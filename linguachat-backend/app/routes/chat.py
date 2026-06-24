@@ -57,6 +57,7 @@ class ChatRequest(BaseModel):
     session_id: str = Field(default="local-session", min_length=1, max_length=128)
     preferences: dict = Field(default_factory=dict)
     native_language: str | LanguageInfo | dict | None = None
+    interface_language: str | LanguageInfo | dict | None = None
     target_language: str | LanguageInfo | dict | None = None
     mission_context: MissionContext | dict | None = None
     missionContext: MissionContext | dict | None = None

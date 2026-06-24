@@ -207,7 +207,7 @@ export function JourneyRail({ onClose }) {
       <div className="px-5 py-4 grid grid-cols-3 gap-2" style={{ borderTop: '1px solid var(--border)' }}>
         {[
           { label: t('today'), value: `${minutesToday}m`, color: 'var(--blue)' },
-          { label: 'Phrases', value: wordsLearned, color: 'var(--green)' },
+          { label: t('words'), value: wordsLearned, color: 'var(--green)' },
           { label: t('completedMissions'), value: completedMissions.length || sessionsTotal, color: 'var(--violet)' },
         ].map(s => (
           <div key={s.label} className="text-center py-2 rounded-xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>

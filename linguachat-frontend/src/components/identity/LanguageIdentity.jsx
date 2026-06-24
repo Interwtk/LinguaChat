@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MOCK_STATS } from '../../data/mockData'
@@ -33,6 +33,7 @@ export function LanguageIdentity() {
     localProgress,
     resetLocalProgress,
     nativeLanguageInfo,
+    interfaceLanguageInfo,
     targetLanguage,
     setNativeLanguage,
     t,
@@ -41,6 +42,10 @@ export function LanguageIdentity() {
   const [nameInput, setNameInput] = useState(profile.name || '')
   const [moodColor, setMoodColor] = useState(profile.moodColor || 'violet')
   const [languageInput, setLanguageInput] = useState(nativeLanguageInfo.code)
+
+  useEffect(() => {
+    setLanguageInput(nativeLanguageInfo.code)
+  }, [nativeLanguageInfo.code])
 
   const hasLocalProgress = localProgress.messagesSent > 0
   const confidence = hasLocalProgress ? localProgress.confidence : MOCK_STATS.confidence
@@ -70,7 +75,11 @@ export function LanguageIdentity() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8" style={{ background: 'var(--bg-main)' }}>
+    <div
+      className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8"
+      dir={interfaceLanguageInfo.base === 'ar' ? 'rtl' : 'ltr'}
+      style={{ background: 'var(--bg-main)' }}
+    >
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
 
         {/* Header */}
@@ -172,7 +181,7 @@ export function LanguageIdentity() {
 
         <div className="rounded-2xl p-5 mb-5 animate-fade-up" style={{ animationDelay: '0.06s', background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
           <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 12 }}>
-            {t('interfaceLanguage')}
+            {t('nativeLanguageLabel')}
           </p>
           <div className="flex flex-col gap-3">
             <div>
@@ -180,7 +189,7 @@ export function LanguageIdentity() {
                 {nativeLanguageInfo.name}
               </p>
               <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 2 }}>
-                {nativeLanguageInfo.code} · learning {targetLanguage.name}
+                {nativeLanguageInfo.code} · {t('learningEnglish')}
               </p>
             </div>
             <div className="flex gap-2">
@@ -209,7 +218,7 @@ export function LanguageIdentity() {
             { label: 'Day streak', value: streak, emoji: '🔥', color: 'var(--coral)' },
             { label: 'Messages', value: localProgress.messagesSent, emoji: '💬', color: 'var(--blue)' },
             { label: t('corrections'), value: localProgress.correctionsReceived, emoji: 'OK', color: 'var(--yellow)' },
-            { label: 'Phrases', value: localProgress.learnedItems.length, emoji: '📚', color: 'var(--green)' },
+            { label: t('words'), value: localProgress.learnedItems.length, emoji: '📚', color: 'var(--green)' },
           ] : [
             { label: 'Day streak', value: MOCK_STATS.streak, emoji: '🔥', color: 'var(--coral)' },
             { label: 'Words known', value: MOCK_STATS.wordsLearned, emoji: '📚', color: 'var(--green)' },

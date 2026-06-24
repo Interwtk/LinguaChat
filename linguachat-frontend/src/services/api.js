@@ -9,6 +9,15 @@ const SPANISH_CHARS = /[áéíóúüñ¿¡]/
 
 /* ─── Translation map ─── */
 const TRANSLATIONS = {
+  'queso':                  'cheese',
+  'agua':                   'water',
+  'cafe':                   'coffee',
+  'comida':                 'food',
+  'pan':                    'bread',
+  'leche':                  'milk',
+  'arroz':                  'rice',
+  'pollo':                  'chicken',
+  'manzana':                'apple',
   'quiero viajar':          'I want to travel',
   'quiero comer':           'I want to eat',
   'me llamo':               'My name is',
@@ -23,6 +32,18 @@ const TRANSLATIONS = {
   'quiero aprender ingles': 'I want to learn English',
   'buenos dias':            'Good morning',
   'buenas noches':          'Good night',
+}
+
+const EN_TO_ES = {
+  cheese: 'queso',
+  water: 'agua',
+  coffee: 'cafe',
+  food: 'comida',
+  bread: 'pan',
+  milk: 'leche',
+  rice: 'arroz',
+  chicken: 'pollo',
+  apple: 'manzana',
 }
 
 /* ─── Error patterns ─── */
@@ -125,38 +146,70 @@ function randomDelay(min = 1200, max = 2200) {
   return new Promise(r => setTimeout(r, min + Math.random() * (max - min)))
 }
 
+function normalizeForIntent(text) {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+    .replace(/[¿?."'“”‘’:;!]+/g, '')
+    .replace(/\s+/g, ' ')
+}
+
+function extractTranslationIntent(text) {
+  const normalized = normalizeForIntent(text)
+  const patterns = [
+    [/^(?:como se dice|como digo|traduce|traducir)\s+(.+)$/, 'to_en'],
+    [/^(?:how do you say|how to say|say)\s+(.+?)(?:\s+in english)?$/, 'to_en'],
+    [/^(?:que significa)\s+(.+)$/, 'from_en'],
+    [/^what does\s+(.+?)\s+mean$/, 'from_en'],
+  ]
+  for (const [pattern, direction] of patterns) {
+    const match = normalized.match(pattern)
+    if (match?.[1]) return { phrase: match[1].trim(), direction }
+  }
+  return null
+}
+
 function getMockResponse({ message, mode }) {
   const text = message.trim()
 
   /* Spanish translation request */
-  const isSpanish = SPANISH_WORDS.test(text) || SPANISH_CHARS.test(text)
-  if (isSpanish) {
-    const lower = text.toLowerCase()
-    let translation = null
-    for (const [es, en] of Object.entries(TRANSLATIONS)) {
-      if (lower.includes(es)) { translation = en; break }
-    }
+  const translationIntent = extractTranslationIntent(text)
+  if (translationIntent) {
+    const translation = translationIntent.direction === 'from_en'
+      ? EN_TO_ES[translationIntent.phrase]
+      : TRANSLATIONS[translationIntent.phrase]
     if (!translation) {
-      const wordMap = {
-        quiero: 'I want', viajar: 'to travel', hablar: 'to speak',
-        comer: 'to eat', necesito: 'I need', tengo: 'I have',
-        hola: 'Hello', gracias: 'Thank you', ayuda: 'help',
-        trabajo: 'work', familia: 'family', agua: 'water',
-        casa: 'house', tiempo: 'weather/time', amigo: 'friend',
+      return {
+        message: 'Buena pregunta. Con el backend activo puedo traducirlo mejor.',
+        suggestion: 'Practica esta pregunta: How do you say ___ in English?',
+        learning_action: {
+          type: 'fill_blank',
+          prompt: 'How do you say ___ in English?',
+          options: null,
+        },
+        focus: 'Traduccion util',
       }
-      const parts = lower.split(/\s+/).map(w => wordMap[w] || w)
-      translation = parts.join(' ')
     }
+    const targetWord = translationIntent.direction === 'from_en' ? translationIntent.phrase : translation
     return {
-      message: 'Se dice asi en ingles:',
-      translation,
-      suggestion: `Usa la frase: ${translation}.`,
+      reply: translationIntent.direction === 'from_en'
+        ? `"${translationIntent.phrase}" significa "${translation}".`
+        : `"${translationIntent.phrase}" se dice "${translation}" en ingles.`,
+      explanation: `Ejemplo: I like ${targetWord}.`,
+      suggestion: translationIntent.direction === 'from_en'
+        ? `Ahora escribe una frase con ${targetWord}.`
+        : 'Ahora intentalo tu: I like _____.',
+      mode: 'translation',
       learning_action: {
-        type: 'complete_sentence',
-        prompt: `Completala: "${translation} to ____."`,
+        type: 'fill_blank',
+        prompt: 'I like _____.',
         options: null,
+        expected: targetWord,
       },
       focus: 'Traduccion util',
+      word_to_use: targetWord,
     }
   }
 
@@ -233,6 +286,7 @@ export function normalizeChatResponse(payload) {
           type: data.learning_action.type || 'answer_question',
           prompt: String(data.learning_action.prompt),
           options: Array.isArray(data.learning_action.options) ? data.learning_action.options : null,
+          expected: data.learning_action.expected ?? null,
         }
       : null,
     focus: data.focus ?? null,
@@ -251,6 +305,7 @@ export async function sendChatMessage({
   sessionId,
   preferences,
   nativeLanguage = null,
+  interfaceLanguage = null,
   targetLanguage = null,
   missionContext = null,
 }) {
@@ -266,6 +321,7 @@ export async function sendChatMessage({
         session_id: sessionId,
         preferences,
         native_language: nativeLanguage,
+        interface_language: interfaceLanguage,
         target_language: targetLanguage,
         mission_context: missionContext,
       }),

@@ -1,20 +1,74 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
 from ai.schemas import ChatMode, ChatResult, LanguageLevel, LearningAction, MissionFeedback
 
 
 TRANSLATIONS = {
     "queso": "cheese",
+    "agua": "water",
+    "cafe": "coffee",
+    "café": "coffee",
+    "comida": "food",
+    "pan": "bread",
+    "leche": "milk",
+    "arroz": "rice",
+    "pollo": "chicken",
+    "carne": "meat",
+    "pescado": "fish",
+    "manzana": "apple",
     "perro": "dog",
     "gato": "cat",
+    "casa": "house",
+    "escuela": "school",
+    "trabajo": "work",
+    "bano": "bathroom",
+    "baño": "bathroom",
+    "ayuda": "help",
+    "gracias": "thank you",
+    "hola": "hello",
+    "adios": "goodbye",
+    "adiós": "goodbye",
+    "por favor": "please",
+    "buenos dias": "good morning",
+    "buenos días": "good morning",
+    "buenas noches": "good night",
+    "me gusta": "I like",
+    "quiero": "I want",
+    "necesito": "I need",
+    "tengo": "I have",
+    "soy": "I am",
+    "estoy": "I am",
     "estoy feliz": "I am happy",
     "estoy asustado": "I am scared",
     "me gusta viajar": "I like to travel",
     "quiero viajar": "I want to travel",
     "me gusta bailar": "I like to dance",
     "quiero aprender ingles": "I want to learn English",
+}
+EN_TO_ES = {
+    "cheese": "queso",
+    "water": "agua",
+    "coffee": "cafe",
+    "food": "comida",
+    "bread": "pan",
+    "milk": "leche",
+    "rice": "arroz",
+    "chicken": "pollo",
+    "apple": "manzana",
+    "dog": "perro",
+    "cat": "gato",
+    "house": "casa",
+    "school": "escuela",
+    "work": "trabajo",
+    "bathroom": "bano",
+    "help": "ayuda",
+    "thank you": "gracias",
+    "hello": "hola",
+    "goodbye": "adios",
+    "please": "por favor",
 }
 
 CORRECTIONS = {
@@ -32,7 +86,8 @@ CORRECTIONS = {
     "speack": ("speak", "La palabra correcta es speak."),
 }
 
-TRANSLATION_TRIGGERS = ("como se dice", "como digo", "how do you say")
+TRANSLATION_TRIGGERS = ("como se dice", "como digo", "traduce", "traducir", "how do you say", "how to say", "say")
+MEANING_TRIGGERS = ("que significa", "what does")
 PRACTICE_TRIGGERS = (
     "practica",
     "practicar",
@@ -48,14 +103,24 @@ SPANISH_HINTS = {"hola", "como", "quiero", "puedo", "digo", "decir", "gracias"}
 
 
 def normalize(text: str) -> str:
-    normalized = re.sub(r"\s+", " ", text.lower().strip())
+    normalized = strip_accents(text)
+    normalized = re.sub(r"\s+", " ", normalized.lower().strip())
     return normalized.strip("!?.,;:")
+
+
+def strip_accents(text: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(char for char in decomposed if not unicodedata.combining(char))
+
+
+def _clean_outer_punctuation(text: str) -> str:
+    return text.strip().strip("¿?\"'“”‘’`.:;! ")
 
 
 def detect_mode(text: str) -> ChatMode:
     normalized = normalize(text)
 
-    if normalized.startswith(TRANSLATION_TRIGGERS):
+    if _extract_translation_intent(text):
         return ChatMode.TRANSLATION
     if normalized in CORRECTIONS:
         return ChatMode.CORRECTION
@@ -67,12 +132,23 @@ def _is_practice_request(text: str) -> bool:
     return any(trigger in normalized for trigger in PRACTICE_TRIGGERS)
 
 
-def _clean_translation_phrase(text: str) -> str:
-    normalized = normalize(text)
-    for trigger in TRANSLATION_TRIGGERS:
-        if normalized.startswith(trigger):
-            return normalized.replace(trigger, "", 1).strip(" ?")
-    return normalized
+def _extract_translation_intent(text: str) -> dict | None:
+    cleaned = _clean_outer_punctuation(text)
+    normalized = normalize(cleaned)
+
+    patterns = [
+        (r"^(?:como se dice|como digo)\s*:?\s*(.+)$", "to_en"),
+        (r"^(?:traduce|traducir)\s*:?\s*(.+)$", "to_en"),
+        (r"^(?:how do you say|how to say|say)\s+(.+?)(?:\s+in english)?$", "to_en"),
+        (r"^(?:que significa)\s*:?\s*(.+)$", "from_en"),
+        (r"^what does\s+(.+?)\s+mean\??$", "from_en"),
+    ]
+    for pattern, direction in patterns:
+        match = re.match(pattern, normalized)
+        if match:
+            phrase = _clean_outer_punctuation(match.group(1))
+            return {"phrase": phrase, "direction": direction}
+    return None
 
 
 def _chat_reply(text: str, level: LanguageLevel, has_history: bool) -> str:
@@ -147,9 +223,10 @@ def _learning_action_for(
 
     if mode == ChatMode.TRANSLATION and translation:
         return LearningAction(
-            type="complete_sentence",
-            prompt=f"Completala: '{translation} to ____.'",
+            type="fill_blank",
+            prompt="Completa: I like _____.",
             options=None,
+            expected=translation,
         )
 
     if mode == ChatMode.CORRECTION and correction:
@@ -246,22 +323,51 @@ def generate_local_response(
     mode = detect_mode(message)
 
     if mode == ChatMode.TRANSLATION:
-        phrase = _clean_translation_phrase(message)
-        translation = TRANSLATIONS.get(phrase)
-        reply = (
-            f"{translation} ({phrase})"
-            if translation
-            else "No tengo esa traduccion en modo local. Prueba con una frase mas corta."
-        )
+        intent = _extract_translation_intent(message) or {"phrase": normalize(message), "direction": "to_en"}
+        phrase = intent["phrase"]
+        normalized_phrase = normalize(phrase)
+        if intent["direction"] == "from_en":
+            translation = EN_TO_ES.get(normalized_phrase)
+            if translation:
+                reply = f'"{phrase.capitalize()}" significa "{translation}".'
+                explanation = f"Es una palabra util. Ejemplo: I like {normalized_phrase}."
+                suggestion = f"Ahora escribe una frase con {normalized_phrase}."
+                word_to_use = normalized_phrase
+                action_expected = normalized_phrase
+            else:
+                reply = "Puedo ayudarte con eso. Con OpenAI activo puedo explicarlo mejor."
+                explanation = "En modo local solo conozco algunas palabras A1/A2."
+                suggestion = "Prueba con una palabra corta como cheese, water o coffee."
+                word_to_use = None
+                action_expected = None
+        else:
+            translation = TRANSLATIONS.get(normalized_phrase)
+            if translation:
+                reply = f'"{phrase.capitalize()}" se dice "{translation}" en ingles.'
+                explanation = f"Ejemplo: I like {translation}."
+                suggestion = "Ahora intentalo tu: I like _____."
+                word_to_use = translation
+                action_expected = translation
+            else:
+                reply = "Buena pregunta. Con OpenAI activo puedo traducirlo mejor."
+                explanation = "Por ahora practiquemos como pedir una traduccion."
+                suggestion = "Pregunta asi: How do you say ___ in English?"
+                word_to_use = None
+                action_expected = None
         return ChatResult(
             reply=reply,
             correction=None,
-            explanation=None,
-            suggestion="Usa la frase en una oracion corta.",
+            explanation=explanation,
+            suggestion=suggestion,
             mode=mode,
-            learning_action=_learning_action_for(mode, message, level, translation=translation),
-            focus="Functional translation",
-            word_to_use=None,
+            learning_action=LearningAction(
+                type="fill_blank",
+                prompt="Completa: I like _____.",
+                options=None,
+                expected=action_expected,
+            ) if action_expected else _learning_action_for(mode, message, level, translation=None),
+            focus="Traduccion util",
+            word_to_use=word_to_use,
         )
 
     if mode == ChatMode.CORRECTION:

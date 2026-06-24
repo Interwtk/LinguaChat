@@ -28,9 +28,11 @@ class LearningAction(BaseModel):
         "choose_option",
         "ask_back",
         "use_word",
+        "fill_blank",
     ]
     prompt: str = Field(min_length=1)
     options: list[str] | None = None
+    expected: str | None = None
 
 
 class LanguageInfo(BaseModel):

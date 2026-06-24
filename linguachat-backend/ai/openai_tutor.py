@@ -41,6 +41,17 @@ Rules:
 - explanation must be null or at most two short sentences.
 - suggestion must be null or one practical, natural next step.
 - For translation, give the natural English phrase in reply.
+- For "como se dice X", "como digo X", "how do you say X in English", translate only X into English.
+- Never repeat the whole request as the translation.
+- For meaning questions like "que significa cheese" or "what does cheese mean", explain the English word in the native language.
+- Translation replies should include: direct translation, one short English example, and one mini practice.
+- Example for Spanish native language:
+  User: como se dice queso
+  reply: "\"Queso\" se dice \"cheese\" en ingles."
+  explanation: "Ejemplo: I like cheese."
+  suggestion: "Ahora intentalo tu: I like _____."
+  mode: "translation"
+  learning_action: {"type":"fill_blank","prompt":"I like _____.","expected":"cheese","options":null}
 - Every turn must include one concrete learning_action with one mini goal.
 - learning_action.prompt must be short and contextual.
 - focus should name the current learning focus in a few words.

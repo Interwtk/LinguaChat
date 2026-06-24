@@ -80,8 +80,47 @@ def test_translation_request():
 
     assert response.status_code == 200
     assert data["mode"] == "translation"
-    assert data["reply"] == "I want to travel (quiero viajar)"
+    assert "I want to travel" in data["reply"]
     assert data["correction"] is None
+
+
+def test_translation_intent_extracts_spanish_word():
+    response = post_chat("como se dice queso", level="A1")
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["mode"] == "translation"
+    assert "cheese" in data["reply"].lower()
+    assert "como se dice queso" not in data["reply"].lower()
+    assert data["word_to_use"] == "cheese" or data["learning_action"].get("expected") == "cheese"
+
+
+def test_translation_intent_handles_accents_and_punctuation():
+    response = post_chat("¿cómo se dice agua?", level="A1")
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["mode"] == "translation"
+    assert "water" in data["reply"].lower()
+
+
+def test_meaning_question_from_english_to_spanish():
+    response = post_chat("qué significa cheese", level="A1")
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["mode"] == "translation"
+    assert "queso" in data["reply"].lower()
+
+
+def test_translation_intent_long_phrase_does_not_repeat_request():
+    response = post_chat("como digo me gusta el queso", level="A1")
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["mode"] == "translation"
+    assert "como digo me gusta el queso" not in data["reply"].lower()
+    assert data["reply"]
 
 
 def test_chat_with_mission_context_without_openai_does_not_break():
@@ -198,6 +237,7 @@ def test_chat_response_includes_learning_action():
         "choose_option",
         "ask_back",
         "use_word",
+        "fill_blank",
     }
 
 

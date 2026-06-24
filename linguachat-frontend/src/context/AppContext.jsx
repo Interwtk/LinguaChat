@@ -1,8 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { sendChatMessage } from '../services/api'
 import {
-  getStoredNativeLanguage,
-  getTargetLanguage,
+  ensureLanguagePreferences,
+  setInterfaceLanguage as persistInterfaceLanguage,
   setNativeLanguage as persistNativeLanguage,
 } from '../services/language'
 import {
@@ -74,8 +74,10 @@ export function AppProvider({ children }) {
     if (checkAuth()) return null
     return 'entry'
   })
-  const [nativeLanguageInfo, setNativeLanguageInfo] = useState(getStoredNativeLanguage)
-  const [targetLanguage] = useState(getTargetLanguage)
+  const [languagePreferences, setLanguagePreferences] = useState(ensureLanguagePreferences)
+  const nativeLanguageInfo = languagePreferences.nativeLanguage
+  const interfaceLanguageInfo = languagePreferences.interfaceLanguage
+  const targetLanguage = languagePreferences.targetLanguage
 
   const [authUser, setAuthUser] = useState(() => {
     try {
@@ -119,8 +121,10 @@ export function AppProvider({ children }) {
   }, [darkMode])
 
   useEffect(() => {
-    persistNativeLanguage(nativeLanguageInfo)
-  }, [nativeLanguageInfo])
+    const root = document.documentElement
+    root.lang = interfaceLanguageInfo.code
+    root.dir = interfaceLanguageInfo.base === 'ar' ? 'rtl' : 'ltr'
+  }, [interfaceLanguageInfo])
 
   useEffect(() => {
     try { localStorage.setItem('lc2-profile', JSON.stringify(profile)) } catch {}
@@ -145,10 +149,25 @@ export function AppProvider({ children }) {
   const toggleDark = useCallback(() => setDarkMode(d => !d), [])
 
   const nativeLanguage = nativeLanguageInfo.base
-  const t = useCallback((key) => translate(nativeLanguageInfo.base, key), [nativeLanguageInfo.base])
+  const interfaceLanguage = interfaceLanguageInfo.base
+  const t = useCallback((key, params) => translate(interfaceLanguageInfo.base, key, params), [interfaceLanguageInfo.base])
 
-  const setNativeLanguage = useCallback((language) => {
-    setNativeLanguageInfo(persistNativeLanguage(language))
+  const updateNativeLanguage = useCallback((language) => {
+    const native = persistNativeLanguage(language)
+    const nextInterface = persistInterfaceLanguage(native)
+    setLanguagePreferences(previous => ({
+      ...previous,
+      nativeLanguage: native,
+      interfaceLanguage: nextInterface,
+    }))
+  }, [])
+
+  const updateInterfaceLanguage = useCallback((language) => {
+    const nextInterface = persistInterfaceLanguage(language)
+    setLanguagePreferences(previous => ({
+      ...previous,
+      interfaceLanguage: nextInterface,
+    }))
   }, [])
 
   const loginMock = useCallback((email) => {
@@ -289,12 +308,14 @@ export function AppProvider({ children }) {
         history,
         sessionId,
         nativeLanguage: nativeLanguageInfo,
+        interfaceLanguage: interfaceLanguageInfo,
         targetLanguage,
         preferences: {
           goal: profile.goal,
           style: profile.style,
           tutor_personality: profile.tutorPersonality,
           native_language: nativeLanguageInfo,
+          interface_language: interfaceLanguageInfo,
           target_language: targetLanguage,
           topics: profile.preferences?.goals || [],
         },
@@ -422,7 +443,7 @@ export function AppProvider({ children }) {
         createMissionStepMessage(getActiveMissionDetails(advanced.activeMission)),
       ])
     }, 650)
-  }, [activeMission, appendLinguaMessages, messages, missionContextFromDetails, nativeLanguageInfo, profile, sessionId, targetLanguage])
+  }, [activeMission, appendLinguaMessages, interfaceLanguageInfo, messages, missionContextFromDetails, nativeLanguageInfo, profile, sessionId, targetLanguage])
 
   const submitMissionOption = useCallback((option) => {
     if (!option) return
@@ -476,12 +497,14 @@ export function AppProvider({ children }) {
         history,
         sessionId,
         nativeLanguage: nativeLanguageInfo,
+        interfaceLanguage: interfaceLanguageInfo,
         targetLanguage,
         preferences: {
           goal: profile.goal,
           style: profile.style,
           tutor_personality: profile.tutorPersonality,
           native_language: nativeLanguageInfo,
+          interface_language: interfaceLanguageInfo,
           target_language: targetLanguage,
           detected_level: profile.placementResult?.detectedLevel || profile.level,
           correction_style: profile.placementResult?.recommendedCorrectionStyle || profile.preferences?.correctionIntensity,
@@ -527,7 +550,7 @@ export function AppProvider({ children }) {
     } finally {
       setIsTyping(false)
     }
-  }, [activeMission, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage])
+  }, [activeMission, interfaceLanguageInfo, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage])
 
   useEffect(() => {
     if (restoredMissionRef.current) return
@@ -576,7 +599,13 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{
       authStep, setAuthStep,
-      nativeLanguage, nativeLanguageInfo, targetLanguage, setNativeLanguage, t,
+      nativeLanguage, nativeLanguageInfo,
+      interfaceLanguage, interfaceLanguageInfo,
+      targetLanguage,
+      setNativeLanguage: updateNativeLanguage,
+      updateNativeLanguage,
+      updateInterfaceLanguage,
+      t,
       authUser,
       loginMock, signupMock,
       completePlacement, completeTutorPersonality, completeLearningPrefs,
