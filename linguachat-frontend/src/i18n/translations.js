@@ -9,18 +9,21 @@ export const LANGUAGE_OPTIONS = [
 
 export function detectNativeLanguage() {
   try {
-    const language = navigator.language?.toLowerCase() || ''
-    if (language.startsWith('es')) return 'es'
-    if (language.startsWith('pt')) return 'pt'
-    if (language.startsWith('fr')) return 'fr'
-    if (language.startsWith('it')) return 'it'
-    if (language.startsWith('de')) return 'de'
+    const language = navigator.languages?.find(Boolean) || navigator.language || ''
+    return language.split('-', 1)[0].toLowerCase() || 'en'
   } catch {}
   return 'en'
 }
 
 export function getLanguageName(code) {
-  return LANGUAGE_OPTIONS.find(item => item.code === code)?.nativeName || 'English'
+  const baseCode = String(code || 'en').split('-', 1)[0]
+  const fixed = LANGUAGE_OPTIONS.find(item => item.code === baseCode)?.nativeName
+  if (fixed) return fixed
+  try {
+    return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) || 'English'
+  } catch {
+    return 'English'
+  }
 }
 
 const base = {

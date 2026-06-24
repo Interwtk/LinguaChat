@@ -1,6 +1,11 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { sendChatMessage } from '../services/api'
 import {
+  getStoredNativeLanguage,
+  getTargetLanguage,
+  setNativeLanguage as persistNativeLanguage,
+} from '../services/language'
+import {
   clearStoredProgress,
   createEmptyProgress,
   createSessionId,
@@ -12,7 +17,7 @@ import {
   saveLocalProgress,
   saveStoredMessages,
 } from '../services/localProgress'
-import { detectNativeLanguage, getLanguageName, translate } from '../i18n/translations'
+import { translate } from '../i18n/translations'
 import {
   advanceMission,
   completeMission,
@@ -55,14 +60,6 @@ function checkAuth() {
   } catch { return false }
 }
 
-function getStoredNativeLanguage() {
-  try {
-    return localStorage.getItem('lc2-native-language') || detectNativeLanguage()
-  } catch {
-    return 'en'
-  }
-}
-
 const WELCOME_MESSAGE = {
   id: 'welcome',
   role: 'lingua',
@@ -77,7 +74,8 @@ export function AppProvider({ children }) {
     if (checkAuth()) return null
     return 'entry'
   })
-  const [nativeLanguage, setNativeLanguageState] = useState(getStoredNativeLanguage)
+  const [nativeLanguageInfo, setNativeLanguageInfo] = useState(getStoredNativeLanguage)
+  const [targetLanguage] = useState(getTargetLanguage)
 
   const [authUser, setAuthUser] = useState(() => {
     try {
@@ -121,12 +119,8 @@ export function AppProvider({ children }) {
   }, [darkMode])
 
   useEffect(() => {
-    try {
-      if (!localStorage.getItem('lc2-native-language')) {
-        localStorage.setItem('lc2-native-language', nativeLanguage)
-      }
-    } catch {}
-  }, [nativeLanguage])
+    persistNativeLanguage(nativeLanguageInfo)
+  }, [nativeLanguageInfo])
 
   useEffect(() => {
     try { localStorage.setItem('lc2-profile', JSON.stringify(profile)) } catch {}
@@ -150,11 +144,11 @@ export function AppProvider({ children }) {
 
   const toggleDark = useCallback(() => setDarkMode(d => !d), [])
 
-  const t = useCallback((key) => translate(nativeLanguage, key), [nativeLanguage])
+  const nativeLanguage = nativeLanguageInfo.base
+  const t = useCallback((key) => translate(nativeLanguageInfo.base, key), [nativeLanguageInfo.base])
 
   const setNativeLanguage = useCallback((language) => {
-    setNativeLanguageState(language)
-    try { localStorage.setItem('lc2-native-language', language) } catch {}
+    setNativeLanguageInfo(persistNativeLanguage(language))
   }, [])
 
   const loginMock = useCallback((email) => {
@@ -237,6 +231,21 @@ export function AppProvider({ children }) {
     setSelectedMessage(list[list.length - 1])
   }, [])
 
+  const missionContextFromDetails = useCallback((details) => {
+    if (!details?.mission || !details?.step) return null
+    return {
+      mission_id: details.mission.id,
+      mission_title: details.mission.title,
+      step_id: details.step.id,
+      step_type: details.step.type,
+      target_skill: details.mission.targetSkill,
+      instruction: details.step.instruction,
+      prompt: details.step.prompt,
+      expected_pattern: details.step.expectedPattern || null,
+      options: details.step.options || null,
+    }
+  }, [])
+
   const startPracticeMission = useCallback((mission = null) => {
     const selectedMission = mission || getMissionForToday(profile.level, profile.goal)
     const active = createActiveMission(selectedMission)
@@ -251,11 +260,10 @@ export function AppProvider({ children }) {
     setMobileSheet(null)
   }, [appendLinguaMessages, profile.goal, profile.level])
 
-  const submitMissionStep = useCallback((value, displayText = null) => {
+  const submitMissionStep = useCallback(async (value, displayText = null) => {
     const details = getActiveMissionDetails(activeMission)
     if (!details?.step) return
     const answerText = displayText || value
-    const evaluation = evaluateMissionStep(details.step, value)
     setMessages(previous => [...previous, {
       id: `u${Date.now()}`,
       role: 'user',
@@ -265,6 +273,69 @@ export function AppProvider({ children }) {
       missionStepId: details.step.id,
     }])
     setIsTyping(true)
+
+    let response = null
+    let evaluation = null
+    try {
+      const history = messages.slice(-8).map(m => ({
+        role: m.role,
+        text: m.text,
+        correction: m.feedback?.correction || null,
+      }))
+      response = await sendChatMessage({
+        message: answerText,
+        level: profile.level,
+        mode: profile.style,
+        history,
+        sessionId,
+        nativeLanguage: nativeLanguageInfo,
+        targetLanguage,
+        preferences: {
+          goal: profile.goal,
+          style: profile.style,
+          tutor_personality: profile.tutorPersonality,
+          native_language: nativeLanguageInfo,
+          target_language: targetLanguage,
+          topics: profile.preferences?.goals || [],
+        },
+        missionContext: missionContextFromDetails(details),
+      })
+    } catch {}
+
+    if (response?.mission_feedback) {
+      evaluation = {
+        passed: Boolean(response.mission_feedback.should_advance),
+        feedback: response.mission_feedback.feedback,
+        correction: response.mission_feedback.corrected_answer || response.correction || null,
+        explanation: response.explanation || response.mission_feedback.hint || null,
+        nextSuggestion: response.suggestion || response.mission_feedback.hint || null,
+      }
+    } else {
+      evaluation = evaluateMissionStep(details.step, value)
+    }
+
+    if (!evaluation.passed) {
+      setMissionFeedback({ passed: false, text: evaluation.feedback })
+      setTimeout(() => {
+        setIsTyping(false)
+        appendLinguaMessages({
+          id: `mission-feedback-${details.step.id}-${Date.now()}`,
+          role: 'lingua',
+          text: response?.reply || evaluation.feedback,
+          feedback: {
+            correction: evaluation.correction || null,
+            why: evaluation.explanation || null,
+            suggestion: evaluation.nextSuggestion || 'Try this same step once more.',
+            focus: details.mission.targetSkill,
+          },
+          missionId: details.mission.id,
+          missionStepId: details.step.id,
+          missionType: 'feedback',
+          ts: Date.now(),
+        })
+      }, 650)
+      return
+    }
 
     const advanced = advanceMission(activeMission, details.step, value, evaluation)
     setLocalProgress(previous => recordMissionProgress(previous, {
@@ -296,7 +367,25 @@ export function AppProvider({ children }) {
       setTimeout(() => {
         setIsTyping(false)
         appendLinguaMessages([
-          createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
+          response
+            ? {
+                id: `mission-feedback-${details.step.id}-${Date.now()}`,
+                role: 'lingua',
+                text: `${response.reply} +${advanced.earnedThisStep} XP.`,
+                feedback: {
+                  correction: response.correction || evaluation.correction || null,
+                  why: response.explanation || evaluation.explanation || null,
+                  suggestion: response.suggestion || evaluation.nextSuggestion || null,
+                  learningAction: response.learning_action || null,
+                  focus: response.focus || details.mission.targetSkill,
+                  wordToUse: response.word_to_use || null,
+                },
+                missionId: details.mission.id,
+                missionStepId: details.step.id,
+                missionType: 'feedback',
+                ts: Date.now(),
+              }
+            : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
           createMissionCompleteMessage(details.mission, completed),
         ])
       }, 650)
@@ -311,11 +400,29 @@ export function AppProvider({ children }) {
     setTimeout(() => {
       setIsTyping(false)
       appendLinguaMessages([
-        createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
+        response
+          ? {
+              id: `mission-feedback-${details.step.id}-${Date.now()}`,
+              role: 'lingua',
+              text: `${response.reply} +${advanced.earnedThisStep} XP.`,
+              feedback: {
+                correction: response.correction || evaluation.correction || null,
+                why: response.explanation || evaluation.explanation || null,
+                suggestion: response.suggestion || evaluation.nextSuggestion || null,
+                learningAction: response.learning_action || null,
+                focus: response.focus || details.mission.targetSkill,
+                wordToUse: response.word_to_use || null,
+              },
+              missionId: details.mission.id,
+              missionStepId: details.step.id,
+              missionType: 'feedback',
+              ts: Date.now(),
+            }
+          : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
         createMissionStepMessage(getActiveMissionDetails(advanced.activeMission)),
       ])
     }, 650)
-  }, [activeMission, appendLinguaMessages])
+  }, [activeMission, appendLinguaMessages, messages, missionContextFromDetails, nativeLanguageInfo, profile, sessionId, targetLanguage])
 
   const submitMissionOption = useCallback((option) => {
     if (!option) return
@@ -368,11 +475,14 @@ export function AppProvider({ children }) {
         mode: profile.style,
         history,
         sessionId,
+        nativeLanguage: nativeLanguageInfo,
+        targetLanguage,
         preferences: {
           goal: profile.goal,
           style: profile.style,
           tutor_personality: profile.tutorPersonality,
-          native_language: getLanguageName(nativeLanguage),
+          native_language: nativeLanguageInfo,
+          target_language: targetLanguage,
           detected_level: profile.placementResult?.detectedLevel || profile.level,
           correction_style: profile.placementResult?.recommendedCorrectionStyle || profile.preferences?.correctionIntensity,
           topics: profile.preferences?.goals || [],
@@ -417,7 +527,7 @@ export function AppProvider({ children }) {
     } finally {
       setIsTyping(false)
     }
-  }, [activeMission, messages, nativeLanguage, profile, sessionId, submitMissionStep])
+  }, [activeMission, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage])
 
   useEffect(() => {
     if (restoredMissionRef.current) return
@@ -466,7 +576,7 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{
       authStep, setAuthStep,
-      nativeLanguage, setNativeLanguage, t,
+      nativeLanguage, nativeLanguageInfo, targetLanguage, setNativeLanguage, t,
       authUser,
       loginMock, signupMock,
       completePlacement, completeTutorPersonality, completeLearningPrefs,

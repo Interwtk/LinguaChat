@@ -47,6 +47,7 @@ def generate_response(
             user_message=user_message,
             level=level,
             history=short_history,
+            user_profile=user_profile,
         ),
         provider="local",
     )

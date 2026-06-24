@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from ai.engine import generate_response
-from ai.schemas import ChatMode, ChatResult, LanguageLevel
+from ai.schemas import ChatMode, ChatResult, LanguageInfo, LanguageLevel, MissionContext
 from app.services.memory import conversation_memory
 
 
@@ -19,6 +19,22 @@ ALLOWED_PREFERENCES = {
     "practice_intent",
     "detected_level",
     "correction_style",
+}
+
+LANGUAGE_NAMES = {
+    "ar": "Arabic",
+    "de": "German",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French",
+    "hi": "Hindi",
+    "it": "Italian",
+    "ja": "Japanese",
+    "ko": "Korean",
+    "pt": "Portuguese",
+    "ru": "Russian",
+    "tr": "Turkish",
+    "zh": "Chinese",
 }
 
 
@@ -40,7 +56,52 @@ class ChatRequest(BaseModel):
     history: list[dict] = Field(default_factory=list)
     session_id: str = Field(default="local-session", min_length=1, max_length=128)
     preferences: dict = Field(default_factory=dict)
+    native_language: str | LanguageInfo | dict | None = None
+    target_language: str | LanguageInfo | dict | None = None
+    mission_context: MissionContext | dict | None = None
+    missionContext: MissionContext | dict | None = None
     user_id: str | None = None
+
+
+def _language_name(base: str) -> str:
+    return LANGUAGE_NAMES.get(base.lower(), base.upper() if base else "English")
+
+
+def _model_to_dict(model, **kwargs) -> dict:
+    if hasattr(model, "model_dump"):
+        return model.model_dump(**kwargs)
+    return model.dict(**kwargs)
+
+
+def _normalize_language(value, fallback_code: str = "en") -> LanguageInfo:
+    if isinstance(value, LanguageInfo):
+        raw = _model_to_dict(value)
+    elif isinstance(value, dict):
+        raw = value
+    elif isinstance(value, str):
+        raw = {"code": value}
+    else:
+        raw = {"code": fallback_code}
+
+    code = str(raw.get("code") or fallback_code).strip() or fallback_code
+    code = code.replace("_", "-")
+    base = str(raw.get("base") or code.split("-", 1)[0] or fallback_code).strip().lower()
+    name = str(raw.get("name") or _language_name(base)).strip()
+    return LanguageInfo(code=code, base=base, name=name)
+
+
+def _normalize_target_language(value) -> LanguageInfo:
+    return LanguageInfo(code="en", base="en", name="English")
+
+
+def _normalize_mission_context(value) -> dict | None:
+    if value is None:
+        return None
+    if isinstance(value, MissionContext):
+        return _model_to_dict(value, exclude_none=True)
+    if isinstance(value, dict):
+        return _model_to_dict(MissionContext(**value), exclude_none=True)
+    return None
 
 
 @router.post("/chat", response_model=ChatResult)
@@ -51,13 +112,19 @@ def chat(req: ChatRequest, response: Response):
     try:
         history = conversation_memory.context(session_id, req.history)
         preferences = _safe_preferences(req.preferences)
+        native_language = _normalize_language(
+            req.native_language or preferences.get("native_language") or "en"
+        )
+        target_language = _normalize_target_language(req.target_language)
+        mission_context = _normalize_mission_context(req.mission_context or req.missionContext)
         user_profile = {
             "level": req.level.value,
-            "native_language": preferences.get("native_language") or "Spanish",
-            "target_language": "English",
+            "native_language": native_language,
+            "target_language": target_language,
             "interests": preferences.get("interests") or preferences.get("topics") or [],
             "preferences": preferences,
             "recent_errors": conversation_memory.recent_errors(session_id),
+            "mission_context": mission_context,
         }
 
         generated = generate_response(
@@ -67,6 +134,8 @@ def chat(req: ChatRequest, response: Response):
             history=history,
         )
         result = generated.response
+        result.detected_language = result.detected_language or native_language
+        result.target_language = result.target_language or target_language
         response.headers["X-LinguaChat-Provider"] = generated.provider
         conversation_memory.add(session_id, message, result, req.level)
         return result

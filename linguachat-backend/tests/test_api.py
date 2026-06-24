@@ -16,6 +16,9 @@ EXPECTED_KEYS = {
     "learning_action",
     "focus",
     "word_to_use",
+    "detected_language",
+    "target_language",
+    "mission_feedback",
 }
 BASE_KEYS = {"reply", "correction", "explanation", "suggestion", "mode"}
 
@@ -38,6 +41,10 @@ def post_chat(message: str, level: str = "A1", session_id: str = "test-session")
             "history": [],
         },
     )
+
+
+def post_chat_payload(payload: dict):
+    return client.post("/chat", json=payload)
 
 
 def test_root_endpoint():
@@ -75,6 +82,65 @@ def test_translation_request():
     assert data["mode"] == "translation"
     assert data["reply"] == "I want to travel (quiero viajar)"
     assert data["correction"] is None
+
+
+def test_chat_with_mission_context_without_openai_does_not_break():
+    response = post_chat_payload({
+        "session_id": "mission-session",
+        "message": "I want to travel",
+        "level": "A1",
+        "history": [],
+        "native_language": {"code": "es-CO", "base": "es", "name": "Spanish"},
+        "target_language": {"code": "en", "base": "en", "name": "English"},
+        "mission_context": {
+            "mission_id": "travel-a1",
+            "mission_title": "Pedir ayuda en un viaje",
+            "step_id": "travel-a1-1",
+            "step_type": "translate",
+            "target_skill": "travel",
+            "instruction": "Escribe esta idea en ingles.",
+            "prompt": "Quiero viajar.",
+            "expected_pattern": "i want to travel",
+        },
+    })
+    data = response.json()
+
+    assert response.status_code == 200
+    assert response.headers["X-LinguaChat-Provider"] == "local"
+    assert data["mission_feedback"]["is_correct"] is True
+    assert 0 <= data["mission_feedback"]["score"] <= 100
+    assert data["mission_feedback"]["should_advance"] is True
+    assert data["target_language"]["name"] == "English"
+
+
+def test_old_native_language_string_still_works():
+    response = post_chat_payload({
+        "session_id": "legacy-language",
+        "message": "Hello",
+        "level": "A1",
+        "native_language": "es",
+    })
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["detected_language"]["base"] == "es"
+    assert data["detected_language"]["name"] == "Spanish"
+
+
+def test_new_native_language_object_and_unlisted_language_work():
+    response = post_chat_payload({
+        "session_id": "ja-language",
+        "message": "Hello",
+        "level": "A1",
+        "native_language": {"code": "ja-JP"},
+        "target_language": {"code": "fr"},
+    })
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["detected_language"]["code"] == "ja-JP"
+    assert data["detected_language"]["base"] == "ja"
+    assert data["target_language"] == {"code": "en", "base": "en", "name": "English"}
 
 
 def test_grammar_correction():

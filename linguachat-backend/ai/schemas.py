@@ -2,7 +2,7 @@ from enum import Enum
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 
 class ChatMode(str, Enum):
@@ -33,6 +33,41 @@ class LearningAction(BaseModel):
     options: list[str] | None = None
 
 
+class LanguageInfo(BaseModel):
+    code: str | None = None
+    base: str | None = None
+    name: str | None = None
+
+
+class MissionContext(BaseModel):
+    mission_id: str | None = None
+    mission_title: str | None = None
+    step_id: str | None = None
+    step_type: str | None = None
+    target_skill: str | None = None
+    instruction: str | None = None
+    prompt: str | None = None
+    expected_pattern: str | None = None
+    options: list[dict] | None = None
+
+
+class MissionFeedback(BaseModel):
+    is_correct: bool
+    score: int = Field(ge=0, le=100)
+    feedback: str = Field(min_length=1)
+    should_advance: bool
+    corrected_answer: str | None = None
+    hint: str | None = None
+
+    @validator("score", pre=True)
+    @classmethod
+    def clamp_score(cls, value):
+        try:
+            return max(0, min(100, int(value)))
+        except (TypeError, ValueError):
+            return 0
+
+
 class ChatResult(BaseModel):
     reply: str = Field(min_length=1)
     correction: str | None
@@ -42,3 +77,6 @@ class ChatResult(BaseModel):
     learning_action: LearningAction | None = None
     focus: str | None = None
     word_to_use: str | None = None
+    detected_language: LanguageInfo | None = None
+    target_language: LanguageInfo | None = None
+    mission_feedback: MissionFeedback | None = None

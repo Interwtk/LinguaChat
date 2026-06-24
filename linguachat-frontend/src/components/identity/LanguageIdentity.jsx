@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MOCK_STATS } from '../../data/mockData'
-import { LANGUAGE_OPTIONS } from '../../i18n/translations'
+import { languageFromInput } from '../../services/language'
 
 const MOOD_COLORS = [
   { id: 'violet', label: 'Calm', bg: 'linear-gradient(135deg, var(--violet), var(--blue))' },
@@ -32,13 +32,15 @@ export function LanguageIdentity() {
     logoutMock,
     localProgress,
     resetLocalProgress,
-    nativeLanguage,
+    nativeLanguageInfo,
+    targetLanguage,
     setNativeLanguage,
     t,
   } = useApp()
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState(profile.name || '')
   const [moodColor, setMoodColor] = useState(profile.moodColor || 'violet')
+  const [languageInput, setLanguageInput] = useState(nativeLanguageInfo.code)
 
   const hasLocalProgress = localProgress.messagesSent > 0
   const confidence = hasLocalProgress ? localProgress.confidence : MOCK_STATS.confidence
@@ -59,6 +61,12 @@ export function LanguageIdentity() {
   function saveMood(id) {
     setMoodColor(id)
     updateProfile({ moodColor: id })
+  }
+
+  function saveLanguage() {
+    const nextLanguage = languageFromInput(languageInput)
+    setNativeLanguage(nextLanguage)
+    setLanguageInput(nextLanguage.code)
   }
 
   return (
@@ -166,24 +174,32 @@ export function LanguageIdentity() {
           <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 12 }}>
             {t('interfaceLanguage')}
           </p>
-          <div className="flex flex-wrap gap-2">
-            {LANGUAGE_OPTIONS.map(option => {
-              const selected = nativeLanguage === option.code
-              return (
-                <button
-                  key={option.code}
-                  onClick={() => setNativeLanguage(option.code)}
-                  className="px-3 py-2 rounded-xl text-sm font-bold transition-all"
-                  style={{
-                    background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
-                    border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
-                    color: selected ? 'var(--violet)' : 'var(--ink-muted)',
-                  }}
-                >
-                  {option.nativeName}
-                </button>
-              )
-            })}
+          <div className="flex flex-col gap-3">
+            <div>
+              <p style={{ fontSize: '0.875rem', color: 'var(--ink)', fontWeight: 800 }}>
+                {nativeLanguageInfo.name}
+              </p>
+              <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 2 }}>
+                {nativeLanguageInfo.code} · learning {targetLanguage.name}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <input
+                value={languageInput}
+                onChange={e => setLanguageInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && saveLanguage()}
+                placeholder="es-CO, ja-JP, ar..."
+                className="rounded-xl px-3 py-2 text-sm outline-none"
+                style={{ flex: 1, background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}
+              />
+              <button
+                onClick={saveLanguage}
+                className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-all active:scale-[0.98]"
+                style={{ background: 'var(--violet)', border: 'none' }}
+              >
+                {t('save')}
+              </button>
+            </div>
           </div>
         </div>
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 
-from ai.schemas import ChatMode, ChatResult, LanguageLevel, LearningAction
+from ai.schemas import ChatMode, ChatResult, LanguageLevel, LearningAction, MissionFeedback
 
 
 TRANSLATIONS = {
@@ -194,8 +194,55 @@ def generate_local_response(
     user_message: str,
     level: LanguageLevel,
     history: list[dict] | None = None,
+    user_profile: dict | None = None,
 ) -> ChatResult:
     message = user_message.strip()
+    profile = user_profile or {}
+    mission_context = profile.get("mission_context")
+
+    if mission_context:
+        expected = normalize(str(mission_context.get("expected_pattern") or ""))
+        answer = normalize(message)
+        is_choice = mission_context.get("step_type") == "choose_option"
+        is_correct = bool(expected and (expected in answer or re.search(expected, answer, re.I)))
+        if is_choice:
+            expected_option = None
+            for option in mission_context.get("options") or []:
+                if normalize(str(option.get("id"))) == expected:
+                    expected_option = normalize(str(option.get("text")))
+                    break
+            is_correct = answer == expected or (expected_option and answer == expected_option)
+        score = 85 if is_correct else (45 if answer else 0)
+        feedback = (
+            "Good. That works for this practice step."
+            if is_correct
+            else "Good try. Use the hint and try this step once more."
+        )
+        return ChatResult(
+            reply=feedback,
+            correction=None if is_correct else mission_context.get("prompt"),
+            explanation=None if is_correct else "In local mode, Lingua checks the main pattern only.",
+            suggestion="Continue to the next step." if is_correct else "Try again with a short English phrase.",
+            mode=ChatMode.CHAT,
+            learning_action=LearningAction(
+                type="answer_question",
+                prompt="Write one short answer in English.",
+                options=None,
+            ),
+            focus=mission_context.get("target_skill") or "Mission practice",
+            word_to_use=None,
+            detected_language=profile.get("native_language"),
+            target_language=profile.get("target_language"),
+            mission_feedback=MissionFeedback(
+                is_correct=is_correct,
+                score=score,
+                feedback=feedback,
+                should_advance=is_correct,
+                corrected_answer=None if is_correct else mission_context.get("prompt"),
+                hint=None if is_correct else mission_context.get("expected_pattern"),
+            ),
+        )
+
     mode = detect_mode(message)
 
     if mode == ChatMode.TRANSLATION:

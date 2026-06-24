@@ -237,10 +237,23 @@ export function normalizeChatResponse(payload) {
       : null,
     focus: data.focus ?? null,
     word_to_use: data.word_to_use ?? null,
+    detected_language: data.detected_language ?? null,
+    target_language: data.target_language ?? null,
+    mission_feedback: data.mission_feedback ?? null,
   }
 }
 
-export async function sendChatMessage({ message, level, mode, history, sessionId, preferences, missionContext = null }) {
+export async function sendChatMessage({
+  message,
+  level,
+  mode,
+  history,
+  sessionId,
+  preferences,
+  nativeLanguage = null,
+  targetLanguage = null,
+  missionContext = null,
+}) {
   try {
     const res = await fetch(`${API_URL}/chat`, {
       method: 'POST',
@@ -252,7 +265,9 @@ export async function sendChatMessage({ message, level, mode, history, sessionId
         history,
         session_id: sessionId,
         preferences,
-        missionContext,
+        native_language: nativeLanguage,
+        target_language: targetLanguage,
+        mission_context: missionContext,
       }),
       signal: AbortSignal.timeout(8000),
     })
