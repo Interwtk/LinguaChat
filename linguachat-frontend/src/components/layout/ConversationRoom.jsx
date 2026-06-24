@@ -12,6 +12,7 @@ export function ConversationRoom() {
     connectionNotice,
     memoryNotice,
     setMobileSheet,
+    navigateTo,
     t,
     activeMissionDetails,
     missionCelebration,
@@ -56,6 +57,8 @@ export function ConversationRoom() {
   }, [])
 
   const canSend = input.trim().length > 0 && !isTyping
+  const practiceInnerStyle = { width: '100%', maxWidth: 980, margin: '0 auto' }
+  const practicePanelStyle = { width: 'calc(100% - 2rem)', maxWidth: 980, margin: '0 auto' }
   const quickPrompts = [
     { label: t('correctMe'), text: 'Correct my next sentence and give me one tiny challenge.' },
     { label: t('askMeQuestion'), text: 'Ask me one question for my level.' },
@@ -69,6 +72,7 @@ export function ConversationRoom() {
     <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>
       <div className="flex items-center justify-between px-4 md:px-6 py-3.5 flex-shrink-0"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-paper)' }}>
+        <div className="flex items-center justify-between" style={practiceInnerStyle}>
         <div className="flex items-center gap-3">
           <button
             className="lg:hidden flex items-center justify-center rounded-xl transition-colors"
@@ -82,6 +86,14 @@ export function ConversationRoom() {
           </button>
 
           <div>
+            <button
+              type="button"
+              onClick={() => navigateTo('today')}
+              className="hidden lg:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-all active:scale-[0.98]"
+              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)', marginBottom: 5 }}
+            >
+              <span aria-hidden="true">←</span> {t('backToToday')}
+            </button>
             <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
               {t('practiceRoom')}
             </p>
@@ -104,12 +116,14 @@ export function ConversationRoom() {
           </span>
           <LinguaAvatar size={34} online />
         </div>
+        </div>
       </div>
 
       {connectionNotice && (
-        <div className="mx-4 md:mx-6 mt-3 px-3.5 py-2.5 rounded-xl animate-fade-up"
+        <div className="mt-3 px-3.5 py-2.5 rounded-xl animate-fade-up"
           role="status"
           style={{
+            ...practicePanelStyle,
             background: 'var(--yellow-soft)',
             border: '1px solid var(--yellow)',
             color: 'var(--ink)',
@@ -121,9 +135,10 @@ export function ConversationRoom() {
       )}
 
       {memoryNotice && (
-        <div className="mx-4 md:mx-6 mt-3 px-3.5 py-2.5 rounded-xl animate-fade-up"
+        <div className="mt-3 px-3.5 py-2.5 rounded-xl animate-fade-up"
           role="status"
           style={{
+            ...practicePanelStyle,
             background: 'var(--green-soft)',
             border: '1px solid var(--green)',
             color: 'var(--ink)',
@@ -135,8 +150,8 @@ export function ConversationRoom() {
       )}
 
       {activeMissionDetails && (
-        <div className="mx-4 md:mx-6 mt-3 rounded-2xl px-3.5 py-3 animate-fade-up"
-          style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+        <div className="mt-3 rounded-2xl px-3.5 py-3 animate-fade-up"
+          style={{ ...practicePanelStyle, background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
           <div className="flex items-center justify-between gap-3">
             <div style={{ minWidth: 0, flex: 1 }}>
               <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
@@ -162,8 +177,8 @@ export function ConversationRoom() {
       )}
 
       {missionCelebration && !activeMissionDetails && (
-        <div className="mx-4 md:mx-6 mt-3 rounded-2xl px-3.5 py-3 animate-fade-up"
-          style={{ background: 'var(--green-soft)', border: '1px solid var(--green)' }}>
+        <div className="mt-3 rounded-2xl px-3.5 py-3 animate-fade-up"
+          style={{ ...practicePanelStyle, background: 'var(--green-soft)', border: '1px solid var(--green)' }}>
           <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--ink)' }}>{t('missionComplete')}</p>
           <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
             {missionCelebration.message} +{missionCelebration.xp} XP.
@@ -172,17 +187,19 @@ export function ConversationRoom() {
       )}
 
       <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6">
-        {messages.map(msg => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
-        {isTyping && <TypingIndicator />}
-        <div ref={bottomRef} />
+        <div style={practiceInnerStyle}>
+          {messages.map(msg => (
+            <MessageBubble key={msg.id} message={msg} />
+          ))}
+          {isTyping && <TypingIndicator />}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
       {sparkOpen && (
         <div className="px-4 md:px-6 pb-2 animate-fade-up">
           <div className="rounded-2xl p-3 flex flex-wrap gap-2"
-            style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+            style={{ ...practiceInnerStyle, background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
             <p style={{ width: '100%', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 4 }}>
               {t('quickPrompts')}
             </p>
@@ -207,7 +224,7 @@ export function ConversationRoom() {
       <div className="px-4 md:px-6 py-4 flex-shrink-0"
         style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-paper)' }}>
         <div className="flex items-end gap-2.5 rounded-2xl p-2.5"
-          style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', transition: 'border-color 0.2s' }}>
+          style={{ ...practiceInnerStyle, background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', transition: 'border-color 0.2s' }}>
           <button
             onClick={() => setSparkOpen(o => !o)}
             title={t('quickPrompts')}

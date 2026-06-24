@@ -5,6 +5,7 @@ import { getMissionForToday } from '../../services/missions'
 
 export function JourneyRail({ onClose }) {
   const { profile, navigateTo, view, localProgress, t, startPracticeMission, activeMissionDetails, completedMissions } = useApp()
+  const isMobileSheet = Boolean(onClose)
   const mission = activeMissionDetails?.mission || getMissionForToday(profile.level, profile.goal)
   const hasLocalProgress = localProgress.messagesSent > 0
   const xp = hasLocalProgress ? localProgress.xp : MOCK_STATS.xp
@@ -44,9 +45,14 @@ export function JourneyRail({ onClose }) {
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-5">
+      <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
         {/* User + stats */}
         <div className="rounded-2xl p-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+          {!isMobileSheet && (
+            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--ink-muted)', marginBottom: 12 }}>
+              {t('yourProgress')}
+            </p>
+          )}
           <div className="flex items-center justify-between mb-3">
             <div>
               <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>
@@ -59,7 +65,7 @@ export function JourneyRail({ onClose }) {
                 }}>
                   {profile.level}
                 </span>
-                <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>Level 3</span>
+                <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{t('level')} 3</span>
               </div>
             </div>
             <div className="flex items-center gap-1" style={{
@@ -77,7 +83,7 @@ export function JourneyRail({ onClose }) {
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-muted)' }}>
-                {xp} XP
+                {xp} {t('xp')}
               </span>
               <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>
                 {xpNextLevel - xp} {t('toNextLevel')}
@@ -93,9 +99,15 @@ export function JourneyRail({ onClose }) {
               />
             </div>
           </div>
+          {!isMobileSheet && (
+            <p style={{ fontSize: 11, color: 'var(--ink-muted)', marginTop: 10 }}>
+              {t('streak')}: <strong style={{ color: 'var(--coral)' }}>{streak}</strong>
+            </p>
+          )}
         </div>
 
         {/* Today's Mission */}
+        {isMobileSheet && (
         <div>
           <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--ink-muted)', marginBottom: 8 }}>
             {t('todaysMission')}
@@ -134,11 +146,12 @@ export function JourneyRail({ onClose }) {
             </button>
           </div>
         </div>
+        )}
 
         {/* Journey Map */}
         <div>
           <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--ink-muted)', marginBottom: 10 }}>
-            {t('yourJourney')}
+            {isMobileSheet ? t('yourJourney') : t('path')}
           </p>
           <ProgressMap level={profile.level} />
         </div>
@@ -208,7 +221,7 @@ export function JourneyRail({ onClose }) {
         {[
           { label: t('today'), value: `${minutesToday}m`, color: 'var(--blue)' },
           { label: t('words'), value: wordsLearned, color: 'var(--green)' },
-          { label: t('completedMissions'), value: completedMissions.length || sessionsTotal, color: 'var(--violet)' },
+          { label: t('missions'), value: completedMissions.length || sessionsTotal, color: 'var(--violet)' },
         ].map(s => (
           <div key={s.label} className="text-center py-2 rounded-xl" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
             <p style={{ fontWeight: 800, fontSize: '1rem', color: s.color }}>{s.value}</p>

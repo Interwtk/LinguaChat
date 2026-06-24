@@ -26,6 +26,42 @@ const FALLBACK_NAMES = {
   zh: 'Chinese',
 }
 
+export const LANGUAGE_OPTIONS = [
+  { code: 'en', base: 'en', englishName: 'English', nativeName: 'English', aliases: ['ingles', 'inglés'] },
+  { code: 'en-US', base: 'en', englishName: 'English (United States)', nativeName: 'English (US)', aliases: ['american english', 'usa', 'us english'] },
+  { code: 'en-GB', base: 'en', englishName: 'English (United Kingdom)', nativeName: 'English (UK)', aliases: ['british english', 'uk english'] },
+  { code: 'es', base: 'es', englishName: 'Spanish', nativeName: 'Español', aliases: ['espanol', 'español', 'castellano'] },
+  { code: 'es-CO', base: 'es', englishName: 'Spanish (Colombia)', nativeName: 'Español (Colombia)', aliases: ['colombian spanish', 'colombia'] },
+  { code: 'es-MX', base: 'es', englishName: 'Spanish (Mexico)', nativeName: 'Español (México)', aliases: ['mexican spanish', 'mexico', 'méxico'] },
+  { code: 'es-CL', base: 'es', englishName: 'Spanish (Chile)', nativeName: 'Español (Chile)', aliases: ['chilean spanish', 'chile'] },
+  { code: 'es-AR', base: 'es', englishName: 'Spanish (Argentina)', nativeName: 'Español (Argentina)', aliases: ['argentinian spanish', 'argentina'] },
+  { code: 'pt', base: 'pt', englishName: 'Portuguese', nativeName: 'Português', aliases: ['portugues', 'português'] },
+  { code: 'pt-BR', base: 'pt', englishName: 'Portuguese (Brazil)', nativeName: 'Português (Brasil)', aliases: ['brazilian portuguese', 'brasil', 'brazil'] },
+  { code: 'pt-PT', base: 'pt', englishName: 'Portuguese (Portugal)', nativeName: 'Português (Portugal)', aliases: ['european portuguese', 'portugal'] },
+  { code: 'fr', base: 'fr', englishName: 'French', nativeName: 'Français', aliases: ['frances', 'français'] },
+  { code: 'it', base: 'it', englishName: 'Italian', nativeName: 'Italiano', aliases: ['italiano'] },
+  { code: 'de', base: 'de', englishName: 'German', nativeName: 'Deutsch', aliases: ['aleman', 'alemán'] },
+  { code: 'ja', base: 'ja', englishName: 'Japanese', nativeName: '日本語', aliases: ['japanese', 'nihongo', 'japonés', 'japones'] },
+  { code: 'ar', base: 'ar', englishName: 'Arabic', nativeName: 'العربية', aliases: ['arabic', 'arabe', 'árabe'] },
+  { code: 'ko', base: 'ko', englishName: 'Korean', nativeName: '한국어', aliases: ['coreano'] },
+  { code: 'zh', base: 'zh', englishName: 'Chinese', nativeName: '中文', aliases: ['mandarin', 'chinese', 'chino'] },
+  { code: 'hi', base: 'hi', englishName: 'Hindi', nativeName: 'हिन्दी', aliases: ['hindi'] },
+  { code: 'ru', base: 'ru', englishName: 'Russian', nativeName: 'Русский', aliases: ['ruso', 'russian'] },
+  { code: 'tr', base: 'tr', englishName: 'Turkish', nativeName: 'Türkçe', aliases: ['turco', 'turkish'] },
+]
+
+function normalizeSearchText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+function optionToLanguageInfo(option) {
+  return { code: option.code, base: option.base, name: option.englishName }
+}
+
 export function normalizeLanguageCode(code) {
   const raw = String(code || '').trim().replace('_', '-')
   if (!raw) return FALLBACK_LANGUAGE.code
@@ -50,11 +86,13 @@ function makeLanguageInfo(language) {
   if (typeof language === 'object' && language) {
     const code = normalizeLanguageCode(language.code || language.base || FALLBACK_LANGUAGE.code)
     const base = String(language.base || code.split('-', 1)[0] || FALLBACK_LANGUAGE.base).toLowerCase()
-    return { code, base, name: language.name || getLanguageDisplayName(code) }
+    const option = LANGUAGE_OPTIONS.find(item => item.code.toLowerCase() === code.toLowerCase())
+    return { code, base, name: language.name || option?.englishName || getLanguageDisplayName(code) }
   }
   const code = normalizeLanguageCode(language || FALLBACK_LANGUAGE.code)
   const base = code.split('-', 1)[0].toLowerCase()
-  return { code, base: base || FALLBACK_LANGUAGE.base, name: getLanguageDisplayName(code) }
+  const option = LANGUAGE_OPTIONS.find(item => item.code.toLowerCase() === code.toLowerCase())
+  return { code, base: base || FALLBACK_LANGUAGE.base, name: option?.englishName || getLanguageDisplayName(code) }
 }
 
 function readLanguage(codeKey, legacyKey = null) {
@@ -124,5 +162,48 @@ export function ensureLanguagePreferences() {
 }
 
 export function languageFromInput(value) {
-  return makeLanguageInfo(value || FALLBACK_LANGUAGE.code)
+  const query = normalizeSearchText(value)
+  const option = LANGUAGE_OPTIONS.find(item => {
+    const fields = [item.code, item.base, item.englishName, item.nativeName, ...(item.aliases || [])]
+    return fields.some(field => normalizeSearchText(field) === query)
+  })
+  return option ? optionToLanguageInfo(option) : makeLanguageInfo(value || FALLBACK_LANGUAGE.code)
+}
+
+export function getLanguageOption(language) {
+  const info = makeLanguageInfo(language || FALLBACK_LANGUAGE.code)
+  const exact = LANGUAGE_OPTIONS.find(item => item.code.toLowerCase() === info.code.toLowerCase())
+  if (exact) return exact
+
+  const baseOption = LANGUAGE_OPTIONS.find(item => item.code.toLowerCase() === info.base.toLowerCase())
+  if (baseOption && info.code.toLowerCase() === info.base.toLowerCase()) return baseOption
+
+  let nativeName = info.name
+  try {
+    nativeName = new Intl.DisplayNames([info.base], { type: 'language' }).of(info.code) || info.name
+  } catch {}
+
+  return {
+    code: info.code,
+    base: info.base,
+    englishName: info.name || getLanguageDisplayName(info.code),
+    nativeName,
+    aliases: [],
+    custom: true,
+  }
+}
+
+export function searchLanguages(query, currentLanguage = null) {
+  const normalizedQuery = normalizeSearchText(query)
+  const current = currentLanguage ? getLanguageOption(currentLanguage) : null
+  const options = current?.custom
+    ? [current, ...LANGUAGE_OPTIONS]
+    : LANGUAGE_OPTIONS
+
+  if (!normalizedQuery) return options
+
+  return options.filter(item => {
+    const fields = [item.code, item.base, item.englishName, item.nativeName, ...(item.aliases || [])]
+    return fields.some(field => normalizeSearchText(field).includes(normalizedQuery))
+  })
 }

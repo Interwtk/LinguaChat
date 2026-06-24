@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
 import { AuthFlow } from './components/auth/AuthFlow'
 import { SetupFlow } from './components/setup/SetupFlow'
@@ -131,10 +132,67 @@ function MobileNotesTitle() {
 
 const AUTH_STEPS = ['entry', 'login', 'signup', 'forgot']
 const SETUP_STEPS = ['placement', 'tutor-personality', 'learning-prefs']
+const NOTES_COLLAPSED_KEY = 'lc2-notes-panel-collapsed'
+
+function DesktopTopNav({ notesCollapsed, onShowNotes }) {
+  const { view, navigateTo, t } = useApp()
+  const items = [
+    { id: 'today', label: t('today') },
+    { id: 'practice', label: t('practice') },
+  ]
+
+  return (
+    <div className="hidden lg:flex items-center justify-between px-5 py-3"
+      style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-paper)', flexShrink: 0 }}>
+      <div className="flex items-center gap-1.5">
+        {items.map(item => {
+          const isActive = view === item.id
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => navigateTo(item.id)}
+              className="rounded-full px-3.5 py-1.5 text-sm font-bold transition-all active:scale-[0.98]"
+              style={{
+                background: isActive ? 'var(--violet-soft)' : 'transparent',
+                border: `1px solid ${isActive ? 'var(--violet)' : 'transparent'}`,
+                color: isActive ? 'var(--violet)' : 'var(--ink-muted)',
+              }}
+            >
+              {item.label}
+            </button>
+          )
+        })}
+      </div>
+      {notesCollapsed ? (
+        <button
+          type="button"
+          onClick={onShowNotes}
+          className="rounded-full px-3.5 py-1.5 text-sm font-bold transition-all active:scale-[0.98]"
+          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}
+        >
+          {t('showNotes')}
+        </button>
+      ) : (
+        <span aria-hidden="true" style={{ width: 1 }} />
+      )}
+    </div>
+  )
+}
 
 /* ─── Main app shell ─── */
 function AppShell() {
   const { authStep, view, mobileSheet, setMobileSheet, t } = useApp()
+  const [notesCollapsed, setNotesCollapsed] = useState(() => {
+    try { return localStorage.getItem(NOTES_COLLAPSED_KEY) === 'true' } catch { return false }
+  })
+  const mainMaxWidth = view === 'practice'
+    ? (notesCollapsed ? 1360 : 1180)
+    : (notesCollapsed ? 1120 : 960)
+
+  useEffect(() => {
+    try { localStorage.setItem(NOTES_COLLAPSED_KEY, String(notesCollapsed)) } catch {}
+  }, [notesCollapsed])
 
   if (authStep && AUTH_STEPS.includes(authStep)) return <AuthFlow />
   if (authStep && SETUP_STEPS.includes(authStep)) return <SetupFlow />
@@ -152,25 +210,21 @@ function AppShell() {
 
         {/* CENTER: Main content */}
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {/* Top bar (only when not in practice) */}
-          {view !== 'practice' && (
-            <div className="flex items-center justify-between px-6 py-3"
-              style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-paper)', flexShrink: 0 }}>
-              <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)' }}>
-                {view === 'today'
-                  ? t('today')
-                  : view === 'memory-garden'
-                    ? t('memoryGarden')
-                    : view === 'archive'
-                      ? t('conversationArchive')
-                      : view === 'identity'
-                        ? t('languageIdentity')
-                        : t('practiceRoom')}
-              </p>
-              <ThemeToggle />
-            </div>
-          )}
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <DesktopTopNav
+            notesCollapsed={notesCollapsed}
+            onShowNotes={() => setNotesCollapsed(false)}
+          />
+          <div
+            style={{
+              flex: 1,
+              overflow: 'hidden',
+              display: 'flex',
+              flexDirection: 'column',
+              width: '100%',
+              maxWidth: mainMaxWidth,
+              margin: '0 auto',
+            }}
+          >
             {view === 'today'          && <TodayView />}
             {view === 'practice'       && <ConversationRoom />}
             {view === 'memory-garden'  && <MemoryGarden />}
@@ -180,15 +234,24 @@ function AppShell() {
         </main>
 
         {/* RIGHT: Tutor Notes */}
-        <aside style={{ width: 296, flexShrink: 0, borderLeft: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          {/* Notes header with theme toggle */}
-          <div className="flex items-center justify-end px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-            <ThemeToggle compact />
-          </div>
-          <div style={{ flex: 1, overflow: 'hidden' }}>
-            <TutorNotes />
-          </div>
-        </aside>
+        {!notesCollapsed && (
+          <aside style={{ width: 296, flexShrink: 0, borderLeft: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
+              <p style={{ fontSize: 12, fontWeight: 800, color: 'var(--ink-muted)' }}>{t('tutorNotes')}</p>
+              <button
+                type="button"
+                onClick={() => setNotesCollapsed(true)}
+                className="rounded-full px-2.5 py-1 text-xs font-bold"
+                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}
+              >
+                {t('hideNotes')}
+              </button>
+            </div>
+            <div style={{ flex: 1, overflow: 'hidden' }}>
+              <TutorNotes />
+            </div>
+          </aside>
+        )}
       </div>
 
       {/* Mobile layout: single column */}

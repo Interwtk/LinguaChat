@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MOCK_STATS } from '../../data/mockData'
-import { languageFromInput } from '../../services/language'
+import { getLanguageOption, languageFromInput, searchLanguages } from '../../services/language'
 
 const MOOD_COLORS = [
   { id: 'violet', label: 'Calm', bg: 'linear-gradient(135deg, var(--violet), var(--blue))' },
@@ -36,16 +37,71 @@ export function LanguageIdentity() {
     interfaceLanguageInfo,
     targetLanguage,
     setNativeLanguage,
+    darkMode,
+    setThemeDark,
     t,
   } = useApp()
   const [editingName, setEditingName] = useState(false)
   const [nameInput, setNameInput] = useState(profile.name || '')
   const [moodColor, setMoodColor] = useState(profile.moodColor || 'violet')
-  const [languageInput, setLanguageInput] = useState(nativeLanguageInfo.code)
+  const [languageOpen, setLanguageOpen] = useState(false)
+  const [languageSearch, setLanguageSearch] = useState('')
+  const [selectedLanguage, setSelectedLanguage] = useState(() => getLanguageOption(nativeLanguageInfo))
+  const [languageSaved, setLanguageSaved] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState(null)
+  const languagePickerRef = useRef(null)
+  const languagePopoverRef = useRef(null)
 
   useEffect(() => {
-    setLanguageInput(nativeLanguageInfo.code)
+    setSelectedLanguage(getLanguageOption(nativeLanguageInfo))
   }, [nativeLanguageInfo.code])
+
+  useEffect(() => {
+    if (!languageOpen) return undefined
+
+    function handlePointerDown(event) {
+      const isInsidePicker = languagePickerRef.current?.contains(event.target)
+      const isInsidePopover = languagePopoverRef.current?.contains(event.target)
+      if (!isInsidePicker && !isInsidePopover) {
+        setLanguageOpen(false)
+        setLanguageSearch('')
+        setSelectedLanguage(getLanguageOption(nativeLanguageInfo))
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    return () => document.removeEventListener('pointerdown', handlePointerDown)
+  }, [languageOpen, nativeLanguageInfo])
+
+  useEffect(() => {
+    if (!languageOpen) return undefined
+
+    function updateDropdownPosition() {
+      const rect = languagePickerRef.current?.getBoundingClientRect()
+      if (!rect) return
+
+      const viewportPadding = 16
+      const width = Math.min(460, Math.max(320, Math.min(rect.width, window.innerWidth - viewportPadding * 2)))
+      const left = Math.min(
+        Math.max(rect.left, viewportPadding),
+        window.innerWidth - width - viewportPadding,
+      )
+
+      setDropdownPosition({
+        top: rect.bottom + 10,
+        left,
+        width,
+      })
+    }
+
+    updateDropdownPosition()
+    window.addEventListener('resize', updateDropdownPosition)
+    window.addEventListener('scroll', updateDropdownPosition, true)
+    return () => {
+      window.removeEventListener('resize', updateDropdownPosition)
+      window.removeEventListener('scroll', updateDropdownPosition, true)
+    }
+  }, [languageOpen])
 
   const hasLocalProgress = localProgress.messagesSent > 0
   const confidence = hasLocalProgress ? localProgress.confidence : MOCK_STATS.confidence
@@ -57,6 +113,11 @@ export function LanguageIdentity() {
     : profile.preferences?.goals || [profile.goal || 'Travel']
   const currentMood = MOOD_COLORS.find(m => m.id === moodColor) || MOOD_COLORS[0]
   const relationship = getRelationshipLabel(streak)
+  const currentLanguage = useMemo(() => getLanguageOption(nativeLanguageInfo), [nativeLanguageInfo])
+  const languageResults = useMemo(
+    () => searchLanguages(languageSearch, currentLanguage),
+    [languageSearch, currentLanguage],
+  )
 
   function saveName() {
     if (nameInput.trim()) updateProfile({ name: nameInput.trim() })
@@ -69,9 +130,13 @@ export function LanguageIdentity() {
   }
 
   function saveLanguage() {
-    const nextLanguage = languageFromInput(languageInput)
+    const nextLanguage = languageFromInput(selectedLanguage?.code || nativeLanguageInfo.code)
     setNativeLanguage(nextLanguage)
-    setLanguageInput(nextLanguage.code)
+    setSelectedLanguage(getLanguageOption(nextLanguage))
+    setLanguageOpen(false)
+    setLanguageSearch('')
+    setLanguageSaved(true)
+    window.setTimeout(() => setLanguageSaved(false), 1600)
   }
 
   return (
@@ -180,35 +245,126 @@ export function LanguageIdentity() {
         </div>
 
         <div className="rounded-2xl p-5 mb-5 animate-fade-up" style={{ animationDelay: '0.06s', background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 12 }}>
-            {t('nativeLanguageLabel')}
-          </p>
-          <div className="flex flex-col gap-3">
+          <div className="flex items-start justify-between gap-3 mb-4">
             <div>
-              <p style={{ fontSize: '0.875rem', color: 'var(--ink)', fontWeight: 800 }}>
-                {nativeLanguageInfo.name}
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 6 }}>
+                {t('nativeLanguageLabel')}
               </p>
-              <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 2 }}>
-                {nativeLanguageInfo.code} · {t('learningEnglish')}
+              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
+                {t('nativeLanguageDescription')}
               </p>
             </div>
-            <div className="flex gap-2">
-              <input
-                value={languageInput}
-                onChange={e => setLanguageInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && saveLanguage()}
-                placeholder="es-CO, ja-JP, ar..."
-                className="rounded-xl px-3 py-2 text-sm outline-none"
-                style={{ flex: 1, background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}
-              />
+            {languageSaved && (
+              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--green)', whiteSpace: 'nowrap' }}>
+                {t('saved')}
+              </span>
+            )}
+          </div>
+          <div ref={languagePickerRef} style={{ position: 'relative' }}>
+            <div className="flex items-center justify-between gap-3 rounded-2xl px-4 py-3"
+              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ fontSize: '1rem', color: 'var(--ink)', fontWeight: 800 }}>
+                  {currentLanguage.nativeName}
+                </p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 2 }}>
+                  {currentLanguage.englishName} · {currentLanguage.code}
+                </p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 2 }}>
+                  {t('learningEnglish')}
+                </p>
+              </div>
               <button
-                onClick={saveLanguage}
-                className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-all active:scale-[0.98]"
-                style={{ background: 'var(--violet)', border: 'none' }}
+                type="button"
+                onClick={() => {
+                  setSelectedLanguage(currentLanguage)
+                  setLanguageOpen(value => !value)
+                }}
+                className="px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-[0.98]"
+                style={{ background: 'var(--violet-soft)', border: '1.5px solid var(--violet)', color: 'var(--violet)', whiteSpace: 'nowrap' }}
               >
-                {t('save')}
+                {t('changeLanguage')}
               </button>
             </div>
+
+            {languageOpen && dropdownPosition && createPortal(
+              <div
+                ref={languagePopoverRef}
+                className="rounded-2xl p-3 shadow-xl animate-fade-up"
+                style={{
+                  position: 'fixed',
+                  zIndex: 1200,
+                  top: dropdownPosition.top,
+                  left: dropdownPosition.left,
+                  width: dropdownPosition.width,
+                  maxHeight: 'min(420px, calc(100dvh - 24px))',
+                  overflow: 'hidden',
+                  background: 'var(--bg-paper)',
+                  border: '1px solid var(--border)',
+                  boxShadow: '0 20px 60px rgba(15, 23, 42, 0.18)',
+                }}
+              >
+                <p style={{ fontSize: 12, fontWeight: 800, color: 'var(--ink)', marginBottom: 8 }}>
+                  {t('selectLanguage')}
+                </p>
+                <input
+                  value={languageSearch}
+                  onChange={event => setLanguageSearch(event.target.value)}
+                  autoFocus
+                  placeholder={t('searchLanguage')}
+                  className="rounded-xl px-3 py-2 text-sm outline-none mb-2"
+                  style={{ width: '100%', background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}
+                />
+                <div style={{ maxHeight: 282, overflowY: 'auto', paddingInlineEnd: 4 }}>
+                  {languageResults.map(option => {
+                    const active = selectedLanguage?.code === option.code
+                    return (
+                      <button
+                        key={option.code}
+                        type="button"
+                        onClick={() => setSelectedLanguage(option)}
+                        className="w-full rounded-xl px-3 py-2 text-left transition-all"
+                        style={{
+                          background: active ? 'var(--violet-soft)' : 'transparent',
+                          border: `1px solid ${active ? 'var(--violet)' : 'transparent'}`,
+                          color: 'var(--ink)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <span style={{ display: 'block', fontSize: 14, fontWeight: 800 }}>
+                          {option.nativeName}
+                        </span>
+                        <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-muted)', marginTop: 2 }}>
+                          {option.englishName} · {option.code}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="flex justify-end gap-2 pt-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLanguageOpen(false)
+                      setLanguageSearch('')
+                      setSelectedLanguage(currentLanguage)
+                    }}
+                    className="px-3 py-2 rounded-xl text-sm font-bold"
+                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}
+                  >
+                    {t('cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveLanguage}
+                    className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-all active:scale-[0.98]"
+                    style={{ background: 'var(--violet)', border: 'none' }}
+                  >
+                    {t('save')}
+                  </button>
+                </div>
+              </div>
+            , document.body)}
           </div>
         </div>
 
@@ -300,6 +456,43 @@ export function LanguageIdentity() {
             {t('correctionStyleLabel')}: <strong style={{ color: 'var(--ink)' }}>{profile.preferences?.correctionIntensity || 'Balanced'}</strong>.
             {t('practiceVibeLabel')}: <strong style={{ color: 'var(--ink)' }}>{profile.preferences?.practiceVibe || 'Motivational'}</strong>.
           </p>
+        </div>
+
+        <div className="rounded-2xl p-5 mb-6 animate-fade-up" style={{ animationDelay: '0.22s', background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 12 }}>
+            {t('appSettings')}
+          </p>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)' }}>{t('theme')}</p>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginTop: 2 }}>
+                {darkMode ? t('dark') : t('light')}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {[
+                { id: 'light', label: t('light'), value: false },
+                { id: 'dark', label: t('dark'), value: true },
+              ].map(option => {
+                const selected = darkMode === option.value
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setThemeDark(option.value)}
+                    className="rounded-xl px-3 py-2 text-sm font-bold transition-all active:scale-[0.98]"
+                    style={{
+                      background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
+                      border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
+                      color: selected ? 'var(--violet)' : 'var(--ink-muted)',
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
         </div>
 
         {/* Logout */}

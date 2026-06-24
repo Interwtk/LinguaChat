@@ -147,6 +147,7 @@ export function AppProvider({ children }) {
   }, [completedMissions])
 
   const toggleDark = useCallback(() => setDarkMode(d => !d), [])
+  const setThemeDark = useCallback((value) => setDarkMode(Boolean(value)), [])
 
   const nativeLanguage = nativeLanguageInfo.base
   const interfaceLanguage = interfaceLanguageInfo.base
@@ -610,7 +611,7 @@ export function AppProvider({ children }) {
       loginMock, signupMock,
       completePlacement, completeTutorPersonality, completeLearningPrefs,
       logoutMock,
-      darkMode, toggleDark,
+      darkMode, toggleDark, setThemeDark,
       onboardingCompleted, completeOnboarding,
       profile, updateProfile,
       view, navigateTo,
