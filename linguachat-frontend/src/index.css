@@ -1,0 +1,273 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Warm Paper Palette ─── */
+:root {
+  --bg-main:    #F8F3EA;
+  --bg-paper:   #FFFDF8;
+  --bg-elevated:#FFFFFF;
+  --ink:        #1F2933;
+  --ink-muted:  #667085;
+  --border:     #E8DDC8;
+  --green:      #3FAE75;
+  --blue:       #3B82C4;
+  --coral:      #F9735B;
+  --yellow:     #F6C453;
+  --violet:     #7C5CFF;
+
+  /* Feedback soft backgrounds */
+  --yellow-soft: rgba(246,196,83,0.15);
+  --blue-soft:   rgba(59,130,196,0.10);
+  --green-soft:  rgba(63,174,117,0.12);
+  --violet-soft: rgba(124,92,255,0.10);
+  --coral-soft:  rgba(249,115,91,0.10);
+}
+
+.dark {
+  --bg-main:    #101418;
+  --bg-paper:   #171D23;
+  --bg-elevated:#202832;
+  --ink:        #F5F0E8;
+  --ink-muted:  #A8B0BA;
+  --border:     #2F3944;
+  --green:      #5BD999;
+  --blue:       #67B7F7;
+  --coral:      #FF8A73;
+  --yellow:     #FFD36A;
+  --violet:     #A996FF;
+
+  --yellow-soft: rgba(255,211,106,0.12);
+  --blue-soft:   rgba(103,183,247,0.10);
+  --green-soft:  rgba(91,217,153,0.10);
+  --violet-soft: rgba(169,150,255,0.12);
+  --coral-soft:  rgba(255,138,115,0.10);
+}
+
+/* ─── Base ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background: var(--bg-main);
+  color: var(--ink);
+  line-height: 1.55;
+  min-height: 100dvh;
+  transition: background-color 0.5s cubic-bezier(0.32,0.72,0,1),
+              color 0.4s ease;
+}
+
+/* Paper texture overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9990;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  mix-blend-mode: multiply;
+}
+
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
+
+/* ─── Chat bubble shapes ─── */
+.bubble-user {
+  background: var(--blue);
+  color: #fff;
+  border-radius: 20px 20px 5px 20px;
+  padding: 10px 15px;
+  max-width: 72%;
+  word-break: break-word;
+  line-height: 1.5;
+  font-size: 0.9375rem;
+}
+
+.bubble-lingua {
+  background: var(--bg-elevated);
+  color: var(--ink);
+  border-radius: 5px 20px 20px 20px;
+  padding: 10px 15px;
+  max-width: 82%;
+  border: 1px solid var(--border);
+  word-break: break-word;
+  line-height: 1.5;
+  font-size: 0.9375rem;
+}
+
+/* ─── Feedback cards / sticker aesthetic ─── */
+.stamp-correction {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--yellow-soft);
+  border: 1.5px solid var(--yellow);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  transform: rotate(-0.4deg);
+  animation: stickerIn 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+.note-why {
+  background: var(--blue-soft);
+  border-left: 3px solid var(--blue);
+  border-radius: 0 8px 8px 0;
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  animation: fadeUp 0.3s 0.05s both;
+}
+
+.chip-try {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--green-soft);
+  border: 1.5px solid var(--green);
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.8125rem;
+  animation: fadeUp 0.3s 0.1s both;
+}
+
+.chip-translation {
+  background: var(--violet-soft);
+  border: 1.5px solid var(--violet);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 0.8125rem;
+  animation: stickerIn 0.25s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+
+/* ─── Typing indicator dots ─── */
+.typing-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--ink-muted);
+  animation: dotBounce 1.4s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.15s; }
+.typing-dot:nth-child(3) { animation-delay: 0.30s; }
+
+/* ─── Journey map node ─── */
+.journey-node-current {
+  animation: nodePulse 2.4s ease-in-out infinite;
+}
+
+/* ─── Mission card ─── */
+.mission-card {
+  background: var(--bg-paper);
+  border: 1.5px solid var(--coral);
+  box-shadow: 0 0 0 4px var(--coral-soft), 0 8px 24px -8px rgba(249,115,91,0.16);
+  border-radius: 18px;
+}
+
+/* ─── Notes panel (tutor notebook aesthetic) ─── */
+.notes-panel {
+  background: var(--bg-paper);
+  border-left: 1px solid var(--border);
+}
+
+.notes-line {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+/* ─── Transitions ─── */
+.theme-transition {
+  transition: background-color 0.5s cubic-bezier(0.32,0.72,0,1),
+              border-color 0.4s ease,
+              color 0.4s ease;
+}
+
+/* ─── Input focus ring ─── */
+.chat-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--blue);
+}
+
+/* ─── Gradient text ─── */
+.gradient-text {
+  background: linear-gradient(135deg, var(--blue) 0%, var(--violet) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.warm-gradient-text {
+  background: linear-gradient(135deg, var(--coral) 0%, var(--yellow) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ─── Keyframes ─── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes stickerIn {
+  from { opacity: 0; transform: scale(0.82) rotate(-2deg); }
+  to   { opacity: 1; transform: scale(1) rotate(-0.4deg); }
+}
+
+@keyframes nodePulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(59,130,196,0.45); }
+  50%     { box-shadow: 0 0 0 8px rgba(59,130,196,0); }
+}
+
+@keyframes dotBounce {
+  0%,80%,100% { transform: scale(0.75); opacity: 0.35; }
+  40%          { transform: scale(1);    opacity: 1; }
+}
+
+@keyframes glowBreathe {
+  0%,100% { opacity: 0.6; }
+  50%     { opacity: 1; }
+}
+
+@keyframes sheetUp {
+  from { opacity: 0; transform: translateY(100%); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ─── Progress bar ─── */
+.xp-bar-fill {
+  transition: width 0.8s cubic-bezier(0.32,0.72,0,1);
+}
+
+/* ─── Onboarding step cards hover ─── */
+.option-card {
+  transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.2s ease,
+              border-color 0.2s ease;
+}
+.option-card:hover {
+  transform: translateY(-2px);
+}
+.option-card.selected {
+  border-color: var(--violet);
+  box-shadow: 0 0 0 3px var(--violet-soft);
+}

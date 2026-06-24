@@ -1,0 +1,497 @@
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { sendChatMessage } from '../services/api'
+import {
+  clearStoredProgress,
+  createEmptyProgress,
+  createSessionId,
+  getOrCreateSessionId,
+  loadLocalProgress,
+  loadStoredMessages,
+  recordPractice,
+  recordMissionProgress,
+  saveLocalProgress,
+  saveStoredMessages,
+} from '../services/localProgress'
+import { detectNativeLanguage, getLanguageName, translate } from '../i18n/translations'
+import {
+  advanceMission,
+  completeMission,
+  createMissionCompleteMessage,
+  createMissionFeedbackMessage,
+  createMissionIntroMessage,
+  createMissionStepMessage,
+  evaluateMissionStep,
+  getActiveMissionDetails,
+  getMissionForToday,
+  loadActiveMission,
+  loadCompletedMissions,
+  saveCompletedMissions,
+  saveActiveMission,
+  startMission as createActiveMission,
+  clearMissionStorage,
+} from '../services/missions'
+
+const AppContext = createContext(null)
+
+const DEFAULT_PROFILE = {
+  name: '',
+  email: '',
+  goal: '',
+  style: 'Friendly',
+  level: 'B1',
+  dailyGoal: 10,
+  tutorPersonality: 'Gentle Guide',
+  preferences: null,
+  placementResult: null,
+  moodColor: 'violet',
+}
+
+function checkAuth() {
+  try {
+    return (
+      localStorage.getItem('lc2-auth') === 'true' ||
+      localStorage.getItem('lc2-onboarded') === 'true'
+    )
+  } catch { return false }
+}
+
+function getStoredNativeLanguage() {
+  try {
+    return localStorage.getItem('lc2-native-language') || detectNativeLanguage()
+  } catch {
+    return 'en'
+  }
+}
+
+const WELCOME_MESSAGE = {
+  id: 'welcome',
+  role: 'lingua',
+  text: "Hi! I'm Lingua, your English companion. Ready to practice? You can write anything in English, ask for a word in Spanish, or just say hello. Mistakes are welcome here.",
+  feedback: null,
+  ts: Date.now(),
+}
+
+export function AppProvider({ children }) {
+  // Auth/setup flow: null = main app, 'entry'/'login'/'signup'/'forgot'/'placement'/'tutor-personality'/'learning-prefs' = flow screens
+  const [authStep, setAuthStep] = useState(() => {
+    if (checkAuth()) return null
+    return 'entry'
+  })
+  const [nativeLanguage, setNativeLanguageState] = useState(getStoredNativeLanguage)
+
+  const [authUser, setAuthUser] = useState(() => {
+    try {
+      const s = localStorage.getItem('lc2-user')
+      return s ? JSON.parse(s) : null
+    } catch { return null }
+  })
+
+  const [darkMode, setDarkMode] = useState(() => {
+    try { return localStorage.getItem('lc2-dark') === 'true' } catch { return false }
+  })
+  const [onboardingCompleted, setOnboardingCompleted] = useState(() => {
+    try { return localStorage.getItem('lc2-onboarded') === 'true' } catch { return false }
+  })
+  const [profile, setProfile] = useState(() => {
+    try {
+      const s = localStorage.getItem('lc2-profile')
+      return s ? { ...DEFAULT_PROFILE, ...JSON.parse(s) } : DEFAULT_PROFILE
+    } catch { return DEFAULT_PROFILE }
+  })
+  const [view, setView] = useState('today')
+  const [sessionId, setSessionId] = useState(getOrCreateSessionId)
+  const [messages, setMessages] = useState(() => loadStoredMessages(WELCOME_MESSAGE))
+  const [localProgress, setLocalProgress] = useState(loadLocalProgress)
+  const [activeMission, setActiveMission] = useState(loadActiveMission)
+  const [completedMissions, setCompletedMissions] = useState(loadCompletedMissions)
+  const [missionFeedback, setMissionFeedback] = useState(null)
+  const [missionCelebration, setMissionCelebration] = useState(null)
+  const [isTyping, setIsTyping] = useState(false)
+  const [selectedMessage, setSelectedMessage] = useState(null)
+  const [connectionNotice, setConnectionNotice] = useState(null)
+  const [memoryNotice, setMemoryNotice] = useState(null)
+  const [mobileSheet, setMobileSheet] = useState(null) // 'journey' | 'notes' | null
+  const messagesEndRef = useRef(null)
+  const restoredMissionRef = useRef(false)
+
+  useEffect(() => {
+    const root = document.documentElement
+    darkMode ? root.classList.add('dark') : root.classList.remove('dark')
+    try { localStorage.setItem('lc2-dark', darkMode) } catch {}
+  }, [darkMode])
+
+  useEffect(() => {
+    try {
+      if (!localStorage.getItem('lc2-native-language')) {
+        localStorage.setItem('lc2-native-language', nativeLanguage)
+      }
+    } catch {}
+  }, [nativeLanguage])
+
+  useEffect(() => {
+    try { localStorage.setItem('lc2-profile', JSON.stringify(profile)) } catch {}
+  }, [profile])
+
+  useEffect(() => {
+    saveStoredMessages(messages)
+  }, [messages])
+
+  useEffect(() => {
+    saveLocalProgress(localProgress)
+  }, [localProgress])
+
+  useEffect(() => {
+    saveActiveMission(activeMission)
+  }, [activeMission])
+
+  useEffect(() => {
+    saveCompletedMissions(completedMissions)
+  }, [completedMissions])
+
+  const toggleDark = useCallback(() => setDarkMode(d => !d), [])
+
+  const t = useCallback((key) => translate(nativeLanguage, key), [nativeLanguage])
+
+  const setNativeLanguage = useCallback((language) => {
+    setNativeLanguageState(language)
+    try { localStorage.setItem('lc2-native-language', language) } catch {}
+  }, [])
+
+  const loginMock = useCallback((email) => {
+    let user = null
+    try {
+      const stored = localStorage.getItem('lc2-user')
+      if (stored) user = JSON.parse(stored)
+    } catch {}
+    if (!user) user = { name: email.split('@')[0], email }
+    setAuthUser(user)
+    setProfile(prev => ({ ...prev, name: user.name, email: user.email }))
+    localStorage.setItem('lc2-user', JSON.stringify(user))
+    localStorage.setItem('lc2-auth', 'true')
+    localStorage.setItem('lc2-onboarded', 'true')
+    setOnboardingCompleted(true)
+    setAuthStep(null)
+  }, [])
+
+  const signupMock = useCallback((name, email) => {
+    const user = { name, email }
+    setAuthUser(user)
+    setProfile(prev => ({ ...prev, name, email }))
+    localStorage.setItem('lc2-user', JSON.stringify(user))
+    setAuthStep('placement')
+  }, [])
+
+  const completePlacement = useCallback((result) => {
+    setProfile(prev => ({ ...prev, level: result.level, placementResult: result }))
+    localStorage.setItem('lc2-placement', JSON.stringify(result))
+    localStorage.setItem('lc2-placement-result', JSON.stringify(result))
+    setAuthStep('tutor-personality')
+  }, [])
+
+  const completeTutorPersonality = useCallback((personality) => {
+    setProfile(prev => ({ ...prev, tutorPersonality: personality }))
+    setAuthStep('learning-prefs')
+  }, [])
+
+  const completeLearningPrefs = useCallback((prefs) => {
+    setProfile(prev => ({
+      ...prev,
+      preferences: prefs,
+      goal: prefs.goals?.[0] || 'Travel',
+      dailyGoal: prefs.dailyGoal || 10,
+    }))
+    localStorage.setItem('lc2-auth', 'true')
+    localStorage.setItem('lc2-onboarded', 'true')
+    setOnboardingCompleted(true)
+    setAuthStep(null)
+  }, [])
+
+  const logoutMock = useCallback(() => {
+    localStorage.removeItem('lc2-auth')
+    localStorage.removeItem('lc2-user')
+    setAuthUser(null)
+    setAuthStep('entry')
+  }, [])
+
+  const completeOnboarding = useCallback((profileData) => {
+    const merged = { ...DEFAULT_PROFILE, ...profileData }
+    setProfile(merged)
+    setOnboardingCompleted(true)
+    try { localStorage.setItem('lc2-onboarded', 'true') } catch {}
+    setView('today')
+  }, [])
+
+  const updateProfile = useCallback((updates) => {
+    setProfile(prev => ({ ...prev, ...updates }))
+  }, [])
+
+  const navigateTo = useCallback((destination) => {
+    setView(destination)
+    setMobileSheet(null)
+  }, [])
+
+  const appendLinguaMessages = useCallback((nextMessages) => {
+    const list = Array.isArray(nextMessages) ? nextMessages.filter(Boolean) : [nextMessages].filter(Boolean)
+    if (!list.length) return
+    setMessages(previous => [...previous, ...list])
+    setSelectedMessage(list[list.length - 1])
+  }, [])
+
+  const startPracticeMission = useCallback((mission = null) => {
+    const selectedMission = mission || getMissionForToday(profile.level, profile.goal)
+    const active = createActiveMission(selectedMission)
+    setActiveMission(active)
+    setMissionFeedback(null)
+    setMissionCelebration(null)
+    appendLinguaMessages([
+      createMissionIntroMessage(selectedMission),
+      createMissionStepMessage(getActiveMissionDetails(active)),
+    ])
+    setView('practice')
+    setMobileSheet(null)
+  }, [appendLinguaMessages, profile.goal, profile.level])
+
+  const submitMissionStep = useCallback((value, displayText = null) => {
+    const details = getActiveMissionDetails(activeMission)
+    if (!details?.step) return
+    const answerText = displayText || value
+    const evaluation = evaluateMissionStep(details.step, value)
+    setMessages(previous => [...previous, {
+      id: `u${Date.now()}`,
+      role: 'user',
+      text: answerText,
+      ts: Date.now(),
+      missionId: details.mission.id,
+      missionStepId: details.step.id,
+    }])
+    setIsTyping(true)
+
+    const advanced = advanceMission(activeMission, details.step, value, evaluation)
+    setLocalProgress(previous => recordMissionProgress(previous, {
+      mission: details.mission,
+      step: details.step,
+      earnedXp: advanced.earnedThisStep,
+      completed: false,
+    }))
+
+    if (advanced.activeMission.currentStepIndex >= details.mission.steps.length) {
+      const completed = completeMission(advanced.activeMission)
+      setActiveMission(null)
+      setCompletedMissions(previous => [completed, ...previous].slice(0, 50))
+      setLocalProgress(previous => recordMissionProgress(previous, {
+        mission: details.mission,
+        step: details.step,
+        earnedXp: Math.max(0, details.mission.rewardXp - completed.earnedXp),
+        completed: true,
+      }))
+      setMissionCelebration({
+        title: details.mission.title,
+        xp: details.mission.rewardXp,
+        message: 'Mision completada. Lingua guardo tu avance en este dispositivo.',
+      })
+      setMissionFeedback({
+        passed: evaluation.passed,
+        text: evaluation.feedback,
+      })
+      setTimeout(() => {
+        setIsTyping(false)
+        appendLinguaMessages([
+          createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
+          createMissionCompleteMessage(details.mission, completed),
+        ])
+      }, 650)
+      return
+    }
+
+    setActiveMission(advanced.activeMission)
+    setMissionFeedback({
+      passed: evaluation.passed,
+      text: evaluation.feedback,
+    })
+    setTimeout(() => {
+      setIsTyping(false)
+      appendLinguaMessages([
+        createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
+        createMissionStepMessage(getActiveMissionDetails(advanced.activeMission)),
+      ])
+    }, 650)
+  }, [activeMission, appendLinguaMessages])
+
+  const submitMissionOption = useCallback((option) => {
+    if (!option) return
+    submitMissionStep(option.id, option.text)
+  }, [submitMissionStep])
+
+  const abandonMission = useCallback(() => {
+    saveActiveMission(null)
+    setActiveMission(null)
+    setMissionFeedback(null)
+    setMissionCelebration(null)
+    appendLinguaMessages({
+      id: `mission-exit-${Date.now()}`,
+      role: 'lingua',
+      text: 'Salimos de la mision. Seguimos en chat libre cuando quieras.',
+      feedback: null,
+      missionType: 'exit',
+      ts: Date.now(),
+    })
+  }, [appendLinguaMessages])
+
+  const sendMessage = useCallback(async (text) => {
+    if (!text.trim()) return
+
+    const missionDetails = getActiveMissionDetails(activeMission)
+    if (missionDetails?.step) {
+      submitMissionStep(text.trim())
+      return
+    }
+
+    const userMsg = {
+      id: `u${Date.now()}`,
+      role: 'user',
+      text: text.trim(),
+      ts: Date.now(),
+    }
+    setMessages(prev => [...prev, userMsg])
+    setIsTyping(true)
+    setSelectedMessage(null)
+
+    try {
+      const history = messages.slice(-8).map(m => ({
+        role: m.role,
+        text: m.text,
+        correction: m.feedback?.correction || null,
+      }))
+      const response = await sendChatMessage({
+        message: text.trim(),
+        level: profile.level,
+        mode: profile.style,
+        history,
+        sessionId,
+        preferences: {
+          goal: profile.goal,
+          style: profile.style,
+          tutor_personality: profile.tutorPersonality,
+          native_language: getLanguageName(nativeLanguage),
+          detected_level: profile.placementResult?.detectedLevel || profile.level,
+          correction_style: profile.placementResult?.recommendedCorrectionStyle || profile.preferences?.correctionIntensity,
+          topics: profile.preferences?.goals || [],
+        },
+      })
+
+      setConnectionNotice(response.connectionMessage)
+      setMemoryNotice(response.correction
+        ? 'Your recent corrections are saved on this device.'
+        : "I'll remember what we practiced today.")
+      setLocalProgress(previous => recordPractice(previous, {
+        userMessage: text.trim(),
+        response,
+      }))
+
+      const linguaMsg = {
+        id: `l${Date.now()}`,
+        role: 'lingua',
+        text: response.reply,
+        feedback: {
+          correction:  response.correction  || null,
+          why:         response.explanation || null,
+          suggestion:  response.suggestion  || null,
+          learningAction: response.learning_action || null,
+          focus: response.focus || null,
+          wordToUse: response.word_to_use || null,
+          translation: null,
+        },
+        ts: Date.now(),
+      }
+      setMessages(prev => [...prev, linguaMsg])
+      setSelectedMessage(linguaMsg)
+    } catch {
+      setConnectionNotice('Lingua had trouble connecting. You can keep exploring the demo.')
+      setMessages(prev => [...prev, {
+        id: `e${Date.now()}`,
+        role: 'lingua',
+        text: 'You can keep practicing with the demo while the connection recovers.',
+        feedback: null,
+        ts: Date.now(),
+      }])
+    } finally {
+      setIsTyping(false)
+    }
+  }, [activeMission, messages, nativeLanguage, profile, sessionId, submitMissionStep])
+
+  useEffect(() => {
+    if (restoredMissionRef.current) return
+    const details = getActiveMissionDetails(activeMission)
+    if (!details?.step) return
+    restoredMissionRef.current = true
+    const hasCurrentStep = messages.some(message =>
+      message.missionId === details.mission.id && message.missionStepId === details.step.id && message.missionType === 'step'
+    )
+    if (!hasCurrentStep) {
+      appendLinguaMessages([
+        createMissionIntroMessage(details.mission, true),
+        createMissionStepMessage(details),
+      ])
+    }
+  }, [activeMission, appendLinguaMessages, messages])
+
+  const selectMessage = useCallback((msg) => {
+    setSelectedMessage(prev => prev?.id === msg.id ? null : msg)
+  }, [])
+
+  const clearMessages = useCallback(() => {
+    setMessages([WELCOME_MESSAGE])
+    setSelectedMessage(null)
+  }, [])
+
+  const resetLocalProgress = useCallback(() => {
+    if (!window.confirm('Reset local chat history and progress on this device?')) return
+    clearStoredProgress()
+    setSessionId(createSessionId())
+    setMessages([WELCOME_MESSAGE])
+    setLocalProgress(createEmptyProgress())
+    setSelectedMessage(null)
+    setConnectionNotice(null)
+    setMemoryNotice(null)
+    clearMissionStorage()
+    setActiveMission(null)
+    setCompletedMissions([])
+    setMissionFeedback(null)
+    setMissionCelebration(null)
+    setView('today')
+  }, [])
+
+  const activeMissionDetails = getActiveMissionDetails(activeMission)
+
+  return (
+    <AppContext.Provider value={{
+      authStep, setAuthStep,
+      nativeLanguage, setNativeLanguage, t,
+      authUser,
+      loginMock, signupMock,
+      completePlacement, completeTutorPersonality, completeLearningPrefs,
+      logoutMock,
+      darkMode, toggleDark,
+      onboardingCompleted, completeOnboarding,
+      profile, updateProfile,
+      view, navigateTo,
+      activeMission, activeMissionDetails, completedMissions,
+      missionFeedback, missionCelebration,
+      startPracticeMission, submitMissionStep, submitMissionOption, abandonMission,
+      messages, sendMessage, clearMessages, isTyping,
+      sessionId, localProgress, resetLocalProgress,
+      connectionNotice, memoryNotice,
+      selectedMessage, selectMessage,
+      mobileSheet, setMobileSheet,
+      messagesEndRef,
+    }}>
+      {children}
+    </AppContext.Provider>
+  )
+}
+
+export const useApp = () => {
+  const ctx = useContext(AppContext)
+  if (!ctx) throw new Error('useApp must be used within AppProvider')
+  return ctx
+}
