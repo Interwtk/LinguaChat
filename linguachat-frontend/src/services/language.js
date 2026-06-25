@@ -27,27 +27,52 @@ const FALLBACK_NAMES = {
 }
 
 export const LANGUAGE_OPTIONS = [
-  { code: 'en', base: 'en', englishName: 'English', nativeName: 'English', aliases: ['ingles', 'inglés'] },
-  { code: 'en-US', base: 'en', englishName: 'English (United States)', nativeName: 'English (US)', aliases: ['american english', 'usa', 'us english'] },
-  { code: 'en-GB', base: 'en', englishName: 'English (United Kingdom)', nativeName: 'English (UK)', aliases: ['british english', 'uk english'] },
+  { code: 'en', base: 'en', englishName: 'English', nativeName: 'English', aliases: ['ingles', 'inglés', 'english'] },
+  { code: 'en-US', base: 'en', englishName: 'English (United States)', nativeName: 'English (US)', aliases: ['american english', 'usa', 'us english', 'united states'] },
+  { code: 'en-GB', base: 'en', englishName: 'English (United Kingdom)', nativeName: 'English (UK)', aliases: ['british english', 'uk english', 'united kingdom'] },
   { code: 'es', base: 'es', englishName: 'Spanish', nativeName: 'Español', aliases: ['espanol', 'español', 'castellano'] },
-  { code: 'es-CO', base: 'es', englishName: 'Spanish (Colombia)', nativeName: 'Español (Colombia)', aliases: ['colombian spanish', 'colombia'] },
-  { code: 'es-MX', base: 'es', englishName: 'Spanish (Mexico)', nativeName: 'Español (México)', aliases: ['mexican spanish', 'mexico', 'méxico'] },
-  { code: 'es-CL', base: 'es', englishName: 'Spanish (Chile)', nativeName: 'Español (Chile)', aliases: ['chilean spanish', 'chile'] },
-  { code: 'es-AR', base: 'es', englishName: 'Spanish (Argentina)', nativeName: 'Español (Argentina)', aliases: ['argentinian spanish', 'argentina'] },
+  { code: 'es-CO', base: 'es', englishName: 'Spanish (Colombia)', nativeName: 'Español (Colombia)', aliases: ['colombian spanish', 'colombia', 'espanol colombiano'] },
+  { code: 'es-MX', base: 'es', englishName: 'Spanish (Mexico)', nativeName: 'Español (México)', aliases: ['mexican spanish', 'mexico', 'méxico', 'espanol mexicano'] },
+  { code: 'es-ES', base: 'es', englishName: 'Spanish (Spain)', nativeName: 'Español (España)', aliases: ['spanish spain', 'spain', 'españa', 'castellano'] },
+  { code: 'es-CL', base: 'es', englishName: 'Spanish (Chile)', nativeName: 'Español (Chile)', aliases: ['chilean spanish', 'chile', 'espanol chileno'] },
+  { code: 'es-AR', base: 'es', englishName: 'Spanish (Argentina)', nativeName: 'Español (Argentina)', aliases: ['argentinian spanish', 'argentine spanish', 'argentina'] },
   { code: 'pt', base: 'pt', englishName: 'Portuguese', nativeName: 'Português', aliases: ['portugues', 'português'] },
-  { code: 'pt-BR', base: 'pt', englishName: 'Portuguese (Brazil)', nativeName: 'Português (Brasil)', aliases: ['brazilian portuguese', 'brasil', 'brazil'] },
-  { code: 'pt-PT', base: 'pt', englishName: 'Portuguese (Portugal)', nativeName: 'Português (Portugal)', aliases: ['european portuguese', 'portugal'] },
-  { code: 'fr', base: 'fr', englishName: 'French', nativeName: 'Français', aliases: ['frances', 'français'] },
-  { code: 'it', base: 'it', englishName: 'Italian', nativeName: 'Italiano', aliases: ['italiano'] },
-  { code: 'de', base: 'de', englishName: 'German', nativeName: 'Deutsch', aliases: ['aleman', 'alemán'] },
+  { code: 'pt-BR', base: 'pt', englishName: 'Portuguese (Brazil)', nativeName: 'Português (Brasil)', aliases: ['brazilian portuguese', 'brasil', 'brazil', 'portugues brasil'] },
+  { code: 'pt-PT', base: 'pt', englishName: 'Portuguese (Portugal)', nativeName: 'Português (Portugal)', aliases: ['european portuguese', 'portugal', 'portugues portugal'] },
+  { code: 'fr', base: 'fr', englishName: 'French', nativeName: 'Français', aliases: ['frances', 'français', 'francais'] },
+  { code: 'fr-CA', base: 'fr', englishName: 'French (Canada)', nativeName: 'Français (Canada)', aliases: ['canadian french', 'quebec', 'québec', 'francais canada'] },
+  { code: 'it', base: 'it', englishName: 'Italian', nativeName: 'Italiano', aliases: ['italiano', 'italian'] },
+  { code: 'de', base: 'de', englishName: 'German', nativeName: 'Deutsch', aliases: ['aleman', 'alemán', 'german'] },
   { code: 'ja', base: 'ja', englishName: 'Japanese', nativeName: '日本語', aliases: ['japanese', 'nihongo', 'japonés', 'japones'] },
   { code: 'ar', base: 'ar', englishName: 'Arabic', nativeName: 'العربية', aliases: ['arabic', 'arabe', 'árabe'] },
-  { code: 'ko', base: 'ko', englishName: 'Korean', nativeName: '한국어', aliases: ['coreano'] },
   { code: 'zh', base: 'zh', englishName: 'Chinese', nativeName: '中文', aliases: ['mandarin', 'chinese', 'chino'] },
-  { code: 'hi', base: 'hi', englishName: 'Hindi', nativeName: 'हिन्दी', aliases: ['hindi'] },
+  { code: 'zh-CN', base: 'zh', englishName: 'Chinese (Simplified)', nativeName: '简体中文', aliases: ['simplified chinese', 'mandarin', 'chino simplificado', 'china'] },
+  { code: 'zh-TW', base: 'zh', englishName: 'Chinese (Traditional)', nativeName: '繁體中文', aliases: ['traditional chinese', 'taiwan', 'chino tradicional'] },
+  { code: 'ko', base: 'ko', englishName: 'Korean', nativeName: '한국어', aliases: ['coreano', 'korean', 'hangul'] },
+  { code: 'hi', base: 'hi', englishName: 'Hindi', nativeName: 'हिन्दी', aliases: ['hindi', 'हिंदी'] },
   { code: 'ru', base: 'ru', englishName: 'Russian', nativeName: 'Русский', aliases: ['ruso', 'russian'] },
   { code: 'tr', base: 'tr', englishName: 'Turkish', nativeName: 'Türkçe', aliases: ['turco', 'turkish'] },
+  { code: 'nl', base: 'nl', englishName: 'Dutch', nativeName: 'Nederlands', aliases: ['dutch', 'holandes', 'holandés'] },
+  { code: 'pl', base: 'pl', englishName: 'Polish', nativeName: 'Polski', aliases: ['polish', 'polaco'] },
+  { code: 'vi', base: 'vi', englishName: 'Vietnamese', nativeName: 'Tiếng Việt', aliases: ['vietnamese', 'vietnamita', 'tieng viet'] },
+  { code: 'id', base: 'id', englishName: 'Indonesian', nativeName: 'Bahasa Indonesia', aliases: ['indonesian', 'indonesio', 'bahasa'] },
+  { code: 'th', base: 'th', englishName: 'Thai', nativeName: 'ไทย', aliases: ['thai', 'tailandes', 'tailandés'] },
+  { code: 'uk', base: 'uk', englishName: 'Ukrainian', nativeName: 'Українська', aliases: ['ukrainian', 'ucraniano'] },
+  { code: 'el', base: 'el', englishName: 'Greek', nativeName: 'Ελληνικά', aliases: ['greek', 'griego', 'ellinika'] },
+  { code: 'he', base: 'he', englishName: 'Hebrew', nativeName: 'עברית', aliases: ['hebrew', 'hebreo', 'ivrit'] },
+  { code: 'sv', base: 'sv', englishName: 'Swedish', nativeName: 'Svenska', aliases: ['swedish', 'sueco'] },
+  { code: 'no', base: 'no', englishName: 'Norwegian', nativeName: 'Norsk', aliases: ['norwegian', 'noruego'] },
+  { code: 'da', base: 'da', englishName: 'Danish', nativeName: 'Dansk', aliases: ['danish', 'danes', 'danés'] },
+  { code: 'fi', base: 'fi', englishName: 'Finnish', nativeName: 'Suomi', aliases: ['finnish', 'fines', 'finés', 'suomi'] },
+  { code: 'ro', base: 'ro', englishName: 'Romanian', nativeName: 'Română', aliases: ['romanian', 'rumano', 'romana'] },
+  { code: 'cs', base: 'cs', englishName: 'Czech', nativeName: 'Čeština', aliases: ['czech', 'checo', 'cesky'] },
+  { code: 'hu', base: 'hu', englishName: 'Hungarian', nativeName: 'Magyar', aliases: ['hungarian', 'hungaro', 'húngaro'] },
+  { code: 'bn', base: 'bn', englishName: 'Bengali', nativeName: 'বাংলা', aliases: ['bengali', 'bangla', 'bengali language'] },
+  { code: 'ur', base: 'ur', englishName: 'Urdu', nativeName: 'اردو', aliases: ['urdu'] },
+  { code: 'fa', base: 'fa', englishName: 'Persian', nativeName: 'فارسی', aliases: ['persian', 'farsi', 'persa'] },
+  { code: 'sw', base: 'sw', englishName: 'Swahili', nativeName: 'Kiswahili', aliases: ['swahili', 'kiswahili', 'suajili'] },
+  { code: 'fil', base: 'fil', englishName: 'Filipino', nativeName: 'Filipino', aliases: ['filipino', 'tagalog', 'tagalo'] },
+  { code: 'ms', base: 'ms', englishName: 'Malay', nativeName: 'Bahasa Melayu', aliases: ['malay', 'malayo', 'melayu'] },
 ]
 
 function normalizeSearchText(value) {
@@ -60,6 +85,17 @@ function normalizeSearchText(value) {
 
 function optionToLanguageInfo(option) {
   return { code: option.code, base: option.base, name: option.englishName }
+}
+
+function getSearchFields(option) {
+  return [
+    option.code,
+    option.base,
+    option.englishName,
+    option.nativeName,
+    ...(option.aliases || []),
+    ...(option.searchTerms || []),
+  ]
 }
 
 export function normalizeLanguageCode(code) {
@@ -164,8 +200,7 @@ export function ensureLanguagePreferences() {
 export function languageFromInput(value) {
   const query = normalizeSearchText(value)
   const option = LANGUAGE_OPTIONS.find(item => {
-    const fields = [item.code, item.base, item.englishName, item.nativeName, ...(item.aliases || [])]
-    return fields.some(field => normalizeSearchText(field) === query)
+    return getSearchFields(item).some(field => normalizeSearchText(field) === query)
   })
   return option ? optionToLanguageInfo(option) : makeLanguageInfo(value || FALLBACK_LANGUAGE.code)
 }
@@ -203,7 +238,6 @@ export function searchLanguages(query, currentLanguage = null) {
   if (!normalizedQuery) return options
 
   return options.filter(item => {
-    const fields = [item.code, item.base, item.englishName, item.nativeName, ...(item.aliases || [])]
-    return fields.some(field => normalizeSearchText(field).includes(normalizedQuery))
+    return getSearchFields(item).some(field => normalizeSearchText(field).includes(normalizedQuery))
   })
 }
