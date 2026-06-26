@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MOCK_STATS } from '../../data/mockData'
 import { getLanguageOption, languageFromInput, searchLanguages } from '../../services/language'
-import { COMPANIONS } from '../../services/tutorPreferences'
+import { COMPANIONS, TUTOR_OPTION_GROUPS, INTEREST_OPTIONS } from '../../services/tutorPreferences'
 
 const MOOD_COLORS = [
   { id: 'violet', label: 'Calm', bg: 'linear-gradient(135deg, var(--violet), var(--blue))' },
@@ -20,71 +20,6 @@ const RELATIONSHIP_STAGES = [
   { days: 14, label: 'Close companions' },
   { days: 30, label: 'Long-time partners' },
 ]
-
-const TUTOR_OPTION_GROUPS = [
-  {
-    key: 'correction_style',
-    labelKey: 'correctionStyleLabel',
-    options: [
-      { id: 'gentle', labelKey: 'correctionGentle' },
-      { id: 'balanced', labelKey: 'correctionBalanced' },
-      { id: 'strict', labelKey: 'correctionStrict' },
-    ],
-  },
-  {
-    key: 'tone',
-    labelKey: 'aiTone',
-    options: [
-      { id: 'friendly', labelKey: 'toneFriendly' },
-      { id: 'motivating', labelKey: 'toneMotivating' },
-      { id: 'fun', labelKey: 'toneFun' },
-      { id: 'professional', labelKey: 'toneProfessional' },
-      { id: 'calm', labelKey: 'toneCalm' },
-    ],
-  },
-  {
-    key: 'pace',
-    labelKey: 'pace',
-    options: [
-      { id: 'slow_clear', labelKey: 'paceSlow' },
-      { id: 'normal', labelKey: 'paceNormal' },
-      { id: 'fast', labelKey: 'paceFast' },
-    ],
-  },
-  {
-    key: 'explanation_depth',
-    labelKey: 'explanations',
-    options: [
-      { id: 'very_simple', labelKey: 'explanationsSimple' },
-      { id: 'normal', labelKey: 'explanationsNormal' },
-      { id: 'detailed', labelKey: 'explanationsDetailed' },
-    ],
-  },
-  {
-    key: 'goal',
-    labelKey: 'goal',
-    options: [
-      { id: 'daily_conversation', labelKey: 'goalDailyConversation' },
-      { id: 'travel', labelKey: 'goalTravel' },
-      { id: 'work', labelKey: 'goalWork' },
-      { id: 'school', labelKey: 'goalSchool' },
-      { id: 'confidence', labelKey: 'goalConfidence' },
-    ],
-  },
-  {
-    key: 'learner_style',
-    labelKey: 'learnerStyle',
-    options: [
-      { id: 'child', labelKey: 'learnerChild' },
-      { id: 'teen', labelKey: 'learnerTeen' },
-      { id: 'adult', labelKey: 'learnerAdult' },
-      { id: 'older_adult', labelKey: 'learnerOlderAdult' },
-      { id: 'prefer_not_to_say', labelKey: 'preferNotSay' },
-    ],
-  },
-]
-
-const INTEREST_OPTIONS = ['travel', 'music', 'games', 'work', 'food', 'school', 'technology', 'family', 'sports', 'culture', 'movies']
 
 function PreferenceButtons({ label, value, options, onChange, t }) {
   return (

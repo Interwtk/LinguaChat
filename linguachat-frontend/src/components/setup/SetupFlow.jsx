@@ -2,6 +2,9 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { ThemeToggle } from '../ui/ThemeToggle'
+import { ChattoMascot } from '../mascot/ChattoMascot'
+import { TutorPersonalizationStep } from '../onboarding/TutorPersonalizationStep'
+import { getMotiMoment } from '../../services/motiMoments'
 import {
   calculatePlacementResult,
   evaluateAnswer,
@@ -198,6 +201,7 @@ function PlacementTest() {
 /* ---- LEVEL REVEAL ---- */
 function LevelReveal() {
   const { profile, setAuthStep, t } = useApp()
+  const moti = getMotiMoment('placementDone')
   const result = profile.placementResult || { level: 'B1', vocab: 72, grammar: 65, conversation: 78 }
   const strengths = result.strengths || result.placementStrengths || ['You can communicate simple ideas.']
   const focusAreas = result.focusAreas || result.placementFocusAreas || ['word order', 'questions', 'everyday vocabulary']
@@ -206,6 +210,16 @@ function LevelReveal() {
     <SetupShell step={1} totalSteps={3}>
       <div className="flex-1 overflow-y-auto px-5 py-8" style={{ maxWidth: 560, margin: '0 auto', width: '100%' }}>
         <div className="animate-fade-up">
+          {/* Chatto Moti Moment — celebrates finishing the placement */}
+          <div className="rounded-3xl p-5 mb-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left"
+            style={{ background: 'var(--bg-paper)', border: '1px solid var(--violet)', boxShadow: '0 0 0 4px var(--violet-soft)' }}>
+            <ChattoMascot mood={moti.mood} size={84} variant={moti.variant} />
+            <div>
+              <p style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--ink)', marginBottom: 4 }}>{t(moti.titleKey)}</p>
+              <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>{t(moti.messageKey)}</p>
+            </div>
+          </div>
+
           <div className="flex items-center gap-3 mb-8">
             <LinguaAvatar size={52} online />
             <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
@@ -564,8 +578,10 @@ export function SetupFlow() {
   const { authStep } = useApp()
   const screens = {
     placement: <PlacementTest />,
+    'level-reveal': <LevelReveal />,
     'tutor-personality': <TutorPersonality />,
     'learning-prefs': <LearningPreferences />,
+    personalize: <TutorPersonalizationStep />,
   }
   return screens[authStep] || <PlacementTest />
 }

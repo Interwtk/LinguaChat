@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MessageBubble, TypingIndicator } from '../chat/MessageBubble'
 import { COMPANIONS } from '../../services/tutorPreferences'
+import { ChattoMascot } from '../mascot/ChattoMascot'
 
 export function ConversationRoom() {
   const {
@@ -201,12 +202,15 @@ export function ConversationRoom() {
       )}
 
       {missionCelebration && !activeMissionDetails && (
-        <div className="mt-3 rounded-2xl px-3.5 py-3 animate-fade-up"
+        <div className="mt-3 rounded-2xl px-3.5 py-3 animate-fade-up flex items-center gap-3"
           style={{ ...practicePanelStyle, background: 'var(--green-soft)', border: '1px solid var(--green)' }}>
-          <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--ink)' }}>{t('missionComplete')}</p>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-            {missionCelebration.message} +{missionCelebration.xp} XP.
-          </p>
+          <ChattoMascot mood="celebrating" size={48} variant="green" />
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--ink)' }}>{t('missionComplete')}</p>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
+              {missionCelebration.message} +{missionCelebration.xp} XP.
+            </p>
+          </div>
         </div>
       )}
 

@@ -10,6 +10,7 @@ import { ThemeToggle } from './components/ui/ThemeToggle'
 import { LanguageIdentity } from './components/identity/LanguageIdentity'
 import { MemoryGarden } from './components/memory/MemoryGarden'
 import { ConversationArchive } from './components/archive/ConversationArchive'
+import { WelcomeMascotCard } from './components/onboarding/WelcomeMascotCard'
 
 /* ─── Mobile bottom navigation ─── */
 function MobileNav() {
@@ -131,7 +132,7 @@ function MobileNotesTitle() {
 }
 
 const AUTH_STEPS = ['entry', 'login', 'signup', 'forgot']
-const SETUP_STEPS = ['placement', 'tutor-personality', 'learning-prefs']
+const SETUP_STEPS = ['placement', 'level-reveal', 'tutor-personality', 'learning-prefs', 'personalize']
 const NOTES_COLLAPSED_KEY = 'lc2-notes-panel-collapsed'
 
 function DesktopTopNav({ notesCollapsed, onShowNotes }) {
@@ -182,7 +183,7 @@ function DesktopTopNav({ notesCollapsed, onShowNotes }) {
 
 /* ─── Main app shell ─── */
 function AppShell() {
-  const { authStep, view, mobileSheet, setMobileSheet, t } = useApp()
+  const { authStep, view, mobileSheet, setMobileSheet, showWelcome, t } = useApp()
   const [notesCollapsed, setNotesCollapsed] = useState(() => {
     try { return localStorage.getItem(NOTES_COLLAPSED_KEY) === 'true' } catch { return false }
   })
@@ -199,6 +200,9 @@ function AppShell() {
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+
+      {/* Chatto welcome — shown once on Home right after onboarding */}
+      {showWelcome && view === 'today' && <WelcomeMascotCard />}
 
       {/* Desktop 3-column cockpit layout */}
       <div className="hidden lg:flex" style={{ height: '100dvh', overflow: 'hidden' }}>

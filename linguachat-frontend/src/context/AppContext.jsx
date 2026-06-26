@@ -115,6 +115,7 @@ export function AppProvider({ children }) {
   const [tutorPreferences, setTutorPreferencesState] = useState(loadTutorPreferences)
   const [activeCompanion, setActiveCompanionState] = useState(loadActiveCompanion)
   const [textSize, setTextSizeState] = useState(loadTextSize)
+  const [showWelcome, setShowWelcome] = useState(false)
   const [missionFeedback, setMissionFeedback] = useState(null)
   const [missionCelebration, setMissionCelebration] = useState(null)
   const [isTyping, setIsTyping] = useState(false)
@@ -223,7 +224,7 @@ export function AppProvider({ children }) {
     setProfile(prev => ({ ...prev, level: result.level, placementResult: result }))
     localStorage.setItem('lc2-placement', JSON.stringify(result))
     localStorage.setItem('lc2-placement-result', JSON.stringify(result))
-    setAuthStep('tutor-personality')
+    setAuthStep('level-reveal')
   }, [])
 
   const completeTutorPersonality = useCallback((personality) => {
@@ -238,10 +239,28 @@ export function AppProvider({ children }) {
       goal: prefs.goals?.[0] || 'Travel',
       dailyGoal: prefs.dailyGoal || 10,
     }))
-    localStorage.setItem('lc2-auth', 'true')
-    localStorage.setItem('lc2-onboarded', 'true')
+    // Final onboarding beat: guided AI personalization with Chatto.
+    setAuthStep('personalize')
+  }, [])
+
+  // User finished the guided personalization step (tutor preferences are already
+  // persisted live). Mark onboarding complete and arm Chatto's Home welcome once.
+  const completePersonalization = useCallback(() => {
+    try {
+      localStorage.setItem('lc2-auth', 'true')
+      localStorage.setItem('lc2-onboarded', 'true')
+      localStorage.setItem('lc2-personalization-completed', 'true')
+      localStorage.setItem('lc2-welcome-seen', 'false')
+    } catch {}
     setOnboardingCompleted(true)
+    setView('today')
+    setShowWelcome(true)
     setAuthStep(null)
+  }, [])
+
+  const dismissWelcome = useCallback(() => {
+    setShowWelcome(false)
+    try { localStorage.setItem('lc2-welcome-seen', 'true') } catch {}
   }, [])
 
   const logoutMock = useCallback(() => {
@@ -654,6 +673,8 @@ export function AppProvider({ children }) {
       authUser,
       loginMock, signupMock,
       completePlacement, completeTutorPersonality, completeLearningPrefs,
+      completePersonalization,
+      showWelcome, dismissWelcome,
       logoutMock,
       darkMode, toggleDark, setThemeDark,
       onboardingCompleted, completeOnboarding,
