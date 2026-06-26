@@ -46,6 +46,14 @@ const EN_TO_ES = {
   apple: 'manzana',
 }
 
+function companionName(activeCompanion = 'lingua') {
+  return activeCompanion === 'lingo'
+    ? 'Lingo'
+    : activeCompanion === 'chatto'
+      ? 'Chatto'
+      : 'Lingua'
+}
+
 /* ─── Error patterns ─── */
 const PATTERNS = [
   {
@@ -171,8 +179,9 @@ function extractTranslationIntent(text) {
   return null
 }
 
-function getMockResponse({ message, mode }) {
+function getMockResponse({ message, mode, tutorPreferences = {}, activeCompanion = 'lingua' }) {
   const text = message.trim()
+  const companion = companionName(activeCompanion)
 
   /* Spanish translation request */
   const translationIntent = extractTranslationIntent(text)
@@ -182,7 +191,7 @@ function getMockResponse({ message, mode }) {
       : TRANSLATIONS[translationIntent.phrase]
     if (!translation) {
       return {
-        message: 'Buena pregunta. Con el backend activo puedo traducirlo mejor.',
+        message: `${companion}: buena pregunta. Con el backend activo puedo traducirlo mejor.`,
         suggestion: 'Practica esta pregunta: How do you say ___ in English?',
         learning_action: {
           type: 'fill_blank',
@@ -220,7 +229,9 @@ function getMockResponse({ message, mode }) {
         ? p.correction(text)
         : p.correction
       return {
-        message: pickResponse(mode),
+        message: tutorPreferences.correction_style === 'strict'
+          ? 'Revisemos la frase con cuidado.'
+          : pickResponse(mode),
         correction,
         why: p.why,
         suggestion: p.suggestion,
@@ -248,7 +259,11 @@ function getMockResponse({ message, mode }) {
     "Bien dicho. Una frase clara tambien cuenta.",
   ]
   return {
-    message: positives[Math.floor(Math.random() * positives.length)],
+    message: activeCompanion === 'lingo'
+      ? 'Tomemos una palabra util de tu frase y usala otra vez.'
+      : activeCompanion === 'chatto'
+        ? 'Nice. Let us keep it like a real conversation.'
+        : positives[Math.floor(Math.random() * positives.length)],
     suggestion: text.length < 30
       ? `Agrega una idea: "${text} because ____."`
       : null,
@@ -308,6 +323,8 @@ export async function sendChatMessage({
   interfaceLanguage = null,
   targetLanguage = null,
   missionContext = null,
+  tutorPreferences = null,
+  activeCompanion = 'lingua',
 }) {
   try {
     const res = await fetch(`${API_URL}/chat`, {
@@ -324,6 +341,8 @@ export async function sendChatMessage({
         interface_language: interfaceLanguage,
         target_language: targetLanguage,
         mission_context: missionContext,
+        tutor_preferences: tutorPreferences,
+        active_companion: activeCompanion,
       }),
       signal: AbortSignal.timeout(8000),
     })
@@ -340,7 +359,7 @@ export async function sendChatMessage({
   } catch {
     await randomDelay(450, 850)
     return {
-      ...normalizeChatResponse(getMockResponse({ message, mode })),
+      ...normalizeChatResponse(getMockResponse({ message, mode, tutorPreferences, activeCompanion })),
       isFallback: true,
       connectionMessage: CONNECTION_MESSAGE,
     }

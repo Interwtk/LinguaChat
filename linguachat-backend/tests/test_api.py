@@ -152,6 +152,44 @@ def test_chat_with_mission_context_without_openai_does_not_break():
     assert data["target_language"]["name"] == "English"
 
 
+def test_tutor_preferences_and_companion_do_not_break_old_contract():
+    response = post_chat_payload({
+        "session_id": "personalized-session",
+        "message": "Hello",
+        "level": "A1",
+        "tutor_preferences": {
+            "correction_style": "gentle",
+            "tone": "calm",
+            "pace": "slow_clear",
+            "explanation_depth": "very_simple",
+            "interests": ["travel", "food"],
+            "goal": "daily_conversation",
+            "learner_style": "older_adult",
+        },
+        "active_companion": "chatto",
+    })
+    data = response.json()
+
+    assert response.status_code == 200
+    assert BASE_KEYS.issubset(data.keys())
+    assert data["mode"] == "chat"
+
+
+def test_lingo_companion_uses_vocabulary_fallback():
+    response = post_chat_payload({
+        "session_id": "lingo-session",
+        "message": "cheese",
+        "level": "A1",
+        "active_companion": "lingo",
+        "tutor_preferences": {"interests": ["food"]},
+    })
+    data = response.json()
+
+    assert response.status_code == 200
+    assert data["focus"] == "Vocabulary practice"
+    assert "queso" in (data["reply"] + " " + (data["explanation"] or "")).lower()
+
+
 def test_old_native_language_string_still_works():
     response = post_chat_payload({
         "session_id": "legacy-language",

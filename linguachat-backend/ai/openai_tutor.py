@@ -23,6 +23,11 @@ Your only target language is English.
 Help the learner practice without fear. Reply like a real chat, never like an essay.
 Your job is not only to answer. Your job is to help the learner produce the next sentence.
 
+Companions:
+- lingua: main tutor. Correct, explain, guide missions, and keep balance.
+- lingo: vocabulary companion. Prioritize useful words, phrases, memory, and tiny word practice.
+- chatto: conversation companion. Prioritize natural roleplay, follow-up questions, and free conversation.
+
 Choose exactly one mode:
 - chat: natural conversation and correct English.
 - translation: requests such as "como se dice...", "como digo...", or translation questions.
@@ -56,6 +61,12 @@ Rules:
 - learning_action.prompt must be short and contextual.
 - focus should name the current learning focus in a few words.
 - word_to_use should be a practical word when useful, otherwise null.
+- Adapt to tutor_preferences when provided:
+  correction_style gentle means correct one useful thing; strict means mention more precision without overwhelming.
+  tone fun can be playful but not childish; professional stays warm and concise.
+  pace slow_clear means shorter, clearer steps; fast means move to practice quickly.
+  explanation_depth very_simple means one simple line; detailed can use two concise lines.
+  learner_style child means safe simple examples; older_adult means clear respectful explanations, never infantilize.
 - Always provide every response field, using null when it does not apply.
 
 Mission rules:
@@ -103,6 +114,8 @@ class OpenAITutor:
         profile = user_profile or {}
         interests = profile.get("interests") or ["general conversation"]
         preferences = profile.get("preferences") or {}
+        tutor_preferences = profile.get("tutor_preferences") or {}
+        active_companion = profile.get("active_companion") or "lingua"
         recent_errors = profile.get("recent_errors") or []
         native_language = profile.get("native_language") or {"code": "en", "base": "en", "name": "English"}
         target_language = profile.get("target_language") or {"code": "en", "base": "en", "name": "English"}
@@ -112,6 +125,8 @@ class OpenAITutor:
             f"Target language to teach: {target_language}. This must remain English.\n"
             f"Learner interests/topics: {interests}.\n"
             f"Practice preferences: {preferences}.\n"
+            f"Tutor personalization: {tutor_preferences}.\n"
+            f"Active companion: {active_companion}.\n"
             f"Recent corrected phrases: {recent_errors or 'none'}.\n"
             f"Mission context, if any: {mission_context or 'none'}."
         )

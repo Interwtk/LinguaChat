@@ -35,6 +35,14 @@ import {
   startMission as createActiveMission,
   clearMissionStorage,
 } from '../services/missions'
+import {
+  loadActiveCompanion,
+  loadTextSize,
+  loadTutorPreferences,
+  saveActiveCompanion,
+  saveTextSize,
+  saveTutorPreferences,
+} from '../services/tutorPreferences'
 
 const AppContext = createContext(null)
 
@@ -104,6 +112,9 @@ export function AppProvider({ children }) {
   const [localProgress, setLocalProgress] = useState(loadLocalProgress)
   const [activeMission, setActiveMission] = useState(loadActiveMission)
   const [completedMissions, setCompletedMissions] = useState(loadCompletedMissions)
+  const [tutorPreferences, setTutorPreferencesState] = useState(loadTutorPreferences)
+  const [activeCompanion, setActiveCompanionState] = useState(loadActiveCompanion)
+  const [textSize, setTextSizeState] = useState(loadTextSize)
   const [missionFeedback, setMissionFeedback] = useState(null)
   const [missionCelebration, setMissionCelebration] = useState(null)
   const [isTyping, setIsTyping] = useState(false)
@@ -124,7 +135,8 @@ export function AppProvider({ children }) {
     const root = document.documentElement
     root.lang = interfaceLanguageInfo.code
     root.dir = interfaceLanguageInfo.base === 'ar' ? 'rtl' : 'ltr'
-  }, [interfaceLanguageInfo])
+    root.dataset.textSize = textSize
+  }, [interfaceLanguageInfo, textSize])
 
   useEffect(() => {
     try { localStorage.setItem('lc2-profile', JSON.stringify(profile)) } catch {}
@@ -145,6 +157,18 @@ export function AppProvider({ children }) {
   useEffect(() => {
     saveCompletedMissions(completedMissions)
   }, [completedMissions])
+
+  useEffect(() => {
+    saveTutorPreferences(tutorPreferences)
+  }, [tutorPreferences])
+
+  useEffect(() => {
+    saveActiveCompanion(activeCompanion)
+  }, [activeCompanion])
+
+  useEffect(() => {
+    saveTextSize(textSize)
+  }, [textSize])
 
   const toggleDark = useCallback(() => setDarkMode(d => !d), [])
   const setThemeDark = useCallback((value) => setDarkMode(Boolean(value)), [])
@@ -239,6 +263,22 @@ export function AppProvider({ children }) {
     setProfile(prev => ({ ...prev, ...updates }))
   }, [])
 
+  const updateTutorPreferences = useCallback((updates) => {
+    setTutorPreferencesState(previous => saveTutorPreferences({
+      ...previous,
+      ...updates,
+      interests: updates?.interests || previous.interests,
+    }))
+  }, [])
+
+  const setActiveCompanion = useCallback((companion) => {
+    setActiveCompanionState(saveActiveCompanion(companion))
+  }, [])
+
+  const setTextSize = useCallback((size) => {
+    setTextSizeState(saveTextSize(size))
+  }, [])
+
   const navigateTo = useCallback((destination) => {
     setView(destination)
     setMobileSheet(null)
@@ -320,6 +360,8 @@ export function AppProvider({ children }) {
           target_language: targetLanguage,
           topics: profile.preferences?.goals || [],
         },
+        tutorPreferences,
+        activeCompanion,
         missionContext: missionContextFromDetails(details),
       })
     } catch {}
@@ -444,7 +486,7 @@ export function AppProvider({ children }) {
         createMissionStepMessage(getActiveMissionDetails(advanced.activeMission)),
       ])
     }, 650)
-  }, [activeMission, appendLinguaMessages, interfaceLanguageInfo, messages, missionContextFromDetails, nativeLanguageInfo, profile, sessionId, targetLanguage])
+  }, [activeCompanion, activeMission, appendLinguaMessages, interfaceLanguageInfo, messages, missionContextFromDetails, nativeLanguageInfo, profile, sessionId, targetLanguage, tutorPreferences])
 
   const submitMissionOption = useCallback((option) => {
     if (!option) return
@@ -511,6 +553,8 @@ export function AppProvider({ children }) {
           correction_style: profile.placementResult?.recommendedCorrectionStyle || profile.preferences?.correctionIntensity,
           topics: profile.preferences?.goals || [],
         },
+        tutorPreferences,
+        activeCompanion,
       })
 
       setConnectionNotice(response.connectionMessage)
@@ -551,7 +595,7 @@ export function AppProvider({ children }) {
     } finally {
       setIsTyping(false)
     }
-  }, [activeMission, interfaceLanguageInfo, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage])
+  }, [activeCompanion, activeMission, interfaceLanguageInfo, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage, tutorPreferences])
 
   useEffect(() => {
     if (restoredMissionRef.current) return
@@ -614,6 +658,9 @@ export function AppProvider({ children }) {
       darkMode, toggleDark, setThemeDark,
       onboardingCompleted, completeOnboarding,
       profile, updateProfile,
+      tutorPreferences, updateTutorPreferences,
+      activeCompanion, setActiveCompanion,
+      textSize, setTextSize,
       view, navigateTo,
       activeMission, activeMissionDetails, completedMissions,
       missionFeedback, missionCelebration,

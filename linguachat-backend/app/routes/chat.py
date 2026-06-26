@@ -21,6 +21,18 @@ ALLOWED_PREFERENCES = {
     "correction_style",
 }
 
+ALLOWED_TUTOR_PREFERENCES = {
+    "correction_style",
+    "tone",
+    "pace",
+    "explanation_depth",
+    "interests",
+    "goal",
+    "learner_style",
+}
+
+ALLOWED_COMPANIONS = {"lingua", "lingo", "chatto"}
+
 LANGUAGE_NAMES = {
     "ar": "Arabic",
     "de": "German",
@@ -49,6 +61,17 @@ def _safe_preferences(preferences: dict) -> dict:
     return safe
 
 
+def _safe_tutor_preferences(preferences: dict) -> dict:
+    safe = {}
+    for key in ALLOWED_TUTOR_PREFERENCES:
+        value = preferences.get(key)
+        if isinstance(value, str):
+            safe[key] = value.strip()[:80]
+        elif isinstance(value, list):
+            safe[key] = [item.strip()[:80] for item in value[:10] if isinstance(item, str)]
+    return safe
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1)
     level: LanguageLevel = LanguageLevel.A1
@@ -61,6 +84,8 @@ class ChatRequest(BaseModel):
     target_language: str | LanguageInfo | dict | None = None
     mission_context: MissionContext | dict | None = None
     missionContext: MissionContext | dict | None = None
+    tutor_preferences: dict | None = None
+    active_companion: str | None = None
     user_id: str | None = None
 
 
@@ -113,6 +138,10 @@ def chat(req: ChatRequest, response: Response):
     try:
         history = conversation_memory.context(session_id, req.history)
         preferences = _safe_preferences(req.preferences)
+        tutor_preferences = _safe_tutor_preferences(req.tutor_preferences or {})
+        active_companion = (req.active_companion or "lingua").strip().lower()
+        if active_companion not in ALLOWED_COMPANIONS:
+            active_companion = "lingua"
         native_language = _normalize_language(
             req.native_language or preferences.get("native_language") or "en"
         )
@@ -124,6 +153,8 @@ def chat(req: ChatRequest, response: Response):
             "target_language": target_language,
             "interests": preferences.get("interests") or preferences.get("topics") or [],
             "preferences": preferences,
+            "tutor_preferences": tutor_preferences,
+            "active_companion": active_companion,
             "recent_errors": conversation_memory.recent_errors(session_id),
             "mission_context": mission_context,
         }

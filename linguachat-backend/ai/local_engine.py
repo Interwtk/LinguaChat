@@ -102,6 +102,15 @@ GREETINGS = {"hello", "hi", "hey", "good morning", "good afternoon", "good eveni
 SPANISH_HINTS = {"hola", "como", "quiero", "puedo", "digo", "decir", "gracias"}
 
 
+def _active_companion(profile: dict | None) -> str:
+    companion = str((profile or {}).get("active_companion") or "lingua").lower()
+    return companion if companion in {"lingua", "lingo", "chatto"} else "lingua"
+
+
+def _tutor_preferences(profile: dict | None) -> dict:
+    return (profile or {}).get("tutor_preferences") or {}
+
+
 def normalize(text: str) -> str:
     normalized = strip_accents(text)
     normalized = re.sub(r"\s+", " ", normalized.lower().strip())
@@ -212,6 +221,71 @@ def _chat_suggestion(level: LanguageLevel, text: str) -> str:
     return "Add nuance with a contrast or qualification."
 
 
+def _companion_chat_response(
+    companion: str,
+    message: str,
+    level: LanguageLevel,
+    profile: dict,
+    history: list[dict] | None,
+) -> ChatResult | None:
+    normalized = normalize(message)
+    prefs = _tutor_preferences(profile)
+
+    if companion == "lingo":
+        word = normalized.split(" ", 1)[0] if normalized else "today"
+        meaning = EN_TO_ES.get(word)
+        if meaning:
+            reply = f"{word.capitalize()} = {meaning}."
+            explanation = f"Ejemplo: I like {word}."
+            suggestion = "Ahora completa: I like _____."
+        else:
+            reply = "Elige una palabra util de tu frase y usala otra vez."
+            explanation = "Lingo se enfoca en vocabulario y frases cortas."
+            suggestion = "Escribe: I use this word: ____."
+        return ChatResult(
+            reply=reply,
+            correction=None,
+            explanation=explanation,
+            suggestion=suggestion,
+            mode=ChatMode.CHAT,
+            learning_action=LearningAction(
+                type="fill_blank",
+                prompt="Completa: I like _____.",
+                options=None,
+                expected=word if meaning else None,
+            ),
+            focus="Vocabulary practice",
+            word_to_use=word if meaning else "word",
+            detected_language=profile.get("native_language"),
+            target_language=profile.get("target_language"),
+        )
+
+    if companion == "chatto":
+        reply = _chat_reply(message, level, bool(history))
+        if prefs.get("pace") == "slow_clear":
+            suggestion = "Answer with one short sentence."
+        else:
+            suggestion = "Keep the conversation going with one detail."
+        return ChatResult(
+            reply=reply,
+            correction=None,
+            explanation=None,
+            suggestion=suggestion,
+            mode=ChatMode.CHAT,
+            learning_action=LearningAction(
+                type="answer_question",
+                prompt="Answer naturally: I think ____ because ____.",
+                options=None,
+            ),
+            focus="Natural conversation",
+            word_to_use="because",
+            detected_language=profile.get("native_language"),
+            target_language=profile.get("target_language"),
+        )
+
+    return None
+
+
 def _learning_action_for(
     mode: ChatMode,
     message: str,
@@ -276,6 +350,7 @@ def generate_local_response(
     message = user_message.strip()
     profile = user_profile or {}
     mission_context = profile.get("mission_context")
+    companion = _active_companion(profile)
 
     if mission_context:
         expected = normalize(str(mission_context.get("expected_pattern") or ""))
@@ -372,6 +447,8 @@ def generate_local_response(
 
     if mode == ChatMode.CORRECTION:
         correction, explanation = CORRECTIONS[normalize(message)]
+        if _tutor_preferences(profile).get("correction_style") == "gentle":
+            explanation = f"Solo una cosa: {explanation}"
         return ChatResult(
             reply=correction,
             correction=correction,
@@ -395,6 +472,10 @@ def generate_local_response(
             focus="Guided production",
             word_to_use="because" if level in {LanguageLevel.A1, LanguageLevel.A2} else "although",
         )
+
+    companion_response = _companion_chat_response(companion, message, level, profile, history)
+    if companion_response:
+        return companion_response
 
     return ChatResult(
         reply=_chat_reply(message, level, bool(history)),

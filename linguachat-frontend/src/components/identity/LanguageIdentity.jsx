@@ -4,6 +4,7 @@ import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MOCK_STATS } from '../../data/mockData'
 import { getLanguageOption, languageFromInput, searchLanguages } from '../../services/language'
+import { COMPANIONS } from '../../services/tutorPreferences'
 
 const MOOD_COLORS = [
   { id: 'violet', label: 'Calm', bg: 'linear-gradient(135deg, var(--violet), var(--blue))' },
@@ -19,6 +20,101 @@ const RELATIONSHIP_STAGES = [
   { days: 14, label: 'Close companions' },
   { days: 30, label: 'Long-time partners' },
 ]
+
+const TUTOR_OPTION_GROUPS = [
+  {
+    key: 'correction_style',
+    labelKey: 'correctionStyleLabel',
+    options: [
+      { id: 'gentle', labelKey: 'correctionGentle' },
+      { id: 'balanced', labelKey: 'correctionBalanced' },
+      { id: 'strict', labelKey: 'correctionStrict' },
+    ],
+  },
+  {
+    key: 'tone',
+    labelKey: 'aiTone',
+    options: [
+      { id: 'friendly', labelKey: 'toneFriendly' },
+      { id: 'motivating', labelKey: 'toneMotivating' },
+      { id: 'fun', labelKey: 'toneFun' },
+      { id: 'professional', labelKey: 'toneProfessional' },
+      { id: 'calm', labelKey: 'toneCalm' },
+    ],
+  },
+  {
+    key: 'pace',
+    labelKey: 'pace',
+    options: [
+      { id: 'slow_clear', labelKey: 'paceSlow' },
+      { id: 'normal', labelKey: 'paceNormal' },
+      { id: 'fast', labelKey: 'paceFast' },
+    ],
+  },
+  {
+    key: 'explanation_depth',
+    labelKey: 'explanations',
+    options: [
+      { id: 'very_simple', labelKey: 'explanationsSimple' },
+      { id: 'normal', labelKey: 'explanationsNormal' },
+      { id: 'detailed', labelKey: 'explanationsDetailed' },
+    ],
+  },
+  {
+    key: 'goal',
+    labelKey: 'goal',
+    options: [
+      { id: 'daily_conversation', labelKey: 'goalDailyConversation' },
+      { id: 'travel', labelKey: 'goalTravel' },
+      { id: 'work', labelKey: 'goalWork' },
+      { id: 'school', labelKey: 'goalSchool' },
+      { id: 'confidence', labelKey: 'goalConfidence' },
+    ],
+  },
+  {
+    key: 'learner_style',
+    labelKey: 'learnerStyle',
+    options: [
+      { id: 'child', labelKey: 'learnerChild' },
+      { id: 'teen', labelKey: 'learnerTeen' },
+      { id: 'adult', labelKey: 'learnerAdult' },
+      { id: 'older_adult', labelKey: 'learnerOlderAdult' },
+      { id: 'prefer_not_to_say', labelKey: 'preferNotSay' },
+    ],
+  },
+]
+
+const INTEREST_OPTIONS = ['travel', 'music', 'games', 'work', 'food', 'school', 'technology', 'family', 'sports', 'culture', 'movies']
+
+function PreferenceButtons({ label, value, options, onChange, t }) {
+  return (
+    <div>
+      <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-muted)', marginBottom: 8 }}>
+        {label}
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {options.map(option => {
+          const selected = value === option.id
+          return (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => onChange(option.id)}
+              className="rounded-xl px-3 py-2 text-xs font-bold transition-all active:scale-[0.98]"
+              style={{
+                background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
+                border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
+                color: selected ? 'var(--violet)' : 'var(--ink-muted)',
+              }}
+            >
+              {t(option.labelKey)}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 function getRelationshipLabel(streak) {
   const stage = [...RELATIONSHIP_STAGES].reverse().find(s => streak >= s.days)
@@ -39,6 +135,12 @@ export function LanguageIdentity() {
     setNativeLanguage,
     darkMode,
     setThemeDark,
+    tutorPreferences,
+    updateTutorPreferences,
+    activeCompanion,
+    setActiveCompanion,
+    textSize,
+    setTextSize,
     t,
   } = useApp()
   const [editingName, setEditingName] = useState(false)
@@ -137,6 +239,14 @@ export function LanguageIdentity() {
     setLanguageSearch('')
     setLanguageSaved(true)
     window.setTimeout(() => setLanguageSaved(false), 1600)
+  }
+
+  function toggleInterest(interest) {
+    const current = tutorPreferences.interests || []
+    const next = current.includes(interest)
+      ? current.filter(item => item !== interest)
+      : [...current, interest].slice(0, 6)
+    updateTutorPreferences({ interests: next.length ? next : ['travel'] })
   }
 
   return (
@@ -458,11 +568,86 @@ export function LanguageIdentity() {
           </p>
         </div>
 
+        <div className="rounded-2xl p-5 mb-6 animate-fade-up" style={{ animationDelay: '0.21s', background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 6 }}>
+            {t('personalizeTutor')}
+          </p>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5, marginBottom: 16 }}>
+            {t('personalizeTutorDescription')}
+          </p>
+
+          <div style={{ marginBottom: 16 }}>
+            <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-muted)', marginBottom: 8 }}>
+              {t('chooseCompanion')}
+            </p>
+            <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
+              {COMPANIONS.map(companion => {
+                const selected = activeCompanion === companion.id
+                return (
+                  <button
+                    key={companion.id}
+                    type="button"
+                    onClick={() => setActiveCompanion(companion.id)}
+                    className="rounded-2xl p-3 text-left transition-all active:scale-[0.98]"
+                    style={{
+                      background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
+                      border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
+                      color: 'var(--ink)',
+                    }}
+                  >
+                    <span style={{ display: 'block', fontSize: '0.9375rem', fontWeight: 900 }}>{companion.name}</span>
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 2 }}>{t(companion.roleKey)}</span>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            {TUTOR_OPTION_GROUPS.map(group => (
+              <PreferenceButtons
+                key={group.key}
+                label={t(group.labelKey)}
+                value={tutorPreferences[group.key]}
+                options={group.options}
+                onChange={value => updateTutorPreferences({ [group.key]: value })}
+                t={t}
+              />
+            ))}
+
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-muted)', marginBottom: 8 }}>
+                {t('interests')}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {INTEREST_OPTIONS.map(interest => {
+                  const selected = (tutorPreferences.interests || []).includes(interest)
+                  return (
+                    <button
+                      key={interest}
+                      type="button"
+                      onClick={() => toggleInterest(interest)}
+                      className="rounded-full px-3 py-1.5 text-xs font-bold transition-all active:scale-[0.98]"
+                      style={{
+                        background: selected ? 'var(--green-soft)' : 'var(--bg-elevated)',
+                        border: `1.5px solid ${selected ? 'var(--green)' : 'var(--border)'}`,
+                        color: selected ? 'var(--green)' : 'var(--ink-muted)',
+                      }}
+                    >
+                      {t(`interest_${interest}`)}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="rounded-2xl p-5 mb-6 animate-fade-up" style={{ animationDelay: '0.22s', background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
           <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 12 }}>
             {t('appSettings')}
           </p>
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center justify-between gap-3 mb-4">
             <div>
               <p style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)' }}>{t('theme')}</p>
               <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginTop: 2 }}>
@@ -480,6 +665,37 @@ export function LanguageIdentity() {
                     key={option.id}
                     type="button"
                     onClick={() => setThemeDark(option.value)}
+                    className="rounded-xl px-3 py-2 text-sm font-bold transition-all active:scale-[0.98]"
+                    style={{
+                      background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
+                      border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
+                      color: selected ? 'var(--violet)' : 'var(--ink-muted)',
+                    }}
+                  >
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-3" style={{ paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+            <div>
+              <p style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)' }}>{t('textSize')}</p>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginTop: 2 }}>
+                {textSize === 'large' ? t('large') : t('normal')}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {[
+                { id: 'normal', label: t('normal') },
+                { id: 'large', label: t('large') },
+              ].map(option => {
+                const selected = textSize === option.id
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => setTextSize(option.id)}
                     className="rounded-xl px-3 py-2 text-sm font-bold transition-all active:scale-[0.98]"
                     style={{
                       background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
