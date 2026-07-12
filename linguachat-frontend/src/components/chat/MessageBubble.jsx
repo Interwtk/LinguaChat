@@ -22,7 +22,7 @@ export function MessageBubble({ message }) {
 
   if (isUser) {
     return (
-      <div className="flex justify-end mb-4 animate-fade-up">
+      <div className="flex justify-end mb-4 animate-message-in">
         <div className="flex flex-col items-end gap-1">
           <div className="bubble-user">{message.text}</div>
           <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{formatTime(message.ts)}</span>
@@ -32,7 +32,7 @@ export function MessageBubble({ message }) {
   }
 
   return (
-    <div className="flex gap-3 mb-5 animate-fade-up">
+    <div className="flex gap-3 mb-5 animate-message-in">
       <LinguaAvatar size={34} online className="mt-0.5" />
       <div className="flex flex-col gap-0.5" style={{ maxWidth: '85%' }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', letterSpacing: '0.04em', marginBottom: 2 }}>
@@ -82,7 +82,7 @@ export function MessageBubble({ message }) {
 
 export function TypingIndicator() {
   return (
-    <div className="flex gap-3 mb-4 animate-fade-up">
+    <div className="flex gap-3 mb-4 animate-message-in">
       <LinguaAvatar size={34} online />
       <div className="flex flex-col gap-1">
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)' }}>Lingua</span>

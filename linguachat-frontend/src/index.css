@@ -87,7 +87,7 @@ body::after {
 
 /* ─── Chat bubble shapes ─── */
 .bubble-user {
-  background: var(--blue);
+  background: linear-gradient(135deg, var(--blue) 0%, var(--violet) 140%);
   color: #fff;
   border-radius: 20px 20px 5px 20px;
   padding: 10px 15px;
@@ -95,6 +95,7 @@ body::after {
   word-break: break-word;
   line-height: 1.5;
   font-size: 0.9375rem;
+  box-shadow: 0 6px 18px -8px rgba(59,130,196,0.5);
 }
 
 .bubble-lingua {
@@ -107,6 +108,7 @@ body::after {
   word-break: break-word;
   line-height: 1.5;
   font-size: 0.9375rem;
+  box-shadow: 0 4px 16px -10px rgba(31,41,51,0.25);
 }
 
 /* ─── Feedback cards / sticker aesthetic ─── */
@@ -265,9 +267,10 @@ body::after {
 /* ─── Chatto mascot ─── */
 .chatto-float   { animation: chattoFloat 4s ease-in-out infinite; }
 .chatto-bounce  { animation: chattoBounce 1.3s ease-in-out infinite; transform-origin: bottom center; }
-.chatto-glow    { animation: chattoFloat 4s ease-in-out infinite; filter: drop-shadow(0 0 10px var(--violet-soft)); }
+.chatto-glow    { animation: chattoFloat 4s ease-in-out infinite; filter: drop-shadow(0 3px 10px rgba(124,92,255,0.28)); }
 .chatto-eyes    { animation: chattoBlink 5.5s infinite; }
 .chatto-sparkle { animation: chattoSparkle 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.chatto-halo    { animation: chattoHalo 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 
 @keyframes chattoFloat {
   0%, 100% { transform: translateY(0); }
@@ -286,13 +289,77 @@ body::after {
   0%, 100% { opacity: 0.4; transform: scale(0.85) rotate(-6deg); }
   50%      { opacity: 1;   transform: scale(1.08) rotate(6deg); }
 }
+@keyframes chattoHalo {
+  0%, 100% { opacity: 0.35; transform: scale(0.94); }
+  50%      { opacity: 0.7;  transform: scale(1.06); }
+}
 
-/* Respect users who prefer reduced motion: keep Chatto calm and still. */
+/* ─── Reusable premium helpers ─── */
+
+/* Lift a card gently on hover / keyboard focus */
+.card-lift {
+  transition: transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
+              box-shadow 0.22s ease,
+              border-color 0.2s ease;
+}
+.card-lift:hover,
+.card-lift:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px -14px rgba(31,41,51,0.28);
+}
+
+/* Soft ambient glow for hero elements */
+.soft-glow { filter: drop-shadow(0 4px 16px rgba(124,92,255,0.18)); }
+
+/* Breathing ring around a primary CTA. Override tint with --cta-ring inline. */
+.cta-glow { position: relative; }
+.cta-glow::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: ctaRing 2.6s ease-in-out infinite;
+}
+@keyframes ctaRing {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(124,92,255,0); }
+  50%      { box-shadow: 0 0 0 5px var(--cta-ring, rgba(124,92,255,0.12)); }
+}
+
+/* Soft one-shot celebration pop */
+.celebrate-pop { animation: celebratePop 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes celebratePop {
+  0%   { transform: scale(0.9); }
+  55%  { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+/* ─── Accessible focus ring (keyboard users) ─── */
+button:focus-visible,
+a:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--bg-paper), 0 0 0 4px var(--violet);
+  border-radius: 12px;
+}
+
+/* Respect users who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
-  .chatto-float, .chatto-bounce, .chatto-glow, .chatto-eyes, .chatto-sparkle {
+  .chatto-float, .chatto-bounce, .chatto-glow, .chatto-eyes, .chatto-sparkle, .chatto-halo,
+  .cta-glow::after, .celebrate-pop {
     animation: none !important;
   }
   .chatto-glow { filter: none; }
+  .card-lift:hover, .card-lift:focus-visible { transform: none; }
+  /* Neutralise entrance/looping utilities so nothing moves. */
+  [class*="animate-"] {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }
 
 /* ─── Onboarding step cards hover ─── */

@@ -5,20 +5,22 @@
  *
  * Props:
  *   mood       'happy' | 'calm' | 'cheering' | 'thinking' | 'supportive' | 'celebrating' | 'welcoming'
- *   size       number (px, the bubble square) — default 96
+ *   size       'small' | 'medium' | 'large' | number (px, the bubble square) — default 'medium' (96)
  *   message    optional short caption rendered under the mascot
  *   animated   boolean — default true (still respects prefers-reduced-motion)
  *   variant    optional gradient accent: 'violet' (default) | 'coral' | 'green'
  */
 
+const SIZES = { small: 64, medium: 96, large: 128 }
+
 const MOODS = {
-  happy:       { eyes: 'open', mouth: 'smile',    cheeks: true,  sparkle: false, anim: 'float' },
-  calm:        { eyes: 'soft', mouth: 'gentle',   cheeks: false, sparkle: false, anim: 'float' },
-  cheering:    { eyes: 'open', mouth: 'open',     cheeks: true,  sparkle: true,  anim: 'glow'  },
-  thinking:    { eyes: 'up',   mouth: 'small',    cheeks: false, sparkle: false, anim: 'float' },
-  supportive:  { eyes: 'soft', mouth: 'warm',     cheeks: false, sparkle: false, anim: 'float' },
-  celebrating: { eyes: 'arc',  mouth: 'open',     cheeks: true,  sparkle: true,  anim: 'bounce' },
-  welcoming:   { eyes: 'open', mouth: 'warm',     cheeks: true,  sparkle: true,  anim: 'float' },
+  happy:       { eyes: 'open', mouth: 'smile',    cheeks: true,  sparkle: false, halo: false, anim: 'float' },
+  calm:        { eyes: 'soft', mouth: 'gentle',   cheeks: false, sparkle: false, halo: false, anim: 'float' },
+  cheering:    { eyes: 'open', mouth: 'open',     cheeks: true,  sparkle: true,  halo: true,  anim: 'glow'  },
+  thinking:    { eyes: 'up',   mouth: 'small',    cheeks: false, sparkle: false, halo: false, anim: 'float' },
+  supportive:  { eyes: 'soft', mouth: 'warm',     cheeks: false, sparkle: false, halo: false, anim: 'float' },
+  celebrating: { eyes: 'arc',  mouth: 'open',     cheeks: true,  sparkle: true,  halo: true,  anim: 'bounce' },
+  welcoming:   { eyes: 'open', mouth: 'warm',     cheeks: true,  sparkle: true,  halo: true,  anim: 'float' },
 }
 
 const ACCENTS = {
@@ -63,14 +65,16 @@ function Eye({ cx, kind }) {
 
 export function ChattoMascot({
   mood = 'happy',
-  size = 96,
+  size = 'medium',
   message = null,
   animated = true,
   variant = 'violet',
 }) {
   const config = MOODS[mood] || MOODS.happy
   const [from, to] = ACCENTS[variant] || ACCENTS.violet
+  const px = typeof size === 'number' ? size : (SIZES[size] || SIZES.medium)
   const gid = `chatto-grad-${variant}`
+  const hid = `chatto-halo-${variant}`
   const floatClass = animated ? `chatto-${config.anim}` : ''
   const eyesClass = animated ? 'chatto-eyes' : ''
 
@@ -78,17 +82,32 @@ export function ChattoMascot({
     <div className="flex flex-col items-center" style={{ userSelect: 'none' }}>
       <div
         className={floatClass}
-        style={{ width: size, height: size, lineHeight: 0 }}
+        style={{ width: px, height: px, lineHeight: 0 }}
         role="img"
         aria-label={`Chatto (${mood})`}
       >
-        <svg viewBox="0 0 100 100" width={size} height={size} fill="none">
+        <svg viewBox="0 0 100 100" width={px} height={px} fill="none">
           <defs>
             <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
               <stop offset="0%" stopColor={from} />
               <stop offset="100%" stopColor={to} />
             </linearGradient>
+            <radialGradient id={hid} cx="50%" cy="46%" r="50%">
+              <stop offset="0%" stopColor={from} stopOpacity="0.5" />
+              <stop offset="70%" stopColor={from} stopOpacity="0.12" />
+              <stop offset="100%" stopColor={from} stopOpacity="0" />
+            </radialGradient>
           </defs>
+
+          {/* ambient halo for celebratory moods */}
+          {config.halo && (
+            <circle
+              className={animated ? 'chatto-halo' : ''}
+              cx="50" cy="44" r="46"
+              fill={`url(#${hid})`}
+              opacity={animated ? undefined : 0.5}
+            />
+          )}
 
           {/* soft shadow */}
           <ellipse cx="50" cy="92" rx="26" ry="5" fill="rgba(31,41,51,0.12)" />
@@ -104,6 +123,9 @@ export function ChattoMascot({
                C88 22 74 8 50 8 Z"
             fill={`url(#${gid})`}
           />
+
+          {/* premium top sheen */}
+          <ellipse cx="42" cy="26" rx="20" ry="11" fill="rgba(255,255,255,0.18)" />
 
           {/* face */}
           <g className={eyesClass} style={{ transformBox: 'fill-box', transformOrigin: 'center' }}>

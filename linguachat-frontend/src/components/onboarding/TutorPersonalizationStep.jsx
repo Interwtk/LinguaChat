@@ -15,14 +15,17 @@ function ChipRow({ label, value, options, onChange, t }) {
             <button
               key={option.id}
               type="button"
+              aria-pressed={selected}
               onClick={() => onChange(option.id)}
-              className="rounded-xl px-3.5 py-2 text-sm font-bold transition-all active:scale-[0.98]"
+              className="rounded-xl px-3.5 py-2 text-sm font-bold transition-all hover:-translate-y-px active:scale-[0.98] inline-flex items-center gap-1.5"
               style={{
                 background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
                 border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
                 color: selected ? 'var(--violet)' : 'var(--ink-muted)',
+                boxShadow: selected ? '0 0 0 3px var(--violet-soft)' : 'none',
               }}
             >
+              {selected && <span aria-hidden="true" style={{ fontSize: '0.85em' }}>✓</span>}
               {t(option.labelKey)}
             </button>
           )
@@ -149,14 +152,17 @@ export function TutorPersonalizationStep() {
                         <button
                           key={interest}
                           type="button"
+                          aria-pressed={selected}
                           onClick={() => toggleInterest(interest)}
-                          className="rounded-xl px-3.5 py-2 text-sm font-bold transition-all active:scale-[0.98]"
+                          className="rounded-xl px-3.5 py-2 text-sm font-bold transition-all hover:-translate-y-px active:scale-[0.98] inline-flex items-center gap-1.5"
                           style={{
                             background: selected ? 'var(--blue-soft)' : 'var(--bg-elevated)',
                             border: `1.5px solid ${selected ? 'var(--blue)' : 'var(--border)'}`,
                             color: selected ? 'var(--blue)' : 'var(--ink-muted)',
+                            boxShadow: selected ? '0 0 0 3px var(--blue-soft)' : 'none',
                           }}
                         >
+                          {selected && <span aria-hidden="true" style={{ fontSize: '0.85em' }}>✓</span>}
                           {t(`interest_${interest}`)}
                         </button>
                       )
@@ -199,11 +205,13 @@ export function TutorPersonalizationStep() {
                         <button
                           key={companion.id}
                           type="button"
+                          aria-pressed={selected}
                           onClick={() => { setActiveCompanion(companion.id); react() }}
-                          className="rounded-2xl px-3 py-3 text-center transition-all active:scale-[0.98]"
+                          className="card-lift rounded-2xl px-3 py-3 text-center transition-all active:scale-[0.98]"
                           style={{
                             background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
                             border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
+                            boxShadow: selected ? '0 0 0 3px var(--violet-soft)' : 'none',
                           }}
                         >
                           <span style={{ display: 'block', fontSize: '0.9375rem', fontWeight: 900, color: selected ? 'var(--violet)' : 'var(--ink)' }}>{companion.name}</span>
@@ -217,10 +225,11 @@ export function TutorPersonalizationStep() {
 
               <button
                 onClick={completePersonalization}
-                className="w-full mt-5 py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 hover:-translate-y-px active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))' }}
+                className="cta-glow group w-full mt-5 py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-95 hover:-translate-y-px active:scale-[0.98] flex items-center justify-center gap-2"
+                style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))', '--cta-ring': 'rgba(124,92,255,0.18)' }}
               >
-                {t('saveAndStart')}
+                <span>{t('saveAndStart')}</span>
+                <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" style={{ fontSize: '1.05em' }}>→</span>
               </button>
             </div>
           </div>

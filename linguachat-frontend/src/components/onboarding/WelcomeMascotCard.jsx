@@ -23,20 +23,21 @@ export function WelcomeMascotCard() {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 animate-fade-in"
       style={{ background: 'rgba(0,0,0,0.32)', backdropFilter: 'blur(2px)' }}
       onClick={dismissWelcome}
       role="dialog"
       aria-modal="true"
+      aria-label={t('welcomeTitle')}
     >
       <div
-        className="animate-fade-up w-full"
+        className="animate-scale-in w-full"
         style={{ maxWidth: 420 }}
         onClick={event => event.stopPropagation()}
       >
         <div className="rounded-3xl p-6 text-center" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)', boxShadow: '0 24px 64px rgba(15,23,42,0.22)' }}>
           <div className="flex justify-center">
-            <ChattoMascot mood="welcoming" size={92} variant="violet" />
+            <ChattoMascot mood="welcoming" size="medium" variant="violet" />
           </div>
           <h2 style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--ink)', lineHeight: 1.25, marginTop: 16, marginBottom: 8 }}>
             {t('welcomeTitle')}
@@ -47,8 +48,8 @@ export function WelcomeMascotCard() {
           <div className="flex flex-col gap-2.5">
             <button
               onClick={openMission}
-              className="w-full py-3 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98]"
-              style={{ background: 'linear-gradient(135deg, var(--coral), var(--yellow))' }}
+              className="cta-glow w-full py-3 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 hover:-translate-y-px active:scale-[0.98]"
+              style={{ background: 'linear-gradient(135deg, var(--coral), var(--yellow))', '--cta-ring': 'rgba(249,115,91,0.18)' }}
             >
               {t('welcomeStartMission')}
             </button>

@@ -211,8 +211,8 @@ function LevelReveal() {
       <div className="flex-1 overflow-y-auto px-5 py-8" style={{ maxWidth: 560, margin: '0 auto', width: '100%' }}>
         <div className="animate-fade-up">
           {/* Chatto Moti Moment — celebrates finishing the placement */}
-          <div className="rounded-3xl p-5 mb-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left"
-            style={{ background: 'var(--bg-paper)', border: '1px solid var(--violet)', boxShadow: '0 0 0 4px var(--violet-soft)' }}>
+          <div className="animate-scale-in rounded-3xl p-5 mb-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left"
+            style={{ background: 'var(--bg-paper)', border: '1px solid var(--violet)', boxShadow: '0 0 0 4px var(--violet-soft), 0 12px 32px -16px rgba(124,92,255,0.4)' }}>
             <ChattoMascot mood={moti.mood} size={84} variant={moti.variant} />
             <div>
               <p style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--ink)', marginBottom: 4 }}>{t(moti.titleKey)}</p>

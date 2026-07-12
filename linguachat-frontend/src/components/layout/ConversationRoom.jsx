@@ -202,9 +202,9 @@ export function ConversationRoom() {
       )}
 
       {missionCelebration && !activeMissionDetails && (
-        <div className="mt-3 rounded-2xl px-3.5 py-3 animate-fade-up flex items-center gap-3"
-          style={{ ...practicePanelStyle, background: 'var(--green-soft)', border: '1px solid var(--green)' }}>
-          <ChattoMascot mood="celebrating" size={48} variant="green" />
+        <div className="mt-3 rounded-2xl px-3.5 py-3 animate-scale-in flex items-center gap-3"
+          style={{ ...practicePanelStyle, background: 'var(--green-soft)', border: '1px solid var(--green)', boxShadow: '0 12px 30px -16px rgba(63,174,117,0.5)' }}>
+          <ChattoMascot mood="celebrating" size={54} variant="green" />
           <div style={{ minWidth: 0 }}>
             <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--ink)' }}>{t('missionComplete')}</p>
             <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>

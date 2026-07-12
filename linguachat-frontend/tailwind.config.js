@@ -36,6 +36,12 @@ export default {
       },
       animation: {
         'fade-up':    'fadeUp 0.3s cubic-bezier(0.34,1.56,0.64,1) both',
+        'fade-in':    'fadeIn 0.3s ease both',
+        'slide-up':   'slideUp 0.35s cubic-bezier(0.32,0.72,0,1) both',
+        'scale-in':   'scaleIn 0.28s cubic-bezier(0.34,1.56,0.64,1) both',
+        'message-in': 'messageIn 0.32s cubic-bezier(0.32,0.72,0,1) both',
+        'popover-in': 'popoverIn 0.2s cubic-bezier(0.32,0.72,0,1) both',
+        'pop-in':     'popIn 0.42s cubic-bezier(0.34,1.56,0.64,1) both',
         'sticker-in': 'stickerIn 0.25s cubic-bezier(0.34,1.56,0.64,1) both',
         'node-pulse': 'nodePulse 2.4s ease-in-out infinite',
         'dot-bounce': 'dotBounce 1.4s ease-in-out infinite',
@@ -48,6 +54,31 @@ export default {
         fadeUp: {
           from: { opacity: '0', transform: 'translateY(10px)' },
           to:   { opacity: '1', transform: 'translateY(0)' },
+        },
+        fadeIn: {
+          from: { opacity: '0' },
+          to:   { opacity: '1' },
+        },
+        slideUp: {
+          from: { opacity: '0', transform: 'translateY(18px)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
+        },
+        scaleIn: {
+          from: { opacity: '0', transform: 'scale(0.92)' },
+          to:   { opacity: '1', transform: 'scale(1)' },
+        },
+        messageIn: {
+          from: { opacity: '0', transform: 'translateY(8px) scale(0.99)' },
+          to:   { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        popoverIn: {
+          from: { opacity: '0', transform: 'translateY(-6px) scale(0.98)' },
+          to:   { opacity: '1', transform: 'translateY(0) scale(1)' },
+        },
+        popIn: {
+          '0%':   { opacity: '0', transform: 'scale(0.6)' },
+          '60%':  { opacity: '1', transform: 'scale(1.06)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
         },
         stickerIn: {
           from: { opacity: '0', transform: 'scale(0.82) rotate(-2deg)' },

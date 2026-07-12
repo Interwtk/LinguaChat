@@ -335,7 +335,7 @@ export function LanguageIdentity() {
             {languageOpen && dropdownPosition && createPortal(
               <div
                 ref={languagePopoverRef}
-                className="rounded-2xl p-3 shadow-xl animate-fade-up"
+                className="rounded-2xl p-3 shadow-xl animate-popover-in"
                 style={{
                   position: 'fixed',
                   zIndex: 1200,

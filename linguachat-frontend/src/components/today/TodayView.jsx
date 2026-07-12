@@ -5,7 +5,7 @@ import { getMissionForToday } from '../../services/missions'
 
 function StatPill({ label, value, color }) {
   return (
-    <div className="flex flex-col items-center justify-center py-3 px-4 rounded-2xl"
+    <div className="card-lift flex flex-col items-center justify-center py-3 px-4 rounded-2xl"
       style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
       <p style={{ fontWeight: 800, fontSize: '1.25rem', color }}>{value}</p>
       <p style={{ fontSize: 11, color: 'var(--ink-muted)', fontWeight: 500 }}>{label}</p>
@@ -38,9 +38,9 @@ export function TodayView() {
               {MOCK_STATS.streak} {t('dayStreak')}. {t('keepGoing')}
             </p>
           </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-2xl"
+          <div className="card-lift flex items-center gap-2 px-3 py-2 rounded-2xl"
             style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-            <span style={{ fontSize: 20 }}>🔥</span>
+            <span className="animate-glow-breathe" style={{ fontSize: 20, display: 'inline-block' }}>🔥</span>
             <span style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--coral)' }}>{MOCK_STATS.streak}</span>
           </div>
         </div>
@@ -53,7 +53,7 @@ export function TodayView() {
         </div>
 
         {/* Today's Mission */}
-        <div className="mission-card p-5 mb-6 animate-fade-up" style={{ animationDelay: '0.08s' }}>
+        <div className="mission-card card-lift p-5 mb-6 animate-fade-up" style={{ animationDelay: '0.08s' }}>
           <div className="flex items-start justify-between gap-3 mb-3">
             <div>
               <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--coral)' }}>
@@ -86,15 +86,16 @@ export function TodayView() {
           </div>
           <button
             onClick={() => activeMissionDetails ? navigateTo('practice') : startPracticeMission(mission)}
-            className="w-full py-3 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 hover:-translate-y-px active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, var(--coral) 0%, var(--yellow) 100%)' }}
+            className="cta-glow group w-full py-3 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-95 hover:-translate-y-px active:scale-[0.98] flex items-center justify-center gap-2"
+            style={{ background: 'linear-gradient(135deg, var(--coral) 0%, var(--yellow) 100%)', '--cta-ring': 'rgba(249,115,91,0.20)' }}
           >
-            {activeMissionDetails ? t('continueMission') : t('startTodaysPractice')}
+            <span>{activeMissionDetails ? t('continueMission') : t('startTodaysPractice')}</span>
+            <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" style={{ fontSize: '1.05em' }}>→</span>
           </button>
         </div>
 
         {/* Phrase of the day */}
-        <div className="rounded-2xl p-5 mb-6 animate-fade-up" style={{
+        <div className="card-lift rounded-2xl p-5 mb-6 animate-fade-up" style={{
           animationDelay: '0.12s',
           background: 'var(--bg-paper)',
           border: '1px solid var(--border)',
@@ -114,7 +115,7 @@ export function TodayView() {
         </div>
 
         {/* Lingua intro + continue */}
-        <div className="rounded-2xl p-5 mb-6 animate-fade-up" style={{
+        <div className="card-lift rounded-2xl p-5 mb-6 animate-fade-up" style={{
           animationDelay: '0.16s',
           background: 'var(--bg-paper)',
           border: '1px solid var(--border)',
@@ -154,7 +155,7 @@ export function TodayView() {
 
         {/* Last mistake */}
         {LAST_MISTAKES[0] && (
-          <div className="rounded-2xl p-5 animate-fade-up" style={{
+          <div className="card-lift rounded-2xl p-5 animate-fade-up" style={{
             animationDelay: '0.20s',
             background: 'var(--bg-paper)', border: '1px solid var(--border)',
           }}>
