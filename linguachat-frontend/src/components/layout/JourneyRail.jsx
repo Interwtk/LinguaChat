@@ -174,6 +174,12 @@ export function JourneyRail({ onClose }) {
                 color: 'var(--violet)', soft: 'var(--violet-soft)',
                 icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
               },
+              {
+                id: 'pricing', label: t('plansTitle'),
+                desc: t('plansDesc'),
+                color: 'var(--coral)', soft: 'var(--coral-soft)',
+                icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.4 5 5.6.8-4 3.9 1 5.6L12 14.7 6 17.3l1-5.6-4-3.9 5.6-.8z"/></svg>,
+              },
             ].map(item => {
               const isActive = view === item.id
               return (

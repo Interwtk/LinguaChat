@@ -10,6 +10,7 @@ import { ThemeToggle } from './components/ui/ThemeToggle'
 import { LanguageIdentity } from './components/identity/LanguageIdentity'
 import { MemoryGarden } from './components/memory/MemoryGarden'
 import { ConversationArchive } from './components/archive/ConversationArchive'
+import { Pricing } from './components/pricing/Pricing'
 import { WelcomeMascotCard } from './components/onboarding/WelcomeMascotCard'
 import { ChattoTutorial } from './components/onboarding/ChattoTutorial'
 import { ChattoMascot } from './components/mascot/ChattoMascot'
@@ -239,6 +240,7 @@ function AppShell() {
             {view === 'memory-garden'  && <MemoryGarden />}
             {view === 'archive'        && <ConversationArchive />}
             {view === 'identity'       && <LanguageIdentity />}
+            {view === 'pricing'        && <Pricing />}
           </div>
         </main>
 
@@ -282,6 +284,7 @@ function AppShell() {
           {view === 'memory-garden' && <MemoryGarden />}
           {view === 'archive'       && <ConversationArchive />}
           {view === 'identity'      && <LanguageIdentity />}
+          {view === 'pricing'       && <Pricing />}
         </div>
 
         {/* Mobile bottom nav */}
