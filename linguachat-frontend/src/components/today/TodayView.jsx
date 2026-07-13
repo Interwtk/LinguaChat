@@ -128,7 +128,7 @@ export function TodayView() {
             </div>
           </div>
           <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55, marginBottom: 14 }}>
-            "I'm here when you're ready. Write anything, ask anything. No judgment, just practice."
+            "{t('linguaReadyQuote')}"
           </p>
           <div className="flex gap-2">
             <button
