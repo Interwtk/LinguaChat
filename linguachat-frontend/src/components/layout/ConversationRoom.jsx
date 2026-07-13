@@ -3,6 +3,8 @@ import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MessageBubble, TypingIndicator } from '../chat/MessageBubble'
 import { ChattoMascot } from '../mascot/ChattoMascot'
+import { EpisodePlayer } from '../episode/EpisodePlayer'
+import { FIRST_EPISODE } from '../../data/episodes'
 
 export function ConversationRoom() {
   const {
@@ -18,6 +20,9 @@ export function ConversationRoom() {
     activeMissionDetails,
     missionCelebration,
     abandonMission,
+    episodeActive,
+    episodeDone,
+    startEpisode,
   } = useApp()
   const [input, setInput] = useState('')
   const [sparkOpen, setSparkOpen] = useState(false)
@@ -68,6 +73,15 @@ export function ConversationRoom() {
     { label: t('increaseDifficulty'), text: 'Make the next exercise a little harder.' },
     { label: t('explainSimple'), text: 'Explain the next correction in very simple words.' },
   ]
+
+  // Guided LinguaLoop episode takes over the practice area; free chat is preserved.
+  if (episodeActive) {
+    return (
+      <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>
+        <EpisodePlayer />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>
@@ -192,6 +206,24 @@ export function ConversationRoom() {
 
       <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6">
         <div style={practiceInnerStyle}>
+          {!activeMissionDetails && (
+            <div className="card-lift rounded-2xl p-4 mb-5 flex items-center gap-3 animate-fade-up"
+              style={{ background: 'var(--bg-paper)', border: '1.5px solid var(--violet)', boxShadow: '0 0 0 3px var(--violet-soft)' }}>
+              <ChattoMascot mood="happy" size={44} decorative intensity="ambient" />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
+                  {t('ep1EpisodeBadge')}{episodeDone ? ` · ${t('ep1DoneTag')}` : ''}
+                </p>
+                <p style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25 }}>{t(FIRST_EPISODE.titleKey)}</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', lineHeight: 1.4, marginTop: 2 }}>{t(FIRST_EPISODE.goalKey)}</p>
+              </div>
+              <button type="button" onClick={startEpisode}
+                className="flex-shrink-0 rounded-2xl px-4 py-2.5 text-sm font-bold text-white transition-all hover:-translate-y-px active:scale-[0.98]"
+                style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))' }}>
+                {episodeDone ? t('ep1ReviewCta') : t('ep1StartCta')}
+              </button>
+            </div>
+          )}
           {messages.map(msg => (
             <MessageBubble key={msg.id} message={msg} />
           ))}

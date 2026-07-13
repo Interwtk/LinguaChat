@@ -3,6 +3,8 @@ import { getTodayPhrase, MOCK_STATS, LAST_MISTAKES } from '../../data/mockData'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { getMissionForToday } from '../../services/missions'
 import { getLocalizedMeaning } from '../../services/learningContent'
+import { ChattoMascot } from '../mascot/ChattoMascot'
+import { FIRST_EPISODE } from '../../data/episodes'
 
 function StatPill({ label, value, color }) {
   return (
@@ -15,7 +17,7 @@ function StatPill({ label, value, color }) {
 }
 
 export function TodayView() {
-  const { navigateTo, profile, t, nativeLanguageInfo, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions } = useApp()
+  const { navigateTo, profile, t, nativeLanguageInfo, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions, episodeDone, startEpisode } = useApp()
   const phrase = getTodayPhrase()
   const mission = activeMissionDetails?.mission || getMissionForToday(profile.level, profile.goal)
   const hour = new Date().getHours()
@@ -45,6 +47,27 @@ export function TodayView() {
             <span style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--coral)' }}>{MOCK_STATS.streak}</span>
           </div>
         </div>
+
+        {/* First adaptive episode CTA */}
+        <button type="button" onClick={startEpisode}
+          className="card-lift w-full text-left rounded-3xl p-5 mb-6 flex items-center gap-4 animate-fade-up transition-all active:scale-[0.99]"
+          style={{ animationDelay: '0.02s', background: 'linear-gradient(135deg, var(--violet-soft), var(--blue-soft))', border: '1.5px solid var(--violet)' }}>
+          <ChattoMascot mood="welcoming" size={56} decorative intensity="ambient" />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
+              {episodeDone ? t('ep1DoneTag') : t('ep1EpisodeBadge')}
+            </p>
+            <p style={{ fontSize: '1.0625rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25, marginTop: 2 }}>
+              {episodeDone ? t(FIRST_EPISODE.titleKey) : `${t('ep1ContinuePrefix')}: ${t(FIRST_EPISODE.titleKey)}`}
+            </p>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45, marginTop: 3 }}>{t(FIRST_EPISODE.goalKey)}</p>
+            <div className="flex items-center gap-2 mt-2">
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', background: 'var(--bg-paper)', border: '1px solid var(--violet)', borderRadius: 999, padding: '2px 8px' }}>{FIRST_EPISODE.level}</span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', background: 'var(--bg-paper)', border: '1px solid var(--blue)', borderRadius: 999, padding: '2px 8px' }}>{t(FIRST_EPISODE.durationKey)}</span>
+            </div>
+          </div>
+          <span aria-hidden="true" style={{ fontSize: '1.3rem', color: 'var(--violet)', flexShrink: 0 }}>→</span>
+        </button>
 
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-3 mb-6 animate-fade-up" style={{ animationDelay: '0.04s' }}>

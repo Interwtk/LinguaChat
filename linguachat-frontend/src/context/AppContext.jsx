@@ -44,6 +44,7 @@ import {
   saveTextSize,
   saveTutorPreferences,
 } from '../services/tutorPreferences'
+import { SEED_VOCAB_BY_ID } from '../data/vocabulary'
 
 const AppContext = createContext(null)
 
@@ -118,6 +119,10 @@ export function AppProvider({ children }) {
   const [textSize, setTextSizeState] = useState(loadTextSize)
   const [showWelcome, setShowWelcome] = useState(false)
   const [showTutorial, setShowTutorial] = useState(false)
+  const [episodeActive, setEpisodeActive] = useState(false)
+  const [episodeDone, setEpisodeDone] = useState(() => {
+    try { return localStorage.getItem('lc2-episode-first_greeting') === 'completed' } catch { return false }
+  })
   const [missionFeedback, setMissionFeedback] = useState(null)
   const [missionCelebration, setMissionCelebration] = useState(null)
   const [isTyping, setIsTyping] = useState(false)
@@ -291,6 +296,41 @@ export function AppProvider({ children }) {
   const dismissTutorial = useCallback(() => {
     setShowTutorial(false)
     try { localStorage.setItem('lc2-tutorial-seen', 'true') } catch {}
+  }, [])
+
+  // ── LinguaLoop episode ──
+  const startEpisode = useCallback(() => {
+    setEpisodeActive(true)
+    setView('practice')
+    setMobileSheet(null)
+  }, [])
+
+  const exitEpisode = useCallback(() => setEpisodeActive(false), [])
+
+  // Finish the episode: record the can-do, feed the Memory Garden with the
+  // episode's items (deduped by vocab id), award XP, and persist completion.
+  const completeEpisode = useCallback((episode) => {
+    try { localStorage.setItem(`lc2-episode-${episode.id}`, 'completed') } catch {}
+    setEpisodeDone(true)
+    setEpisodeActive(false)
+    setLocalProgress(previous => {
+      const existing = new Set((previous.learnedItems || []).map(i => i.vocabId).filter(Boolean))
+      const additions = (episode.items || [])
+        .filter(id => !existing.has(id) && SEED_VOCAB_BY_ID[id])
+        .map(id => ({
+          vocabId: id,
+          word: SEED_VOCAB_BY_ID[id].term,
+          kind: SEED_VOCAB_BY_ID[id].kind,
+          mastery: 0.5,
+          lastSeenAt: Date.now(),
+        }))
+      return {
+        ...previous,
+        learnedItems: [...additions, ...(previous.learnedItems || [])],
+        xp: (previous.xp || 0) + (episode.xp || 0),
+      }
+    })
+    setView('today')
   }, [])
 
   const logoutMock = useCallback(() => {
@@ -706,6 +746,7 @@ export function AppProvider({ children }) {
       completePersonalization, applyRecommendedSetup,
       showWelcome, dismissWelcome,
       showTutorial, dismissTutorial,
+      episodeActive, episodeDone, startEpisode, exitEpisode, completeEpisode,
       logoutMock,
       darkMode, toggleDark, setThemeDark,
       onboardingCompleted, completeOnboarding,
