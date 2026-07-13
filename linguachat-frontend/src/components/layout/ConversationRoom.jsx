@@ -159,7 +159,7 @@ export function ConversationRoom() {
                 {t('activeMission')}
               </p>
               <p style={{ fontSize: '0.8125rem', fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {activeMissionDetails.mission.title} · {t('missionStep')} {activeMissionDetails.currentStepNumber} {t('of')} {activeMissionDetails.totalSteps}
+                {activeMissionDetails.mission.titleKey ? t(activeMissionDetails.mission.titleKey) : activeMissionDetails.mission.title} · {t('missionStep')} {activeMissionDetails.currentStepNumber} {t('of')} {activeMissionDetails.totalSteps}
               </p>
             </div>
             <button

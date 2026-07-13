@@ -1,12 +1,22 @@
+/*
+ * `title` / `description` / `targetSkill` / `type` are English canonical values
+ * (used by the backend via mission_context). The *displayed* label uses the
+ * matching *Key through i18n (interface language). Step-level `instruction`,
+ * `prompt` and `feedbackHint` are legacy Spanish support text (see report).
+ */
 export const PRACTICE_MISSIONS = [
   {
     id: 'travel-a1',
     type: 'Travel',
-    title: 'Pedir ayuda en un viaje',
-    description: 'Practica frases simples para moverte en una ciudad.',
+    typeKey: 'missionTypeTravel',
+    title: 'Ask for help while traveling',
+    titleKey: 'missionTravelA1Title',
+    description: 'Practice simple phrases to get around a city.',
+    descKey: 'missionTravelA1Desc',
     levelRange: ['A1', 'A2'],
     estimatedTime: '5 min',
-    targetSkill: 'preguntar informacion',
+    targetSkill: 'asking for information',
+    skillKey: 'missionTravelA1Skill',
     rewardXp: 45,
     steps: [
       {
@@ -55,11 +65,15 @@ export const PRACTICE_MISSIONS = [
   {
     id: 'daily-a1',
     type: 'Daily Life',
-    title: 'Cuenta tu rutina',
-    description: 'Construye frases cortas sobre tu dia.',
+    typeKey: 'missionTypeDaily',
+    title: 'Tell your routine',
+    titleKey: 'missionDailyA1Title',
+    description: 'Build short sentences about your day.',
+    descKey: 'missionDailyA1Desc',
     levelRange: ['A1', 'A2'],
     estimatedTime: '4 min',
-    targetSkill: 'rutina diaria',
+    targetSkill: 'daily routine',
+    skillKey: 'missionDailyA1Skill',
     rewardXp: 40,
     steps: [
       {
@@ -99,11 +113,15 @@ export const PRACTICE_MISSIONS = [
   {
     id: 'work-a2',
     type: 'Work',
-    title: 'Presentarte en el trabajo',
-    description: 'Practica una presentacion breve y segura.',
+    typeKey: 'missionTypeWork',
+    title: 'Introduce yourself at work',
+    titleKey: 'missionWorkA2Title',
+    description: 'Practice a short, confident introduction.',
+    descKey: 'missionWorkA2Desc',
     levelRange: ['A2', 'B1'],
     estimatedTime: '6 min',
-    targetSkill: 'presentacion profesional simple',
+    targetSkill: 'simple professional introduction',
+    skillKey: 'missionWorkA2Skill',
     rewardXp: 55,
     steps: [
       {
@@ -143,11 +161,15 @@ export const PRACTICE_MISSIONS = [
   {
     id: 'confidence-a1',
     type: 'Confidence',
-    title: 'Hablar sin bloquearte',
-    description: 'Usa frases simples para responder aunque no sepas todo.',
+    typeKey: 'missionTypeConfidence',
+    title: 'Speak without freezing',
+    titleKey: 'missionConfidenceA1Title',
+    description: 'Use simple phrases to answer even when you are unsure.',
+    descKey: 'missionConfidenceA1Desc',
     levelRange: ['A1', 'B1'],
     estimatedTime: '4 min',
-    targetSkill: 'responder con calma',
+    targetSkill: 'answering calmly',
+    skillKey: 'missionConfidenceA1Skill',
     rewardXp: 40,
     steps: [
       {
@@ -182,11 +204,15 @@ export const PRACTICE_MISSIONS = [
   {
     id: 'questions-a2',
     type: 'Questions',
-    title: 'Hacer preguntas simples',
-    description: 'Practica el orden de palabras en preguntas.',
+    typeKey: 'missionTypeQuestions',
+    title: 'Ask simple questions',
+    titleKey: 'missionQuestionsA2Title',
+    description: 'Practice word order in questions.',
+    descKey: 'missionQuestionsA2Desc',
     levelRange: ['A2', 'B1'],
     estimatedTime: '5 min',
-    targetSkill: 'orden de preguntas',
+    targetSkill: 'question word order',
+    skillKey: 'missionQuestionsA2Skill',
     rewardXp: 45,
     steps: [
       {
@@ -226,11 +252,15 @@ export const PRACTICE_MISSIONS = [
   {
     id: 'grammar-a1',
     type: 'Grammar Basics',
-    title: 'Frases con I am',
-    description: 'Aprende una estructura simple para hablar de ti.',
+    typeKey: 'missionTypeGrammar',
+    title: 'Sentences with I am',
+    titleKey: 'missionGrammarA1Title',
+    description: 'Learn a simple structure to talk about yourself.',
+    descKey: 'missionGrammarA1Desc',
     levelRange: ['A1', 'A2'],
     estimatedTime: '4 min',
-    targetSkill: 'I am + emocion',
+    targetSkill: 'I am + emotion',
+    skillKey: 'missionGrammarA1Skill',
     rewardXp: 35,
     steps: [
       {
@@ -270,11 +300,15 @@ export const PRACTICE_MISSIONS = [
   {
     id: 'travel-b1',
     type: 'Travel',
-    title: 'Explica un plan de viaje',
-    description: 'Conecta una decision con una razon.',
+    typeKey: 'missionTypeTravel',
+    title: 'Explain a travel plan',
+    titleKey: 'missionTravelB1Title',
+    description: 'Connect a decision with a reason.',
+    descKey: 'missionTravelB1Desc',
     levelRange: ['B1', 'C2'],
     estimatedTime: '6 min',
-    targetSkill: 'opinion con because',
+    targetSkill: 'opinions with because',
+    skillKey: 'missionTravelB1Skill',
     rewardXp: 60,
     steps: [
       {

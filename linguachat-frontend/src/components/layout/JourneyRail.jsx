@@ -108,7 +108,7 @@ export function JourneyRail({ onClose }) {
           <div className="mission-card p-4">
             <div className="flex items-start justify-between gap-2 mb-3">
               <p style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--ink)', lineHeight: 1.4 }}>
-                {mission.title}
+                {mission.titleKey ? t(mission.titleKey) : mission.title}
               </p>
               <span style={{
                 fontSize: 10, fontWeight: 700, background: 'var(--coral)', color: '#fff',
@@ -118,10 +118,10 @@ export function JourneyRail({ onClose }) {
               </span>
             </div>
             <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5, marginBottom: 12 }}>
-              {mission.description}
+              {mission.descKey ? t(mission.descKey) : mission.description}
             </p>
             <div className="flex gap-1.5 mb-3">
-              {[mission.type, mission.targetSkill].map(tag => (
+              {[mission.typeKey ? t(mission.typeKey) : mission.type, mission.skillKey ? t(mission.skillKey) : mission.targetSkill].map(tag => (
                 <span key={tag} style={{
                   fontSize: 10, fontWeight: 600, background: 'var(--coral-soft)',
                   color: 'var(--coral)', padding: '2px 8px', borderRadius: 999,

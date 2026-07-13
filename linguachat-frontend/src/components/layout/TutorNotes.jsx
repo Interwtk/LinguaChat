@@ -182,7 +182,7 @@ export function TutorNotes() {
             </p>
             <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px' }}>
               <p style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 2 }}>
-                {LAST_MISTAKES[0].topic}
+                {LAST_MISTAKES[0].topicKey ? t(LAST_MISTAKES[0].topicKey) : LAST_MISTAKES[0].topic}
               </p>
               <p style={{ fontSize: 11, color: 'var(--ink-muted)', textDecoration: 'line-through' }}>
                 "{LAST_MISTAKES[0].original}"

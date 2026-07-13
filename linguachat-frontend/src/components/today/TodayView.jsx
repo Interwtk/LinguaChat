@@ -2,6 +2,7 @@ import { useApp } from '../../context/AppContext'
 import { getTodayPhrase, MOCK_STATS, LAST_MISTAKES } from '../../data/mockData'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { getMissionForToday } from '../../services/missions'
+import { getLocalizedMeaning } from '../../services/learningContent'
 
 function StatPill({ label, value, color }) {
   return (
@@ -14,7 +15,7 @@ function StatPill({ label, value, color }) {
 }
 
 export function TodayView() {
-  const { navigateTo, profile, t, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions } = useApp()
+  const { navigateTo, profile, t, nativeLanguageInfo, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions } = useApp()
   const phrase = getTodayPhrase()
   const mission = activeMissionDetails?.mission || getMissionForToday(profile.level, profile.goal)
   const hour = new Date().getHours()
@@ -60,7 +61,7 @@ export function TodayView() {
                 {t('todaysMission')}
               </span>
               <h2 style={{ fontWeight: 800, fontSize: '1.125rem', color: 'var(--ink)', marginTop: 4, lineHeight: 1.3 }}>
-                {mission.title}
+                {mission.titleKey ? t(mission.titleKey) : mission.title}
               </h2>
             </div>
             <span style={{
@@ -71,7 +72,7 @@ export function TodayView() {
             </span>
           </div>
           <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55, marginBottom: 16 }}>
-            {mission.description}
+            {mission.descKey ? t(mission.descKey) : mission.description}
           </p>
           <div className="flex flex-wrap gap-1.5 mb-3">
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', background: 'var(--violet-soft)', border: '1px solid var(--violet)', borderRadius: 999, padding: '2px 8px' }}>
@@ -81,7 +82,7 @@ export function TodayView() {
               {mission.estimatedTime}
             </span>
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--green)', background: 'var(--green-soft)', border: '1px solid var(--green)', borderRadius: 999, padding: '2px 8px' }}>
-              {mission.targetSkill}
+              {mission.skillKey ? t(mission.skillKey) : mission.targetSkill}
             </span>
           </div>
           <button
@@ -106,11 +107,11 @@ export function TodayView() {
               {t('phraseOfDay')}
             </span>
           </div>
-          <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', fontStyle: 'italic', marginBottom: 6 }}>
+          <p lang="en" dir="ltr" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', fontStyle: 'italic', marginBottom: 6 }}>
             "{phrase.phrase}"
           </p>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-            {phrase.meaning}
+          <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
+            {getLocalizedMeaning(phrase.meaning, nativeLanguageInfo, interfaceLanguageInfo)}
           </p>
         </div>
 
@@ -176,7 +177,7 @@ export function TodayView() {
                 color: 'var(--green)', border: '1px solid var(--green)',
                 padding: '3px 10px', borderRadius: 999,
               }}>
-                {LAST_MISTAKES[0].topic}
+                {LAST_MISTAKES[0].topicKey ? t(LAST_MISTAKES[0].topicKey) : LAST_MISTAKES[0].topic}
               </span>
             </div>
           </div>

@@ -1,19 +1,17 @@
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
+import { SEED_VOCAB_BY_ID } from '../../data/vocabulary'
+import { getLocalizedMeaning } from '../../services/learningContent'
 
-const MOCK_GARDEN_WORDS = [
-  { word: 'happy', trans: 'feliz', mastery: 0.92, emoji: ':)', example: 'I am happy today.', days: 12 },
-  { word: 'because', trans: 'porque', mastery: 0.78, emoji: '+', example: 'I am happy because I am learning.', days: 11 },
-  { word: 'question', trans: 'pregunta', mastery: 0.85, emoji: '?', example: 'Can I ask you a question?', days: 10 },
-  { word: 'travel', trans: 'viajar', mastery: 0.70, emoji: '>', example: 'I want to travel to London.', days: 9 },
-  { word: 'water', trans: 'agua', mastery: 0.60, emoji: '~', example: 'Can I have water, please?', days: 8 },
-  { word: 'morning', trans: 'manana', mastery: 0.42, emoji: 'am', example: 'I study in the morning.', days: 7 },
-  { word: 'yesterday', trans: 'ayer', mastery: 0.50, emoji: '<', example: 'I went to work yesterday.', days: 6 },
-  { word: 'work', trans: 'trabajo', mastery: 0.65, emoji: 'wk', example: 'I go to work by bus.', days: 5 },
-  { word: 'like', trans: 'gustar', mastery: 0.72, emoji: '<3', example: 'I like music.', days: 4 },
-  { word: 'need', trans: 'necesitar', mastery: 0.48, emoji: '!', example: 'I need help, please.', days: 3 },
-  { word: 'easy', trans: 'facil', mastery: 0.38, emoji: 'ok', example: 'This is easy.', days: 2 },
-  { word: 'today', trans: 'hoy', mastery: 0.72, emoji: 'now', example: 'Today I feel good.', days: 1 },
+// Demo garden: stable vocab ids + demo mastery. The visible meaning (`trans`)
+// is resolved to the learner's native language, never hardcoded Spanish.
+const DEMO_GARDEN = [
+  { id: 'happy', mastery: 0.92, days: 12 }, { id: 'because', mastery: 0.78, days: 11 },
+  { id: 'question', mastery: 0.85, days: 10 }, { id: 'travel', mastery: 0.70, days: 9 },
+  { id: 'water', mastery: 0.60, days: 8 }, { id: 'morning', mastery: 0.42, days: 7 },
+  { id: 'yesterday', mastery: 0.50, days: 6 }, { id: 'work', mastery: 0.65, days: 5 },
+  { id: 'like', mastery: 0.72, days: 4 }, { id: 'need', mastery: 0.48, days: 3 },
+  { id: 'easy', mastery: 0.38, days: 2 }, { id: 'today', mastery: 0.72, days: 1 },
 ]
 
 const FILTERS = ['All', 'Mastered', 'Learning', 'New']
@@ -36,16 +34,31 @@ function wordRotation(word) {
 }
 
 export function MemoryGarden() {
-  const { localProgress, t } = useApp()
+  const { localProgress, t, nativeLanguageInfo, interfaceLanguageInfo } = useApp()
   const [filter, setFilter] = useState('All')
   const [expanded, setExpanded] = useState(null)
+  const meaningOf = (item) => getLocalizedMeaning(item?.meaning, nativeLanguageInfo, interfaceLanguageInfo)
   const hasRealItems = localProgress.learnedItems.length > 0
   const gardenWords = hasRealItems
-    ? localProgress.learnedItems.map(item => ({
-        ...item,
-        days: Math.max(0, Math.floor((Date.now() - item.lastSeenAt) / 86400000)),
-      }))
-    : MOCK_GARDEN_WORDS
+    ? localProgress.learnedItems.map(item => {
+        // A real item may carry a vocab id (localized) or a legacy `trans` label.
+        const vocab = item.vocabId ? SEED_VOCAB_BY_ID[item.vocabId] : null
+        return {
+          ...item,
+          word: vocab?.term || item.word,
+          emoji: vocab?.emoji || item.emoji || '·',
+          example: vocab?.example || item.example || '',
+          trans: vocab ? meaningOf(vocab) : (item.trans || ''),
+          days: Math.max(0, Math.floor((Date.now() - (item.lastSeenAt || Date.now())) / 86400000)),
+        }
+      })
+    : DEMO_GARDEN.map(d => {
+        const vocab = SEED_VOCAB_BY_ID[d.id]
+        return {
+          word: vocab.term, emoji: vocab.emoji, example: vocab.example,
+          trans: meaningOf(vocab), mastery: d.mastery, days: d.days,
+        }
+      })
 
   const filtered = gardenWords.filter(w => {
     if (filter === 'All') return true
@@ -126,16 +139,16 @@ export function MemoryGarden() {
                   <span style={{ fontSize: isLarge ? 20 : 16 }}>{w.emoji}</span>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: colors.border, marginTop: 3 }} />
                 </div>
-                <p style={{ fontWeight: 800, fontSize: isLarge ? '1rem' : '0.9375rem', color: 'var(--ink)', lineHeight: 1.2, marginBottom: 3 }}>
+                <p lang="en" dir="ltr" style={{ fontWeight: 800, fontSize: isLarge ? '1rem' : '0.9375rem', color: 'var(--ink)', lineHeight: 1.2, marginBottom: 3 }}>
                   {w.word}
                 </p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', fontWeight: 500 }}>
+                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', fontWeight: 500 }}>
                   {w.trans}
                 </p>
 
                 {isExpanded && (
                   <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${colors.border}44` }}>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--ink)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: 6 }}>
+                    <p lang="en" dir="ltr" style={{ fontSize: '0.8125rem', color: 'var(--ink)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: 6 }}>
                       "{w.example}"
                     </p>
                     <div className="flex items-center justify-between">
