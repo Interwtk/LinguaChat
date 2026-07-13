@@ -117,6 +117,7 @@ export function AppProvider({ children }) {
   const [activeCompanion, setActiveCompanionState] = useState(loadActiveCompanion)
   const [textSize, setTextSizeState] = useState(loadTextSize)
   const [showWelcome, setShowWelcome] = useState(false)
+  const [showTutorial, setShowTutorial] = useState(false)
   const [missionFeedback, setMissionFeedback] = useState(null)
   const [missionCelebration, setMissionCelebration] = useState(null)
   const [isTyping, setIsTyping] = useState(false)
@@ -281,6 +282,15 @@ export function AppProvider({ children }) {
   const dismissWelcome = useCallback(() => {
     setShowWelcome(false)
     try { localStorage.setItem('lc2-welcome-seen', 'true') } catch {}
+    // Arm Chatto's one-time guided tour once the welcome is closed (new users).
+    try {
+      if (localStorage.getItem('lc2-tutorial-seen') !== 'true') setShowTutorial(true)
+    } catch {}
+  }, [])
+
+  const dismissTutorial = useCallback(() => {
+    setShowTutorial(false)
+    try { localStorage.setItem('lc2-tutorial-seen', 'true') } catch {}
   }, [])
 
   const logoutMock = useCallback(() => {
@@ -695,6 +705,7 @@ export function AppProvider({ children }) {
       completePlacement, completeTutorPersonality, completeLearningPrefs,
       completePersonalization, applyRecommendedSetup,
       showWelcome, dismissWelcome,
+      showTutorial, dismissTutorial,
       logoutMock,
       darkMode, toggleDark, setThemeDark,
       onboardingCompleted, completeOnboarding,

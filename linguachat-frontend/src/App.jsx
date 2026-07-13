@@ -11,6 +11,7 @@ import { LanguageIdentity } from './components/identity/LanguageIdentity'
 import { MemoryGarden } from './components/memory/MemoryGarden'
 import { ConversationArchive } from './components/archive/ConversationArchive'
 import { WelcomeMascotCard } from './components/onboarding/WelcomeMascotCard'
+import { ChattoTutorial } from './components/onboarding/ChattoTutorial'
 import { ChattoMascot } from './components/mascot/ChattoMascot'
 
 /* ─── Mobile bottom navigation ─── */
@@ -184,7 +185,7 @@ function DesktopTopNav({ notesCollapsed, onShowNotes }) {
 
 /* ─── Main app shell ─── */
 function AppShell() {
-  const { authStep, view, mobileSheet, setMobileSheet, showWelcome, t } = useApp()
+  const { authStep, view, mobileSheet, setMobileSheet, showWelcome, showTutorial, t } = useApp()
   const [notesCollapsed, setNotesCollapsed] = useState(() => {
     try { return localStorage.getItem(NOTES_COLLAPSED_KEY) === 'true' } catch { return false }
   })
@@ -204,6 +205,9 @@ function AppShell() {
 
       {/* Chatto welcome — shown once on Home right after onboarding */}
       {showWelcome && view === 'today' && <WelcomeMascotCard />}
+
+      {/* Chatto guided tour — once, after the welcome, only on Home */}
+      {showTutorial && !showWelcome && view === 'today' && <ChattoTutorial />}
 
       {/* Desktop 3-column cockpit layout */}
       <div className="hidden lg:flex" style={{ height: '100dvh', overflow: 'hidden' }}>
