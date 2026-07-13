@@ -11,6 +11,7 @@ import { LanguageIdentity } from './components/identity/LanguageIdentity'
 import { MemoryGarden } from './components/memory/MemoryGarden'
 import { ConversationArchive } from './components/archive/ConversationArchive'
 import { WelcomeMascotCard } from './components/onboarding/WelcomeMascotCard'
+import { ChattoMascot } from './components/mascot/ChattoMascot'
 
 /* ─── Mobile bottom navigation ─── */
 function MobileNav() {
@@ -264,16 +265,7 @@ function AppShell() {
         <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
           style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-paper)' }}>
           <div className="flex items-center gap-2">
-            <div style={{
-              width: 28, height: 28, borderRadius: 8,
-              background: 'linear-gradient(135deg, var(--violet), var(--blue))',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-                  fill="rgba(255,255,255,0.3)" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
+            <ChattoMascot mood="happy" size={30} decorative={true} animated={false} />
             <span style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--ink)' }}>LinguaChat</span>
           </div>
           <ThemeToggle compact />

@@ -75,16 +75,7 @@ export function TutorPersonalizationStep() {
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2">
-          <div style={{
-            width: 30, height: 30, borderRadius: 9,
-            background: 'linear-gradient(135deg, var(--violet), var(--blue))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-                fill="rgba(255,255,255,0.3)" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
+          <ChattoMascot mood="happy" size={30} decorative={true} animated={false} />
           <span style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--ink)' }}>LinguaChat</span>
         </div>
         <div className="flex items-center gap-3">

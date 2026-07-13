@@ -2,6 +2,7 @@ import { useApp } from '../../context/AppContext'
 import { ProgressMap } from '../progress/ProgressMap'
 import { MOCK_STATS } from '../../data/mockData'
 import { getMissionForToday } from '../../services/missions'
+import { ChattoMascot } from '../mascot/ChattoMascot'
 
 export function JourneyRail({ onClose }) {
   const { profile, navigateTo, view, localProgress, t, startPracticeMission, activeMissionDetails, completedMissions } = useApp()
@@ -22,15 +23,7 @@ export function JourneyRail({ onClose }) {
       <div className="flex items-center justify-between px-5 pt-5 pb-4" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2.5">
           {/* Logo mark */}
-          <div className="flex-shrink-0 flex items-center justify-center rounded-xl" style={{
-            width: 34, height: 34,
-            background: 'linear-gradient(135deg, var(--violet) 0%, var(--blue) 100%)',
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-                fill="rgba(255,255,255,0.3)" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </div>
+          <ChattoMascot mood="happy" size={36} decorative={true} animated={false} />
           <div>
             <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.1 }}>LinguaChat</p>
             <p style={{ fontSize: 10, color: 'var(--ink-muted)', fontWeight: 500 }}>{t('practiceEveryDay')}</p>

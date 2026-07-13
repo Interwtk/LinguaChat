@@ -265,9 +265,31 @@ body::after {
 }
 
 /* ─── Chatto mascot ─── */
+.chatto-official {
+  isolation: isolate;
+}
+.chatto-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: contain;
+  image-rendering: auto;
+  filter: drop-shadow(0 7px 14px rgba(31,41,51,0.14));
+}
 .chatto-float   { animation: chattoFloat 4s ease-in-out infinite; }
 .chatto-bounce  { animation: chattoBounce 1.3s ease-in-out infinite; transform-origin: bottom center; }
-.chatto-glow    { animation: chattoFloat 4s ease-in-out infinite; filter: drop-shadow(0 3px 10px rgba(124,92,255,0.28)); }
+.chatto-glow    { animation: chattoFloat 4s ease-in-out infinite; filter: drop-shadow(0 4px 14px rgba(124,92,255,0.3)); }
+.chatto-welcoming .chatto-image,
+.chatto-cheering .chatto-image,
+.chatto-celebrating .chatto-image {
+  filter: drop-shadow(0 9px 18px rgba(124,92,255,0.18));
+}
+.chatto-thinking .chatto-image {
+  filter: drop-shadow(0 7px 14px rgba(59,130,196,0.14));
+}
+.chatto-supportive .chatto-image {
+  filter: drop-shadow(0 7px 14px rgba(63,174,117,0.13));
+}
 .chatto-eyes    { animation: chattoBlink 5.5s infinite; }
 .chatto-sparkle { animation: chattoSparkle 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
 .chatto-halo    { animation: chattoHalo 3.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
@@ -348,9 +370,10 @@ select:focus-visible {
 
 /* Respect users who prefer reduced motion. */
 @media (prefers-reduced-motion: reduce) {
-  .chatto-float, .chatto-bounce, .chatto-glow, .chatto-eyes, .chatto-sparkle, .chatto-halo,
+  .chatto-official, .chatto-image, .chatto-float, .chatto-bounce, .chatto-glow, .chatto-eyes, .chatto-sparkle, .chatto-halo,
   .cta-glow::after, .celebrate-pop {
     animation: none !important;
+    transition: none !important;
   }
   .chatto-glow { filter: none; }
   .card-lift:hover, .card-lift:focus-visible { transform: none; }

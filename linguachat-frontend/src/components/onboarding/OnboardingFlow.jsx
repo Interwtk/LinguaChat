@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
+import { ChattoMascot } from '../mascot/ChattoMascot'
 
 /* ─── Step data ─── */
 const GOALS = [
@@ -109,15 +110,7 @@ export function OnboardingFlow() {
 
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-10">
-        <div className="flex-shrink-0 flex items-center justify-center rounded-xl" style={{
-          width: 36, height: 36,
-          background: 'linear-gradient(135deg, var(--violet) 0%, var(--blue) 100%)',
-        }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
-              fill="rgba(255,255,255,0.3)" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </div>
+        <ChattoMascot mood="happy" size={38} decorative={true} animated={false} />
         <span style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--ink)' }}>LinguaChat</span>
       </div>
 
