@@ -27,6 +27,19 @@ export function getLanguageName(code) {
 }
 
 const base = {
+  // Setup choice (recommended vs personalize)
+  recommended: 'Recommended',
+  setupChoiceEyebrow: 'One quick choice',
+  setupChoiceTitle: 'How do you want to start?',
+  setupChoiceBody: 'Start right away with a balanced setup, or fine-tune how Lingua teaches you. You can change everything later.',
+  setupRecommendedTitle: 'Recommended setup',
+  setupRecommendedDesc: 'A balanced, friendly experience ready to go. Great if you just want to start practicing.',
+  setupRecommendedCta: 'Start with recommended',
+  setupPersonalizeTitle: 'Personalize how Lingua teaches',
+  setupPersonalizeDesc: 'Choose the tone, pace, corrections and topics that fit you best.',
+  setupPersonalizeCta: 'Personalize Lingua',
+  setupChoiceChatto: "I'll be right here with you either way.",
+  useRecommendedInstead: 'Use the recommended setup instead',
   entryEyebrow: 'Your English companion',
   entryTitle: 'Practice English',
   entryTitleAccent: 'without fear.',
@@ -339,6 +352,18 @@ const base = {
 }
 
 const es = {
+  recommended: 'Recomendado',
+  setupChoiceEyebrow: 'Una decisión rápida',
+  setupChoiceTitle: '¿Cómo quieres empezar?',
+  setupChoiceBody: 'Empieza ya con una configuración equilibrada, o ajusta cómo Lingua te enseña. Puedes cambiar todo después.',
+  setupRecommendedTitle: 'Configuración recomendada',
+  setupRecommendedDesc: 'Una experiencia equilibrada y cálida, lista para usar. Ideal si solo quieres empezar a practicar.',
+  setupRecommendedCta: 'Empezar con la recomendada',
+  setupPersonalizeTitle: 'Personalizar cómo enseña Lingua',
+  setupPersonalizeDesc: 'Elige el tono, el ritmo, las correcciones y los temas que mejor te queden.',
+  setupPersonalizeCta: 'Personalizar a Lingua',
+  setupChoiceChatto: 'De cualquier forma, estaré aquí contigo.',
+  useRecommendedInstead: 'Mejor usar la configuración recomendada',
   entryEyebrow: 'Tu companera de ingles',
   entryTitle: 'Practica ingles',
   entryTitleAccent: 'sin miedo.',
@@ -650,6 +675,18 @@ const es = {
 }
 
 const pt = {
+  recommended: 'Recomendado',
+  setupChoiceEyebrow: 'Uma escolha rápida',
+  setupChoiceTitle: 'Como você quer começar?',
+  setupChoiceBody: 'Comece já com uma configuração equilibrada ou ajuste como a Lingua ensina você. Você pode mudar tudo depois.',
+  setupRecommendedTitle: 'Configuração recomendada',
+  setupRecommendedDesc: 'Uma experiência equilibrada e acolhedora, pronta para usar. Ótimo se você só quer começar a praticar.',
+  setupRecommendedCta: 'Começar com a recomendada',
+  setupPersonalizeTitle: 'Personalizar como a Lingua ensina',
+  setupPersonalizeDesc: 'Escolha o tom, o ritmo, as correções e os temas que combinam com você.',
+  setupPersonalizeCta: 'Personalizar a Lingua',
+  setupChoiceChatto: 'De qualquer forma, estarei aqui com você.',
+  useRecommendedInstead: 'Prefiro usar a configuração recomendada',
   practiceEveryDay: 'Pratique todos os dias',
   todaysMission: 'Missao de hoje',
   continueMission: 'Continuar missao',
@@ -715,6 +752,18 @@ const pt = {
 }
 
 const fr = {
+  recommended: 'Recommandé',
+  setupChoiceEyebrow: 'Un choix rapide',
+  setupChoiceTitle: 'Comment veux-tu commencer ?',
+  setupChoiceBody: "Commence tout de suite avec une configuration équilibrée, ou ajuste la façon dont Lingua t'enseigne. Tu peux tout changer plus tard.",
+  setupRecommendedTitle: 'Configuration recommandée',
+  setupRecommendedDesc: "Une expérience équilibrée et chaleureuse, prête à l'emploi. Parfait si tu veux juste commencer à pratiquer.",
+  setupRecommendedCta: 'Commencer avec la recommandée',
+  setupPersonalizeTitle: 'Personnaliser la façon dont Lingua enseigne',
+  setupPersonalizeDesc: 'Choisis le ton, le rythme, les corrections et les sujets qui te conviennent le mieux.',
+  setupPersonalizeCta: 'Personnaliser Lingua',
+  setupChoiceChatto: 'Dans tous les cas, je serai là avec toi.',
+  useRecommendedInstead: 'Utiliser plutôt la configuration recommandée',
   practiceEveryDay: 'Pratique chaque jour',
   todaysMission: "Mission d'aujourd'hui",
   continueMission: 'Continuer la mission',
@@ -780,6 +829,18 @@ const fr = {
 }
 
 const it = {
+  recommended: 'Consigliato',
+  setupChoiceEyebrow: 'Una scelta veloce',
+  setupChoiceTitle: 'Come vuoi iniziare?',
+  setupChoiceBody: 'Inizia subito con una configurazione equilibrata oppure personalizza come Lingua ti insegna. Puoi cambiare tutto più tardi.',
+  setupRecommendedTitle: 'Configurazione consigliata',
+  setupRecommendedDesc: "Un'esperienza equilibrata e accogliente, pronta all'uso. Perfetta se vuoi solo iniziare a esercitarti.",
+  setupRecommendedCta: 'Inizia con quella consigliata',
+  setupPersonalizeTitle: 'Personalizza come insegna Lingua',
+  setupPersonalizeDesc: 'Scegli il tono, il ritmo, le correzioni e gli argomenti più adatti a te.',
+  setupPersonalizeCta: 'Personalizza Lingua',
+  setupChoiceChatto: 'In ogni caso, sarò qui con te.',
+  useRecommendedInstead: 'Usa invece la configurazione consigliata',
   practiceEveryDay: 'Esercitati ogni giorno',
   todaysMission: 'Missione di oggi',
   continueMission: 'Continua la missione',
@@ -845,6 +906,18 @@ const it = {
 }
 
 const de = {
+  recommended: 'Empfohlen',
+  setupChoiceEyebrow: 'Eine kurze Wahl',
+  setupChoiceTitle: 'Wie möchtest du starten?',
+  setupChoiceBody: 'Starte sofort mit einer ausgewogenen Einrichtung oder passe an, wie Lingua dich unterrichtet. Du kannst später alles ändern.',
+  setupRecommendedTitle: 'Empfohlene Einrichtung',
+  setupRecommendedDesc: 'Ein ausgewogenes, freundliches Erlebnis, sofort startklar. Ideal, wenn du einfach loslegen willst.',
+  setupRecommendedCta: 'Mit der Empfehlung starten',
+  setupPersonalizeTitle: 'Anpassen, wie Lingua unterrichtet',
+  setupPersonalizeDesc: 'Wähle Ton, Tempo, Korrekturen und Themen, die am besten zu dir passen.',
+  setupPersonalizeCta: 'Lingua anpassen',
+  setupChoiceChatto: 'So oder so bin ich für dich da.',
+  useRecommendedInstead: 'Lieber die empfohlene Einrichtung verwenden',
   practiceEveryDay: 'Ube jeden Tag',
   todaysMission: 'Heutige Mission',
   continueMission: 'Mission fortsetzen',
@@ -910,6 +983,18 @@ const de = {
 }
 
 const ja = {
+  recommended: 'おすすめ',
+  setupChoiceEyebrow: 'ひとつだけ選択',
+  setupChoiceTitle: 'どのように始めますか？',
+  setupChoiceBody: 'バランスの取れた設定ですぐに始めるか、Linguaの教え方を調整できます。あとで全部変更できます。',
+  setupRecommendedTitle: 'おすすめの設定',
+  setupRecommendedDesc: 'バランスが良く親しみやすい、すぐ使える設定です。とにかく練習を始めたい方に最適。',
+  setupRecommendedCta: 'おすすめで始める',
+  setupPersonalizeTitle: 'Linguaの教え方をカスタマイズ',
+  setupPersonalizeDesc: 'あなたに合うトーン・ペース・添削・トピックを選べます。',
+  setupPersonalizeCta: 'Linguaをカスタマイズ',
+  setupChoiceChatto: 'どちらを選んでも、私はそばにいます。',
+  useRecommendedInstead: 'おすすめの設定を使う',
   practiceEveryDay: '毎日練習',
   todaysMission: '今日のミッション',
   continueMission: 'ミッションを続ける',
@@ -1046,6 +1131,18 @@ const ja = {
 }
 
 const ar = {
+  recommended: 'موصى به',
+  setupChoiceEyebrow: 'خيار سريع واحد',
+  setupChoiceTitle: 'كيف تريد أن تبدأ؟',
+  setupChoiceBody: 'ابدأ فورًا بإعداد متوازن، أو اضبط طريقة تعليم Lingua لك. يمكنك تغيير كل شيء لاحقًا.',
+  setupRecommendedTitle: 'الإعداد الموصى به',
+  setupRecommendedDesc: 'تجربة متوازنة وودّية جاهزة للبدء. مثالية إذا كنت تريد فقط بدء التدريب.',
+  setupRecommendedCta: 'ابدأ بالموصى به',
+  setupPersonalizeTitle: 'خصّص طريقة تعليم Lingua',
+  setupPersonalizeDesc: 'اختر النبرة والوتيرة والتصحيحات والمواضيع التي تناسبك.',
+  setupPersonalizeCta: 'خصّص Lingua',
+  setupChoiceChatto: 'في كلتا الحالتين، سأكون هنا معك.',
+  useRecommendedInstead: 'استخدم الإعداد الموصى به بدلًا من ذلك',
   practiceEveryDay: 'تدرّب كل يوم',
   todaysMission: 'مهمة اليوم',
   continueMission: 'تابع المهمة',

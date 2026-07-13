@@ -133,7 +133,7 @@ function MobileNotesTitle() {
 }
 
 const AUTH_STEPS = ['entry', 'login', 'signup', 'forgot']
-const SETUP_STEPS = ['placement', 'level-reveal', 'tutor-personality', 'learning-prefs', 'personalize']
+const SETUP_STEPS = ['placement', 'level-reveal', 'setup-choice', 'tutor-personality', 'learning-prefs', 'personalize']
 const NOTES_COLLAPSED_KEY = 'lc2-notes-panel-collapsed'
 
 function DesktopTopNav({ notesCollapsed, onShowNotes }) {

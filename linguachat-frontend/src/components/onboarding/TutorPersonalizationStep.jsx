@@ -43,6 +43,7 @@ export function TutorPersonalizationStep() {
     textSize,
     setTextSize,
     completePersonalization,
+    applyRecommendedSetup,
   } = useApp()
 
   // Chatto briefly cheers whenever the user picks something.
@@ -192,6 +193,15 @@ export function TutorPersonalizationStep() {
               >
                 <span>{t('saveAndStart')}</span>
                 <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" style={{ fontSize: '1.05em' }}>→</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={applyRecommendedSetup}
+                className="w-full mt-2.5 py-2.5 rounded-2xl font-semibold text-sm transition-all hover:opacity-80 active:scale-[0.98]"
+                style={{ background: 'transparent', border: 'none', color: 'var(--ink-muted)' }}
+              >
+                {t('useRecommendedInstead')}
               </button>
             </div>
           </div>

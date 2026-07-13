@@ -304,12 +304,81 @@ function LevelReveal() {
           </div>
 
           <button
-            onClick={() => setAuthStep('tutor-personality')}
+            onClick={() => setAuthStep('setup-choice')}
             className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 hover:-translate-y-px active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))' }}
           >
             {t('enterPractice')}
           </button>
+        </div>
+      </div>
+    </SetupShell>
+  )
+}
+
+/* ---- SETUP CHOICE: recommended vs personalize ---- */
+function SetupChoice() {
+  const { setAuthStep, applyRecommendedSetup, t } = useApp()
+
+  return (
+    <SetupShell step={1} totalSteps={3}>
+      <div className="flex-1 overflow-y-auto px-5 py-8" style={{ maxWidth: 620, margin: '0 auto', width: '100%' }}>
+        <div className="animate-fade-up">
+          {/* Chatto guides the choice — it never decides for you */}
+          <div className="flex flex-col items-center text-center mb-8">
+            <ChattoMascot mood="supportive" size="medium" variant="violet" />
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--violet)', marginTop: 16, marginBottom: 8 }}>
+              {t('setupChoiceEyebrow')}
+            </p>
+            <h2 style={{ fontWeight: 800, fontSize: 'clamp(1.4rem, 4vw, 1.75rem)', color: 'var(--ink)', lineHeight: 1.2, marginBottom: 10 }}>
+              {t('setupChoiceTitle')}
+            </h2>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--ink-muted)', lineHeight: 1.6, maxWidth: 420 }}>
+              {t('setupChoiceBody')}
+            </p>
+          </div>
+
+          <div className="grid gap-3">
+            {/* Recommended — one tap to a balanced Lingua */}
+            <button
+              type="button"
+              onClick={applyRecommendedSetup}
+              className="card-lift group text-left rounded-3xl p-5 transition-all active:scale-[0.99]"
+              style={{ background: 'var(--violet-soft)', border: '1.5px solid var(--violet)', boxShadow: '0 0 0 3px var(--violet-soft)' }}
+            >
+              <div className="flex items-center justify-between gap-3 mb-1.5">
+                <span style={{ fontWeight: 800, fontSize: '1.0625rem', color: 'var(--ink)' }}>{t('setupRecommendedTitle')}</span>
+                <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#fff', background: 'var(--violet)', padding: '3px 9px', borderRadius: 999, flexShrink: 0 }}>
+                  {t('recommended')}
+                </span>
+              </div>
+              <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55, marginBottom: 14 }}>{t('setupRecommendedDesc')}</p>
+              <span className="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 font-bold text-white text-sm"
+                style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))' }}>
+                {t('setupRecommendedCta')}
+                <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">→</span>
+              </span>
+            </button>
+
+            {/* Personalize — go into the guided flow */}
+            <button
+              type="button"
+              onClick={() => setAuthStep('tutor-personality')}
+              className="card-lift group text-left rounded-3xl p-5 transition-all active:scale-[0.99]"
+              style={{ background: 'var(--bg-paper)', border: '1.5px solid var(--border)' }}
+            >
+              <span style={{ display: 'block', fontWeight: 800, fontSize: '1.0625rem', color: 'var(--ink)', marginBottom: 6 }}>{t('setupPersonalizeTitle')}</span>
+              <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55, marginBottom: 12 }}>{t('setupPersonalizeDesc')}</p>
+              <span className="inline-flex items-center gap-1.5 font-bold text-sm" style={{ color: 'var(--violet)' }}>
+                {t('setupPersonalizeCta')}
+                <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">→</span>
+              </span>
+            </button>
+          </div>
+
+          <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', textAlign: 'center', marginTop: 18, lineHeight: 1.5 }}>
+            {t('setupChoiceChatto')}
+          </p>
         </div>
       </div>
     </SetupShell>
@@ -570,6 +639,7 @@ export function SetupFlow() {
   const screens = {
     placement: <PlacementTest />,
     'level-reveal': <LevelReveal />,
+    'setup-choice': <SetupChoice />,
     'tutor-personality': <TutorPersonality />,
     'learning-prefs': <LearningPreferences />,
     personalize: <TutorPersonalizationStep />,

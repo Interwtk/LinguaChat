@@ -36,6 +36,7 @@ import {
   clearMissionStorage,
 } from '../services/missions'
 import {
+  DEFAULT_TUTOR_PREFERENCES,
   loadActiveCompanion,
   loadTextSize,
   loadTutorPreferences,
@@ -257,6 +258,25 @@ export function AppProvider({ children }) {
     setShowWelcome(true)
     setAuthStep(null)
   }, [])
+
+  // Recommended path: skip the guided questions and start Lingua with a
+  // balanced, friendly setup. Mirrors the defaults the manual flow produces.
+  const applyRecommendedSetup = useCallback(() => {
+    setProfile(prev => ({
+      ...prev,
+      tutorPersonality: prev.tutorPersonality || 'Gentle Guide',
+      preferences: {
+        goals: ['Travel'],
+        dailyGoal: 10,
+        correctionIntensity: 'Balanced',
+        practiceVibe: 'Motivational',
+      },
+      goal: prev.goal || 'Travel',
+      dailyGoal: 10,
+    }))
+    setTutorPreferencesState(saveTutorPreferences(DEFAULT_TUTOR_PREFERENCES))
+    completePersonalization()
+  }, [completePersonalization])
 
   const dismissWelcome = useCallback(() => {
     setShowWelcome(false)
@@ -673,7 +693,7 @@ export function AppProvider({ children }) {
       authUser,
       loginMock, signupMock,
       completePlacement, completeTutorPersonality, completeLearningPrefs,
-      completePersonalization,
+      completePersonalization, applyRecommendedSetup,
       showWelcome, dismissWelcome,
       logoutMock,
       darkMode, toggleDark, setThemeDark,
