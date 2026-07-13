@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { ChattoMascot } from '../mascot/ChattoMascot'
-import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS, COMPANIONS } from '../../services/tutorPreferences'
+import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS } from '../../services/tutorPreferences'
 
 function ChipRow({ label, value, options, onChange, t }) {
   return (
@@ -40,8 +40,6 @@ export function TutorPersonalizationStep() {
     t,
     tutorPreferences,
     updateTutorPreferences,
-    activeCompanion,
-    setActiveCompanion,
     textSize,
     setTextSize,
     completePersonalization,
@@ -180,33 +178,6 @@ export function TutorPersonalizationStep() {
                           }}
                         >
                           {option.label}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
-                {/* Companion */}
-                <div>
-                  <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-muted)', marginBottom: 8 }}>{t('chooseCompanion')}</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {COMPANIONS.map(companion => {
-                      const selected = activeCompanion === companion.id
-                      return (
-                        <button
-                          key={companion.id}
-                          type="button"
-                          aria-pressed={selected}
-                          onClick={() => { setActiveCompanion(companion.id); react() }}
-                          className="card-lift rounded-2xl px-3 py-3 text-center transition-all active:scale-[0.98]"
-                          style={{
-                            background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
-                            border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
-                            boxShadow: selected ? '0 0 0 3px var(--violet-soft)' : 'none',
-                          }}
-                        >
-                          <span style={{ display: 'block', fontSize: '0.9375rem', fontWeight: 900, color: selected ? 'var(--violet)' : 'var(--ink)' }}>{companion.name}</span>
-                          <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 2 }}>{t(companion.roleKey)}</span>
                         </button>
                       )
                     })}

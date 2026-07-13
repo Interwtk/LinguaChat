@@ -12,10 +12,13 @@ export const DEFAULT_TUTOR_PREFERENCES = {
   learner_style: 'prefer_not_to_say',
 }
 
+// Lingua is the single, official tutor. The old multi-companion selector
+// (Lingua / Lingo / Chatto) is gone from the product: Lingua teaches, Chatto
+// is the mascot. This constant is kept as a single-entry list so any legacy
+// import keeps working while `active_companion` stays 'lingua' for the backend.
+export const SOLE_COMPANION = 'lingua'
 export const COMPANIONS = [
   { id: 'lingua', name: 'Lingua', roleKey: 'companionLinguaRole' },
-  { id: 'lingo', name: 'Lingo', roleKey: 'companionLingoRole' },
-  { id: 'chatto', name: 'Chatto', roleKey: 'companionChattoRole' },
 ]
 
 /* Shared option config used by both the onboarding personalization step and
@@ -113,19 +116,19 @@ export function saveTutorPreferences(preferences) {
   return next
 }
 
+// Always resolve to Lingua. Any legacy stored value ('lingo' / 'chatto') is
+// silently migrated to 'lingua' so a stale key can never resurface a selector.
 export function loadActiveCompanion() {
   try {
     const stored = localStorage.getItem(ACTIVE_COMPANION_KEY)
-    return COMPANIONS.some(companion => companion.id === stored) ? stored : 'lingua'
-  } catch {
-    return 'lingua'
-  }
+    if (stored !== SOLE_COMPANION) localStorage.setItem(ACTIVE_COMPANION_KEY, SOLE_COMPANION)
+  } catch {}
+  return SOLE_COMPANION
 }
 
-export function saveActiveCompanion(companion) {
-  const next = COMPANIONS.some(item => item.id === companion) ? companion : 'lingua'
-  try { localStorage.setItem(ACTIVE_COMPANION_KEY, next) } catch {}
-  return next
+export function saveActiveCompanion() {
+  try { localStorage.setItem(ACTIVE_COMPANION_KEY, SOLE_COMPANION) } catch {}
+  return SOLE_COMPANION
 }
 
 export function loadTextSize() {

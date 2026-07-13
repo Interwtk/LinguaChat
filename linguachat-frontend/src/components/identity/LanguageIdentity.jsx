@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MOCK_STATS } from '../../data/mockData'
 import { getLanguageOption, languageFromInput, searchLanguages } from '../../services/language'
-import { COMPANIONS, TUTOR_OPTION_GROUPS, INTEREST_OPTIONS } from '../../services/tutorPreferences'
+import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS } from '../../services/tutorPreferences'
 
 const MOOD_COLORS = [
   { id: 'violet', label: 'Calm', bg: 'linear-gradient(135deg, var(--violet), var(--blue))' },
@@ -72,8 +72,6 @@ export function LanguageIdentity() {
     setThemeDark,
     tutorPreferences,
     updateTutorPreferences,
-    activeCompanion,
-    setActiveCompanion,
     textSize,
     setTextSize,
     t,
@@ -510,33 +508,6 @@ export function LanguageIdentity() {
           <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5, marginBottom: 16 }}>
             {t('personalizeTutorDescription')}
           </p>
-
-          <div style={{ marginBottom: 16 }}>
-            <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-muted)', marginBottom: 8 }}>
-              {t('chooseCompanion')}
-            </p>
-            <div className="grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))' }}>
-              {COMPANIONS.map(companion => {
-                const selected = activeCompanion === companion.id
-                return (
-                  <button
-                    key={companion.id}
-                    type="button"
-                    onClick={() => setActiveCompanion(companion.id)}
-                    className="rounded-2xl p-3 text-left transition-all active:scale-[0.98]"
-                    style={{
-                      background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
-                      border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
-                      color: 'var(--ink)',
-                    }}
-                  >
-                    <span style={{ display: 'block', fontSize: '0.9375rem', fontWeight: 900 }}>{companion.name}</span>
-                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 2 }}>{t(companion.roleKey)}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
 
           <div className="flex flex-col gap-4">
             {TUTOR_OPTION_GROUPS.map(group => (

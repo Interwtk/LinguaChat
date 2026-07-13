@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MessageBubble, TypingIndicator } from '../chat/MessageBubble'
-import { COMPANIONS } from '../../services/tutorPreferences'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 
 export function ConversationRoom() {
@@ -19,8 +18,6 @@ export function ConversationRoom() {
     activeMissionDetails,
     missionCelebration,
     abandonMission,
-    activeCompanion,
-    setActiveCompanion,
   } = useApp()
   const [input, setInput] = useState('')
   const [sparkOpen, setSparkOpen] = useState(false)
@@ -112,27 +109,6 @@ export function ConversationRoom() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden md:flex items-center gap-1 rounded-full p-1"
-            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-            {COMPANIONS.map(companion => {
-              const selected = activeCompanion === companion.id
-              return (
-                <button
-                  key={companion.id}
-                  type="button"
-                  onClick={() => setActiveCompanion(companion.id)}
-                  className="rounded-full px-2.5 py-1 text-xs font-bold transition-all active:scale-[0.98]"
-                  style={{
-                    background: selected ? 'var(--violet-soft)' : 'transparent',
-                    color: selected ? 'var(--violet)' : 'var(--ink-muted)',
-                    border: 'none',
-                  }}
-                >
-                  {companion.name}
-                </button>
-              )
-            })}
-          </div>
           <span style={{
             fontSize: 10, fontWeight: 700, background: 'var(--violet-soft)', color: 'var(--violet)',
             border: '1px solid var(--violet)', padding: '2px 8px', borderRadius: 999,

@@ -46,12 +46,10 @@ const EN_TO_ES = {
   apple: 'manzana',
 }
 
-function companionName(activeCompanion = 'lingua') {
-  return activeCompanion === 'lingo'
-    ? 'Lingo'
-    : activeCompanion === 'chatto'
-      ? 'Chatto'
-      : 'Lingua'
+// Lingua is the only tutor. `active_companion` is still sent for backend
+// compatibility, but the display name is always Lingua.
+function companionName() {
+  return 'Lingua'
 }
 
 /* ─── Error patterns ─── */
@@ -259,11 +257,7 @@ function getMockResponse({ message, mode, tutorPreferences = {}, activeCompanion
     "Bien dicho. Una frase clara tambien cuenta.",
   ]
   return {
-    message: activeCompanion === 'lingo'
-      ? 'Tomemos una palabra util de tu frase y usala otra vez.'
-      : activeCompanion === 'chatto'
-        ? 'Nice. Let us keep it like a real conversation.'
-        : positives[Math.floor(Math.random() * positives.length)],
+    message: positives[Math.floor(Math.random() * positives.length)],
     suggestion: text.length < 30
       ? `Agrega una idea: "${text} because ____."`
       : null,
