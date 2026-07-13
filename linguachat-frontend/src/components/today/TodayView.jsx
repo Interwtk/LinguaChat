@@ -14,7 +14,7 @@ function StatPill({ label, value, color }) {
 }
 
 export function TodayView() {
-  const { navigateTo, profile, t, nativeLanguage, startPracticeMission, activeMissionDetails, completedMissions } = useApp()
+  const { navigateTo, profile, t, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions } = useApp()
   const phrase = getTodayPhrase()
   const mission = activeMissionDetails?.mission || getMissionForToday(profile.level, profile.goal)
   const hour = new Date().getHours()
@@ -28,7 +28,7 @@ export function TodayView() {
         <div className="flex items-start justify-between mb-8 animate-fade-up">
           <div>
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--ink-muted)', marginBottom: 6 }}>
-              {new Date().toLocaleDateString(nativeLanguage === 'es' ? 'es-CL' : 'en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              {new Date().toLocaleDateString(interfaceLanguageInfo.code || 'en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
             <h1 style={{ fontWeight: 800, fontSize: 'clamp(1.5rem, 4vw, 2rem)', color: 'var(--ink)', lineHeight: 1.1 }}>
               {greeting},<br />

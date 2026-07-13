@@ -1,16 +1,17 @@
 #!/usr/bin/env node
 /*
- * check-i18n — reports interface-translation coverage per locale.
+ * check-i18n — verifies interface-translation coverage and consistency.
  *
- * It parses src/i18n/translations.js directly (no build, no deps) and, for every
- * locale dictionary, lists the base (English) keys that are NOT explicitly
- * translated. Those keys still render — they fall back to English via
- * `{ ...base, ...locale }` — but they are the honest measure of how "complete"
- * a language really is.
+ * Parses src/i18n/translations.js directly (no build, no deps). For every locale
+ * dictionary it checks, against the English base:
+ *   - missing keys   (base keys the locale does not translate)
+ *   - extra keys     (suspicious keys in a locale that are not in base)
+ *   - placeholders   ({token} interpolation must match the base value)
  *
- * Locales in FULLY_SUPPORTED are treated as a hard gate: if any of them is
- * missing a visible key, the script exits 1 (use it in CI / pre-commit).
- * Every other locale is report-only.
+ * Every locale in FULLY_SUPPORTED is a hard gate: any missing key, extra key or
+ * placeholder mismatch fails the run with exit code 1. English is the reference.
+ * (Untranslated keys still render — they fall back to English — but a "complete"
+ * interface locale must not rely on that fallback for visible text.)
  *
  *   node scripts/check-i18n.mjs
  */
@@ -21,37 +22,39 @@ import { dirname, resolve } from 'node:path'
 const here = dirname(fileURLToPath(import.meta.url))
 const TRANSLATIONS = resolve(here, '../src/i18n/translations.js')
 
-// Locales we promise are fully localized. English (base) is the reference.
-const FULLY_SUPPORTED = ['es']
+// Every declared interface locale is fully supported and gated.
 const LOCALE_ORDER = ['es', 'pt', 'fr', 'it', 'de', 'ja', 'ar']
+const FULLY_SUPPORTED = [...LOCALE_ORDER]
 
-function extractLocaleKeys(source) {
+function extractDicts(source) {
   const lines = source.split(/\r?\n/)
   const dicts = {}
   let current = null
   for (const line of lines) {
     const open = line.match(/^const (\w+) = \{$/)
     if (open) {
-      // Only treat known dictionary names as locale blocks.
-      if (['base', ...LOCALE_ORDER].includes(open[1])) {
-        current = open[1]
-        dicts[current] = new Set()
-      } else {
-        current = null
-      }
+      current = ['base', ...LOCALE_ORDER].includes(open[1]) ? open[1] : null
+      if (current) dicts[current] = {}
       continue
     }
     if (current && /^\}/.test(line)) { current = null; continue }
     if (!current) continue
-    const key = line.match(/^\s{2}([A-Za-z0-9_]+):/)
-    if (key) dicts[current].add(key[1])
+    const kv = line.match(/^\s{2}([A-Za-z0-9_]+):\s*(.*?),?\s*$/)
+    if (kv) dicts[current][kv[1]] = kv[2]
   }
   return dicts
 }
 
+const placeholders = (value) => {
+  const found = new Set()
+  for (const m of String(value || '').matchAll(/\{(\w+)\}/g)) found.add(m[1])
+  return [...found].sort()
+}
+
 const source = await readFile(TRANSLATIONS, 'utf8')
-const dicts = extractLocaleKeys(source)
-const baseKeys = [...(dicts.base || [])]
+const dicts = extractDicts(source)
+const base = dicts.base || {}
+const baseKeys = Object.keys(base)
 
 if (!baseKeys.length) {
   console.error('check-i18n: could not read base dictionary keys. Aborting.')
@@ -59,37 +62,38 @@ if (!baseKeys.length) {
 }
 
 console.log(`\ni18n coverage — ${baseKeys.length} visible keys in base (English)\n`)
-console.log('locale   translated   missing   coverage')
-console.log('------   ----------   -------   --------')
+console.log('locale   translated   missing   extra   phMismatch   coverage')
+console.log('------   ----------   -------   -----   ----------   --------')
 
 let gateFailed = false
-const report = {}
+const detail = {}
 
 for (const loc of LOCALE_ORDER) {
-  const keys = dicts[loc] || new Set()
-  const missing = baseKeys.filter(k => !keys.has(k))
+  const dict = dicts[loc] || {}
+  const keys = Object.keys(dict)
+  const missing = baseKeys.filter(k => !(k in dict))
+  const extra = keys.filter(k => !(k in base))
+  const phMismatch = baseKeys.filter(k => (k in dict) &&
+    placeholders(base[k]).join(',') !== placeholders(dict[k]).join(','))
   const translated = baseKeys.length - missing.length
   const pct = Math.round((translated / baseKeys.length) * 100)
-  report[loc] = missing
+  detail[loc] = { missing, extra, phMismatch }
   const gate = FULLY_SUPPORTED.includes(loc)
-  const flag = gate && missing.length ? '  <- INCOMPLETE (gated)' : ''
+  const bad = gate && (missing.length || extra.length || phMismatch.length)
   console.log(
-    `${loc.padEnd(6)}   ${String(translated).padStart(10)}   ${String(missing.length).padStart(7)}   ${String(pct).padStart(6)}%${flag}`,
+    `${loc.padEnd(6)}   ${String(translated).padStart(10)}   ${String(missing.length).padStart(7)}   ` +
+    `${String(extra.length).padStart(5)}   ${String(phMismatch.length).padStart(10)}   ${String(pct).padStart(6)}%` +
+    (bad ? '  <- FAIL' : ''),
   )
-  if (gate && missing.length) gateFailed = true
+  if (bad) gateFailed = true
 }
 
-// Detail for gated locales that failed, so the gap is actionable.
-for (const loc of FULLY_SUPPORTED) {
-  const missing = report[loc]
-  if (missing && missing.length) {
-    console.log(`\nMissing keys in "${loc}" (must be translated):`)
-    console.log('  ' + missing.join('\n  '))
-  }
+for (const loc of LOCALE_ORDER) {
+  const { missing, extra, phMismatch } = detail[loc]
+  if (missing.length) console.log(`\n[${loc}] missing keys:\n  ` + missing.join('\n  '))
+  if (extra.length) console.log(`\n[${loc}] extra/suspicious keys:\n  ` + extra.join('\n  '))
+  if (phMismatch.length) console.log(`\n[${loc}] placeholder mismatch:\n  ` + phMismatch.join('\n  '))
 }
 
-console.log(
-  '\nNote: untranslated keys fall back to English automatically. Report-only for non-gated locales.\n',
-)
-
+console.log('\nUntranslated keys fall back to English, but gated locales must be complete.\n')
 process.exit(gateFailed ? 1 : 0)

@@ -386,44 +386,15 @@ function SetupChoice() {
 }
 
 /* ---- TUTOR PERSONALITY ---- */
+// `id` is the stored value (also used by the backend/profile) and stays English.
+// The visible name/desc/sample are localized via i18n keys.
 const PERSONALITIES = [
-  {
-    id: 'Gentle Guide',
-    emoji: '🌿',
-    name: 'Gentle Guide',
-    desc: 'Patient, encouraging, celebrates every step. Perfect if you get nervous about mistakes.',
-    sample: 'That was a wonderful try! Here is a tiny note...',
-    aura: 'var(--green)',
-    soft: 'var(--green-soft)',
-  },
-  {
-    id: 'Casual Friend',
-    emoji: '😊',
-    name: 'Casual Friend',
-    desc: 'Relaxed and fun. Talks like a real friend, keeps it light and conversational.',
-    sample: 'Hey, nice one! Just a tiny thing to fix...',
-    aura: 'var(--coral)',
-    soft: 'var(--coral-soft)',
-  },
-  {
-    id: 'Strict Coach',
-    emoji: '📐',
-    name: 'Strict Coach',
-    desc: 'Precise and demanding. Calls out every mistake. For those who want fast improvement.',
-    sample: 'Note the correction below. Precision matters.',
-    aura: 'var(--blue)',
-    soft: 'var(--blue-soft)',
-  },
-  {
-    id: 'Interview Mentor',
-    emoji: '🎯',
-    name: 'Interview Mentor',
-    desc: 'Professional and goal-focused. Prepares you for work and formal situations.',
-    sample: 'In a professional context, use this exact phrase.',
-    aura: 'var(--violet)',
-    soft: 'var(--violet-soft)',
-  },
+  { id: 'Gentle Guide',    emoji: '🌿', nameKey: 'persGentleName', descKey: 'persGentleDesc', sampleKey: 'persGentleSample', aura: 'var(--green)',  soft: 'var(--green-soft)' },
+  { id: 'Casual Friend',   emoji: '😊', nameKey: 'persCasualName', descKey: 'persCasualDesc', sampleKey: 'persCasualSample', aura: 'var(--coral)',  soft: 'var(--coral-soft)' },
+  { id: 'Strict Coach',    emoji: '📐', nameKey: 'persStrictName', descKey: 'persStrictDesc', sampleKey: 'persStrictSample', aura: 'var(--blue)',   soft: 'var(--blue-soft)' },
+  { id: 'Interview Mentor',emoji: '🎯', nameKey: 'persMentorName', descKey: 'persMentorDesc', sampleKey: 'persMentorSample', aura: 'var(--violet)', soft: 'var(--violet-soft)' },
 ]
+const personalityName = (id) => PERSONALITIES.find(p => p.id === id)?.nameKey
 
 function TutorPersonality() {
   const { completeTutorPersonality, t } = useApp()
@@ -461,8 +432,8 @@ function TutorPersonality() {
                   <div className="flex items-start gap-3 mb-3">
                     <span style={{ fontSize: 24 }}>{p.emoji}</span>
                     <div style={{ flex: 1 }}>
-                      <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', marginBottom: 4 }}>{p.name}</p>
-                      <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>{p.desc}</p>
+                      <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', marginBottom: 4 }}>{t(p.nameKey)}</p>
+                      <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>{t(p.descKey)}</p>
                     </div>
                     {isSelected && (
                       <div style={{ width: 20, height: 20, borderRadius: '50%', background: p.aura, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -472,7 +443,7 @@ function TutorPersonality() {
                   </div>
                   <div className="rounded-xl px-3 py-2" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
                     <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', fontStyle: 'italic', lineHeight: 1.5 }}>
-                      "{p.sample}"
+                      "{t(p.sampleKey)}"
                     </p>
                   </div>
                 </div>
@@ -486,7 +457,7 @@ function TutorPersonality() {
             className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98]"
             style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))', opacity: selected ? 1 : 0.5, cursor: selected ? 'pointer' : 'not-allowed' }}
           >
-            {selected ? `${t('choose')} ${selected}` : t('selectEnergy')}
+            {selected ? `${t('choose')} · ${t(personalityName(selected))}` : t('selectEnergy')}
           </button>
         </div>
       </div>
@@ -495,10 +466,20 @@ function TutorPersonality() {
 }
 
 /* ---- LEARNING PREFERENCES ---- */
-const GOALS_OPTIONS = ['Travel', 'Work', 'Study', 'Friends', 'Streaming', 'Immigration']
-const VIBES = ['Motivational', 'Calm', 'Challenging']
-const CORRECTION_LEVELS = ['Every mistake', 'Balanced', 'Only big errors']
+// `id` stays English (stored/sent); the visible label is localized.
+const GOAL_OPTIONS = [
+  { id: 'Travel', key: 'goalOptTravel' }, { id: 'Work', key: 'goalOptWork' },
+  { id: 'Study', key: 'goalOptStudy' }, { id: 'Friends', key: 'goalOptFriends' },
+  { id: 'Streaming', key: 'goalOptStreaming' }, { id: 'Immigration', key: 'goalOptImmigration' },
+]
+const VIBE_OPTIONS = [
+  { id: 'Motivational', key: 'vibeMotivational' }, { id: 'Calm', key: 'vibeCalm' }, { id: 'Challenging', key: 'vibeChallenging' },
+]
+const CORRECTION_OPTIONS = [
+  { id: 'Every mistake', key: 'corrEvery' }, { id: 'Balanced', key: 'corrBalanced' }, { id: 'Only big errors', key: 'corrOnlyBig' },
+]
 const DAILY_OPTIONS = [5, 10, 15, 30]
+const labelKeyFor = (list, id) => list.find(o => o.id === id)?.key
 
 function LearningPreferences() {
   const { completeLearningPrefs, profile, t } = useApp()
@@ -533,15 +514,15 @@ function LearningPreferences() {
           {/* Why you practice */}
           <Section label={t('whyLearning')}>
             <div className="flex flex-wrap gap-2">
-              {GOALS_OPTIONS.map(g => (
-                <button key={g} onClick={() => toggleGoal(g)}
+              {GOAL_OPTIONS.map(o => (
+                <button key={o.id} onClick={() => toggleGoal(o.id)}
                   className="px-4 py-2 rounded-2xl text-sm font-semibold transition-all"
                   style={{
-                    background: goals.includes(g) ? 'var(--violet)' : 'var(--bg-paper)',
-                    color: goals.includes(g) ? '#fff' : 'var(--ink)',
-                    border: `1.5px solid ${goals.includes(g) ? 'var(--violet)' : 'var(--border)'}`,
+                    background: goals.includes(o.id) ? 'var(--violet)' : 'var(--bg-paper)',
+                    color: goals.includes(o.id) ? '#fff' : 'var(--ink)',
+                    border: `1.5px solid ${goals.includes(o.id) ? 'var(--violet)' : 'var(--border)'}`,
                   }}>
-                  {g}
+                  {t(o.key)}
                 </button>
               ))}
             </div>
@@ -567,15 +548,15 @@ function LearningPreferences() {
           {/* Correction style */}
           <Section label={t('correctionQuestion')}>
             <div className="flex flex-col gap-2">
-              {CORRECTION_LEVELS.map(c => (
-                <button key={c} onClick={() => setCorrection(c)}
+              {CORRECTION_OPTIONS.map(o => (
+                <button key={o.id} onClick={() => setCorrection(o.id)}
                   className="px-4 py-2.5 rounded-xl text-sm font-semibold text-left transition-all"
                   style={{
-                    background: correction === c ? 'var(--blue-soft)' : 'var(--bg-paper)',
+                    background: correction === o.id ? 'var(--blue-soft)' : 'var(--bg-paper)',
                     color: 'var(--ink)',
-                    border: `1.5px solid ${correction === c ? 'var(--blue)' : 'var(--border)'}`,
+                    border: `1.5px solid ${correction === o.id ? 'var(--blue)' : 'var(--border)'}`,
                   }}>
-                  {c}
+                  {t(o.key)}
                 </button>
               ))}
             </div>
@@ -584,15 +565,15 @@ function LearningPreferences() {
           {/* Practice vibe */}
           <Section label={t('vibeQuestion')}>
             <div className="grid grid-cols-3 gap-2">
-              {VIBES.map(v => (
-                <button key={v} onClick={() => setVibe(v)}
+              {VIBE_OPTIONS.map(o => (
+                <button key={o.id} onClick={() => setVibe(o.id)}
                   className="py-2.5 rounded-xl font-semibold text-sm transition-all"
                   style={{
-                    background: vibe === v ? 'var(--coral-soft)' : 'var(--bg-paper)',
+                    background: vibe === o.id ? 'var(--coral-soft)' : 'var(--bg-paper)',
                     color: 'var(--ink)',
-                    border: `1.5px solid ${vibe === v ? 'var(--coral)' : 'var(--border)'}`,
+                    border: `1.5px solid ${vibe === o.id ? 'var(--coral)' : 'var(--border)'}`,
                   }}>
-                  {v}
+                  {t(o.key)}
                 </button>
               ))}
             </div>
@@ -605,7 +586,12 @@ function LearningPreferences() {
                 {t('yourSetup')}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.65 }}>
-                {profile.tutorPersonality} style, {daily} minutes/day, correcting {correction.toLowerCase()}, with a {vibe.toLowerCase()} vibe.
+                {t('prefsSummary', {
+                  style: t(personalityName(profile.tutorPersonality) || 'persGentleName'),
+                  daily,
+                  correction: t(labelKeyFor(CORRECTION_OPTIONS, correction) || 'corrBalanced'),
+                  vibe: t(labelKeyFor(VIBE_OPTIONS, vibe) || 'vibeMotivational'),
+                })}
               </p>
             </div>
           )}

@@ -92,7 +92,7 @@ function ConfidenceBadge({ value }) {
 }
 
 export function ConversationArchive() {
-  const { navigateTo, localProgress, t, nativeLanguage } = useApp()
+  const { navigateTo, localProgress, t, interfaceLanguageInfo } = useApp()
   const [expanded, setExpanded] = useState(null)
   const hasRealSessions = localProgress.sessions.length > 0
   const conversations = hasRealSessions ? localProgress.sessions : MOCK_ARCHIVE
@@ -100,7 +100,7 @@ export function ConversationArchive() {
 
   function formatDate(dateStr) {
     const d = new Date(dateStr)
-    return d.toLocaleDateString(nativeLanguage === 'es' ? 'es-CL' : 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    return d.toLocaleDateString(interfaceLanguageInfo.code || 'en-US', { weekday: 'short', month: 'short', day: 'numeric' })
   }
 
   return (
