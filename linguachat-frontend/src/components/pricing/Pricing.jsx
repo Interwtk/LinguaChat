@@ -103,7 +103,7 @@ export function Pricing() {
       <div style={{ maxWidth: 860, margin: '0 auto' }}>
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-8 animate-fade-up">
-          <ChattoMascot mood="happy" size="small" variant="violet" decorative />
+          <ChattoMascot mood="supportive" size="small" variant="green" decorative />
           <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--violet)', marginTop: 12, marginBottom: 8 }}>
             {t('pricingEyebrow')}
           </p>

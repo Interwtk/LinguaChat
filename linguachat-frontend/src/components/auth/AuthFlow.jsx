@@ -101,7 +101,7 @@ function EntryScreen() {
   return (
     <AuthShell>
       <div className="flex flex-col items-center text-center animate-fade-up">
-        <div style={{ marginBottom: 28 }}><ChattoMascot mood="welcoming" size={88} /></div>
+        <div style={{ marginBottom: 28 }}><ChattoMascot mood="welcoming" size={88} intensity="enter" priority /></div>
         <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--violet)', marginBottom: 14 }}>
           {t('entryEyebrow')}
         </p>

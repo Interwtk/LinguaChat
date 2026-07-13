@@ -73,7 +73,7 @@ function PlacementTest() {
     return (
       <SetupShell step={0} totalSteps={3}>
         <div className="flex-1 flex flex-col items-center justify-center px-5 py-10 text-center animate-fade-up">
-          <ChattoMascot mood="welcoming" size={80} />
+          <ChattoMascot mood="thinking" size={80} variant="blue" intensity="guide" />
           <div style={{ marginTop: 24, marginBottom: 8 }}>
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--violet)' }}>
               LinguaChat
@@ -326,7 +326,7 @@ function SetupChoice() {
         <div className="animate-fade-up">
           {/* Chatto guides the choice — it never decides for you */}
           <div className="flex flex-col items-center text-center mb-8">
-            <ChattoMascot mood="supportive" size="medium" variant="violet" />
+            <ChattoMascot mood="supportive" size="medium" variant="violet" intensity="guide" />
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--violet)', marginTop: 16, marginBottom: 8 }}>
               {t('setupChoiceEyebrow')}
             </p>
