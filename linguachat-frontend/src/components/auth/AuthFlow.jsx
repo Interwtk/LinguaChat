@@ -76,13 +76,14 @@ function PasswordField({ label, value, onChange, placeholder, autoComplete }) {
 }
 
 function PasswordStrength({ password }) {
+  const { t } = useApp()
   if (!password) return null
   let score = 0
   if (password.length >= 8) score++
   if (/[A-Z]/.test(password)) score++
   if (/[0-9]/.test(password)) score++
   if (/[^A-Za-z0-9]/.test(password)) score++
-  const labels = ['', 'Weak', 'Fair', 'Good', 'Strong']
+  const labels = ['', t('pwWeak'), t('pwFair'), t('pwGood'), t('pwStrong')]
   const colors = ['', 'var(--coral)', 'var(--yellow)', 'var(--blue)', 'var(--green)']
   return (
     <div className="flex items-center gap-2 mt-1">

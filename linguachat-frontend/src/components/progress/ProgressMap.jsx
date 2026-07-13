@@ -1,6 +1,16 @@
 import { JOURNEY_NODES, LEVEL_TO_NODE, MOCK_STATS } from '../../data/mockData'
+import { useApp } from '../../context/AppContext'
+
+const NODE_LABEL_KEYS = {
+  start: 'journeyStart',
+  basics: 'journeyBasics',
+  travel: 'journeyTravel',
+  confidence: 'journeyConfidence',
+  fluency: 'journeyFluency',
+}
 
 export function ProgressMap({ level = 'B1' }) {
+  const { t } = useApp()
   const currentNodeId = LEVEL_TO_NODE[level] || 'travel'
   const currentIdx = JOURNEY_NODES.findIndex(n => n.id === currentNodeId)
 
@@ -71,7 +81,7 @@ export function ProgressMap({ level = 'B1' }) {
                 color: current ? 'var(--ink)' : done ? 'var(--green)' : 'var(--ink-muted)',
                 lineHeight: 1.3,
               }}>
-                {node.label}
+                {NODE_LABEL_KEYS[node.id] ? t(NODE_LABEL_KEYS[node.id]) : node.label}
               </p>
               {node.levels && (
                 <p style={{ fontSize: 11, color: 'var(--ink-muted)', opacity: 0.7 }}>{node.levels}</p>
@@ -83,7 +93,7 @@ export function ProgressMap({ level = 'B1' }) {
                   color: 'var(--blue)', background: 'rgba(59,130,196,0.1)',
                   padding: '1px 6px', borderRadius: 999,
                 }}>
-                  You are here
+                  {t('youAreHere')}
                 </span>
               )}
             </div>
