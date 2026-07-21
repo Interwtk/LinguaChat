@@ -45,6 +45,17 @@ import {
   saveTutorPreferences,
 } from '../services/tutorPreferences'
 import { SEED_VOCAB_BY_ID } from '../data/vocabulary'
+import { ARC } from '../learning/episodes/index.js'
+import { loadLearnerModel } from '../learning/engine/learnerModel.js'
+import {
+  loadSession, saveSession, clearSession, getOrCreateSession, startSession,
+  advanceBlock, completeSession, isDurationMode,
+} from '../learning/engine/session.js'
+
+const DURATION_PREF_KEY = 'lc2-session-duration'
+// A small bonus for finishing the whole session — progress is the real reward,
+// so this stays secondary and is granted exactly once per session.
+const SESSION_BONUS_XP = 15
 
 const AppContext = createContext(null)
 
@@ -121,6 +132,15 @@ export function AppProvider({ children }) {
   const [showTutorial, setShowTutorial] = useState(false)
   const [episodeActiveId, setEpisodeActiveId] = useState(null)
   const [episodeArcVersion, setEpisodeArcVersion] = useState(0) // bumps when episode progress changes
+  // Daily session: restored from storage on first render so a reload resumes.
+  const [dailySession, setDailySession] = useState(() => loadSession(ARC))
+  const [sessionActive, setSessionActive] = useState(false)
+  const [preferredDuration, setPreferredDuration] = useState(() => {
+    try {
+      const stored = localStorage.getItem(DURATION_PREF_KEY)
+      return isDurationMode(stored) ? stored : 'standard'
+    } catch { return 'standard' }
+  })
   const [missionFeedback, setMissionFeedback] = useState(null)
   const [missionCelebration, setMissionCelebration] = useState(null)
   const [isTyping, setIsTyping] = useState(false)
@@ -308,6 +328,82 @@ export function AppProvider({ children }) {
   const finishEpisode = useCallback(() => {
     setEpisodeActiveId(null)
     setEpisodeArcVersion(v => v + 1) // let Home/Practice re-read learner state
+    setView('today')
+  }, [])
+
+  // ── adaptive daily session ──
+  // The plan itself lives in the session engine; the context only owns "which
+  // session is on screen" and persists every transition immediately so a reload
+  // or a breakpoint change resumes at the same block.
+  const persistSession = useCallback((next) => {
+    setDailySession(next)
+    if (next) saveSession(next); else clearSession()
+    return next
+  }, [])
+
+  /*
+   * A PURE preview of today's session for Home to render. It must not persist
+   * or setState: Home reads it during render, and writing state there would be
+   * a setState-in-render (React warns, and the two components can disagree).
+   * The plan is deterministic, so the preview always matches what `beginSession`
+   * will actually store.
+   */
+  const previewSession = useCallback((durationMode) => {
+    const mode = durationMode || preferredDuration
+    return getOrCreateSession(loadLearnerModel(), ARC, { durationMode: mode, stored: dailySession ?? undefined })
+  }, [dailySession, preferredDuration])
+
+  const chooseDuration = useCallback((mode) => {
+    if (!isDurationMode(mode)) return
+    try { localStorage.setItem(DURATION_PREF_KEY, mode) } catch { /* noop */ }
+    setPreferredDuration(mode)
+    // Changing duration only replans while the session has not started yet.
+    if (dailySession && dailySession.status !== 'planned') return
+    const next = getOrCreateSession(loadLearnerModel(), ARC, { durationMode: mode, stored: dailySession ?? undefined })
+    persistSession(next)
+  }, [dailySession, persistSession])
+
+  const beginSession = useCallback(() => {
+    const planned = dailySession && dailySession.status !== 'completed'
+      ? dailySession
+      : getOrCreateSession(loadLearnerModel(), ARC, { durationMode: preferredDuration })
+    const next = persistSession(startSession(planned))
+    setSessionActive(true)
+    setView('practice')
+    setMobileSheet(null)
+    return next
+  }, [dailySession, preferredDuration, persistSession])
+
+  const advanceSession = useCallback(() => {
+    setEpisodeArcVersion(v => v + 1)
+    setDailySession(previous => {
+      if (!previous) return previous
+      const next = advanceBlock(previous)
+      saveSession(next)
+      return next
+    })
+  }, [])
+
+  const finishSession = useCallback(() => {
+    // Decide synchronously from the current session: reading the award flag out
+    // of a setState updater would run before React applies it, and the bonus
+    // would silently never be granted. completeSession stays idempotent, so a
+    // double tap still awards exactly once.
+    if (dailySession) {
+      const { session, awarded } = completeSession(dailySession)
+      saveSession(session)
+      setDailySession(session)
+      if (awarded) setLocalProgress(p => ({ ...p, xp: (p.xp || 0) + SESSION_BONUS_XP }))
+    }
+    setSessionActive(false)
+    setEpisodeActiveId(null)
+    setEpisodeArcVersion(v => v + 1)
+    setView('today')
+  }, [dailySession])
+
+  const exitSession = useCallback(() => {
+    setSessionActive(false)
+    setEpisodeActiveId(null)
     setView('today')
   }, [])
 
@@ -747,6 +843,8 @@ export function AppProvider({ children }) {
       showWelcome, dismissWelcome,
       showTutorial, dismissTutorial,
       episodeActiveId, episodeArcVersion, startEpisode, exitEpisode, awardEpisode, finishEpisode,
+      dailySession, sessionActive, preferredDuration,
+      previewSession, chooseDuration, beginSession, advanceSession, finishSession, exitSession,
       logoutMock,
       darkMode, toggleDark, setThemeDark,
       onboardingCompleted, completeOnboarding,

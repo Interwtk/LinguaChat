@@ -6,6 +6,8 @@ import { getLocalizedMeaning } from '../../services/learningContent'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { ARC, getEpisode } from '../../learning/episodes/index.js'
 import { planDay, arcProgress } from '../../learning/engine/planner.js'
+import { DurationPicker } from '../session/DurationPicker'
+import { sessionHasReview, sessionHeadline, sessionProgress } from '../../learning/engine/session.js'
 import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 
 function StatPill({ label, value, color }) {
@@ -19,10 +21,19 @@ function StatPill({ label, value, color }) {
 }
 
 export function TodayView() {
-  const { navigateTo, profile, t, nativeLanguageInfo, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions, episodeArcVersion, startEpisode } = useApp()
+  const { navigateTo, profile, t, nativeLanguageInfo, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions, episodeArcVersion, startEpisode,
+    dailySession, previewSession, beginSession } = useApp()
   const plan = planDay(loadLearnerModel(), ARC)
   const planEpisode = plan.episodeId ? getEpisode(plan.episodeId) : null
   const arc = arcProgress(loadLearnerModel(), ARC)
+  // The recommended session for today. Read-only here: the plan is deterministic,
+  // so this preview is exactly what beginSession will store — and rendering it
+  // never writes state.
+  const session = dailySession || previewSession()
+  const headline = sessionHeadline(session)
+  const sessionEpisode = headline?.episodeId ? getEpisode(headline.episodeId) : null
+  const sessionStarted = session.status === 'active'
+  const { done: sessionDone, total: sessionTotal } = sessionProgress(session)
   const phrase = getTodayPhrase()
   const mission = activeMissionDetails?.mission || getMissionForToday(profile.level, profile.goal)
   const hour = new Date().getHours()
@@ -53,7 +64,47 @@ export function TodayView() {
           </div>
         </div>
 
-        {/* Today's proposal from the planner */}
+        {/* Today's adaptive session — the main promise of the day */}
+        <div className="rounded-3xl p-5 mb-6 animate-fade-up" style={{ background: 'linear-gradient(135deg, var(--violet-soft), var(--blue-soft))', border: '1.5px solid var(--violet)' }}>
+          <div className="flex items-center gap-4">
+            <ChattoMascot mood="welcoming" size={52} decorative intensity="ambient" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
+                {t('sessionBadge')} · {arc.completed}/{arc.total}{sessionHasReview(session) ? ` · ${t('planReviewTag')}` : ''}
+              </p>
+              <p lang={nativeLanguageInfo.base} style={{ fontSize: '1.0625rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25, marginTop: 2 }}>
+                {sessionEpisode ? t(sessionEpisode.titleKey) : t('sessionFreeChatTitle')}
+              </p>
+              <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45, marginTop: 3 }}>
+                {sessionEpisode ? t(sessionEpisode.goalKey) : t('sessionFreeChatBody')}
+              </p>
+              <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', color: 'var(--violet)', fontWeight: 700, marginTop: 6 }}>
+                {t(`sessionDuration_${session.durationMode}`)} · {t('sessionMinutes', { minutes: session.estimatedMinutes })}
+              </p>
+            </div>
+          </div>
+
+          {sessionStarted && (
+            <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', fontWeight: 700, marginTop: 12 }}>
+              {t('sessionStepOf', { done: Math.min(sessionDone + 1, sessionTotal), total: sessionTotal })}
+            </p>
+          )}
+
+          <button type="button" onClick={beginSession}
+            className="cta-glow w-full mt-4 py-3 rounded-2xl font-bold text-white text-sm transition-all hover:-translate-y-px active:scale-[0.98]"
+            style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))', '--cta-ring': 'rgba(124,92,255,0.18)' }}>
+            {sessionStarted ? t('sessionContinueCta') : t('sessionStartCta')}
+          </button>
+
+          <div className="mt-3">
+            <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--ink-muted)', marginBottom: 6 }}>
+              {sessionStarted ? t('sessionDurationLockedHint') : t('sessionDurationLabel')}
+            </p>
+            <DurationPicker disabled={sessionStarted} />
+          </div>
+        </div>
+
+        {/* Direct access to the planned episode is still available */}
         {planEpisode && (
           <button type="button" onClick={() => startEpisode(planEpisode.id)}
             className="card-lift w-full text-left rounded-3xl p-5 mb-6 flex items-center gap-4 animate-fade-up transition-all active:scale-[0.99]"

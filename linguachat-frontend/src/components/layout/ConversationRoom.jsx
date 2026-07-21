@@ -4,6 +4,7 @@ import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MessageBubble, TypingIndicator } from '../chat/MessageBubble'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { EpisodeShell } from '../episode/EpisodeShell'
+import { SessionRunner } from '../session/SessionRunner'
 import { ARC, getEpisode } from '../../learning/episodes/index.js'
 import { planDay } from '../../learning/engine/planner.js'
 import { loadLearnerModel, getEpisodeState } from '../../learning/engine/learnerModel.js'
@@ -25,6 +26,9 @@ export function ConversationRoom() {
     episodeActiveId,
     episodeArcVersion,
     startEpisode,
+    sessionActive,
+    dailySession,
+    beginSession,
   } = useApp()
   const [input, setInput] = useState('')
   const [sparkOpen, setSparkOpen] = useState(false)
@@ -75,6 +79,16 @@ export function ConversationRoom() {
     { label: t('increaseDifficulty'), text: 'Make the next exercise a little harder.' },
     { label: t('explainSimple'), text: 'Explain the next correction in very simple words.' },
   ]
+
+  // An active daily session drives the practice area; it renders episodes through
+  // the same EpisodeShell, so there is never a second episode instance.
+  if (sessionActive && dailySession) {
+    return (
+      <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>
+        <SessionRunner />
+      </div>
+    )
+  }
 
   // Guided LinguaLoop episode takes over the practice area; free chat is preserved.
   if (episodeActiveId) {
