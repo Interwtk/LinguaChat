@@ -359,3 +359,37 @@ export async function sendChatMessage({
     }
   }
 }
+
+/*
+ * Remote evaluator for LinguaLoop free replies (Level 2 of the hybrid pipeline).
+ *
+ * Isolated from /chat: posts to /learning/evaluate and returns the parsed JSON,
+ * or null on ANY problem (network error, timeout, non-2xx, unparseable body).
+ * A null makes the hybrid router fall back to the local verdict, so a missing or
+ * broken backend never blocks an episode. Honours an external AbortSignal (e.g.
+ * the learner navigated away or advanced) in addition to its own timeout.
+ */
+export async function evaluateLearningResponse(payload, { signal, timeoutMs = 6000 } = {}) {
+  const controller = new AbortController()
+  const onAbort = () => controller.abort()
+  const timer = setTimeout(onAbort, timeoutMs)
+  if (signal) {
+    if (signal.aborted) { clearTimeout(timer); return null }
+    signal.addEventListener('abort', onAbort)
+  }
+  try {
+    const res = await fetch(`${API_URL}/learning/evaluate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    })
+    if (!res.ok) return null
+    return await res.json().catch(() => null)
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+    if (signal) signal.removeEventListener('abort', onAbort)
+  }
+}

@@ -1,17 +1,21 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { SEED_VOCAB_BY_ID } from '../../data/vocabulary'
 import { getLocalizedMeaning } from '../../services/learningContent'
 import { getEpisode } from '../../learning/episodes/index.js'
-import { evaluateFree } from '../../learning/engine/responseEvaluation.js'
+import { evaluateFree, shouldEscalate } from '../../learning/engine/responseEvaluation.js'
+import { evaluateEpisodeResponse } from '../../learning/engine/hybridEvaluation.js'
+import { createSubmissionGuard } from '../../learning/engine/submitGuard.js'
+import { partnerFor } from '../../learning/engine/variation.js'
+import { evaluateLearningResponse } from '../../services/api'
 import {
   loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, markRecurringError,
   getRecommendedScaffold, getEpisodeState, setEpisodeState,
 } from '../../learning/engine/learnerModel.js'
 
-const resolve = (str, name) => String(str || '').replace(/\{name\}/g, name)
+const resolve = (str, name, partner = 'Alex') => String(str || '').replace(/\{name\}/g, name).replace(/\{partner\}/g, partner)
 
 function En({ children, className = '', style }) {
   return <span lang="en" dir="ltr" className={className} style={style}>{children}</span>
@@ -33,6 +37,8 @@ export function EpisodeShell({ episodeId }) {
   const { t, profile, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode } = useApp()
   const ep = getEpisode(episodeId)
   const name = (profile.name || '').trim() || 'Alex'
+  // deterministic roleplay partner — stable per learner, reproducible on reload
+  const partner = useMemo(() => partnerFor(profile.name || 'guest'), [profile.name])
   const nativeLang = nativeLanguageInfo.base
   const meaningOf = (id) => getLocalizedMeaning(SEED_VOCAB_BY_ID[id]?.meaning, nativeLanguageInfo, interfaceLanguageInfo)
 
@@ -60,9 +66,23 @@ export function EpisodeShell({ episodeId }) {
   const [retry, setRetry] = useState(null)     // { explainKey, natural, promptKey }
   const [praise, setPraise] = useState(null)
   const [live, setLive] = useState('')
+  const [reviewing, setReviewing] = useState(false)  // remote evaluation in flight
+
+  const guardRef = useRef(createSubmissionGuard())  // double-submit + late-response
+  const abortRef = useRef(null)       // cancels the in-flight remote request
+  const attemptsRef = useRef(0)       // attempts on the current step
+  const replyInputRef = useRef(null)
+
+  // Cancel any in-flight evaluation if the learner leaves mid-review.
+  useEffect(() => () => {
+    guardRef.current.invalidate()
+    try { abortRef.current?.abort() } catch { /* noop */ }
+  }, [])
 
   if (!ep) return null
   const step = ep.steps[stepIndex]
+
+  const remoteEvaluator = (payload, signal) => evaluateLearningResponse(payload, { signal })
 
   function persistStep(nextIndex) {
     setEpisodeState(modelRef.current, ep.id, { status: nextIndex >= ep.steps.length - 1 ? getEpisodeState(modelRef.current, ep.id).status : 'in_progress', stepIndex: nextIndex })
@@ -71,6 +91,12 @@ export function EpisodeShell({ episodeId }) {
   }
 
   function advance() {
+    // invalidate any late remote response and cancel an in-flight one
+    guardRef.current.invalidate()
+    try { abortRef.current?.abort() } catch { /* noop */ }
+    abortRef.current = null
+    attemptsRef.current = 0
+    setReviewing(false)
     setRetry(null); setPraise(null); setLive(''); setChoice(null); setBuildOrder([]); setFillValue(''); setReply(''); setUsedSuggestion(false)
     const next = Math.min(ep.steps.length - 1, stepIndex + 1)
     setStepIndex(next)
@@ -92,10 +118,42 @@ export function EpisodeShell({ episodeId }) {
     saveLearnerModel(modelRef.current)
   }
 
-  /* ---------- free reply (roleplay / recall) ---------- */
-  function submitFree(evalKind, itemIds, { fromSuggestion } = {}) {
+  /* ---------- free reply (roleplay / recall) — hybrid evaluation ---------- */
+  async function submitFree(evalKind, itemIds, { fromSuggestion } = {}) {
+    const text = reply
+    if (!text.trim()) return
+    const token = guardRef.current.begin()
+    if (token === null) return                // a submission is already in flight
     const independent = !fromSuggestion && scaffold !== 'high' && !step.showModelDefault
-    const result = evaluateFree(evalKind, reply, { name, independent })
+    const turnContext = { linguaSaid: resolve(step.promptEn || step.sceneEn || '', name, partner) }
+
+    // Decide up front whether we will need Lingua, only to show a calm status.
+    const preview = evaluateFree(evalKind, text, { name, independent, turnContext })
+    const willEscalate = shouldEscalate(preview)
+
+    const controller = new AbortController()
+    abortRef.current = controller
+    if (willEscalate) { setReviewing(true); setLive(t('epEvaluating')) }
+
+    let result
+    try {
+      result = await evaluateEpisodeResponse({
+        episode: ep, step, learnerResponse: text, learnerName: name,
+        nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
+        targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
+        previousAttempts: attemptsRef.current, turnContext,
+        signal: controller.signal, remote: remoteEvaluator,
+      })
+    } catch {
+      result = { ...preview, source: 'fallback' }
+    }
+
+    // Ignore a late response if the learner already advanced or left the step.
+    if (!guardRef.current.isCurrent(token)) return
+    guardRef.current.settle()
+    abortRef.current = null
+    setReviewing(false)
+
     if (result.completedObjective) {
       recordItems(itemIds, { correct: true, independent })
       adaptScaffold({ correct: true, usedHelp: fromSuggestion || scaffold === 'high' })
@@ -103,12 +161,15 @@ export function EpisodeShell({ episodeId }) {
       setLive(t(result.praiseKey || 'ep1FeedbackGood'))
       setTimeout(advance, 700)
     } else {
+      attemptsRef.current += 1
       recordItems(itemIds, { correct: false, independent: false })
       markRecurringError(modelRef.current, result.errorType)
       saveLearnerModel(modelRef.current)
       adaptScaffold({ correct: false })
       setRetry({ explainKey: result.explanation, natural: resolve(result.naturalVersion, name), promptKey: result.retryPrompt })
       setLive(t('ep1RetryTitle'))
+      // return focus to the input so a screen reader/keyboard user retries in place
+      setTimeout(() => { try { replyInputRef.current?.focus() } catch { /* noop */ } }, 40)
     }
   }
 
@@ -166,7 +227,7 @@ export function EpisodeShell({ episodeId }) {
         {/* ---------------- MODEL ---------------- */}
         {step.type === 'model' && (
           <div>
-            <LinguaLine><En style={{ fontWeight: 700 }}>{step.target}</En>{step.response && <> <En style={{ opacity: 0.85 }}>{step.response}</En></>}</LinguaLine>
+            <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.target, name, partner)}</En>{step.response && <> <En style={{ opacity: 0.85 }}>{resolve(step.response, name, partner)}</En></>}</LinguaLine>
             {(showHelp || scaffold === 'high') && (
               <div className="rounded-2xl p-4 mb-3 animate-fade-up" style={{ background: 'var(--violet-soft)', border: '1px solid var(--violet)' }}>
                 <p lang={nativeLang} style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{(step.meaningItems || []).map(meaningOf).join(' · ')}</p>
@@ -211,7 +272,7 @@ export function EpisodeShell({ episodeId }) {
         {step.type === 'choice' && (
           <div className="animate-fade-up">
             <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{t(step.instructionKey)}</p>
-            {step.promptEn && <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.promptEn, name)}</En></LinguaLine>}
+            {step.promptEn && <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.promptEn, name, partner)}</En></LinguaLine>}
             <div className="flex flex-col gap-2 mt-2">
               {step.options.map((opt, i) => {
                 const chosen = choice === i
@@ -288,9 +349,9 @@ export function EpisodeShell({ episodeId }) {
         {(step.type === 'free_reply' || step.type === 'recall') && (
           <div className="animate-fade-up">
             {step.sceneEn
-              ? <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.sceneEn, name)}</En></LinguaLine>
+              ? <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.sceneEn, name, partner)}</En></LinguaLine>
               : step.promptEn
-                ? <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.promptEn, name)}</En></LinguaLine>
+                ? <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.promptEn, name, partner)}</En></LinguaLine>
                 : (
                   <div className="flex items-center gap-2 mb-3">
                     <ChattoMascot mood="supportive" size={40} intensity="support" decorative />
@@ -308,15 +369,23 @@ export function EpisodeShell({ episodeId }) {
               </div>
             )}
 
-            {step.suggestionEn && (scaffold !== 'low' || retry) && (
+            {step.suggestionEn && (scaffold !== 'low' || retry) && !reviewing && (
               <button type="button" onClick={() => { setReply(resolve(step.suggestionEn, name)); setUsedSuggestion(true) }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]" style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}>
                 {t('ep1UseSuggestion')}: <En>{resolve(step.suggestionEn, name)}</En>
               </button>
             )}
 
-            <div className="flex items-end gap-2 rounded-2xl p-2.5" style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)' }}>
-              <input value={reply} onChange={e => setReply(e.target.value)} lang="en" dir="ltr" onKeyDown={e => { if (e.key === 'Enter' && reply.trim()) submitFree(step.evalKind, step.itemIds, { fromSuggestion: usedSuggestion }) }} placeholder={t('ep1TypeReply')} aria-label={t(step.instructionKey)} className="chat-input flex-1 bg-transparent text-sm" style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
-              <button onClick={() => submitFree(step.evalKind, step.itemIds, { fromSuggestion: usedSuggestion })} disabled={!reply.trim()} className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-white transition-all active:scale-[0.98]" style={{ background: reply.trim() ? 'var(--blue)' : 'var(--border)' }}>{t('ep1Send')}</button>
+            {/* calm "Lingua is reviewing" state — Lingua evaluates, never Chatto */}
+            {reviewing && (
+              <div role="status" aria-live="polite" className="flex items-center gap-2 mb-3 animate-fade-up">
+                <LinguaAvatar size={28} online />
+                <span lang={nativeLang} style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--violet)' }}>{t('epEvaluating')}</span>
+              </div>
+            )}
+
+            <div className="flex items-end gap-2 rounded-2xl p-2.5" aria-busy={reviewing} style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', opacity: reviewing ? 0.7 : 1 }}>
+              <input ref={replyInputRef} value={reply} onChange={e => setReply(e.target.value)} disabled={reviewing} lang="en" dir="ltr" onKeyDown={e => { if (e.key === 'Enter' && reply.trim() && !reviewing) submitFree(step.evalKind, step.itemIds, { fromSuggestion: usedSuggestion }) }} placeholder={t('ep1TypeReply')} aria-label={t(step.instructionKey)} className="chat-input flex-1 bg-transparent text-sm" style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
+              <button onClick={() => submitFree(step.evalKind, step.itemIds, { fromSuggestion: usedSuggestion })} disabled={!reply.trim() || reviewing} className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-white transition-all active:scale-[0.98]" style={{ background: reply.trim() && !reviewing ? 'var(--blue)' : 'var(--border)' }}>{t('ep1Send')}</button>
             </div>
             {praise && <p role="status" lang={nativeLang} className="mt-2" style={{ fontSize: '0.8125rem', color: 'var(--green)', fontWeight: 700 }}>{t(praise)}</p>}
           </div>
