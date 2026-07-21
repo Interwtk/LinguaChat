@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
+import { useIsDesktop } from './services/viewport'
 import { AuthFlow } from './components/auth/AuthFlow'
 import { SetupFlow } from './components/setup/SetupFlow'
 import { JourneyRail } from './components/layout/JourneyRail'
@@ -190,6 +191,9 @@ function AppShell() {
   const [notesCollapsed, setNotesCollapsed] = useState(() => {
     try { return localStorage.getItem(NOTES_COLLAPSED_KEY) === 'true' } catch { return false }
   })
+  // Exactly one shell is mounted. Rendering both and hiding one with CSS keeps a
+  // second, stale copy of every stateful view alive (see services/viewport.js).
+  const isDesktop = useIsDesktop()
   const mainMaxWidth = view === 'practice'
     ? (notesCollapsed ? 1360 : 1180)
     : (notesCollapsed ? 1120 : 960)
@@ -210,8 +214,11 @@ function AppShell() {
       {/* Chatto guided tour — once, after the welcome, only on Home */}
       {showTutorial && !showWelcome && view === 'today' && <ChattoTutorial />}
 
-      {/* Desktop 3-column cockpit layout */}
-      <div className="hidden lg:flex" style={{ height: '100dvh', overflow: 'hidden' }}>
+      {/* Desktop 3-column cockpit layout — mounted only above the lg breakpoint.
+          Mounting is the ONLY authority here: keeping `hidden lg:*` as a second
+          source of truth would blank the screen if the two ever disagreed. */}
+      {isDesktop && (
+      <div className="flex" style={{ height: '100dvh', overflow: 'hidden' }}>
 
         {/* LEFT: Journey Rail */}
         <aside style={{ width: 288, flexShrink: 0, borderRight: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
@@ -264,9 +271,11 @@ function AppShell() {
           </aside>
         )}
       </div>
+      )}
 
-      {/* Mobile layout: single column */}
-      <div className="lg:hidden flex flex-col" style={{ minHeight: '100dvh' }}>
+      {/* Mobile layout: single column — mounted only below the lg breakpoint */}
+      {!isDesktop && (
+      <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
         {/* Mobile top bar */}
         <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
           style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-paper)' }}>
@@ -300,6 +309,7 @@ function AppShell() {
           <MobileNotesSheet onClose={() => setMobileSheet(null)} />
         )}
       </div>
+      )}
     </div>
   )
 }
