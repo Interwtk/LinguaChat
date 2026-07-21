@@ -9,6 +9,7 @@
  */
 import { evaluateIntroduction, evaluateAskName, evaluateNiceToMeet } from '../src/learning/engine/responseEvaluation.js'
 import { ARC, getEpisode } from '../src/learning/episodes/index.js'
+import { partnerFor, PARTNER_NAMES } from '../src/learning/engine/variation.js'
 
 let failures = 0
 function check(label, cond) {
@@ -80,6 +81,15 @@ for (const ep of ARC) {
     check(`episode ${ep.id} step has type`, Boolean(step.type))
   }
 }
+
+/* ---- narrative variation: deterministic, reproducible, in range ---- */
+check('partner is deterministic per seed', partnerFor('Sebastian') === partnerFor('Sebastian'))
+check('partner always a known name', PARTNER_NAMES.includes(partnerFor('Sebastian')) && PARTNER_NAMES.includes(partnerFor('guest')))
+check('different seeds can differ', new Set(['Sebastian', 'Maria', 'Kenji', 'Omar', 'Lucia'].map(partnerFor)).size > 1)
+check('partner placeholders resolvable in arc', ARC.every(ep => ep.steps.every(s => {
+  const strings = [s.promptEn, s.sceneEn, s.response, s.target].filter(Boolean)
+  return strings.every(str => !/\{partner\}/.test(str.replace(/\{partner\}/g, partnerFor('Sebastian'))))
+})))
 
 console.log(`\ncheck-episodes — ${failures ? 'FAIL (' + failures + ')' : 'OK'}\n`)
 process.exit(failures ? 1 : 0)

@@ -13,7 +13,10 @@
     "check:learner-model": "node scripts/check-learner-model.mjs",
     "check:arc-e2e": "node scripts/check-arc-e2e.mjs",
     "check:edge-cases": "node scripts/check-edge-cases.mjs",
-    "check:all": "node scripts/check-i18n.mjs && node scripts/check-learning-content.mjs && node scripts/check-episodes.mjs && node scripts/check-learner-model.mjs && node scripts/check-arc-e2e.mjs && node scripts/check-edge-cases.mjs"
+    "check:hybrid-evaluation": "node scripts/check-hybrid-evaluation.mjs",
+    "check:episode-recovery": "node scripts/check-episode-recovery.mjs",
+    "check:visual-structure": "node scripts/check-visual-structure.mjs",
+    "check:all": "node scripts/check-i18n.mjs && node scripts/check-learning-content.mjs && node scripts/check-episodes.mjs && node scripts/check-learner-model.mjs && node scripts/check-arc-e2e.mjs && node scripts/check-edge-cases.mjs && node scripts/check-hybrid-evaluation.mjs && node scripts/check-episode-recovery.mjs && node scripts/check-visual-structure.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
