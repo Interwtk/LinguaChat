@@ -119,10 +119,8 @@ export function AppProvider({ children }) {
   const [textSize, setTextSizeState] = useState(loadTextSize)
   const [showWelcome, setShowWelcome] = useState(false)
   const [showTutorial, setShowTutorial] = useState(false)
-  const [episodeActive, setEpisodeActive] = useState(false)
-  const [episodeDone, setEpisodeDone] = useState(() => {
-    try { return localStorage.getItem('lc2-episode-first_greeting') === 'completed' } catch { return false }
-  })
+  const [episodeActiveId, setEpisodeActiveId] = useState(null)
+  const [episodeArcVersion, setEpisodeArcVersion] = useState(0) // bumps when episode progress changes
   const [missionFeedback, setMissionFeedback] = useState(null)
   const [missionCelebration, setMissionCelebration] = useState(null)
   const [isTyping, setIsTyping] = useState(false)
@@ -298,24 +296,27 @@ export function AppProvider({ children }) {
     try { localStorage.setItem('lc2-tutorial-seen', 'true') } catch {}
   }, [])
 
-  // ── LinguaLoop episode ──
-  const startEpisode = useCallback(() => {
-    setEpisodeActive(true)
+  // ── LinguaLoop episodes ──
+  const startEpisode = useCallback((episodeId) => {
+    setEpisodeActiveId(episodeId || 'first_greeting')
     setView('practice')
     setMobileSheet(null)
   }, [])
 
-  const exitEpisode = useCallback(() => setEpisodeActive(false), [])
+  const exitEpisode = useCallback(() => setEpisodeActiveId(null), [])
 
-  // Finish the episode: record the can-do, feed the Memory Garden with the
-  // episode's items (deduped by vocab id), award XP, and persist completion.
-  const completeEpisode = useCallback((episode) => {
-    try { localStorage.setItem(`lc2-episode-${episode.id}`, 'completed') } catch {}
-    setEpisodeDone(true)
-    setEpisodeActive(false)
+  const finishEpisode = useCallback(() => {
+    setEpisodeActiveId(null)
+    setEpisodeArcVersion(v => v + 1) // let Home/Practice re-read learner state
+    setView('today')
+  }, [])
+
+  // Feed the Memory Garden (deduped by vocab id) and award XP. The EpisodeShell
+  // only calls this when the episode is not yet awarded, so XP is never doubled.
+  const awardEpisode = useCallback((episode) => {
     setLocalProgress(previous => {
       const existing = new Set((previous.learnedItems || []).map(i => i.vocabId).filter(Boolean))
-      const additions = (episode.items || [])
+      const additions = (episode.gardenItems || [])
         .filter(id => !existing.has(id) && SEED_VOCAB_BY_ID[id])
         .map(id => ({
           vocabId: id,
@@ -330,7 +331,6 @@ export function AppProvider({ children }) {
         xp: (previous.xp || 0) + (episode.xp || 0),
       }
     })
-    setView('today')
   }, [])
 
   const logoutMock = useCallback(() => {
@@ -746,7 +746,7 @@ export function AppProvider({ children }) {
       completePersonalization, applyRecommendedSetup,
       showWelcome, dismissWelcome,
       showTutorial, dismissTutorial,
-      episodeActive, episodeDone, startEpisode, exitEpisode, completeEpisode,
+      episodeActiveId, episodeArcVersion, startEpisode, exitEpisode, awardEpisode, finishEpisode,
       logoutMock,
       darkMode, toggleDark, setThemeDark,
       onboardingCompleted, completeOnboarding,

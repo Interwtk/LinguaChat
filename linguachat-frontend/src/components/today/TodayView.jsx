@@ -4,7 +4,9 @@ import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { getMissionForToday } from '../../services/missions'
 import { getLocalizedMeaning } from '../../services/learningContent'
 import { ChattoMascot } from '../mascot/ChattoMascot'
-import { FIRST_EPISODE } from '../../data/episodes'
+import { ARC, getEpisode } from '../../learning/episodes/index.js'
+import { planDay, arcProgress } from '../../learning/engine/planner.js'
+import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 
 function StatPill({ label, value, color }) {
   return (
@@ -17,7 +19,10 @@ function StatPill({ label, value, color }) {
 }
 
 export function TodayView() {
-  const { navigateTo, profile, t, nativeLanguageInfo, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions, episodeDone, startEpisode } = useApp()
+  const { navigateTo, profile, t, nativeLanguageInfo, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions, episodeArcVersion, startEpisode } = useApp()
+  const plan = planDay(loadLearnerModel(), ARC)
+  const planEpisode = plan.episodeId ? getEpisode(plan.episodeId) : null
+  const arc = arcProgress(loadLearnerModel(), ARC)
   const phrase = getTodayPhrase()
   const mission = activeMissionDetails?.mission || getMissionForToday(profile.level, profile.goal)
   const hour = new Date().getHours()
@@ -48,26 +53,28 @@ export function TodayView() {
           </div>
         </div>
 
-        {/* First adaptive episode CTA */}
-        <button type="button" onClick={startEpisode}
-          className="card-lift w-full text-left rounded-3xl p-5 mb-6 flex items-center gap-4 animate-fade-up transition-all active:scale-[0.99]"
-          style={{ animationDelay: '0.02s', background: 'linear-gradient(135deg, var(--violet-soft), var(--blue-soft))', border: '1.5px solid var(--violet)' }}>
-          <ChattoMascot mood="welcoming" size={56} decorative intensity="ambient" />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
-              {episodeDone ? t('ep1DoneTag') : t('ep1EpisodeBadge')}
-            </p>
-            <p style={{ fontSize: '1.0625rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25, marginTop: 2 }}>
-              {episodeDone ? t(FIRST_EPISODE.titleKey) : `${t('ep1ContinuePrefix')}: ${t(FIRST_EPISODE.titleKey)}`}
-            </p>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45, marginTop: 3 }}>{t(FIRST_EPISODE.goalKey)}</p>
-            <div className="flex items-center gap-2 mt-2">
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', background: 'var(--bg-paper)', border: '1px solid var(--violet)', borderRadius: 999, padding: '2px 8px' }}>{FIRST_EPISODE.level}</span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', background: 'var(--bg-paper)', border: '1px solid var(--blue)', borderRadius: 999, padding: '2px 8px' }}>{t(FIRST_EPISODE.durationKey)}</span>
+        {/* Today's proposal from the planner */}
+        {planEpisode && (
+          <button type="button" onClick={() => startEpisode(planEpisode.id)}
+            className="card-lift w-full text-left rounded-3xl p-5 mb-6 flex items-center gap-4 animate-fade-up transition-all active:scale-[0.99]"
+            style={{ animationDelay: '0.02s', background: 'linear-gradient(135deg, var(--violet-soft), var(--blue-soft))', border: '1.5px solid var(--violet)' }}>
+            <ChattoMascot mood="welcoming" size={56} decorative intensity="ambient" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
+                {t('planTodayBadge')} · {arc.completed}/{arc.total}{plan.hasReview ? ` · ${t('planReviewTag')}` : ''}
+              </p>
+              <p style={{ fontSize: '1.0625rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25, marginTop: 2 }}>
+                {plan.type === 'continue_episode' ? `${t('ep1ContinuePrefix')}: ${t(planEpisode.titleKey)}` : t(planEpisode.titleKey)}
+              </p>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45, marginTop: 3 }}>{t(planEpisode.goalKey)}</p>
+              <div className="flex items-center gap-2 mt-2">
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', background: 'var(--bg-paper)', border: '1px solid var(--violet)', borderRadius: 999, padding: '2px 8px' }}>{planEpisode.level}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', background: 'var(--bg-paper)', border: '1px solid var(--blue)', borderRadius: 999, padding: '2px 8px' }}>{t(planEpisode.durationKey)}</span>
+              </div>
             </div>
-          </div>
-          <span aria-hidden="true" style={{ fontSize: '1.3rem', color: 'var(--violet)', flexShrink: 0 }}>→</span>
-        </button>
+            <span aria-hidden="true" style={{ fontSize: '1.3rem', color: 'var(--violet)', flexShrink: 0 }}>→</span>
+          </button>
+        )}
 
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-3 mb-6 animate-fade-up" style={{ animationDelay: '0.04s' }}>

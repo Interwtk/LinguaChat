@@ -44,6 +44,18 @@ export const SEED_VOCAB = [
     meaning: { en: 'short for "I am" — used before your name', es: 'soy / yo soy', pt: 'eu sou', fr: 'je suis', it: 'sono / io sono', de: 'ich bin', ja: '私は〜です', ar: 'أنا' } },
   { id: 'whats_your_name', term: 'What’s your name?', kind: 'phrase', emoji: '?', example: 'Hi! What’s your name?',
     meaning: { en: 'asking someone’s name', es: '¿Cómo te llamas?', pt: 'Qual é o seu nome?', fr: 'Comment tu t’appelles ?', it: 'Come ti chiami?', de: 'Wie heißt du?', ja: 'お名前は何ですか？', ar: 'ما اسمك؟' } },
+
+  /* Arc items (episodes 2 & 3) */
+  { id: 'name', term: 'name', kind: 'word', emoji: 'Na', example: 'What’s your name?',
+    meaning: { en: 'what you are called', es: 'nombre', pt: 'nome', fr: 'nom / prénom', it: 'nome', de: 'Name', ja: '名前', ar: 'اسم' } },
+  { id: 'my_name_is', term: 'My name is…', kind: 'phrase', emoji: 'My', example: 'My name is Alex.',
+    meaning: { en: 'a way to say your name', es: 'Me llamo…', pt: 'Meu nome é…', fr: 'Je m’appelle…', it: 'Mi chiamo…', de: 'Ich heiße…', ja: '私の名前は〜です', ar: 'اسمي…' } },
+  { id: 'nice_to_meet', term: 'Nice to meet you.', kind: 'phrase', emoji: ':)', example: 'Nice to meet you.',
+    meaning: { en: 'a friendly way to close a greeting', es: 'Mucho gusto.', pt: 'Prazer em conhecer.', fr: 'Enchanté(e).', it: 'Piacere di conoscerti.', de: 'Freut mich.', ja: 'はじめまして。', ar: 'سعيد بلقائك.' } },
+  { id: 'im_pattern', term: 'I’m + name', kind: 'pattern', emoji: 'I', example: 'I’m Alex.',
+    meaning: { en: '“I’m” followed by your name', es: '“I’m” + tu nombre', pt: '“I’m” + o teu nome', fr: '« I’m » + ton nom', it: '“I’m” + il tuo nome', de: '„I’m“ + dein Name', ja: '“I’m” + 名前', ar: '“I’m” + اسمك' } },
+  { id: 'whats_your_pattern', term: 'What’s your + noun', kind: 'pattern', emoji: 'W?', example: 'What’s your name?',
+    meaning: { en: 'asking about “your …”', es: 'preguntar por “tu …”', pt: 'perguntar por “o teu …”', fr: 'demander « ton … »', it: 'chiedere “il tuo …”', de: 'nach „dein …“ fragen', ja: '「あなたの〜」を尋ねる', ar: 'السؤال عن “…ك”' } },
 ]
 
 export const SEED_VOCAB_BY_ID = Object.fromEntries(SEED_VOCAB.map(item => [item.id, item]))

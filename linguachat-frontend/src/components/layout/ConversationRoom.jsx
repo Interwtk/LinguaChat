@@ -3,8 +3,10 @@ import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MessageBubble, TypingIndicator } from '../chat/MessageBubble'
 import { ChattoMascot } from '../mascot/ChattoMascot'
-import { EpisodePlayer } from '../episode/EpisodePlayer'
-import { FIRST_EPISODE } from '../../data/episodes'
+import { EpisodeShell } from '../episode/EpisodeShell'
+import { ARC, getEpisode } from '../../learning/episodes/index.js'
+import { planDay } from '../../learning/engine/planner.js'
+import { loadLearnerModel, getEpisodeState } from '../../learning/engine/learnerModel.js'
 
 export function ConversationRoom() {
   const {
@@ -20,8 +22,8 @@ export function ConversationRoom() {
     activeMissionDetails,
     missionCelebration,
     abandonMission,
-    episodeActive,
-    episodeDone,
+    episodeActiveId,
+    episodeArcVersion,
     startEpisode,
   } = useApp()
   const [input, setInput] = useState('')
@@ -75,13 +77,17 @@ export function ConversationRoom() {
   ]
 
   // Guided LinguaLoop episode takes over the practice area; free chat is preserved.
-  if (episodeActive) {
+  if (episodeActiveId) {
     return (
       <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>
-        <EpisodePlayer />
+        <EpisodeShell episodeId={episodeActiveId} />
       </div>
     )
   }
+
+  // Deterministic planner picks what to offer (re-read on arc changes).
+  const plan = planDay(loadLearnerModel(), ARC)
+  const suggestedEpisode = plan.episodeId ? getEpisode(plan.episodeId) : null
 
   return (
     <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>
@@ -206,21 +212,21 @@ export function ConversationRoom() {
 
       <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6">
         <div style={practiceInnerStyle}>
-          {!activeMissionDetails && (
+          {!activeMissionDetails && suggestedEpisode && (
             <div className="card-lift rounded-2xl p-4 mb-5 flex items-center gap-3 animate-fade-up"
               style={{ background: 'var(--bg-paper)', border: '1.5px solid var(--violet)', boxShadow: '0 0 0 3px var(--violet-soft)' }}>
               <ChattoMascot mood="happy" size={44} decorative intensity="ambient" />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
-                  {t('ep1EpisodeBadge')}{episodeDone ? ` · ${t('ep1DoneTag')}` : ''}
+                  {t('ep1EpisodeBadge')}{plan.hasReview ? ` · ${t('planReviewTag')}` : ''}
                 </p>
-                <p style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25 }}>{t(FIRST_EPISODE.titleKey)}</p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', lineHeight: 1.4, marginTop: 2 }}>{t(FIRST_EPISODE.goalKey)}</p>
+                <p style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25 }}>{t(suggestedEpisode.titleKey)}</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', lineHeight: 1.4, marginTop: 2 }}>{t(suggestedEpisode.goalKey)}</p>
               </div>
-              <button type="button" onClick={startEpisode}
+              <button type="button" onClick={() => startEpisode(suggestedEpisode.id)}
                 className="flex-shrink-0 rounded-2xl px-4 py-2.5 text-sm font-bold text-white transition-all hover:-translate-y-px active:scale-[0.98]"
                 style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))' }}>
-                {episodeDone ? t('ep1ReviewCta') : t('ep1StartCta')}
+                {plan.type === 'continue_episode' ? t('ep1ContinuePrefix') : t('ep1StartCta')}
               </button>
             </div>
           )}
