@@ -8,7 +8,12 @@
     "build": "vite build",
     "preview": "vite preview",
     "check:i18n": "node scripts/check-i18n.mjs",
-    "check:learning-content": "node scripts/check-learning-content.mjs"
+    "check:learning-content": "node scripts/check-learning-content.mjs",
+    "check:episodes": "node scripts/check-episodes.mjs",
+    "check:learner-model": "node scripts/check-learner-model.mjs",
+    "check:arc-e2e": "node scripts/check-arc-e2e.mjs",
+    "check:edge-cases": "node scripts/check-edge-cases.mjs",
+    "check:all": "node scripts/check-i18n.mjs && node scripts/check-learning-content.mjs && node scripts/check-episodes.mjs && node scripts/check-learner-model.mjs && node scripts/check-arc-e2e.mjs && node scripts/check-edge-cases.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
