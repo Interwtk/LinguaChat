@@ -41,6 +41,25 @@ has('renders a single active step', /const step = ep\.steps\[stepIndex\]/.test(s
 // Free-reply input carries an accessible label.
 has('reply input has aria-label', /ref=\{replyInputRef\}[\s\S]{0,600}aria-label=/.test(shell))
 
+/*
+ * Exactly one layout shell may be MOUNTED. Rendering both and hiding one with
+ * CSS keeps a second, stale copy of every stateful view alive; crossing the lg
+ * breakpoint then swaps that stale copy in and it persists its outdated step
+ * index over real progress (reproduced: progress 3 -> shown 0 -> saved 1).
+ */
+const app = read('src/App.jsx')
+has('shells are conditionally mounted, not CSS-hidden', /\{isDesktop && \(/.test(app) && /\{!isDesktop && \(/.test(app))
+has('uses the viewport hook', /useIsDesktop\(\)/.test(app))
+// Mounting must be the SOLE authority: a leftover `hidden lg:*` on a shell would
+// be a second source of truth and could blank the screen if the two disagreed.
+has('no conflicting hidden/lg CSS on the mounted shells', !/className="hidden lg:flex"/.test(app) && !/className="lg:hidden flex flex-col"/.test(app))
+
+const viewport = read('src/services/viewport.js')
+has('viewport query matches Tailwind lg', /min-width:\s*1024px/.test(viewport))
+// A missed `change` event must not strand the wrong shell — resize is also watched.
+has('viewport also listens to resize', /addEventListener\('resize'/.test(viewport))
+has('viewport re-reads the query on sync', /window\.matchMedia\(query\)\.matches/.test(viewport))
+
 // Global reduced-motion + focus-visible foundations live in the stylesheet.
 const css = read('src/index.css')
 has('honors prefers-reduced-motion', /prefers-reduced-motion/.test(css))

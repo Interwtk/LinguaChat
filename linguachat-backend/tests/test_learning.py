@@ -159,6 +159,82 @@ def test_endpoint_empty_response_is_safe():
     assert res.json()["error_type"] == "empty"
 
 
+def test_remote_missing_fields_falls_back(monkeypatch):
+    _enable_openai(monkeypatch)
+    # a truncated/incomplete verdict: no completed_objective at all
+    monkeypatch.setattr(evaluator, "evaluate_with_openai", lambda payload: {"understood": True})
+    r = evaluator.evaluate_episode_response(_payload(learner_response="Sebastian"))
+    assert r.source == "fallback"
+    assert r.retry_required is True
+
+
+def test_remote_empty_response_falls_back(monkeypatch):
+    _enable_openai(monkeypatch)
+    for empty in ({}, None, [], ""):
+        monkeypatch.setattr(evaluator, "evaluate_with_openai", lambda payload, e=empty: e)
+        r = evaluator.evaluate_episode_response(_payload(learner_response="Sebastian"))
+        assert r.source == "fallback"
+
+
+def test_remote_server_error_falls_back(monkeypatch):
+    _enable_openai(monkeypatch)
+    def boom(payload):
+        raise RuntimeError("500 Internal Server Error")
+    monkeypatch.setattr(evaluator, "evaluate_with_openai", boom)
+    r = evaluator.evaluate_episode_response(_payload(learner_response="Hi, I'm Sebastian."))
+    assert r.source == "fallback"
+    assert r.completed_objective is True
+
+
+@pytest.mark.parametrize("native", ["es", "pt", "fr", "it", "de", "ja", "ar", "en"])
+def test_native_language_does_not_change_the_verdict(native):
+    """Explanations are localized elsewhere; the verdict must be language-agnostic."""
+    accepted = client.post("/learning/evaluate", json=_payload(
+        learner_response="Hi, I'm Sebastian.", native_language=native)).json()
+    rejected = client.post("/learning/evaluate", json=_payload(
+        learner_response="Sebastian", native_language=native)).json()
+    assert accepted["completed_objective"] is True
+    assert rejected["completed_objective"] is False
+
+
+@pytest.mark.parametrize("target", ["en", None, "es"])
+def test_target_language_stays_english(target):
+    """target_language is accepted but English remains the taught language."""
+    body = client.post("/learning/evaluate", json=_payload(
+        learner_response="Hi, I'm Sebastian.", target_language=target)).json()
+    assert body["completed_objective"] is True
+    assert body["natural_version"].startswith("Hi, I'm ")
+
+
+def test_only_one_priority_error_is_reported():
+    # "Hi" is missing both the copula and the name; only ONE error is surfaced.
+    body = client.post("/learning/evaluate", json=_payload(learner_response="Hi")).json()
+    assert isinstance(body["error_type"], str)
+    assert body["error_type"] == "greeting_only"
+    assert body["retry_required"] is True
+
+
+def test_turn_context_is_optional_and_safe():
+    for ctx in (None, {}, {"lingua_said": None}):
+        res = client.post("/learning/evaluate", json=_payload(
+            expected_intent="nice_to_meet", learner_response="Nice to meet you.", turn_context=ctx))
+        assert res.status_code == 200
+        assert res.json()["completed_objective"] is True
+
+
+def test_unknown_step_type_is_not_judged():
+    body = client.post("/learning/evaluate", json=_payload(
+        expected_intent="something_new", learner_response="hello there")).json()
+    assert body["completed_objective"] is False
+    assert body["error_type"] == "unclear"
+    assert body["understood"] is False
+
+
+def test_oversized_response_is_rejected_by_validation():
+    res = client.post("/learning/evaluate", json=_payload(learner_response="x" * 600))
+    assert res.status_code == 422  # max_length guard on the request model
+
+
 # ---------- no regression on /chat, mission, translation ----------
 def test_chat_still_works():
     res = client.post("/chat", json={"message": "hello", "level": "A1"})
