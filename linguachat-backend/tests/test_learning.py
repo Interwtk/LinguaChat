@@ -235,6 +235,114 @@ def test_oversized_response_is_rejected_by_validation():
     assert res.status_code == 422  # max_length guard on the request model
 
 
+# ---------- second Pre-A1 arc: wellbeing, origin, full conversation ----------
+@pytest.mark.parametrize("text", [
+    "How are you?", "How are you doing?", "How're you?", "And how are you?",
+])
+def test_ask_wellbeing_accepts_variants(text):
+    r = evaluate_deterministic(_payload(expected_intent="ask_wellbeing", learner_response=text))
+    assert r["completed_objective"] is True
+
+
+@pytest.mark.parametrize("text", [
+    "I'm good.", "I'm fine.", "I'm okay.", "I'm tired.", "Good, thanks.", "Fine, thank you.", "I am well.",
+])
+def test_answer_wellbeing_accepts_any_feeling(text):
+    """A feeling is never wrong — only a missing structure is corrected."""
+    r = evaluate_deterministic(_payload(expected_intent="answer_wellbeing", learner_response=text))
+    assert r["completed_objective"] is True
+    assert r["error_type"] is None
+
+
+def test_wellbeing_incomplete_gets_one_priority_error():
+    no_aux = evaluate_deterministic(_payload(expected_intent="ask_wellbeing", learner_response="How you?"))
+    assert no_aux["completed_objective"] is False
+    assert no_aux["error_type"] == "missing_auxiliary"
+    bare = evaluate_deterministic(_payload(expected_intent="answer_wellbeing", learner_response="good"))
+    assert bare["completed_objective"] is False
+    assert bare["error_type"] == "missing_copula"
+    assert bare["natural_version"] == "I'm good."
+
+
+@pytest.mark.parametrize("text", ["And you?", "What about you?", "How about you?", "And yourself?"])
+def test_reciprocal_question(text):
+    assert evaluate_deterministic(_payload(expected_intent="reciprocal_question", learner_response=text))["completed_objective"] is True
+
+
+@pytest.mark.parametrize("text", ["Where are you from?", "And where are you from?", "What country are you from?"])
+def test_ask_origin_accepts_variants(text):
+    assert evaluate_deterministic(_payload(expected_intent="ask_origin", learner_response=text))["completed_objective"] is True
+
+
+def test_ask_origin_missing_auxiliary_is_recognised():
+    r = evaluate_deterministic(_payload(expected_intent="ask_origin", learner_response="Where you from?"))
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "missing_auxiliary"
+    assert r["natural_version"] == "Where are you from?"
+
+
+@pytest.mark.parametrize("text", [
+    "I'm from Colombia.", "I am from Colombia.", "I'm from Bogotá.", "I'm from Tokyo.", "I'm from the north of Spain.",
+])
+def test_answer_origin_accepts_any_place(text):
+    """Countries, cities and regions are all valid — no geographic judgement."""
+    r = evaluate_deterministic(_payload(expected_intent="answer_origin", learner_response=text))
+    assert r["completed_objective"] is True
+
+
+def test_bare_place_is_partial_evidence_not_a_failure():
+    r = evaluate_deterministic(_payload(expected_intent="answer_origin", learner_response="Colombia", learner_place="Colombia"))
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "missing_from"
+    assert r["natural_version"] == "I'm from Colombia."
+
+
+@pytest.mark.parametrize("place,expected", [
+    ("Nairobi", "I'm from Nairobi."),
+    ("Osaka", "I'm from Osaka."),
+    ("", "I'm from Colombia."),   # neutral fallback only when nothing is known
+])
+def test_origin_model_answer_follows_the_learner_place(place, expected):
+    r = evaluate_deterministic(_payload(expected_intent="answer_origin", learner_response="x", learner_place=place))
+    assert r["natural_version"] == expected
+
+
+def test_full_conversation_turn():
+    good = evaluate_deterministic(_payload(expected_intent="full_intro_conversation", learner_response="Hi, I'm Sebastian. How are you?"))
+    assert good["completed_objective"] is True
+    only_intro = evaluate_deterministic(_payload(expected_intent="full_intro_conversation", learner_response="Hi, I'm Sebastian."))
+    assert only_intro["completed_objective"] is False
+    assert only_intro["error_type"] == "incomplete_turn"
+
+
+def test_new_intents_work_through_the_endpoint_without_openai():
+    """The whole second arc must be completable with OpenAI disabled."""
+    for intent, text in [
+        ("ask_wellbeing", "How are you?"),
+        ("answer_wellbeing", "I'm tired."),
+        ("reciprocal_question", "And you?"),
+        ("ask_origin", "Where are you from?"),
+        ("answer_origin", "I'm from Lima."),
+        ("full_intro_conversation", "Hi, I'm Sebastian. Where are you from?"),
+    ]:
+        res = client.post("/learning/evaluate", json=_payload(expected_intent=intent, learner_response=text))
+        assert res.status_code == 200, intent
+        body = res.json()
+        assert body["completed_objective"] is True, f"{intent} rejected {text!r}"
+        assert body["source"] == "deterministic"
+
+
+def test_first_arc_intents_still_work():
+    """No regression on the original three episodes."""
+    for intent, text in [
+        ("introduction", "Hi, I'm Sebastian."),
+        ("ask_name", "What's your name?"),
+        ("nice_to_meet", "Nice to meet you."),
+    ]:
+        r = evaluate_deterministic(_payload(expected_intent=intent, learner_response=text))
+        assert r["completed_objective"] is True, intent
+
+
 # ---------- no regression on /chat, mission, translation ----------
 def test_chat_still_works():
     res = client.post("/chat", json={"message": "hello", "level": "A1"})

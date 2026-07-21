@@ -60,6 +60,28 @@ has('viewport query matches Tailwind lg', /min-width:\s*1024px/.test(viewport))
 has('viewport also listens to resize', /addEventListener\('resize'/.test(viewport))
 has('viewport re-reads the query on sync', /window\.matchMedia\(query\)\.matches/.test(viewport))
 
+/*
+ * Home must READ the session plan, never write it during render. Calling a
+ * persisting planner in the render body is a setState-in-render (React warns,
+ * and Home and the provider can disagree about today's plan).
+ */
+const today = read('src/components/today/TodayView.jsx')
+has('Home previews the session without persisting', /previewSession\(\)/.test(today))
+has('Home does not plan-and-save during render', !/planDailySession\(\)/.test(today))
+
+// The duration picker is a real radiogroup, usable by keyboard and screen reader.
+const picker = read('src/components/session/DurationPicker.jsx')
+has('duration picker uses radiogroup semantics', /role="radiogroup"/.test(picker) && /role="radio"/.test(picker))
+has('duration picker exposes aria-checked', /aria-checked=\{selected\}/.test(picker))
+has('duration picker supports arrow keys', /ArrowRight|ArrowDown/.test(picker))
+has('duration picker has comfortable tap targets', /minHeight:\s*\d\d/.test(picker))
+
+// The session runner must reuse EpisodeShell — never a second episode engine.
+const runner = read('src/components/session/SessionRunner.jsx')
+has('session reuses EpisodeShell', /<EpisodeShell episodeId=/.test(runner))
+has('session reuses the hybrid evaluator', /evaluateEpisodeResponse/.test(runner))
+has('session practice guards double submit', /guardRef\.current\.begin\(\)/.test(runner))
+
 // Global reduced-motion + focus-visible foundations live in the stylesheet.
 const css = read('src/index.css')
 has('honors prefers-reduced-motion', /prefers-reduced-motion/.test(css))

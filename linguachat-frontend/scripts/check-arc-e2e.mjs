@@ -21,14 +21,26 @@ import {
 } from '../src/learning/engine/learnerModel.js'
 
 const NAME = 'Sebastian'
-const resolve = (s) => String(s || '').replace(/\{name\}/g, NAME)
+const PLACE = 'Bogotá'
+const VARS = { name: NAME, partner: 'Sam', place: PLACE, partnerPlace: 'Japan' }
+const resolve = (s) => String(s || '').replace(/\{(\w+)\}/g, (m, k) => (VARS[k] ?? m))
 
 // canonical correct answer for a free/recall step (suggestion when present)
+const CANONICAL = {
+  introduction: `Hi, I'm ${NAME}.`,
+  ask_name: "What's your name?",
+  nice_to_meet: 'Nice to meet you too.',
+  ask_wellbeing: 'How are you?',
+  answer_wellbeing: "I'm good.",
+  reciprocal_question: 'And you?',
+  ask_origin: 'Where are you from?',
+  answer_origin: `I'm from ${PLACE}.`,
+  full_intro_conversation: `Hi, I'm ${NAME}. How are you?`,
+}
 function answerFor(step) {
   if (step.suggestionEn) return resolve(step.suggestionEn)
-  if (step.evalKind === 'introduction') return `Hi, I'm ${NAME}.`
-  if (step.evalKind === 'ask_name') return "What's your name?"
-  if (step.evalKind === 'nice_to_meet') return 'Nice to meet you too.'
+  const canonical = CANONICAL[step.evalKind]
+  if (canonical) return canonical
   throw new Error('no canonical answer for evalKind ' + step.evalKind)
 }
 
@@ -66,7 +78,8 @@ function playEpisode(model, ep, { mode }) {
     } else if (step.type === 'free_reply' || step.type === 'recall') {
       const fromSuggestion = mode === 'helped' && Boolean(step.suggestionEn)
       const independent = !fromSuggestion && scaffold !== 'high'
-      const res = evaluateFree(step.evalKind, answerFor(step), { name: NAME, independent })
+      const turnContext = { linguaSaid: resolve(step.promptEn || step.sceneEn || '') }
+      const res = evaluateFree(step.evalKind, answerFor(step), { name: NAME, independent, turnContext, place: PLACE })
       assert.ok(res.completedObjective, `${ep.id} step ${i} (${step.evalKind}): intended answer rejected → ${JSON.stringify(res)}`)
       ;(step.itemIds || []).forEach(id => recordItemAttempt(model, id, { correct: true, independent }))
       adapt({ correct: true, usedHelp: fromSuggestion || scaffold === 'high' })
@@ -92,7 +105,7 @@ function playEpisode(model, ep, { mode }) {
 const model = createLearnerModel()
 const garden = []
 let xp = 0
-assert.equal(ARC.length, 3, 'arc must have three episodes')
+assert.equal(ARC.length, 6, 'both Pre-A1 arcs must be playable end to end')
 
 for (const ep of ARC) {
   const { awarded } = playEpisode(model, ep, { mode: 'helped' })
@@ -102,10 +115,16 @@ for (const ep of ARC) {
   assert.equal(getEpisodeState(model, ep.id).status, 'completed', `${ep.id} completed`)
 }
 
-assert.equal(xp, 140, `arc XP should total 140, got ${xp}`)
+const expectedXp = ARC.reduce((sum, ep) => sum + ep.xp, 0)
+assert.equal(xp, expectedXp, `arc XP should total ${expectedXp}, got ${xp}`)
+assert.equal(xp, 315, 'both arcs together should award 315 XP')
 
 // garden: deduped union of all gardenItems, order-independent
-const expectedGarden = ['hi', 'hello', 'im', 'whats_your_name', 'my_name_is', 'name', 'nice_to_meet']
+const expectedGarden = [
+  'hi', 'hello', 'im', 'whats_your_name', 'my_name_is', 'name', 'nice_to_meet',
+  'how_are_you', 'im_good', 'and_you', 'good', 'fine', 'tired', 'im_feeling_pattern',
+  'where_from', 'im_from', 'from', 'what_about_you', 'im_from_pattern',
+]
 assert.deepEqual([...garden].sort(), [...expectedGarden].sort(), 'garden must be the deduped union')
 assert.equal(garden.length, new Set(garden).size, 'garden must have no duplicates')
 
@@ -134,4 +153,4 @@ assert.equal(bad.completedObjective, false, 'bare name must be rejected')
 markRecurringError(em, bad.errorType)
 assert.ok(em.recurringErrors.length === 1 && em.recurringErrors[0].errorType, 'recurring error recorded')
 
-console.log('check-arc-e2e — OK  (3 episodes played, XP', xp + ', garden', garden.length, 'items, full_greeting → can_do after independent replay)')
+console.log(`check-arc-e2e — OK  (${ARC.length} episodes played, XP ${xp}, garden ${garden.length} items, full_greeting → can_do after independent replay)`)

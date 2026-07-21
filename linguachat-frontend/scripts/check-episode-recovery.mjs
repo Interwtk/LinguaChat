@@ -102,7 +102,11 @@ const ok = () => { n++ }
   for (const ep of ARC) feed(ep)
   feed(ARC[2])   // replay must not duplicate
   assert.equal(garden.length, new Set(garden).size, 'no duplicates in the garden')
-  assert.deepEqual([...garden].sort(), ['hello', 'hi', 'im', 'my_name_is', 'name', 'nice_to_meet', 'whats_your_name'].sort())
+  assert.deepEqual([...garden].sort(), [
+    'hello', 'hi', 'im', 'my_name_is', 'name', 'nice_to_meet', 'whats_your_name',
+    'how_are_you', 'im_good', 'and_you', 'good', 'fine', 'tired', 'im_feeling_pattern',
+    'where_from', 'im_from', 'from', 'what_about_you', 'im_from_pattern',
+  ].sort())
   ok()
 }
 
