@@ -23,6 +23,12 @@ const PRAISE = {
   introduction: { independent: 'ep1PraiseIndependent', helped: 'ep1PraiseIm' },
   ask_name: { independent: 'ep2PraiseIndependent', helped: 'ep2PraiseAsked' },
   nice_to_meet: { independent: 'ep3PraiseIndependent', helped: 'ep3PraiseClose' },
+  ask_wellbeing: { independent: 'ep4PraiseIndependent', helped: 'ep4PraiseAsked' },
+  answer_wellbeing: { independent: 'ep4PraiseIndependent', helped: 'ep4PraiseAnswered' },
+  reciprocal_question: { independent: 'ep4PraiseIndependent', helped: 'ep4PraiseBounce' },
+  ask_origin: { independent: 'ep5PraiseIndependent', helped: 'ep5PraiseAsked' },
+  answer_origin: { independent: 'ep5PraiseIndependent', helped: 'ep5PraiseAnswered' },
+  full_intro_conversation: { independent: 'ep6PraiseIndependent', helped: 'ep6PraiseCombined' },
 }
 
 function praiseFor(kind, independent) {
@@ -65,6 +71,7 @@ function buildRemotePayload(params, kind) {
     target_items: step?.itemIds || [],
     learner_response: params.learnerResponse ?? '',
     learner_name: params.learnerName ?? '',
+    learner_place: params.place ?? '',
     native_language: params.nativeLanguage ?? 'en',
     interface_language: params.interfaceLanguage ?? 'en',
     target_language: params.targetLanguage ?? 'en',
@@ -76,10 +83,10 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', signal, remote } = params
   const kind = step?.evalKind
   const independent = !assistanceUsed && scaffoldLevel !== 'high'
-  const local = evaluateFree(kind, learnerResponse, { name: learnerName, independent, turnContext })
+  const local = evaluateFree(kind, learnerResponse, { name: learnerName, independent, turnContext, place })
 
   // Conclusive local verdict (closed step, clear accept, empty, clear failure).
   if (!shouldEscalate(local)) return { ...local, source: 'deterministic' }

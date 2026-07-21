@@ -8,14 +8,17 @@ import { getEpisode } from '../../learning/episodes/index.js'
 import { evaluateFree, shouldEscalate } from '../../learning/engine/responseEvaluation.js'
 import { evaluateEpisodeResponse } from '../../learning/engine/hybridEvaluation.js'
 import { createSubmissionGuard } from '../../learning/engine/submitGuard.js'
-import { partnerFor } from '../../learning/engine/variation.js'
+import { partnerFor, placeFor } from '../../learning/engine/variation.js'
 import { evaluateLearningResponse } from '../../services/api'
 import {
   loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, markRecurringError,
   getRecommendedScaffold, getEpisodeState, setEpisodeState,
 } from '../../learning/engine/learnerModel.js'
 
-const resolve = (str, name, partner = 'Alex') => String(str || '').replace(/\{name\}/g, name).replace(/\{partner\}/g, partner)
+// Fill {name} / {partner} / {place} / {partnerPlace} in the English target text.
+// An unknown placeholder is left untouched rather than printed as "undefined".
+const resolve = (str, vars = {}) =>
+  String(str || '').replace(/\{(\w+)\}/g, (match, key) => (vars[key] == null || vars[key] === '' ? match : String(vars[key])))
 
 function En({ children, className = '', style }) {
   return <span lang="en" dir="ltr" className={className} style={style}>{children}</span>
@@ -33,7 +36,9 @@ function LinguaLine({ children }) {
   )
 }
 
-export function EpisodeShell({ episodeId }) {
+// `onComplete` lets a daily session take over what happens after the episode:
+// inside a session the next block follows, standalone it returns to Home.
+export function EpisodeShell({ episodeId, onComplete = null }) {
   const { t, profile, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode } = useApp()
   const ep = getEpisode(episodeId)
   const name = (profile.name || '').trim() || 'Alex'
@@ -67,6 +72,9 @@ export function EpisodeShell({ episodeId }) {
   const [praise, setPraise] = useState(null)
   const [live, setLive] = useState('')
   const [reviewing, setReviewing] = useState(false)  // remote evaluation in flight
+  // The place the learner said they are from, captured inside the activity (see
+  // episode 5) — never required up front, never part of the global profile.
+  const [place, setPlace] = useState(() => modelRef.current.facts?.place || '')
 
   const guardRef = useRef(createSubmissionGuard())  // double-submit + late-response
   const abortRef = useRef(null)       // cancels the in-flight remote request
@@ -81,6 +89,11 @@ export function EpisodeShell({ episodeId }) {
 
   if (!ep) return null
   const step = ep.steps[stepIndex]
+
+  // The partner's own place is derived from the partner name, so it is stable
+  // per learner and never hardcoded to one country.
+  const partnerPlace = placeFor(partner)
+  const vars = { name, partner, place, partnerPlace }
 
   const remoteEvaluator = (payload, signal) => evaluateLearningResponse(payload, { signal })
 
@@ -125,10 +138,10 @@ export function EpisodeShell({ episodeId }) {
     const token = guardRef.current.begin()
     if (token === null) return                // a submission is already in flight
     const independent = !fromSuggestion && scaffold !== 'high' && !step.showModelDefault
-    const turnContext = { linguaSaid: resolve(step.promptEn || step.sceneEn || '', name, partner) }
+    const turnContext = { linguaSaid: resolve(step.promptEn || step.sceneEn || '', vars) }
 
     // Decide up front whether we will need Lingua, only to show a calm status.
-    const preview = evaluateFree(evalKind, text, { name, independent, turnContext })
+    const preview = evaluateFree(evalKind, text, { name, independent, turnContext, place })
     const willEscalate = shouldEscalate(preview)
 
     const controller = new AbortController()
@@ -138,7 +151,7 @@ export function EpisodeShell({ episodeId }) {
     let result
     try {
       result = await evaluateEpisodeResponse({
-        episode: ep, step, learnerResponse: text, learnerName: name,
+        episode: ep, step, learnerResponse: text, learnerName: name, place,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
         previousAttempts: attemptsRef.current, turnContext,
@@ -166,7 +179,7 @@ export function EpisodeShell({ episodeId }) {
       markRecurringError(modelRef.current, result.errorType)
       saveLearnerModel(modelRef.current)
       adaptScaffold({ correct: false })
-      setRetry({ explainKey: result.explanation, natural: resolve(result.naturalVersion, name), promptKey: result.retryPrompt })
+      setRetry({ explainKey: result.explanation, natural: resolve(result.naturalVersion, vars), promptKey: result.retryPrompt })
       setLive(t('ep1RetryTitle'))
       // return focus to the input so a screen reader/keyboard user retries in place
       setTimeout(() => { try { replyInputRef.current?.focus() } catch { /* noop */ } }, 40)
@@ -187,7 +200,8 @@ export function EpisodeShell({ episodeId }) {
       setEpisodeState(m, ep.id, { status: 'completed', stepIndex: ep.steps.length - 1 })
     }
     saveLearnerModel(m)
-    finishEpisode()
+    if (onComplete) onComplete(ep)
+    else finishEpisode()
   }
 
   return (
@@ -227,7 +241,7 @@ export function EpisodeShell({ episodeId }) {
         {/* ---------------- MODEL ---------------- */}
         {step.type === 'model' && (
           <div>
-            <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.target, name, partner)}</En>{step.response && <> <En style={{ opacity: 0.85 }}>{resolve(step.response, name, partner)}</En></>}</LinguaLine>
+            <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.target, vars)}</En>{step.response && <> <En style={{ opacity: 0.85 }}>{resolve(step.response, vars)}</En></>}</LinguaLine>
             {(showHelp || scaffold === 'high') && (
               <div className="rounded-2xl p-4 mb-3 animate-fade-up" style={{ background: 'var(--violet-soft)', border: '1px solid var(--violet)' }}>
                 <p lang={nativeLang} style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{(step.meaningItems || []).map(meaningOf).join(' · ')}</p>
@@ -245,7 +259,7 @@ export function EpisodeShell({ episodeId }) {
         {step.type === 'comprehension' && (
           <div className="animate-fade-up">
             <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{t(step.instructionKey)}</p>
-            <div className="rounded-2xl p-3 mb-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}><En style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--ink)' }}>{resolve(step.target, name)}</En></div>
+            <div className="rounded-2xl p-3 mb-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}><En style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--ink)' }}>{resolve(step.target, vars)}</En></div>
             <div className="flex flex-col gap-2">
               {step.options.map((opt, i) => {
                 const chosen = choice === i
@@ -272,7 +286,7 @@ export function EpisodeShell({ episodeId }) {
         {step.type === 'choice' && (
           <div className="animate-fade-up">
             <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{t(step.instructionKey)}</p>
-            {step.promptEn && <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.promptEn, name, partner)}</En></LinguaLine>}
+            {step.promptEn && <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.promptEn, vars)}</En></LinguaLine>}
             <div className="flex flex-col gap-2 mt-2">
               {step.options.map((opt, i) => {
                 const chosen = choice === i
@@ -287,7 +301,7 @@ export function EpisodeShell({ episodeId }) {
                     }}
                     className="rounded-2xl px-4 py-3 text-left transition-all active:scale-[0.99]"
                     style={{ background: done && opt.correct ? 'var(--green-soft)' : chosen && !opt.correct ? 'var(--coral-soft)' : 'var(--bg-paper)', border: `1.5px solid ${done && opt.correct ? 'var(--green)' : chosen && !opt.correct ? 'var(--coral)' : 'var(--border)'}` }}>
-                    <En style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--ink)' }}>{resolve(opt.textEn, name)}</En>
+                    <En style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--ink)' }}>{resolve(opt.textEn, vars)}</En>
                   </button>
                 )
               })}
@@ -297,7 +311,7 @@ export function EpisodeShell({ episodeId }) {
 
         {/* ---------------- WORD ORDER ---------------- */}
         {step.type === 'word_order' && (() => {
-          const tokens = step.tokens.map(tk => resolve(tk, name))
+          const tokens = step.tokens.map(tk => resolve(tk, vars))
           const remaining = tokens.filter(tok => buildOrder.filter(x => x === tok).length < tokens.filter(x => x === tok).length || !buildOrder.includes(tok))
           return (
             <div className="animate-fade-up">
@@ -337,11 +351,22 @@ export function EpisodeShell({ episodeId }) {
             <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>{t(step.instructionKey)}</p>
             <div className="flex items-center gap-2 flex-wrap rounded-2xl p-3 mb-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
               <En style={{ fontSize: '1rem', fontWeight: 700 }}>{step.before}</En>
-              <input value={fillValue} onChange={e => setFillValue(e.target.value)} lang="en" dir="ltr" placeholder={t('ep1TypeName')} aria-label={t(step.instructionKey)} className="chat-input rounded-xl px-3 py-2 text-sm" style={{ flex: 1, minWidth: 120, background: 'var(--bg-paper)', border: '1.5px solid var(--border)', color: 'var(--ink)' }} />
+              <input value={fillValue} onChange={e => setFillValue(e.target.value)} lang="en" dir="ltr" placeholder={t(step.placeholderKey || 'ep1TypeName')} aria-label={t(step.instructionKey)} className="chat-input rounded-xl px-3 py-2 text-sm" style={{ flex: 1, minWidth: 120, background: 'var(--bg-paper)', border: '1.5px solid var(--border)', color: 'var(--ink)' }} />
               <En style={{ fontSize: '1rem', fontWeight: 700 }}>{step.after}</En>
             </div>
-            {scaffold === 'high' && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginBottom: 12 }}>{t(step.hintKey)} <En style={{ fontWeight: 700 }}>{resolve(`${step.before} ${name}${step.after}`, name)}</En></p>}
-            <button disabled={!fillValue.trim()} onClick={() => { recordItems([step.itemId].filter(Boolean), { correct: true, independent: scaffold !== 'high' }); setLive(t('ep1Correct')); advance() }} className="w-full py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]" style={{ background: 'var(--violet)', opacity: fillValue.trim() ? 1 : 0.5 }}>{t('ep1Check')}</button>
+            {scaffold === 'high' && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginBottom: 12 }}>{t(step.hintKey)} <En style={{ fontWeight: 700 }}>{resolve(`${step.before} ${step.captureFact ? (place || partnerPlace) : name}${step.after}`, vars)}</En></p>}
+            <button disabled={!fillValue.trim()} onClick={() => {
+              // A capture step stores what the learner typed (e.g. their place)
+              // so later steps and model answers can use it. Never validated.
+              if (step.captureFact) {
+                const value = fillValue.trim()
+                modelRef.current.facts = { ...(modelRef.current.facts || {}), [step.captureFact]: value }
+                saveLearnerModel(modelRef.current)
+                if (step.captureFact === 'place') setPlace(value)
+              }
+              recordItems([step.itemId].filter(Boolean), { correct: true, independent: scaffold !== 'high' })
+              setLive(t('ep1Correct')); advance()
+            }} className="w-full py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]" style={{ background: 'var(--violet)', opacity: fillValue.trim() ? 1 : 0.5 }}>{t('ep1Check')}</button>
           </div>
         )}
 
@@ -349,9 +374,9 @@ export function EpisodeShell({ episodeId }) {
         {(step.type === 'free_reply' || step.type === 'recall') && (
           <div className="animate-fade-up">
             {step.sceneEn
-              ? <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.sceneEn, name, partner)}</En></LinguaLine>
+              ? <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.sceneEn, vars)}</En></LinguaLine>
               : step.promptEn
-                ? <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.promptEn, name, partner)}</En></LinguaLine>
+                ? <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.promptEn, vars)}</En></LinguaLine>
                 : (
                   <div className="flex items-center gap-2 mb-3">
                     <ChattoMascot mood="supportive" size={40} intensity="support" decorative />
@@ -370,8 +395,8 @@ export function EpisodeShell({ episodeId }) {
             )}
 
             {step.suggestionEn && (scaffold !== 'low' || retry) && !reviewing && (
-              <button type="button" onClick={() => { setReply(resolve(step.suggestionEn, name)); setUsedSuggestion(true) }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]" style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}>
-                {t('ep1UseSuggestion')}: <En>{resolve(step.suggestionEn, name)}</En>
+              <button type="button" onClick={() => { setReply(resolve(step.suggestionEn, vars)); setUsedSuggestion(true) }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]" style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}>
+                {t('ep1UseSuggestion')}: <En>{resolve(step.suggestionEn, vars)}</En>
               </button>
             )}
 

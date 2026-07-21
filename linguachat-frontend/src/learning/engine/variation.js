@@ -24,4 +24,17 @@ export function partnerFor(seedStr) {
   return PARTNERS[seedFrom(seedStr) % PARTNERS.length]
 }
 
+/*
+ * Where the roleplay partner is from. Derived from the partner name so it is
+ * stable per learner and varied across learners — and so no single country is
+ * ever hardcoded as "the" answer. This is the PARTNER's place only; the
+ * learner's own place is always supplied by the learner.
+ */
+const PARTNER_PLACES = ['Canada', 'Ireland', 'Kenya', 'Japan', 'Brazil', 'Spain', 'India', 'Mexico']
+
+export function placeFor(partnerName) {
+  return PARTNER_PLACES[seedFrom(partnerName) % PARTNER_PLACES.length]
+}
+
 export const PARTNER_NAMES = PARTNERS
+export const PARTNER_PLACE_NAMES = PARTNER_PLACES

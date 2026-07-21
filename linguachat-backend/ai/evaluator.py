@@ -23,6 +23,8 @@ logger = logging.getLogger(__name__)
 _ALLOWED_ERROR_TYPES = {
     None, "empty", "missing_copula", "missing_name", "greeting_only",
     "no_intro", "question_order", "no_question", "missing_close", "unclear",
+    # second Pre-A1 arc
+    "missing_auxiliary", "missing_from", "no_answer", "incomplete_turn",
 }
 
 # ---- normalization (mirrors the frontend responseEvaluation) ----
@@ -155,6 +157,103 @@ def _nice(text: str, turn: dict) -> dict:
                  natural_version=natural, confidence=0.75)
 
 
+# ---- second Pre-A1 arc: how you are, where you are from ----
+_ASK_WELLBEING = re.compile(r"\b(how are you( doing| today)?|how'?re you|how are things|how'?s it going)\b")
+_WELLBEING_NO_AUX = re.compile(r"\bhow (you|u)\b")
+_FEELING = re.compile(r"\b(good|fine|okay|ok|great|well|tired|happy|sleepy|so so|not bad|alright)\b")
+_IM = re.compile(r"\b(i'?m|i am)\b")
+_RECIPROCAL_Q = re.compile(r"\b(and you|what about you|how about you|and yourself)\b")
+_ASK_ORIGIN = re.compile(r"\b((and )?where are you from|what country are you from|where do you come from)\b")
+_ORIGIN_NO_AUX = re.compile(r"\bwhere (you|u) from\b")
+_FROM_PLACE = re.compile(r"\bfrom\s+[^\W\d_]", re.UNICODE)
+
+
+def _ask_wellbeing(text: str) -> dict:
+    n = normalize(text)
+    natural = "How are you?"
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _ASK_WELLBEING.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=not re.fullmatch(r"how are you", n), confidence=0.95)
+    if _WELLBEING_NO_AUX.search(n):
+        return _base(error_type="missing_auxiliary", retry_required=True, natural_version=natural, confidence=0.85)
+    return _base(error_type="no_question", retry_required=True, natural_version=natural, confidence=0.75)
+
+
+def _answer_wellbeing(text: str) -> dict:
+    n = normalize(text)
+    natural = "I'm good."
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    feeling = bool(_FEELING.search(n))
+    polite_short = feeling and bool(re.search(r"\b(thanks|thank you)\b", n))
+    if feeling and (_IM.search(n) or polite_short):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=not re.fullmatch(r"i'?m good", n), confidence=0.95)
+    if feeling:
+        # the feeling is understood; only the structure is missing
+        return _base(error_type="missing_copula", retry_required=True, natural_version=natural, confidence=0.8)
+    return _base(error_type="no_answer", retry_required=True, natural_version=natural, confidence=0.7)
+
+
+def _reciprocal(text: str) -> dict:
+    n = normalize(text)
+    natural = "And you?"
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _RECIPROCAL_Q.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=not re.fullmatch(r"and you", n), confidence=0.95)
+    return _base(error_type="no_question", retry_required=True, natural_version=natural, confidence=0.75)
+
+
+def _ask_origin(text: str) -> dict:
+    n = normalize(text)
+    natural = "Where are you from?"
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _ASK_ORIGIN.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=not re.fullmatch(r"where are you from", n), confidence=0.95)
+    if _ORIGIN_NO_AUX.search(n):
+        return _base(error_type="missing_auxiliary", retry_required=True, natural_version=natural, confidence=0.85)
+    return _base(error_type="no_question", retry_required=True, natural_version=natural, confidence=0.75)
+
+
+def _answer_origin(text: str, place: str) -> dict:
+    """The place itself is never judged — only the English structure is taught."""
+    n = normalize(text)
+    natural = f"I'm from {(place or '').strip() or 'Colombia'}."
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    copula = bool(_IM.search(n))
+    from_place = bool(_FROM_PLACE.search(n))
+    if copula and from_place:
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=not n.startswith("i'm from"), confidence=0.96)
+    if from_place:
+        return _base(error_type="missing_copula", retry_required=True, natural_version=natural, confidence=0.8)
+    if re.search(r"[^\W\d_]", n, re.UNICODE) and len(n.split()) <= 3:
+        # a bare place name: understood, but ask for the whole sentence
+        return _base(error_type="missing_from", retry_required=True, natural_version=natural, confidence=0.8)
+    return _base(error_type="no_answer", retry_required=True, natural_version=natural, confidence=0.6)
+
+
+def _full_conversation(text: str, name: str) -> dict:
+    n = normalize(text)
+    natural = f"Hi, I'm {(name or 'Alex').strip() or 'Alex'}. How are you?"
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    intro = _intro(text, name)
+    carries_on = bool(_ASK_WELLBEING.search(n) or _ASK_ORIGIN.search(n) or _ASK.search(n) or _NICE.search(n))
+    if intro["completed_objective"] and carries_on:
+        return _base(completed_objective=True, accepted_variant=True, natural_version=natural, confidence=0.94)
+    if intro["completed_objective"]:
+        return _base(error_type="incomplete_turn", retry_required=True, natural_version=natural, confidence=0.85)
+    return {**intro, "natural_version": natural}
+
+
 def evaluate_deterministic(payload: dict) -> dict:
     kind = (payload.get("expected_intent") or payload.get("step_type") or "").strip()
     text = payload.get("learner_response") or ""
@@ -170,6 +269,18 @@ def evaluate_deterministic(payload: dict) -> dict:
         return _ask(text)
     if kind == "nice_to_meet":
         return _nice(text, turn_dict)
+    if kind == "ask_wellbeing":
+        return _ask_wellbeing(text)
+    if kind == "answer_wellbeing":
+        return _answer_wellbeing(text)
+    if kind == "reciprocal_question":
+        return _reciprocal(text)
+    if kind == "ask_origin":
+        return _ask_origin(text)
+    if kind == "answer_origin":
+        return _answer_origin(text, payload.get("learner_place") or "")
+    if kind == "full_intro_conversation":
+        return _full_conversation(text, name)
     # unknown step type — do not pretend to judge it
     return _base(understood=False, error_type="unclear", retry_required=True, confidence=0.4)
 

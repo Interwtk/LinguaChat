@@ -162,6 +162,242 @@ const base = {
   ep1VariationInstruction: 'Now meet Alex. Introduce yourself again.',
   ep1UseSuggestion: 'Use',
   epEvaluating: 'Lingua is reviewing your answer',
+
+  sessionBadge: "TODAY’S SESSION",
+
+  sessionStartCta: "Start session",
+
+  sessionContinueCta: "Continue session",
+
+  sessionPause: "Pause",
+
+  sessionStepOf: "Step {done} of {total}",
+
+  sessionBlockBadge: "QUICK PRACTICE",
+
+  sessionTurnInstruction: "Answer in English.",
+
+  sessionSkipBlock: "Skip for now",
+
+  sessionReviewTitle: "Let’s bring one phrase back",
+
+  sessionRetryTitle: "Let’s practise something you almost had",
+
+  sessionRecallTitle: "Let’s make this one solid",
+
+  sessionFreeChatTitle: "Free conversation",
+
+  sessionFreeChatBody: "Use what you know with Lingua, with no exercises.",
+
+  sessionFreeChatCta: "Open free chat",
+
+  sessionDoneBadge: "SESSION COMPLETE",
+
+  sessionDoneTitle: "You practised what you needed today",
+
+  sessionDoneBody: "Your English grew a little in a real situation, not on a list.",
+
+  sessionDoneNext: "Tomorrow we’ll build on this.",
+
+  sessionDoneCount: "{count} activities completed",
+
+  sessionDoneCta: "Back to today",
+
+  sessionDurationLabel: "How long today?",
+
+  sessionDurationLockedHint: "You can change the length next time.",
+
+  sessionMinutes: "about {minutes} min",
+
+  sessionDuration_quick: "Quick",
+
+  sessionDuration_standard: "Normal",
+
+  sessionDuration_deep: "Deep",
+
+  sessionDurationHint_quick: "One essential goal.",
+
+  sessionDurationHint_standard: "Review and progress, balanced.",
+
+  sessionDurationHint_deep: "More practice and conversation.",
+
+  ep4Title: "How are you?",
+
+  ep4Goal: "I can ask how someone is and give a simple answer.",
+
+  ep4CanDoName: "Ask and answer how you are",
+
+  ep4Duration: "5–8 min",
+
+  ep4RecallInstruction: "Warm up: introduce yourself.",
+
+  ep4SceneTitle: "You meet again",
+
+  ep4SceneBody: "You already know each other. Now you can ask how they are.",
+
+  ep4ModelExplain: "“How are you?” asks about the other person. “I’m good” answers it.",
+
+  ep4ComprehensionInstruction: "What is Lingua asking?",
+
+  ep4CompOptCorrect: "How you are feeling",
+
+  ep4CompOptWrong1: "Your name",
+
+  ep4CompOptWrong2: "Where you live",
+
+  ep4BuildInstruction: "Build the question:",
+
+  ep4ChoiceInstruction: "Any of these works. Choose how you feel:",
+
+  ep4AnswerInstruction: "Answer how you are.",
+
+  ep4AskInstruction: "Now ask how they are.",
+
+  ep4BounceInstruction: "Return the question in two words.",
+
+  ep4FinalInstruction: "Last one — ask how they are, with no model.",
+
+  ep4CloseTitle: "You can ask and answer",
+
+  ep4CloseBody: "That short exchange is how most real conversations start.",
+
+  ep4PraiseIndependent: "You did that without the model.",
+
+  ep4PraiseAsked: "You asked it correctly.",
+
+  ep4PraiseAnswered: "That answer sounds natural.",
+
+  ep4PraiseBounce: "Nice — you returned the question.",
+
+  ep4RetryPromptEmpty: "Write your answer in English.",
+
+  ep4RetryExplainAux: "I understood you. English needs “are” in this question:",
+
+  ep4RetryPromptAux: "Try again: How are…",
+
+  ep4RetryExplainAsk: "To ask about the other person, use this question:",
+
+  ep4RetryPromptAsk: "Try again: How…",
+
+  ep4RetryExplainIm: "Good feeling! In English we add “I’m” before it:",
+
+  ep4RetryPromptIm: "Try again: I’m…",
+
+  ep4RetryExplainBounce: "To return the question, English uses two short words:",
+
+  ep4RetryPromptBounce: "Try again: And…",
+
+  ep5Title: "Where are you from?",
+
+  ep5Goal: "I can ask where someone is from and say where I’m from.",
+
+  ep5CanDoName: "Ask and say where you are from",
+
+  ep5Duration: "6–9 min",
+
+  ep5RecallInstruction: "First, greet and say your name.",
+
+  ep5SceneTitle: "Someone from far away",
+
+  ep5SceneBody: "You meet someone from another place. Where are they from?",
+
+  ep5ModelExplain: "“Where are you from?” asks about a place. “I’m from…” answers it.",
+
+  ep5ComprehensionInstruction: "What information is being asked?",
+
+  ep5CompOptCorrect: "The place you come from",
+
+  ep5CompOptWrong1: "How old you are",
+
+  ep5CompOptWrong2: "How you feel",
+
+  ep5BuildInstruction: "Build the question:",
+
+  ep5FillInstruction: "Complete it with your own place:",
+
+  ep5FillHint: "A country, a city or a region — whatever you say.",
+
+  ep5PlacePlaceholder: "your place",
+
+  ep5AnswerInstruction: "Now say where you are from.",
+
+  ep5AskInstruction: "Ask where they are from.",
+
+  ep5BounceInstruction: "Return the question another way.",
+
+  ep5FinalInstruction: "Last one — say where you are from, with no model.",
+
+  ep5CloseTitle: "You can talk about where you’re from",
+
+  ep5CloseBody: "This is one of the first things people ask each other.",
+
+  ep5PraiseIndependent: "You said it on your own.",
+
+  ep5PraiseAsked: "You asked it correctly.",
+
+  ep5PraiseAnswered: "You used the full structure.",
+
+  ep5RetryPromptEmpty: "Write your answer in English.",
+
+  ep5RetryExplainAux: "I understood you. This question needs “are”:",
+
+  ep5RetryPromptAux: "Try again: Where are…",
+
+  ep5RetryExplainAsk: "To ask about a place, use this question:",
+
+  ep5RetryPromptAsk: "Try again: Where…",
+
+  ep5RetryExplainIm: "Almost — English starts this answer with “I’m”:",
+
+  ep5RetryPromptIm: "Try again: I’m from…",
+
+  ep5RetryExplainFrom: "I understood the place. Now say the whole sentence:",
+
+  ep5RetryPromptFrom: "Try again: I’m from…",
+
+  ep6Title: "Your first conversation",
+
+  ep6Goal: "I can greet someone, introduce myself, ask how they are and say where I’m from.",
+
+  ep6CanDoName: "Hold a first conversation",
+
+  ep6Duration: "8–12 min",
+
+  ep6SceneTitle: "A real conversation",
+
+  ep6SceneBody: "No cards this time. Just you and someone new — everything you have learned, together.",
+
+  ep6Start: "Start the conversation",
+
+  ep6TurnGreet: "Greet and introduce yourself.",
+
+  ep6TurnAskName: "Ask for their name.",
+
+  ep6TurnNice: "Close the introduction politely.",
+
+  ep6TurnAskWellbeing: "Ask how they are.",
+
+  ep6TurnAnswerWellbeing: "Now answer how you are.",
+
+  ep6TurnAskOrigin: "Ask where they are from.",
+
+  ep6TurnAnswerOrigin: "Say where you are from.",
+
+  ep6FinalInstruction: "Final challenge — open a conversation and keep it going, in one turn.",
+
+  ep6CloseTitle: "You had your first conversation",
+
+  ep6CloseBody: "You did not complete a lesson — you met someone in English.",
+
+  ep6PraiseIndependent: "A whole turn, on your own.",
+
+  ep6PraiseCombined: "You joined two ideas in one turn.",
+
+  ep6RetryPromptEmpty: "Write your answer in English.",
+
+  ep6RetryExplainMore: "Good introduction! Now keep the conversation going — add a question:",
+
+  ep6RetryPromptMore: "Try again: Hi, I’m… How are you?",
   ep1TypeReply: 'Type your reply…',
   ep1Send: 'Send',
   ep1FeedbackGood: 'Great — you greeted them and said your name!',
@@ -708,6 +944,242 @@ const es = {
   ep1VariationInstruction: 'Ahora conoce a Alex. Preséntate otra vez.',
   ep1UseSuggestion: 'Usar',
   epEvaluating: 'Lingua está revisando tu respuesta',
+
+  sessionBadge: "SESIÓN DE HOY",
+
+  sessionStartCta: "Comenzar sesión",
+
+  sessionContinueCta: "Continuar sesión",
+
+  sessionPause: "Pausar",
+
+  sessionStepOf: "Paso {done} de {total}",
+
+  sessionBlockBadge: "PRÁCTICA BREVE",
+
+  sessionTurnInstruction: "Responde en inglés.",
+
+  sessionSkipBlock: "Saltar por ahora",
+
+  sessionReviewTitle: "Recuperemos una frase",
+
+  sessionRetryTitle: "Practiquemos algo que casi tienes",
+
+  sessionRecallTitle: "Afiancemos esto",
+
+  sessionFreeChatTitle: "Conversación libre",
+
+  sessionFreeChatBody: "Usa lo que sabes con Lingua, sin ejercicios.",
+
+  sessionFreeChatCta: "Abrir conversación",
+
+  sessionDoneBadge: "SESIÓN COMPLETA",
+
+  sessionDoneTitle: "Practicaste lo que necesitabas hoy",
+
+  sessionDoneBody: "Tu inglés creció un poco en una situación real, no en una lista.",
+
+  sessionDoneNext: "Mañana seguiremos desde aquí.",
+
+  sessionDoneCount: "{count} actividades completadas",
+
+  sessionDoneCta: "Volver a hoy",
+
+  sessionDurationLabel: "¿Cuánto tiempo hoy?",
+
+  sessionDurationLockedHint: "Puedes cambiar la duración la próxima vez.",
+
+  sessionMinutes: "unos {minutes} min",
+
+  sessionDuration_quick: "Rápida",
+
+  sessionDuration_standard: "Normal",
+
+  sessionDuration_deep: "Profunda",
+
+  sessionDurationHint_quick: "Un objetivo esencial.",
+
+  sessionDurationHint_standard: "Repaso y progreso equilibrados.",
+
+  sessionDurationHint_deep: "Más práctica y conversación.",
+
+  ep4Title: "¿Cómo estás?",
+
+  ep4Goal: "Puedo preguntar cómo está alguien y dar una respuesta simple.",
+
+  ep4CanDoName: "Preguntar y responder cómo estás",
+
+  ep4Duration: "5–8 min",
+
+  ep4RecallInstruction: "Calienta: preséntate.",
+
+  ep4SceneTitle: "Se vuelven a ver",
+
+  ep4SceneBody: "Ya se conocen. Ahora puedes preguntar cómo está.",
+
+  ep4ModelExplain: "“How are you?” pregunta por la otra persona. “I’m good” responde.",
+
+  ep4ComprehensionInstruction: "¿Qué está preguntando Lingua?",
+
+  ep4CompOptCorrect: "Cómo te sientes",
+
+  ep4CompOptWrong1: "Tu nombre",
+
+  ep4CompOptWrong2: "Dónde vives",
+
+  ep4BuildInstruction: "Forma la pregunta:",
+
+  ep4ChoiceInstruction: "Cualquiera sirve. Elige cómo te sientes:",
+
+  ep4AnswerInstruction: "Responde cómo estás.",
+
+  ep4AskInstruction: "Ahora pregunta cómo está.",
+
+  ep4BounceInstruction: "Devuelve la pregunta en dos palabras.",
+
+  ep4FinalInstruction: "La última: pregunta cómo está, sin modelo.",
+
+  ep4CloseTitle: "Ya puedes preguntar y responder",
+
+  ep4CloseBody: "Ese intercambio corto es como empieza casi toda conversación real.",
+
+  ep4PraiseIndependent: "Lo hiciste sin mirar el modelo.",
+
+  ep4PraiseAsked: "Preguntaste correctamente.",
+
+  ep4PraiseAnswered: "Esa respuesta suena natural.",
+
+  ep4PraiseBounce: "Bien: devolviste la pregunta.",
+
+  ep4RetryPromptEmpty: "Escribe tu respuesta en inglés.",
+
+  ep4RetryExplainAux: "Te entendí. En inglés esta pregunta necesita “are”:",
+
+  ep4RetryPromptAux: "Inténtalo otra vez: How are…",
+
+  ep4RetryExplainAsk: "Para preguntar por la otra persona, usa esta pregunta:",
+
+  ep4RetryPromptAsk: "Inténtalo otra vez: How…",
+
+  ep4RetryExplainIm: "¡Buen sentimiento! En inglés añadimos “I’m” antes:",
+
+  ep4RetryPromptIm: "Inténtalo otra vez: I’m…",
+
+  ep4RetryExplainBounce: "Para devolver la pregunta, el inglés usa dos palabras cortas:",
+
+  ep4RetryPromptBounce: "Inténtalo otra vez: And…",
+
+  ep5Title: "¿De dónde eres?",
+
+  ep5Goal: "Puedo preguntar de dónde es alguien y decir de dónde soy.",
+
+  ep5CanDoName: "Preguntar y decir de dónde eres",
+
+  ep5Duration: "6–9 min",
+
+  ep5RecallInstruction: "Primero, saluda y di tu nombre.",
+
+  ep5SceneTitle: "Alguien de lejos",
+
+  ep5SceneBody: "Conoces a alguien de otro lugar. ¿De dónde es?",
+
+  ep5ModelExplain: "“Where are you from?” pregunta por un lugar. “I’m from…” responde.",
+
+  ep5ComprehensionInstruction: "¿Qué información se pregunta?",
+
+  ep5CompOptCorrect: "El lugar de donde vienes",
+
+  ep5CompOptWrong1: "Cuántos años tienes",
+
+  ep5CompOptWrong2: "Cómo te sientes",
+
+  ep5BuildInstruction: "Forma la pregunta:",
+
+  ep5FillInstruction: "Complétalo con tu propio lugar:",
+
+  ep5FillHint: "Un país, una ciudad o una región: lo que tú digas.",
+
+  ep5PlacePlaceholder: "tu lugar",
+
+  ep5AnswerInstruction: "Ahora di de dónde eres.",
+
+  ep5AskInstruction: "Pregunta de dónde es.",
+
+  ep5BounceInstruction: "Devuelve la pregunta de otra forma.",
+
+  ep5FinalInstruction: "La última: di de dónde eres, sin modelo.",
+
+  ep5CloseTitle: "Ya puedes hablar de dónde eres",
+
+  ep5CloseBody: "Es una de las primeras cosas que la gente se pregunta.",
+
+  ep5PraiseIndependent: "Lo dijiste por tu cuenta.",
+
+  ep5PraiseAsked: "Preguntaste correctamente.",
+
+  ep5PraiseAnswered: "Usaste la estructura completa.",
+
+  ep5RetryPromptEmpty: "Escribe tu respuesta en inglés.",
+
+  ep5RetryExplainAux: "Te entendí. Esta pregunta necesita “are”:",
+
+  ep5RetryPromptAux: "Inténtalo otra vez: Where are…",
+
+  ep5RetryExplainAsk: "Para preguntar por un lugar, usa esta pregunta:",
+
+  ep5RetryPromptAsk: "Inténtalo otra vez: Where…",
+
+  ep5RetryExplainIm: "Casi: en inglés esta respuesta empieza con “I’m”:",
+
+  ep5RetryPromptIm: "Inténtalo otra vez: I’m from…",
+
+  ep5RetryExplainFrom: "Entendí el lugar. Ahora di la frase completa:",
+
+  ep5RetryPromptFrom: "Inténtalo otra vez: I’m from…",
+
+  ep6Title: "Tu primera conversación",
+
+  ep6Goal: "Puedo saludar, presentarme, preguntar cómo está y decir de dónde soy.",
+
+  ep6CanDoName: "Mantener una primera conversación",
+
+  ep6Duration: "8–12 min",
+
+  ep6SceneTitle: "Una conversación real",
+
+  ep6SceneBody: "Esta vez sin tarjetas. Solo tú y alguien nuevo: todo lo aprendido, junto.",
+
+  ep6Start: "Empezar la conversación",
+
+  ep6TurnGreet: "Saluda y preséntate.",
+
+  ep6TurnAskName: "Pregunta su nombre.",
+
+  ep6TurnNice: "Cierra la presentación con cortesía.",
+
+  ep6TurnAskWellbeing: "Pregunta cómo está.",
+
+  ep6TurnAnswerWellbeing: "Ahora responde cómo estás.",
+
+  ep6TurnAskOrigin: "Pregunta de dónde es.",
+
+  ep6TurnAnswerOrigin: "Di de dónde eres.",
+
+  ep6FinalInstruction: "Reto final: abre una conversación y continúala, en un solo turno.",
+
+  ep6CloseTitle: "Tuviste tu primera conversación",
+
+  ep6CloseBody: "No completaste una lección: conociste a alguien en inglés.",
+
+  ep6PraiseIndependent: "Un turno completo, por tu cuenta.",
+
+  ep6PraiseCombined: "Uniste dos ideas en un turno.",
+
+  ep6RetryPromptEmpty: "Escribe tu respuesta en inglés.",
+
+  ep6RetryExplainMore: "¡Buena presentación! Ahora sigue la conversación: añade una pregunta:",
+
+  ep6RetryPromptMore: "Inténtalo otra vez: Hi, I’m… How are you?",
   ep1TypeReply: 'Escribe tu respuesta…',
   ep1Send: 'Enviar',
   ep1FeedbackGood: '¡Bien! Saludaste y dijiste tu nombre.',
@@ -1219,6 +1691,242 @@ const pt = {
   ep1VariationInstruction: "Agora conhece o Alex. Apresenta-te outra vez.",
   ep1UseSuggestion: "Usar",
   epEvaluating: "A Lingua está a rever a tua resposta",
+
+  sessionBadge: "SESSÃO DE HOJE",
+
+  sessionStartCta: "Começar sessão",
+
+  sessionContinueCta: "Continuar sessão",
+
+  sessionPause: "Pausar",
+
+  sessionStepOf: "Passo {done} de {total}",
+
+  sessionBlockBadge: "PRÁTICA CURTA",
+
+  sessionTurnInstruction: "Responde em inglês.",
+
+  sessionSkipBlock: "Saltar por agora",
+
+  sessionReviewTitle: "Vamos recuperar uma frase",
+
+  sessionRetryTitle: "Vamos praticar algo que quase tens",
+
+  sessionRecallTitle: "Vamos consolidar isto",
+
+  sessionFreeChatTitle: "Conversa livre",
+
+  sessionFreeChatBody: "Usa o que sabes com a Lingua, sem exercícios.",
+
+  sessionFreeChatCta: "Abrir conversa",
+
+  sessionDoneBadge: "SESSÃO COMPLETA",
+
+  sessionDoneTitle: "Praticaste o que precisavas hoje",
+
+  sessionDoneBody: "O teu inglês cresceu um pouco numa situação real, não numa lista.",
+
+  sessionDoneNext: "Amanhã continuamos a partir daqui.",
+
+  sessionDoneCount: "{count} atividades concluídas",
+
+  sessionDoneCta: "Voltar a hoje",
+
+  sessionDurationLabel: "Quanto tempo hoje?",
+
+  sessionDurationLockedHint: "Podes mudar a duração da próxima vez.",
+
+  sessionMinutes: "cerca de {minutes} min",
+
+  sessionDuration_quick: "Rápida",
+
+  sessionDuration_standard: "Normal",
+
+  sessionDuration_deep: "Profunda",
+
+  sessionDurationHint_quick: "Um objetivo essencial.",
+
+  sessionDurationHint_standard: "Revisão e progresso equilibrados.",
+
+  sessionDurationHint_deep: "Mais prática e conversa.",
+
+  ep4Title: "Como estás?",
+
+  ep4Goal: "Consigo perguntar como alguém está e dar uma resposta simples.",
+
+  ep4CanDoName: "Perguntar e responder como estás",
+
+  ep4Duration: "5–8 min",
+
+  ep4RecallInstruction: "Aquece: apresenta-te.",
+
+  ep4SceneTitle: "Voltam a encontrar-se",
+
+  ep4SceneBody: "Já se conhecem. Agora podes perguntar como está.",
+
+  ep4ModelExplain: "“How are you?” pergunta pela outra pessoa. “I’m good” responde.",
+
+  ep4ComprehensionInstruction: "O que está a Lingua a perguntar?",
+
+  ep4CompOptCorrect: "Como te sentes",
+
+  ep4CompOptWrong1: "O teu nome",
+
+  ep4CompOptWrong2: "Onde vives",
+
+  ep4BuildInstruction: "Forma a pergunta:",
+
+  ep4ChoiceInstruction: "Qualquer uma serve. Escolhe como te sentes:",
+
+  ep4AnswerInstruction: "Responde como estás.",
+
+  ep4AskInstruction: "Agora pergunta como está.",
+
+  ep4BounceInstruction: "Devolve a pergunta em duas palavras.",
+
+  ep4FinalInstruction: "A última: pergunta como está, sem modelo.",
+
+  ep4CloseTitle: "Já consegues perguntar e responder",
+
+  ep4CloseBody: "Essa troca curta é como começa quase toda conversa real.",
+
+  ep4PraiseIndependent: "Fizeste isso sem ver o modelo.",
+
+  ep4PraiseAsked: "Perguntaste corretamente.",
+
+  ep4PraiseAnswered: "Essa resposta soa natural.",
+
+  ep4PraiseBounce: "Boa: devolveste a pergunta.",
+
+  ep4RetryPromptEmpty: "Escreve a tua resposta em inglês.",
+
+  ep4RetryExplainAux: "Entendi-te. Em inglês esta pergunta precisa de “are”:",
+
+  ep4RetryPromptAux: "Tenta outra vez: How are…",
+
+  ep4RetryExplainAsk: "Para perguntar pela outra pessoa, usa esta pergunta:",
+
+  ep4RetryPromptAsk: "Tenta outra vez: How…",
+
+  ep4RetryExplainIm: "Bom! Em inglês juntamos “I’m” antes:",
+
+  ep4RetryPromptIm: "Tenta outra vez: I’m…",
+
+  ep4RetryExplainBounce: "Para devolver a pergunta, o inglês usa duas palavras curtas:",
+
+  ep4RetryPromptBounce: "Tenta outra vez: And…",
+
+  ep5Title: "De onde és?",
+
+  ep5Goal: "Consigo perguntar de onde alguém é e dizer de onde sou.",
+
+  ep5CanDoName: "Perguntar e dizer de onde és",
+
+  ep5Duration: "6–9 min",
+
+  ep5RecallInstruction: "Primeiro, cumprimenta e diz o teu nome.",
+
+  ep5SceneTitle: "Alguém de longe",
+
+  ep5SceneBody: "Conheces alguém de outro lugar. De onde é?",
+
+  ep5ModelExplain: "“Where are you from?” pergunta por um lugar. “I’m from…” responde.",
+
+  ep5ComprehensionInstruction: "Que informação está a ser pedida?",
+
+  ep5CompOptCorrect: "O lugar de onde vens",
+
+  ep5CompOptWrong1: "Que idade tens",
+
+  ep5CompOptWrong2: "Como te sentes",
+
+  ep5BuildInstruction: "Forma a pergunta:",
+
+  ep5FillInstruction: "Completa com o teu lugar:",
+
+  ep5FillHint: "Um país, uma cidade ou uma região — o que disseres.",
+
+  ep5PlacePlaceholder: "o teu lugar",
+
+  ep5AnswerInstruction: "Agora diz de onde és.",
+
+  ep5AskInstruction: "Pergunta de onde é.",
+
+  ep5BounceInstruction: "Devolve a pergunta de outra forma.",
+
+  ep5FinalInstruction: "A última: diz de onde és, sem modelo.",
+
+  ep5CloseTitle: "Já consegues falar de onde és",
+
+  ep5CloseBody: "É uma das primeiras coisas que as pessoas perguntam.",
+
+  ep5PraiseIndependent: "Disseste isso sozinho.",
+
+  ep5PraiseAsked: "Perguntaste corretamente.",
+
+  ep5PraiseAnswered: "Usaste a estrutura completa.",
+
+  ep5RetryPromptEmpty: "Escreve a tua resposta em inglês.",
+
+  ep5RetryExplainAux: "Entendi-te. Esta pergunta precisa de “are”:",
+
+  ep5RetryPromptAux: "Tenta outra vez: Where are…",
+
+  ep5RetryExplainAsk: "Para perguntar por um lugar, usa esta pergunta:",
+
+  ep5RetryPromptAsk: "Tenta outra vez: Where…",
+
+  ep5RetryExplainIm: "Quase: em inglês esta resposta começa com “I’m”:",
+
+  ep5RetryPromptIm: "Tenta outra vez: I’m from…",
+
+  ep5RetryExplainFrom: "Entendi o lugar. Agora diz a frase completa:",
+
+  ep5RetryPromptFrom: "Tenta outra vez: I’m from…",
+
+  ep6Title: "A tua primeira conversa",
+
+  ep6Goal: "Consigo cumprimentar, apresentar-me, perguntar como está e dizer de onde sou.",
+
+  ep6CanDoName: "Ter uma primeira conversa",
+
+  ep6Duration: "8–12 min",
+
+  ep6SceneTitle: "Uma conversa real",
+
+  ep6SceneBody: "Desta vez sem cartões. Só tu e alguém novo: tudo o que aprendeste, junto.",
+
+  ep6Start: "Começar a conversa",
+
+  ep6TurnGreet: "Cumprimenta e apresenta-te.",
+
+  ep6TurnAskName: "Pergunta o nome.",
+
+  ep6TurnNice: "Fecha a apresentação com cortesia.",
+
+  ep6TurnAskWellbeing: "Pergunta como está.",
+
+  ep6TurnAnswerWellbeing: "Agora responde como estás.",
+
+  ep6TurnAskOrigin: "Pergunta de onde é.",
+
+  ep6TurnAnswerOrigin: "Diz de onde és.",
+
+  ep6FinalInstruction: "Desafio final: abre uma conversa e continua-a, num só turno.",
+
+  ep6CloseTitle: "Tiveste a tua primeira conversa",
+
+  ep6CloseBody: "Não completaste uma lição: conheceste alguém em inglês.",
+
+  ep6PraiseIndependent: "Um turno completo, sozinho.",
+
+  ep6PraiseCombined: "Juntaste duas ideias num turno.",
+
+  ep6RetryPromptEmpty: "Escreve a tua resposta em inglês.",
+
+  ep6RetryExplainMore: "Boa apresentação! Agora continua a conversa: junta uma pergunta:",
+
+  ep6RetryPromptMore: "Tenta outra vez: Hi, I’m… How are you?",
   ep1TypeReply: "Escreve a tua resposta…",
   ep1Send: "Enviar",
   ep1FeedbackGood: "Boa! Cumprimentaste e disseste o teu nome.",
@@ -1760,6 +2468,242 @@ const fr = {
   ep1VariationInstruction: "Maintenant, rencontre Alex. Présente-toi à nouveau.",
   ep1UseSuggestion: "Utiliser",
   epEvaluating: "Lingua vérifie ta réponse",
+
+  sessionBadge: "SÉANCE DU JOUR",
+
+  sessionStartCta: "Commencer la séance",
+
+  sessionContinueCta: "Continuer la séance",
+
+  sessionPause: "Pause",
+
+  sessionStepOf: "Étape {done} sur {total}",
+
+  sessionBlockBadge: "PRATIQUE RAPIDE",
+
+  sessionTurnInstruction: "Réponds en anglais.",
+
+  sessionSkipBlock: "Passer pour l’instant",
+
+  sessionReviewTitle: "Reprenons une phrase",
+
+  sessionRetryTitle: "Pratiquons quelque chose que tu maîtrises presque",
+
+  sessionRecallTitle: "Consolidons ceci",
+
+  sessionFreeChatTitle: "Conversation libre",
+
+  sessionFreeChatBody: "Utilise ce que tu sais avec Lingua, sans exercices.",
+
+  sessionFreeChatCta: "Ouvrir la conversation",
+
+  sessionDoneBadge: "SÉANCE TERMINÉE",
+
+  sessionDoneTitle: "Tu as travaillé ce qu’il te fallait aujourd’hui",
+
+  sessionDoneBody: "Ton anglais a progressé dans une vraie situation, pas sur une liste.",
+
+  sessionDoneNext: "Demain, on continuera d’ici.",
+
+  sessionDoneCount: "{count} activités terminées",
+
+  sessionDoneCta: "Retour à aujourd’hui",
+
+  sessionDurationLabel: "Combien de temps aujourd’hui ?",
+
+  sessionDurationLockedHint: "Tu pourras changer la durée la prochaine fois.",
+
+  sessionMinutes: "environ {minutes} min",
+
+  sessionDuration_quick: "Rapide",
+
+  sessionDuration_standard: "Normale",
+
+  sessionDuration_deep: "Approfondie",
+
+  sessionDurationHint_quick: "Un objectif essentiel.",
+
+  sessionDurationHint_standard: "Révision et progrès équilibrés.",
+
+  sessionDurationHint_deep: "Plus de pratique et de conversation.",
+
+  ep4Title: "Comment ça va ?",
+
+  ep4Goal: "Je peux demander comment va quelqu’un et répondre simplement.",
+
+  ep4CanDoName: "Demander et dire comment ça va",
+
+  ep4Duration: "5–8 min",
+
+  ep4RecallInstruction: "Échauffement : présente-toi.",
+
+  ep4SceneTitle: "Vous vous revoyez",
+
+  ep4SceneBody: "Vous vous connaissez déjà. Tu peux demander comment ça va.",
+
+  ep4ModelExplain: "« How are you ? » interroge l’autre. « I’m good » répond.",
+
+  ep4ComprehensionInstruction: "Que demande Lingua ?",
+
+  ep4CompOptCorrect: "Comment tu te sens",
+
+  ep4CompOptWrong1: "Ton nom",
+
+  ep4CompOptWrong2: "Où tu habites",
+
+  ep4BuildInstruction: "Forme la question :",
+
+  ep4ChoiceInstruction: "Toutes conviennent. Choisis comment tu te sens :",
+
+  ep4AnswerInstruction: "Dis comment tu vas.",
+
+  ep4AskInstruction: "Maintenant, demande comment ça va.",
+
+  ep4BounceInstruction: "Renvoie la question en deux mots.",
+
+  ep4FinalInstruction: "La dernière : demande comment ça va, sans modèle.",
+
+  ep4CloseTitle: "Tu sais demander et répondre",
+
+  ep4CloseBody: "Ce court échange, c’est le début de presque toute vraie conversation.",
+
+  ep4PraiseIndependent: "Tu l’as fait sans le modèle.",
+
+  ep4PraiseAsked: "Tu as bien posé la question.",
+
+  ep4PraiseAnswered: "Cette réponse sonne naturel.",
+
+  ep4PraiseBounce: "Bien : tu as renvoyé la question.",
+
+  ep4RetryPromptEmpty: "Écris ta réponse en anglais.",
+
+  ep4RetryExplainAux: "Je t’ai compris. En anglais, cette question a besoin de « are » :",
+
+  ep4RetryPromptAux: "Réessaie : How are…",
+
+  ep4RetryExplainAsk: "Pour demander à l’autre, utilise cette question :",
+
+  ep4RetryPromptAsk: "Réessaie : How…",
+
+  ep4RetryExplainIm: "Bien ! En anglais, on ajoute « I’m » devant :",
+
+  ep4RetryPromptIm: "Réessaie : I’m…",
+
+  ep4RetryExplainBounce: "Pour renvoyer la question, l’anglais utilise deux petits mots :",
+
+  ep4RetryPromptBounce: "Réessaie : And…",
+
+  ep5Title: "D’où viens-tu ?",
+
+  ep5Goal: "Je peux demander d’où vient quelqu’un et dire d’où je viens.",
+
+  ep5CanDoName: "Demander et dire d’où l’on vient",
+
+  ep5Duration: "6–9 min",
+
+  ep5RecallInstruction: "D’abord, salue et dis ton nom.",
+
+  ep5SceneTitle: "Quelqu’un de loin",
+
+  ep5SceneBody: "Tu rencontres quelqu’un d’ailleurs. D’où vient-il ou elle ?",
+
+  ep5ModelExplain: "« Where are you from ? » interroge sur un lieu. « I’m from… » répond.",
+
+  ep5ComprehensionInstruction: "Quelle information demande-t-on ?",
+
+  ep5CompOptCorrect: "Le lieu d’où tu viens",
+
+  ep5CompOptWrong1: "Ton âge",
+
+  ep5CompOptWrong2: "Comment tu te sens",
+
+  ep5BuildInstruction: "Forme la question :",
+
+  ep5FillInstruction: "Complète avec ton propre lieu :",
+
+  ep5FillHint: "Un pays, une ville ou une région — comme tu veux.",
+
+  ep5PlacePlaceholder: "ton lieu",
+
+  ep5AnswerInstruction: "Maintenant, dis d’où tu viens.",
+
+  ep5AskInstruction: "Demande d’où il ou elle vient.",
+
+  ep5BounceInstruction: "Renvoie la question autrement.",
+
+  ep5FinalInstruction: "La dernière : dis d’où tu viens, sans modèle.",
+
+  ep5CloseTitle: "Tu sais dire d’où tu viens",
+
+  ep5CloseBody: "C’est l’une des premières questions que l’on se pose.",
+
+  ep5PraiseIndependent: "Tu l’as dit tout seul.",
+
+  ep5PraiseAsked: "Tu as bien posé la question.",
+
+  ep5PraiseAnswered: "Tu as utilisé la structure complète.",
+
+  ep5RetryPromptEmpty: "Écris ta réponse en anglais.",
+
+  ep5RetryExplainAux: "Je t’ai compris. Cette question a besoin de « are » :",
+
+  ep5RetryPromptAux: "Réessaie : Where are…",
+
+  ep5RetryExplainAsk: "Pour demander un lieu, utilise cette question :",
+
+  ep5RetryPromptAsk: "Réessaie : Where…",
+
+  ep5RetryExplainIm: "Presque : en anglais, cette réponse commence par « I’m » :",
+
+  ep5RetryPromptIm: "Réessaie : I’m from…",
+
+  ep5RetryExplainFrom: "J’ai compris le lieu. Dis maintenant la phrase entière :",
+
+  ep5RetryPromptFrom: "Réessaie : I’m from…",
+
+  ep6Title: "Ta première conversation",
+
+  ep6Goal: "Je peux saluer, me présenter, demander comment ça va et dire d’où je viens.",
+
+  ep6CanDoName: "Tenir une première conversation",
+
+  ep6Duration: "8–12 min",
+
+  ep6SceneTitle: "Une vraie conversation",
+
+  ep6SceneBody: "Pas de cartes cette fois. Juste toi et quelqu’un de nouveau : tout ce que tu as appris.",
+
+  ep6Start: "Commencer la conversation",
+
+  ep6TurnGreet: "Salue et présente-toi.",
+
+  ep6TurnAskName: "Demande son nom.",
+
+  ep6TurnNice: "Termine la présentation poliment.",
+
+  ep6TurnAskWellbeing: "Demande comment ça va.",
+
+  ep6TurnAnswerWellbeing: "Maintenant, dis comment tu vas.",
+
+  ep6TurnAskOrigin: "Demande d’où il ou elle vient.",
+
+  ep6TurnAnswerOrigin: "Dis d’où tu viens.",
+
+  ep6FinalInstruction: "Défi final : ouvre une conversation et poursuis-la, en un seul tour.",
+
+  ep6CloseTitle: "Tu as eu ta première conversation",
+
+  ep6CloseBody: "Tu n’as pas fini une leçon : tu as rencontré quelqu’un en anglais.",
+
+  ep6PraiseIndependent: "Un tour complet, tout seul.",
+
+  ep6PraiseCombined: "Tu as réuni deux idées en un tour.",
+
+  ep6RetryPromptEmpty: "Écris ta réponse en anglais.",
+
+  ep6RetryExplainMore: "Bonne présentation ! Poursuis la conversation : ajoute une question :",
+
+  ep6RetryPromptMore: "Réessaie : Hi, I’m… How are you?",
   ep1TypeReply: "Écris ta réponse…",
   ep1Send: "Envoyer",
   ep1FeedbackGood: "Super ! Tu as salué et dit ton nom.",
@@ -2301,6 +3245,242 @@ const it = {
   ep1VariationInstruction: "Ora conosci Alex. Presentati di nuovo.",
   ep1UseSuggestion: "Usa",
   epEvaluating: "Lingua sta controllando la tua risposta",
+
+  sessionBadge: "SESSIONE DI OGGI",
+
+  sessionStartCta: "Inizia la sessione",
+
+  sessionContinueCta: "Continua la sessione",
+
+  sessionPause: "Pausa",
+
+  sessionStepOf: "Passo {done} di {total}",
+
+  sessionBlockBadge: "PRATICA BREVE",
+
+  sessionTurnInstruction: "Rispondi in inglese.",
+
+  sessionSkipBlock: "Salta per ora",
+
+  sessionReviewTitle: "Riprendiamo una frase",
+
+  sessionRetryTitle: "Pratichiamo qualcosa che quasi sai",
+
+  sessionRecallTitle: "Consolidiamo questo",
+
+  sessionFreeChatTitle: "Conversazione libera",
+
+  sessionFreeChatBody: "Usa quello che sai con Lingua, senza esercizi.",
+
+  sessionFreeChatCta: "Apri la conversazione",
+
+  sessionDoneBadge: "SESSIONE COMPLETATA",
+
+  sessionDoneTitle: "Hai praticato ciò che ti serviva oggi",
+
+  sessionDoneBody: "Il tuo inglese è cresciuto in una situazione reale, non in un elenco.",
+
+  sessionDoneNext: "Domani ripartiremo da qui.",
+
+  sessionDoneCount: "{count} attività completate",
+
+  sessionDoneCta: "Torna a oggi",
+
+  sessionDurationLabel: "Quanto tempo oggi?",
+
+  sessionDurationLockedHint: "Potrai cambiare la durata la prossima volta.",
+
+  sessionMinutes: "circa {minutes} min",
+
+  sessionDuration_quick: "Rapida",
+
+  sessionDuration_standard: "Normale",
+
+  sessionDuration_deep: "Approfondita",
+
+  sessionDurationHint_quick: "Un obiettivo essenziale.",
+
+  sessionDurationHint_standard: "Ripasso e progresso in equilibrio.",
+
+  sessionDurationHint_deep: "Più pratica e conversazione.",
+
+  ep4Title: "Come stai?",
+
+  ep4Goal: "So chiedere come sta qualcuno e dare una risposta semplice.",
+
+  ep4CanDoName: "Chiedere e dire come stai",
+
+  ep4Duration: "5–8 min",
+
+  ep4RecallInstruction: "Riscaldamento: presentati.",
+
+  ep4SceneTitle: "Vi rivedete",
+
+  ep4SceneBody: "Vi conoscete già. Ora puoi chiedere come sta.",
+
+  ep4ModelExplain: "“How are you?” chiede all’altra persona. “I’m good” risponde.",
+
+  ep4ComprehensionInstruction: "Che cosa chiede Lingua?",
+
+  ep4CompOptCorrect: "Come ti senti",
+
+  ep4CompOptWrong1: "Il tuo nome",
+
+  ep4CompOptWrong2: "Dove vivi",
+
+  ep4BuildInstruction: "Componi la domanda:",
+
+  ep4ChoiceInstruction: "Vanno tutte bene. Scegli come stai:",
+
+  ep4AnswerInstruction: "Rispondi come stai.",
+
+  ep4AskInstruction: "Ora chiedi come sta.",
+
+  ep4BounceInstruction: "Restituisci la domanda in due parole.",
+
+  ep4FinalInstruction: "L’ultima: chiedi come sta, senza modello.",
+
+  ep4CloseTitle: "Sai chiedere e rispondere",
+
+  ep4CloseBody: "Questo breve scambio apre quasi ogni conversazione reale.",
+
+  ep4PraiseIndependent: "L’hai fatto senza il modello.",
+
+  ep4PraiseAsked: "Hai chiesto correttamente.",
+
+  ep4PraiseAnswered: "Questa risposta suona naturale.",
+
+  ep4PraiseBounce: "Bene: hai restituito la domanda.",
+
+  ep4RetryPromptEmpty: "Scrivi la tua risposta in inglese.",
+
+  ep4RetryExplainAux: "Ti ho capito. In inglese questa domanda richiede “are”:",
+
+  ep4RetryPromptAux: "Riprova: How are…",
+
+  ep4RetryExplainAsk: "Per chiedere all’altra persona, usa questa domanda:",
+
+  ep4RetryPromptAsk: "Riprova: How…",
+
+  ep4RetryExplainIm: "Bene! In inglese mettiamo “I’m” prima:",
+
+  ep4RetryPromptIm: "Riprova: I’m…",
+
+  ep4RetryExplainBounce: "Per restituire la domanda, l’inglese usa due parole brevi:",
+
+  ep4RetryPromptBounce: "Riprova: And…",
+
+  ep5Title: "Di dove sei?",
+
+  ep5Goal: "So chiedere di dov’è qualcuno e dire di dove sono.",
+
+  ep5CanDoName: "Chiedere e dire di dove sei",
+
+  ep5Duration: "6–9 min",
+
+  ep5RecallInstruction: "Prima, saluta e di’ il tuo nome.",
+
+  ep5SceneTitle: "Qualcuno da lontano",
+
+  ep5SceneBody: "Incontri qualcuno di un altro posto. Di dov’è?",
+
+  ep5ModelExplain: "“Where are you from?” chiede un luogo. “I’m from…” risponde.",
+
+  ep5ComprehensionInstruction: "Quale informazione viene chiesta?",
+
+  ep5CompOptCorrect: "Il posto da cui vieni",
+
+  ep5CompOptWrong1: "Quanti anni hai",
+
+  ep5CompOptWrong2: "Come ti senti",
+
+  ep5BuildInstruction: "Componi la domanda:",
+
+  ep5FillInstruction: "Completa con il tuo luogo:",
+
+  ep5FillHint: "Un paese, una città o una regione — quello che vuoi.",
+
+  ep5PlacePlaceholder: "il tuo luogo",
+
+  ep5AnswerInstruction: "Ora di’ di dove sei.",
+
+  ep5AskInstruction: "Chiedi di dov’è.",
+
+  ep5BounceInstruction: "Restituisci la domanda in un altro modo.",
+
+  ep5FinalInstruction: "L’ultima: di’ di dove sei, senza modello.",
+
+  ep5CloseTitle: "Sai dire di dove sei",
+
+  ep5CloseBody: "È una delle prime cose che ci si chiede.",
+
+  ep5PraiseIndependent: "L’hai detto da solo.",
+
+  ep5PraiseAsked: "Hai chiesto correttamente.",
+
+  ep5PraiseAnswered: "Hai usato la struttura completa.",
+
+  ep5RetryPromptEmpty: "Scrivi la tua risposta in inglese.",
+
+  ep5RetryExplainAux: "Ti ho capito. Questa domanda richiede “are”:",
+
+  ep5RetryPromptAux: "Riprova: Where are…",
+
+  ep5RetryExplainAsk: "Per chiedere un luogo, usa questa domanda:",
+
+  ep5RetryPromptAsk: "Riprova: Where…",
+
+  ep5RetryExplainIm: "Quasi: in inglese questa risposta inizia con “I’m”:",
+
+  ep5RetryPromptIm: "Riprova: I’m from…",
+
+  ep5RetryExplainFrom: "Ho capito il luogo. Ora di’ la frase intera:",
+
+  ep5RetryPromptFrom: "Riprova: I’m from…",
+
+  ep6Title: "La tua prima conversazione",
+
+  ep6Goal: "So salutare, presentarmi, chiedere come sta e dire di dove sono.",
+
+  ep6CanDoName: "Sostenere una prima conversazione",
+
+  ep6Duration: "8–12 min",
+
+  ep6SceneTitle: "Una conversazione vera",
+
+  ep6SceneBody: "Niente carte stavolta. Solo tu e una persona nuova: tutto insieme.",
+
+  ep6Start: "Inizia la conversazione",
+
+  ep6TurnGreet: "Saluta e presentati.",
+
+  ep6TurnAskName: "Chiedi il nome.",
+
+  ep6TurnNice: "Chiudi la presentazione con cortesia.",
+
+  ep6TurnAskWellbeing: "Chiedi come sta.",
+
+  ep6TurnAnswerWellbeing: "Ora rispondi come stai.",
+
+  ep6TurnAskOrigin: "Chiedi di dov’è.",
+
+  ep6TurnAnswerOrigin: "Di’ di dove sei.",
+
+  ep6FinalInstruction: "Sfida finale: apri una conversazione e portala avanti, in un turno.",
+
+  ep6CloseTitle: "Hai avuto la tua prima conversazione",
+
+  ep6CloseBody: "Non hai finito una lezione: hai conosciuto qualcuno in inglese.",
+
+  ep6PraiseIndependent: "Un turno intero, da solo.",
+
+  ep6PraiseCombined: "Hai unito due idee in un turno.",
+
+  ep6RetryPromptEmpty: "Scrivi la tua risposta in inglese.",
+
+  ep6RetryExplainMore: "Bella presentazione! Ora vai avanti: aggiungi una domanda:",
+
+  ep6RetryPromptMore: "Riprova: Hi, I’m… How are you?",
   ep1TypeReply: "Scrivi la tua risposta…",
   ep1Send: "Invia",
   ep1FeedbackGood: "Ottimo! Hai salutato e detto il tuo nome.",
@@ -2842,6 +4022,242 @@ const de = {
   ep1VariationInstruction: "Jetzt triffst du Alex. Stell dich noch einmal vor.",
   ep1UseSuggestion: "Verwenden",
   epEvaluating: "Lingua prüft deine Antwort",
+
+  sessionBadge: "HEUTIGE EINHEIT",
+
+  sessionStartCta: "Einheit starten",
+
+  sessionContinueCta: "Einheit fortsetzen",
+
+  sessionPause: "Pause",
+
+  sessionStepOf: "Schritt {done} von {total}",
+
+  sessionBlockBadge: "KURZE ÜBUNG",
+
+  sessionTurnInstruction: "Antworte auf Englisch.",
+
+  sessionSkipBlock: "Vorerst überspringen",
+
+  sessionReviewTitle: "Holen wir einen Satz zurück",
+
+  sessionRetryTitle: "Üben wir etwas, das du fast kannst",
+
+  sessionRecallTitle: "Machen wir das sicher",
+
+  sessionFreeChatTitle: "Freies Gespräch",
+
+  sessionFreeChatBody: "Nutze mit Lingua, was du kannst — ganz ohne Übungen.",
+
+  sessionFreeChatCta: "Gespräch öffnen",
+
+  sessionDoneBadge: "EINHEIT ABGESCHLOSSEN",
+
+  sessionDoneTitle: "Du hast heute geübt, was du brauchtest",
+
+  sessionDoneBody: "Dein Englisch ist in einer echten Situation gewachsen, nicht in einer Liste.",
+
+  sessionDoneNext: "Morgen machen wir hier weiter.",
+
+  sessionDoneCount: "{count} Aktivitäten abgeschlossen",
+
+  sessionDoneCta: "Zurück zu heute",
+
+  sessionDurationLabel: "Wie lange heute?",
+
+  sessionDurationLockedHint: "Die Dauer kannst du beim nächsten Mal ändern.",
+
+  sessionMinutes: "ca. {minutes} Min.",
+
+  sessionDuration_quick: "Kurz",
+
+  sessionDuration_standard: "Normal",
+
+  sessionDuration_deep: "Intensiv",
+
+  sessionDurationHint_quick: "Ein wesentliches Ziel.",
+
+  sessionDurationHint_standard: "Wiederholung und Fortschritt im Gleichgewicht.",
+
+  sessionDurationHint_deep: "Mehr Übung und Gespräch.",
+
+  ep4Title: "Wie geht es dir?",
+
+  ep4Goal: "Ich kann fragen, wie es jemandem geht, und einfach antworten.",
+
+  ep4CanDoName: "Fragen und sagen, wie es dir geht",
+
+  ep4Duration: "5–8 Min.",
+
+  ep4RecallInstruction: "Zum Aufwärmen: stell dich vor.",
+
+  ep4SceneTitle: "Ihr trefft euch wieder",
+
+  ep4SceneBody: "Ihr kennt euch schon. Jetzt kannst du fragen, wie es geht.",
+
+  ep4ModelExplain: "„How are you?“ fragt nach der anderen Person. „I’m good“ antwortet.",
+
+  ep4ComprehensionInstruction: "Was fragt Lingua?",
+
+  ep4CompOptCorrect: "Wie du dich fühlst",
+
+  ep4CompOptWrong1: "Deinen Namen",
+
+  ep4CompOptWrong2: "Wo du wohnst",
+
+  ep4BuildInstruction: "Bilde die Frage:",
+
+  ep4ChoiceInstruction: "Alle passen. Wähle, wie du dich fühlst:",
+
+  ep4AnswerInstruction: "Sag, wie es dir geht.",
+
+  ep4AskInstruction: "Frag jetzt, wie es ihr oder ihm geht.",
+
+  ep4BounceInstruction: "Gib die Frage in zwei Wörtern zurück.",
+
+  ep4FinalInstruction: "Zum Schluss: frag ohne Vorlage, wie es geht.",
+
+  ep4CloseTitle: "Du kannst fragen und antworten",
+
+  ep4CloseBody: "Mit diesem kurzen Austausch beginnt fast jedes echte Gespräch.",
+
+  ep4PraiseIndependent: "Das ging ohne Vorlage.",
+
+  ep4PraiseAsked: "Du hast richtig gefragt.",
+
+  ep4PraiseAnswered: "Diese Antwort klingt natürlich.",
+
+  ep4PraiseBounce: "Gut — du hast die Frage zurückgegeben.",
+
+  ep4RetryPromptEmpty: "Schreib deine Antwort auf Englisch.",
+
+  ep4RetryExplainAux: "Ich habe dich verstanden. Auf Englisch braucht diese Frage „are“:",
+
+  ep4RetryPromptAux: "Versuch es noch mal: How are…",
+
+  ep4RetryExplainAsk: "Um nach der anderen Person zu fragen, nutze diese Frage:",
+
+  ep4RetryPromptAsk: "Versuch es noch mal: How…",
+
+  ep4RetryExplainIm: "Gut! Im Englischen setzen wir „I’m“ davor:",
+
+  ep4RetryPromptIm: "Versuch es noch mal: I’m…",
+
+  ep4RetryExplainBounce: "Um die Frage zurückzugeben, nutzt Englisch zwei kurze Wörter:",
+
+  ep4RetryPromptBounce: "Versuch es noch mal: And…",
+
+  ep5Title: "Woher kommst du?",
+
+  ep5Goal: "Ich kann fragen, woher jemand kommt, und sagen, woher ich komme.",
+
+  ep5CanDoName: "Fragen und sagen, woher du kommst",
+
+  ep5Duration: "6–9 Min.",
+
+  ep5RecallInstruction: "Zuerst: grüße und sag deinen Namen.",
+
+  ep5SceneTitle: "Jemand von weit her",
+
+  ep5SceneBody: "Du triffst jemanden von woanders. Woher kommt die Person?",
+
+  ep5ModelExplain: "„Where are you from?“ fragt nach einem Ort. „I’m from…“ antwortet.",
+
+  ep5ComprehensionInstruction: "Welche Information wird erfragt?",
+
+  ep5CompOptCorrect: "Der Ort, aus dem du kommst",
+
+  ep5CompOptWrong1: "Wie alt du bist",
+
+  ep5CompOptWrong2: "Wie du dich fühlst",
+
+  ep5BuildInstruction: "Bilde die Frage:",
+
+  ep5FillInstruction: "Ergänze deinen eigenen Ort:",
+
+  ep5FillHint: "Ein Land, eine Stadt oder eine Region — ganz wie du magst.",
+
+  ep5PlacePlaceholder: "dein Ort",
+
+  ep5AnswerInstruction: "Sag jetzt, woher du kommst.",
+
+  ep5AskInstruction: "Frag, woher die Person kommt.",
+
+  ep5BounceInstruction: "Gib die Frage anders zurück.",
+
+  ep5FinalInstruction: "Zum Schluss: sag ohne Vorlage, woher du kommst.",
+
+  ep5CloseTitle: "Du kannst sagen, woher du kommst",
+
+  ep5CloseBody: "Das ist eine der ersten Fragen überhaupt.",
+
+  ep5PraiseIndependent: "Das hast du allein gesagt.",
+
+  ep5PraiseAsked: "Du hast richtig gefragt.",
+
+  ep5PraiseAnswered: "Du hast die ganze Struktur benutzt.",
+
+  ep5RetryPromptEmpty: "Schreib deine Antwort auf Englisch.",
+
+  ep5RetryExplainAux: "Ich habe dich verstanden. Diese Frage braucht „are“:",
+
+  ep5RetryPromptAux: "Versuch es noch mal: Where are…",
+
+  ep5RetryExplainAsk: "Um nach einem Ort zu fragen, nutze diese Frage:",
+
+  ep5RetryPromptAsk: "Versuch es noch mal: Where…",
+
+  ep5RetryExplainIm: "Fast — auf Englisch beginnt diese Antwort mit „I’m“:",
+
+  ep5RetryPromptIm: "Versuch es noch mal: I’m from…",
+
+  ep5RetryExplainFrom: "Den Ort habe ich verstanden. Sag jetzt den ganzen Satz:",
+
+  ep5RetryPromptFrom: "Versuch es noch mal: I’m from…",
+
+  ep6Title: "Dein erstes Gespräch",
+
+  ep6Goal: "Ich kann grüßen, mich vorstellen, nach dem Befinden fragen und sagen, woher ich komme.",
+
+  ep6CanDoName: "Ein erstes Gespräch führen",
+
+  ep6Duration: "8–12 Min.",
+
+  ep6SceneTitle: "Ein echtes Gespräch",
+
+  ep6SceneBody: "Diesmal ohne Karten. Nur du und jemand Neues — alles Gelernte zusammen.",
+
+  ep6Start: "Gespräch beginnen",
+
+  ep6TurnGreet: "Grüße und stell dich vor.",
+
+  ep6TurnAskName: "Frag nach dem Namen.",
+
+  ep6TurnNice: "Schließe die Vorstellung höflich ab.",
+
+  ep6TurnAskWellbeing: "Frag, wie es geht.",
+
+  ep6TurnAnswerWellbeing: "Sag jetzt, wie es dir geht.",
+
+  ep6TurnAskOrigin: "Frag, woher die Person kommt.",
+
+  ep6TurnAnswerOrigin: "Sag, woher du kommst.",
+
+  ep6FinalInstruction: "Letzte Aufgabe: eröffne ein Gespräch und führe es weiter — in einem Zug.",
+
+  ep6CloseTitle: "Du hattest dein erstes Gespräch",
+
+  ep6CloseBody: "Du hast keine Lektion beendet — du hast jemanden auf Englisch kennengelernt.",
+
+  ep6PraiseIndependent: "Ein ganzer Gesprächszug, allein.",
+
+  ep6PraiseCombined: "Du hast zwei Ideen verbunden.",
+
+  ep6RetryPromptEmpty: "Schreib deine Antwort auf Englisch.",
+
+  ep6RetryExplainMore: "Gute Vorstellung! Jetzt weiter — stell noch eine Frage:",
+
+  ep6RetryPromptMore: "Versuch es noch mal: Hi, I’m… How are you?",
   ep1TypeReply: "Schreib deine Antwort…",
   ep1Send: "Senden",
   ep1FeedbackGood: "Super! Du hast begrüßt und deinen Namen gesagt.",
@@ -3383,6 +4799,242 @@ const ja = {
   ep1VariationInstruction: "今度はAlexに会います。もう一度自己紹介して。",
   ep1UseSuggestion: "使う",
   epEvaluating: "リンガが回答を確認しています",
+
+  sessionBadge: "今日のセッション",
+
+  sessionStartCta: "セッションを始める",
+
+  sessionContinueCta: "セッションを続ける",
+
+  sessionPause: "一時停止",
+
+  sessionStepOf: "{total} 中 {done} 番目",
+
+  sessionBlockBadge: "ミニ練習",
+
+  sessionTurnInstruction: "英語で答えてね。",
+
+  sessionSkipBlock: "今はスキップ",
+
+  sessionReviewTitle: "ひとつのフレーズを思い出そう",
+
+  sessionRetryTitle: "もう少しでできることを練習しよう",
+
+  sessionRecallTitle: "これをしっかり固めよう",
+
+  sessionFreeChatTitle: "フリー会話",
+
+  sessionFreeChatBody: "練習問題なしで、リンガと知っていることを使ってみよう。",
+
+  sessionFreeChatCta: "会話を開く",
+
+  sessionDoneBadge: "セッション完了",
+
+  sessionDoneTitle: "今日必要なことを練習できました",
+
+  sessionDoneBody: "リストではなく、実際の場面で英語が少し伸びました。",
+
+  sessionDoneNext: "明日はここから続けます。",
+
+  sessionDoneCount: "{count} 個のアクティビティ完了",
+
+  sessionDoneCta: "今日に戻る",
+
+  sessionDurationLabel: "今日はどのくらい？",
+
+  sessionDurationLockedHint: "長さは次回変更できます。",
+
+  sessionMinutes: "約{minutes}分",
+
+  sessionDuration_quick: "ショート",
+
+  sessionDuration_standard: "ふつう",
+
+  sessionDuration_deep: "じっくり",
+
+  sessionDurationHint_quick: "大事な目標をひとつ。",
+
+  sessionDurationHint_standard: "復習と前進をバランスよく。",
+
+  sessionDurationHint_deep: "練習と会話をたっぷり。",
+
+  ep4Title: "元気ですか？",
+
+  ep4Goal: "相手の調子をたずねて、簡単に答えられる。",
+
+  ep4CanDoName: "調子をたずねて答える",
+
+  ep4Duration: "5〜8分",
+
+  ep4RecallInstruction: "ウォームアップ：自己紹介しよう。",
+
+  ep4SceneTitle: "また会いました",
+
+  ep4SceneBody: "もう知り合いです。調子をたずねてみましょう。",
+
+  ep4ModelExplain: "「How are you?」は相手の調子をたずね、「I’m good」で答えます。",
+
+  ep4ComprehensionInstruction: "リンガは何をたずねている？",
+
+  ep4CompOptCorrect: "気分はどうか",
+
+  ep4CompOptWrong1: "名前",
+
+  ep4CompOptWrong2: "住んでいる場所",
+
+  ep4BuildInstruction: "質問を組み立てよう：",
+
+  ep4ChoiceInstruction: "どれも正解です。今の気分を選ぼう：",
+
+  ep4AnswerInstruction: "調子を答えよう。",
+
+  ep4AskInstruction: "今度は相手の調子をたずねよう。",
+
+  ep4BounceInstruction: "二語で質問を返そう。",
+
+  ep4FinalInstruction: "最後です。お手本なしで調子をたずねよう。",
+
+  ep4CloseTitle: "たずねて答えられます",
+
+  ep4CloseBody: "この短いやりとりから、たいていの会話は始まります。",
+
+  ep4PraiseIndependent: "お手本なしでできました。",
+
+  ep4PraiseAsked: "正しくたずねられました。",
+
+  ep4PraiseAnswered: "その答えは自然です。",
+
+  ep4PraiseBounce: "質問を返せました。",
+
+  ep4RetryPromptEmpty: "英語で答えを書いてね。",
+
+  ep4RetryExplainAux: "伝わりました。英語ではこの質問に “are” が必要です：",
+
+  ep4RetryPromptAux: "もう一度：How are…",
+
+  ep4RetryExplainAsk: "相手のことをたずねるには、この質問を使います：",
+
+  ep4RetryPromptAsk: "もう一度：How…",
+
+  ep4RetryExplainIm: "いいですね。英語では前に “I’m” を付けます：",
+
+  ep4RetryPromptIm: "もう一度：I’m…",
+
+  ep4RetryExplainBounce: "質問を返すには、英語では短い二語を使います：",
+
+  ep4RetryPromptBounce: "もう一度：And…",
+
+  ep5Title: "どこ出身ですか？",
+
+  ep5Goal: "出身をたずねて、自分の出身も言える。",
+
+  ep5CanDoName: "出身をたずねて言う",
+
+  ep5Duration: "6〜9分",
+
+  ep5RecallInstruction: "まず、あいさつして名前を言おう。",
+
+  ep5SceneTitle: "遠くから来た人",
+
+  ep5SceneBody: "別の場所から来た人に会いました。出身はどこ？",
+
+  ep5ModelExplain: "「Where are you from?」は場所をたずね、「I’m from…」で答えます。",
+
+  ep5ComprehensionInstruction: "どんな情報をたずねている？",
+
+  ep5CompOptCorrect: "出身の場所",
+
+  ep5CompOptWrong1: "年齢",
+
+  ep5CompOptWrong2: "気分",
+
+  ep5BuildInstruction: "質問を組み立てよう：",
+
+  ep5FillInstruction: "自分の場所を入れて完成させよう：",
+
+  ep5FillHint: "国でも街でも地域でも、あなたの答えでOK。",
+
+  ep5PlacePlaceholder: "あなたの場所",
+
+  ep5AnswerInstruction: "自分の出身を言おう。",
+
+  ep5AskInstruction: "相手の出身をたずねよう。",
+
+  ep5BounceInstruction: "別の言い方で質問を返そう。",
+
+  ep5FinalInstruction: "最後です。お手本なしで出身を言おう。",
+
+  ep5CloseTitle: "出身について話せます",
+
+  ep5CloseBody: "これは人が最初にたずね合うことのひとつです。",
+
+  ep5PraiseIndependent: "自分の力で言えました。",
+
+  ep5PraiseAsked: "正しくたずねられました。",
+
+  ep5PraiseAnswered: "完全な形で言えました。",
+
+  ep5RetryPromptEmpty: "英語で答えを書いてね。",
+
+  ep5RetryExplainAux: "伝わりました。この質問には “are” が必要です：",
+
+  ep5RetryPromptAux: "もう一度：Where are…",
+
+  ep5RetryExplainAsk: "場所をたずねるには、この質問を使います：",
+
+  ep5RetryPromptAsk: "もう一度：Where…",
+
+  ep5RetryExplainIm: "おしい！英語ではこの答えは “I’m” で始めます：",
+
+  ep5RetryPromptIm: "もう一度：I’m from…",
+
+  ep5RetryExplainFrom: "場所は伝わりました。今度は文全体で言ってみよう：",
+
+  ep5RetryPromptFrom: "もう一度：I’m from…",
+
+  ep6Title: "はじめての会話",
+
+  ep6Goal: "あいさつ・自己紹介・調子をたずねる・出身を言う、が全部できる。",
+
+  ep6CanDoName: "はじめての会話ができる",
+
+  ep6Duration: "8〜12分",
+
+  ep6SceneTitle: "本物の会話",
+
+  ep6SceneBody: "今回はカードなし。あなたと新しい人だけ。学んだことを全部つなげよう。",
+
+  ep6Start: "会話を始める",
+
+  ep6TurnGreet: "あいさつして自己紹介しよう。",
+
+  ep6TurnAskName: "名前をたずねよう。",
+
+  ep6TurnNice: "ていねいに自己紹介を締めくくろう。",
+
+  ep6TurnAskWellbeing: "調子をたずねよう。",
+
+  ep6TurnAnswerWellbeing: "今度は自分の調子を答えよう。",
+
+  ep6TurnAskOrigin: "出身をたずねよう。",
+
+  ep6TurnAnswerOrigin: "自分の出身を言おう。",
+
+  ep6FinalInstruction: "最後の挑戦：ひとことで会話を始めて、続けよう。",
+
+  ep6CloseTitle: "はじめての会話ができました",
+
+  ep6CloseBody: "レッスンを終えたのではなく、英語で人と出会えたのです。",
+
+  ep6PraiseIndependent: "ひとつの turn を自力で言えました。",
+
+  ep6PraiseCombined: "ふたつの内容をつなげられました。",
+
+  ep6RetryPromptEmpty: "英語で答えを書いてね。",
+
+  ep6RetryExplainMore: "いい自己紹介！会話を続けるために質問を足そう：",
+
+  ep6RetryPromptMore: "もう一度：Hi, I’m… How are you?",
   ep1TypeReply: "返事を入力…",
   ep1Send: "送信",
   ep1FeedbackGood: "いいね！あいさつして名前も言えました。",
@@ -3924,6 +5576,242 @@ const ar = {
   ep1VariationInstruction: "الآن قابِل Alex. عرّف بنفسك مجددًا.",
   ep1UseSuggestion: "استخدم",
   epEvaluating: "لينغوا تراجع إجابتك",
+
+  sessionBadge: "جلسة اليوم",
+
+  sessionStartCta: "ابدأ الجلسة",
+
+  sessionContinueCta: "تابع الجلسة",
+
+  sessionPause: "إيقاف مؤقت",
+
+  sessionStepOf: "الخطوة {done} من {total}",
+
+  sessionBlockBadge: "تدريب سريع",
+
+  sessionTurnInstruction: "أجب بالإنجليزية.",
+
+  sessionSkipBlock: "تخطَّ الآن",
+
+  sessionReviewTitle: "لنستعد عبارة واحدة",
+
+  sessionRetryTitle: "لنتدرب على شيء كدت تتقنه",
+
+  sessionRecallTitle: "لنثبّت هذه المهارة",
+
+  sessionFreeChatTitle: "محادثة حرة",
+
+  sessionFreeChatBody: "استخدم ما تعرفه مع لينغوا، بلا تمارين.",
+
+  sessionFreeChatCta: "افتح المحادثة",
+
+  sessionDoneBadge: "اكتملت الجلسة",
+
+  sessionDoneTitle: "تدربت على ما تحتاجه اليوم",
+
+  sessionDoneBody: "تحسّنت إنجليزيتك في موقف حقيقي، لا في قائمة.",
+
+  sessionDoneNext: "غدًا نكمل من هنا.",
+
+  sessionDoneCount: "أكملت {count} نشاطًا",
+
+  sessionDoneCta: "العودة إلى اليوم",
+
+  sessionDurationLabel: "كم من الوقت اليوم؟",
+
+  sessionDurationLockedHint: "يمكنك تغيير المدة في المرة القادمة.",
+
+  sessionMinutes: "نحو {minutes} دقيقة",
+
+  sessionDuration_quick: "سريعة",
+
+  sessionDuration_standard: "عادية",
+
+  sessionDuration_deep: "معمّقة",
+
+  sessionDurationHint_quick: "هدف أساسي واحد.",
+
+  sessionDurationHint_standard: "مراجعة وتقدّم متوازنان.",
+
+  sessionDurationHint_deep: "مزيد من التدريب والمحادثة.",
+
+  ep4Title: "كيف حالك؟",
+
+  ep4Goal: "أستطيع أن أسأل عن حال شخص وأجيب ببساطة.",
+
+  ep4CanDoName: "السؤال عن الحال والإجابة",
+
+  ep4Duration: "٥–٨ دقائق",
+
+  ep4RecallInstruction: "إحماء: عرّف بنفسك.",
+
+  ep4SceneTitle: "تلتقيان من جديد",
+
+  ep4SceneBody: "تعرفان بعضكما. الآن يمكنك السؤال عن الحال.",
+
+  ep4ModelExplain: "“How are you?” تسأل عن الآخر، و“I’m good” تجيب.",
+
+  ep4ComprehensionInstruction: "ماذا تسأل لينغوا؟",
+
+  ep4CompOptCorrect: "كيف تشعر",
+
+  ep4CompOptWrong1: "اسمك",
+
+  ep4CompOptWrong2: "أين تسكن",
+
+  ep4BuildInstruction: "كوّن السؤال:",
+
+  ep4ChoiceInstruction: "كلها صحيحة. اختر شعورك:",
+
+  ep4AnswerInstruction: "أجب كيف حالك.",
+
+  ep4AskInstruction: "الآن اسأل عن حاله.",
+
+  ep4BounceInstruction: "أعد السؤال بكلمتين.",
+
+  ep4FinalInstruction: "الأخيرة: اسأل عن حاله بدون نموذج.",
+
+  ep4CloseTitle: "أصبحت تسأل وتجيب",
+
+  ep4CloseBody: "بهذا التبادل القصير تبدأ معظم المحادثات الحقيقية.",
+
+  ep4PraiseIndependent: "فعلتها دون النموذج.",
+
+  ep4PraiseAsked: "سألت بشكل صحيح.",
+
+  ep4PraiseAnswered: "إجابتك تبدو طبيعية.",
+
+  ep4PraiseBounce: "جيد — أعدت السؤال.",
+
+  ep4RetryPromptEmpty: "اكتب إجابتك بالإنجليزية.",
+
+  ep4RetryExplainAux: "فهمتك. تحتاج هذه الجملة إلى “are” بالإنجليزية:",
+
+  ep4RetryPromptAux: "حاول مجددًا: How are…",
+
+  ep4RetryExplainAsk: "للسؤال عن الشخص الآخر، استخدم هذا السؤال:",
+
+  ep4RetryPromptAsk: "حاول مجددًا: How…",
+
+  ep4RetryExplainIm: "شعور جيد! بالإنجليزية نضيف “I’m” قبله:",
+
+  ep4RetryPromptIm: "حاول مجددًا: I’m…",
+
+  ep4RetryExplainBounce: "لإعادة السؤال، تستخدم الإنجليزية كلمتين قصيرتين:",
+
+  ep4RetryPromptBounce: "حاول مجددًا: And…",
+
+  ep5Title: "من أين أنت؟",
+
+  ep5Goal: "أستطيع أن أسأل عن أصل شخص وأقول من أين أنا.",
+
+  ep5CanDoName: "السؤال عن الأصل وقوله",
+
+  ep5Duration: "٦–٩ دقائق",
+
+  ep5RecallInstruction: "أولًا، ألقِ التحية وقل اسمك.",
+
+  ep5SceneTitle: "شخص من مكان بعيد",
+
+  ep5SceneBody: "تقابل شخصًا من مكان آخر. من أين هو؟",
+
+  ep5ModelExplain: "“Where are you from?” تسأل عن مكان، و“I’m from…” تجيب.",
+
+  ep5ComprehensionInstruction: "ما المعلومة المطلوبة؟",
+
+  ep5CompOptCorrect: "المكان الذي أتيت منه",
+
+  ep5CompOptWrong1: "كم عمرك",
+
+  ep5CompOptWrong2: "كيف تشعر",
+
+  ep5BuildInstruction: "كوّن السؤال:",
+
+  ep5FillInstruction: "أكمل بمكانك أنت:",
+
+  ep5FillHint: "بلد أو مدينة أو منطقة — كما تحب.",
+
+  ep5PlacePlaceholder: "مكانك",
+
+  ep5AnswerInstruction: "الآن قل من أين أنت.",
+
+  ep5AskInstruction: "اسأل من أين هو.",
+
+  ep5BounceInstruction: "أعد السؤال بطريقة أخرى.",
+
+  ep5FinalInstruction: "الأخيرة: قل من أين أنت بدون نموذج.",
+
+  ep5CloseTitle: "تستطيع الحديث عن أصلك",
+
+  ep5CloseBody: "هذا من أول ما يسأله الناس بعضهم.",
+
+  ep5PraiseIndependent: "قلتها بنفسك.",
+
+  ep5PraiseAsked: "سألت بشكل صحيح.",
+
+  ep5PraiseAnswered: "استخدمت التركيب كاملًا.",
+
+  ep5RetryPromptEmpty: "اكتب إجابتك بالإنجليزية.",
+
+  ep5RetryExplainAux: "فهمتك. يحتاج هذا السؤال إلى “are”:",
+
+  ep5RetryPromptAux: "حاول مجددًا: Where are…",
+
+  ep5RetryExplainAsk: "للسؤال عن مكان، استخدم هذا السؤال:",
+
+  ep5RetryPromptAsk: "حاول مجددًا: Where…",
+
+  ep5RetryExplainIm: "تقريبًا — تبدأ هذه الإجابة بـ“I’m”:",
+
+  ep5RetryPromptIm: "حاول مجددًا: I’m from…",
+
+  ep5RetryExplainFrom: "فهمت المكان. الآن قل الجملة كاملة:",
+
+  ep5RetryPromptFrom: "حاول مجددًا: I’m from…",
+
+  ep6Title: "محادثتك الأولى",
+
+  ep6Goal: "أستطيع التحية والتعريف بنفسي والسؤال عن الحال وقول من أين أنا.",
+
+  ep6CanDoName: "إجراء محادثة أولى",
+
+  ep6Duration: "٨–١٢ دقيقة",
+
+  ep6SceneTitle: "محادثة حقيقية",
+
+  ep6SceneBody: "بلا بطاقات هذه المرة. أنت وشخص جديد فقط — كل ما تعلمته معًا.",
+
+  ep6Start: "ابدأ المحادثة",
+
+  ep6TurnGreet: "ألقِ التحية وعرّف بنفسك.",
+
+  ep6TurnAskName: "اسأل عن اسمه.",
+
+  ep6TurnNice: "أنهِ التعارف بلطف.",
+
+  ep6TurnAskWellbeing: "اسأل عن حاله.",
+
+  ep6TurnAnswerWellbeing: "الآن أجب كيف حالك.",
+
+  ep6TurnAskOrigin: "اسأل من أين هو.",
+
+  ep6TurnAnswerOrigin: "قل من أين أنت.",
+
+  ep6FinalInstruction: "التحدي الأخير: افتح محادثة وواصلها في دور واحد.",
+
+  ep6CloseTitle: "أجريت محادثتك الأولى",
+
+  ep6CloseBody: "لم تُنهِ درسًا — بل تعرّفت على شخص بالإنجليزية.",
+
+  ep6PraiseIndependent: "دور كامل بنفسك.",
+
+  ep6PraiseCombined: "جمعت فكرتين في دور واحد.",
+
+  ep6RetryPromptEmpty: "اكتب إجابتك بالإنجليزية.",
+
+  ep6RetryExplainMore: "تعريف جيد! واصل المحادثة بإضافة سؤال:",
+
+  ep6RetryPromptMore: "حاول مجددًا: Hi, I’m… How are you?",
   ep1TypeReply: "اكتب ردّك…",
   ep1Send: "إرسال",
   ep1FeedbackGood: "رائع! حيّيت وقلت اسمك.",

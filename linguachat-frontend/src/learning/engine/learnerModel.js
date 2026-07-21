@@ -18,6 +18,9 @@ export function createLearnerModel() {
     recurringErrors: [],
     scaffoldByEpisode: {},
     episodes: {},
+    // Soft facts the learner supplies inside an activity (e.g. the place they
+    // are from). Never required up front, never part of the global profile.
+    facts: {},
   }
 }
 const emptyModel = createLearnerModel
@@ -35,6 +38,7 @@ function migrate(parsed) {
       canDo: { ...parsed.canDo }, languageItems: { ...parsed.languageItems },
       recurringErrors: Array.isArray(parsed.recurringErrors) ? [...parsed.recurringErrors] : [],
       scaffoldByEpisode: { ...parsed.scaffoldByEpisode }, episodes: { ...parsed.episodes },
+      facts: { ...(parsed.facts || {}) },
     }
   }
   // v1 -> v2 (never lose existing progress)

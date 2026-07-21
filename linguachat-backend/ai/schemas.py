@@ -88,6 +88,9 @@ class EvaluateRequest(BaseModel):
     target_items: list[str] = Field(default_factory=list)
     learner_response: str = Field(default="", max_length=500)
     learner_name: str | None = Field(default=None, max_length=80)
+    # A place the learner named inside the activity (country, city or region).
+    # Used only to build the model answer — never validated geographically.
+    learner_place: str | None = Field(default=None, max_length=120)
     native_language: str | LanguageInfo | dict | None = None
     interface_language: str | LanguageInfo | dict | None = None
     target_language: str | LanguageInfo | dict | None = None

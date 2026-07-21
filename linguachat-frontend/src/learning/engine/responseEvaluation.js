@@ -165,12 +165,165 @@ export function evaluateNiceToMeet(text, { independent = false, turnContext = nu
   return { ...r, errorType: 'missing_close', conclusive: wordCount(n) < 3, confidence: wordCount(n) < 3 ? 0.85 : 0.5, priorityCorrection: 'ep3RetryExplain', explanation: 'ep3RetryExplain', retryRequired: true, retryPrompt: 'ep3RetryPrompt' }
 }
 
+/* ---- Episode 4: ask how someone is ---- */
+const ASK_WELLBEING = /\b(how are you( doing| today)?|how'?re you|how are things|how'?s it going)\b/
+// "How you?" / "how you doing" — intent is clear, the auxiliary is missing.
+const WELLBEING_NO_AUX = /\bhow (you|u)\b/
+
+export function evaluateAskWellbeing(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'How are you?'
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep4RetryPromptEmpty' }
+  if (ASK_WELLBEING.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = !/^how are you$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep4PraiseIndependent' : 'ep4PraiseAsked'
+    return r
+  }
+  if (WELLBEING_NO_AUX.test(n)) {
+    // understood, but the auxiliary "are" is missing — one priority correction
+    return { ...r, errorType: 'missing_auxiliary', priorityCorrection: 'ep4RetryExplainAux', explanation: 'ep4RetryExplainAux', retryRequired: true, retryPrompt: 'ep4RetryPromptAux' }
+  }
+  return { ...r, errorType: 'no_question', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep4RetryExplainAsk', explanation: 'ep4RetryExplainAsk', retryRequired: true, retryPrompt: 'ep4RetryPromptAsk' }
+}
+
+/* ---- Episode 4: answer how you are ---- */
+// Any of these feelings is a valid answer — a feeling is never "wrong".
+const FEELING = /\b(good|fine|okay|ok|great|well|tired|happy|sleepy|so so|not bad|alright)\b/
+const WELLBEING_FULL = /\b(i'?m|i am)\b/
+
+export function evaluateAnswerWellbeing(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = "I'm good."
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep4RetryPromptEmpty' }
+  const feeling = FEELING.test(n)
+  const full = WELLBEING_FULL.test(n)
+  // "Good, thanks." / "Fine, thank you." are natural complete answers too.
+  const politeShort = feeling && /\b(thanks|thank you)\b/.test(n)
+  if (feeling && (full || politeShort)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = !/^i'?m good$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep4PraiseIndependent' : 'ep4PraiseAnswered'
+    return r
+  }
+  if (feeling) {
+    // partial evidence: the feeling is understood, the structure is missing
+    return { ...r, errorType: 'missing_copula', priorityCorrection: 'ep4RetryExplainIm', explanation: 'ep4RetryExplainIm', retryRequired: true, retryPrompt: 'ep4RetryPromptIm' }
+  }
+  return { ...r, errorType: 'no_answer', conclusive: wordCount(n) < 3, confidence: wordCount(n) < 3 ? 0.85 : 0.5, priorityCorrection: 'ep4RetryExplainIm', explanation: 'ep4RetryExplainIm', retryRequired: true, retryPrompt: 'ep4RetryPromptIm' }
+}
+
+/* ---- Episodes 4 & 5: bounce the question back ---- */
+const RECIPROCAL_Q = /\b(and you|what about you|how about you|and yourself|and your ?self)\b\??/
+
+export function evaluateReciprocalQuestion(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'And you?'
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep4RetryPromptEmpty' }
+  if (RECIPROCAL_Q.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = !/^and you$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep4PraiseIndependent' : 'ep4PraiseBounce'
+    return r
+  }
+  return { ...r, errorType: 'no_question', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep4RetryExplainBounce', explanation: 'ep4RetryExplainBounce', retryRequired: true, retryPrompt: 'ep4RetryPromptBounce' }
+}
+
+/* ---- Episode 5: ask where someone is from ---- */
+const ASK_ORIGIN = /\b((and )?where are you from|what country are you from|where do you come from|where are you from)\b/
+const ORIGIN_NO_AUX = /\bwhere (you|u) from\b/
+
+export function evaluateAskOrigin(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'Where are you from?'
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep5RetryPromptEmpty' }
+  if (ASK_ORIGIN.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = !/^where are you from$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep5PraiseIndependent' : 'ep5PraiseAsked'
+    return r
+  }
+  if (ORIGIN_NO_AUX.test(n)) {
+    // "Where you from?" — intent recognised, only the auxiliary is missing
+    return { ...r, errorType: 'missing_auxiliary', priorityCorrection: 'ep5RetryExplainAux', explanation: 'ep5RetryExplainAux', retryRequired: true, retryPrompt: 'ep5RetryPromptAux' }
+  }
+  return { ...r, errorType: 'no_question', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep5RetryExplainAsk', explanation: 'ep5RetryExplainAsk', retryRequired: true, retryPrompt: 'ep5RetryPromptAsk' }
+}
+
+/* ---- Episode 5: say where you are from ----
+ * The place is never judged geographically: any country, city or region the
+ * learner names is accepted. Only the English structure is taught.
+ */
+const FROM_PLACE = /\bfrom\s+\p{L}[\p{L}\s'.-]*/u
+
+export function evaluateAnswerOrigin(text, { independent = false, place = '' } = {}) {
+  const n = normalize(text)
+  const natural = `I'm from ${String(place || '').trim() || 'Colombia'}.`
+  const r = base(independent)
+  r.naturalVersion = natural
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep5RetryPromptEmpty' }
+  const copula = /\b(i'?m|i am)\b/.test(n)
+  const fromPlace = FROM_PLACE.test(n)
+  if (copula && fromPlace) {
+    r.completedObjective = true
+    r.confidence = 0.96
+    r.acceptedVariant = !/^i'?m from /.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep5PraiseIndependent' : 'ep5PraiseAnswered'
+    return r
+  }
+  if (fromPlace && !copula) {
+    return { ...r, errorType: 'missing_copula', priorityCorrection: 'ep5RetryExplainIm', explanation: 'ep5RetryExplainIm', retryRequired: true, retryPrompt: 'ep5RetryPromptIm' }
+  }
+  // A bare place name is understood but incomplete: partial evidence, ask for
+  // the full structure rather than calling it wrong.
+  if (/\p{L}/u.test(n) && wordCount(n) <= 3) {
+    return { ...r, errorType: 'missing_from', priorityCorrection: 'ep5RetryExplainFrom', explanation: 'ep5RetryExplainFrom', retryRequired: true, retryPrompt: 'ep5RetryPromptFrom' }
+  }
+  return { ...r, errorType: 'no_answer', conclusive: false, confidence: 0.5, priorityCorrection: 'ep5RetryExplainFrom', explanation: 'ep5RetryExplainFrom', retryRequired: true, retryPrompt: 'ep5RetryPromptFrom' }
+}
+
+/* ---- Episode 6: a combined opening turn (greet + introduce, plus one more) ---- */
+export function evaluateFullIntroConversation(text, { name = 'Alex', independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = `Hi, I'm ${String(name).trim() || 'Alex'}. How are you?`
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep6RetryPromptEmpty' }
+  const intro = evaluateIntroduction(text, { name, independent })
+  const extra = ASK_WELLBEING.test(n) || ASK_ORIGIN.test(n) || ASK_NAME.test(n) || NICE.test(n)
+  if (intro.completedObjective && extra) {
+    r.completedObjective = true
+    r.confidence = 0.94
+    r.acceptedVariant = true
+    r.praiseKey = r.masteryEvidence.independent ? 'ep6PraiseIndependent' : 'ep6PraiseCombined'
+    return r
+  }
+  if (intro.completedObjective) {
+    // introduced correctly but did not carry the conversation forward
+    return { ...r, errorType: 'incomplete_turn', priorityCorrection: 'ep6RetryExplainMore', explanation: 'ep6RetryExplainMore', retryRequired: true, retryPrompt: 'ep6RetryPromptMore' }
+  }
+  return { ...r, errorType: intro.errorType, conclusive: intro.conclusive, confidence: intro.confidence, priorityCorrection: intro.priorityCorrection, explanation: intro.explanation, retryRequired: true, retryPrompt: intro.retryPrompt }
+}
+
 // Dispatcher used by the engine for free_reply / roleplay steps.
 export function evaluateFree(kind, text, ctx = {}) {
   switch (kind) {
     case 'introduction': return evaluateIntroduction(text, ctx)
     case 'ask_name': return evaluateAskName(text, ctx)
     case 'nice_to_meet': return evaluateNiceToMeet(text, ctx)
+    case 'ask_wellbeing': return evaluateAskWellbeing(text, ctx)
+    case 'answer_wellbeing': return evaluateAnswerWellbeing(text, ctx)
+    case 'reciprocal_question': return evaluateReciprocalQuestion(text, ctx)
+    case 'ask_origin': return evaluateAskOrigin(text, ctx)
+    case 'answer_origin': return evaluateAnswerOrigin(text, ctx)
+    case 'full_intro_conversation': return evaluateFullIntroConversation(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }
