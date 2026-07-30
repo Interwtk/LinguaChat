@@ -17,7 +17,7 @@ import {
   saveLocalProgress,
   saveStoredMessages,
 } from '../services/localProgress'
-import { translate } from '../i18n/translations'
+import { translate, loadLocale, isLocaleReady } from '../i18n/translations'
 import {
   advanceMission,
   completeMission,
@@ -201,7 +201,31 @@ export function AppProvider({ children }) {
 
   const nativeLanguage = nativeLanguageInfo.base
   const interfaceLanguage = interfaceLanguageInfo.base
-  const t = useCallback((key, params) => translate(interfaceLanguageInfo.base, key, params), [interfaceLanguageInfo.base])
+
+  /*
+   * Interface locales are fetched on demand. `localeVersion` simply forces a
+   * re-render once a dictionary lands, so `t` re-resolves with real strings.
+   * The native language is loaded too when it differs, because pedagogical help
+   * is written in the learner's own language, not the interface one.
+   */
+  const [localeVersion, setLocaleVersion] = useState(0)
+  useEffect(() => {
+    let cancelled = false
+    const wanted = [...new Set([interfaceLanguage, nativeLanguage])]
+    if (wanted.every(isLocaleReady)) return undefined
+    Promise.all(wanted.map(loadLocale)).then(() => {
+      if (!cancelled) setLocaleVersion(v => v + 1)
+    })
+    return () => { cancelled = true }
+  }, [interfaceLanguage, nativeLanguage])
+
+  // localeVersion participates so every consumer re-renders when a locale lands
+  const t = useCallback(
+    (key, params) => translate(interfaceLanguageInfo.base, key, params),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [interfaceLanguageInfo.base, localeVersion],
+  )
+  const interfaceReady = isLocaleReady(interfaceLanguage)
 
   const updateNativeLanguage = useCallback((language) => {
     const native = persistNativeLanguage(language)
@@ -829,7 +853,7 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{
       authStep, setAuthStep,
-      nativeLanguage, nativeLanguageInfo,
+      nativeLanguage, nativeLanguageInfo, interfaceReady,
       interfaceLanguage, interfaceLanguageInfo,
       targetLanguage,
       setNativeLanguage: updateNativeLanguage,

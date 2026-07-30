@@ -26,23 +26,32 @@ const TRANSLATIONS = resolve(here, '../src/i18n/translations.js')
 const LOCALE_ORDER = ['es', 'pt', 'fr', 'it', 'de', 'ja', 'ar']
 const FULLY_SUPPORTED = [...LOCALE_ORDER]
 
-function extractDicts(source) {
-  const lines = source.split(/\r?\n/)
-  const dicts = {}
-  let current = null
-  for (const line of lines) {
-    const open = line.match(/^const (\w+) = \{$/)
-    if (open) {
-      current = ['base', ...LOCALE_ORDER].includes(open[1]) ? open[1] : null
-      if (current) dicts[current] = {}
-      continue
-    }
-    if (current && /^\}/.test(line)) { current = null; continue }
-    if (!current) continue
-    const kv = line.match(/^\s{2}([A-Za-z0-9_]+):\s*(.*?),?\s*$/)
-    if (kv) dicts[current][kv[1]] = kv[2]
+// Collect `  key: value,` pairs from a dictionary body.
+function readPairs(lines, from = 0, until = () => false) {
+  const dict = {}
+  for (let i = from; i < lines.length; i++) {
+    if (until(lines[i])) break
+    const kv = lines[i].match(/^\s{2}([A-Za-z0-9_]+):\s*(.*?),?\s*$/)
+    if (kv) dict[kv[1]] = kv[2]
   }
-  return dicts
+  return dict
+}
+
+// English lives in translations.js as `const base = { … }`; it is both a locale
+// and the fallback, so it always ships in the entry chunk.
+function extractBase(source) {
+  const lines = source.split(/\r?\n/)
+  const start = lines.findIndex(l => /^const base = \{$/.test(l))
+  if (start === -1) return {}
+  return readPairs(lines, start + 1, (l) => /^\}/.test(l))
+}
+
+// Every other locale is its own lazily-imported module: `export default { … }`.
+function extractLocale(source) {
+  const lines = source.split(/\r?\n/)
+  const start = lines.findIndex(l => /^export default \{$/.test(l))
+  if (start === -1) return {}
+  return readPairs(lines, start + 1, (l) => /^\}/.test(l))
 }
 
 const placeholders = (value) => {
@@ -52,8 +61,11 @@ const placeholders = (value) => {
 }
 
 const source = await readFile(TRANSLATIONS, 'utf8')
-const dicts = extractDicts(source)
-const base = dicts.base || {}
+const base = extractBase(source)
+const dicts = { base }
+for (const loc of LOCALE_ORDER) {
+  dicts[loc] = extractLocale(await readFile(resolve(here, `../src/i18n/locales/${loc}.js`), 'utf8'))
+}
 const baseKeys = Object.keys(base)
 
 if (!baseKeys.length) {
