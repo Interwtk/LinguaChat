@@ -1,20 +1,42 @@
 import { useEffect, useState } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
 import { useIsDesktop } from './services/viewport'
-import { AuthFlow } from './components/auth/AuthFlow'
-import { SetupFlow } from './components/setup/SetupFlow'
 import { JourneyRail } from './components/layout/JourneyRail'
-import { ConversationRoom } from './components/layout/ConversationRoom'
 import { TutorNotes } from './components/layout/TutorNotes'
 import { TodayView } from './components/today/TodayView'
 import { ThemeToggle } from './components/ui/ThemeToggle'
-import { LanguageIdentity } from './components/identity/LanguageIdentity'
-import { MemoryGarden } from './components/memory/MemoryGarden'
-import { ConversationArchive } from './components/archive/ConversationArchive'
-import { Pricing } from './components/pricing/Pricing'
+import { lazyScreen } from './components/ui/LazyBoundary'
 import { WelcomeMascotCard } from './components/onboarding/WelcomeMascotCard'
 import { ChattoTutorial } from './components/onboarding/ChattoTutorial'
 import { ChattoMascot } from './components/mascot/ChattoMascot'
+
+/*
+ * Code splitting.
+ *
+ * Home is what almost every session opens on, so TodayView and the shell stay in
+ * the entry chunk. Everything else is fetched when the learner actually goes
+ * there: the sign-in and setup flows (a returning learner never sees them), the
+ * secondary screens, and the whole practice surface — which pulls in the episode
+ * engine, the daily-session runner and the evaluators.
+ */
+const AuthFlowScreen = lazyScreen(() => import('./components/auth/AuthFlow'), m => m.AuthFlow)
+const SetupFlowScreen = lazyScreen(() => import('./components/setup/SetupFlow'), m => m.SetupFlow)
+const ConversationRoomScreen = lazyScreen(() => import('./components/layout/ConversationRoom'), m => m.ConversationRoom)
+const LanguageIdentityScreen = lazyScreen(() => import('./components/identity/LanguageIdentity'), m => m.LanguageIdentity)
+const MemoryGardenScreen = lazyScreen(() => import('./components/memory/MemoryGarden'), m => m.MemoryGarden)
+const ConversationArchiveScreen = lazyScreen(() => import('./components/archive/ConversationArchive'), m => m.ConversationArchive)
+const PricingScreen = lazyScreen(() => import('./components/pricing/Pricing'), m => m.Pricing)
+
+// Every lazy screen shows its loading and failure states in the interface
+// language, so a chunk problem never surfaces as a blank page or English text.
+function useScreenLabels() {
+  const { t } = useApp()
+  return {
+    loadingLabel: t('screenLoading'),
+    errorLabel: t('screenLoadFailed'),
+    retryLabel: t('screenLoadRetry'),
+  }
+}
 
 /* ─── Mobile bottom navigation ─── */
 function MobileNav() {
@@ -194,6 +216,7 @@ function AppShell() {
   // Exactly one shell is mounted. Rendering both and hiding one with CSS keeps a
   // second, stale copy of every stateful view alive (see services/viewport.js).
   const isDesktop = useIsDesktop()
+  const screenLabels = useScreenLabels()
   const mainMaxWidth = view === 'practice'
     ? (notesCollapsed ? 1360 : 1180)
     : (notesCollapsed ? 1120 : 960)
@@ -202,8 +225,8 @@ function AppShell() {
     try { localStorage.setItem(NOTES_COLLAPSED_KEY, String(notesCollapsed)) } catch {}
   }, [notesCollapsed])
 
-  if (authStep && AUTH_STEPS.includes(authStep)) return <AuthFlow />
-  if (authStep && SETUP_STEPS.includes(authStep)) return <SetupFlow />
+  if (authStep && AUTH_STEPS.includes(authStep)) return <AuthFlowScreen {...screenLabels} />
+  if (authStep && SETUP_STEPS.includes(authStep)) return <SetupFlowScreen {...screenLabels} />
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
@@ -243,11 +266,11 @@ function AppShell() {
             }}
           >
             {view === 'today'          && <TodayView />}
-            {view === 'practice'       && <ConversationRoom />}
-            {view === 'memory-garden'  && <MemoryGarden />}
-            {view === 'archive'        && <ConversationArchive />}
-            {view === 'identity'       && <LanguageIdentity />}
-            {view === 'pricing'        && <Pricing />}
+            {view === 'practice'       && <ConversationRoomScreen {...screenLabels} />}
+            {view === 'memory-garden'  && <MemoryGardenScreen {...screenLabels} />}
+            {view === 'archive'        && <ConversationArchiveScreen {...screenLabels} />}
+            {view === 'identity'       && <LanguageIdentityScreen {...screenLabels} />}
+            {view === 'pricing'        && <PricingScreen {...screenLabels} />}
           </div>
         </main>
 
@@ -289,11 +312,11 @@ function AppShell() {
         {/* Mobile content */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingBottom: 72 }}>
           {view === 'today'         && <TodayView />}
-          {view === 'practice'      && <ConversationRoom />}
-          {view === 'memory-garden' && <MemoryGarden />}
-          {view === 'archive'       && <ConversationArchive />}
-          {view === 'identity'      && <LanguageIdentity />}
-          {view === 'pricing'       && <Pricing />}
+          {view === 'practice'      && <ConversationRoomScreen {...screenLabels} />}
+          {view === 'memory-garden' && <MemoryGardenScreen {...screenLabels} />}
+          {view === 'archive'       && <ConversationArchiveScreen {...screenLabels} />}
+          {view === 'identity'      && <LanguageIdentityScreen {...screenLabels} />}
+          {view === 'pricing'       && <PricingScreen {...screenLabels} />}
         </div>
 
         {/* Mobile bottom nav */}
