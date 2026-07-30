@@ -303,7 +303,25 @@ def test_bare_place_is_partial_evidence_not_a_failure():
     ("", "I'm from Colombia."),   # neutral fallback only when nothing is known
 ])
 def test_origin_model_answer_follows_the_learner_place(place, expected):
-    r = evaluate_deterministic(_payload(expected_intent="answer_origin", learner_response="x", learner_place=place))
+    """When the answer names no place, fall back to the one given earlier."""
+    r = evaluate_deterministic(_payload(
+        expected_intent="answer_origin",
+        learner_response="this sentence names no place at all",
+        learner_place=place))
+    assert r["natural_version"] == expected
+
+
+@pytest.mark.parametrize("answer,expected", [
+    ("Colombia.", "I'm from Colombia."),
+    ("I'm Osaka", "I'm from Osaka."),
+    ("From Cairo", "I'm from Cairo."),
+    ("Bogotá", "I'm from Bogotá."),
+])
+def test_origin_model_answer_echoes_the_place_just_named(answer, expected):
+    """A nudge must repeat the learner's own place, never swap in another one."""
+    r = evaluate_deterministic(_payload(
+        expected_intent="answer_origin", learner_response=answer, learner_place="Lima"))
+    assert r["completed_objective"] is False
     assert r["natural_version"] == expected
 
 

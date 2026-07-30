@@ -6,7 +6,7 @@
  */
 import assert from 'node:assert/strict'
 import { ARC } from '../src/learning/episodes/index.js'
-import { createLearnerModel, setEpisodeState, recordItemAttempt, markRecurringError } from '../src/learning/engine/learnerModel.js'
+import { createLearnerModel, setEpisodeState, markRecurringError } from '../src/learning/engine/learnerModel.js'
 import {
   buildSessionPlan, getOrCreateSession, DURATION_MODES, dayKeyFor,
   startSession, advanceBlock, currentBlock, sessionProgress, sessionHeadline, sessionHasReview,
@@ -17,6 +17,24 @@ const AT = Date.parse('2026-07-21T09:00:00Z')
 let n = 0
 const ok = () => { n++ }
 const types = (s) => s.blocks.map(b => b.type)
+
+/*
+ * Seed an item that is already due for review AT A GIVEN INSTANT.
+ *
+ * recordItemAttempt schedules from the real Date.now(), so combining it with a
+ * fixed `AT` made this file pass only on the day it was written: once the wall
+ * clock drifted past AT, the "overdue" review was actually scheduled in the
+ * future and the assertions flipped. Writing the item directly keeps every
+ * assertion deterministic and clock-independent.
+ */
+function seedDueReview(model, itemId, atMs = AT) {
+  model.languageItems[itemId] = {
+    status: 'learning', correct: 1, incorrect: 0, independentCorrect: 0, streak: 1,
+    nextReviewAt: new Date(atMs - 86400000).toISOString(),
+    lastSeenAt: new Date(atMs - 2 * 86400000).toISOString(),
+  }
+  return model
+}
 
 // 1) a brand-new learner: main goal = first episode, ends with completion
 {
@@ -34,12 +52,11 @@ const types = (s) => s.blocks.map(b => b.type)
 {
   const model = createLearnerModel()
   setEpisodeState(model, 'first_greeting', { status: 'in_progress', stepIndex: 3 })
-  recordItemAttempt(model, 'hi', { correct: true, independent: false })  // schedules a review
+  seedDueReview(model, 'hi')
   markRecurringError(model, 'missing_copula'); markRecurringError(model, 'missing_copula')
   model.canDo.introduce_self = { status: 'learning', attempts: 1, successes: 1, independentSuccesses: 0, contexts: [], lastPracticedAt: null }
-  const later = AT + 5 * 86400000   // make the review overdue
   for (const [mode, cfg] of Object.entries(DURATION_MODES)) {
-    const s = buildSessionPlan(model, ARC, { durationMode: mode, atMs: later })
+    const s = buildSessionPlan(model, ARC, { durationMode: mode, atMs: AT })
     assert.ok(s.blocks.length <= cfg.maxBlocks, `${mode}: ${s.blocks.length} blocks exceeds ${cfg.maxBlocks}`)
     assert.equal(s.blocks.at(-1).type, 'session_completion')
     assert.equal(s.durationMode, mode)
@@ -148,8 +165,8 @@ const types = (s) => s.blocks.map(b => b.type)
 // 11) review flag + practice-kind maps cover every arc item id
 {
   const model = createLearnerModel()
-  recordItemAttempt(model, 'how_are_you', { correct: true, independent: false })
-  const s = buildSessionPlan(model, ARC, { durationMode: 'standard', atMs: AT + 5 * 86400000 })
+  seedDueReview(model, 'how_are_you')
+  const s = buildSessionPlan(model, ARC, { durationMode: 'standard', atMs: AT })
   assert.equal(sessionHasReview(s), true)
   for (const ep of ARC) {
     for (const id of ep.gardenItems || []) {
@@ -179,6 +196,24 @@ const types = (s) => s.blocks.map(b => b.type)
 {
   const s = buildSessionPlan(createLearnerModel(), ARC, { durationMode: 'turbo', atMs: AT })
   assert.equal(s.durationMode, 'standard')
+  ok()
+}
+
+// 14) the planner is clock-independent: the same model and the same instant must
+//     produce the same plan whether "today" is 2026 or ten years later.
+//     Regression guard — this file used to pass only on the day it was written.
+{
+  const build = (atMs) => {
+    const model = seedDueReview(createLearnerModel(), 'hi', atMs)
+    setEpisodeState(model, 'first_greeting', { status: 'in_progress', stepIndex: 2 })
+    return buildSessionPlan(model, ARC, { durationMode: 'standard', atMs })
+  }
+  for (const atMs of [AT, AT + 3650 * 86400000, AT - 3650 * 86400000]) {
+    const s = build(atMs)
+    assert.equal(sessionHasReview(s), true, 'an overdue review must be planned at any instant')
+    assert.ok(types(s).includes('continue_episode'))
+    assert.equal(s.dayKey, dayKeyFor(atMs))
+  }
   ok()
 }
 

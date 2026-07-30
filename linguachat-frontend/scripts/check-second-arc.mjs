@@ -137,7 +137,15 @@ const NEW_IDS = ['how_are_you', 'where_from', 'first_conversation']
   assert.equal(bare.errorType, 'missing_from')
   assert.equal(bare.naturalVersion, "I'm from Colombia.")
   // the model answer follows the learner's OWN place, never a hardcoded country
-  assert.equal(evaluateFree('answer_origin', 'x y z', { place: 'Nairobi' }).naturalVersion, "I'm from Nairobi.")
+  // The model answer echoes the place the LEARNER just named, so a nudge never
+  // looks like a correction of their own country ("Colombia." -> "I'm from Colombia.").
+  assert.equal(evaluateFree('answer_origin', 'Colombia.', { place: 'Lima' }).naturalVersion, "I'm from Colombia.")
+  assert.equal(evaluateFree('answer_origin', "I'm Osaka", { place: 'Lima' }).naturalVersion, "I'm from Osaka.")
+  assert.equal(evaluateFree('answer_origin', 'From Cairo', { place: 'Lima' }).naturalVersion, "I'm from Cairo.")
+  // When nothing place-like can be read, fall back to the place they gave earlier.
+  assert.equal(evaluateFree('answer_origin', 'this sentence names no place at all', { place: 'Nairobi' }).naturalVersion, "I'm from Nairobi.")
+  // …and only then to a neutral example.
+  assert.equal(evaluateFree('answer_origin', 'this sentence names no place at all', {}).naturalVersion, "I'm from Colombia.")
   ok()
 }
 

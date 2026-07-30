@@ -263,10 +263,30 @@ export function evaluateAskOrigin(text, { independent = false } = {}) {
  * learner names is accepted. Only the English structure is taught.
  */
 const FROM_PLACE = /\bfrom\s+\p{L}[\p{L}\s'.-]*/u
+// Leading words to peel off an incomplete answer ("I'm Lima" / "From Lima").
+const ORIGIN_LEAD = /^\s*(i\s*'?\s*m|i\s+am|i)?\s*(from)?\s*/i
+
+/*
+ * The place the learner just named, taken from THEIR OWN words so the model
+ * answer echoes what they said ("Colombia." -> "I'm from Colombia.") instead of
+ * a previously stored place, which would read as a correction of their answer.
+ * Returns '' when nothing place-like is left.
+ */
+export function placeFromAnswer(text) {
+  const raw = String(text || '').trim().replace(/[.!?¡¿,;:]+$/u, '')
+  if (!raw) return ''
+  const rest = raw.replace(ORIGIN_LEAD, '').trim()
+  if (!rest || !/\p{L}/u.test(rest)) return ''
+  // keep it to a short place-like phrase, never a whole sentence
+  return rest.split(/\s+/).length <= 4 ? rest : ''
+}
 
 export function evaluateAnswerOrigin(text, { independent = false, place = '' } = {}) {
   const n = normalize(text)
-  const natural = `I'm from ${String(place || '').trim() || 'Colombia'}.`
+  // Prefer the place the learner just named; fall back to the one they gave
+  // earlier in the episode, and only then to a neutral example.
+  const named = placeFromAnswer(text)
+  const natural = `I'm from ${named || String(place || '').trim() || 'Colombia'}.`
   const r = base(independent)
   r.naturalVersion = natural
   if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep5RetryPromptEmpty' }

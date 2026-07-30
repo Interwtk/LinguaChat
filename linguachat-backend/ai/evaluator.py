@@ -221,10 +221,29 @@ def _ask_origin(text: str) -> dict:
     return _base(error_type="no_question", retry_required=True, natural_version=natural, confidence=0.75)
 
 
+_ORIGIN_LEAD = re.compile(r"^\s*(i\s*'?\s*m|i\s+am|i)?\s*(from)?\s*", re.IGNORECASE)
+
+
+def place_from_answer(text: str) -> str:
+    """
+    The place the learner just named, in their own words, so the model answer
+    echoes what they said ("Colombia." -> "I'm from Colombia.") instead of a
+    previously stored place, which would read as a correction of their country.
+    """
+    raw = str(text or "").strip().rstrip(".!?¡¿,;: ")
+    if not raw:
+        return ""
+    rest = _ORIGIN_LEAD.sub("", raw, count=1).strip()
+    if not rest or not re.search(r"[^\W\d_]", rest, re.UNICODE):
+        return ""
+    return rest if len(rest.split()) <= 4 else ""
+
+
 def _answer_origin(text: str, place: str) -> dict:
     """The place itself is never judged — only the English structure is taught."""
     n = normalize(text)
-    natural = f"I'm from {(place or '').strip() or 'Colombia'}."
+    named = place_from_answer(text)
+    natural = f"I'm from {named or (place or '').strip() or 'Colombia'}."
     if not n:
         return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
     copula = bool(_IM.search(n))
