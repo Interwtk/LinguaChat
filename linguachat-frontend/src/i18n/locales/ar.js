@@ -133,6 +133,10 @@ export default {
 
   sessionChoiceInstruction: "اختر الإجابة الطبيعية.",
 
+  sessionChoiceRetry: "تقريبًا — الإجابة الطبيعية هنا هي:",
+
+  sessionGapRetry: "تقريبًا — الكلمة الناقصة هي:",
+
   altPractiseAnotherWay: "تدرّب بطريقة أخرى",
 
   altGuidedInstruction: "كوّن الجملة نفسها، كلمة بكلمة.",
@@ -140,6 +144,46 @@ export default {
   altGuidedHint: "المس الكلمات بالترتيب الصحيح.",
 
   feedbackQuestion: "كيف كانت طريقة التدريب هذه؟",
+
+  feedbackQuestionFor: "كيف كان {activity}؟",
+
+  formatName_roleplay: "المحادثة",
+
+  formatName_mini_story: "القصة القصيرة",
+
+  formatName_free_reply: "الإجابة بكلماتك",
+
+  formatName_recall: "تذكّر الجملة",
+
+  formatName_review: "المراجعة السريعة",
+
+  formatName_word_order: "ترتيب الكلمات",
+
+  formatName_fill_blank: "إكمال الجملة",
+
+  formatName_guided_reply: "التدريب الموجّه",
+
+  formatName_choice: "اختيار الإجابة",
+
+  formatName_comprehension: "فهم المعنى",
+
+  replaySectionTitle: "ما تستطيع فعله الآن",
+
+  replayCompletedTag: "مكتمل",
+
+  replayPractiseAgain: "تدرّب مرة أخرى",
+
+  replayTryOtherOption: "جرّب الخيار الآخر",
+
+  replayTimesPractised: "تدرّبت {count}×",
+
+  memoryRememberedLike: "قلت آخر مرة إنك تحب {topic}. هل تريد الحديث عن ذلك؟",
+
+  memoryUseTopic: "نعم، لنتحدث عن ذلك",
+
+  memoryUseAnotherTopic: "استخدم موضوعًا آخر",
+
+  sessionTopicRemembered: "شيء ذكرته: {topic}",
 
   feedbackMoreLikeThis: "المزيد من هذا",
 

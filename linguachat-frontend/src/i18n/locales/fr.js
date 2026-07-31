@@ -133,6 +133,10 @@ export default {
 
   sessionChoiceInstruction: "Choisis la réponse naturelle.",
 
+  sessionChoiceRetry: "Presque — la réponse naturelle ici est :",
+
+  sessionGapRetry: "Presque — le mot qui manque est :",
+
   altPractiseAnotherWay: "S’entraîner autrement",
 
   altGuidedInstruction: "Construis la même phrase, mot à mot.",
@@ -140,6 +144,46 @@ export default {
   altGuidedHint: "Touche les mots dans le bon ordre.",
 
   feedbackQuestion: "Comment s’est passée cette façon de pratiquer ?",
+
+  feedbackQuestionFor: "Comment s’est passé {activity} ?",
+
+  formatName_roleplay: "la conversation",
+
+  formatName_mini_story: "la petite histoire",
+
+  formatName_free_reply: "répondre avec tes mots",
+
+  formatName_recall: "te souvenir de la phrase",
+
+  formatName_review: "la révision rapide",
+
+  formatName_word_order: "remettre les mots dans l’ordre",
+
+  formatName_fill_blank: "compléter la phrase",
+
+  formatName_guided_reply: "la pratique guidée",
+
+  formatName_choice: "choisir la réponse",
+
+  formatName_comprehension: "comprendre le sens",
+
+  replaySectionTitle: "Ce que tu sais déjà faire",
+
+  replayCompletedTag: "Terminé",
+
+  replayPractiseAgain: "S’entraîner encore",
+
+  replayTryOtherOption: "Essayer l’autre option",
+
+  replayTimesPractised: "pratiqué {count}×",
+
+  memoryRememberedLike: "La dernière fois, tu as dit que tu aimes {topic}. Tu veux en parler ?",
+
+  memoryUseTopic: "Oui, parlons-en",
+
+  memoryUseAnotherTopic: "Utiliser un autre sujet",
+
+  sessionTopicRemembered: "Quelque chose que tu as mentionné : {topic}",
 
   feedbackMoreLikeThis: "Plus d’activités comme ça",
 

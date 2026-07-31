@@ -1,13 +1,15 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MessageBubble, TypingIndicator } from '../chat/MessageBubble'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { EpisodeShell } from '../episode/EpisodeShell'
+import { CompletedEpisodes } from '../episode/CompletedEpisodes'
 import { SessionRunner } from '../session/SessionRunner'
 import { ARC, getEpisode } from '../../learning/episodes/index.js'
 import { planDay } from '../../learning/engine/planner.js'
 import { loadLearnerModel, getEpisodeState } from '../../learning/engine/learnerModel.js'
+import { selectLearnerFact } from '../../learning/engine/learnerFacts.js'
 
 export function ConversationRoom() {
   const {
@@ -24,14 +26,22 @@ export function ConversationRoom() {
     missionCelebration,
     abandonMission,
     episodeActiveId,
+    episodeRunOptions,
     episodeArcVersion,
     startEpisode,
     sessionActive,
     dailySession,
     beginSession,
+    nativeLanguageInfo,
   } = useApp()
   const [input, setInput] = useState('')
   const [sparkOpen, setSparkOpen] = useState(false)
+  // "Use another topic" applies to this conversation only; nothing is deleted.
+  const [factDismissed, setFactDismissed] = useState(false)
+  const rememberedFact = useMemo(
+    () => selectLearnerFact(loadLearnerModel(), { type: 'like', seed: `chat:${episodeArcVersion}` }),
+    [episodeArcVersion],
+  )
   const textareaRef = useRef(null)
   const bottomRef = useRef(null)
 
@@ -94,7 +104,7 @@ export function ConversationRoom() {
   if (episodeActiveId) {
     return (
       <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>
-        <EpisodeShell episodeId={episodeActiveId} />
+        <EpisodeShell episodeId={episodeActiveId} runOptions={episodeRunOptions} />
       </div>
     )
   }
@@ -244,6 +254,36 @@ export function ConversationRoom() {
               </button>
             </div>
           )}
+          {/*
+            * An offer, not an assumption. Lingua may bring back something the
+            * learner said, once, as a suggestion they can ignore or wave away —
+            * saying "another topic" never deletes the memory, it just keeps it
+            * out of this conversation.
+            */}
+          {!activeMissionDetails && rememberedFact && !factDismissed && (
+            <div className="rounded-2xl p-3.5 mb-5 flex items-start gap-3 animate-fade-up"
+              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+              <LinguaAvatar size={30} online className="mt-0.5" />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink)', lineHeight: 1.5 }}>
+                  {t('memoryRememberedLike', { topic: rememberedFact.value })}
+                </p>
+                <div className="flex gap-2 mt-2 flex-wrap">
+                  <button type="button" onClick={() => usePrompt(`Let's talk about ${rememberedFact.value}.`)}
+                    className="rounded-full px-3 py-1.5 text-xs font-bold transition-all active:scale-[0.98]"
+                    style={{ background: 'var(--violet-soft)', border: '1.5px solid var(--violet)', color: 'var(--violet)', minHeight: 36 }}>
+                    <span lang={nativeLanguageInfo.base}>{t('memoryUseTopic')}</span>
+                  </button>
+                  <button type="button" onClick={() => setFactDismissed(true)}
+                    className="rounded-full px-3 py-1.5 text-xs font-semibold transition-all active:scale-[0.98]"
+                    style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)', color: 'var(--ink-muted)', minHeight: 36 }}>
+                    <span lang={nativeLanguageInfo.base}>{t('memoryUseAnotherTopic')}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {!activeMissionDetails && <CompletedEpisodes />}
           {messages.map(msg => (
             <MessageBubble key={msg.id} message={msg} />
           ))}

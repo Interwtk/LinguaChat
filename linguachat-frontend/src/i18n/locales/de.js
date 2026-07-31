@@ -133,6 +133,10 @@ export default {
 
   sessionChoiceInstruction: "Wähle die natürliche Antwort.",
 
+  sessionChoiceRetry: "Fast — die natürliche Antwort ist hier:",
+
+  sessionGapRetry: "Fast — das fehlende Wort ist:",
+
   altPractiseAnotherWay: "Anders üben",
 
   altGuidedInstruction: "Baue denselben Satz, Wort für Wort.",
@@ -140,6 +144,46 @@ export default {
   altGuidedHint: "Tippe die Wörter in der richtigen Reihenfolge an.",
 
   feedbackQuestion: "Wie war diese Art zu üben?",
+
+  feedbackQuestionFor: "Wie lief {activity}?",
+
+  formatName_roleplay: "das Gespräch",
+
+  formatName_mini_story: "die kleine Geschichte",
+
+  formatName_free_reply: "mit eigenen Worten antworten",
+
+  formatName_recall: "den Satz erinnern",
+
+  formatName_review: "die kurze Wiederholung",
+
+  formatName_word_order: "die Wörter ordnen",
+
+  formatName_fill_blank: "den Satz vervollständigen",
+
+  formatName_guided_reply: "die geführte Übung",
+
+  formatName_choice: "die Antwort auswählen",
+
+  formatName_comprehension: "die Bedeutung verstehen",
+
+  replaySectionTitle: "Was du schon kannst",
+
+  replayCompletedTag: "Abgeschlossen",
+
+  replayPractiseAgain: "Noch einmal üben",
+
+  replayTryOtherOption: "Die andere Möglichkeit probieren",
+
+  replayTimesPractised: "{count}× geübt",
+
+  memoryRememberedLike: "Letztes Mal hast du gesagt, du magst {topic}. Willst du darüber sprechen?",
+
+  memoryUseTopic: "Ja, reden wir darüber",
+
+  memoryUseAnotherTopic: "Anderes Thema nehmen",
+
+  sessionTopicRemembered: "Etwas, das du erwähnt hast: {topic}",
 
   feedbackMoreLikeThis: "Mehr davon",
 

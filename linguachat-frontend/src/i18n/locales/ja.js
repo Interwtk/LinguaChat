@@ -133,6 +133,10 @@ export default {
 
   sessionChoiceInstruction: "自然な答えを選びましょう。",
 
+  sessionChoiceRetry: "おしい — ここでの自然な答えは：",
+
+  sessionGapRetry: "おしい — 足りない単語は：",
+
   altPractiseAnotherWay: "別の方法で練習する",
 
   altGuidedInstruction: "同じ文を、一語ずつ組み立てましょう。",
@@ -140,6 +144,46 @@ export default {
   altGuidedHint: "正しい順に単語をタップしてください。",
 
   feedbackQuestion: "この練習のしかたはどうでしたか。",
+
+  feedbackQuestionFor: "{activity}はどうでしたか。",
+
+  formatName_roleplay: "会話",
+
+  formatName_mini_story: "短いお話",
+
+  formatName_free_reply: "自分の言葉で答えること",
+
+  formatName_recall: "フレーズを思い出すこと",
+
+  formatName_review: "短い復習",
+
+  formatName_word_order: "単語を並べること",
+
+  formatName_fill_blank: "文を完成させること",
+
+  formatName_guided_reply: "ガイド付き練習",
+
+  formatName_choice: "答えを選ぶこと",
+
+  formatName_comprehension: "意味を考えること",
+
+  replaySectionTitle: "できるようになったこと",
+
+  replayCompletedTag: "完了",
+
+  replayPractiseAgain: "もう一度練習する",
+
+  replayTryOtherOption: "もう一方を試す",
+
+  replayTimesPractised: "{count}回練習",
+
+  memoryRememberedLike: "前に{topic}が好きだと言っていましたね。その話をしますか。",
+
+  memoryUseTopic: "はい、その話をしましょう",
+
+  memoryUseAnotherTopic: "別の話題にする",
+
+  sessionTopicRemembered: "あなたが話していたこと：{topic}",
 
   feedbackMoreLikeThis: "こういう練習をもっと",
 

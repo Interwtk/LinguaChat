@@ -133,6 +133,10 @@ export default {
 
   sessionChoiceInstruction: "Escolha a resposta natural.",
 
+  sessionChoiceRetry: "Quase — a resposta natural aqui é:",
+
+  sessionGapRetry: "Quase — a palavra que falta é:",
+
   altPractiseAnotherWay: "Praticar de outra forma",
 
   altGuidedInstruction: "Monte a mesma frase, palavra por palavra.",
@@ -140,6 +144,46 @@ export default {
   altGuidedHint: "Toque nas palavras na ordem certa.",
 
   feedbackQuestion: "Como foi esta forma de praticar?",
+
+  feedbackQuestionFor: "Como foi {activity}?",
+
+  formatName_roleplay: "a conversa",
+
+  formatName_mini_story: "a pequena história",
+
+  formatName_free_reply: "responder com suas palavras",
+
+  formatName_recall: "lembrar a frase",
+
+  formatName_review: "a revisão rápida",
+
+  formatName_word_order: "ordenar as palavras",
+
+  formatName_fill_blank: "completar a frase",
+
+  formatName_guided_reply: "a prática guiada",
+
+  formatName_choice: "escolher a resposta",
+
+  formatName_comprehension: "entender o significado",
+
+  replaySectionTitle: "O que você já sabe fazer",
+
+  replayCompletedTag: "Concluído",
+
+  replayPractiseAgain: "Praticar de novo",
+
+  replayTryOtherOption: "Tentar a outra opção",
+
+  replayTimesPractised: "praticado {count}×",
+
+  memoryRememberedLike: "Da última vez você disse que gosta de {topic}. Quer falar sobre isso?",
+
+  memoryUseTopic: "Sim, vamos falar disso",
+
+  memoryUseAnotherTopic: "Usar outro tema",
+
+  sessionTopicRemembered: "Algo que você mencionou: {topic}",
 
   feedbackMoreLikeThis: "Mais atividades assim",
 

@@ -18,6 +18,10 @@ import {
 import { dayKeyFor } from '../../learning/engine/session.js'
 import { seedFrom } from '../../learning/engine/variation.js'
 import { FormatFeedback } from './FormatFeedback'
+import {
+  beginEpisodeRun, completeEpisodeRun, updateActiveRun, runEarnsReward, otherBranch, RUN_BRANCH_REPLAY,
+} from '../../learning/engine/episodeRuns.js'
+import { recordLearnerFact, selectLearnerFact } from '../../learning/engine/learnerFacts.js'
 
 // Fill {name} / {partner} / {place} / {partnerPlace} in the English target text.
 // An unknown placeholder is left untouched rather than printed as "undefined".
@@ -72,7 +76,7 @@ function LinguaLine({ children }) {
 
 // `onComplete` lets a daily session take over what happens after the episode:
 // inside a session the next block follows, standalone it returns to Home.
-export function EpisodeShell({ episodeId, onComplete = null, interestId = null }) {
+export function EpisodeShell({ episodeId, onComplete = null, interestId = null, runOptions = null }) {
   const { t, profile, tutorPreferences, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode } = useApp()
   const ep = getEpisode(episodeId)
   const name = (profile.name || '').trim() || 'Alex'
@@ -84,6 +88,28 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null }
   const modelRef = useRef(loadLearnerModel())
   const awardedRef = useRef(false)
   const finishedRef = useRef(false)
+  /*
+   * Open (or rejoin) this run before anything else, so the rest of the shell
+   * knows whether it is a first attempt or practice. Started once per mount
+   * and persisted, so a remount or a reload rejoins the same run.
+   */
+  const runRef = useRef(null)
+  if (ep && !runRef.current) {
+    const wantsOtherBranch = Boolean(runOptions?.wantsOtherBranch)
+    const preferred = wantsOtherBranch ? otherBranch(modelRef.current, ep) : null
+    // Resolving the run only touches the in-memory model; it is written to
+    // storage in the effect below, so rendering stays free of side effects.
+    runRef.current = beginEpisodeRun(modelRef.current, ep.id, {
+      source: runOptions?.source || (onComplete ? 'daily_session' : 'practice'),
+      wantsOtherBranch,
+      branchPreference: preferred,
+    })
+  }
+  const run = runRef.current
+  useEffect(() => {
+    if (runRef.current) saveLearnerModel(modelRef.current)
+  }, [])
+
   const initial = useMemo(() => {
     if (!ep) return { step: 0, scaffold: 'high' }
     const st = getEpisodeState(modelRef.current, ep.id)
@@ -166,6 +192,19 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null }
     [interestCtx, profile.name, episodeId],
   )
 
+  /*
+   * Practising something again is the natural place to use what the learner
+   * told Lingua the first time: the structure is familiar, so a familiar
+   * subject makes the repetition feel like a conversation rather than a
+   * rerun. A first run keeps the catalogue example.
+   */
+  const practiceFact = useMemo(() => {
+    const mode = runRef.current?.mode
+    if (mode !== 'replay' && mode !== 'branch_replay') return null
+    return selectLearnerFact(modelRef.current, { type: 'like', seed: `${episodeId}:practice`, allowRecent: true })
+  }, [episodeId])
+  const subjectNoun = practiceFact?.value || interestCtx.targetNoun
+
   if (!ep) return null
 
   // The partner's own place is derived from the partner name, so it is stable
@@ -173,12 +212,17 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null }
   const partnerPlace = placeFor(partner)
   // Branch line for the small controlled story in episode 9 (two outcomes, one
   // objective). The branch is stored, so a reload keeps the same story.
-  const branch = modelRef.current.facts?.[`branch:${ep.id}`] || 'accept'
+  /*
+   * Which way the little story is going THIS time. A practice run carries its
+   * own outcome, so "try the other option" can show the other ending without
+   * rewriting the decision the learner originally made.
+   */
+  const branch = run?.branchId || modelRef.current.facts?.[`branch:${ep.id}`] || 'accept'
   const branchLine = branch === 'decline' ? 'No problem. Maybe another day.' : 'Great! Let’s get ready.'
 
   const vars = {
     name, partner, place, partnerPlace,
-    noun: interestCtx.targetNoun,
+    noun: subjectNoun,
     object: interestObject,
     activity: interestCtx.activity,
     branchLine,
@@ -204,7 +248,16 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null }
     const format = formatOfStep(step)
     if (!format) return
     const id = `${dayKeyFor()}:${ep.id}:${altStep ? 'alt' : stepIndex}:${suffix}`
-    if (recordActivitySignalOnce(modelRef.current, id, format, kind)) saveLearnerModel(modelRef.current)
+    if (!recordActivitySignalOnce(modelRef.current, id, format, kind)) return
+    // The run keeps a shape of how this attempt went — counts only, no answers.
+    const current = runRef.current
+    if (current) {
+      const patch = { formatsUsed: [...new Set([...(current.formatsUsed || []), format])] }
+      if (kind === 'assistance') patch.assistanceUsed = (current.assistanceUsed || 0) + 1
+      if (kind === 'retried') patch.retriedSteps = (current.retriedSteps || 0) + 1
+      runRef.current = updateActiveRun(modelRef.current, patch) || current
+    }
+    saveLearnerModel(modelRef.current)
   }
 
   function advance() {
@@ -262,7 +315,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null }
   // The worked example for a gap-fill: whatever the step is capturing.
   function fillExample(s) {
     if (s.captureFact === 'place') return place || partnerPlace
-    if (s.captureFact === 'likes') return interestCtx.targetNoun
+    if (s.captureFact === 'likes') return subjectNoun
     return s.captureFact ? interestCtx.targetNoun : name
   }
 
@@ -282,7 +335,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null }
 
     // Decide up front whether we will need Lingua, only to show a calm status.
     // targetNoun keeps the model answer in the learner's own subject matter
-    const evalCtx = { name, independent, turnContext, place, targetNoun: interestCtx.targetNoun, activity: interestCtx.activity }
+    const evalCtx = { name, independent, turnContext, place, targetNoun: subjectNoun, activity: interestCtx.activity }
     const preview = evaluateFree(evalKind, text, evalCtx)
     const willEscalate = shouldEscalate(preview)
 
@@ -294,7 +347,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null }
     try {
       result = await evaluateEpisodeResponse({
         episode: ep, step, learnerResponse: text, learnerName: name, place,
-        targetNoun: interestCtx.targetNoun, activity: interestCtx.activity, interestId: interestCtx.interestId,
+        targetNoun: subjectNoun, activity: interestCtx.activity, interestId: interestCtx.interestId,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
         previousAttempts: attemptsRef.current, turnContext,
@@ -318,7 +371,13 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null }
        */
       if (step.branchOn === 'accept_decline') {
         const declined = /\b(no,? thank|no,? thanks|not now|maybe later)\b/i.test(text)
-        modelRef.current.facts = { ...(modelRef.current.facts || {}), [`branch:${ep.id}`]: declined ? 'decline' : 'accept' }
+        const chosen = declined ? 'decline' : 'accept'
+        runRef.current = updateActiveRun(modelRef.current, { branchId: chosen }) || runRef.current
+        // The historic outcome is written once, by the run that counted. Later
+        // practice explores the other ending without erasing the first one.
+        if (runEarnsReward(run?.mode) && !modelRef.current.facts?.[`branch:${ep.id}`]) {
+          modelRef.current.facts = { ...(modelRef.current.facts || {}), [`branch:${ep.id}`]: chosen }
+        }
         saveLearnerModel(modelRef.current)
       }
       recordItems(itemIds, { correct: true, independent })
@@ -353,13 +412,21 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null }
     const st = getEpisodeState(m, ep.id)
     const independent = cleanStreak >= 1
     recordCanDoAttempt(m, ep.canDoId, { success: true, independent, context: ep.id })
-    if (!st.awarded && !awardedRef.current) {
+    /*
+     * The reward is gated by the episode, not by the run: whatever this run
+     * calls itself, an episode that has already paid out never pays again.
+     * Practice still counts — the run is filed, the evidence is recorded, and
+     * a due review can still be satisfied by it.
+     */
+    const firstCompletion = !st.awarded && !awardedRef.current
+    if (firstCompletion) {
       awardedRef.current = true
       awardEpisode(ep)  // garden + XP, idempotent by awarded flag below
       setEpisodeState(m, ep.id, { status: 'completed', awarded: true, stepIndex: ep.steps.length - 1 })
     } else {
       setEpisodeState(m, ep.id, { status: 'completed', stepIndex: ep.steps.length - 1 })
     }
+    completeEpisodeRun(m, { independentEvidence: independent, branchId: runRef.current?.branchId || null, rewarded: firstCompletion })
     saveLearnerModel(m)
     if (onComplete) onComplete(ep)
     else finishEpisode()
@@ -528,6 +595,15 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null }
               if (step.captureFact) {
                 const value = fillValue.trim()
                 modelRef.current.facts = { ...(modelRef.current.facts || {}), [step.captureFact]: value }
+                /*
+                 * Also kept as a proper fact, so Lingua can bring it back later
+                 * ("last time you said you like music"). Only what the learner
+                 * volunteered here — never a corrected mistake.
+                 */
+                recordLearnerFact(modelRef.current, {
+                  type: step.captureFact === 'place' ? 'place' : 'like',
+                  value, sourceEpisodeId: ep.id,
+                })
                 saveLearnerModel(modelRef.current)
                 if (step.captureFact === 'place') setPlace(value)
               }

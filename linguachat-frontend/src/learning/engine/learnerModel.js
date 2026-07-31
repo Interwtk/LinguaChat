@@ -8,7 +8,11 @@
  */
 const KEY = 'lc2-learner-model-v1' // key kept stable; internal `version` gates migration
 const DAY = 86400000
-export const MODEL_VERSION = 4
+export const MODEL_VERSION = 5
+
+// How many past runs of one episode we keep. Enough to see a pattern, small
+// enough that storage never grows without bound.
+export const RUNS_PER_EPISODE = 12
 
 /*
  * Activity formats we can observe. Preference only ever changes VARIETY — which
@@ -50,6 +54,20 @@ export function createLearnerModel() {
     // Ids of activity events already counted, so the same moment can never be
     // counted twice (double tap, StrictMode, reload, breakpoint, re-render).
     signalLog: [],
+    /*
+     * A compact history of how each episode was played: first time, resumed,
+     * practised again, or practised taking the other option. Never the answers
+     * themselves — just enough to tell a replay from a first run and to keep
+     * rewards honest.
+     */
+    episodeRuns: {},
+    activeRun: null,
+    /*
+     * Things the learner told Lingua inside an activity ("I like music"), with
+     * enough metadata to use them sparingly and drop them when they go stale.
+     * Kept apart from the interests chosen at onboarding: both may be true.
+     */
+    learnerFacts: [],
   }
 }
 const emptyModel = createLearnerModel
@@ -58,59 +76,54 @@ const nowIso = () => new Date().toISOString()
 
 // ---- migration ----
 export function migrateLearnerModel(parsed) { return migrate(parsed) }
+
+/*
+ * Carry a stored model forward to the current version.
+ *
+ * Everything the learner earned — XP flags, the Memory Garden, can-dos,
+ * mastery evidence, facts, episode progress, scaffolding, review schedules —
+ * is copied across untouched. Only fields that did not exist yet are added,
+ * empty. Each version simply decides which of the newer fields it can trust.
+ */
+function carryForward(parsed, { keepPreferences, keepSignals, keepRuns }) {
+  const m = emptyModel()
+  return {
+    ...m, ...parsed,
+    version: MODEL_VERSION,
+    canDo: { ...parsed.canDo }, languageItems: { ...parsed.languageItems },
+    recurringErrors: Array.isArray(parsed.recurringErrors) ? [...parsed.recurringErrors] : [],
+    scaffoldByEpisode: { ...parsed.scaffoldByEpisode }, episodes: { ...parsed.episodes },
+    facts: { ...(parsed.facts || {}) },
+    activityPreferences: keepPreferences ? sanitizeActivityPreferences(parsed.activityPreferences) : {},
+    recentFormats: keepPreferences && Array.isArray(parsed.recentFormats)
+      ? parsed.recentFormats.filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12) : [],
+    recentInterests: keepPreferences && Array.isArray(parsed.recentInterests)
+      ? parsed.recentInterests.filter(i => typeof i === 'string').slice(0, 8) : [],
+    signalLog: keepSignals ? sanitizeSignalLog(parsed.signalLog) : [],
+    episodeRuns: keepRuns ? sanitizeEpisodeRuns(parsed.episodeRuns) : {},
+    activeRun: keepRuns ? sanitizeRun(parsed.activeRun) : null,
+    // A learner arriving from before structured facts still keeps what they
+    // told Lingua: the loose `facts.likes` string becomes a proper fact.
+    learnerFacts: keepRuns ? sanitizeLearnerFacts(parsed.learnerFacts) : factsFromLegacy(parsed.facts),
+  }
+}
+
 function migrate(parsed) {
   if (!parsed || typeof parsed !== 'object') return emptyModel()
   if (parsed.version === MODEL_VERSION) {
-    const m = emptyModel()
-    return {
-      ...m, ...parsed,
-      canDo: { ...parsed.canDo }, languageItems: { ...parsed.languageItems },
-      recurringErrors: Array.isArray(parsed.recurringErrors) ? [...parsed.recurringErrors] : [],
-      scaffoldByEpisode: { ...parsed.scaffoldByEpisode }, episodes: { ...parsed.episodes },
-      facts: { ...(parsed.facts || {}) },
-      activityPreferences: sanitizeActivityPreferences(parsed.activityPreferences),
-      recentFormats: Array.isArray(parsed.recentFormats) ? parsed.recentFormats.filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12) : [],
-      recentInterests: Array.isArray(parsed.recentInterests) ? parsed.recentInterests.filter(i => typeof i === 'string').slice(0, 8) : [],
-      signalLog: sanitizeSignalLog(parsed.signalLog),
-    }
+    return carryForward(parsed, { keepPreferences: true, keepSignals: true, keepRuns: true })
   }
-
-  /*
-   * v3 -> v4: adds the retried / negative counters and the idempotency log.
-   * Preferences already earned are kept and simply gain the missing counters,
-   * so nobody starts again from zero.
-   */
+  // v4 -> v5: adds the run history and structured facts.
+  if (parsed.version === 4) {
+    return carryForward(parsed, { keepPreferences: true, keepSignals: true, keepRuns: false })
+  }
+  // v3 -> v5: preferences exist but predate the idempotency log.
   if (parsed.version === 3) {
-    const m = emptyModel()
-    return {
-      ...m, ...parsed,
-      version: MODEL_VERSION,
-      canDo: { ...parsed.canDo }, languageItems: { ...parsed.languageItems },
-      recurringErrors: Array.isArray(parsed.recurringErrors) ? [...parsed.recurringErrors] : [],
-      scaffoldByEpisode: { ...parsed.scaffoldByEpisode }, episodes: { ...parsed.episodes },
-      facts: { ...(parsed.facts || {}) },
-      activityPreferences: sanitizeActivityPreferences(parsed.activityPreferences),
-      recentFormats: Array.isArray(parsed.recentFormats) ? parsed.recentFormats.filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12) : [],
-      recentInterests: Array.isArray(parsed.recentInterests) ? parsed.recentInterests.filter(i => typeof i === 'string').slice(0, 8) : [],
-      signalLog: [],
-    }
+    return carryForward(parsed, { keepPreferences: true, keepSignals: false, keepRuns: false })
   }
-
-  /*
-   * v2 -> v4: everything the learner earned is kept exactly as it is; only the
-   * new preference fields are added. A learner upgrading mid-arc loses nothing.
-   */
+  // v2 -> v5: no preference data at all yet.
   if (parsed.version === 2) {
-    const m = emptyModel()
-    return {
-      ...m, ...parsed,
-      version: MODEL_VERSION,
-      canDo: { ...parsed.canDo }, languageItems: { ...parsed.languageItems },
-      recurringErrors: Array.isArray(parsed.recurringErrors) ? [...parsed.recurringErrors] : [],
-      scaffoldByEpisode: { ...parsed.scaffoldByEpisode }, episodes: { ...parsed.episodes },
-      facts: { ...(parsed.facts || {}) },
-      activityPreferences: {}, recentFormats: [], recentInterests: [], signalLog: [],
-    }
+    return carryForward(parsed, { keepPreferences: false, keepSignals: false, keepRuns: false })
   }
   // v1 -> v2 (never lose existing progress)
   const m = emptyModel()
@@ -187,7 +200,67 @@ function mergeActivityEvidence(model) {
     activityPreferences: merged,
     signalLog: log,
     recentFormats: (Array.isArray(recent) ? recent : []).filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12),
+    episodeRuns: mergeEpisodeRuns(model.episodeRuns, stored.episodeRuns),
+    learnerFacts: mergeLearnerFacts(model.learnerFacts, stored.learnerFacts),
+    episodes: mergeEpisodeState(model.episodes, stored.episodes),
   }
+}
+
+/*
+ * Runs are merged by id, never summed. If one copy saw a run finish and the
+ * other did not, the finished version wins — a completion is a fact, an
+ * unfinished snapshot is only the absence of news.
+ */
+export function mergeEpisodeRuns(mine, theirs) {
+  const a = sanitizeEpisodeRuns(mine)
+  const b = sanitizeEpisodeRuns(theirs)
+  const out = {}
+  for (const episodeId of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const byId = new Map()
+    for (const run of [...(b[episodeId] || []), ...(a[episodeId] || [])]) {
+      const prev = byId.get(run.runId)
+      byId.set(run.runId, prev ? { ...prev, ...run, completedAt: run.completedAt || prev.completedAt, rewarded: prev.rewarded || run.rewarded } : run)
+    }
+    out[episodeId] = [...byId.values()].slice(-RUNS_PER_EPISODE)
+  }
+  return out
+}
+
+export function mergeLearnerFacts(mine, theirs) {
+  const byKey = new Map()
+  for (const fact of [...sanitizeLearnerFacts(theirs), ...sanitizeLearnerFacts(mine)]) {
+    const key = `${fact.type}:${fact.value.toLowerCase()}`
+    const prev = byKey.get(key)
+    byKey.set(key, prev ? {
+      ...fact,
+      useCount: Math.max(prev.useCount, fact.useCount),
+      confidence: Math.max(prev.confidence, fact.confidence),
+      learnedAt: prev.learnedAt || fact.learnedAt,
+      lastUsedAt: [prev.lastUsedAt, fact.lastUsedAt].filter(Boolean).sort().at(-1) || null,
+    } : fact)
+  }
+  return [...byKey.values()].slice(-20)
+}
+
+/*
+ * Episode progress is merged so that a stale snapshot can never un-award an
+ * episode or push progress backwards. XP itself is never recomputed here.
+ */
+export function mergeEpisodeState(mine, theirs) {
+  const a = mine || {}
+  const b = theirs || {}
+  const out = {}
+  for (const id of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const x = a[id] || {}
+    const y = b[id] || {}
+    out[id] = {
+      ...y, ...x,
+      status: x.status === 'completed' || y.status === 'completed' ? 'completed' : (x.status || y.status || 'new'),
+      stepIndex: Math.max(Number(x.stepIndex) || 0, Number(y.stepIndex) || 0),
+      awarded: Boolean(x.awarded || y.awarded),
+    }
+  }
+  return out
 }
 
 export function saveLearnerModel(model) {
@@ -196,6 +269,9 @@ export function saveLearnerModel(model) {
   model.activityPreferences = merged.activityPreferences
   model.signalLog = merged.signalLog
   model.recentFormats = merged.recentFormats
+  model.episodeRuns = merged.episodeRuns
+  model.learnerFacts = merged.learnerFacts
+  model.episodes = merged.episodes
   try { localStorage.setItem(KEY, JSON.stringify({ ...merged, version: MODEL_VERSION })) } catch {}
   return model
 }
@@ -287,6 +363,99 @@ export function sanitizeActivityPreferences(raw) {
     }
     out[format] = clean
   }
+  return out
+}
+
+/* ---- episode runs and learner facts (v5) ---- */
+
+export const RUN_MODES = ['first_run', 'resume', 'replay', 'review', 'branch_replay']
+export const RUN_SOURCES = ['practice', 'daily_session', 'memory_garden', 'home']
+const str = (v, max) => (typeof v === 'string' && v.length > 0 && v.length <= max ? v : null)
+
+// One run, or null. A run that lost its episode id is meaningless and dropped.
+export function sanitizeRun(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const episodeId = str(raw.episodeId, 60)
+  const runId = str(raw.runId, 80)
+  if (!episodeId || !runId) return null
+  const num = (v) => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Math.min(Math.round(Number(v)), 9999) : 0)
+  return {
+    runId,
+    episodeId,
+    mode: RUN_MODES.includes(raw.mode) ? raw.mode : 'replay',
+    source: RUN_SOURCES.includes(raw.source) ? raw.source : 'practice',
+    branchId: str(raw.branchId, 30),
+    startedAt: str(raw.startedAt, 40),
+    completedAt: str(raw.completedAt, 40),
+    independentEvidence: Boolean(raw.independentEvidence),
+    assistanceUsed: num(raw.assistanceUsed),
+    retriedSteps: num(raw.retriedSteps),
+    formatsUsed: Array.isArray(raw.formatsUsed)
+      ? [...new Set(raw.formatsUsed.filter(f => ACTIVITY_FORMATS.includes(f)))].slice(0, 10) : [],
+    rewarded: Boolean(raw.rewarded),
+  }
+}
+
+export function sanitizeEpisodeRuns(raw) {
+  const out = {}
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out
+  for (const [episodeId, list] of Object.entries(raw)) {
+    if (!str(episodeId, 60) || !Array.isArray(list)) continue
+    const seen = new Set()
+    const runs = []
+    for (const item of list) {
+      const run = sanitizeRun(item)
+      if (!run || run.episodeId !== episodeId || seen.has(run.runId)) continue
+      seen.add(run.runId)
+      runs.push(run)
+    }
+    if (runs.length) out[episodeId] = runs.slice(-RUNS_PER_EPISODE)
+  }
+  return out
+}
+
+export const FACT_TYPES = ['like', 'dislike', 'place']
+export const FACT_MAX_LENGTH = 40
+
+// A fact is only worth keeping if it is short, printable and not a sentence.
+export function normalizeFactValue(raw) {
+  const value = String(raw ?? '').replace(/\s+/g, ' ').trim()
+  if (!value || value.length > FACT_MAX_LENGTH) return null
+  if (value.split(' ').length > 4) return null
+  if (!/\p{L}/u.test(value)) return null
+  return value
+}
+
+export function sanitizeLearnerFacts(raw) {
+  if (!Array.isArray(raw)) return []
+  const seen = new Set()
+  const out = []
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue
+    const value = normalizeFactValue(item.value)
+    if (!value || !FACT_TYPES.includes(item.type)) continue
+    const key = `${item.type}:${value.toLowerCase()}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    const confidence = Number(item.confidence)
+    out.push({
+      type: item.type,
+      value,
+      sourceEpisodeId: str(item.sourceEpisodeId, 60),
+      learnedAt: str(item.learnedAt, 40),
+      lastUsedAt: str(item.lastUsedAt, 40),
+      useCount: Number.isFinite(Number(item.useCount)) && Number(item.useCount) >= 0 ? Math.min(Math.round(Number(item.useCount)), 999) : 0,
+      confidence: Number.isFinite(confidence) ? Math.max(0, Math.min(1, confidence)) : 0.5,
+    })
+  }
+  return out.slice(-20)
+}
+
+// Rescue what older versions stored loosely, so nobody has to say it twice.
+function factsFromLegacy(facts) {
+  const out = []
+  const like = normalizeFactValue(facts?.likes)
+  if (like) out.push({ type: 'like', value: like, sourceEpisodeId: 'what_you_like', learnedAt: null, lastUsedAt: null, useCount: 0, confidence: 0.6 })
   return out
 }
 

@@ -46,7 +46,8 @@ import {
 } from '../services/tutorPreferences'
 import { SEED_VOCAB_BY_ID } from '../data/vocabulary'
 import { ARC } from '../learning/episodes/index.js'
-import { loadLearnerModel } from '../learning/engine/learnerModel.js'
+import { loadLearnerModel, saveLearnerModel } from '../learning/engine/learnerModel.js'
+import { markFactUsed, rotateFactUsage, selectLearnerFact } from '../learning/engine/learnerFacts.js'
 import {
   loadSession, saveSession, clearSession, getOrCreateSession, startSession,
   advanceBlock, completeSession, isDurationMode,
@@ -131,6 +132,8 @@ export function AppProvider({ children }) {
   const [showWelcome, setShowWelcome] = useState(false)
   const [showTutorial, setShowTutorial] = useState(false)
   const [episodeActiveId, setEpisodeActiveId] = useState(null)
+  // Why this episode was opened. Never the run mode itself — see startEpisode.
+  const [episodeRunOptions, setEpisodeRunOptions] = useState({ source: 'practice', wantsOtherBranch: false })
   const [episodeArcVersion, setEpisodeArcVersion] = useState(0) // bumps when episode progress changes
   // Daily session: restored from storage on first render so a reload resumes.
   const [dailySession, setDailySession] = useState(() => loadSession(ARC))
@@ -341,7 +344,17 @@ export function AppProvider({ children }) {
   }, [])
 
   // ── LinguaLoop episodes ──
-  const startEpisode = useCallback((episodeId) => {
+  /*
+   * `options` says only where the learner came from and whether they asked to
+   * take the other option. What KIND of run that is (first time, resuming,
+   * practising again, review) is decided by the engine from the episode's own
+   * state, so nothing in the UI can accidentally claim a first completion.
+   */
+  const startEpisode = useCallback((episodeId, options = {}) => {
+    setEpisodeRunOptions({
+      source: options.source || 'practice',
+      wantsOtherBranch: Boolean(options.wantsOtherBranch),
+    })
     setEpisodeActiveId(episodeId || 'first_greeting')
     setView('practice')
     setMobileSheet(null)
@@ -399,6 +412,18 @@ export function AppProvider({ children }) {
       ? dailySession
       : getOrCreateSession(loadLearnerModel(), ARC, { durationMode: preferredDuration, ...sessionContext() })
     const next = persistSession(startSession(planned))
+    /*
+     * A remembered fact only counts as "used" when the session actually
+     * starts — never while Home is merely rendering a preview. That keeps the
+     * cooldown honest and keeps rendering free of side effects.
+     */
+    if (next?.topic?.source === 'fact' && next.topic.factValue && planned.status === 'planned') {
+      const model = loadLearnerModel()
+      const fact = { type: 'like', value: next.topic.factValue }
+      markFactUsed(model, fact)
+      rotateFactUsage(model, fact)
+      saveLearnerModel(model)
+    }
     setSessionActive(true)
     setView('practice')
     setMobileSheet(null)
@@ -771,6 +796,9 @@ export function AppProvider({ children }) {
         },
         tutorPreferences,
         activeCompanion,
+        // one short topic the learner mentioned before, if there is a suitable
+        // one; nothing else about them travels with the message
+        rememberedLike: selectLearnerFact(loadLearnerModel(), { type: 'like', seed: sessionId })?.value || null,
       })
 
       setConnectionNotice(response.connectionMessage)
@@ -873,7 +901,7 @@ export function AppProvider({ children }) {
       completePersonalization, applyRecommendedSetup,
       showWelcome, dismissWelcome,
       showTutorial, dismissTutorial,
-      episodeActiveId, episodeArcVersion, startEpisode, exitEpisode, awardEpisode, finishEpisode,
+      episodeActiveId, episodeRunOptions, episodeArcVersion, startEpisode, exitEpisode, awardEpisode, finishEpisode,
       dailySession, sessionActive, preferredDuration,
       previewSession, chooseDuration, beginSession, advanceSession, finishSession, exitSession,
       logoutMock,

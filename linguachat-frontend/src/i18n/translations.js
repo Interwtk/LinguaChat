@@ -306,6 +306,10 @@ const base = {
 
   sessionChoiceInstruction: "Choose the natural answer.",
 
+  sessionChoiceRetry: "Not quite — the natural answer here is:",
+
+  sessionGapRetry: "Almost — the missing word is:",
+
   altPractiseAnotherWay: "Practise another way",
 
   altGuidedInstruction: "Build the same sentence, word by word.",
@@ -313,6 +317,47 @@ const base = {
   altGuidedHint: "Tap the words in the right order.",
 
   feedbackQuestion: "How was this way of practising?",
+
+  feedbackQuestionFor: "How did {activity} go?",
+
+  formatName_roleplay: "the conversation",
+
+  formatName_mini_story: "the little story",
+
+  formatName_free_reply: "answering in your own words",
+
+  formatName_recall: "remembering the phrase",
+
+  formatName_review: "the quick review",
+
+  formatName_word_order: "putting the words in order",
+
+  formatName_fill_blank: "completing the sentence",
+
+  formatName_guided_reply: "the guided practice",
+
+  formatName_choice: "choosing the answer",
+
+  formatName_comprehension: "working out the meaning",
+
+  replaySectionTitle: "What you can already do",
+
+  replayCompletedTag: "Completed",
+
+  replayPractiseAgain: "Practise again",
+
+  replayTryOtherOption: "Try the other option",
+
+  replayTimesPractised: "practised {count}×",
+
+  memoryRememberedLike: "Last time you said you like {topic}. Want to talk about that?",
+
+  memoryUseTopic: "Yes, let’s talk about it",
+
+  memoryUseAnotherTopic: "Use another topic",
+
+  sessionTopicRemembered: "Something you mentioned: {topic}",
+
 
   feedbackMoreLikeThis: "More like this",
 
