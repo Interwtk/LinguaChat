@@ -142,16 +142,18 @@ const OBJECTIVE_FORMATS = {
   ask_name: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   nice_to_meet: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   ask_wellbeing: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
-  answer_wellbeing: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  // recognising a natural answer is fine for a reply; it is NOT a way to
+  // practise producing a question, so ask_* never lists `choice`
+  answer_wellbeing: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
   reciprocal_question: ['guided_reply', 'word_order', 'free_reply', 'recall'],
   ask_origin: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   answer_origin: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
-  express_like: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'mini_story'],
+  express_like: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'mini_story', 'choice'],
   express_dislike: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall'],
   ask_preference: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   yes_no_preference: ['guided_reply', 'choice', 'free_reply', 'recall'],
-  express_want: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'mini_story'],
-  express_need: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  express_want: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'mini_story', 'choice'],
+  express_need: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
   ask_want: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   accept_offer: ['guided_reply', 'choice', 'free_reply', 'recall'],
   decline_offer: ['guided_reply', 'choice', 'free_reply', 'recall'],
@@ -171,8 +173,58 @@ export function formatSupportsObjective(format, objective) {
  * target sentence, just with the words in front of them.
  */
 export const BLOCK_CANDIDATES = {
-  review: ['guided_reply', 'word_order', 'fill_blank'],
+  // recognising the phrase again is a legitimate way to bring one back
+  review: ['guided_reply', 'word_order', 'fill_blank', 'choice'],
   targeted_retry: ['guided_reply', 'fill_blank', 'word_order'],
   recall: ['recall', 'free_reply', 'guided_reply'],
   extra_practice: ['roleplay', 'mini_story', 'guided_reply'],
+}
+
+/*
+ * How much of a session a format really represents. This is not a score shown
+ * to anyone — it only decides which activity is worth asking about at the end.
+ * A three-word recall is not what the session was; a conversation is.
+ */
+const FORMAT_WEIGHT = {
+  roleplay: 5, mini_story: 5, free_reply: 4,
+  word_order: 3, fill_blank: 3, guided_reply: 3,
+  comprehension: 2, choice: 2,
+  recall: 1, review: 1,
+}
+// Below this, a format is too slight to be worth a question of its own.
+const MIN_REPRESENTATIVE_WEIGHT = 2
+
+/*
+ * Which activity the closing question should be about.
+ *
+ * Asking about the first block was wrong: a session that opened with a
+ * one-line review and then spent ten minutes in a roleplay was asking about
+ * the review. This picks what the session actually WAS — weighted by how much
+ * of it the format carried, restricted to what the learner really finished,
+ * with a nudge towards an activity chosen for them by preference, and a stable
+ * seed so the same session always asks the same thing.
+ */
+export function selectRepresentativeFormat({ blocks = [], completedFormats = [], adaptedFormats = [], durationMode = 'standard', seed = '' } = {}) {
+  const completed = new Set(completedFormats.filter(Boolean))
+  const adapted = new Set(adaptedFormats.filter(Boolean))
+  const scored = []
+  const seen = new Set()
+  for (const block of blocks) {
+    const format = block?.format
+    if (!format || seen.has(format)) continue
+    seen.add(format)
+    // never ask about something that was skipped or left unfinished
+    if (!completed.has(format)) continue
+    let weight = FORMAT_WEIGHT[format] ?? 2
+    // an activity picked FOR the learner is the one worth asking about
+    if (adapted.has(format)) weight += 1
+    if (block.type === 'extra_practice') weight += 1
+    if (weight < MIN_REPRESENTATIVE_WEIGHT) continue
+    scored.push({ format, weight })
+  }
+  if (!scored.length) return null
+  const best = Math.max(...scored.map(s => s.weight))
+  const top = scored.filter(s => s.weight === best)
+  if (top.length === 1) return top[0].format
+  return top[seedFrom(String(seed)) % top.length].format
 }

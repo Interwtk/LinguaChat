@@ -10,6 +10,7 @@ import { evaluateFree, shouldEscalate } from '../../learning/engine/responseEval
 import { createSubmissionGuard } from '../../learning/engine/submitGuard.js'
 import { partnerFor, placeFor } from '../../learning/engine/variation.js'
 import { getInterestContext } from '../../learning/engine/interests.js'
+import { selectRepresentativeFormat } from '../../learning/engine/formatChoice.js'
 import { evaluateLearningResponse } from '../../services/api'
 import { currentBlock, sessionProgress, dayKeyFor } from '../../learning/engine/session.js'
 import {
@@ -99,7 +100,9 @@ function PracticeTurn({ block, topic = null, onDone }) {
     name, partner,
     partnerPlace: placeFor(partner),
     place: modelRef.current.facts?.place || '',
-    noun: ctx.targetNoun,
+    // if today is built around something the learner told Lingua, practise
+    // with their own words rather than a catalogue noun
+    noun: topic?.factValue || ctx.targetNoun,
     activity: ctx.activity,
   }
   const nativeLang = nativeLanguageInfo.base
@@ -111,6 +114,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
   const [live, setLive] = useState('')
   const [buildOrder, setBuildOrder] = useState([])
   const [gap, setGap] = useState('')
+  const [chosen, setChosen] = useState(null)
   const guardRef = useRef(createSubmissionGuard())
   const abortRef = useRef(null)
   const inputRef = useRef(null)
@@ -215,7 +219,16 @@ function PracticeTurn({ block, topic = null, onDone }) {
     if (itemId) recordItemAttempt(modelRef.current, itemId, { correct, independent: false })
     saveLearnerModel(modelRef.current)
     if (correct) { setLive(t('ep1Correct')); setTimeout(complete, 600) }
-    else { mark('retried'); setRetry({ explainKey: 'ep1BuildRetry', natural: modelAnswer }); setBuildOrder([]); setLive(t('ep1RetryTitle')) }
+    else {
+      mark('retried')
+      // Say what actually went wrong: an order, a missing word, or a choice.
+      const explainKey = format === 'choice' ? 'sessionChoiceRetry'
+        : format === 'fill_blank' ? 'sessionGapRetry' : 'ep1BuildRetry'
+      setRetry({ explainKey, natural: modelAnswer })
+      // the chosen option stays marked while the correction is on screen, so a
+      // screen reader still reports what was picked
+      setBuildOrder([]); setLive(t('ep1RetryTitle'))
+    }
   }
 
   const titleKey = block.type === 'targeted_retry' ? 'sessionRetryTitle'
@@ -336,16 +349,27 @@ function PracticeTurn({ block, topic = null, onDone }) {
         )
       })()}
 
-      {/* Choose the natural reply. */}
+      {/* Choose the natural reply. A real radio group, so it works from the
+          keyboard and is announced as a choice — and the chosen option is
+          marked with a symbol, never with colour alone. */}
       {format === 'choice' && (
-        <div className="flex flex-col gap-2">
-          {choiceOptions.map((opt, i) => (
-            <button key={i} type="button" onClick={() => settleClosed(opt === modelAnswer)}
-              className="rounded-2xl px-4 py-3 text-start transition-all active:scale-[0.99]"
-              style={{ background: 'var(--bg-paper)', border: '1.5px solid var(--border)', minHeight: 48 }}>
-              <En style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--ink)' }}>{opt}</En>
-            </button>
-          ))}
+        <div role="radiogroup" aria-label={t('sessionChoiceInstruction')} className="flex flex-col gap-2">
+          {choiceOptions.map((opt, i) => {
+            const isChosen = chosen === opt
+            return (
+              <button key={i} type="button" role="radio" aria-checked={isChosen}
+                onClick={() => { setChosen(opt); settleClosed(opt === modelAnswer) }}
+                className="rounded-2xl px-4 py-3 text-start transition-all active:scale-[0.99] flex items-center gap-2"
+                style={{
+                  background: isChosen ? 'var(--violet-soft)' : 'var(--bg-paper)',
+                  border: `1.5px solid ${isChosen ? 'var(--violet)' : 'var(--border)'}`,
+                  minHeight: 48,
+                }}>
+                <span aria-hidden="true" style={{ fontSize: 13, width: 14, color: 'var(--violet)' }}>{isChosen ? '●' : '○'}</span>
+                <En style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--ink)' }}>{opt}</En>
+              </button>
+            )
+          })}
         </div>
       )}
 
@@ -363,8 +387,28 @@ function SessionCompletion({ session, onFinish }) {
   const nativeLang = nativeLanguageInfo.base
   const doneRef = useRef(false)
   const { total } = sessionProgress(session)
-  // Ask about the format this session actually used most, not a generic one.
-  const practisedFormat = (session?.blocks || []).map(b => b.format).filter(Boolean)[0] || null
+  /*
+   * Ask about what the session actually WAS, not whatever happened to come
+   * first. Only formats the learner really finished are eligible, a one-line
+   * recall is not worth a question, and an activity chosen for them by
+   * preference is the most interesting one to ask about.
+   */
+  const practisedFormat = useMemo(() => {
+    const model = loadLearnerModel()
+    const day = dayKeyFor()
+    const log = model.signalLog || []
+    const blocks = session?.blocks || []
+    const completedFormats = blocks
+      .filter(b => b.format && log.includes(`${day}:session:${b.id}:completed`))
+      .map(b => b.format)
+    return selectRepresentativeFormat({
+      blocks,
+      completedFormats,
+      adaptedFormats: blocks.filter(b => b.source === 'preference').map(b => b.format),
+      durationMode: session?.durationMode,
+      seed: session?.id || '',
+    })
+  }, [session])
   return (
     <div className="animate-scale-in rounded-3xl p-6 text-center" style={{ background: 'var(--bg-paper)', border: '1px solid var(--green)', boxShadow: '0 0 0 3px var(--green-soft)' }}>
       <div className="flex justify-center"><ChattoMascot mood="celebrating" size="medium" variant="green" intensity="celebrate" /></div>
@@ -422,7 +466,13 @@ export function SessionRunner() {
       <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
         {header}
         {(block.type === 'review' || block.type === 'targeted_retry' || block.type === 'recall' || block.type === 'extra_practice') && (
-          <PracticeTurn block={block} topic={dailySession.topic} onDone={() => advanceSession()} />
+          /*
+           * Keyed by block: without this React reuses ONE PracticeTurn across
+           * every block of the session, so the previous block's correction was
+           * still on screen and — far worse — its "already finished" guard was
+           * still set, which left the session stuck on the second block.
+           */
+          <PracticeTurn key={block.id} block={block} topic={dailySession.topic} onDone={() => advanceSession()} />
         )}
         {block.type === 'free_chat_option' && (
           <div className="animate-fade-up rounded-3xl p-6 text-center" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
