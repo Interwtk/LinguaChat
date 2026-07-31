@@ -33,6 +33,10 @@ export function TodayView() {
   const headline = sessionHeadline(session)
   const sessionEpisode = headline?.episodeId ? getEpisode(headline.episodeId) : null
   const sessionStarted = session.status === 'active'
+  // A localized topic name, or nothing at all when the session has no subject
+  // matter to promise. Learners never see the interest id itself.
+  // Kept exactly as the locale writes it — German capitalises its nouns.
+  const topicLabel = session.topic?.labelKey ? t(session.topic.labelKey) : null
   const { done: sessionDone, total: sessionTotal } = sessionProgress(session)
   const phrase = getTodayPhrase()
   const mission = activeMissionDetails?.mission || getMissionForToday(profile.level, profile.goal)
@@ -78,6 +82,14 @@ export function TodayView() {
               <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45, marginTop: 3 }}>
                 {sessionEpisode ? t(sessionEpisode.goalKey) : t('sessionFreeChatBody')}
               </p>
+              {/* Today's subject matter, in plain words. Never an id, never a
+                  score, never the reason it was chosen. It comes from the
+                  stored plan, so it cannot drift while the session is running. */}
+              {topicLabel && (
+                <p lang={interfaceLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink)', fontWeight: 700, marginTop: 5 }}>
+                  {t('sessionTopicToday', { topic: topicLabel })}
+                </p>
+              )}
               <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', color: 'var(--violet)', fontWeight: 700, marginTop: 6 }}>
                 {t(`sessionDuration_${session.durationMode}`)} · {t('sessionMinutes', { minutes: session.estimatedMinutes })}
               </p>

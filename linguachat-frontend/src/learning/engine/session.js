@@ -15,6 +15,8 @@
  */
 import { getDueReviews, getEpisodeState } from './learnerModel.js'
 import { isEpisodeUnlocked } from './planner.js'
+import { selectEquivalentActivityFormat, BLOCK_CANDIDATES } from './formatChoice.js'
+import { getInterestContext, getLearnerInterests } from './interests.js'
 
 export const SESSION_KEY = 'lc2-daily-session-v1'
 export const SESSION_VERSION = 1
@@ -90,13 +92,42 @@ export const practiceKindForError = (errorType) => ERROR_KIND[errorType] || null
 export const practiceKindForCanDo = (canDoId) => CANDO_KIND[canDoId] || null
 
 /* ---------- plan assembly ---------- */
-function reviewBlock(model, atMs) {
+
+/*
+ * The format for a secondary block. The objective and the amount of support
+ * come first; preference only ever decides between formats that are already
+ * acceptable for both. `scaffold` is the learner's weakest current support
+ * level, so a struggling learner is never handed an unaided format for variety.
+ */
+function formatFor(type, { model, objective, scaffold, durationMode, seed, requiredPractice = null }) {
+  return selectEquivalentActivityFormat({
+    objective,
+    requiredPractice,
+    candidates: BLOCK_CANDIDATES[type] || [],
+    learnerModel: model,
+    scaffold,
+    durationMode,
+    seed,
+  })
+}
+
+// The support level to plan with: if any goal is still fragile, plan carefully.
+function planningScaffold(model) {
+  const levels = Object.values(model.scaffoldByEpisode || {})
+  if (levels.includes('high')) return 'high'
+  if (levels.includes('medium')) return 'medium'
+  return levels.length ? 'low' : 'high'
+}
+
+function reviewBlock(model, atMs, ctx) {
   const due = getDueReviews(model, atMs).filter(id => practiceKindForItem(id))
   if (!due.length) return null
   const itemId = due[0]
+  const objective = practiceKindForItem(itemId)
   return {
     id: `review:${itemId}`, type: 'review', source: 'due_review',
-    objective: practiceKindForItem(itemId), estimatedMinutes: 1,
+    objective, estimatedMinutes: 1,
+    format: formatFor('review', { ...ctx, objective, seed: `${ctx.seed}:review:${itemId}` }),
     payload: { itemId, itemIds: due.slice(0, 4) },
   }
 }
@@ -121,26 +152,52 @@ function mainEpisodeBlock(model, arc) {
   return null
 }
 
-function targetedRetryBlock(model) {
+function targetedRetryBlock(model, ctx) {
   // Only a genuinely repeated error is worth a dedicated block.
   const err = (model.recurringErrors || []).find(e => e && e.count >= 2 && practiceKindForError(e.errorType))
   if (!err) return null
+  const objective = practiceKindForError(err.errorType)
+  /*
+   * A word-order mistake has to be practised as word order — that is the skill
+   * that failed. Preference may not route around it.
+   */
+  const requiredPractice = err.errorType === 'question_order' ? 'word_order' : null
   return {
     id: `retry:${err.errorType}`, type: 'targeted_retry', source: 'recurring_error',
-    objective: practiceKindForError(err.errorType), estimatedMinutes: 1,
+    objective, estimatedMinutes: 1,
+    format: formatFor('targeted_retry', { ...ctx, objective, requiredPractice, seed: `${ctx.seed}:retry:${err.errorType}` }),
     payload: { errorType: err.errorType },
   }
 }
 
-function fragileSkillBlock(model) {
+function fragileSkillBlock(model, ctx) {
   const entry = Object.entries(model.canDo || {})
     .find(([id, c]) => c && c.status === 'learning' && practiceKindForCanDo(id))
   if (!entry) return null
   const [canDoId] = entry
+  const objective = practiceKindForCanDo(canDoId)
   return {
     id: `recall:${canDoId}`, type: 'recall', source: 'fragile_skill',
-    objective: practiceKindForCanDo(canDoId), estimatedMinutes: 2,
+    objective, estimatedMinutes: 2,
+    format: formatFor('recall', { ...ctx, objective, seed: `${ctx.seed}:recall:${canDoId}` }),
     payload: { canDoId },
+  }
+}
+
+/*
+ * The one block preference is really allowed to shape: an extra turn in a deep
+ * session, reusing something the learner already met, in the way that suits
+ * them. It is additional practice — it never replaces anything required.
+ */
+function extraPracticeBlock(model, ctx) {
+  const entry = Object.entries(model.canDo || {}).find(([id, c]) => c && practiceKindForCanDo(id))
+  if (!entry) return null
+  const objective = practiceKindForCanDo(entry[0])
+  return {
+    id: `extra:${entry[0]}`, type: 'extra_practice', source: 'preference',
+    objective, estimatedMinutes: 2,
+    format: formatFor('extra_practice', { ...ctx, objective, seed: `${ctx.seed}:extra:${entry[0]}` }),
+    payload: { canDoId: entry[0] },
   }
 }
 
@@ -160,14 +217,16 @@ const completionBlock = () => ({
  * every block — the duration decides how much fits, so a session ends feeling
  * finished rather than exhausting.
  */
-export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs = Date.now() } = {}) {
+export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs = Date.now(), interests = [], learnerKey = 'guest' } = {}) {
   const mode = isDurationMode(durationMode) ? durationMode : 'standard'
   const { minutes, maxBlocks } = DURATION_MODES[mode]
+  const dayKey = dayKeyFor(atMs)
+  const ctx = { model, scaffold: planningScaffold(model), durationMode: mode, seed: `${learnerKey}:${dayKey}` }
 
-  const review = reviewBlock(model, atMs)
+  const review = reviewBlock(model, atMs, ctx)
   const main = mainEpisodeBlock(model, arc)
-  const retry = targetedRetryBlock(model)
-  const fragile = fragileSkillBlock(model)
+  const retry = targetedRetryBlock(model, ctx)
+  const fragile = fragileSkillBlock(model, ctx)
 
   const blocks = []
   const room = () => blocks.length < maxBlocks - 1   // always reserve the completion slot
@@ -179,12 +238,26 @@ export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs =
   if (mode !== 'quick') {
     if (retry && room()) blocks.push(retry)
     if (mode === 'deep' && fragile && room()) blocks.push(fragile)
+    // Deep sessions have room for one extra turn shaped by preference.
+    if (mode === 'deep' && !fragile && room()) {
+      const extra = extraPracticeBlock(model, ctx)
+      if (extra) blocks.push(extra)
+    }
   }
   // Nothing scheduled at all → offer conversation rather than an empty session.
   if (!blocks.length) blocks.push(freeChatBlock())
   else if (mode === 'deep' && room()) blocks.push(freeChatBlock())
 
   blocks.push(completionBlock())
+
+  /*
+   * The subject matter for today, pinned into the plan. Home can promise it and
+   * the episode uses it, so both always agree — and changing interests midway
+   * cannot swap the topic of a session already under way.
+   */
+  const mainEpisodeId = main?.payload?.episodeId || null
+  const topicSeed = `${learnerKey}:${mainEpisodeId || dayKey}`
+  const topicCtx = getInterestContext(getLearnerInterests(interests), topicSeed)
 
   const estimated = blocks.reduce((sum, b) => sum + (b.estimatedMinutes || 0), 0)
   return {
@@ -195,6 +268,7 @@ export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs =
     durationMode: mode,
     // an approximate promise, never a countdown
     estimatedMinutes: Math.max(1, Math.min(estimated || minutes, minutes + 8)),
+    topic: { interestId: topicCtx.interestId, labelKey: topicCtx.labelKey, episodeId: mainEpisodeId },
     status: 'planned',
     currentBlockIndex: 0,
     awarded: false,
@@ -217,7 +291,12 @@ export function normalizeSession(parsed, arc) {
   }
   const index = Number(parsed.currentBlockIndex)
   const currentBlockIndex = Number.isFinite(index) ? Math.min(Math.max(0, index), parsed.blocks.length - 1) : 0
-  return { ...parsed, currentBlockIndex, awarded: Boolean(parsed.awarded) }
+  // A session stored before topics existed is still perfectly valid; it simply
+  // has no pinned subject matter and Home falls back to the neutral line.
+  const topic = parsed.topic && typeof parsed.topic === 'object' && !Array.isArray(parsed.topic)
+    ? { interestId: parsed.topic.interestId ?? null, labelKey: parsed.topic.labelKey ?? null, episodeId: parsed.topic.episodeId ?? null }
+    : { interestId: null, labelKey: null, episodeId: null }
+  return { ...parsed, currentBlockIndex, topic, awarded: Boolean(parsed.awarded) }
 }
 
 export function loadSession(arc) {
@@ -243,15 +322,16 @@ export function clearSession() {
  * only built for a new day, or when the learner changes duration BEFORE
  * starting.
  */
-export function getOrCreateSession(model, arc, { durationMode = 'standard', atMs = Date.now(), stored = undefined } = {}) {
+export function getOrCreateSession(model, arc, { durationMode = 'standard', atMs = Date.now(), stored = undefined, interests = [], learnerKey = 'guest' } = {}) {
   const existing = stored === undefined ? loadSession(arc) : normalizeSession(stored, arc)
   const today = dayKeyFor(atMs)
   if (existing && existing.dayKey === today) {
-    // a started or finished session is kept exactly as it is
+    // a started or finished session is kept exactly as it is — including its
+    // topic, so changing interests mid-session never rewrites today's promise
     if (existing.status !== 'planned') return existing
     if (existing.durationMode === durationMode) return existing
   }
-  return buildSessionPlan(model, arc, { durationMode, atMs })
+  return buildSessionPlan(model, arc, { durationMode, atMs, interests, learnerKey })
 }
 
 export function startSession(session) {

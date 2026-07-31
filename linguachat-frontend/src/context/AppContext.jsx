@@ -372,10 +372,17 @@ export function AppProvider({ children }) {
    * The plan is deterministic, so the preview always matches what `beginSession`
    * will actually store.
    */
+  // What the planner needs to pin today's subject matter: the interests the
+  // learner already chose, plus a stable key so the choice is reproducible.
+  const sessionContext = useCallback(() => ({
+    interests: tutorPreferences?.interests || [],
+    learnerKey: (profile.name || 'guest').trim() || 'guest',
+  }), [tutorPreferences, profile.name])
+
   const previewSession = useCallback((durationMode) => {
     const mode = durationMode || preferredDuration
-    return getOrCreateSession(loadLearnerModel(), ARC, { durationMode: mode, stored: dailySession ?? undefined })
-  }, [dailySession, preferredDuration])
+    return getOrCreateSession(loadLearnerModel(), ARC, { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
+  }, [dailySession, preferredDuration, sessionContext])
 
   const chooseDuration = useCallback((mode) => {
     if (!isDurationMode(mode)) return
@@ -383,20 +390,20 @@ export function AppProvider({ children }) {
     setPreferredDuration(mode)
     // Changing duration only replans while the session has not started yet.
     if (dailySession && dailySession.status !== 'planned') return
-    const next = getOrCreateSession(loadLearnerModel(), ARC, { durationMode: mode, stored: dailySession ?? undefined })
+    const next = getOrCreateSession(loadLearnerModel(), ARC, { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
     persistSession(next)
-  }, [dailySession, persistSession])
+  }, [dailySession, persistSession, sessionContext])
 
   const beginSession = useCallback(() => {
     const planned = dailySession && dailySession.status !== 'completed'
       ? dailySession
-      : getOrCreateSession(loadLearnerModel(), ARC, { durationMode: preferredDuration })
+      : getOrCreateSession(loadLearnerModel(), ARC, { durationMode: preferredDuration, ...sessionContext() })
     const next = persistSession(startSession(planned))
     setSessionActive(true)
     setView('practice')
     setMobileSheet(null)
     return next
-  }, [dailySession, preferredDuration, persistSession])
+  }, [dailySession, preferredDuration, persistSession, sessionContext])
 
   const advanceSession = useCallback(() => {
     setEpisodeArcVersion(v => v + 1)
