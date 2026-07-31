@@ -126,7 +126,9 @@ function learner() {
 {
   const home = read('src/components/today/TodayView.jsx')
   assert.ok(/sessionTopicToday/.test(home), 'the topic line must actually be rendered')
-  assert.ok(/session\.topic\?\.labelKey/.test(home), 'the label must come from the stored plan')
+  assert.ok(/sessionTopicRemembered/.test(home), 'a remembered fact must read differently from a chosen interest')
+  assert.ok(/session\.topic\b/.test(home), 'the topic must come from the stored plan')
+  assert.ok(!/loadLearnerModel\(\)\.learnerFacts/.test(home), 'Home must not go digging for facts itself')
   assert.ok(!/topic\.interestId\}/.test(home), 'an interest id must never be printed')
   // (the existing "confidence" stat pill is the learner's own progress figure,
   // not the preference model — the preference internals are what must not leak)

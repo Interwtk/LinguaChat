@@ -555,6 +555,52 @@ def test_mission_feedback_still_works():
     assert res.json().get("mission_feedback") is not None
 
 
+# ---------- optional memory context on /chat ----------
+def test_chat_accepts_a_small_remembered_topic():
+    """Lingua may be told one short thing the learner mentioned before."""
+    res = client.post("/chat", json={
+        "message": "hello", "level": "A1",
+        "optional_context": {"remembered_like": "music"},
+    })
+    assert res.status_code == 200
+    assert "reply" in res.json()
+
+
+def test_chat_works_without_any_context():
+    res = client.post("/chat", json={"message": "hello", "level": "A1"})
+    assert res.status_code == 200
+    assert "reply" in res.json()
+
+
+def test_optional_context_keeps_only_what_it_understands():
+    """A client cannot smuggle a profile, a score or past answers through it."""
+    from app.routes.chat import _safe_optional_context
+
+    kept = _safe_optional_context({
+        "remembered_like": "  music  ",
+        "mastery": {"express_like": 0.9},
+        "activity_events": ["a", "b"],
+        "score": 0.62,
+        "learner_answers": ["I like music", "I want water"],
+        "email": "someone@example.com",
+    })
+    assert kept == {"remembered_like": "music"}
+
+    assert _safe_optional_context(None) == {}
+    assert _safe_optional_context("music") == {}
+    assert _safe_optional_context({"remembered_like": 42}) == {}
+    assert _safe_optional_context({"remembered_like": ""}) == {}
+    # and it can never grow unbounded
+    assert len(_safe_optional_context({"remembered_like": "x" * 500})["remembered_like"]) <= 40
+
+
+def test_invalid_optional_context_does_not_break_chat():
+    res = client.post("/chat", json={
+        "message": "hello", "level": "A1", "optional_context": {"remembered_like": None, "junk": [1, 2, 3]},
+    })
+    assert res.status_code == 200
+
+
 def test_translation_and_meaning_still_work():
     r1 = client.post("/chat", json={"message": "como se dice queso", "level": "A1"})
     assert "cheese" in r1.json()["reply"].lower()
