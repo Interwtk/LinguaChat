@@ -451,6 +451,46 @@ def test_simple_plan_conversation():
     assert half["error_type"] == "incomplete_turn"
 
 
+@pytest.mark.parametrize("noun,activity,expected", [
+    ("traveling", "plan a trip", "I like traveling. Do you want to plan a trip?"),
+    ("games", "play a game", "I like games. Do you want to play a game?"),
+    # no activity supplied → the neutral proposal, never a wrong one
+    ("music", "", "I like music. Do you want to listen to music?"),
+    ("", "", "I like music. Do you want to listen to music?"),
+])
+def test_plan_model_answer_proposes_this_episode_s_activity(noun, activity, expected):
+    """A trip episode must not model "Do you want to listen to music?"."""
+    r = evaluate_deterministic(_payload(
+        expected_intent="simple_plan_conversation", learner_response="Music.",
+        target_noun=noun, target_activity=activity,
+    ))
+    assert r["completed_objective"] is False
+    assert r["natural_version"] == expected
+
+
+def test_plan_activity_travels_through_the_endpoint():
+    res = client.post("/learning/evaluate", json={
+        "expected_intent": "simple_plan_conversation", "learner_response": "Music.",
+        "target_noun": "traveling", "target_activity": "plan a trip",
+    })
+    assert res.status_code == 200
+    assert res.json()["natural_version"] == "I like traveling. Do you want to plan a trip?"
+
+
+def test_plan_activity_is_bounded_and_optional():
+    """An oversized or missing activity must never reach the model answer."""
+    res = client.post("/learning/evaluate", json={
+        "expected_intent": "simple_plan_conversation", "learner_response": "Music.",
+        "target_activity": "x" * 200,
+    })
+    assert res.status_code == 422           # rejected by the schema, not rendered
+    res_ok = client.post("/learning/evaluate", json={
+        "expected_intent": "simple_plan_conversation", "learner_response": "Music.",
+    })
+    assert res_ok.status_code == 200
+    assert "listen to music" in res_ok.json()["natural_version"]
+
+
 @pytest.mark.parametrize("noun,expected", [
     ("games", "I like games."),
     ("movies", "I like movies."),

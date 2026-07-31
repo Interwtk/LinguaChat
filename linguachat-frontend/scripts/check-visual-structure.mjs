@@ -36,8 +36,13 @@ const reviewingBlock = shell.slice(shell.indexOf('{reviewing && ('), shell.index
 has('reviewing status shows Lingua, not Chatto', /LinguaAvatar/.test(reviewingBlock) && !/ChattoMascot/.test(reviewingBlock))
 // Focus returns to the input on retry (keyboard / screen-reader friendly).
 has('returns focus to the input on retry', /replyInputRef\.current\?\.focus\(\)/.test(shell))
-// Single-step render (no duplicate interactive episode instances by design).
-has('renders a single active step', /const step = ep\.steps\[stepIndex\]/.test(shell))
+/*
+ * Single-step render (no duplicate interactive episode instances by design).
+ * An alternative activity must REPLACE the step on screen, never render beside
+ * it — two live steps would mean two sets of answers for one objective.
+ */
+has('derives exactly one authored step from the index', /const authoredStep = ep \? ep\.steps\[Math\.min\(stepIndex/.test(shell))
+has('the alternative replaces the step, it does not add one', /const step = altStep \|\| authoredStep/.test(shell))
 // Free-reply input carries an accessible label.
 has('reply input has aria-label', /ref=\{replyInputRef\}[\s\S]{0,600}aria-label=/.test(shell))
 

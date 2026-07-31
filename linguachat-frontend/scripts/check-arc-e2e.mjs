@@ -86,13 +86,18 @@ function playEpisode(model, ep, { mode }) {
     } else if (step.type === 'word_order' || step.type === 'fill_blank') {
       if (step.itemId) recordItemAttempt(model, step.itemId, { correct: true, independent: scaffold !== 'high' })
     } else if (step.type === 'free_reply' || step.type === 'recall') {
-      const fromSuggestion = mode === 'helped' && Boolean(step.suggestionEn)
+      // 'always_helped' models the learner who leans on support at every single
+      // turn; 'helped' is the realistic beginner who only taps the model answer
+      // where one is offered.
+      const fromSuggestion = mode === 'always_helped' || (mode === 'helped' && Boolean(step.suggestionEn))
       const independent = !fromSuggestion && scaffold !== 'high'
       const turnContext = { linguaSaid: resolve(step.promptEn || step.sceneEn || '') }
       const res = evaluateFree(step.evalKind, answerFor(step), { name: NAME, independent, turnContext, place: PLACE, targetNoun: VARS.noun })
       assert.ok(res.completedObjective, `${ep.id} step ${i} (${step.evalKind}): intended answer rejected → ${JSON.stringify(res)}`)
       ;(step.itemIds || []).forEach(id => recordItemAttempt(model, id, { correct: true, independent }))
-      adapt({ correct: true, usedHelp: fromSuggestion || scaffold === 'high' })
+      // mirrors the shell: "help was used" means the learner reached for the
+      // model answer, not merely that support was still on screen
+      adapt({ correct: true, usedHelp: fromSuggestion })
     }
     // scene / model / completion carry no evaluation
   }
@@ -144,8 +149,21 @@ assert.equal(garden.length, new Set(garden).size, 'garden must have no duplicate
 const replay = playEpisode(model, ARC[2], { mode: 'helped' })
 assert.equal(replay.awarded, false, 'already-awarded episode must not re-award')
 
-// after helped completions the full-greeting can-do is still only "learning"
-assert.equal(model.canDo.full_greeting.status, 'learning', 'helped-only completion must not grant mastery')
+/*
+ * Mastery may only come from something the learner produced unaided.
+ *
+ * A learner who leans on the model answer at EVERY turn stays at "learning" no
+ * matter how many times they finish: support never comes down, so no success is
+ * ever independent. (A learner who answers some turns unaided does earn it —
+ * that is the point of lowering support, and it is asserted below.)
+ */
+{
+  const helpedModel = createLearnerModel()
+  for (let i = 0; i < 3; i++) playEpisode(helpedModel, ARC[2], { mode: 'always_helped' })
+  assert.equal(helpedModel.canDo.full_greeting.status, 'learning',
+    'leaning on the model answer every time must never grant mastery')
+  assert.equal(helpedModel.canDo.full_greeting.independentSuccesses, 0)
+}
 
 // ---------------- run 2: an independent replay lifts it to can_do ----------------
 playEpisode(model, ARC[2], { mode: 'independent' })

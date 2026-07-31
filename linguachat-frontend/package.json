@@ -21,8 +21,12 @@
     "check:session-recovery": "node scripts/check-session-recovery.mjs",
     "check:bundle-boundaries": "node scripts/check-bundle-boundaries.mjs",
     "check:locale-loading": "node scripts/check-locale-loading.mjs",
-    "check:all": "node scripts/check-i18n.mjs && node scripts/check-learning-content.mjs && node scripts/check-episodes.mjs && node scripts/check-learner-model.mjs && node scripts/check-arc-e2e.mjs && node scripts/check-edge-cases.mjs && node scripts/check-hybrid-evaluation.mjs && node scripts/check-episode-recovery.mjs && node scripts/check-visual-structure.mjs && node scripts/check-daily-session.mjs && node scripts/check-second-arc.mjs && node scripts/check-session-recovery.mjs && node scripts/check-third-arc.mjs && node scripts/check-locale-loading.mjs && node scripts/check-bundle-boundaries.mjs",
-    "check:third-arc": "node scripts/check-third-arc.mjs"
+    "check:all": "node scripts/check-i18n.mjs && node scripts/check-learning-content.mjs && node scripts/check-episodes.mjs && node scripts/check-learner-model.mjs && node scripts/check-arc-e2e.mjs && node scripts/check-edge-cases.mjs && node scripts/check-hybrid-evaluation.mjs && node scripts/check-episode-recovery.mjs && node scripts/check-visual-structure.mjs && node scripts/check-daily-session.mjs && node scripts/check-second-arc.mjs && node scripts/check-session-recovery.mjs && node scripts/check-third-arc.mjs && node scripts/check-third-arc-e2e.mjs && node scripts/check-activity-signals.mjs && node scripts/check-preference-planning.mjs && node scripts/check-personalized-home.mjs && node scripts/check-locale-loading.mjs && node scripts/check-bundle-boundaries.mjs",
+    "check:third-arc": "node scripts/check-third-arc.mjs",
+    "check:third-arc-e2e": "node scripts/check-third-arc-e2e.mjs",
+    "check:activity-signals": "node scripts/check-activity-signals.mjs",
+    "check:preference-planning": "node scripts/check-preference-planning.mjs",
+    "check:personalized-home": "node scripts/check-personalized-home.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
