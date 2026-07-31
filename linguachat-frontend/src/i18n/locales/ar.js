@@ -125,6 +125,30 @@ export default {
 
   sessionRecallTitle: "لنثبّت هذه المهارة",
 
+  sessionExtraTitle: "واحدة أخرى، على طريقتك",
+
+  sessionBuildInstruction: "رتّب الكلمات.",
+
+  sessionGapInstruction: "أكمل الجملة.",
+
+  sessionChoiceInstruction: "اختر الإجابة الطبيعية.",
+
+  altPractiseAnotherWay: "تدرّب بطريقة أخرى",
+
+  altGuidedInstruction: "كوّن الجملة نفسها، كلمة بكلمة.",
+
+  altGuidedHint: "المس الكلمات بالترتيب الصحيح.",
+
+  feedbackQuestion: "كيف كانت طريقة التدريب هذه؟",
+
+  feedbackMoreLikeThis: "المزيد من هذا",
+
+  feedbackItsFine: "لا بأس",
+
+  feedbackAnotherWay: "أفضّل طريقة أخرى",
+
+  feedbackThanks: "تم التسجيل، شكرًا.",
+
   sessionFreeChatTitle: "محادثة حرة",
 
   sessionFreeChatBody: "استخدم ما تعرفه مع لينغوا، بلا تمارين.",

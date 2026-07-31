@@ -125,6 +125,30 @@ export default {
 
   sessionRecallTitle: "これをしっかり固めよう",
 
+  sessionExtraTitle: "もう一つ、あなたのやり方で",
+
+  sessionBuildInstruction: "単語を正しい順に並べましょう。",
+
+  sessionGapInstruction: "文を完成させましょう。",
+
+  sessionChoiceInstruction: "自然な答えを選びましょう。",
+
+  altPractiseAnotherWay: "別の方法で練習する",
+
+  altGuidedInstruction: "同じ文を、一語ずつ組み立てましょう。",
+
+  altGuidedHint: "正しい順に単語をタップしてください。",
+
+  feedbackQuestion: "この練習のしかたはどうでしたか。",
+
+  feedbackMoreLikeThis: "こういう練習をもっと",
+
+  feedbackItsFine: "これでいい",
+
+  feedbackAnotherWay: "別の方法がいい",
+
+  feedbackThanks: "受け取りました。ありがとう。",
+
   sessionFreeChatTitle: "フリー会話",
 
   sessionFreeChatBody: "練習問題なしで、リンガと知っていることを使ってみよう。",

@@ -8,7 +8,7 @@
  */
 const KEY = 'lc2-learner-model-v1' // key kept stable; internal `version` gates migration
 const DAY = 86400000
-export const MODEL_VERSION = 3
+export const MODEL_VERSION = 4
 
 /*
  * Activity formats we can observe. Preference only ever changes VARIETY — which
@@ -19,11 +19,17 @@ export const MODEL_VERSION = 3
 export const ACTIVITY_FORMATS = [
   'comprehension', 'word_order', 'fill_blank', 'choice',
   'free_reply', 'roleplay', 'recall', 'review', 'mini_story',
+  'guided_reply',
 ]
 
 const emptyActivityStat = () => ({
-  shown: 0, completed: 0, abandoned: 0, assistanceUsed: 0, positiveSignals: 0,
+  shown: 0, completed: 0, abandoned: 0, assistanceUsed: 0, retried: 0,
+  positiveSignals: 0, negativeSignals: 0,
 })
+
+// How many event ids we remember purely to stay idempotent. Bounded so
+// localStorage cannot grow without limit; only ids are kept, never answers.
+export const SIGNAL_LOG_LIMIT = 160
 
 export function createLearnerModel() {
   return {
@@ -41,6 +47,9 @@ export function createLearnerModel() {
     activityPreferences: {},
     recentFormats: [],
     recentInterests: [],
+    // Ids of activity events already counted, so the same moment can never be
+    // counted twice (double tap, StrictMode, reload, breakpoint, re-render).
+    signalLog: [],
   }
 }
 const emptyModel = createLearnerModel
@@ -62,11 +71,33 @@ function migrate(parsed) {
       activityPreferences: sanitizeActivityPreferences(parsed.activityPreferences),
       recentFormats: Array.isArray(parsed.recentFormats) ? parsed.recentFormats.filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12) : [],
       recentInterests: Array.isArray(parsed.recentInterests) ? parsed.recentInterests.filter(i => typeof i === 'string').slice(0, 8) : [],
+      signalLog: sanitizeSignalLog(parsed.signalLog),
     }
   }
 
   /*
-   * v2 -> v3: everything the learner earned is kept exactly as it is; only the
+   * v3 -> v4: adds the retried / negative counters and the idempotency log.
+   * Preferences already earned are kept and simply gain the missing counters,
+   * so nobody starts again from zero.
+   */
+  if (parsed.version === 3) {
+    const m = emptyModel()
+    return {
+      ...m, ...parsed,
+      version: MODEL_VERSION,
+      canDo: { ...parsed.canDo }, languageItems: { ...parsed.languageItems },
+      recurringErrors: Array.isArray(parsed.recurringErrors) ? [...parsed.recurringErrors] : [],
+      scaffoldByEpisode: { ...parsed.scaffoldByEpisode }, episodes: { ...parsed.episodes },
+      facts: { ...(parsed.facts || {}) },
+      activityPreferences: sanitizeActivityPreferences(parsed.activityPreferences),
+      recentFormats: Array.isArray(parsed.recentFormats) ? parsed.recentFormats.filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12) : [],
+      recentInterests: Array.isArray(parsed.recentInterests) ? parsed.recentInterests.filter(i => typeof i === 'string').slice(0, 8) : [],
+      signalLog: [],
+    }
+  }
+
+  /*
+   * v2 -> v4: everything the learner earned is kept exactly as it is; only the
    * new preference fields are added. A learner upgrading mid-arc loses nothing.
    */
   if (parsed.version === 2) {
@@ -78,7 +109,7 @@ function migrate(parsed) {
       recurringErrors: Array.isArray(parsed.recurringErrors) ? [...parsed.recurringErrors] : [],
       scaffoldByEpisode: { ...parsed.scaffoldByEpisode }, episodes: { ...parsed.episodes },
       facts: { ...(parsed.facts || {}) },
-      activityPreferences: {}, recentFormats: [], recentInterests: [],
+      activityPreferences: {}, recentFormats: [], recentInterests: [], signalLog: [],
     }
   }
   // v1 -> v2 (never lose existing progress)
@@ -117,8 +148,55 @@ export function loadLearnerModel() {
   return emptyModel()
 }
 
+/*
+ * Merge the activity evidence held in storage with the copy about to be saved.
+ *
+ * Several components hold their own snapshot of the model (the episode shell,
+ * the session runner, the little feedback card). Whoever saved last used to win,
+ * which silently threw away a signal another component had just recorded — a
+ * learner could answer "more like this" and watch it disappear a second later.
+ *
+ * Every counter here only ever grows, and every increment is guarded by a unique
+ * event id, so taking the larger of the two values is exactly the union of what
+ * both copies saw: never double-counted, never lost.
+ */
+function mergeActivityEvidence(model) {
+  let stored = null
+  try { stored = JSON.parse(localStorage.getItem(KEY) || 'null') } catch { return model }
+  if (!stored || typeof stored !== 'object' || stored.version !== MODEL_VERSION) return model
+
+  const mine = model.activityPreferences || {}
+  const theirs = sanitizeActivityPreferences(stored.activityPreferences)
+  const merged = {}
+  for (const format of new Set([...Object.keys(mine), ...Object.keys(theirs)])) {
+    const a = mine[format] || emptyActivityStat()
+    const b = theirs[format] || emptyActivityStat()
+    const out = emptyActivityStat()
+    for (const key of Object.keys(out)) out[key] = Math.max(Number(a[key]) || 0, Number(b[key]) || 0)
+    merged[format] = out
+  }
+
+  const myLog = Array.isArray(model.signalLog) ? model.signalLog : []
+  const theirLog = sanitizeSignalLog(stored.signalLog)
+  const log = [...myLog, ...theirLog.filter(id => !myLog.includes(id))].slice(0, SIGNAL_LOG_LIMIT)
+  // whichever copy has seen more events also has the more current recency list
+  const recent = theirLog.length > myLog.length ? sanitizeSignalLog([]).concat(stored.recentFormats || []) : model.recentFormats
+
+  return {
+    ...model,
+    activityPreferences: merged,
+    signalLog: log,
+    recentFormats: (Array.isArray(recent) ? recent : []).filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12),
+  }
+}
+
 export function saveLearnerModel(model) {
-  try { localStorage.setItem(KEY, JSON.stringify({ ...model, version: MODEL_VERSION })) } catch {}
+  const merged = mergeActivityEvidence(model)
+  // keep the caller's own object in step with what was written
+  model.activityPreferences = merged.activityPreferences
+  model.signalLog = merged.signalLog
+  model.recentFormats = merged.recentFormats
+  try { localStorage.setItem(KEY, JSON.stringify({ ...merged, version: MODEL_VERSION })) } catch {}
   return model
 }
 
@@ -212,22 +290,32 @@ export function sanitizeActivityPreferences(raw) {
   return out
 }
 
+export function sanitizeSignalLog(raw) {
+  if (!Array.isArray(raw)) return []
+  return raw.filter(id => typeof id === 'string' && id.length > 0 && id.length <= 120).slice(0, SIGNAL_LOG_LIMIT)
+}
+
 /*
  * Record one observation about a format.
  *
- * `signal` is 'shown' | 'completed' | 'abandoned' | 'assistance' | 'positive'.
- * Note what is NOT here: mistakes, retries and slow attempts. Those say the
- * activity was hard, not that it was disliked, and must never push a format away.
+ * `signal` is one of SIGNAL_KINDS. Note what is NOT here: mistakes, slow
+ * attempts and asking for help do not count against a format. `retried` and
+ * `assistance` ARE stored, because they describe how the activity went, but
+ * they deliberately carry no weight in the score: difficulty is not dislike.
  */
+export const SIGNAL_KINDS = ['shown', 'completed', 'abandoned', 'assistance', 'retried', 'positive', 'negative_soft']
+
 export function recordActivitySignal(model, format, signal) {
-  if (!ACTIVITY_FORMATS.includes(format)) return model
+  if (!ACTIVITY_FORMATS.includes(format) || !SIGNAL_KINDS.includes(signal)) return model
   model.activityPreferences = model.activityPreferences || {}
   const stat = model.activityPreferences[format] || emptyActivityStat()
   if (signal === 'shown') stat.shown += 1
   else if (signal === 'completed') stat.completed += 1
   else if (signal === 'abandoned') stat.abandoned += 1
   else if (signal === 'assistance') stat.assistanceUsed += 1
+  else if (signal === 'retried') stat.retried += 1
   else if (signal === 'positive') stat.positiveSignals += 1
+  else if (signal === 'negative_soft') stat.negativeSignals += 1
   model.activityPreferences[format] = stat
   /*
    * A rolling log of what was actually shown, most recent first — duplicates
@@ -241,22 +329,60 @@ export function recordActivitySignal(model, format, signal) {
 }
 
 /*
+ * Record a signal at most once for a given moment.
+ *
+ * `eventId` identifies the moment, not the call: "this step of this episode in
+ * this session, shown". Every source of accidental repetition — a re-render, a
+ * StrictMode double effect, a language switch, crossing a breakpoint, a reload
+ * onto the same step, a double tap — produces the SAME id and is therefore
+ * counted once. Returns true only when the signal was actually new.
+ */
+export function recordActivitySignalOnce(model, eventId, format, signal) {
+  if (!eventId || !ACTIVITY_FORMATS.includes(format) || !SIGNAL_KINDS.includes(signal)) return false
+  model.signalLog = Array.isArray(model.signalLog) ? model.signalLog : []
+  if (model.signalLog.includes(eventId)) return false
+  recordActivitySignal(model, format, signal)
+  model.signalLog = [eventId, ...model.signalLog].slice(0, SIGNAL_LOG_LIMIT)
+  return true
+}
+
+/*
  * A 0..1 comfort score, or null when there is not enough evidence.
  *
  * One abandonment is never enough to conclude anything — a learner may simply
  * have been interrupted — so a format needs at least three showings before it
- * has a score at all.
+ * has a score at all. The score starts neutral (0.5) and only moves away from
+ * neutral as evidence accumulates, so a single completion cannot swing it.
  */
 export const MIN_SIGNALS_FOR_SCORE = 3
+// Evidence needed before a preference counts as something we can act on.
+export const FULL_CONFIDENCE_SIGNALS = 8
+export const CONFIDENT_PREFERENCE = 0.6   // ≈5 observations
 
 export function activityScore(model, format) {
+  const p = activityPreference(model, format)
+  return p.score
+}
+
+/*
+ * The full picture: what we believe, how sure we are, and on how much evidence.
+ * The planner is required to look at `confidence`, never at `score` alone.
+ */
+export function activityPreference(model, format) {
   const stat = (model.activityPreferences || {})[format]
-  if (!stat || stat.shown < MIN_SIGNALS_FOR_SCORE) return null
-  const completionRate = stat.completed / Math.max(1, stat.shown)
-  const abandonRate = stat.abandoned / Math.max(1, stat.shown)
-  const liked = Math.min(1, stat.positiveSignals / Math.max(1, stat.shown))
-  const score = 0.65 * completionRate + 0.35 * liked - 0.4 * abandonRate
-  return Math.max(0, Math.min(1, Number(score.toFixed(3))))
+  const observations = stat ? stat.shown : 0
+  const confidence = Math.min(1, Number((observations / FULL_CONFIDENCE_SIGNALS).toFixed(3)))
+  if (!stat || observations < MIN_SIGNALS_FOR_SCORE) return { score: null, confidence, observations }
+  const completionRate = stat.completed / observations
+  const abandonRate = stat.abandoned / observations
+  const liked = Math.min(1, stat.positiveSignals / observations)
+  const disliked = Math.min(1, (stat.negativeSignals || 0) / observations)
+  // Note: retried and assistanceUsed are absent on purpose. A hard activity is
+  // not a disliked activity, and punishing help would teach learners to suffer.
+  const target = Math.max(0, Math.min(1, 0.65 * completionRate + 0.35 * liked - 0.5 * abandonRate - 0.35 * disliked))
+  const weight = Math.min(1, observations / FULL_CONFIDENCE_SIGNALS)
+  const score = 0.5 + (target - 0.5) * weight
+  return { score: Number(Math.max(0, Math.min(1, score)).toFixed(3)), confidence, observations }
 }
 
 /*
@@ -270,9 +396,12 @@ export function preferredFormat(model, candidates = []) {
   if (!options.length) return null
   const recent = model.recentFormats || []
   const ranked = options.map((format, index) => {
-    const score = activityScore(model, format)
+    const { score, confidence } = activityPreference(model, format)
+    // A weak preference must not behave like a certainty: until there is enough
+    // evidence the format is treated as neutral and only recency decides.
+    const effective = score == null || confidence < CONFIDENT_PREFERENCE ? 0.5 : score
     const recency = recent.indexOf(format)   // -1 = not used recently
-    return { format, index, score: score == null ? 0.5 : score, recencyPenalty: recency === -1 ? 0 : (3 - Math.min(recency, 3)) * 0.2 }
+    return { format, index, score: effective, recencyPenalty: recency === -1 ? 0 : (3 - Math.min(recency, 3)) * 0.2 }
   })
   ranked.sort((a, b) => (b.score - b.recencyPenalty) - (a.score - a.recencyPenalty) || a.index - b.index)
   return ranked[0].format

@@ -13,13 +13,46 @@ import { getLearnerInterests, getInterestContext, getInterestObject } from '../.
 import { evaluateLearningResponse } from '../../services/api'
 import {
   loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, markRecurringError,
-  getRecommendedScaffold, getEpisodeState, setEpisodeState,
+  getRecommendedScaffold, getEpisodeState, setEpisodeState, recordActivitySignalOnce,
 } from '../../learning/engine/learnerModel.js'
+import { dayKeyFor } from '../../learning/engine/session.js'
+import { seedFrom } from '../../learning/engine/variation.js'
+import { FormatFeedback } from './FormatFeedback'
 
 // Fill {name} / {partner} / {place} / {partnerPlace} in the English target text.
 // An unknown placeholder is left untouched rather than printed as "undefined".
 const resolve = (str, vars = {}) =>
   String(str || '').replace(/\{(\w+)\}/g, (match, key) => (vars[key] == null || vars[key] === '' ? match : String(vars[key])))
+
+/*
+ * Which activity format each step is, for the preference model. An episode step
+ * may override it (a multi-turn conversation turn is roleplay, not a free reply).
+ */
+const STEP_FORMAT = {
+  comprehension: 'comprehension', choice: 'choice', word_order: 'word_order',
+  fill_blank: 'fill_blank', free_reply: 'free_reply', recall: 'recall',
+}
+export const formatOfStep = (step) => (step && (step.format || STEP_FORMAT[step.type])) || null
+
+/*
+ * A deterministic shuffle for the "build the sentence" activity. Presenting the
+ * words already in order asked nothing of the learner; the seed keeps the same
+ * scramble across re-renders and reloads, and a single-token step is left alone.
+ */
+export function scrambleTokens(tokens, seedKey = '') {
+  const list = [...tokens]
+  if (list.length < 3) return list
+  const rnd = (n, salt) => seedFrom(`${seedKey}:${salt}`) % n
+  for (let i = list.length - 1; i > 0; i--) {
+    const j = rnd(i + 1, i)
+    const tmp = list[i]; list[i] = list[j]; list[j] = tmp
+  }
+  // Never hand back the solution itself.
+  if (list.join(' ') === tokens.join(' ')) {
+    const tmp = list[0]; list[0] = list[list.length - 1]; list[list.length - 1] = tmp
+  }
+  return list
+}
 
 function En({ children, className = '', style }) {
   return <span lang="en" dir="ltr" className={className} style={style}>{children}</span>
@@ -39,7 +72,7 @@ function LinguaLine({ children }) {
 
 // `onComplete` lets a daily session take over what happens after the episode:
 // inside a session the next block follows, standalone it returns to Home.
-export function EpisodeShell({ episodeId, onComplete = null }) {
+export function EpisodeShell({ episodeId, onComplete = null, interestId = null }) {
   const { t, profile, tutorPreferences, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode } = useApp()
   const ep = getEpisode(episodeId)
   const name = (profile.name || '').trim() || 'Alex'
@@ -50,6 +83,7 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
 
   const modelRef = useRef(loadLearnerModel())
   const awardedRef = useRef(false)
+  const finishedRef = useRef(false)
   const initial = useMemo(() => {
     if (!ep) return { step: 0, scaffold: 'high' }
     const st = getEpisodeState(modelRef.current, ep.id)
@@ -73,6 +107,9 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
   const [praise, setPraise] = useState(null)
   const [live, setLive] = useState('')
   const [reviewing, setReviewing] = useState(false)  // remote evaluation in flight
+  // The learner asked to practise this step another way (see `switchActivity`).
+  const [altStep, setAltStep] = useState(null)
+  const [askFeedback, setAskFeedback] = useState(false)
   // The place the learner said they are from, captured inside the activity (see
   // episode 5) — never required up front, never part of the global profile.
   const [place, setPlace] = useState(() => modelRef.current.facts?.place || '')
@@ -88,12 +125,25 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
     try { abortRef.current?.abort() } catch { /* noop */ }
   }, [])
 
-  if (!ep) return null
-  const step = ep.steps[stepIndex]
+  // The step actually on screen: normally the authored one, or the alternative
+  // the learner asked for. Computed before any early return so the hooks below
+  // always run in the same order.
+  const authoredStep = ep ? ep.steps[Math.min(stepIndex, ep.steps.length - 1)] : null
+  const step = altStep || authoredStep
 
-  // The partner's own place is derived from the partner name, so it is stable
-  // per learner and never hardcoded to one country.
-  const partnerPlace = placeFor(partner)
+  /*
+   * "This activity is on screen" — recorded once per step per day. The id is
+   * built from the day, the episode and the step, so every accidental repeat
+   * (re-render, StrictMode's double effect, a language switch, crossing a
+   * breakpoint, reloading onto the same step) resolves to the SAME id and is
+   * counted once. Leaving and coming back later the same day is not new either.
+   */
+  useEffect(() => {
+    const format = formatOfStep(step)
+    if (!ep || !format) return
+    const id = `${dayKeyFor()}:${ep.id}:${altStep ? 'alt' : stepIndex}:shown`
+    if (recordActivitySignalOnce(modelRef.current, id, format, 'shown')) saveLearnerModel(modelRef.current)
+  }, [ep, stepIndex, altStep, step])
 
   /*
    * Interest context for a personalised episode. The seed is the learner plus
@@ -101,15 +151,26 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
    * cannot drift between renders or across a reload) while a different episode
    * may pick another interest the learner chose. With no interests we fall back
    * to neutral examples rather than asking them to configure anything.
+   *
+   * Inside a daily session the topic is already pinned in the plan, so it is
+   * passed in and wins: Home and the episode can never promise different things.
    */
   const interestCtx = useMemo(
-    () => getInterestContext(getLearnerInterests(tutorPreferences), `${profile.name || 'guest'}:${episodeId}`),
-    [tutorPreferences, profile.name, episodeId],
+    () => (interestId
+      ? getInterestContext([interestId], `${profile.name || 'guest'}:${episodeId}`)
+      : getInterestContext(getLearnerInterests(tutorPreferences), `${profile.name || 'guest'}:${episodeId}`)),
+    [tutorPreferences, profile.name, episodeId, interestId],
   )
   const interestObject = useMemo(
     () => getInterestObject(interestCtx, `${profile.name || 'guest'}:${episodeId}:object`),
     [interestCtx, profile.name, episodeId],
   )
+
+  if (!ep) return null
+
+  // The partner's own place is derived from the partner name, so it is stable
+  // per learner and never hardcoded to one country.
+  const partnerPlace = placeFor(partner)
   // Branch line for the small controlled story in episode 9 (two outcomes, one
   // objective). The branch is stored, so a reload keeps the same story.
   const branch = modelRef.current.facts?.[`branch:${ep.id}`] || 'accept'
@@ -123,7 +184,10 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
     branchLine,
   }
 
-  const remoteEvaluator = (payload, signal) => evaluateLearningResponse(payload, { signal })
+  const remoteEvaluator = (payload, abortSignal) => evaluateLearningResponse(payload, { signal: abortSignal })
+
+  // "Long" means the episode really was a conversation, not a single card.
+  const longRoleplay = ep.steps.filter(s => s.type === 'free_reply' || s.type === 'recall').length >= 4
 
   function persistStep(nextIndex) {
     setEpisodeState(modelRef.current, ep.id, { status: nextIndex >= ep.steps.length - 1 ? getEpisodeState(modelRef.current, ep.id).status : 'in_progress', stepIndex: nextIndex })
@@ -131,13 +195,27 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
     saveLearnerModel(modelRef.current)
   }
 
+  /*
+   * Record an activity signal for the step on screen, at most once. `suffix`
+   * names the moment ('completed', 'assistance', 'retried'), so each kind is
+   * counted once per step per day no matter how the UI is driven.
+   */
+  function signal(kind, suffix = kind) {
+    const format = formatOfStep(step)
+    if (!format) return
+    const id = `${dayKeyFor()}:${ep.id}:${altStep ? 'alt' : stepIndex}:${suffix}`
+    if (recordActivitySignalOnce(modelRef.current, id, format, kind)) saveLearnerModel(modelRef.current)
+  }
+
   function advance() {
     // invalidate any late remote response and cancel an in-flight one
     guardRef.current.invalidate()
     try { abortRef.current?.abort() } catch { /* noop */ }
     abortRef.current = null
+    signal('completed')
     attemptsRef.current = 0
     setReviewing(false)
+    setAltStep(null)
     setRetry(null); setPraise(null); setLive(''); setChoice(null); setBuildOrder([]); setFillValue(''); setReply(''); setUsedSuggestion(false)
     const next = Math.min(ep.steps.length - 1, stepIndex + 1)
     setStepIndex(next)
@@ -145,6 +223,14 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
     if (scaffold === 'high') setShowHelp(true)
   }
 
+  /*
+   * Support goes down only after two clean answers in a row.
+   *
+   * `usedHelp` here means the learner actually reached for the model answer —
+   * NOT merely that support was still on screen. Counting "support is high" as
+   * "help was used" made the streak reset every turn, so support could never be
+   * reduced and no episode could ever produce independent evidence.
+   */
   function adaptScaffold({ correct, usedHelp }) {
     const nextStreak = correct && !usedHelp ? cleanStreak + 1 : 0
     setCleanStreak(nextStreak)
@@ -152,6 +238,32 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
     setScaffold(next)
     modelRef.current.scaffoldByEpisode[ep.id] = next
     if (next === 'high') setShowHelp(true)
+  }
+
+  /*
+   * "Practise this another way." Offered only after two attempts on a step that
+   * has a model answer, and only as an EQUIVALENT activity: the learner still
+   * produces the very same target sentence, with the words in front of them.
+   * It records a soft negative for the format, never an abandonment, never XP,
+   * and never counts as mastery — the objective is not skipped.
+   */
+  function switchActivity() {
+    const target = resolve(step.suggestionEn, vars)
+    const tokens = target.replace(/([.?!])$/, ' $1').split(/\s+/).filter(Boolean)
+    signal('negative_soft', 'switched')
+    setAltStep({
+      type: 'word_order', format: 'guided_reply', instructionKey: 'altGuidedInstruction',
+      hintKey: 'altGuidedHint', itemId: (step.itemIds || [])[0] || null, tokens, assisted: true,
+    })
+    setRetry(null)
+    setLive(t('altGuidedInstruction'))
+  }
+
+  // The worked example for a gap-fill: whatever the step is capturing.
+  function fillExample(s) {
+    if (s.captureFact === 'place') return place || partnerPlace
+    if (s.captureFact === 'likes') return interestCtx.targetNoun
+    return s.captureFact ? interestCtx.targetNoun : name
   }
 
   function recordItems(ids, { correct, independent }) {
@@ -170,7 +282,7 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
 
     // Decide up front whether we will need Lingua, only to show a calm status.
     // targetNoun keeps the model answer in the learner's own subject matter
-    const evalCtx = { name, independent, turnContext, place, targetNoun: interestCtx.targetNoun }
+    const evalCtx = { name, independent, turnContext, place, targetNoun: interestCtx.targetNoun, activity: interestCtx.activity }
     const preview = evaluateFree(evalKind, text, evalCtx)
     const willEscalate = shouldEscalate(preview)
 
@@ -182,7 +294,7 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
     try {
       result = await evaluateEpisodeResponse({
         episode: ep, step, learnerResponse: text, learnerName: name, place,
-        targetNoun: interestCtx.targetNoun, interestId: interestCtx.interestId,
+        targetNoun: interestCtx.targetNoun, activity: interestCtx.activity, interestId: interestCtx.interestId,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
         previousAttempts: attemptsRef.current, turnContext,
@@ -210,7 +322,8 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
         saveLearnerModel(modelRef.current)
       }
       recordItems(itemIds, { correct: true, independent })
-      adaptScaffold({ correct: true, usedHelp: fromSuggestion || scaffold === 'high' })
+      if (attemptsRef.current > 0) signal('retried')
+      adaptScaffold({ correct: true, usedHelp: fromSuggestion })
       setPraise(result.praiseKey || 'ep1FeedbackGood')
       setLive(t(result.praiseKey || 'ep1FeedbackGood'))
       setTimeout(advance, 700)
@@ -227,8 +340,15 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
     }
   }
 
-  /* ---------- completion (idempotent award) ---------- */
+  /* ---------- completion (idempotent award AND idempotent evidence) ---------- */
   function finish() {
+    /*
+     * Guarded as a whole, not just for XP. Tapping the button three times used
+     * to record three can-do successes from a single completion, which could
+     * hand out mastery the learner had not earned.
+     */
+    if (finishedRef.current) return
+    finishedRef.current = true
     const m = modelRef.current
     const st = getEpisodeState(m, ep.id)
     const independent = cleanStreak >= 1
@@ -353,7 +473,9 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
         {/* ---------------- WORD ORDER ---------------- */}
         {step.type === 'word_order' && (() => {
           const tokens = step.tokens.map(tk => resolve(tk, vars))
-          const remaining = tokens.filter(tok => buildOrder.filter(x => x === tok).length < tokens.filter(x => x === tok).length || !buildOrder.includes(tok))
+          // Shown scrambled — deterministically, so a reload keeps the same
+          // arrangement. The answer is still compared against the real order.
+          const shown = scrambleTokens(tokens, `${ep.id}:${stepIndex}:${altStep ? 'alt' : 'main'}`)
           return (
             <div className="animate-fade-up">
               <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>{t(step.instructionKey)}</p>
@@ -364,7 +486,7 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
                 ))}
               </div>
               <div className="flex flex-wrap gap-2 mb-4">
-                {tokens.map((tok, i) => {
+                {shown.map((tok, i) => {
                   const usedCount = buildOrder.filter(x => x === tok).length
                   const totalCount = tokens.filter(x => x === tok).length
                   const spent = usedCount >= totalCount
@@ -377,7 +499,9 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
                 <button onClick={() => setBuildOrder([])} className="px-4 py-2.5 rounded-2xl text-sm font-semibold" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}>{t('ep1Reset')}</button>
                 <button disabled={buildOrder.length < tokens.length} onClick={() => {
                   const correct = buildOrder.join(' ') === tokens.join(' ')
-                  recordItems([step.itemId].filter(Boolean), { correct, independent: scaffold !== 'high' })
+                  // An alternative offered after a struggle is support, so a
+                  // success here is never counted as independent evidence.
+                  recordItems([step.itemId].filter(Boolean), { correct, independent: scaffold !== 'high' && !step.assisted })
                   if (correct) { setLive(t('ep1Correct')); advance() } else { setRetry({ explainKey: 'ep1BuildRetry', natural: tokens.join(' ') }); setBuildOrder([]); setLive(t('ep1RetryTitle')) }
                 }} className="flex-1 py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]" style={{ background: 'var(--violet)', opacity: buildOrder.length < tokens.length ? 0.5 : 1 }}>{t('ep1Check')}</button>
               </div>
@@ -395,7 +519,9 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
               <input value={fillValue} onChange={e => setFillValue(e.target.value)} lang="en" dir="ltr" placeholder={t(step.placeholderKey || 'ep1TypeName')} aria-label={t(step.instructionKey)} className="chat-input rounded-xl px-3 py-2 text-sm" style={{ flex: 1, minWidth: 120, background: 'var(--bg-paper)', border: '1.5px solid var(--border)', color: 'var(--ink)' }} />
               <En style={{ fontSize: '1rem', fontWeight: 700 }}>{step.after}</En>
             </div>
-            {scaffold === 'high' && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginBottom: 12 }}>{t(step.hintKey)} <En style={{ fontWeight: 700 }}>{resolve(`${step.before} ${step.captureFact ? (place || partnerPlace) : name}${step.after}`, vars)}</En></p>}
+            {/* The example must match what is being asked for: a place for the
+                place step, something the learner enjoys for the likes step. */}
+            {scaffold === 'high' && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginBottom: 12 }}>{t(step.hintKey)} <En style={{ fontWeight: 700 }}>{resolve(`${step.before} ${fillExample(step)}${step.after}`, vars)}</En></p>}
             <button disabled={!fillValue.trim()} onClick={() => {
               // A capture step stores what the learner typed (e.g. their place)
               // so later steps and model answers can use it. Never validated.
@@ -436,8 +562,18 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
             )}
 
             {step.suggestionEn && (scaffold !== 'low' || retry) && !reviewing && (
-              <button type="button" onClick={() => { setReply(resolve(step.suggestionEn, vars)); setUsedSuggestion(true) }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]" style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}>
+              <button type="button" onClick={() => { setReply(resolve(step.suggestionEn, vars)); setUsedSuggestion(true); signal('assistance') }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]" style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}>
                 {t('ep1UseSuggestion')}: <En>{resolve(step.suggestionEn, vars)}</En>
+              </button>
+            )}
+
+            {/* Offered only after two real attempts, and only where an equivalent
+                activity exists. It changes HOW the sentence is practised, never
+                whether it is practised. */}
+            {step.suggestionEn && attemptsRef.current >= 2 && !reviewing && (
+              <button type="button" onClick={switchActivity} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 ms-2 transition-all active:scale-[0.98]"
+                style={{ background: 'var(--violet-soft)', border: '1.5px solid var(--violet)', color: 'var(--violet)' }}>
+                {t('altPractiseAnotherWay')}
               </button>
             )}
 
@@ -468,6 +604,8 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
               <span style={{ fontSize: 16 }}>✓</span>
               <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--ink)' }}>{t(step.canDoNameKey)} · +{ep.xp} XP</span>
             </div>
+            {/* Only after a long conversational episode, never after every card. */}
+            {longRoleplay && <FormatFeedback format="roleplay" momentId={ep.id} />}
             <button onClick={finish} className="cta-glow w-full py-3 rounded-2xl font-bold text-white text-sm transition-all hover:-translate-y-px active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, var(--green), var(--blue))', '--cta-ring': 'rgba(63,174,117,0.2)' }}>{t(step.ctaKey || 'ep1CloseCta')}</button>
           </div>
         )}

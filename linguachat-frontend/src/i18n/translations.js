@@ -298,6 +298,30 @@ const base = {
 
   sessionRecallTitle: "Let’s make this one solid",
 
+  sessionExtraTitle: "One more, your way",
+
+  sessionBuildInstruction: "Put the words in order.",
+
+  sessionGapInstruction: "Complete the sentence.",
+
+  sessionChoiceInstruction: "Choose the natural answer.",
+
+  altPractiseAnotherWay: "Practise another way",
+
+  altGuidedInstruction: "Build the same sentence, word by word.",
+
+  altGuidedHint: "Tap the words in the right order.",
+
+  feedbackQuestion: "How was this way of practising?",
+
+  feedbackMoreLikeThis: "More like this",
+
+  feedbackItsFine: "It’s fine",
+
+  feedbackAnotherWay: "I’d prefer another way",
+
+  feedbackThanks: "Noted, thank you.",
+
   sessionFreeChatTitle: "Free conversation",
 
   sessionFreeChatBody: "Use what you know with Lingua, with no exercises.",

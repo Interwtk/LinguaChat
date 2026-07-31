@@ -125,6 +125,30 @@ export default {
 
   sessionRecallTitle: "Vamos consolidar isto",
 
+  sessionExtraTitle: "Mais uma, do seu jeito",
+
+  sessionBuildInstruction: "Coloque as palavras em ordem.",
+
+  sessionGapInstruction: "Complete a frase.",
+
+  sessionChoiceInstruction: "Escolha a resposta natural.",
+
+  altPractiseAnotherWay: "Praticar de outra forma",
+
+  altGuidedInstruction: "Monte a mesma frase, palavra por palavra.",
+
+  altGuidedHint: "Toque nas palavras na ordem certa.",
+
+  feedbackQuestion: "Como foi esta forma de praticar?",
+
+  feedbackMoreLikeThis: "Mais atividades assim",
+
+  feedbackItsFine: "Está bom",
+
+  feedbackAnotherWay: "Prefiro de outra forma",
+
+  feedbackThanks: "Anotado, obrigado.",
+
   sessionFreeChatTitle: "Conversa livre",
 
   sessionFreeChatBody: "Usa o que sabes com a Lingua, sem exercícios.",
