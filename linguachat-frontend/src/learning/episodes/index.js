@@ -331,18 +331,24 @@ const CHOOSE_03 = {
   gardenItems: ['i_like', 'do_you_want', 'yes_please', 'no_thank_you'],
   steps: [
     { type: 'scene', mood: 'welcoming', titleKey: 'ep9SceneTitle', bodyKey: 'ep9SceneBody', showGoal: true, ctaKey: 'ep9Start' },
-    { type: 'free_reply', speaker: 'lingua', promptEn: 'Hi! I’m {partner}. How are you?', instructionKey: 'ep9TurnWellbeing',
+    // Every turn here is roleplay: one continuous conversation, not a card.
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Hi! I’m {partner}. How are you?', instructionKey: 'ep9TurnWellbeing',
       evalKind: 'answer_wellbeing', suggestionEn: 'I’m good, thanks.', itemIds: ['im_good'] },
-    { type: 'free_reply', speaker: 'lingua', promptEn: 'Good! So… what do you like?', instructionKey: 'ep9TurnLike',
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Good! So… what do you like?', instructionKey: 'ep9TurnLike',
       evalKind: 'express_like', suggestionEn: 'I like {noun}.', itemIds: ['i_like'] },
-    { type: 'free_reply', speaker: 'lingua', promptEn: 'Nice. I like {object}.', instructionKey: 'ep9TurnAsk',
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Nice. I like {object}.', instructionKey: 'ep9TurnAsk',
       evalKind: 'ask_preference', suggestionEn: 'What do you like?', itemIds: ['what_do_you_like'] },
-    { type: 'free_reply', speaker: 'lingua', promptEn: 'I like {noun} too. Do you want to {activity}?', instructionKey: 'ep9TurnDecide',
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'I like {noun} too. Do you want to {activity}?', instructionKey: 'ep9TurnDecide',
       evalKind: 'accept_offer', suggestionEn: 'Yes, please.', itemIds: ['yes_please'], branchOn: 'accept_decline' },
-    { type: 'free_reply', speaker: 'lingua', promptEn: '{branchLine}', instructionKey: 'ep9TurnNeed',
-      evalKind: 'express_want', suggestionEn: 'I want {noun}.', itemIds: ['i_want'] },
-    { type: 'free_reply', speaker: 'lingua', promptEn: 'Perfect. Let’s do it!', instructionKey: 'ep9TurnOffer',
-      evalKind: 'ask_want', suggestionEn: 'Do you want {noun}?', itemIds: ['do_you_want'] },
+    /*
+     * Wants are practised with what episode 8 actually taught (water, help).
+     * Reusing the interest noun here produced sentences like "I want traveling."
+     * — personalisation must never cost grammar.
+     */
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: '{branchLine}', instructionKey: 'ep9TurnNeed',
+      evalKind: 'express_want', suggestionEn: 'I want water.', itemIds: ['i_want'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Perfect. Let’s do it!', instructionKey: 'ep9TurnOffer',
+      evalKind: 'ask_want', suggestionEn: 'Do you want water?', itemIds: ['do_you_want'] },
     { type: 'recall', instructionKey: 'ep9FinalInstruction', evalKind: 'simple_plan_conversation', itemIds: ['i_like', 'do_you_want'] },
     { type: 'completion', canDoNameKey: 'ep9CanDoName', titleKey: 'ep9CloseTitle', bodyKey: 'ep9CloseBody', ctaKey: 'ep1CloseCta' },
   ],

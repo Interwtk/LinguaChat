@@ -382,10 +382,10 @@ export function evaluateExpressLike(text, { independent = false, targetNoun = 'm
   return { ...r, errorType: 'no_preference', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep7RetryExplainLike', explanation: 'ep7RetryExplainLike', retryRequired: true, retryPrompt: 'ep7RetryPromptLike' }
 }
 
-export function evaluateExpressDislike(text, { independent = false, targetNoun = 'coffee' } = {}) {
+export function evaluateExpressDislike(text, { independent = false, targetThing = 'coffee' } = {}) {
   const n = normalize(text)
   const r = base(independent)
-  r.naturalVersion = `I don't like ${targetNoun}.`
+  r.naturalVersion = `I don't like ${targetThing}.`
   if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep7RetryPromptEmpty' }
   if (DISLIKE.test(n) && hasObject(n)) {
     r.completedObjective = true
@@ -435,10 +435,10 @@ export function evaluateYesNoPreference(text, { independent = false } = {}) {
   return { ...r, errorType: 'no_answer', conclusive: wordCount(n) < 4, confidence: 0.8, priorityCorrection: 'ep7RetryExplainShort', explanation: 'ep7RetryExplainShort', retryRequired: true, retryPrompt: 'ep7RetryPromptShort' }
 }
 
-export function evaluateExpressWant(text, { independent = false, targetNoun = 'water' } = {}) {
+export function evaluateExpressWant(text, { independent = false, targetThing = 'water' } = {}) {
   const n = normalize(text)
   const r = base(independent)
-  r.naturalVersion = `I want ${targetNoun}.`
+  r.naturalVersion = `I want ${targetThing}.`
   if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep8RetryPromptEmpty' }
   if ((WANT.test(n) || NEED.test(n)) && hasObject(n)) {
     // want vs need is not a serious error when the request is understood
@@ -458,10 +458,10 @@ export function evaluateExpressWant(text, { independent = false, targetNoun = 'w
   return { ...r, errorType: 'no_request', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep8RetryExplainWant', explanation: 'ep8RetryExplainWant', retryRequired: true, retryPrompt: 'ep8RetryPromptWant' }
 }
 
-export function evaluateExpressNeed(text, { independent = false, targetNoun = 'help' } = {}) {
+export function evaluateExpressNeed(text, { independent = false, targetThing = 'help' } = {}) {
   const n = normalize(text)
   const r = base(independent)
-  r.naturalVersion = `I need ${targetNoun}.`
+  r.naturalVersion = `I need ${targetThing}.`
   if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep8RetryPromptEmpty' }
   if ((NEED.test(n) || WANT.test(n)) && hasObject(n)) {
     r.completedObjective = true
@@ -476,10 +476,10 @@ export function evaluateExpressNeed(text, { independent = false, targetNoun = 'h
   return { ...r, errorType: 'no_request', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep8RetryExplainNeed', explanation: 'ep8RetryExplainNeed', retryRequired: true, retryPrompt: 'ep8RetryPromptNeed' }
 }
 
-export function evaluateAskWant(text, { independent = false, targetNoun = 'water' } = {}) {
+export function evaluateAskWant(text, { independent = false, targetThing = 'water' } = {}) {
   const n = normalize(text)
   const r = base(independent)
-  r.naturalVersion = `Do you want ${targetNoun}?`
+  r.naturalVersion = `Do you want ${targetThing}?`
   if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep8RetryPromptEmpty' }
   if (ASK_WANT.test(n)) {
     r.completedObjective = true
@@ -526,10 +526,12 @@ export function evaluateDeclineOffer(text, { independent = false } = {}) {
 }
 
 /* Episode 9: a turn that both states a preference and moves the plan forward. */
-export function evaluateSimplePlanConversation(text, { independent = false, targetNoun = 'music' } = {}) {
+export function evaluateSimplePlanConversation(text, { independent = false, targetNoun = 'music', activity = 'listen to music' } = {}) {
   const n = normalize(text)
   const r = base(independent)
-  r.naturalVersion = `I like ${targetNoun}. Do you want to listen to music?`
+  // The model answer proposes what THIS episode is about — offering "listen to
+  // music" to someone whose episode is about trips is not a model, it is noise.
+  r.naturalVersion = `I like ${targetNoun}. Do you want to ${activity}?`
   if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep9RetryPromptEmpty' }
   const states = LIKE.test(n) || DISLIKE.test(n) || WANT.test(n) || NEED.test(n)
   const carries = ASK_PREF.test(n) || ASK_WANT.test(n) || ACCEPT.test(n) || DECLINE.test(n)

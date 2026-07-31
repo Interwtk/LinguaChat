@@ -395,9 +395,11 @@ def _offer_reply(text: str, natural: str) -> dict:
     return _base(error_type="no_answer", retry_required=True, natural_version=natural, confidence=0.8)
 
 
-def _simple_plan(text: str, noun: str) -> dict:
+def _simple_plan(text: str, noun: str, activity: str = "") -> dict:
     n = normalize(text)
-    natural = f"I like {noun or 'music'}. Do you want to listen to music?"
+    # The model answer proposes what this episode is actually about, mirroring
+    # the frontend: offering "listen to music" inside a trip episode is noise.
+    natural = f"I like {noun or 'music'}. Do you want to {activity or 'listen to music'}?"
     if not n:
         return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
     states = bool(_LIKE.search(n) or _DISLIKE.search(n) or _WANT.search(n) or _NEED.search(n))
@@ -436,28 +438,30 @@ def evaluate_deterministic(payload: dict) -> dict:
         return _answer_origin(text, payload.get("learner_place") or "")
     if kind == "full_intro_conversation":
         return _full_conversation(text, name)
-    # third arc — the target noun follows the learner's own interest
+    # third arc — the target noun follows the learner's own interest, but ONLY
+    # where the sentence is about a preference. Wants and needs are practised
+    # with what episode 8 actually taught ("I need help.", not "I need music.").
     noun = payload.get("target_noun") or ""
     if kind == "express_like":
         return _express_like(text, noun)
     if kind == "express_dislike":
-        return _express_dislike(text, noun)
+        return _express_dislike(text, "")
     if kind == "ask_preference":
         return _ask_preference(text)
     if kind == "yes_no_preference":
         return _yes_no_preference(text)
     if kind == "express_want":
-        return _express_want(text, noun)
+        return _express_want(text, "")
     if kind == "express_need":
-        return _express_need(text, noun)
+        return _express_need(text, "")
     if kind == "ask_want":
-        return _ask_want(text, noun)
+        return _ask_want(text, "")
     if kind == "accept_offer":
         return _offer_reply(text, "Yes, please.")
     if kind == "decline_offer":
         return _offer_reply(text, "No, thank you.")
     if kind == "simple_plan_conversation":
-        return _simple_plan(text, noun)
+        return _simple_plan(text, noun, payload.get("target_activity") or "")
     # unknown step type — do not pretend to judge it
     return _base(understood=False, error_type="unclear", retry_required=True, confidence=0.4)
 

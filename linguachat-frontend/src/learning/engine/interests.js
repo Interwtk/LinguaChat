@@ -27,7 +27,9 @@ export const INTEREST_CONTEXTS = {
   games: { targetNoun: 'games', objects: ['video games', 'board games'], activity: 'play a game', sceneKey: 'ctxSceneGames' },
   movies: { targetNoun: 'movies', objects: ['funny movies', 'action movies'], activity: 'watch a movie', sceneKey: 'ctxSceneMovies' },
   food: { targetNoun: 'food', objects: ['pizza', 'fruit'], activity: 'have something to eat', sceneKey: 'ctxSceneFood' },
-  travel: { targetNoun: 'travel', objects: ['beaches', 'mountains'], activity: 'plan a trip', sceneKey: 'ctxSceneTravel' },
+  // "I like travel." is not how anyone says it; the gerund is what a teacher
+  // would model, and it is exactly as easy to read.
+  travel: { targetNoun: 'traveling', objects: ['beaches', 'mountains'], activity: 'plan a trip', sceneKey: 'ctxSceneTravel' },
   sports: { targetNoun: 'sports', objects: ['football', 'running'], activity: 'go for a walk', sceneKey: 'ctxSceneSports' },
   technology: { targetNoun: 'technology', objects: ['computers', 'phones'], activity: 'look at something online', sceneKey: 'ctxSceneTechnology' },
   culture: { targetNoun: 'art', objects: ['museums', 'photos'], activity: 'visit a museum', sceneKey: 'ctxSceneCulture' },

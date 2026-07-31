@@ -73,6 +73,7 @@ function buildRemotePayload(params, kind) {
     learner_name: params.learnerName ?? '',
     learner_place: params.place ?? '',
     target_noun: params.targetNoun ?? '',
+    target_activity: params.activity ?? '',
     interest_id: params.interestId ?? null,
     native_language: params.nativeLanguage ?? 'en',
     interface_language: params.interfaceLanguage ?? 'en',
@@ -85,10 +86,16 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', activity = '', signal, remote } = params
   const kind = step?.evalKind
   const independent = !assistanceUsed && scaffoldLevel !== 'high'
-  const local = evaluateFree(kind, learnerResponse, { name: learnerName, independent, turnContext, place })
+  // The same context the caller previewed with, so the shown verdict and the
+  // model answer can never disagree about what this episode is about.
+  const local = evaluateFree(kind, learnerResponse, {
+    name: learnerName, independent, turnContext, place,
+    ...(targetNoun ? { targetNoun } : {}),
+    ...(activity ? { activity } : {}),
+  })
 
   // Conclusive local verdict (closed step, clear accept, empty, clear failure).
   if (!shouldEscalate(local)) return { ...local, source: 'deterministic' }

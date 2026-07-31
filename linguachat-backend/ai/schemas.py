@@ -94,6 +94,9 @@ class EvaluateRequest(BaseModel):
     # The English noun the current episode is personalised around (from a
     # controlled catalogue). An interest ID at most — never the learner's profile.
     target_noun: str | None = Field(default=None, max_length=40)
+    # The simple thing this episode proposes doing together ("plan a trip"),
+    # also from the controlled catalogue. Used only to build a model answer.
+    target_activity: str | None = Field(default=None, max_length=60)
     interest_id: str | None = Field(default=None, max_length=40)
     native_language: str | LanguageInfo | dict | None = None
     interface_language: str | LanguageInfo | dict | None = None
