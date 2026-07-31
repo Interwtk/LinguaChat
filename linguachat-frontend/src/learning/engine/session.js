@@ -43,6 +43,16 @@ const ITEM_KIND = {
   fine: 'answer_wellbeing', tired: 'answer_wellbeing', im_feeling_pattern: 'answer_wellbeing',
   and_you: 'reciprocal_question', what_about_you: 'reciprocal_question',
   where_from: 'ask_origin', im_from: 'answer_origin', from: 'answer_origin', im_from_pattern: 'answer_origin',
+  // third arc: preferences, wants and needs
+  like: 'express_like', i_like: 'express_like', i_like_pattern: 'express_like',
+  music: 'express_like', games: 'express_like',
+  i_dont_like: 'express_dislike',
+  what_do_you_like: 'ask_preference', do_you_like: 'ask_preference',
+  want: 'express_want', i_want: 'express_want', i_want_pattern: 'express_want',
+  need: 'express_need', i_need: 'express_need', help: 'express_need',
+  do_you_want: 'ask_want',
+  yes_please: 'accept_offer', please: 'accept_offer',
+  no_thank_you: 'decline_offer',
 }
 const ERROR_KIND = {
   missing_copula: 'introduction',
@@ -56,6 +66,12 @@ const ERROR_KIND = {
   missing_from: 'answer_origin',
   no_answer: 'answer_wellbeing',
   incomplete_turn: 'full_intro_conversation',
+  // third arc
+  missing_object: 'express_like',
+  missing_verb: 'express_want',
+  missing_negation: 'express_dislike',
+  no_preference: 'express_like',
+  no_request: 'express_want',
 }
 const CANDO_KIND = {
   introduce_self: 'introduction',
@@ -64,6 +80,9 @@ const CANDO_KIND = {
   ask_wellbeing: 'ask_wellbeing',
   ask_origin: 'ask_origin',
   full_conversation: 'full_intro_conversation',
+  express_preferences: 'express_like',
+  express_needs: 'express_want',
+  make_plan: 'simple_plan_conversation',
 }
 
 export const practiceKindForItem = (id) => ITEM_KIND[id] || null

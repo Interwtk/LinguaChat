@@ -8,7 +8,22 @@
  */
 const KEY = 'lc2-learner-model-v1' // key kept stable; internal `version` gates migration
 const DAY = 86400000
-export const MODEL_VERSION = 2
+export const MODEL_VERSION = 3
+
+/*
+ * Activity formats we can observe. Preference only ever changes VARIETY — which
+ * of two equivalent activities to use next — never whether a needed skill is
+ * practised. Difficulty is not dislike: errors, help and long attempts are
+ * deliberately not counted as negative signals.
+ */
+export const ACTIVITY_FORMATS = [
+  'comprehension', 'word_order', 'fill_blank', 'choice',
+  'free_reply', 'roleplay', 'recall', 'review', 'mini_story',
+]
+
+const emptyActivityStat = () => ({
+  shown: 0, completed: 0, abandoned: 0, assistanceUsed: 0, positiveSignals: 0,
+})
 
 export function createLearnerModel() {
   return {
@@ -21,6 +36,11 @@ export function createLearnerModel() {
     // Soft facts the learner supplies inside an activity (e.g. the place they
     // are from). Never required up front, never part of the global profile.
     facts: {},
+    // How the learner gets on with each activity format, and what has been used
+    // lately, so sessions can vary without becoming random.
+    activityPreferences: {},
+    recentFormats: [],
+    recentInterests: [],
   }
 }
 const emptyModel = createLearnerModel
@@ -39,6 +59,26 @@ function migrate(parsed) {
       recurringErrors: Array.isArray(parsed.recurringErrors) ? [...parsed.recurringErrors] : [],
       scaffoldByEpisode: { ...parsed.scaffoldByEpisode }, episodes: { ...parsed.episodes },
       facts: { ...(parsed.facts || {}) },
+      activityPreferences: sanitizeActivityPreferences(parsed.activityPreferences),
+      recentFormats: Array.isArray(parsed.recentFormats) ? parsed.recentFormats.filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12) : [],
+      recentInterests: Array.isArray(parsed.recentInterests) ? parsed.recentInterests.filter(i => typeof i === 'string').slice(0, 8) : [],
+    }
+  }
+
+  /*
+   * v2 -> v3: everything the learner earned is kept exactly as it is; only the
+   * new preference fields are added. A learner upgrading mid-arc loses nothing.
+   */
+  if (parsed.version === 2) {
+    const m = emptyModel()
+    return {
+      ...m, ...parsed,
+      version: MODEL_VERSION,
+      canDo: { ...parsed.canDo }, languageItems: { ...parsed.languageItems },
+      recurringErrors: Array.isArray(parsed.recurringErrors) ? [...parsed.recurringErrors] : [],
+      scaffoldByEpisode: { ...parsed.scaffoldByEpisode }, episodes: { ...parsed.episodes },
+      facts: { ...(parsed.facts || {}) },
+      activityPreferences: {}, recentFormats: [], recentInterests: [],
     }
   }
   // v1 -> v2 (never lose existing progress)
@@ -150,6 +190,102 @@ export function getEpisodeState(model, episodeId) {
 export function setEpisodeState(model, episodeId, patch) {
   const prev = getEpisodeState(model, episodeId)
   model.episodes[episodeId] = { ...prev, ...patch }
+  return model
+}
+
+/* ---- activity preferences ---- */
+
+// Drop unknown formats and clamp every counter, so a corrupt or hand-edited
+// file can never produce a nonsensical score.
+export function sanitizeActivityPreferences(raw) {
+  const out = {}
+  if (!raw || typeof raw !== 'object') return out
+  for (const [format, stat] of Object.entries(raw)) {
+    if (!ACTIVITY_FORMATS.includes(format) || !stat || typeof stat !== 'object') continue
+    const clean = emptyActivityStat()
+    for (const key of Object.keys(clean)) {
+      const value = Number(stat[key])
+      clean[key] = Number.isFinite(value) && value >= 0 ? Math.min(Math.round(value), 9999) : 0
+    }
+    out[format] = clean
+  }
+  return out
+}
+
+/*
+ * Record one observation about a format.
+ *
+ * `signal` is 'shown' | 'completed' | 'abandoned' | 'assistance' | 'positive'.
+ * Note what is NOT here: mistakes, retries and slow attempts. Those say the
+ * activity was hard, not that it was disliked, and must never push a format away.
+ */
+export function recordActivitySignal(model, format, signal) {
+  if (!ACTIVITY_FORMATS.includes(format)) return model
+  model.activityPreferences = model.activityPreferences || {}
+  const stat = model.activityPreferences[format] || emptyActivityStat()
+  if (signal === 'shown') stat.shown += 1
+  else if (signal === 'completed') stat.completed += 1
+  else if (signal === 'abandoned') stat.abandoned += 1
+  else if (signal === 'assistance') stat.assistanceUsed += 1
+  else if (signal === 'positive') stat.positiveSignals += 1
+  model.activityPreferences[format] = stat
+  /*
+   * A rolling log of what was actually shown, most recent first — duplicates
+   * INCLUDED. De-duplicating here would make "this format keeps repeating"
+   * impossible to detect, which is the whole point of tracking recency.
+   */
+  if (signal === 'shown') {
+    model.recentFormats = [format, ...(model.recentFormats || [])].slice(0, 12)
+  }
+  return model
+}
+
+/*
+ * A 0..1 comfort score, or null when there is not enough evidence.
+ *
+ * One abandonment is never enough to conclude anything — a learner may simply
+ * have been interrupted — so a format needs at least three showings before it
+ * has a score at all.
+ */
+export const MIN_SIGNALS_FOR_SCORE = 3
+
+export function activityScore(model, format) {
+  const stat = (model.activityPreferences || {})[format]
+  if (!stat || stat.shown < MIN_SIGNALS_FOR_SCORE) return null
+  const completionRate = stat.completed / Math.max(1, stat.shown)
+  const abandonRate = stat.abandoned / Math.max(1, stat.shown)
+  const liked = Math.min(1, stat.positiveSignals / Math.max(1, stat.shown))
+  const score = 0.65 * completionRate + 0.35 * liked - 0.4 * abandonRate
+  return Math.max(0, Math.min(1, Number(score.toFixed(3))))
+}
+
+/*
+ * Choose between activities that teach the same thing. Anything the learner has
+ * seen very recently is pushed back so a session never repeats one format over
+ * and over; among the rest, a format they get on with wins. With no evidence the
+ * order given by the caller is preserved, so behaviour stays predictable.
+ */
+export function preferredFormat(model, candidates = []) {
+  const options = candidates.filter(f => ACTIVITY_FORMATS.includes(f))
+  if (!options.length) return null
+  const recent = model.recentFormats || []
+  const ranked = options.map((format, index) => {
+    const score = activityScore(model, format)
+    const recency = recent.indexOf(format)   // -1 = not used recently
+    return { format, index, score: score == null ? 0.5 : score, recencyPenalty: recency === -1 ? 0 : (3 - Math.min(recency, 3)) * 0.2 }
+  })
+  ranked.sort((a, b) => (b.score - b.recencyPenalty) - (a.score - a.recencyPenalty) || a.index - b.index)
+  return ranked[0].format
+}
+
+// True when a format has repeated enough lately that variety is worth forcing.
+export function formatOverused(model, format, within = 3) {
+  return (model.recentFormats || []).slice(0, within).filter(f => f === format).length >= 2
+}
+
+export function noteInterestUsed(model, interestId) {
+  if (!interestId) return model
+  model.recentInterests = [interestId, ...(model.recentInterests || []).filter(i => i !== interestId)].slice(0, 8)
   return model
 }
 
