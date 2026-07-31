@@ -361,6 +361,143 @@ def test_first_arc_intents_still_work():
         assert r["completed_objective"] is True, intent
 
 
+# ---------- third Pre-A1 arc: preferences, wants, needs, plans ----------
+@pytest.mark.parametrize("text", [
+    "I like music.", "I really like music.", "I like games.", "Music is good. I like it.",
+])
+def test_express_like_accepts_variants(text):
+    assert evaluate_deterministic(_payload(expected_intent="express_like", learner_response=text))["completed_objective"] is True
+
+
+@pytest.mark.parametrize("text", ["Music.", "I music.", "Like music."])
+def test_express_like_partial_is_guided_not_failed(text):
+    r = evaluate_deterministic(_payload(expected_intent="express_like", learner_response=text))
+    assert r["completed_objective"] is False
+    assert r["natural_version"]
+    assert r["retry_required"] is True
+
+
+def test_a_preference_is_never_wrong():
+    """Saying you do NOT like something still satisfies the step."""
+    r = evaluate_deterministic(_payload(expected_intent="express_like", learner_response="I don't like coffee."))
+    assert r["completed_objective"] is True
+
+
+@pytest.mark.parametrize("text", ["I don't like coffee.", "I do not like coffee.", "I don't really like coffee."])
+def test_express_dislike(text):
+    assert evaluate_deterministic(_payload(expected_intent="express_dislike", learner_response=text))["completed_objective"] is True
+
+
+@pytest.mark.parametrize("text", ["What do you like?", "Do you like music?", "What music do you like?"])
+def test_ask_preference_accepts_variants(text):
+    assert evaluate_deterministic(_payload(expected_intent="ask_preference", learner_response=text))["completed_objective"] is True
+
+
+@pytest.mark.parametrize("text", ["What you like?", "You like music?"])
+def test_ask_preference_missing_auxiliary(text):
+    r = evaluate_deterministic(_payload(expected_intent="ask_preference", learner_response=text))
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "missing_auxiliary"
+    assert r["natural_version"] == "What do you like?"
+
+
+@pytest.mark.parametrize("text", ["Yes, I do.", "No, I don't.", "Yes.", "No."])
+def test_yes_no_preference(text):
+    assert evaluate_deterministic(_payload(expected_intent="yes_no_preference", learner_response=text))["completed_objective"] is True
+
+
+@pytest.mark.parametrize("text", ["I want water.", "I'd like water.", "I want coffee."])
+def test_express_want(text):
+    assert evaluate_deterministic(_payload(expected_intent="express_want", learner_response=text))["completed_objective"] is True
+
+
+def test_polite_short_request_is_partial_evidence():
+    r = evaluate_deterministic(_payload(expected_intent="express_want", learner_response="Water, please."))
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "missing_verb"
+
+
+@pytest.mark.parametrize("text", ["I need help.", "I need water.", "I need a break."])
+def test_express_need(text):
+    assert evaluate_deterministic(_payload(expected_intent="express_need", learner_response=text))["completed_objective"] is True
+
+
+def test_want_and_need_are_not_a_serious_error():
+    """The request is understood either way; do not fail it over the verb."""
+    assert evaluate_deterministic(_payload(expected_intent="express_want", learner_response="I need water."))["completed_objective"] is True
+    assert evaluate_deterministic(_payload(expected_intent="express_need", learner_response="I want help."))["completed_objective"] is True
+
+
+@pytest.mark.parametrize("text", ["Do you want water?", "Would you like coffee?"])
+def test_ask_want(text):
+    assert evaluate_deterministic(_payload(expected_intent="ask_want", learner_response=text))["completed_objective"] is True
+
+
+@pytest.mark.parametrize("intent,text", [
+    ("accept_offer", "Yes, please."), ("accept_offer", "Sure."),
+    ("decline_offer", "No, thank you."), ("decline_offer", "Maybe later."),
+    ("accept_offer", "No, thank you."),      # declining is still a valid reply
+])
+def test_offer_replies(intent, text):
+    assert evaluate_deterministic(_payload(expected_intent=intent, learner_response=text))["completed_objective"] is True
+
+
+def test_simple_plan_conversation():
+    good = evaluate_deterministic(_payload(expected_intent="simple_plan_conversation",
+                                           learner_response="I like music. Do you want to listen to music?"))
+    assert good["completed_objective"] is True
+    half = evaluate_deterministic(_payload(expected_intent="simple_plan_conversation", learner_response="I like music."))
+    assert half["completed_objective"] is False
+    assert half["error_type"] == "incomplete_turn"
+
+
+@pytest.mark.parametrize("noun,expected", [
+    ("games", "I like games."),
+    ("movies", "I like movies."),
+    ("", "I like music."),      # neutral default when no interest is active
+])
+def test_interest_context_shapes_the_model_answer(noun, expected):
+    """Personalization changes the subject matter, never the objective."""
+    r = evaluate_deterministic(_payload(expected_intent="express_like", learner_response="music", target_noun=noun))
+    assert r["completed_objective"] is False
+    assert r["natural_version"] == expected
+
+
+def test_third_arc_intents_work_through_the_endpoint_without_openai():
+    for intent, text in [
+        ("express_like", "I like music."), ("express_dislike", "I don't like coffee."),
+        ("ask_preference", "What do you like?"), ("yes_no_preference", "Yes, I do."),
+        ("express_want", "I want water."), ("express_need", "I need help."),
+        ("ask_want", "Do you want water?"), ("accept_offer", "Yes, please."),
+        ("decline_offer", "No, thank you."),
+        ("simple_plan_conversation", "I like music. Do you want to listen to music?"),
+    ]:
+        res = client.post("/learning/evaluate", json=_payload(expected_intent=intent, learner_response=text))
+        assert res.status_code == 200, intent
+        body = res.json()
+        assert body["completed_objective"] is True, f"{intent} rejected {text!r}"
+        assert body["source"] == "deterministic"
+
+
+@pytest.mark.parametrize("intent", [
+    "express_like", "express_dislike", "ask_preference", "yes_no_preference",
+    "express_want", "express_need", "ask_want", "accept_offer", "decline_offer",
+    "simple_plan_conversation",
+])
+def test_third_arc_empty_replies_are_safe(intent):
+    r = evaluate_deterministic(_payload(expected_intent=intent, learner_response=""))
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "empty"
+
+
+def test_third_arc_falls_back_when_remote_is_broken(monkeypatch):
+    _enable_openai(monkeypatch)
+    monkeypatch.setattr(evaluator, "evaluate_with_openai", lambda payload: {"completed_objective": "maybe"})
+    r = evaluator.evaluate_episode_response(_payload(expected_intent="express_like", learner_response="I like music."))
+    assert r.source == "fallback"
+    assert r.completed_objective is True     # the deterministic verdict still stands
+
+
 # ---------- no regression on /chat, mission, translation ----------
 def test_chat_still_works():
     res = client.post("/chat", json={"message": "hello", "level": "A1"})

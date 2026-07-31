@@ -3,6 +3,7 @@
  * check-learner-model — unit-style checks for the learner model, mastery rules,
  * review scheduling, migration and the daily planner. Pure ESM, no test runner.
  */
+import { MODEL_VERSION } from '../src/learning/engine/learnerModel.js'
 import {
   createLearnerModel, migrateLearnerModel, recordItemAttempt, recordCanDoAttempt,
   scheduleReview, getRecommendedScaffold, getEpisodeState, setEpisodeState, getDueReviews,
@@ -50,11 +51,11 @@ const v1 = {
   recurringErrors: [], preferredScaffold: 'medium',
 }
 const migrated = migrateLearnerModel(v1)
-check('migrated version = 2', migrated.version === 2)
+check('migrated to current version', migrated.version === MODEL_VERSION)
 check('migrated canDo preserved as can_do', migrated.canDo.introduce_self.status === 'can_do')
 check('migrated item known -> can_do', migrated.languageItems.im.status === 'can_do')
 check('migrated scaffold preserved', migrated.scaffoldByEpisode.first_greeting === 'medium')
-check('corrupt input -> fresh model', migrateLearnerModel('not-json-object').version === 2)
+check('corrupt input -> fresh model', migrateLearnerModel('not-json-object').version === MODEL_VERSION)
 
 /* ---- episode progress + idempotent award ---- */
 let m3 = createLearnerModel()

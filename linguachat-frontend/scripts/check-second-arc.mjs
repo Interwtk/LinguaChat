@@ -17,11 +17,11 @@ const NEW_IDS = ['how_are_you', 'where_from', 'first_conversation']
 
 // 1) structure: six episodes in two arcs, ids unique, steps well formed
 {
-  assert.equal(ARC.length, 6)
-  assert.equal(new Set(ARC.map(e => e.id)).size, 6)
+  assert.equal(ARC.length, 9)
+  assert.equal(new Set(ARC.map(e => e.id)).size, 9)
   assert.deepEqual(episodesInArc('greetings').map(e => e.id), ['first_greeting', 'ask_name', 'nice_to_meet'])
   assert.deepEqual(episodesInArc('connect').map(e => e.id), NEW_IDS)
-  assert.deepEqual(ARCS, ['greetings', 'connect'])
+  assert.deepEqual(ARCS, ['greetings', 'connect', 'choose'])
   for (const id of NEW_IDS) {
     const ep = getEpisode(id)
     assert.ok(ep.canDoId && ep.titleKey && ep.goalKey && ep.canDoNameKey, `${id} missing keys`)
@@ -178,7 +178,7 @@ const NEW_IDS = ['how_are_you', 'where_from', 'first_conversation']
 
 // 11) placeholders used by the new episodes are all resolvable
 {
-  const known = new Set(['name', 'partner', 'place', 'partnerPlace'])
+  const known = new Set(['name', 'partner', 'place', 'partnerPlace', 'noun', 'object', 'activity', 'branchLine'])
   for (const ep of ARC) {
     for (const s of ep.steps) {
       for (const str of [s.promptEn, s.sceneEn, s.response, s.target, s.suggestionEn].filter(Boolean)) {

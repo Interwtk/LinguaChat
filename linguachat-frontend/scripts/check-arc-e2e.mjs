@@ -22,7 +22,7 @@ import {
 
 const NAME = 'Sebastian'
 const PLACE = 'Bogotá'
-const VARS = { name: NAME, partner: 'Sam', place: PLACE, partnerPlace: 'Japan' }
+const VARS = { name: NAME, partner: 'Sam', place: PLACE, partnerPlace: 'Japan', noun: 'music', object: 'pop music', activity: 'listen to music', branchLine: 'Great!' }
 const resolve = (s) => String(s || '').replace(/\{(\w+)\}/g, (m, k) => (VARS[k] ?? m))
 
 // canonical correct answer for a free/recall step (suggestion when present)
@@ -36,6 +36,16 @@ const CANONICAL = {
   ask_origin: 'Where are you from?',
   answer_origin: `I'm from ${PLACE}.`,
   full_intro_conversation: `Hi, I'm ${NAME}. How are you?`,
+  express_like: 'I like music.',
+  express_dislike: "I don't like coffee.",
+  ask_preference: 'What do you like?',
+  yes_no_preference: 'Yes, I do.',
+  express_want: 'I want water.',
+  express_need: 'I need help.',
+  ask_want: 'Do you want water?',
+  accept_offer: 'Yes, please.',
+  decline_offer: 'No, thank you.',
+  simple_plan_conversation: 'I like music. Do you want to listen to music?',
 }
 function answerFor(step) {
   if (step.suggestionEn) return resolve(step.suggestionEn)
@@ -79,7 +89,7 @@ function playEpisode(model, ep, { mode }) {
       const fromSuggestion = mode === 'helped' && Boolean(step.suggestionEn)
       const independent = !fromSuggestion && scaffold !== 'high'
       const turnContext = { linguaSaid: resolve(step.promptEn || step.sceneEn || '') }
-      const res = evaluateFree(step.evalKind, answerFor(step), { name: NAME, independent, turnContext, place: PLACE })
+      const res = evaluateFree(step.evalKind, answerFor(step), { name: NAME, independent, turnContext, place: PLACE, targetNoun: VARS.noun })
       assert.ok(res.completedObjective, `${ep.id} step ${i} (${step.evalKind}): intended answer rejected → ${JSON.stringify(res)}`)
       ;(step.itemIds || []).forEach(id => recordItemAttempt(model, id, { correct: true, independent }))
       adapt({ correct: true, usedHelp: fromSuggestion || scaffold === 'high' })
@@ -105,7 +115,7 @@ function playEpisode(model, ep, { mode }) {
 const model = createLearnerModel()
 const garden = []
 let xp = 0
-assert.equal(ARC.length, 6, 'both Pre-A1 arcs must be playable end to end')
+assert.equal(ARC.length, 9, 'all three Pre-A1 arcs must be playable end to end')
 
 for (const ep of ARC) {
   const { awarded } = playEpisode(model, ep, { mode: 'helped' })
@@ -117,13 +127,15 @@ for (const ep of ARC) {
 
 const expectedXp = ARC.reduce((sum, ep) => sum + ep.xp, 0)
 assert.equal(xp, expectedXp, `arc XP should total ${expectedXp}, got ${xp}`)
-assert.equal(xp, 315, 'both arcs together should award 315 XP')
+assert.equal(xp, 500, 'all three arcs together should award 500 XP')
 
 // garden: deduped union of all gardenItems, order-independent
 const expectedGarden = [
   'hi', 'hello', 'im', 'whats_your_name', 'my_name_is', 'name', 'nice_to_meet',
   'how_are_you', 'im_good', 'and_you', 'good', 'fine', 'tired', 'im_feeling_pattern',
   'where_from', 'im_from', 'from', 'what_about_you', 'im_from_pattern',
+  'like', 'i_like', 'i_dont_like', 'what_do_you_like', 'do_you_like', 'i_like_pattern',
+  'want', 'need', 'help', 'please', 'i_want', 'i_need', 'do_you_want', 'yes_please', 'no_thank_you', 'i_want_pattern',
 ]
 assert.deepEqual([...garden].sort(), [...expectedGarden].sort(), 'garden must be the deduped union')
 assert.equal(garden.length, new Set(garden).size, 'garden must have no duplicates')

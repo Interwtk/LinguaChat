@@ -8,7 +8,7 @@ import assert from 'node:assert/strict'
 import { getEpisode, ARC } from '../src/learning/episodes/index.js'
 import { evaluateFree, evaluateIntroduction, normalize, fold } from '../src/learning/engine/responseEvaluation.js'
 import {
-  createLearnerModel, migrateLearnerModel, recordItemAttempt, getDueReviews,
+  createLearnerModel, migrateLearnerModel, recordItemAttempt, getDueReviews, MODEL_VERSION,
   getEpisodeState,
 } from '../src/learning/engine/learnerModel.js'
 
@@ -20,7 +20,7 @@ const ok = (label) => { n++; /* passed */ void label }
   const m = createLearnerModel()
   assert.deepEqual(m.canDo, {})
   assert.deepEqual(m.episodes, {})
-  assert.equal(m.version, 2)
+  assert.equal(m.version, MODEL_VERSION)
   ok('fresh model')
 }
 
@@ -28,7 +28,7 @@ const ok = (label) => { n++; /* passed */ void label }
 {
   const v1 = { version: 1, canDo: { introduce_self: { status: 'can_do', successfulAttempts: 3, lastPracticedAt: 't' } }, languageItems: { hi: { status: 'known', correct: 2 } } }
   const m = migrateLearnerModel(v1)
-  assert.equal(m.version, 2)
+  assert.equal(m.version, MODEL_VERSION)
   assert.equal(m.canDo.introduce_self.status, 'can_do')
   assert.ok(m.canDo.introduce_self.independentSuccesses >= 1, 'known can_do keeps independent evidence')
   assert.equal(m.languageItems.hi.status, 'can_do', 'known item → can_do')
@@ -39,7 +39,7 @@ const ok = (label) => { n++; /* passed */ void label }
 {
   for (const bad of [null, undefined, 'not-json', 42, [], { foo: 1 }]) {
     const m = migrateLearnerModel(bad)
-    assert.equal(m.version, 2)
+    assert.equal(m.version, MODEL_VERSION)
     assert.equal(typeof m.canDo, 'object')
   }
   ok('corrupt → fresh')

@@ -106,6 +106,8 @@ const ok = () => { n++ }
     'hello', 'hi', 'im', 'my_name_is', 'name', 'nice_to_meet', 'whats_your_name',
     'how_are_you', 'im_good', 'and_you', 'good', 'fine', 'tired', 'im_feeling_pattern',
     'where_from', 'im_from', 'from', 'what_about_you', 'im_from_pattern',
+    'like', 'i_like', 'i_dont_like', 'what_do_you_like', 'do_you_like', 'i_like_pattern',
+    'want', 'need', 'help', 'please', 'i_want', 'i_need', 'do_you_want', 'yes_please', 'no_thank_you', 'i_want_pattern',
   ].sort())
   ok()
 }
