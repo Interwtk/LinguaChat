@@ -91,6 +91,10 @@ class EvaluateRequest(BaseModel):
     # A place the learner named inside the activity (country, city or region).
     # Used only to build the model answer — never validated geographically.
     learner_place: str | None = Field(default=None, max_length=120)
+    # The English noun the current episode is personalised around (from a
+    # controlled catalogue). An interest ID at most — never the learner's profile.
+    target_noun: str | None = Field(default=None, max_length=40)
+    interest_id: str | None = Field(default=None, max_length=40)
     native_language: str | LanguageInfo | dict | None = None
     interface_language: str | LanguageInfo | dict | None = None
     target_language: str | LanguageInfo | dict | None = None

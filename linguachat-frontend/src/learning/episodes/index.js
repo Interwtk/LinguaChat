@@ -224,12 +224,136 @@ const CONNECT_03 = {
   ],
 }
 
+/* ============================================================================
+ * Third Pre-A1 arc — "choose": what you like, what you want, making a plan.
+ *
+ * These episodes are personalised: {noun}, {object} and {activity} are filled
+ * from the learner's own interests through a controlled catalogue, so a learner
+ * who chose music practises with music and one who chose games practises with
+ * games. The can-do, the structures and the amount of vocabulary are identical
+ * either way — only the subject matter changes.
+ * ==========================================================================*/
+
+const CHOOSE_01 = {
+  id: 'what_you_like',
+  arc: 'choose',
+  level: 'Pre-A1',
+  titleKey: 'ep7Title',
+  goalKey: 'ep7Goal',
+  canDoId: 'express_preferences',
+  canDoNameKey: 'ep7CanDoName',
+  durationKey: 'ep7Duration',
+  estimatedMinutes: 8,
+  xp: 55,
+  prerequisites: ['first_conversation'],
+  personalized: true,
+  targetItems: ['i_like', 'i_dont_like', 'what_do_you_like', 'i_like_pattern'],
+  reviewItems: ['im', 'how_are_you'],
+  gardenItems: ['like', 'i_like', 'i_dont_like', 'what_do_you_like', 'do_you_like', 'i_like_pattern'],
+  steps: [
+    { type: 'recall', review: true, instructionKey: 'ep7RecallInstruction', evalKind: 'ask_wellbeing', itemIds: ['how_are_you'] },
+    { type: 'scene', mood: 'welcoming', titleKey: 'ep7SceneTitle', bodyKey: 'ep7SceneBody', showGoal: true, ctaKey: 'ep1Continue' },
+    { type: 'model', target: 'I like {noun}.', response: 'What do you like?', meaningItems: ['i_like', 'what_do_you_like'], explainKey: 'ep7ModelExplain' },
+    { type: 'comprehension', instructionKey: 'ep7ComprehensionInstruction', target: 'I like {noun}.', itemId: 'i_like',
+      options: [{ key: 'ep7CompOptCorrect', correct: true }, { key: 'ep7CompOptWrong1' }, { key: 'ep7CompOptWrong2' }] },
+    { type: 'word_order', instructionKey: 'ep7BuildInstruction', hintKey: 'ep1BuildHint', itemId: 'i_like', tokens: ['I', 'like', '{noun}', '.'] },
+    // the learner names their own thing; it is remembered for later turns
+    { type: 'fill_blank', instructionKey: 'ep7FillInstruction', before: 'I like', after: '.', hintKey: 'ep7FillHint',
+      itemId: 'i_like_pattern', captureFact: 'likes', placeholderKey: 'ep7LikePlaceholder' },
+    { type: 'model', target: 'I don’t like coffee.', meaningItems: ['i_dont_like'], explainKey: 'ep7DislikeExplain' },
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'Is there something you don’t like?', instructionKey: 'ep7DislikeInstruction',
+      evalKind: 'express_dislike', suggestionEn: 'I don’t like coffee.', itemIds: ['i_dont_like'] },
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'I like {noun} too! Do you like {object}?', instructionKey: 'ep7ShortAnswerInstruction',
+      evalKind: 'yes_no_preference', suggestionEn: 'Yes, I do.', itemIds: ['do_you_like'] },
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'There is a lot I enjoy.', instructionKey: 'ep7AskInstruction',
+      evalKind: 'ask_preference', suggestionEn: 'What do you like?', itemIds: ['what_do_you_like'] },
+    { type: 'recall', instructionKey: 'ep7FinalInstruction', evalKind: 'express_like', itemIds: ['i_like', 'like'] },
+    { type: 'completion', canDoNameKey: 'ep7CanDoName', titleKey: 'ep7CloseTitle', bodyKey: 'ep7CloseBody', ctaKey: 'ep1CloseCta' },
+  ],
+}
+
+const CHOOSE_02 = {
+  id: 'what_you_want',
+  arc: 'choose',
+  level: 'Pre-A1',
+  titleKey: 'ep8Title',
+  goalKey: 'ep8Goal',
+  canDoId: 'express_needs',
+  canDoNameKey: 'ep8CanDoName',
+  durationKey: 'ep8Duration',
+  estimatedMinutes: 8,
+  xp: 55,
+  prerequisites: ['what_you_like'],
+  personalized: true,
+  targetItems: ['i_want', 'i_need', 'do_you_want', 'i_want_pattern'],
+  reviewItems: ['i_like', 'what_do_you_like'],
+  gardenItems: ['want', 'need', 'help', 'please', 'i_want', 'i_need', 'do_you_want', 'yes_please', 'no_thank_you', 'i_want_pattern'],
+  steps: [
+    { type: 'recall', review: true, instructionKey: 'ep8RecallInstruction', evalKind: 'express_like', itemIds: ['i_like'] },
+    { type: 'scene', mood: 'welcoming', titleKey: 'ep8SceneTitle', bodyKey: 'ep8SceneBody', showGoal: true, ctaKey: 'ep1Continue' },
+    { type: 'model', target: 'I want water.', response: 'I need help.', meaningItems: ['i_want', 'i_need'], explainKey: 'ep8ModelExplain' },
+    { type: 'comprehension', instructionKey: 'ep8ComprehensionInstruction', target: 'I need help.', itemId: 'i_need',
+      options: [{ key: 'ep8CompOptCorrect', correct: true }, { key: 'ep8CompOptWrong1' }, { key: 'ep8CompOptWrong2' }] },
+    { type: 'word_order', instructionKey: 'ep8BuildInstruction', hintKey: 'ep1BuildHint', itemId: 'i_want', tokens: ['I', 'want', 'water', '.'] },
+    // every option is a valid thing to want — nothing here is "wrong"
+    { type: 'choice', instructionKey: 'ep8ChoiceInstruction', promptEn: 'What do you want right now?', itemId: 'i_want', allValid: true,
+      options: [{ textEn: 'I want water.', correct: true }, { textEn: 'I want coffee.', correct: true }, { textEn: 'I need a break.', correct: true }] },
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'Tell me what you need today.', instructionKey: 'ep8NeedInstruction',
+      evalKind: 'express_need', suggestionEn: 'I need help.', itemIds: ['i_need', 'need'] },
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'I have water and coffee here.', instructionKey: 'ep8AskInstruction',
+      evalKind: 'ask_want', suggestionEn: 'Do you want water?', itemIds: ['do_you_want'] },
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'Do you want some water?', instructionKey: 'ep8AcceptInstruction',
+      evalKind: 'accept_offer', suggestionEn: 'Yes, please.', itemIds: ['yes_please', 'please'] },
+    { type: 'free_reply', variation: true, sceneEn: 'Do you want coffee too?', instructionKey: 'ep8DeclineInstruction',
+      evalKind: 'decline_offer', suggestionEn: 'No, thank you.', itemIds: ['no_thank_you'] },
+    { type: 'recall', instructionKey: 'ep8FinalInstruction', evalKind: 'express_want', itemIds: ['i_want', 'want'] },
+    { type: 'completion', canDoNameKey: 'ep8CanDoName', titleKey: 'ep8CloseTitle', bodyKey: 'ep8CloseBody', ctaKey: 'ep1CloseCta' },
+  ],
+}
+
+const CHOOSE_03 = {
+  id: 'make_a_plan',
+  arc: 'choose',
+  level: 'Pre-A1',
+  titleKey: 'ep9Title',
+  goalKey: 'ep9Goal',
+  canDoId: 'make_plan',
+  canDoNameKey: 'ep9CanDoName',
+  durationKey: 'ep9Duration',
+  estimatedMinutes: 10,
+  xp: 75,
+  prerequisites: ['what_you_want'],
+  personalized: true,
+  // a small controlled story: one decision point, two branches, same objective
+  story: { branchStep: 5, branches: ['accept', 'decline'] },
+  targetItems: ['i_like', 'do_you_want', 'yes_please', 'no_thank_you'],
+  reviewItems: ['im', 'i_like', 'i_want', 'do_you_want'],
+  gardenItems: ['i_like', 'do_you_want', 'yes_please', 'no_thank_you'],
+  steps: [
+    { type: 'scene', mood: 'welcoming', titleKey: 'ep9SceneTitle', bodyKey: 'ep9SceneBody', showGoal: true, ctaKey: 'ep9Start' },
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'Hi! I’m {partner}. How are you?', instructionKey: 'ep9TurnWellbeing',
+      evalKind: 'answer_wellbeing', suggestionEn: 'I’m good, thanks.', itemIds: ['im_good'] },
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'Good! So… what do you like?', instructionKey: 'ep9TurnLike',
+      evalKind: 'express_like', suggestionEn: 'I like {noun}.', itemIds: ['i_like'] },
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'Nice. I like {object}.', instructionKey: 'ep9TurnAsk',
+      evalKind: 'ask_preference', suggestionEn: 'What do you like?', itemIds: ['what_do_you_like'] },
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'I like {noun} too. Do you want to {activity}?', instructionKey: 'ep9TurnDecide',
+      evalKind: 'accept_offer', suggestionEn: 'Yes, please.', itemIds: ['yes_please'], branchOn: 'accept_decline' },
+    { type: 'free_reply', speaker: 'lingua', promptEn: '{branchLine}', instructionKey: 'ep9TurnNeed',
+      evalKind: 'express_want', suggestionEn: 'I want {noun}.', itemIds: ['i_want'] },
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'Perfect. Let’s do it!', instructionKey: 'ep9TurnOffer',
+      evalKind: 'ask_want', suggestionEn: 'Do you want {noun}?', itemIds: ['do_you_want'] },
+    { type: 'recall', instructionKey: 'ep9FinalInstruction', evalKind: 'simple_plan_conversation', itemIds: ['i_like', 'do_you_want'] },
+    { type: 'completion', canDoNameKey: 'ep9CanDoName', titleKey: 'ep9CloseTitle', bodyKey: 'ep9CloseBody', ctaKey: 'ep1CloseCta' },
+  ],
+}
+
 GREETINGS_01.arc = 'greetings'
 GREETINGS_02.arc = 'greetings'
 GREETINGS_03.arc = 'greetings'
 
-export const ARC = [GREETINGS_01, GREETINGS_02, GREETINGS_03, CONNECT_01, CONNECT_02, CONNECT_03]
-export const ARCS = ['greetings', 'connect']
+export const ARC = [GREETINGS_01, GREETINGS_02, GREETINGS_03, CONNECT_01, CONNECT_02, CONNECT_03, CHOOSE_01, CHOOSE_02, CHOOSE_03]
+export const ARCS = ['greetings', 'connect', 'choose']
 export const getEpisode = (id) => ARC.find(e => e.id === id) || null
 export const firstEpisode = () => ARC[0]
 export const episodesInArc = (arcId) => ARC.filter(e => e.arc === arcId)

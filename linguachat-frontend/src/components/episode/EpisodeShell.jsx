@@ -9,6 +9,7 @@ import { evaluateFree, shouldEscalate } from '../../learning/engine/responseEval
 import { evaluateEpisodeResponse } from '../../learning/engine/hybridEvaluation.js'
 import { createSubmissionGuard } from '../../learning/engine/submitGuard.js'
 import { partnerFor, placeFor } from '../../learning/engine/variation.js'
+import { getLearnerInterests, getInterestContext, getInterestObject } from '../../learning/engine/interests.js'
 import { evaluateLearningResponse } from '../../services/api'
 import {
   loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, markRecurringError,
@@ -39,7 +40,7 @@ function LinguaLine({ children }) {
 // `onComplete` lets a daily session take over what happens after the episode:
 // inside a session the next block follows, standalone it returns to Home.
 export function EpisodeShell({ episodeId, onComplete = null }) {
-  const { t, profile, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode } = useApp()
+  const { t, profile, tutorPreferences, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode } = useApp()
   const ep = getEpisode(episodeId)
   const name = (profile.name || '').trim() || 'Alex'
   // deterministic roleplay partner — stable per learner, reproducible on reload
@@ -93,7 +94,34 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
   // The partner's own place is derived from the partner name, so it is stable
   // per learner and never hardcoded to one country.
   const partnerPlace = placeFor(partner)
-  const vars = { name, partner, place, partnerPlace }
+
+  /*
+   * Interest context for a personalised episode. The seed is the learner plus
+   * the episode id, so the subject matter is fixed for the whole episode (it
+   * cannot drift between renders or across a reload) while a different episode
+   * may pick another interest the learner chose. With no interests we fall back
+   * to neutral examples rather than asking them to configure anything.
+   */
+  const interestCtx = useMemo(
+    () => getInterestContext(getLearnerInterests(tutorPreferences), `${profile.name || 'guest'}:${episodeId}`),
+    [tutorPreferences, profile.name, episodeId],
+  )
+  const interestObject = useMemo(
+    () => getInterestObject(interestCtx, `${profile.name || 'guest'}:${episodeId}:object`),
+    [interestCtx, profile.name, episodeId],
+  )
+  // Branch line for the small controlled story in episode 9 (two outcomes, one
+  // objective). The branch is stored, so a reload keeps the same story.
+  const branch = modelRef.current.facts?.[`branch:${ep.id}`] || 'accept'
+  const branchLine = branch === 'decline' ? 'No problem. Maybe another day.' : 'Great! Let’s get ready.'
+
+  const vars = {
+    name, partner, place, partnerPlace,
+    noun: interestCtx.targetNoun,
+    object: interestObject,
+    activity: interestCtx.activity,
+    branchLine,
+  }
 
   const remoteEvaluator = (payload, signal) => evaluateLearningResponse(payload, { signal })
 
@@ -141,7 +169,9 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
     const turnContext = { linguaSaid: resolve(step.promptEn || step.sceneEn || '', vars) }
 
     // Decide up front whether we will need Lingua, only to show a calm status.
-    const preview = evaluateFree(evalKind, text, { name, independent, turnContext, place })
+    // targetNoun keeps the model answer in the learner's own subject matter
+    const evalCtx = { name, independent, turnContext, place, targetNoun: interestCtx.targetNoun }
+    const preview = evaluateFree(evalKind, text, evalCtx)
     const willEscalate = shouldEscalate(preview)
 
     const controller = new AbortController()
@@ -152,6 +182,7 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
     try {
       result = await evaluateEpisodeResponse({
         episode: ep, step, learnerResponse: text, learnerName: name, place,
+        targetNoun: interestCtx.targetNoun, interestId: interestCtx.interestId,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
         previousAttempts: attemptsRef.current, turnContext,
@@ -168,6 +199,16 @@ export function EpisodeShell({ episodeId, onComplete = null }) {
     setReviewing(false)
 
     if (result.completedObjective) {
+      /*
+       * A branching step records which way the little story went, so the next
+       * turn follows it and a reload keeps the same outcome. Both branches lead
+       * to the same can-do; only the wording differs.
+       */
+      if (step.branchOn === 'accept_decline') {
+        const declined = /\b(no,? thank|no,? thanks|not now|maybe later)\b/i.test(text)
+        modelRef.current.facts = { ...(modelRef.current.facts || {}), [`branch:${ep.id}`]: declined ? 'decline' : 'accept' }
+        saveLearnerModel(modelRef.current)
+      }
       recordItems(itemIds, { correct: true, independent })
       adaptScaffold({ correct: true, usedHelp: fromSuggestion || scaffold === 'high' })
       setPraise(result.praiseKey || 'ep1FeedbackGood')

@@ -332,6 +332,220 @@ export function evaluateFullIntroConversation(text, { name = 'Alex', independent
   return { ...r, errorType: intro.errorType, conclusive: intro.conclusive, confidence: intro.confidence, priorityCorrection: intro.priorityCorrection, explanation: intro.explanation, retryRequired: true, retryPrompt: intro.retryPrompt }
 }
 
+/* ============================================================================
+ * Third Pre-A1 arc — preferences, wants and needs.
+ *
+ * A preference is never "wrong": these evaluators only ever teach the English
+ * structure. Liking or wanting something different from the example is accepted
+ * as-is, and a bare noun counts as understood-but-incomplete, never as a
+ * failure.
+ * ==========================================================================*/
+const LIKE = /\b(i (really |kind of |sort of )?like|i love|i enjoy)\b/
+const DISLIKE = /\b(i (really )?(don'?t|do not) (really )?like|i dislike|i hate)\b/
+const ASK_PREF = /\b((and )?what (kind of |type of )?\w*\s?do you like|what do you like|do you like\b|how about you)\b/
+const ASK_PREF_NO_AUX = /\b(what you like|you like\b)/
+const WANT = /\b(i want|i'?d like|i would like|can i (have|get))\b/
+const NEED = /\b(i need|i really need)\b/
+const ASK_WANT = /\b(do you want|would you like|do you need)\b/
+const ACCEPT = /\b(yes,? please|yes,? thank you|yes,? thanks|sure|ok(ay)?,? (please|thanks)|sounds good|i'?d love to|let'?s do it)\b/
+const DECLINE = /\b(no,? thank you|no,? thanks|not now|maybe later|i'?m ok(ay)?)\b/
+const YES_DO = /\b(yes,? i do|yes|yeah|yep)\b/
+const NO_DONT = /\b(no,? i (don'?t|do not)|no|nope)\b/
+// a noun-ish remainder means the learner did name something
+const hasObject = (n) => /\p{L}/u.test(n.replace(/\b(i|like|want|need|don'?t|do|not|really|the|a|an|please|thank|you|yes|no)\b/g, '').trim())
+
+export function evaluateExpressLike(text, { independent = false, targetNoun = 'music' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = `I like ${targetNoun}.`
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep7RetryPromptEmpty' }
+  if (DISLIKE.test(n)) {
+    // saying they do NOT like it is a perfectly good sentence for this step
+    r.completedObjective = true; r.confidence = 0.93; r.acceptedVariant = true
+    r.praiseKey = r.masteryEvidence.independent ? 'ep7PraiseIndependent' : 'ep7PraiseLiked'
+    return r
+  }
+  if (LIKE.test(n) && hasObject(n)) {
+    r.completedObjective = true
+    r.confidence = 0.96
+    r.acceptedVariant = !/^i like /.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep7PraiseIndependent' : 'ep7PraiseLiked'
+    return r
+  }
+  if (LIKE.test(n)) {
+    return { ...r, errorType: 'missing_object', priorityCorrection: 'ep7RetryExplainObject', explanation: 'ep7RetryExplainObject', retryRequired: true, retryPrompt: 'ep7RetryPromptObject' }
+  }
+  // "Music." / "I music." — understood, structure missing
+  if (hasObject(n) && wordCount(n) <= 3) {
+    return { ...r, errorType: 'missing_verb', priorityCorrection: 'ep7RetryExplainLike', explanation: 'ep7RetryExplainLike', retryRequired: true, retryPrompt: 'ep7RetryPromptLike' }
+  }
+  return { ...r, errorType: 'no_preference', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep7RetryExplainLike', explanation: 'ep7RetryExplainLike', retryRequired: true, retryPrompt: 'ep7RetryPromptLike' }
+}
+
+export function evaluateExpressDislike(text, { independent = false, targetNoun = 'coffee' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = `I don't like ${targetNoun}.`
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep7RetryPromptEmpty' }
+  if (DISLIKE.test(n) && hasObject(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = !/^i don'?t like /.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep7PraiseIndependent' : 'ep7PraiseDisliked'
+    return r
+  }
+  if (LIKE.test(n)) {
+    // they said the positive instead — guide, do not judge the preference
+    return { ...r, errorType: 'missing_negation', priorityCorrection: 'ep7RetryExplainDont', explanation: 'ep7RetryExplainDont', retryRequired: true, retryPrompt: 'ep7RetryPromptDont' }
+  }
+  return { ...r, errorType: 'missing_negation', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep7RetryExplainDont', explanation: 'ep7RetryExplainDont', retryRequired: true, retryPrompt: 'ep7RetryPromptDont' }
+}
+
+export function evaluateAskPreference(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'What do you like?'
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep7RetryPromptEmpty' }
+  if (ASK_PREF.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = !/^what do you like$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep7PraiseIndependent' : 'ep7PraiseAsked'
+    return r
+  }
+  if (ASK_PREF_NO_AUX.test(n)) {
+    // "What you like?" / "You like music?" — intent clear, auxiliary missing
+    return { ...r, errorType: 'missing_auxiliary', priorityCorrection: 'ep7RetryExplainDo', explanation: 'ep7RetryExplainDo', retryRequired: true, retryPrompt: 'ep7RetryPromptDo' }
+  }
+  return { ...r, errorType: 'no_question', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep7RetryExplainDo', explanation: 'ep7RetryExplainDo', retryRequired: true, retryPrompt: 'ep7RetryPromptDo' }
+}
+
+export function evaluateYesNoPreference(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'Yes, I do.'
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep7RetryPromptEmpty' }
+  if (NO_DONT.test(n) || YES_DO.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.94
+    r.acceptedVariant = !/^(yes,? i do|no,? i don'?t)$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep7PraiseIndependent' : 'ep7PraiseShortAnswer'
+    return r
+  }
+  return { ...r, errorType: 'no_answer', conclusive: wordCount(n) < 4, confidence: 0.8, priorityCorrection: 'ep7RetryExplainShort', explanation: 'ep7RetryExplainShort', retryRequired: true, retryPrompt: 'ep7RetryPromptShort' }
+}
+
+export function evaluateExpressWant(text, { independent = false, targetNoun = 'water' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = `I want ${targetNoun}.`
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep8RetryPromptEmpty' }
+  if ((WANT.test(n) || NEED.test(n)) && hasObject(n)) {
+    // want vs need is not a serious error when the request is understood
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = !/^i want /.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep8PraiseIndependent' : 'ep8PraiseAsked'
+    return r
+  }
+  // "Water, please." — polite and understood, but not the structure being taught
+  if (/please/.test(n) && hasObject(n)) {
+    return { ...r, errorType: 'missing_verb', priorityCorrection: 'ep8RetryExplainWant', explanation: 'ep8RetryExplainWant', retryRequired: true, retryPrompt: 'ep8RetryPromptWant' }
+  }
+  if (hasObject(n) && wordCount(n) <= 3) {
+    return { ...r, errorType: 'missing_verb', priorityCorrection: 'ep8RetryExplainWant', explanation: 'ep8RetryExplainWant', retryRequired: true, retryPrompt: 'ep8RetryPromptWant' }
+  }
+  return { ...r, errorType: 'no_request', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep8RetryExplainWant', explanation: 'ep8RetryExplainWant', retryRequired: true, retryPrompt: 'ep8RetryPromptWant' }
+}
+
+export function evaluateExpressNeed(text, { independent = false, targetNoun = 'help' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = `I need ${targetNoun}.`
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep8RetryPromptEmpty' }
+  if ((NEED.test(n) || WANT.test(n)) && hasObject(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = !/^i need /.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep8PraiseIndependent' : 'ep8PraiseNeeded'
+    return r
+  }
+  if (hasObject(n) && wordCount(n) <= 3) {
+    return { ...r, errorType: 'missing_verb', priorityCorrection: 'ep8RetryExplainNeed', explanation: 'ep8RetryExplainNeed', retryRequired: true, retryPrompt: 'ep8RetryPromptNeed' }
+  }
+  return { ...r, errorType: 'no_request', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep8RetryExplainNeed', explanation: 'ep8RetryExplainNeed', retryRequired: true, retryPrompt: 'ep8RetryPromptNeed' }
+}
+
+export function evaluateAskWant(text, { independent = false, targetNoun = 'water' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = `Do you want ${targetNoun}?`
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep8RetryPromptEmpty' }
+  if (ASK_WANT.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = !/^do you want /.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep8PraiseIndependent' : 'ep8PraiseOffered'
+    return r
+  }
+  if (/\byou want\b/.test(n)) {
+    return { ...r, errorType: 'missing_auxiliary', priorityCorrection: 'ep8RetryExplainDo', explanation: 'ep8RetryExplainDo', retryRequired: true, retryPrompt: 'ep8RetryPromptDo' }
+  }
+  return { ...r, errorType: 'no_question', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep8RetryExplainDo', explanation: 'ep8RetryExplainDo', retryRequired: true, retryPrompt: 'ep8RetryPromptDo' }
+}
+
+export function evaluateAcceptOffer(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'Yes, please.'
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep8RetryPromptEmpty' }
+  if (ACCEPT.test(n) || DECLINE.test(n)) {
+    // accepting or declining are both valid replies to an offer
+    r.completedObjective = true
+    r.confidence = 0.94
+    r.acceptedVariant = !/^yes,? please$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep8PraiseIndependent' : 'ep8PraiseAnswered'
+    return r
+  }
+  return { ...r, errorType: 'no_answer', conclusive: wordCount(n) < 4, confidence: 0.8, priorityCorrection: 'ep8RetryExplainPolite', explanation: 'ep8RetryExplainPolite', retryRequired: true, retryPrompt: 'ep8RetryPromptPolite' }
+}
+
+export function evaluateDeclineOffer(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'No, thank you.'
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep8RetryPromptEmpty' }
+  if (DECLINE.test(n) || ACCEPT.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.94
+    r.acceptedVariant = !/^no,? thank you$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep8PraiseIndependent' : 'ep8PraiseAnswered'
+    return r
+  }
+  return { ...r, errorType: 'no_answer', conclusive: wordCount(n) < 4, confidence: 0.8, priorityCorrection: 'ep8RetryExplainPolite', explanation: 'ep8RetryExplainPolite', retryRequired: true, retryPrompt: 'ep8RetryPromptPolite' }
+}
+
+/* Episode 9: a turn that both states a preference and moves the plan forward. */
+export function evaluateSimplePlanConversation(text, { independent = false, targetNoun = 'music' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = `I like ${targetNoun}. Do you want to listen to music?`
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep9RetryPromptEmpty' }
+  const states = LIKE.test(n) || DISLIKE.test(n) || WANT.test(n) || NEED.test(n)
+  const carries = ASK_PREF.test(n) || ASK_WANT.test(n) || ACCEPT.test(n) || DECLINE.test(n)
+  if (states && carries) {
+    r.completedObjective = true
+    r.confidence = 0.93
+    r.acceptedVariant = true
+    r.praiseKey = r.masteryEvidence.independent ? 'ep9PraiseIndependent' : 'ep9PraiseCombined'
+    return r
+  }
+  if (states) {
+    return { ...r, errorType: 'incomplete_turn', priorityCorrection: 'ep9RetryExplainMore', explanation: 'ep9RetryExplainMore', retryRequired: true, retryPrompt: 'ep9RetryPromptMore' }
+  }
+  return { ...r, errorType: 'no_preference', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep9RetryExplainStart', explanation: 'ep9RetryExplainStart', retryRequired: true, retryPrompt: 'ep9RetryPromptStart' }
+}
+
 // Dispatcher used by the engine for free_reply / roleplay steps.
 export function evaluateFree(kind, text, ctx = {}) {
   switch (kind) {
@@ -344,6 +558,16 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'ask_origin': return evaluateAskOrigin(text, ctx)
     case 'answer_origin': return evaluateAnswerOrigin(text, ctx)
     case 'full_intro_conversation': return evaluateFullIntroConversation(text, ctx)
+    case 'express_like': return evaluateExpressLike(text, ctx)
+    case 'express_dislike': return evaluateExpressDislike(text, ctx)
+    case 'ask_preference': return evaluateAskPreference(text, ctx)
+    case 'yes_no_preference': return evaluateYesNoPreference(text, ctx)
+    case 'express_want': return evaluateExpressWant(text, ctx)
+    case 'express_need': return evaluateExpressNeed(text, ctx)
+    case 'ask_want': return evaluateAskWant(text, ctx)
+    case 'accept_offer': return evaluateAcceptOffer(text, ctx)
+    case 'decline_offer': return evaluateDeclineOffer(text, ctx)
+    case 'simple_plan_conversation': return evaluateSimplePlanConversation(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }

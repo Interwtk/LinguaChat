@@ -25,6 +25,8 @@ _ALLOWED_ERROR_TYPES = {
     "no_intro", "question_order", "no_question", "missing_close", "unclear",
     # second Pre-A1 arc
     "missing_auxiliary", "missing_from", "no_answer", "incomplete_turn",
+    # third Pre-A1 arc
+    "missing_object", "missing_verb", "missing_negation", "no_preference", "no_request",
 }
 
 # ---- normalization (mirrors the frontend responseEvaluation) ----
@@ -273,6 +275,140 @@ def _full_conversation(text: str, name: str) -> dict:
     return {**intro, "natural_version": natural}
 
 
+# ---- third Pre-A1 arc: preferences, wants and needs ----
+_LIKE = re.compile(r"\b(i (really |kind of |sort of )?like|i love|i enjoy)\b")
+_DISLIKE = re.compile(r"\b(i (really )?(don'?t|do not) (really )?like|i dislike|i hate)\b")
+_ASK_PREF = re.compile(r"\b((and )?what (kind of |type of )?\w*\s?do you like|what do you like|do you like\b|how about you)\b")
+_ASK_PREF_NO_AUX = re.compile(r"\b(what you like|you like\b)")
+_WANT = re.compile(r"\b(i want|i'?d like|i would like|can i (have|get))\b")
+_NEED = re.compile(r"\b(i need|i really need)\b")
+_ASK_WANT = re.compile(r"\b(do you want|would you like|do you need)\b")
+_ACCEPT = re.compile(r"\b(yes,? please|yes,? thank you|yes,? thanks|sure|sounds good|let'?s do it)\b")
+_DECLINE = re.compile(r"\b(no,? thank you|no,? thanks|not now|maybe later)\b")
+_YES_DO = re.compile(r"\b(yes,? i do|yes|yeah|yep)\b")
+_NO_DONT = re.compile(r"\b(no,? i (don'?t|do not)|no|nope)\b")
+_FILLER = re.compile(r"\b(i|like|want|need|don'?t|do|not|really|the|a|an|please|thank|you|yes|no)\b")
+
+
+def _has_object(n: str) -> bool:
+    rest = _FILLER.sub("", n).strip()
+    return bool(re.search(r"[^\W\d_]", rest, re.UNICODE))
+
+
+def _express_like(text: str, noun: str) -> dict:
+    n = normalize(text)
+    natural = f"I like {noun or 'music'}."
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _DISLIKE.search(n):
+        # not liking something is a perfectly good sentence for this step
+        return _base(completed_objective=True, accepted_variant=True, natural_version=natural, confidence=0.93)
+    if _LIKE.search(n) and _has_object(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=not n.startswith("i like "), confidence=0.96)
+    if _LIKE.search(n):
+        return _base(error_type="missing_object", retry_required=True, natural_version=natural, confidence=0.8)
+    if _has_object(n) and len(n.split()) <= 3:
+        return _base(error_type="missing_verb", retry_required=True, natural_version=natural, confidence=0.8)
+    return _base(error_type="no_preference", retry_required=True, natural_version=natural, confidence=0.7)
+
+
+def _express_dislike(text: str, noun: str) -> dict:
+    n = normalize(text)
+    natural = f"I don't like {noun or 'coffee'}."
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _DISLIKE.search(n) and _has_object(n):
+        return _base(completed_objective=True, natural_version=natural, confidence=0.95)
+    return _base(error_type="missing_negation", retry_required=True, natural_version=natural, confidence=0.8)
+
+
+def _ask_preference(text: str) -> dict:
+    n = normalize(text)
+    natural = "What do you like?"
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _ASK_PREF.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=not re.fullmatch(r"what do you like", n), confidence=0.95)
+    if _ASK_PREF_NO_AUX.search(n):
+        return _base(error_type="missing_auxiliary", retry_required=True, natural_version=natural, confidence=0.85)
+    return _base(error_type="no_question", retry_required=True, natural_version=natural, confidence=0.75)
+
+
+def _yes_no_preference(text: str) -> dict:
+    n = normalize(text)
+    natural = "Yes, I do."
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _YES_DO.search(n) or _NO_DONT.search(n):
+        return _base(completed_objective=True, natural_version=natural, confidence=0.94)
+    return _base(error_type="no_answer", retry_required=True, natural_version=natural, confidence=0.8)
+
+
+def _express_want(text: str, noun: str) -> dict:
+    n = normalize(text)
+    natural = f"I want {noun or 'water'}."
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    # want vs need is not a serious error when the request is understood
+    if (_WANT.search(n) or _NEED.search(n)) and _has_object(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=not n.startswith("i want "), confidence=0.95)
+    if _has_object(n) and (len(n.split()) <= 3 or "please" in n):
+        return _base(error_type="missing_verb", retry_required=True, natural_version=natural, confidence=0.8)
+    return _base(error_type="no_request", retry_required=True, natural_version=natural, confidence=0.7)
+
+
+def _express_need(text: str, noun: str) -> dict:
+    n = normalize(text)
+    natural = f"I need {noun or 'help'}."
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if (_NEED.search(n) or _WANT.search(n)) and _has_object(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=not n.startswith("i need "), confidence=0.95)
+    if _has_object(n) and len(n.split()) <= 3:
+        return _base(error_type="missing_verb", retry_required=True, natural_version=natural, confidence=0.8)
+    return _base(error_type="no_request", retry_required=True, natural_version=natural, confidence=0.7)
+
+
+def _ask_want(text: str, noun: str) -> dict:
+    n = normalize(text)
+    natural = f"Do you want {noun or 'water'}?"
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _ASK_WANT.search(n):
+        return _base(completed_objective=True, natural_version=natural, confidence=0.95)
+    if re.search(r"\byou want\b", n):
+        return _base(error_type="missing_auxiliary", retry_required=True, natural_version=natural, confidence=0.85)
+    return _base(error_type="no_question", retry_required=True, natural_version=natural, confidence=0.75)
+
+
+def _offer_reply(text: str, natural: str) -> dict:
+    """Accepting and declining are both correct replies to an offer."""
+    n = normalize(text)
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _ACCEPT.search(n) or _DECLINE.search(n):
+        return _base(completed_objective=True, natural_version=natural, confidence=0.94)
+    return _base(error_type="no_answer", retry_required=True, natural_version=natural, confidence=0.8)
+
+
+def _simple_plan(text: str, noun: str) -> dict:
+    n = normalize(text)
+    natural = f"I like {noun or 'music'}. Do you want to listen to music?"
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    states = bool(_LIKE.search(n) or _DISLIKE.search(n) or _WANT.search(n) or _NEED.search(n))
+    carries = bool(_ASK_PREF.search(n) or _ASK_WANT.search(n) or _ACCEPT.search(n) or _DECLINE.search(n))
+    if states and carries:
+        return _base(completed_objective=True, accepted_variant=True, natural_version=natural, confidence=0.93)
+    if states:
+        return _base(error_type="incomplete_turn", retry_required=True, natural_version=natural, confidence=0.85)
+    return _base(error_type="no_preference", retry_required=True, natural_version=natural, confidence=0.7)
+
+
 def evaluate_deterministic(payload: dict) -> dict:
     kind = (payload.get("expected_intent") or payload.get("step_type") or "").strip()
     text = payload.get("learner_response") or ""
@@ -300,6 +436,28 @@ def evaluate_deterministic(payload: dict) -> dict:
         return _answer_origin(text, payload.get("learner_place") or "")
     if kind == "full_intro_conversation":
         return _full_conversation(text, name)
+    # third arc — the target noun follows the learner's own interest
+    noun = payload.get("target_noun") or ""
+    if kind == "express_like":
+        return _express_like(text, noun)
+    if kind == "express_dislike":
+        return _express_dislike(text, noun)
+    if kind == "ask_preference":
+        return _ask_preference(text)
+    if kind == "yes_no_preference":
+        return _yes_no_preference(text)
+    if kind == "express_want":
+        return _express_want(text, noun)
+    if kind == "express_need":
+        return _express_need(text, noun)
+    if kind == "ask_want":
+        return _ask_want(text, noun)
+    if kind == "accept_offer":
+        return _offer_reply(text, "Yes, please.")
+    if kind == "decline_offer":
+        return _offer_reply(text, "No, thank you.")
+    if kind == "simple_plan_conversation":
+        return _simple_plan(text, noun)
     # unknown step type — do not pretend to judge it
     return _base(understood=False, error_type="unclear", retry_required=True, confidence=0.4)
 

@@ -72,6 +72,8 @@ function buildRemotePayload(params, kind) {
     learner_response: params.learnerResponse ?? '',
     learner_name: params.learnerName ?? '',
     learner_place: params.place ?? '',
+    target_noun: params.targetNoun ?? '',
+    interest_id: params.interestId ?? null,
     native_language: params.nativeLanguage ?? 'en',
     interface_language: params.interfaceLanguage ?? 'en',
     target_language: params.targetLanguage ?? 'en',
