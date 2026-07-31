@@ -87,6 +87,10 @@ class ChatRequest(BaseModel):
     tutor_preferences: dict | None = None
     active_companion: str | None = None
     user_id: str | None = None
+    # The one small thing Lingua may be told to remember for this turn, e.g.
+    # {"remembered_like": "music"}. Deliberately narrow: no history, no scores,
+    # no mastery, no activity events — anything else is ignored, not stored.
+    optional_context: dict | None = None
 
 
 def _language_name(base: str) -> str:
@@ -118,6 +122,27 @@ def _normalize_language(value, fallback_code: str = "en") -> LanguageInfo:
 
 def _normalize_target_language(value) -> LanguageInfo:
     return LanguageInfo(code="en", base="en", name="English")
+
+
+ALLOWED_OPTIONAL_CONTEXT = {"remembered_like"}
+
+
+def _safe_optional_context(value) -> dict:
+    """Keep only the handful of short, harmless hints we actually understand.
+
+    Anything else a client sends — a profile, a score, a list of past answers —
+    is dropped here rather than reaching the tutor or the logs.
+    """
+    if not isinstance(value, dict):
+        return {}
+    safe = {}
+    for key in ALLOWED_OPTIONAL_CONTEXT:
+        raw = value.get(key)
+        if isinstance(raw, str):
+            text = raw.strip()[:40]
+            if text:
+                safe[key] = text
+    return safe
 
 
 def _normalize_mission_context(value) -> dict | None:
@@ -157,6 +182,7 @@ def chat(req: ChatRequest, response: Response):
             "active_companion": active_companion,
             "recent_errors": conversation_memory.recent_errors(session_id),
             "mission_context": mission_context,
+            "optional_context": _safe_optional_context(req.optional_context),
         }
 
         generated = generate_response(

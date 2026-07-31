@@ -319,6 +319,9 @@ export async function sendChatMessage({
   missionContext = null,
   tutorPreferences = null,
   activeCompanion = 'lingua',
+  // At most one short thing the learner mentioned before ("music"). Never the
+  // profile, never the history, never anything the model has inferred.
+  rememberedLike = null,
 }) {
   try {
     const res = await fetch(`${API_URL}/chat`, {
@@ -337,6 +340,7 @@ export async function sendChatMessage({
         mission_context: missionContext,
         tutor_preferences: tutorPreferences,
         active_companion: activeCompanion,
+        ...(rememberedLike ? { optional_context: { remembered_like: rememberedLike } } : {}),
       }),
       signal: AbortSignal.timeout(8000),
     })

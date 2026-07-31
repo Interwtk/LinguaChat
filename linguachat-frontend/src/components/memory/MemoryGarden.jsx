@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { SEED_VOCAB_BY_ID } from '../../data/vocabulary'
 import { getLocalizedMeaning } from '../../services/learningContent'
+import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
+import { selectLearnerFact } from '../../learning/engine/learnerFacts.js'
 
 // Demo garden: stable vocab ids + demo mastery. The visible meaning (`trans`)
 // is resolved to the learner's native language, never hardcoded Spanish.
@@ -69,6 +71,20 @@ export function MemoryGarden() {
   })
 
   const mastered = gardenWords.filter(w => masteryLevel(w.mastery) === 'mastered').length
+
+  /*
+   * For the handful of words where it genuinely helps, a second example built
+   * from something the learner told Lingua. It is additional, short, and only
+   * appears when the word actually fits the sentence — a saved phrase must
+   * never be replaced by a personalised one.
+   */
+  const fact = selectLearnerFact(loadLearnerModel(), { type: 'like', seed: 'garden', allowRecent: true })
+  const PERSONAL_EXAMPLE = fact ? {
+    like: `I like ${fact.value}.`,
+    need: `I need ${fact.value}.`,
+    today: `I like ${fact.value} today.`,
+  } : {}
+  const personalExampleFor = (word) => PERSONAL_EXAMPLE[String(word || '').toLowerCase()] || null
 
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8" style={{ background: 'var(--bg-main)' }}>
@@ -151,6 +167,13 @@ export function MemoryGarden() {
                     <p lang="en" dir="ltr" style={{ fontSize: '0.8125rem', color: 'var(--ink)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: 6 }}>
                       "{w.example}"
                     </p>
+                    {/* A second example in the learner's own subject matter,
+                        beside the real one — never instead of it. */}
+                    {personalExampleFor(w.word) && (
+                      <p lang="en" dir="ltr" style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', lineHeight: 1.5, marginBottom: 6 }}>
+                        {personalExampleFor(w.word)}
+                      </p>
+                    )}
                     <div className="flex items-center justify-between">
                       <span style={{ fontSize: 10, fontWeight: 700, color: colors.text, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         {masteryLevel(w.mastery)}

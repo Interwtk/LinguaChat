@@ -35,8 +35,18 @@ export function TodayView() {
   const sessionStarted = session.status === 'active'
   // A localized topic name, or nothing at all when the session has no subject
   // matter to promise. Learners never see the interest id itself.
-  // Kept exactly as the locale writes it — German capitalises its nouns.
-  const topicLabel = session.topic?.labelKey ? t(session.topic.labelKey) : null
+  /*
+   * Today's promise, in one of three voices: something the learner told Lingua,
+   * something they chose at onboarding, or simply an everyday situation. Never
+   * the same formula every day, and never an id or a reason.
+   */
+  const topicLine = (() => {
+    const topic = session.topic || {}
+    if (topic.source === 'fact' && topic.factValue) return t('sessionTopicRemembered', { topic: topic.factValue })
+    // kept exactly as the locale writes it — German capitalises its nouns
+    if (topic.labelKey) return t('sessionTopicToday', { topic: t(topic.labelKey) })
+    return null
+  })()
   const { done: sessionDone, total: sessionTotal } = sessionProgress(session)
   const phrase = getTodayPhrase()
   const mission = activeMissionDetails?.mission || getMissionForToday(profile.level, profile.goal)
@@ -85,9 +95,9 @@ export function TodayView() {
               {/* Today's subject matter, in plain words. Never an id, never a
                   score, never the reason it was chosen. It comes from the
                   stored plan, so it cannot drift while the session is running. */}
-              {topicLabel && (
+              {topicLine && (
                 <p lang={interfaceLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink)', fontWeight: 700, marginTop: 5 }}>
-                  {t('sessionTopicToday', { topic: topicLabel })}
+                  {topicLine}
                 </p>
               )}
               <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', color: 'var(--violet)', fontWeight: 700, marginTop: 6 }}>

@@ -17,6 +17,7 @@ import { getDueReviews, getEpisodeState } from './learnerModel.js'
 import { isEpisodeUnlocked } from './planner.js'
 import { selectEquivalentActivityFormat, BLOCK_CANDIDATES } from './formatChoice.js'
 import { getInterestContext, getLearnerInterests } from './interests.js'
+import { getFactContext } from './learnerFacts.js'
 
 export const SESSION_KEY = 'lc2-daily-session-v1'
 export const SESSION_VERSION = 1
@@ -258,6 +259,13 @@ export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs =
   const mainEpisodeId = main?.payload?.episodeId || null
   const topicSeed = `${learnerKey}:${mainEpisodeId || dayKey}`
   const topicCtx = getInterestContext(getLearnerInterests(interests), topicSeed)
+  /*
+   * Something the learner actually told Lingua beats a box they ticked at
+   * onboarding — but only occasionally, and never when today is already about
+   * it. With nothing suitable to remember, the interest (or a plain everyday
+   * situation) is a perfectly good promise.
+   */
+  const factCtx = getFactContext(model, { interestContext: topicCtx, seed: `${topicSeed}:fact`, atMs })
 
   const estimated = blocks.reduce((sum, b) => sum + (b.estimatedMinutes || 0), 0)
   return {
@@ -268,7 +276,14 @@ export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs =
     durationMode: mode,
     // an approximate promise, never a countdown
     estimatedMinutes: Math.max(1, Math.min(estimated || minutes, minutes + 8)),
-    topic: { interestId: topicCtx.interestId, labelKey: topicCtx.labelKey, episodeId: mainEpisodeId },
+    topic: {
+      source: factCtx.source,
+      interestId: topicCtx.interestId,
+      labelKey: topicCtx.labelKey,
+      // what the learner said, in their own words — only when it is a fact
+      factValue: factCtx.source === 'fact' ? factCtx.value : null,
+      episodeId: mainEpisodeId,
+    },
     status: 'planned',
     currentBlockIndex: 0,
     awarded: false,
@@ -293,9 +308,15 @@ export function normalizeSession(parsed, arc) {
   const currentBlockIndex = Number.isFinite(index) ? Math.min(Math.max(0, index), parsed.blocks.length - 1) : 0
   // A session stored before topics existed is still perfectly valid; it simply
   // has no pinned subject matter and Home falls back to the neutral line.
-  const topic = parsed.topic && typeof parsed.topic === 'object' && !Array.isArray(parsed.topic)
-    ? { interestId: parsed.topic.interestId ?? null, labelKey: parsed.topic.labelKey ?? null, episodeId: parsed.topic.episodeId ?? null }
-    : { interestId: null, labelKey: null, episodeId: null }
+  const rawTopic = parsed.topic && typeof parsed.topic === 'object' && !Array.isArray(parsed.topic) ? parsed.topic : {}
+  const factValue = typeof rawTopic.factValue === 'string' && rawTopic.factValue.length <= 40 ? rawTopic.factValue : null
+  const topic = {
+    source: ['fact', 'interest', 'neutral'].includes(rawTopic.source) ? rawTopic.source : (rawTopic.interestId ? 'interest' : 'neutral'),
+    interestId: rawTopic.interestId ?? null,
+    labelKey: rawTopic.labelKey ?? null,
+    factValue,
+    episodeId: rawTopic.episodeId ?? null,
+  }
   return { ...parsed, currentBlockIndex, topic, awarded: Boolean(parsed.awarded) }
 }
 
