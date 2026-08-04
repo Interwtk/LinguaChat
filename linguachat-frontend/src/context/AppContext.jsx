@@ -49,6 +49,7 @@ import { ARC } from '../learning/episodes/index.js'
 import { loadLearnerModel, saveLearnerModel, recordItemSeen } from '../learning/engine/learnerModel.js'
 import { markFactUsed, rotateFactUsage, selectLearnerFact } from '../learning/engine/learnerFacts.js'
 import { loadMemoryContext } from '../learning/engine/memoryContext.js'
+import { asSubjectValue } from '../learning/engine/semanticContext.js'
 import {
   loadSession, saveSession, clearSession, getOrCreateSession, startSession,
   advanceBlock, completeSession, isDurationMode,
@@ -814,6 +815,7 @@ export function AppProvider({ children }) {
         // one short topic the learner mentioned before, if there is a suitable
         // one; nothing else about them travels with the message
         rememberedLike: selectLearnerFact(loadLearnerModel(), {
+          accept: (f) => Boolean(asSubjectValue(f.value)),
           type: 'like', seed: sessionId, dismissedIds: loadMemoryContext().dismissedFactIds,
         })?.value || null,
       })

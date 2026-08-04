@@ -21,6 +21,7 @@ import {
   normalizeFactValue, sanitizeLearnerFacts, FACT_TYPES,
 } from './learnerModel.js'
 import { seedFrom } from './variation.js'
+import { asSubjectValue } from './semanticContext.js'
 
 // A fact needs this much confidence before it is allowed to shape anything.
 export const MIN_FACT_CONFIDENCE = 0.5
@@ -62,9 +63,16 @@ export function factsOfType(model, type) {
  * be memory, just an echo. The seed makes the choice stable: the same session
  * gets the same fact across reloads, a new session may get another one.
  */
-export function selectLearnerFact(model, { type = 'like', seed = '', atMs = Date.now(), avoidValue = null, allowRecent = false, dismissedIds = [] } = {}) {
+export function selectLearnerFact(model, { type = 'like', seed = '', atMs = Date.now(), avoidValue = null, allowRecent = false, dismissedIds = [], accept = null } = {}) {
   const declined = new Set((dismissedIds || []).map(id => String(id).toLowerCase()))
   const candidates = factsOfType(model, type).filter((fact) => {
+    /*
+     * `accept` lets the CALLER say what kind of value it can use, before the
+     * cooldown and rotation rules run. Filtering afterwards would silently drop
+     * the whole choice whenever the seed happened to land on a value the
+     * activity could not use.
+     */
+    if (typeof accept === 'function' && !accept(fact)) return false
     if (fact.confidence < MIN_FACT_CONFIDENCE) return false
     // waved away for today: still a fact, just not this one right now
     if (declined.has(`${fact.type}:${fact.value.toLowerCase()}`)) return false
@@ -114,7 +122,16 @@ export function rotateFactUsage(model, usedFact) {
  */
 export function getFactContext(model, { interestContext = null, seed = '', atMs = Date.now(), optOut = false, dismissedIds = [] } = {}) {
   if (optOut) return { source: 'neutral', value: null, fact: null }
-  const fact = selectLearnerFact(model, { type: 'like', seed, atMs, avoidValue: interestContext?.targetNoun, dismissedIds })
+  /*
+   * A remembered like becomes the day's subject only if it is something a
+   * person can be asked to like. Episode 7's gap stores whatever was typed, so
+   * without this the session announced "Something you mentioned: tired" and
+   * every sentence built around it inherited the nonsense.
+   */
+  const fact = selectLearnerFact(model, {
+    type: 'like', seed, atMs, avoidValue: interestContext?.targetNoun, dismissedIds,
+    accept: (candidate) => Boolean(asSubjectValue(candidate.value)),
+  })
   if (fact) return { source: 'fact', value: fact.value, fact }
   if (interestContext?.interestId) return { source: 'interest', value: interestContext.targetNoun, fact: null }
   return { source: 'neutral', value: null, fact: null }

@@ -11,6 +11,7 @@ import { planDay } from '../../learning/engine/planner.js'
 import { loadLearnerModel, getEpisodeState } from '../../learning/engine/learnerModel.js'
 import { selectLearnerFact } from '../../learning/engine/learnerFacts.js'
 import { loadMemoryContext, dismissFact } from '../../learning/engine/memoryContext.js'
+import { asSubjectValue } from '../../learning/engine/semanticContext.js'
 
 export function ConversationRoom() {
   const {
@@ -46,6 +47,8 @@ export function ConversationRoom() {
   const [memoryContext, setMemoryContext] = useState(() => loadMemoryContext())
   const rememberedFact = useMemo(
     () => (memoryContext.neutralRequested ? null : selectLearnerFact(loadLearnerModel(), {
+      // never open with "you said you like tired"
+      accept: (f) => Boolean(asSubjectValue(f.value)),
       type: 'like',
       seed: `chat:${episodeArcVersion}`,
       dismissedIds: memoryContext.dismissedFactIds,

@@ -4,6 +4,7 @@ import { SEED_VOCAB_BY_ID } from '../../data/vocabulary'
 import { getLocalizedMeaning } from '../../services/learningContent'
 import { loadLearnerModel, LEARNING_STATE_RANK } from '../../learning/engine/learnerModel.js'
 import { selectLearnerFact } from '../../learning/engine/learnerFacts.js'
+import { asSubjectValue } from '../../learning/engine/semanticContext.js'
 
 // Demo garden: stable vocab ids + demo mastery. The visible meaning (`trans`)
 // is resolved to the learner's native language, never hardcoded Spanish.
@@ -98,7 +99,7 @@ export function MemoryGarden() {
    * appears when the word actually fits the sentence — a saved phrase must
    * never be replaced by a personalised one.
    */
-  const fact = selectLearnerFact(loadLearnerModel(), { type: 'like', seed: 'garden', allowRecent: true })
+  const fact = selectLearnerFact(loadLearnerModel(), { type: 'like', seed: 'garden', allowRecent: true, accept: (f) => Boolean(asSubjectValue(f.value)) })
   const PERSONAL_EXAMPLE = fact ? {
     like: `I like ${fact.value}.`,
     need: `I need ${fact.value}.`,

@@ -58,7 +58,20 @@ export const INTENT_SLOTS = {
   express_like: ['interest', 'activity', 'food', 'drink', 'generic_object'],
   express_dislike: ['interest', 'food', 'drink', 'generic_object'],
   ask_preference: ['interest', 'activity'],
-  yes_no_preference: ['interest', 'food', 'drink', 'generic_object'],
+  /*
+   * What may be offered as something to have an opinion about.
+   *
+   * `activity` is here because the interest catalogue produces gerunds — "Do
+   * you like traveling?" is exactly as ordinary as "Do you like music?".
+   *
+   * `place` is deliberately NOT here, and that is the interesting exclusion:
+   * "Do you like Bogota?" is perfectly grammatical, but the only place this
+   * project stores is where the learner is FROM, captured as an origin and not
+   * as a preference. Offering it back asserts an opinion they never expressed.
+   * A slot is defined by its communicative function, not by whether the
+   * sentence parses. `feeling` and `person` are excluded for the same reason.
+   */
+  yes_no_preference: ['interest', 'activity', 'food', 'drink', 'generic_object'],
   // wanting and needing are about things you can hold or have, never about
   // "travel" or "music" — that is where "I want traveling." came from
   express_want: ['drink', 'food', 'consumable', 'generic_object'],
@@ -82,6 +95,18 @@ export const INTENT_SLOTS = {
    */
   repair_request: [],
   close_encounter: [],
+  /*
+   * The sixth arc. Asking what something is personalises nothing: the whole
+   * point is that the learner does not know the word yet.
+   *
+   * Identifying and counting DO take a value, and only from the thing
+   * catalogue: `generic_object` and `food` are the types it contains, and a
+   * quantity additionally requires the entry to be countable — which the
+   * catalogue knows and a semantic type alone could not.
+   */
+  ask_what_thing: [],
+  identify_thing: ['generic_object', 'food'],
+  use_quantity: ['generic_object', 'food'],
 }
 
 export const slotsFor = (intent) => INTENT_SLOTS[intent] || []
@@ -114,6 +139,95 @@ export const NEUTRAL_CATALOG = {
   place: [],       // a place is the learner's own; never invent one
   feeling: [typedValue('good', 'good', 'feeling')],
   person: [],
+}
+
+/*
+ * The intent that defines what an activity's SUBJECT may be — the value that
+ * fills `{noun}` in "Do you like {noun}?" and in the lines around it.
+ *
+ * Anything the learner told us is a candidate and nothing is a candidate by
+ * default: a fact is used only when its type fits the slot, and the curated
+ * interest catalogue answers when it does not. Fallback beats a wrong
+ * personalisation — the rule this file exists for.
+ */
+export const SUBJECT_INTENT = 'yes_no_preference'
+
+export function asSubjectValue(value) {
+  const typed = value && typeof value === 'object' && value.semanticType ? value : classifyValue(value?.value ?? value)
+  return isContextCompatible(SUBJECT_INTENT, typed) ? typed : null
+}
+
+/*
+ * THE THING CATALOGUE.
+ *
+ * Four facts per entry, each of which a sentence needs:
+ *
+ *   singular / plural  because "two sandwichs" is not a word, and forming a
+ *                      plural by adding "s" is exactly the naive rule that
+ *                      would produce it
+ *   article            because "an apple" is not "a apple", and the learner is
+ *                      never taught the rule in Pre-A1 — the material simply has
+ *                      to be right
+ *   countability       because "It’s a water." and "two coffee" are the two
+ *                      sentences this arc could most easily have shipped
+ *
+ * `mass` entries are listed precisely so they can be REFUSED where a count is
+ * needed. They stay perfectly usable where the café already uses them.
+ */
+export const COUNTABILITY = ['count', 'mass']
+
+export const THINGS = {
+  book: { id: 'book', singular: 'book', plural: 'books', article: 'a', semanticType: 'generic_object', countability: 'count' },
+  phone: { id: 'phone', singular: 'phone', plural: 'phones', article: 'a', semanticType: 'generic_object', countability: 'count' },
+  bag: { id: 'bag', singular: 'bag', plural: 'bags', article: 'a', semanticType: 'generic_object', countability: 'count' },
+  cup: { id: 'cup', singular: 'cup', plural: 'cups', article: 'a', semanticType: 'generic_object', countability: 'count' },
+  sandwich: { id: 'sandwich', singular: 'sandwich', plural: 'sandwiches', article: 'a', semanticType: 'food', countability: 'count' },
+  apple: { id: 'apple', singular: 'apple', plural: 'apples', article: 'an', semanticType: 'food', countability: 'count' },
+  /* known, and known to be uncountable here */
+  water: { id: 'water', singular: 'water', plural: 'water', article: null, semanticType: 'drink', countability: 'mass' },
+  coffee: { id: 'coffee', singular: 'coffee', plural: 'coffee', article: null, semanticType: 'drink', countability: 'mass' },
+  tea: { id: 'tea', singular: 'tea', plural: 'tea', article: null, semanticType: 'drink', countability: 'mass' },
+  music: { id: 'music', singular: 'music', plural: 'music', article: null, semanticType: 'interest', countability: 'mass' },
+}
+
+export const thingById = (id) => THINGS[String(id || '').toLowerCase()] || null
+
+/* A thing you can point at and say "It's a ...". */
+export const isCountableThing = (id) => thingById(id)?.countability === 'count'
+
+/* The countable things this arc may talk about, in a stable order. */
+export const COUNTABLE_THINGS = Object.keys(THINGS).filter(isCountableThing)
+
+/*
+ * "a book" / "an apple" / and nothing at all for water. Built from the entry
+ * rather than from the first letter, so a silent-h or a "a university" style
+ * exception is a data change and never a rule change.
+ */
+export function withArticle(id) {
+  const thing = thingById(id)
+  if (!thing) return ''
+  return thing.article ? `${thing.article} ${thing.singular}` : thing.singular
+}
+
+/*
+ * "one book" / "two books" / "" for anything that cannot be counted.
+ *
+ * Refusing outright is deliberate: a quantity of an uncountable thing is a
+ * sentence this level should never have to produce, and returning something
+ * plausible would hide the mistake at the call site.
+ */
+export function countedThing(id, count) {
+  const thing = thingById(id)
+  const n = Number(count)
+  if (!thing || thing.countability !== 'count' || !Number.isInteger(n) || n < 1) return ''
+  return `${n === 1 ? thing.singular : thing.plural}`
+}
+
+/* Whether a value may be pointed at and identified: "It's a ___". */
+export function asIdentifiableThing(value) {
+  const thing = thingById(value)
+  if (thing && thing.countability === 'count') return thing
+  return null
 }
 
 export function neutralFor(intent, seed = '') {
