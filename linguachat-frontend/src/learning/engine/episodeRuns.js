@@ -66,19 +66,31 @@ export function beginEpisodeRun(model, episodeId, { source = 'practice', wantsOt
   if (active && active.episodeId === episodeId && active.mode === mode && !active.completedAt) {
     return active
   }
+  /*
+   * Coming back to an episode already under way is the SAME attempt, even
+   * though its mode changes from a first run to a resume. Carry what that
+   * attempt had earned across — above all the support level, which must not be
+   * derived a second time from a learner model that has moved on since. Losing
+   * it made a learner who reloaded mid-episode start again from whatever the
+   * evidence said at that moment rather than from where they actually were.
+   */
+  const continues = active && active.episodeId === episodeId && !active.completedAt
+    && ((active.mode === RUN_FIRST && mode === RUN_RESUME) || (active.mode === RUN_RESUME && mode === RUN_FIRST))
+
   const run = sanitizeRun({
-    runId: makeRunId(model, episodeId, atMs),
+    runId: continues ? active.runId : makeRunId(model, episodeId, atMs),
     episodeId,
     mode,
     source,
-    branchId: branchPreference,
-    startedAt: new Date(atMs).toISOString(),
+    branchId: continues ? (branchPreference || active.branchId) : branchPreference,
+    startedAt: continues ? active.startedAt : new Date(atMs).toISOString(),
     completedAt: null,
-    independentEvidence: false,
-    assistanceUsed: 0,
-    retriedSteps: 0,
-    formatsUsed: [],
-    rewarded: false,
+    independentEvidence: continues ? active.independentEvidence : false,
+    assistanceUsed: continues ? active.assistanceUsed : 0,
+    retriedSteps: continues ? active.retriedSteps : 0,
+    formatsUsed: continues ? active.formatsUsed : [],
+    rewarded: continues ? active.rewarded : false,
+    scaffold: continues ? active.scaffold : null,
   })
   model.activeRun = run
   return run

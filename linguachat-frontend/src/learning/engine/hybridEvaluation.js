@@ -18,6 +18,7 @@
  * learner model decides mastery from the returned evidence.
  */
 import { evaluateFree, shouldEscalate } from './responseEvaluation.js'
+import { isIndependentEvidence } from './scaffolding.js'
 
 const PRAISE = {
   introduction: { independent: 'ep1PraiseIndependent', helped: 'ep1PraiseIm' },
@@ -113,7 +114,16 @@ function buildRemotePayload(params, kind) {
 export async function evaluateEpisodeResponse(params) {
   const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', signal, remote } = params
   const kind = step?.evalKind
-  const independent = !assistanceUsed && scaffoldLevel !== 'high'
+  /*
+   * Whether this counts as unaided production, used only to choose the wording
+   * of the praise. It comes from what the learner DID — the caller decides, and
+   * the format decides if the caller does not. It used to be derived from the
+   * support level, which meant a learner typing an unaided sentence while a
+   * suggestion sat on screen was congratulated as if they had copied it.
+   */
+  const independent = typeof params.independent === 'boolean'
+    ? params.independent
+    : isIndependentEvidence({ step, assistanceUsed, correct: true })
   // The same context the caller previewed with, so the shown verdict and the
   // model answer can never disagree about what this episode is about.
   const local = evaluateFree(kind, learnerResponse, {

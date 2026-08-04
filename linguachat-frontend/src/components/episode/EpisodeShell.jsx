@@ -14,8 +14,12 @@ import { getLearnerInterests, getInterestContext, getInterestObject } from '../.
 import { evaluateLearningResponse } from '../../services/api'
 import {
   loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, markRecurringError,
-  getRecommendedScaffold, getEpisodeState, setEpisodeState, recordActivitySignalOnce,
+  getEpisodeState, setEpisodeState, recordActivitySignalOnce,
 } from '../../learning/engine/learnerModel.js'
+import {
+  deriveInitialScaffold, updateScaffoldAfterTurn, reviveScaffoldState,
+  evidenceKindForStep, isIndependentEvidence, showsModelAnswer, showsHintByDefault,
+} from '../../learning/engine/scaffolding.js'
 import { dayKeyFor } from '../../learning/engine/session.js'
 import { seedFrom } from '../../learning/engine/variation.js'
 import { FormatFeedback } from './FormatFeedback'
@@ -108,21 +112,50 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
   }
   const run = runRef.current
   useEffect(() => {
-    if (runRef.current) saveLearnerModel(modelRef.current)
+    /*
+     * Write the run AND the support level it was given, so a reload restores
+     * the decision instead of taking it again. Re-deriving would usually agree,
+     * but "usually" is not a guarantee: the model changes as the learner answers,
+     * and a run must not silently become easier or harder halfway through.
+     */
+    if (!runRef.current) return
+    if (initial.scaffold && !runRef.current.scaffold) {
+      scaffoldRef.current = initial.scaffold
+      persistScaffold(initial.scaffold)
+    }
+    saveLearnerModel(modelRef.current)
   }, [])
 
   const initial = useMemo(() => {
-    if (!ep) return { step: 0, scaffold: 'high' }
+    if (!ep) return { step: 0, scaffold: null }
     const st = getEpisodeState(modelRef.current, ep.id)
-    const savedScaffold = modelRef.current.scaffoldByEpisode[ep.id] || 'high'
     // resume, but never resume onto the completion step for a fresh replay
     const step = Math.min(st.status === 'completed' ? 0 : (st.stepIndex || 0), ep ? ep.steps.length - 1 : 0)
-    return { step, scaffold: savedScaffold }
+    /*
+     * How much help this run offers is decided ONCE, here, from what the
+     * learner has actually done — and a run already under way keeps the level
+     * it was given rather than re-deriving it from a model that has moved on.
+     * Nothing downstream recomputes it, so a re-render, a breakpoint change or
+     * a language switch cannot alter the experience mid-episode.
+     */
+    const resumed = reviveScaffoldState(runRef.current?.scaffold)
+    const scaffold = resumed || deriveInitialScaffold({
+      learnerModel: modelRef.current,
+      episode: ep,
+      runMode: runRef.current?.mode || 'first_run',
+    })
+    return { step, scaffold }
   }, [ep])
 
   const [stepIndex, setStepIndex] = useState(initial.step)
-  const [scaffold, setScaffold] = useState(initial.scaffold)
-  const [cleanStreak, setCleanStreak] = useState(0)
+  const [scaffoldState, setScaffoldState] = useState(initial.scaffold)
+  /*
+   * The same state, in a ref, because `advance()` runs from a timer: by the
+   * time it persists, its closure still holds the level from BEFORE the turn
+   * that triggered it, and writing that back silently undid every transition.
+   */
+  const scaffoldRef = useRef(initial.scaffold)
+  const scaffold = scaffoldState?.currentLevel || 'high'
   const [showHelp, setShowHelp] = useState(true)
   const [usedSuggestion, setUsedSuggestion] = useState(false)
 
@@ -278,7 +311,26 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
 
   function persistStep(nextIndex) {
     setEpisodeState(modelRef.current, ep.id, { status: nextIndex >= ep.steps.length - 1 ? getEpisodeState(modelRef.current, ep.id).status : 'in_progress', stepIndex: nextIndex })
-    modelRef.current.scaffoldByEpisode[ep.id] = scaffold
+    persistScaffold(scaffoldRef.current)
+    saveLearnerModel(modelRef.current)
+  }
+
+  /*
+   * Support belongs to the RUN, so practising the same episode again derives
+   * its own level instead of inheriting the one a previous attempt ended on.
+   * `scaffoldByEpisode` is still written for the planner, which only wants a
+   * rough read of how supported the learner currently is.
+   */
+  function persistScaffold(next) {
+    if (!next) return
+    runRef.current = updateActiveRun(modelRef.current, { scaffold: next }) || runRef.current
+    modelRef.current.scaffoldByEpisode[ep.id] = next.currentLevel
+    /*
+     * Written the moment it changes. A wrong answer does not advance the step,
+     * so nothing else would have saved it — and a learner who reloads after
+     * getting stuck must find the help that was just restored, not the level
+     * they had before they struggled.
+     */
     saveLearnerModel(modelRef.current)
   }
 
@@ -327,13 +379,14 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
    * "help was used" made the streak reset every turn, so support could never be
    * reduced and no episode could ever produce independent evidence.
    */
-  function adaptScaffold({ correct, usedHelp }) {
-    const nextStreak = correct && !usedHelp ? cleanStreak + 1 : 0
-    setCleanStreak(nextStreak)
-    const next = getRecommendedScaffold(scaffold, { cleanSuccessStreak: nextStreak, justFailed: !correct, usedHelp })
-    setScaffold(next)
-    modelRef.current.scaffoldByEpisode[ep.id] = next
-    if (next === 'high') setShowHelp(true)
+  function adaptScaffold({ correct, usedHelp, evidenceKind = null, retried = false, switchedActivity = false }) {
+    const next = updateScaffoldAfterTurn(scaffoldState, {
+      correct, assistanceUsed: usedHelp, evidenceKind, retried, switchedActivity,
+    })
+    scaffoldRef.current = next
+    setScaffoldState(next)
+    persistScaffold(next)
+    if (next.currentLevel === 'high') setShowHelp(true)
   }
 
   /*
@@ -347,6 +400,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
     const target = resolve(step.suggestionEn, vars)
     const tokens = target.replace(/([.?!])$/, ' $1').split(/\s+/).filter(Boolean)
     signal('negative_soft', 'switched')
+    adaptScaffold({ correct: true, usedHelp: true, evidenceKind: 'guided', switchedActivity: true })
     setAltStep({
       type: 'word_order', format: 'guided_reply', instructionKey: 'altGuidedInstruction',
       hintKey: 'altGuidedHint', itemId: (step.itemIds || [])[0] || null, tokens, assisted: true,
@@ -366,8 +420,9 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
     return s.captureFact ? interestCtx.targetNoun : name
   }
 
-  function recordItems(ids, { correct, independent }) {
-    (ids || []).forEach(id => recordItemAttempt(modelRef.current, id, { correct, independent }))
+  function recordItems(ids, { correct, independent, evidenceKind = null }) {
+    const kind = evidenceKind || evidenceKindForStep(step) || 'open'
+    ;(ids || []).forEach(id => recordItemAttempt(modelRef.current, id, { correct, independent, evidenceKind: kind }))
     saveLearnerModel(modelRef.current)
   }
 
@@ -377,7 +432,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
     if (!text.trim()) return
     const token = guardRef.current.begin()
     if (token === null) return                // a submission is already in flight
-    const independent = !fromSuggestion && scaffold !== 'high' && !step.showModelDefault
+    const independent = isIndependentEvidence({ step, assistanceUsed: fromSuggestion, correct: true })
     const turnContext = { linguaSaid: resolve(step.promptEn || step.sceneEn || '', vars) }
 
     // Decide up front whether we will need Lingua, only to show a calm status.
@@ -398,7 +453,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
         episode: ep, step, learnerResponse: text, learnerName: name, place,
         targetNoun: subjectNoun, targetThing: requestedThing || undefined, activity: interestCtx.activity, interestId: interestCtx.interestId,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
-        targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
+        targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion, independent,
         previousAttempts: attemptsRef.current, turnContext,
         signal: controller.signal, remote: remoteEvaluator,
       })
@@ -431,8 +486,15 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
         saveLearnerModel(modelRef.current)
       }
       recordItems(itemIds, { correct: true, independent })
+      /*
+       * The run remembers that it saw unaided open production, which is what
+       * the can-do is credited from at the end. A component counter could not
+       * do this job: it is lost on reload, and mastery is not allowed to depend
+       * on whether the learner refreshed the page.
+       */
+      if (independent) runRef.current = updateActiveRun(modelRef.current, { independentEvidence: true }) || runRef.current
       if (attemptsRef.current > 0) signal('retried')
-      adaptScaffold({ correct: true, usedHelp: fromSuggestion })
+      adaptScaffold({ correct: true, usedHelp: fromSuggestion, evidenceKind: evidenceKindForStep(step), retried: attemptsRef.current > 0 })
       setPraise(result.praiseKey || 'ep1FeedbackGood')
       setLive(t(result.praiseKey || 'ep1FeedbackGood'))
       setTimeout(advance, 700)
@@ -441,7 +503,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
       recordItems(itemIds, { correct: false, independent: false })
       markRecurringError(modelRef.current, result.errorType)
       saveLearnerModel(modelRef.current)
-      adaptScaffold({ correct: false })
+      adaptScaffold({ correct: false, evidenceKind: evidenceKindForStep(step) })
       setRetry({ explainKey: result.explanation, natural: resolve(result.naturalVersion, vars), promptKey: result.retryPrompt })
       setLive(t('ep1RetryTitle'))
       // return focus to the input so a screen reader/keyboard user retries in place
@@ -460,7 +522,9 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
     finishedRef.current = true
     const m = modelRef.current
     const st = getEpisodeState(m, ep.id)
-    const independent = cleanStreak >= 1
+    // the can-do is only credited as independent if this run actually produced
+    // unaided open production, which the scaffold state has been counting
+    const independent = Boolean(runRef.current?.independentEvidence)
     recordCanDoAttempt(m, ep.canDoId, { success: true, independent, context: ep.id })
     /*
      * The reward is gated by the episode, not by the run: whatever this run
@@ -520,7 +584,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
         {step.type === 'model' && (
           <div>
             <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.target, vars)}</En>{step.response && <> <En style={{ opacity: 0.85 }}>{resolve(step.response, vars)}</En></>}</LinguaLine>
-            {(showHelp || scaffold === 'high') && (
+            {(showHelp || showsHintByDefault(scaffold)) && (
               <div className="rounded-2xl p-4 mb-3 animate-fade-up" style={{ background: 'var(--violet-soft)', border: '1px solid var(--violet)' }}>
                 <p lang={nativeLang} style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{(step.meaningItems || []).map(meaningOf).join(' · ')}</p>
                 {step.explainKey && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>{t(step.explainKey)}</p>}
@@ -546,7 +610,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
                   <button key={i} type="button" lang={nativeLang} aria-pressed={chosen} disabled={done}
                     onClick={() => {
                       setChoice(i)
-                      recordItems([step.itemId].filter(Boolean), { correct: Boolean(opt.correct), independent: scaffold !== 'high' })
+                      recordItems([step.itemId].filter(Boolean), { correct: Boolean(opt.correct), independent: false })
                       setLive(opt.correct ? t('ep1Correct') : t('ep1KeepGoing'))
                       setTimeout(advance, 850)
                     }}
@@ -573,7 +637,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
                   <button key={i} type="button" aria-pressed={chosen} disabled={done}
                     onClick={() => {
                       setChoice(i)
-                      recordItems([step.itemId].filter(Boolean), { correct: Boolean(opt.correct), independent: scaffold !== 'high' })
+                      recordItems([step.itemId].filter(Boolean), { correct: Boolean(opt.correct), independent: false })
                       if (opt.correct) { setLive(t('ep1Correct')); setTimeout(advance, 850) }
                       else { setLive(t('ep1KeepGoing')); setTimeout(() => setChoice(null), 800) }
                     }}
@@ -618,7 +682,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
                   const correct = buildOrder.join(' ') === tokens.join(' ')
                   // An alternative offered after a struggle is support, so a
                   // success here is never counted as independent evidence.
-                  recordItems([step.itemId].filter(Boolean), { correct, independent: scaffold !== 'high' && !step.assisted })
+                  recordItems([step.itemId].filter(Boolean), { correct, independent: false })
                   if (correct) { setLive(t('ep1Correct')); advance() } else { setRetry({ explainKey: 'ep1BuildRetry', natural: tokens.join(' ') }); setBuildOrder([]); setLive(t('ep1RetryTitle')) }
                 }} className="flex-1 py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]" style={{ background: 'var(--violet)', opacity: buildOrder.length < tokens.length ? 0.5 : 1 }}>{t('ep1Check')}</button>
               </div>
@@ -638,7 +702,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
             </div>
             {/* The example must match what is being asked for: a place for the
                 place step, something the learner enjoys for the likes step. */}
-            {scaffold === 'high' && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginBottom: 12 }}>{t(step.hintKey)} <En style={{ fontWeight: 700 }}>{resolve(`${step.before} ${fillExample(step)}${step.after}`, vars)}</En></p>}
+            {showsHintByDefault(scaffold) && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginBottom: 12 }}>{t(step.hintKey)} <En style={{ fontWeight: 700 }}>{resolve(`${step.before} ${fillExample(step)}${step.after}`, vars)}</En></p>}
             <button disabled={!fillValue.trim()} onClick={() => {
               // A capture step stores what the learner typed (e.g. their place)
               // so later steps and model answers can use it. Never validated.
@@ -657,7 +721,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
                 saveLearnerModel(modelRef.current)
                 if (step.captureFact === 'place') setPlace(value)
               }
-              recordItems([step.itemId].filter(Boolean), { correct: true, independent: scaffold !== 'high' })
+              recordItems([step.itemId].filter(Boolean), { correct: true, independent: false })
               setLive(t('ep1Correct')); advance()
             }} className="w-full py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]" style={{ background: 'var(--violet)', opacity: fillValue.trim() ? 1 : 0.5 }}>{t('ep1Check')}</button>
           </div>
@@ -687,7 +751,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
               </div>
             )}
 
-            {step.suggestionEn && (scaffold !== 'low' || retry) && !reviewing && (
+            {step.suggestionEn && (showsModelAnswer(scaffold) || retry) && !reviewing && (
               <button type="button" onClick={() => { setReply(resolve(step.suggestionEn, vars)); setUsedSuggestion(true); signal('assistance') }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]" style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}>
                 {t('ep1UseSuggestion')}: <En>{resolve(step.suggestionEn, vars)}</En>
               </button>

@@ -18,6 +18,10 @@ import {
   loadLearnerModel, saveLearnerModel, recordItemAttempt, markRecurringError, recordActivitySignalOnce,
 } from '../../learning/engine/learnerModel.js'
 import { selectCompatibleContext } from '../../learning/engine/semanticContext.js'
+import {
+  deriveInitialScaffold, updateScaffoldAfterTurn, evidenceKindForStep,
+  isIndependentEvidence, showsModelAnswer,
+} from '../../learning/engine/scaffolding.js'
 
 const En = ({ children, style }) => <span lang="en" dir="ltr" style={style}>{children}</span>
 
@@ -104,6 +108,26 @@ function PracticeTurn({ block, topic = null, onDone }) {
   const { t, profile, nativeLanguageInfo, interfaceLanguageInfo } = useApp()
   const kind = block.objective || 'introduction'
   const format = block.format || 'free_reply'
+  /*
+   * A session block is not a small episode, and it must not inherit an
+   * episode's support level. Every block derives its own from the skill it
+   * practises and why the planner chose it — a targeted retry exists because
+   * something went wrong, a recall of a mastered skill does not.
+   *
+   * Derived once per block. `PracticeTurn` is keyed by block id, so moving on
+   * builds a fresh component rather than carrying the previous block's state.
+   */
+  const scaffoldRef = useRef(null)
+  if (!scaffoldRef.current) {
+    scaffoldRef.current = deriveInitialScaffold({
+      learnerModel: loadLearnerModel(),
+      targetIntent: kind,
+      runMode: 'review',
+      blockType: block.type,
+    })
+  }
+  const [scaffoldState, setScaffoldState] = useState(scaffoldRef.current)
+  const scaffold = scaffoldState.currentLevel
   const name = (profile.name || '').trim() || 'Alex'
   const partner = useMemo(() => partnerFor(profile.name || 'guest'), [profile.name])
   const modelRef = useRef(loadLearnerModel())
@@ -196,7 +220,9 @@ function PracticeTurn({ block, topic = null, onDone }) {
     const turnContext = { linguaSaid }
     // Same context the model answer was built from, so a correction can never
     // name something the prompt never mentioned.
-    const evalCtx = { name, independent: !fromSuggestion, turnContext, place: vars.place, targetNoun: vars.noun, targetThing: vars.item }
+    const stepShape = { type: 'free_reply', format }
+    const independent = isIndependentEvidence({ step: stepShape, assistanceUsed: fromSuggestion, correct: true })
+    const evalCtx = { name, independent, turnContext, place: vars.place, targetNoun: vars.noun, targetThing: vars.item }
     const preview = evaluateFree(kind, text, evalCtx)
     const controller = new AbortController()
     abortRef.current = controller
@@ -209,7 +235,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
         learnerResponse: text, learnerName: name, place: vars.place,
         targetNoun: vars.noun, targetThing: vars.item,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
-        targetLanguage: 'en', scaffoldLevel: 'medium', assistanceUsed: fromSuggestion,
+        targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
         previousAttempts: 0, turnContext, signal: controller.signal,
         remote: (payload, signal) => evaluateLearningResponse(payload, { signal }),
       })
@@ -223,14 +249,18 @@ function PracticeTurn({ block, topic = null, onDone }) {
 
     const itemId = block.payload?.itemId
     if (result.completedObjective) {
-      if (itemId) recordItemAttempt(modelRef.current, itemId, { correct: true, independent: !fromSuggestion })
+      if (itemId) recordItemAttempt(modelRef.current, itemId, { correct: true, independent, evidenceKind: evidenceKindForStep(stepShape) })
       saveLearnerModel(modelRef.current)
+      setScaffoldState(prev => updateScaffoldAfterTurn(prev, {
+        correct: true, assistanceUsed: fromSuggestion, evidenceKind: evidenceKindForStep(stepShape), retried: Boolean(retry),
+      }))
       if (retry) mark('retried')
       setPraise(result.praiseKey || 'ep1FeedbackGood')
       setLive(t(result.praiseKey || 'ep1FeedbackGood'))
       setTimeout(complete, 700)
     } else {
-      if (itemId) recordItemAttempt(modelRef.current, itemId, { correct: false, independent: false })
+      if (itemId) recordItemAttempt(modelRef.current, itemId, { correct: false, independent: false, evidenceKind: evidenceKindForStep(stepShape) })
+      setScaffoldState(prev => updateScaffoldAfterTurn(prev, { correct: false, evidenceKind: evidenceKindForStep(stepShape) }))
       markRecurringError(modelRef.current, result.errorType)
       saveLearnerModel(modelRef.current)
       setRetry({ explainKey: result.explanation, natural: result.naturalVersion, promptKey: result.retryPrompt })
@@ -246,7 +276,8 @@ function PracticeTurn({ block, topic = null, onDone }) {
    */
   function settleClosed(correct) {
     const itemId = block.payload?.itemId
-    if (itemId) recordItemAttempt(modelRef.current, itemId, { correct, independent: false })
+    const kind = evidenceKindForStep({ type: format === 'choice' ? 'choice' : 'word_order', format })
+    if (itemId) recordItemAttempt(modelRef.current, itemId, { correct, independent: false, evidenceKind: kind })
     saveLearnerModel(modelRef.current)
     if (correct) { setLive(t('ep1Correct')); setTimeout(complete, 600) }
     else {

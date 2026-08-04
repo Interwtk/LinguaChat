@@ -4,6 +4,7 @@ import { ChattoMascot } from '../mascot/ChattoMascot'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { evaluateEpisodeResponse } from '../../learning/engine/hybridEvaluation.js'
 import { evaluateFree, shouldEscalate } from '../../learning/engine/responseEvaluation.js'
+import { deriveInitialScaffold, isIndependentEvidence } from '../../learning/engine/scaffolding.js'
 import { createSubmissionGuard } from '../../learning/engine/submitGuard.js'
 import { evaluateLearningResponse } from '../../services/api'
 import { dayKeyFor } from '../../learning/engine/session.js'
@@ -41,6 +42,21 @@ export function MiniStory({ block, vars, onDone }) {
   const seed = `${block.id}:${dayKeyFor()}`
 
   const modelRef = useRef(loadLearnerModel())
+  /*
+   * A story keeps its own support, derived from the objective it serves. It is
+   * read once: a scene the learner is halfway through must not change shape
+   * because something else in the model moved.
+   */
+  const storyScaffoldRef = useRef(null)
+  if (!storyScaffoldRef.current) {
+    storyScaffoldRef.current = deriveInitialScaffold({
+      learnerModel: modelRef.current,
+      targetIntent: block.objective,
+      runMode: 'review',
+      blockType: block.type,
+    })
+  }
+  const storyScaffold = storyScaffoldRef.current.currentLevel
   const [state, setState] = useState(() => {
     try {
       const stored = normalizeStoryState(JSON.parse(localStorage.getItem(STORY_STORAGE_KEY) || 'null'), story)
@@ -110,7 +126,8 @@ export function MiniStory({ block, vars, onDone }) {
     const token = guardRef.current.begin()
     if (token === null) return
     const turnContext = { linguaSaid: resolve(turnText(turns[state.currentTurn - 1], state.branchId), vars) }
-    const evalCtx = { name: vars.name, independent: !fromSuggestion, turnContext, place: vars.place, targetNoun: vars.noun, targetThing: vars.item, activity: vars.activity }
+    const independent = isIndependentEvidence({ step: { type: 'free_reply', format: 'mini_story' }, assistanceUsed: fromSuggestion, correct: true })
+    const evalCtx = { name: vars.name, independent, turnContext, place: vars.place, targetNoun: vars.noun, targetThing: vars.item, activity: vars.activity }
     const preview = evaluateFree(turn.evalKind, text, evalCtx)
     const controller = new AbortController()
     abortRef.current = controller
@@ -123,7 +140,7 @@ export function MiniStory({ block, vars, onDone }) {
         learnerResponse: text, learnerName: vars.name, place: vars.place,
         targetNoun: vars.noun, targetThing: vars.item, activity: vars.activity,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
-        targetLanguage: 'en', scaffoldLevel: 'medium', assistanceUsed: fromSuggestion,
+        targetLanguage: 'en', scaffoldLevel: storyScaffold, assistanceUsed: fromSuggestion,
         previousAttempts: 0, turnContext, signal: controller.signal,
         remote: (payload, abortSignal) => evaluateLearningResponse(payload, { signal: abortSignal }),
       })
