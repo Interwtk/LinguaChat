@@ -29,10 +29,34 @@ const PRAISE = {
   ask_origin: { independent: 'ep5PraiseIndependent', helped: 'ep5PraiseAsked' },
   answer_origin: { independent: 'ep5PraiseIndependent', helped: 'ep5PraiseAnswered' },
   full_intro_conversation: { independent: 'ep6PraiseIndependent', helped: 'ep6PraiseCombined' },
+  express_like: { independent: 'ep7PraiseIndependent', helped: 'ep7PraiseLiked' },
+  express_dislike: { independent: 'ep7PraiseIndependent', helped: 'ep7PraiseDisliked' },
+  ask_preference: { independent: 'ep7PraiseIndependent', helped: 'ep7PraiseAsked' },
+  yes_no_preference: { independent: 'ep7PraiseIndependent', helped: 'ep7PraiseShortAnswer' },
+  express_want: { independent: 'ep8PraiseIndependent', helped: 'ep8PraiseAsked' },
+  express_need: { independent: 'ep8PraiseIndependent', helped: 'ep8PraiseNeeded' },
+  ask_want: { independent: 'ep8PraiseIndependent', helped: 'ep8PraiseOffered' },
+  accept_offer: { independent: 'ep8PraiseIndependent', helped: 'ep8PraiseAnswered' },
+  decline_offer: { independent: 'ep8PraiseIndependent', helped: 'ep8PraiseAnswered' },
+  simple_plan_conversation: { independent: 'ep9PraiseIndependent', helped: 'ep9PraiseCombined' },
+  polite_request: { independent: 'ep10PraiseIndependent', helped: 'ep10PraiseAsked' },
+  thank_service: { independent: 'ep10PraiseIndependent', helped: 'ep10PraiseThanked' },
+  respond_anything_else: { independent: 'ep11PraiseIndependent', helped: 'ep11PraiseAnswered' },
+  finish_order: { independent: 'ep11PraiseIndependent', helped: 'ep11PraiseClosed' },
+  cafe_order_conversation: { independent: 'ep12PraiseIndependent', helped: 'ep12PraiseOrdered' },
 }
 
+/*
+ * Praise has to be about what the learner just did. Falling back to episode 1
+ * meant a remote-settled cafe order was congratulated with "You used I'm before
+ * your name." — flattering, specific, and about a different sentence entirely.
+ * An unknown intent now gets plain, honest encouragement instead.
+ */
+const GENERIC_PRAISE = 'ep1FeedbackGood'
+
 function praiseFor(kind, independent) {
-  const p = PRAISE[kind] || PRAISE.introduction
+  const p = PRAISE[kind]
+  if (!p) return GENERIC_PRAISE
   return independent ? p.independent : p.helped
 }
 
@@ -73,6 +97,7 @@ function buildRemotePayload(params, kind) {
     learner_name: params.learnerName ?? '',
     learner_place: params.place ?? '',
     target_noun: params.targetNoun ?? '',
+    target_thing: params.targetThing ?? '',
     target_activity: params.activity ?? '',
     interest_id: params.interestId ?? null,
     native_language: params.nativeLanguage ?? 'en',
@@ -86,7 +111,7 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', activity = '', signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', signal, remote } = params
   const kind = step?.evalKind
   const independent = !assistanceUsed && scaffoldLevel !== 'high'
   // The same context the caller previewed with, so the shown verdict and the
@@ -94,6 +119,7 @@ export async function evaluateEpisodeResponse(params) {
   const local = evaluateFree(kind, learnerResponse, {
     name: learnerName, independent, turnContext, place,
     ...(targetNoun ? { targetNoun } : {}),
+    ...(targetThing ? { targetThing } : {}),
     ...(activity ? { activity } : {}),
   })
 

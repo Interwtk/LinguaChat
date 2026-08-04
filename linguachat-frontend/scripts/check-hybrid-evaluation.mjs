@@ -7,6 +7,12 @@
 import assert from 'node:assert/strict'
 import { evaluateEpisodeResponse, validateRemoteEvaluation } from '../src/learning/engine/hybridEvaluation.js'
 import { evaluateFree, shouldEscalate } from '../src/learning/engine/responseEvaluation.js'
+import { readFileSync } from 'node:fs'
+import { ARC } from '../src/learning/episodes/index.js'
+
+// the English dictionary is module-private, so the keys are read as source
+const EN_SOURCE = readFileSync(new URL('../src/i18n/translations.js', import.meta.url), 'utf8')
+const hasKey = (key) => new RegExp(`\n  ${key}:`).test(EN_SOURCE)
 
 const NAME = 'Sebastian'
 const introStep = { evalKind: 'introduction', itemIds: ['hi', 'im'], type: 'free_reply', promptEn: "Hi! I'm Alex. What's your name?" }
@@ -200,6 +206,35 @@ async function main() {
     assert.equal(shouldEscalate(evaluateFree('introduction', '', { name: NAME })), false)
     assert.equal(shouldEscalate(evaluateFree('introduction', 'Sebastian', { name: NAME })), false)
     assert.equal(shouldEscalate(evaluateFree('introduction', 'Sebastián here, hello!', { name: NAME })), true)
+    ok()
+  }
+
+  /*
+   * Praise must be about the sentence the learner just wrote. The praise table
+   * stopped at the second arc, so any remote-settled answer in a later arc was
+   * congratulated with "You used I'm before your name." — specific, warm, and
+   * about a completely different objective.
+   */
+  {
+    const intents = new Set()
+    for (const ep of ARC) for (const step of ep.steps) if (step.evalKind) intents.add(step.evalKind)
+
+    for (const kind of intents) {
+      const step = { evalKind: kind, itemIds: [], type: 'free_reply' }
+      const remote = async () => ({ completed_objective: true, retry_required: false, confidence: 0.8 })
+      const r = await evaluateEpisodeResponse({
+        step, learnerResponse: 'something only Lingua can judge here', learnerName: NAME,
+        scaffoldLevel: 'low', remote,
+      })
+      if (r.source !== 'remote') continue          // settled locally; no praise from here
+      assert.ok(r.praiseKey, `${kind}: a remote success must still praise something`)
+      assert.ok(hasKey(r.praiseKey), `${kind}: praise key ${r.praiseKey} must exist`)
+      if (kind === 'introduction') continue      // episode 1's praise is its own
+      assert.notEqual(r.praiseKey, 'ep1PraiseIm',
+        `${kind} was praised for using "I'm" before a name`)
+      assert.notEqual(r.praiseKey, 'ep1PraiseIndependent',
+        `${kind} borrowed episode 1's praise`)
+    }
     ok()
   }
 
