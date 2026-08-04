@@ -696,6 +696,98 @@ def test_target_thing_is_bounded_and_optional():
     assert res_ok.status_code == 200
 
 
+
+# ---------- adaptive support must not leak into the backend ----------
+def test_scaffold_level_is_accepted_but_never_decides_the_verdict():
+    """The support level is context, not a grade. The same answer gets the same
+    verdict whether the learner had a model on screen or not."""
+    verdicts = []
+    for level in ["high", "medium", "low"]:
+        r = evaluate_deterministic(_payload(expected_intent="introduction",
+                                            learner_response="Hi, I'm Sebastian.",
+                                            scaffold_level=level))
+        verdicts.append((r["completed_objective"], r["error_type"], r["natural_version"]))
+    assert len(set(verdicts)) == 1, "support level changed the verdict"
+
+
+def test_an_unknown_scaffold_level_is_harmless():
+    r = evaluate_deterministic(_payload(expected_intent="introduction",
+                                        learner_response="Hi, I'm Sebastian.",
+                                        scaffold_level="enormous"))
+    assert r["completed_objective"] is True
+
+
+def test_the_provider_never_sees_support_state_or_reason_codes():
+    """The provider is handed linguistic context and nothing else. Reason codes
+    are internal labels for our own tests; a model has no business reading them,
+    and neither has anything that logs a request."""
+    from ai.providers import EvaluationContext
+    payload = _payload(
+        expected_intent="introduction", learner_response="Hi, I'm Sebastian.",
+        scaffold_level="low", assistance_used=True,
+    )
+    payload["scaffold"] = {"currentLevel": "low", "reasonCodes": ["fresh_skill"]}
+    payload["reason_codes"] = ["fresh_skill", "strong_prerequisites"]
+    ctx = EvaluationContext.from_payload(payload)
+    exposed = ctx.model_dump() if hasattr(ctx, "model_dump") else vars(ctx)
+    blob = str(exposed).lower()
+    for forbidden in ["scaffold", "reason", "fresh_skill", "strong_prerequisites", "assistance"]:
+        assert forbidden not in blob, f"the provider was handed {forbidden}"
+
+
+def test_assistance_used_does_not_change_the_deterministic_verdict():
+    """Whether the learner reached for help decides how the success is RECORDED,
+    which is the frontend's job. It must not change whether the English was
+    right."""
+    a = evaluate_deterministic(_payload(expected_intent="polite_request",
+                                        learner_response="Can I have water, please?",
+                                        assistance_used=False))
+    b = evaluate_deterministic(_payload(expected_intent="polite_request",
+                                        learner_response="Can I have water, please?",
+                                        assistance_used=True))
+    assert a["completed_objective"] == b["completed_objective"] is True
+    assert a["natural_version"] == b["natural_version"]
+
+
+def test_a_timeout_yields_exactly_one_conservative_verdict(monkeypatch):
+    """A remote that never answers must not produce a second piece of evidence.
+    One request in, one verdict out, and the learner is not blocked."""
+    _enable_openai(monkeypatch)
+    calls = []
+
+    def slow(payload):
+        calls.append(1)
+        raise TimeoutError("provider took too long")
+
+    monkeypatch.setattr(evaluator, "evaluate_with_openai", slow)
+    r = evaluator.evaluate_episode_response(_payload(expected_intent="express_like",
+                                                     learner_response="music is what I like most"))
+    assert len(calls) == 1, "a timeout must not be retried into duplicate evidence"
+    assert r.source == "fallback"
+    assert not (r.completed_objective and r.retry_required)
+
+
+def test_every_intent_still_answers_after_the_support_changes():
+    """The twelve episodes' intents are untouched by the frontend rework."""
+    for intent, text in [
+        ("introduction", "Hi, I'm Sebastian."), ("ask_name", "What's your name?"),
+        ("nice_to_meet", "Nice to meet you."), ("ask_wellbeing", "How are you?"),
+        ("answer_wellbeing", "I'm good."), ("reciprocal_question", "And you?"),
+        ("ask_origin", "Where are you from?"), ("answer_origin", "I'm from Bogota."),
+        ("full_intro_conversation", "Hi, I'm Sebastian. How are you?"),
+        ("express_like", "I like music."), ("express_dislike", "I don't like coffee."),
+        ("ask_preference", "What do you like?"), ("yes_no_preference", "Yes, I do."),
+        ("express_want", "I want water."), ("express_need", "I need help."),
+        ("ask_want", "Do you want water?"), ("accept_offer", "Yes, please."),
+        ("decline_offer", "No, thank you."),
+        ("simple_plan_conversation", "I like music. Do you want to listen to music?"),
+        ("polite_request", "Can I have water, please?"), ("thank_service", "Thank you."),
+        ("respond_anything_else", "No, thank you."), ("finish_order", "That is all, thanks."),
+        ("cafe_order_conversation", "Can I have water, please? That is all, thanks."),
+    ]:
+        r = evaluate_deterministic(_payload(expected_intent=intent, learner_response=text))
+        assert r["completed_objective"] is True, f"{intent} rejected {text!r}"
+
 # ---------- no regression on /chat, mission, translation ----------
 def test_chat_still_works():
     res = client.post("/chat", json={"message": "hello", "level": "A1"})

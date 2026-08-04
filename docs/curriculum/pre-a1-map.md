@@ -60,6 +60,10 @@ Verified against the real steps, not the titles:
 
 ## 4. Findings
 
+> **Update.** Findings 4.1 and 4.2 have since been addressed — see
+> [adaptive-support.md](adaptive-support.md). The measurements below are kept as
+> the record of what was wrong and why it mattered.
+
 ### 4.1 The Memory Garden granted language nothing taught
 
 The Garden grows from each episode's `gardenItems` at a fixed mastery of 0.5. The review engine schedules from `languageItems`, which only fills when a step records an attempt. The two had drifted: after playing all twelve episodes the Garden showed **45 items** while the learner model tracked **32**, and the 13 missing ones **could never come up for review at any point in the future**.
@@ -104,9 +108,9 @@ Six episodes open with the identical five-step spine `recall → scene → model
 
 `I'm + feeling`, `I'm from + place`, `I like + noun`, `I want + noun`, `Can I have + item + please?` are only ever practised with the words supplied. The learner produces the *sentences* freely; the pattern itself is always scaffolded.
 
-### 4.6 Three episode fields are inert
+### 4.6 Three episode fields are inert — *resolved*
 
-`targetItems`, `reviewItems` and `personalized` are declared on every episode and read by **nothing at runtime** — only by check scripts. They describe intent that the engine does not act on, which is how the declared and executed curricula drifted apart in the first place.
+`targetItems`, `reviewItems` and `personalized` were declared on every episode and read by **nothing at runtime**. All three are now gone from the episode data and derived from the steps instead — `targetsOf()`, `reviewsOf()`, `personalisesOf()` — each with a real consumer and a check that fails if a look-alike field returns.
 
 ### 4.7 Intents are healthy — for now
 
@@ -195,4 +199,4 @@ The check already enforces the shape of this: because two required can-dos are u
 
 **Split episode metadata from steps when a second level lands, not before.** The manifest currently costs nothing at runtime — nothing imports it, entry moved 361.39 → 361.43 kB. Home already pulls the full episode list through the planner; splitting today would be refactoring for a problem Pre-A1 does not have.
 
-**Before the next arc:** decide whether `targetItems`/`reviewItems`/`personalized` become real or disappear. Declared-but-unread fields are how curricula drift.
+**Before the next arc:** nothing outstanding on metadata — the three inert fields are derived now. See [adaptive-support.md](adaptive-support.md) for what the support engine expects a new arc to declare.

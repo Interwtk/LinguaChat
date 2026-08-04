@@ -145,8 +145,16 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
 
 // 12) an answer with the words on screen never counts as independent evidence
 {
-  assert.match(runner, /recordItemAttempt\(modelRef\.current, itemId, \{ correct, independent: false \}\)/,
+  /*
+   * A closed activity shows the answer, so it is assisted by definition — and
+   * it now also declares WHAT it proves. Recognising a sentence is evidence of
+   * understanding, never of production, so the evidence kind travels with the
+   * attempt instead of being inferred from the support level.
+   */
+  assert.match(runner, /recordItemAttempt\(modelRef\.current, itemId, \{ correct, independent: false, evidenceKind: kind \}\)/,
     'a closed activity shows the answer, so it is assisted by definition')
+  assert.match(runner, /const kind = evidenceKindForStep\(/,
+    'a closed activity must say what kind of evidence it produced')
   ok()
 }
 

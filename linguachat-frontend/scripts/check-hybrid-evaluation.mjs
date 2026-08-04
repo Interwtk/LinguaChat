@@ -175,14 +175,30 @@ async function main() {
     ok()
   }
 
-  // 14) mastery evidence: independence depends on scaffold + assistance
+  /*
+   * 14) mastery evidence follows what the learner DID, not how much help was on
+   * screen. This used to read `scaffoldLevel !== 'high'`, so someone typing an
+   * unaided sentence while a suggestion sat beside it was recorded as having
+   * copied it — and, worse, could never generate independent evidence at all on
+   * the turns where support was highest.
+   */
   {
-    const helped = await run({ learnerResponse: "I'm Sebastian.", scaffoldLevel: 'high', remote: spy(null) })
-    assert.equal(helped.masteryEvidence.independent, false, 'high scaffold ⇒ not independent')
+    const helpedLevel = await run({ learnerResponse: "I'm Sebastian.", scaffoldLevel: 'high', assistanceUsed: false, remote: spy(null) })
+    assert.equal(helpedLevel.masteryEvidence.independent, true,
+      'a suggestion merely being on screen is not the learner using it')
     const solo = await run({ learnerResponse: "I'm Sebastian.", scaffoldLevel: 'low', assistanceUsed: false, remote: spy(null) })
-    assert.equal(solo.masteryEvidence.independent, true, 'low scaffold, no help ⇒ independent')
+    assert.equal(solo.masteryEvidence.independent, true, 'no help used ⇒ independent')
     const suggested = await run({ learnerResponse: "I'm Sebastian.", scaffoldLevel: 'low', assistanceUsed: true, remote: spy(null) })
     assert.equal(suggested.masteryEvidence.independent, false, 'used a suggestion ⇒ not independent')
+    // a closed activity cannot prove production whatever the level
+    const closed = await evaluateEpisodeResponse({
+      episode, step: { ...introStep, type: 'choice' }, learnerResponse: "I'm Sebastian.",
+      learnerName: NAME, scaffoldLevel: 'low', assistanceUsed: false, remote: spy(null),
+    })
+    assert.equal(closed.masteryEvidence.independent, false, 'recognising is not producing')
+    // and an explicit caller decision wins over any inference
+    const told = await run({ learnerResponse: "I'm Sebastian.", scaffoldLevel: 'low', assistanceUsed: false, independent: false, remote: spy(null) })
+    assert.equal(told.masteryEvidence.independent, false, 'the caller may say it was assisted')
     ok()
   }
 

@@ -20,8 +20,28 @@ recordItemAttempt(m, 'im', { correct: true, independent: false })
 check('one helped success is not can_do', m.languageItems.im.status === 'learning')
 recordItemAttempt(m, 'im', { correct: true, independent: false })
 check('two helped successes still not can_do (no independence)', m.languageItems.im.status === 'learning')
+/*
+ * Being able to use a piece of language now takes TWO unaided productions, not
+ * one. A single success is as easily luck, a half-remembered phrase or a lucky
+ * guess as it is ability — and this is the claim the Memory Garden makes to the
+ * learner, so it has to be worth making.
+ */
 recordItemAttempt(m, 'im', { correct: true, independent: true })
-check('independent + >=2 correct -> can_do', m.languageItems.im.status === 'can_do')
+check('one independent success is not yet can_do', m.languageItems.im.status === 'learning')
+check('...but it counts as practice', m.languageItems.im.learningState === 'practicing')
+recordItemAttempt(m, 'im', { correct: true, independent: true })
+check('two independent successes -> can_do', m.languageItems.im.status === 'can_do')
+check('...and the item can be used', m.languageItems.im.learningState === 'can_use')
+
+/* ---- guided and recognised work never reach can_use on their own ---- */
+{
+  const guided = createLearnerModel()
+  for (let i = 0; i < 6; i++) recordItemAttempt(guided, 'im', { correct: true, independent: false, evidenceKind: 'guided' })
+  check('six guided successes stay at practicing', guided.languageItems.im.learningState === 'practicing')
+  const seen = createLearnerModel()
+  for (let i = 0; i < 6; i++) recordItemAttempt(seen, 'im', { correct: true, independent: false, evidenceKind: 'recognition' })
+  check('six recognitions stay at understood', seen.languageItems.im.learningState === 'understood')
+}
 
 /* ---- can-do goal ---- */
 let m2 = createLearnerModel()
