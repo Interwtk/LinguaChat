@@ -46,7 +46,7 @@ import {
 } from '../services/tutorPreferences'
 import { SEED_VOCAB_BY_ID } from '../data/vocabulary'
 import { ARC } from '../learning/episodes/index.js'
-import { loadLearnerModel, saveLearnerModel } from '../learning/engine/learnerModel.js'
+import { loadLearnerModel, saveLearnerModel, recordItemSeen } from '../learning/engine/learnerModel.js'
 import { markFactUsed, rotateFactUsage, selectLearnerFact } from '../learning/engine/learnerFacts.js'
 import { loadMemoryContext } from '../learning/engine/memoryContext.js'
 import {
@@ -466,9 +466,22 @@ export function AppProvider({ children }) {
     setView('today')
   }, [])
 
-  // Feed the Memory Garden (deduped by vocab id) and award XP. The EpisodeShell
-  // only calls this when the episode is not yet awarded, so XP is never doubled.
+  /*
+   * Feed the Memory Garden (deduped by vocab id) and award XP. The EpisodeShell
+   * only calls this when the episode is not yet awarded, so XP is never doubled.
+   *
+   * Being granted an item means the learner has MET it — nothing more. Each
+   * grant is recorded in the learner model at `seen`, which is what the Garden
+   * now reads; anything further has to be earned by evidence. Items the learner
+   * really produced are already further along and are not pushed back, because
+   * `recordItemSeen` only ever raises a state.
+   */
   const awardEpisode = useCallback((episode) => {
+    const model = loadLearnerModel()
+    for (const id of episode.gardenItems || []) {
+      if (SEED_VOCAB_BY_ID[id]) recordItemSeen(model, id)
+    }
+    saveLearnerModel(model)
     setLocalProgress(previous => {
       const existing = new Set((previous.learnedItems || []).map(i => i.vocabId).filter(Boolean))
       const additions = (episode.gardenItems || [])
@@ -477,7 +490,6 @@ export function AppProvider({ children }) {
           vocabId: id,
           word: SEED_VOCAB_BY_ID[id].term,
           kind: SEED_VOCAB_BY_ID[id].kind,
-          mastery: 0.5,
           lastSeenAt: Date.now(),
         }))
       return {

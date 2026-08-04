@@ -8,7 +8,7 @@
  */
 const KEY = 'lc2-learner-model-v1' // key kept stable; internal `version` gates migration
 const DAY = 86400000
-export const MODEL_VERSION = 5
+export const MODEL_VERSION = 6
 
 // How many past runs of one episode we keep. Enough to see a pattern, small
 // enough that storage never grows without bound.
@@ -108,22 +108,72 @@ function carryForward(parsed, { keepPreferences, keepSignals, keepRuns }) {
   }
 }
 
+/*
+ * Give an item from before v6 a learning state, using only evidence that was
+ * already recorded. Nothing is invented, and nothing that had real independent
+ * production is demoted — but an item whose history is ambiguous stops at
+ * `practicing` rather than being credited with something it may never have had.
+ */
+function learningStateFromLegacyItem(it) {
+  if (!it) return 'seen'
+  if (it.learningState && LEARNING_STATE_RANK[it.learningState] != null) return it.learningState
+  const independent = it.independentCorrect || 0
+  const correct = it.correct || 0
+  if (independent >= INDEPENDENT_USES_TO_CAN_USE) return 'can_use'
+  if (it.status === 'can_do' && independent >= 1 && correct >= 2) return 'can_use'
+  if (correct >= 1) return 'practicing'
+  return 'seen'
+}
+
+function upgradeLanguageItems(items) {
+  const out = {}
+  for (const [id, it] of Object.entries(items || {})) {
+    if (!it || typeof it !== 'object') continue
+    const learningState = learningStateFromLegacyItem(it)
+    out[id] = {
+      ...emptyItem(), ...it,
+      learningState,
+      status: learningState === 'can_use' ? 'can_do' : (it.correct || it.incorrect ? 'learning' : (it.status || 'learning')),
+    }
+  }
+  return out
+}
+
 function migrate(parsed) {
   if (!parsed || typeof parsed !== 'object') return emptyModel()
   if (parsed.version === MODEL_VERSION) {
-    return carryForward(parsed, { keepPreferences: true, keepSignals: true, keepRuns: true })
+    const m = carryForward(parsed, { keepPreferences: true, keepSignals: true, keepRuns: true })
+    m.languageItems = upgradeLanguageItems(m.languageItems)
+    return m
   }
-  // v4 -> v5: adds the run history and structured facts.
+  /*
+   * v5 -> v6: adds a learning state to every language item, derived from the
+   * evidence v5 already stored. Everything else — XP, episodes, mastery,
+   * can-dos, facts, interests, preferences, signal ids, runs, the active run
+   * and its scaffold — is carried across untouched.
+   */
+  if (parsed.version === 5) {
+    const m = carryForward(parsed, { keepPreferences: true, keepSignals: true, keepRuns: true })
+    m.languageItems = upgradeLanguageItems(m.languageItems)
+    return m
+  }
+  // v4 -> v6: adds the run history and structured facts.
   if (parsed.version === 4) {
-    return carryForward(parsed, { keepPreferences: true, keepSignals: true, keepRuns: false })
+    const m = carryForward(parsed, { keepPreferences: true, keepSignals: true, keepRuns: false })
+    m.languageItems = upgradeLanguageItems(m.languageItems)
+    return m
   }
-  // v3 -> v5: preferences exist but predate the idempotency log.
+  // v3 -> v6: preferences exist but predate the idempotency log.
   if (parsed.version === 3) {
-    return carryForward(parsed, { keepPreferences: true, keepSignals: false, keepRuns: false })
+    const m = carryForward(parsed, { keepPreferences: true, keepSignals: false, keepRuns: false })
+    m.languageItems = upgradeLanguageItems(m.languageItems)
+    return m
   }
-  // v2 -> v5: no preference data at all yet.
+  // v2 -> v6: no preference data at all yet.
   if (parsed.version === 2) {
-    return carryForward(parsed, { keepPreferences: false, keepSignals: false, keepRuns: false })
+    const m = carryForward(parsed, { keepPreferences: false, keepSignals: false, keepRuns: false })
+    m.languageItems = upgradeLanguageItems(m.languageItems)
+    return m
   }
   // v1 -> v2 (never lose existing progress)
   const m = emptyModel()
@@ -138,7 +188,8 @@ function migrate(parsed) {
     }
   }
   for (const [id, it] of Object.entries(parsed.languageItems || {})) {
-    m.languageItems[id] = {
+    const legacy = {
+      ...emptyItem(),
       status: it.status === 'known' ? 'can_do' : (it.status || 'learning'),
       correct: it.correct || 0,
       incorrect: it.incorrect || 0,
@@ -147,6 +198,7 @@ function migrate(parsed) {
       nextReviewAt: it.nextReviewAt || null,
       lastSeenAt: nowIso(),
     }
+    m.languageItems[id] = { ...legacy, learningState: learningStateFromLegacyItem(legacy) }
   }
   if (parsed.preferredScaffold) m.scaffoldByEpisode.first_greeting = parsed.preferredScaffold
   // preserve legacy episode completion flag if present elsewhere is handled by caller
@@ -203,7 +255,46 @@ function mergeActivityEvidence(model) {
     episodeRuns: mergeEpisodeRuns(model.episodeRuns, stored.episodeRuns),
     learnerFacts: mergeLearnerFacts(model.learnerFacts, stored.learnerFacts),
     episodes: mergeEpisodeState(model.episodes, stored.episodes),
+    languageItems: mergeLanguageItems(model.languageItems, stored.languageItems),
   }
+}
+
+/*
+ * Language items merge monotonically: counters take the higher value, the
+ * learning state takes the further-along one, and the review date takes the
+ * sooner of the two so nothing escapes revision.
+ *
+ * Without this, two copies of the model saving over each other lost whichever
+ * item the other one had just recorded — a Garden entry, or the evidence behind
+ * it, quietly disappearing.
+ */
+export function mergeLanguageItems(mine, theirs) {
+  const a = (mine && typeof mine === 'object') ? mine : {}
+  const b = (theirs && typeof theirs === 'object') ? theirs : {}
+  const out = {}
+  for (const id of new Set([...Object.keys(a), ...Object.keys(b)])) {
+    const x = a[id]
+    const y = b[id]
+    if (!x || typeof x !== 'object') { if (y && typeof y === 'object') out[id] = y; continue }
+    if (!y || typeof y !== 'object') { out[id] = x; continue }
+    const maxNum = (k) => Math.max(Number(x[k]) || 0, Number(y[k]) || 0)
+    const state = higherLearningState(x.learningState || 'seen', y.learningState || 'seen')
+    const soonest = [x.nextReviewAt, y.nextReviewAt].filter(Boolean).sort()[0] || null
+    const latestSeen = [x.lastSeenAt, y.lastSeenAt].filter(Boolean).sort().pop() || null
+    out[id] = {
+      status: state === 'can_use' ? 'can_do' : (x.status === 'new' && y.status === 'new' ? 'new' : 'learning'),
+      learningState: state,
+      correct: maxNum('correct'),
+      incorrect: maxNum('incorrect'),
+      independentCorrect: maxNum('independentCorrect'),
+      guidedCorrect: maxNum('guidedCorrect'),
+      recognisedCorrect: maxNum('recognisedCorrect'),
+      streak: maxNum('streak'),
+      nextReviewAt: soonest,
+      lastSeenAt: latestSeen,
+    }
+  }
+  return out
 }
 
 /*
@@ -272,6 +363,7 @@ export function saveLearnerModel(model) {
   model.episodeRuns = merged.episodeRuns
   model.learnerFacts = merged.learnerFacts
   model.episodes = merged.episodes
+  model.languageItems = merged.languageItems
   try { localStorage.setItem(KEY, JSON.stringify({ ...merged, version: MODEL_VERSION })) } catch {}
   return model
 }
@@ -289,20 +381,104 @@ export function scheduleReview(prev, { correct, independent }) {
 }
 
 // ---- language items ----
-export function recordItemAttempt(model, itemId, { correct, independent = false }) {
-  const prev = model.languageItems[itemId] || { status: 'new', correct: 0, incorrect: 0, independentCorrect: 0, streak: 0, nextReviewAt: null, lastSeenAt: null }
+
+/*
+ * How far a single piece of language has travelled.
+ *
+ * The Memory Garden used to show every granted item at a flat mastery of 0.5,
+ * so a sentence the learner had said unaided looked exactly like a word they
+ * had once heard someone else say. These four states are the smallest honest
+ * distinction:
+ *
+ *   seen        it appeared — as input, or inside a phrase tracked whole
+ *   understood  they picked it out correctly when it mattered
+ *   practicing  they produced it with the words in front of them
+ *   can_use     they produced it from nothing, more than once
+ *
+ * The order is monotonic on purpose. Getting something wrong later does not
+ * unlearn it; that is what the review schedule is for, and the two axes are
+ * deliberately separate.
+ */
+export const LEARNING_STATES = ['seen', 'understood', 'practicing', 'can_use']
+export const LEARNING_STATE_RANK = { seen: 0, understood: 1, practicing: 2, can_use: 3 }
+export const INDEPENDENT_USES_TO_CAN_USE = 2
+
+const higherLearningState = (a, b) => {
+  const ra = LEARNING_STATE_RANK[a] ?? -1
+  const rb = LEARNING_STATE_RANK[b] ?? -1
+  return rb > ra ? b : a
+}
+
+const emptyItem = () => ({
+  status: 'new', learningState: null, correct: 0, incorrect: 0,
+  independentCorrect: 0, guidedCorrect: 0, recognisedCorrect: 0,
+  streak: 0, nextReviewAt: null, lastSeenAt: null,
+})
+
+/*
+ * The state an answer can justify on its own. `evidenceKind` comes from the
+ * activity format (see scaffolding.js): recognition proves understanding,
+ * guided work proves practice, and only unaided open production can reach
+ * `can_use` — and only on the second time.
+ */
+function stateFromEvidence({ evidenceKind, correct, independent, independentCorrect }) {
+  if (!correct) return null
+  if (evidenceKind === 'recognition') return 'understood'
+  if (evidenceKind === 'guided') return 'practicing'
+  if (evidenceKind === 'open') {
+    if (independent && independentCorrect >= INDEPENDENT_USES_TO_CAN_USE) return 'can_use'
+    return independent ? 'practicing' : 'practicing'
+  }
+  return null
+}
+
+/*
+ * Record that an item was merely met — granted by an episode, heard in a line,
+ * or carried inside a phrase that is tracked as a whole. It enters the Garden
+ * and the review schedule leaves it alone; nothing here claims it can be used.
+ */
+export function recordItemSeen(model, itemId) {
+  if (!itemId) return model
+  const prev = model.languageItems[itemId]
+  if (prev) {
+    model.languageItems[itemId] = { ...prev, learningState: higherLearningState(prev.learningState || 'seen', 'seen'), lastSeenAt: nowIso() }
+    return model
+  }
+  model.languageItems[itemId] = { ...emptyItem(), learningState: 'seen', lastSeenAt: nowIso() }
+  return model
+}
+
+export function recordItemAttempt(model, itemId, { correct, independent = false, evidenceKind = 'open' } = {}) {
+  const prev = { ...emptyItem(), ...(model.languageItems[itemId] || {}) }
   const correctCount = prev.correct + (correct ? 1 : 0)
   const incorrectCount = prev.incorrect + (correct ? 0 : 1)
-  const independentCorrect = prev.independentCorrect + (correct && independent ? 1 : 0)
+  const independentCorrect = prev.independentCorrect + (correct && independent && evidenceKind === 'open' ? 1 : 0)
+  const guidedCorrect = prev.guidedCorrect + (correct && evidenceKind === 'guided' ? 1 : 0)
+  const recognisedCorrect = prev.recognisedCorrect + (correct && evidenceKind === 'recognition' ? 1 : 0)
   const review = scheduleReview(prev, { correct, independent })
-  let status = 'learning'
-  if (independentCorrect >= 1 && correctCount >= 2) status = 'can_do'
+
+  // learning state only ever climbs
+  const earned = stateFromEvidence({ evidenceKind, correct, independent, independentCorrect })
+  const learningState = higherLearningState(prev.learningState || 'seen', earned || 'seen')
+
+  /*
+   * `status` is kept for everything that already reads it (review scheduling,
+   * the planner, mastery displays). It is now derived from the learning state
+   * rather than counted separately, so the two can never disagree.
+   */
+  const status = learningState === 'can_use' ? 'can_do' : 'learning'
+
   model.languageItems[itemId] = {
-    status, correct: correctCount, incorrect: incorrectCount, independentCorrect,
+    status, learningState, correct: correctCount, incorrect: incorrectCount,
+    independentCorrect, guidedCorrect, recognisedCorrect,
     streak: review.streak, nextReviewAt: review.nextReviewAt, lastSeenAt: nowIso(),
   }
   return model
 }
+
+/* What the learner can be said to be able to use, for the Garden and audits. */
+export const learningStateOf = (model, itemId) => model?.languageItems?.[itemId]?.learningState || null
+export const canUseItem = (model, itemId) => learningStateOf(model, itemId) === 'can_use'
 
 // ---- can-do goals ----
 export function recordCanDoAttempt(model, canDoId, { success, independent = false, context = null }) {
@@ -393,6 +569,32 @@ export function sanitizeRun(raw) {
     formatsUsed: Array.isArray(raw.formatsUsed)
       ? [...new Set(raw.formatsUsed.filter(f => ACTIVITY_FORMATS.includes(f)))].slice(0, 10) : [],
     rewarded: Boolean(raw.rewarded),
+    /*
+     * How much help this run offers, and why. It lives on the run so a resumed
+     * attempt restores exactly what it had rather than re-deriving from a model
+     * that has changed since — and so practising the same episode again starts
+     * from its own reading of the evidence.
+     */
+    scaffold: sanitizeScaffold(raw.scaffold),
+  }
+}
+
+const SCAFFOLD_LEVELS = ['high', 'medium', 'low']
+function sanitizeScaffold(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const initialLevel = SCAFFOLD_LEVELS.includes(raw.initialLevel) ? raw.initialLevel : null
+  const currentLevel = SCAFFOLD_LEVELS.includes(raw.currentLevel) ? raw.currentLevel : initialLevel
+  if (!initialLevel || !currentLevel) return null
+  const num = (v) => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Math.min(Math.round(Number(v)), 99) : 0)
+  return {
+    initialLevel,
+    currentLevel,
+    // reason codes are short internal labels; anything unexpected is dropped
+    reasonCodes: Array.isArray(raw.reasonCodes)
+      ? raw.reasonCodes.filter(c => typeof c === 'string' && /^[a-z_]{3,40}$/.test(c)).slice(0, 12) : [],
+    independentStreak: num(raw.independentStreak),
+    assistedStreak: num(raw.assistedStreak),
+    retryPressure: num(raw.retryPressure),
   }
 }
 

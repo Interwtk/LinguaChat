@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { SEED_VOCAB_BY_ID } from '../../data/vocabulary'
 import { getLocalizedMeaning } from '../../services/learningContent'
-import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
+import { loadLearnerModel, LEARNING_STATE_RANK } from '../../learning/engine/learnerModel.js'
 import { selectLearnerFact } from '../../learning/engine/learnerFacts.js'
 
 // Demo garden: stable vocab ids + demo mastery. The visible meaning (`trans`)
@@ -16,19 +16,40 @@ const DEMO_GARDEN = [
   { id: 'easy', mastery: 0.38, days: 2 }, { id: 'today', mastery: 0.72, days: 1 },
 ]
 
-const FILTERS = ['All', 'Mastered', 'Learning', 'New']
+const FILTERS = ['All', 'CanUse', 'Practicing', 'Seen']
 
-function masteryLevel(m) {
-  if (m >= 0.75) return 'mastered'
-  if (m >= 0.45) return 'learning'
-  return 'new'
+/*
+ * The Garden used to show every item at a flat mastery of 0.5, so a sentence
+ * the learner had produced unaided looked exactly like a word they had once
+ * heard someone else say. It now reads the learner model's four learning
+ * states and groups them into the three the learner needs to tell apart:
+ *
+ *   seen + understood  →  met it
+ *   practicing         →  working on it
+ *   can_use            →  can use it
+ *
+ * `seen` and `understood` share a group on purpose. The difference between
+ * having met a word and having recognised it matters to the review engine and
+ * not to the person reading the screen.
+ */
+const GROUPS = { Seen: 'Seen', Practicing: 'Practicing', CanUse: 'CanUse' }
+
+function groupForState(state) {
+  if (state === 'can_use') return GROUPS.CanUse
+  if (state === 'practicing') return GROUPS.Practicing
+  return GROUPS.Seen
 }
 
-function masteryColor(m) {
-  if (m >= 0.75) return { bg: 'var(--green-soft)', border: 'var(--green)', text: 'var(--green)' }
-  if (m >= 0.45) return { bg: 'var(--yellow-soft)', border: 'var(--yellow)', text: 'var(--yellow)' }
+const GROUP_LABEL_KEY = { Seen: 'gardenStateSeen', Practicing: 'gardenStatePracticing', CanUse: 'gardenStateCanUse' }
+
+function groupColor(group) {
+  if (group === GROUPS.CanUse) return { bg: 'var(--green-soft)', border: 'var(--green)', text: 'var(--green)' }
+  if (group === GROUPS.Practicing) return { bg: 'var(--yellow-soft)', border: 'var(--yellow)', text: 'var(--yellow)' }
   return { bg: 'var(--blue-soft)', border: 'var(--blue)', text: 'var(--blue)' }
 }
+
+/* How full the little progress bar looks, from the state rather than a number. */
+const groupProgress = (group) => (group === GROUPS.CanUse ? 1 : group === GROUPS.Practicing ? 0.6 : 0.25)
 
 function wordRotation(word) {
   const code = word.charCodeAt(0) + word.charCodeAt(word.length - 1)
@@ -41,16 +62,20 @@ export function MemoryGarden() {
   const [expanded, setExpanded] = useState(null)
   const meaningOf = (item) => getLocalizedMeaning(item?.meaning, nativeLanguageInfo, interfaceLanguageInfo)
   const hasRealItems = localProgress.learnedItems.length > 0
+  // the learner model is the authority on how far each item has come
+  const learnerModel = loadLearnerModel()
   const gardenWords = hasRealItems
     ? localProgress.learnedItems.map(item => {
         // A real item may carry a vocab id (localized) or a legacy `trans` label.
         const vocab = item.vocabId ? SEED_VOCAB_BY_ID[item.vocabId] : null
+        const state = item.vocabId ? learnerModel.languageItems?.[item.vocabId]?.learningState : null
         return {
           ...item,
           word: vocab?.term || item.word,
           emoji: vocab?.emoji || item.emoji || '·',
           example: vocab?.example || item.example || '',
           trans: vocab ? meaningOf(vocab) : (item.trans || ''),
+          group: groupForState(state),
           days: Math.max(0, Math.floor((Date.now() - (item.lastSeenAt || Date.now())) / 86400000)),
         }
       })
@@ -58,19 +83,14 @@ export function MemoryGarden() {
         const vocab = SEED_VOCAB_BY_ID[d.id]
         return {
           word: vocab.term, emoji: vocab.emoji, example: vocab.example,
-          trans: meaningOf(vocab), mastery: d.mastery, days: d.days,
+          trans: meaningOf(vocab),
+          group: d.mastery >= 0.75 ? GROUPS.CanUse : d.mastery >= 0.45 ? GROUPS.Practicing : GROUPS.Seen,
+          days: d.days,
         }
       })
 
-  const filtered = gardenWords.filter(w => {
-    if (filter === 'All') return true
-    if (filter === 'Mastered') return masteryLevel(w.mastery) === 'mastered'
-    if (filter === 'Learning') return masteryLevel(w.mastery) === 'learning'
-    if (filter === 'New') return masteryLevel(w.mastery) === 'new'
-    return true
-  })
-
-  const mastered = gardenWords.filter(w => masteryLevel(w.mastery) === 'mastered').length
+  const filtered = gardenWords.filter(w => (filter === 'All' ? true : w.group === filter))
+  const usable = gardenWords.filter(w => w.group === GROUPS.CanUse).length
 
   /*
    * For the handful of words where it genuinely helps, a second example built
@@ -99,8 +119,8 @@ export function MemoryGarden() {
             </h1>
             <div className="flex items-center gap-3 text-right">
               <div>
-                <p style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--green)' }}>{mastered}</p>
-                <p style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{t('mastered')}</p>
+                <p style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--green)' }}>{usable}</p>
+                <p style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{t('gardenStateCanUse')}</p>
               </div>
               <div>
                 <p style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--ink)' }}>{gardenWords.length}</p>
@@ -119,7 +139,7 @@ export function MemoryGarden() {
                 color: filter === f ? 'var(--bg-main)' : 'var(--ink-muted)',
                 border: `1.5px solid ${filter === f ? 'var(--ink)' : 'var(--border)'}`,
               }}>
-              {f === 'All' ? t('all') : f === 'Mastered' ? t('mastered') : f === 'Learning' ? t('learning') : t('new')}
+              {f === 'All' ? t('all') : t(GROUP_LABEL_KEY[f])}
             </button>
           ))}
         </div>
@@ -131,10 +151,10 @@ export function MemoryGarden() {
           gap: 12,
         }}>
           {filtered.map(w => {
-            const colors = masteryColor(w.mastery)
+            const colors = groupColor(w.group)
             const rot = wordRotation(w.word)
             const isExpanded = expanded === w.word
-            const isLarge = w.mastery >= 0.80
+            const isLarge = w.group === GROUPS.CanUse
 
             return (
               <button
@@ -176,14 +196,14 @@ export function MemoryGarden() {
                     )}
                     <div className="flex items-center justify-between">
                       <span style={{ fontSize: 10, fontWeight: 700, color: colors.text, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-                        {masteryLevel(w.mastery)}
+                        {t(GROUP_LABEL_KEY[w.group])}
                       </span>
                       <span style={{ fontSize: 10, color: 'var(--ink-muted)' }}>
                         {w.days}d
                       </span>
                     </div>
                     <div style={{ height: 3, background: 'var(--border)', borderRadius: 999, marginTop: 6, overflow: 'hidden' }}>
-                      <div style={{ width: `${w.mastery * 100}%`, height: '100%', borderRadius: 999, background: colors.border }} />
+                      <div style={{ width: `${groupProgress(w.group) * 100}%`, height: '100%', borderRadius: 999, background: colors.border }} />
                     </div>
                   </div>
                 )}
@@ -202,8 +222,8 @@ export function MemoryGarden() {
         <div className="grid grid-cols-3 gap-3 mt-8 animate-fade-up" style={{ animationDelay: '0.12s' }}>
           {[
             { label: t('addedThisWeek'), value: hasRealItems ? gardenWords.filter(item => item.days <= 7).length : 4, color: 'var(--violet)' },
-            { label: t('mastered'), value: mastered, color: 'var(--green)' },
-            { label: t('stillLearning'), value: gardenWords.length - mastered, color: 'var(--yellow)' },
+            { label: t('gardenStateCanUse'), value: usable, color: 'var(--green)' },
+            { label: t('gardenStatePracticing'), value: gardenWords.filter(w => w.group === GROUPS.Practicing).length, color: 'var(--yellow)' },
           ].map(s => (
             <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
               <p style={{ fontWeight: 800, fontSize: '1.375rem', color: s.color }}>{s.value}</p>
