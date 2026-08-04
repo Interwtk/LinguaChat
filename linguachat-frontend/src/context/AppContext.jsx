@@ -48,6 +48,7 @@ import { SEED_VOCAB_BY_ID } from '../data/vocabulary'
 import { ARC } from '../learning/episodes/index.js'
 import { loadLearnerModel, saveLearnerModel } from '../learning/engine/learnerModel.js'
 import { markFactUsed, rotateFactUsage, selectLearnerFact } from '../learning/engine/learnerFacts.js'
+import { loadMemoryContext } from '../learning/engine/memoryContext.js'
 import {
   loadSession, saveSession, clearSession, getOrCreateSession, startSession,
   advanceBlock, completeSession, isDurationMode,
@@ -390,6 +391,8 @@ export function AppProvider({ children }) {
   const sessionContext = useCallback(() => ({
     interests: tutorPreferences?.interests || [],
     learnerKey: (profile.name || 'guest').trim() || 'guest',
+    // topics the learner waved away today are not used to build today's plan
+    dismissedFactIds: loadMemoryContext().dismissedFactIds,
   }), [tutorPreferences, profile.name])
 
   const previewSession = useCallback((durationMode) => {
@@ -798,7 +801,9 @@ export function AppProvider({ children }) {
         activeCompanion,
         // one short topic the learner mentioned before, if there is a suitable
         // one; nothing else about them travels with the message
-        rememberedLike: selectLearnerFact(loadLearnerModel(), { type: 'like', seed: sessionId })?.value || null,
+        rememberedLike: selectLearnerFact(loadLearnerModel(), {
+          type: 'like', seed: sessionId, dismissedIds: loadMemoryContext().dismissedFactIds,
+        })?.value || null,
       })
 
       setConnectionNotice(response.connectionMessage)

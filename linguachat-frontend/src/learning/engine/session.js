@@ -218,7 +218,7 @@ const completionBlock = () => ({
  * every block — the duration decides how much fits, so a session ends feeling
  * finished rather than exhausting.
  */
-export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs = Date.now(), interests = [], learnerKey = 'guest' } = {}) {
+export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs = Date.now(), interests = [], learnerKey = 'guest', dismissedFactIds = [] } = {}) {
   const mode = isDurationMode(durationMode) ? durationMode : 'standard'
   const { minutes, maxBlocks } = DURATION_MODES[mode]
   const dayKey = dayKeyFor(atMs)
@@ -265,7 +265,7 @@ export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs =
    * it. With nothing suitable to remember, the interest (or a plain everyday
    * situation) is a perfectly good promise.
    */
-  const factCtx = getFactContext(model, { interestContext: topicCtx, seed: `${topicSeed}:fact`, atMs })
+  const factCtx = getFactContext(model, { interestContext: topicCtx, seed: `${topicSeed}:fact`, atMs, dismissedIds: dismissedFactIds })
 
   const estimated = blocks.reduce((sum, b) => sum + (b.estimatedMinutes || 0), 0)
   return {
@@ -343,7 +343,7 @@ export function clearSession() {
  * only built for a new day, or when the learner changes duration BEFORE
  * starting.
  */
-export function getOrCreateSession(model, arc, { durationMode = 'standard', atMs = Date.now(), stored = undefined, interests = [], learnerKey = 'guest' } = {}) {
+export function getOrCreateSession(model, arc, { durationMode = 'standard', atMs = Date.now(), stored = undefined, interests = [], learnerKey = 'guest', dismissedFactIds = [] } = {}) {
   const existing = stored === undefined ? loadSession(arc) : normalizeSession(stored, arc)
   const today = dayKeyFor(atMs)
   if (existing && existing.dayKey === today) {
@@ -352,7 +352,7 @@ export function getOrCreateSession(model, arc, { durationMode = 'standard', atMs
     if (existing.status !== 'planned') return existing
     if (existing.durationMode === durationMode) return existing
   }
-  return buildSessionPlan(model, arc, { durationMode, atMs, interests, learnerKey })
+  return buildSessionPlan(model, arc, { durationMode, atMs, interests, learnerKey, dismissedFactIds })
 }
 
 export function startSession(session) {

@@ -10,6 +10,7 @@ import { ARC, getEpisode } from '../../learning/episodes/index.js'
 import { planDay } from '../../learning/engine/planner.js'
 import { loadLearnerModel, getEpisodeState } from '../../learning/engine/learnerModel.js'
 import { selectLearnerFact } from '../../learning/engine/learnerFacts.js'
+import { loadMemoryContext, dismissFact } from '../../learning/engine/memoryContext.js'
 
 export function ConversationRoom() {
   const {
@@ -36,12 +37,24 @@ export function ConversationRoom() {
   } = useApp()
   const [input, setInput] = useState('')
   const [sparkOpen, setSparkOpen] = useState(false)
-  // "Use another topic" applies to this conversation only; nothing is deleted.
-  const [factDismissed, setFactDismissed] = useState(false)
+  /*
+   * "Use another topic" is remembered for the day, not for the mount: walking
+   * to Home and back used to bring the same suggestion straight back. Nothing
+   * is deleted — the next fact is offered instead, and with none left there is
+   * simply no suggestion.
+   */
+  const [memoryContext, setMemoryContext] = useState(() => loadMemoryContext())
   const rememberedFact = useMemo(
-    () => selectLearnerFact(loadLearnerModel(), { type: 'like', seed: `chat:${episodeArcVersion}` }),
-    [episodeArcVersion],
+    () => (memoryContext.neutralRequested ? null : selectLearnerFact(loadLearnerModel(), {
+      type: 'like',
+      seed: `chat:${episodeArcVersion}`,
+      dismissedIds: memoryContext.dismissedFactIds,
+    })),
+    [episodeArcVersion, memoryContext],
   )
+  const useAnotherTopic = useCallback(() => {
+    setMemoryContext(dismissFact(rememberedFact))
+  }, [rememberedFact])
   const textareaRef = useRef(null)
   const bottomRef = useRef(null)
 
@@ -260,7 +273,7 @@ export function ConversationRoom() {
             * saying "another topic" never deletes the memory, it just keeps it
             * out of this conversation.
             */}
-          {!activeMissionDetails && rememberedFact && !factDismissed && (
+          {!activeMissionDetails && rememberedFact && (
             <div className="rounded-2xl p-3.5 mb-5 flex items-start gap-3 animate-fade-up"
               style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
               <LinguaAvatar size={30} online className="mt-0.5" />
@@ -274,7 +287,7 @@ export function ConversationRoom() {
                     style={{ background: 'var(--violet-soft)', border: '1.5px solid var(--violet)', color: 'var(--violet)', minHeight: 36 }}>
                     <span lang={nativeLanguageInfo.base}>{t('memoryUseTopic')}</span>
                   </button>
-                  <button type="button" onClick={() => setFactDismissed(true)}
+                  <button type="button" onClick={useAnotherTopic}
                     className="rounded-full px-3 py-1.5 text-xs font-semibold transition-all active:scale-[0.98]"
                     style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)', color: 'var(--ink-muted)', minHeight: 36 }}>
                     <span lang={nativeLanguageInfo.base}>{t('memoryUseAnotherTopic')}</span>

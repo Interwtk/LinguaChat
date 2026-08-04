@@ -62,9 +62,12 @@ export function factsOfType(model, type) {
  * be memory, just an echo. The seed makes the choice stable: the same session
  * gets the same fact across reloads, a new session may get another one.
  */
-export function selectLearnerFact(model, { type = 'like', seed = '', atMs = Date.now(), avoidValue = null, allowRecent = false } = {}) {
+export function selectLearnerFact(model, { type = 'like', seed = '', atMs = Date.now(), avoidValue = null, allowRecent = false, dismissedIds = [] } = {}) {
+  const declined = new Set((dismissedIds || []).map(id => String(id).toLowerCase()))
   const candidates = factsOfType(model, type).filter((fact) => {
     if (fact.confidence < MIN_FACT_CONFIDENCE) return false
+    // waved away for today: still a fact, just not this one right now
+    if (declined.has(`${fact.type}:${fact.value.toLowerCase()}`)) return false
     if (avoidValue && fact.value.toLowerCase() === String(avoidValue).toLowerCase()) return false
     if (allowRecent) return true
     if (fact.useCount >= MAX_CONSECUTIVE_USES) return false
@@ -109,9 +112,9 @@ export function rotateFactUsage(model, usedFact) {
  * something the learner told us, otherwise the interest they chose, otherwise
  * a neutral example. Never a raw id, never an explanation of why.
  */
-export function getFactContext(model, { interestContext = null, seed = '', atMs = Date.now(), optOut = false } = {}) {
+export function getFactContext(model, { interestContext = null, seed = '', atMs = Date.now(), optOut = false, dismissedIds = [] } = {}) {
   if (optOut) return { source: 'neutral', value: null, fact: null }
-  const fact = selectLearnerFact(model, { type: 'like', seed, atMs, avoidValue: interestContext?.targetNoun })
+  const fact = selectLearnerFact(model, { type: 'like', seed, atMs, avoidValue: interestContext?.targetNoun, dismissedIds })
   if (fact) return { source: 'fact', value: fact.value, fact }
   if (interestContext?.interestId) return { source: 'interest', value: interestContext.targetNoun, fact: null }
   return { source: 'neutral', value: null, fact: null }
