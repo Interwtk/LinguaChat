@@ -135,7 +135,7 @@ const CONNECT_01 = {
       options: [{ key: 'ep4CompOptCorrect', correct: true }, { key: 'ep4CompOptWrong1' }, { key: 'ep4CompOptWrong2' }] },
     { type: 'word_order', instructionKey: 'ep4BuildInstruction', hintKey: 'ep1BuildHint', itemId: 'how_are_you', tokens: ['How', 'are', 'you', '?'] },
     // every feeling is a valid answer — no option here is "wrong"
-    { type: 'choice', instructionKey: 'ep4ChoiceInstruction', promptEn: 'How are you?', itemId: 'im_good', allValid: true,
+    { type: 'choice', instructionKey: 'ep4ChoiceInstruction', promptEn: 'How are you?', itemId: 'im_feeling_pattern', allValid: true,
       options: [{ textEn: 'I’m good.', correct: true }, { textEn: 'I’m fine.', correct: true }, { textEn: 'I’m tired.', correct: true }] },
     { type: 'free_reply', speaker: 'lingua', promptEn: 'Hi {name}! How are you?', instructionKey: 'ep4AnswerInstruction',
       evalKind: 'answer_wellbeing', suggestionEn: 'I’m good.', itemIds: ['im_good', 'good'] },
@@ -173,7 +173,7 @@ const CONNECT_02 = {
     // the learner supplies their own place here; it is remembered for later
     // steps and never validated geographically
     { type: 'fill_blank', instructionKey: 'ep5FillInstruction', before: 'I’m from', after: '.', hintKey: 'ep5FillHint',
-      itemId: 'im_from', captureFact: 'place', placeholderKey: 'ep5PlacePlaceholder' },
+      itemId: 'im_from_pattern', captureFact: 'place', placeholderKey: 'ep5PlacePlaceholder' },
     { type: 'free_reply', speaker: 'lingua', promptEn: 'I’m from {partnerPlace}. Where are you from?', instructionKey: 'ep5AnswerInstruction',
       evalKind: 'answer_origin', suggestionEn: 'I’m from {place}.', itemIds: ['im_from', 'from'] },
     { type: 'free_reply', speaker: 'lingua', promptEn: 'Nice! I love meeting new people.', instructionKey: 'ep5AskInstruction',
@@ -296,7 +296,7 @@ const CHOOSE_02 = {
       options: [{ key: 'ep8CompOptCorrect', correct: true }, { key: 'ep8CompOptWrong1' }, { key: 'ep8CompOptWrong2' }] },
     { type: 'word_order', instructionKey: 'ep8BuildInstruction', hintKey: 'ep1BuildHint', itemId: 'i_want', tokens: ['I', 'want', 'water', '.'] },
     // every option is a valid thing to want — nothing here is "wrong"
-    { type: 'choice', instructionKey: 'ep8ChoiceInstruction', promptEn: 'What do you want right now?', itemId: 'i_want', allValid: true,
+    { type: 'choice', instructionKey: 'ep8ChoiceInstruction', promptEn: 'What do you want right now?', itemId: 'i_want_pattern', allValid: true,
       options: [{ textEn: 'I want water.', correct: true }, { textEn: 'I want coffee.', correct: true }, { textEn: 'I need a break.', correct: true }] },
     { type: 'free_reply', speaker: 'lingua', promptEn: 'Tell me what you need today.', instructionKey: 'ep8NeedInstruction',
       evalKind: 'express_need', suggestionEn: 'I need help.', itemIds: ['i_need', 'need'] },
@@ -339,7 +339,7 @@ const CHOOSE_03 = {
     { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Nice. I like {object}.', instructionKey: 'ep9TurnAsk',
       evalKind: 'ask_preference', suggestionEn: 'What do you like?', itemIds: ['what_do_you_like'] },
     { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'I like {noun} too. Do you want to {activity}?', instructionKey: 'ep9TurnDecide',
-      evalKind: 'accept_offer', suggestionEn: 'Yes, please.', itemIds: ['yes_please'], branchOn: 'accept_decline' },
+      evalKind: 'accept_offer', suggestionEn: 'Yes, please.', itemIds: ['yes_please', 'no_thank_you'], branchOn: 'accept_decline' },
     /*
      * Wants are practised with what episode 8 actually taught (water, help).
      * Reusing the interest noun here produced sentences like "I want traveling."
