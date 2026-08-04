@@ -2,7 +2,7 @@
 
 This document explains the level. The code decides it.
 
-- **Source of truth:** `linguachat-frontend/src/learning/episodes/index.js` — the fifteen episodes.
+- **Source of truth:** `linguachat-frontend/src/learning/episodes/index.js` — the seventeen episodes.
 - **Audit metadata:** `linguachat-frontend/src/learning/curriculum/preA1Map.js` — judgements a program cannot make, plus derived accessors that read the episodes rather than copy them.
 - **Enforcement:** `npm run check:curriculum-map` — every claim below that can be verified, is.
 
@@ -26,7 +26,11 @@ Three commitments follow, and the audit measured all three:
 
 ## 2. What exists today
 
-**15 episodes · 5 arcs · 26 intents · 14 can-dos · 51 Memory Garden items · 66 vocabulary entries · 870 XP.**
+**17 episodes · 6 arcs · 29 intents · 16 can-dos · 59 Memory Garden items · 74 vocabulary entries · 1000 XP.**
+
+> **The content of Pre-A1 is complete. A learner being ready for A1 is a separate
+> question, answered from evidence — see §7. A1 itself is not implemented, and the
+> full graduation regression has not been run.**
 
 | Arc | Episodes | Capability |
 |---|---|---|
@@ -35,10 +39,46 @@ Three commitments follow, and the audit measured all three:
 | `choose` | 7 Lo que te gusta · 8 Lo que quieres · 9 Hagamos un plan | like/dislike, ask a preference, want/need, accept/decline, agree a plan |
 | `cafe` | 10 Un café, por favor · 11 ¿Algo más? · 12 Tu primer pedido | polite request, answer a follow-up, close an order, thank service |
 | `repair` | 13 Cuando no entiendes · 14 Pide que lo repitan · 15 Seguir en la conversación | say you did not understand, ask for a repetition, ask for slower speech, close an encounter |
+| `things` | 16 ¿Qué es esto? · 17 ¿Cuántos? | ask what a thing is, identify it, understand "How many?", answer with a small quantity |
 
-Prerequisites form a single line: ep1 → ep2 → … → ep15. One entry point, no cycles, every episode reachable.
+Prerequisites form a single line: ep1 → ep2 → … → ep17. One entry point, no cycles, every episode reachable.
 
 Each arc is three episodes: **teach → extend → do it for real.** The third episode of every arc drops the exercises and becomes a conversation.
+
+### The last arc, and the decisions inside it
+
+**Three nouns, not a vocabulary list.** "What's this?" exists so a learner can
+acquire words inside a conversation instead of waiting for a lesson to hand them
+over. Book, phone and bag appear because a frame needs something to be about;
+the episode is about the frame.
+
+**The numbers are ONE Garden item.** Ten cards would fill a sixth of the Memory
+Garden with words nobody reviews individually, and the capability is answering
+"How many?", not reciting a list. Evidence still comes from what the learner
+produced — it simply accumulates on the group, the way a pattern's does.
+
+**Plurals are looked up, never built.** A small thing catalogue carries
+singular, plural, article and countability, because "It's a water.", "two
+coffee" and "two sandwichs" are the three sentences this arc could most easily
+have shipped. A step that names an uncountable thing for a counted turn is
+refused rather than papered over.
+
+**"How many?" is receptive.** The learner has to understand the question to
+answer it, and Pre-A1 never needs them to ask it. It is declared in
+`RECEPTIVE_ITEMS`, which is what stops the Garden from claiming it as something
+they can say.
+
+**Asking and answering are two intents.** Repair was one function done three
+ways; identifying is two different jobs, and the curriculum already models that
+pair as `ask_origin`/`answer_origin`. `CAN_DO_INTENTS` records that
+`identify_things` is made of both, so asking twice cannot stand in for never
+having identified anything.
+
+**Episode 17 is the level's closing conversation.** Identifying, counting,
+repairing, ordering, declining and saying goodbye happen in one unbroken
+exchange at a counter — seven consecutive turns, four distinct things to do.
+Nothing was added to lengthen it; every turn is a capability the level already
+owed.
 
 ### The repair arc, and the decisions inside it
 
@@ -73,7 +113,7 @@ So are `What?` and `Sorry?`: understood, and not the polite sentence the arc tea
 
 ---
 
-## 3. What a learner can do after episode 15
+## 3. What a learner can do after episode 17
 
 Verified against the real steps, not the titles:
 
@@ -87,10 +127,16 @@ Verified against the real steps, not the titles:
 - order in a café: request politely, answer "Anything else?", close the order, say thank you;
 - say they did not understand, ask for a repetition or for slower speech, and carry on with the
   question they just rescued;
-- lose the thread of a conversation, get it back, and say goodbye.
+- lose the thread of a conversation, get it back, and say goodbye;
+- ask what an unknown thing is, and say what one is;
+- understand "How many?" and answer with a small quantity, including inside an order.
 
-**What they cannot do:** ask what something is, or use any number. Both are required, both are
-still unbuilt, and that is why finishing episode 15 is not an exit from Pre-A1.
+**What they cannot do:** ask a price, talk about the past, or say what time it is.
+None of those is required for Pre-A1 — see §5 and the deferred list.
+
+**And finishing all seventeen is still not an exit from Pre-A1.** That guarantee
+used to come from two capabilities being unbuilt. It now comes from evidence, and
+§7 is where it lives.
 
 ---
 
@@ -213,7 +259,7 @@ New vocabulary: ≤ 9. New semantic types: none.
 Formats: heavy roleplay and `mini_story` — the first episodes where a story belongs, because a misunderstanding is a plot.
 Provider likely needed: **yes** — "I don't understand" arrives in many shapes.
 
-### Arc 6 — Things and how many (2 episodes) — **not built, and not started**
+### Arc 6 — Things and how many (2 episodes) — **built**
 
 Solves: the café cannot count, and the learner has no way to name an unknown object.
 Can-dos: `identify_things`, `use_small_numbers`.
@@ -224,34 +270,74 @@ Provider likely needed: no — both are highly deterministic.
 
 Two episodes is right for arc 6. Three would pad it.
 
-**Estimate: Pre-A1 needs 1 more arc and 2 more episodes — 17 in total.** Arc 5 is built; the
-section above is kept as written so the plan can be compared with what was delivered.
+**Both arcs are built: 17 episodes, as estimated.** The sections above are kept as originally
+written so the plan can be compared with what was delivered. Two deviations, both recorded in
+the capability map: numbers came in as one Garden item rather than a list, and "How much is it?"
+was dropped from the numbers episode — prices need money as a second countable domain, which is
+an A1-sized addition. It moved to the optional list rather than being quietly forgotten.
 
 ---
 
-## 7. When is a learner ready for A1?
+## 7. Finished, and ready: two different sentences
 
-Not "finished every episode". The proposed criteria, encoded in `PRE_A1_EXIT_CRITERIA`:
+**Curriculum complete** is a fact about the course: seventeen episodes exist and the learner
+reached the end of them. **Ready for A1** is a claim about the learner. They are computed
+separately, and the second is never implied by the first.
 
-- every **required can-do** earned — including `identify_things` and `use_small_numbers`, which
-  do not exist yet;
-- **two independent successes** each, with no model answer on screen (one is luck);
-- **no required skill still `learning`**;
-- **at most three overdue reviews** — a learner carrying a backlog is not ready to add a level;
-- **the last long conversation finished unaided**.
+Readiness lives in `linguachat-frontend/src/learning/curriculum/readiness.js` and is:
 
-The check already enforces the shape of this: because two required can-dos are unbuilt,
-"completed all episodes" provably cannot mean "ready for A1" — and after arc 5 that is still
-true, which `check-fifth-arc` asserts directly so a future arc cannot quietly change it.
+- **derived, never stored.** Recomputed from the learner model every time it is asked for. A
+  stored `ready: true` would be a second source of truth that can disagree with the evidence,
+  and merging two devices would have to decide which lie to keep.
+- **not a score.** No number, no percentage. The result is a list of what is missing, in reason
+  codes the UI turns into one human sentence and never shows raw.
+- **stable.** One review falling due overnight must not flip a learner from ready to not-ready.
+
+### What it requires
+
+| Criterion | Where it comes from |
+|---|---|
+| every required can-do taught | `PRE_A1_EXIT_CRITERIA.requiredCanDos` — the map is the only list |
+| **two** unaided successes each | one is luck; `independentEvidencePerCanDo` |
+| every item the capability is made of at least `practicing`, one at `can_use` | `productiveItemsOf`, so asking "What's this?" twice cannot stand in for never having identified anything |
+| at most **3** overdue reviews *among required items* | a forgotten optional word is not a reason to hold anyone back |
+| a **recent integrated conversation**, held unaided | a run of an episode the curriculum considers integrated, with at most 2 assists, recent relative to the learner's own last activity |
+
+An episode marked complete changes none of this by itself. A **replay** can: it produces new
+evidence and pays no XP, which is exactly how a learner who was helped through the level
+consolidates it afterwards.
+
+Six cases are pinned in `check:pre-a1-readiness`, including the one that matters most — a
+learner who walked through all seventeen episodes leaning on the model answer is
+`curriculumComplete: true, ready: false`.
+
+### What readiness does NOT do
+
+It awards nothing, unlocks nothing, and writes nothing to the learner model. A1 does not exist,
+so `ready: true` says only that the base is there — the copy says as much and offers more
+practice rather than a door.
 
 ---
 
 ## 8. Architecture recommendations
 
-**Keep the linear chain for now.** Fifteen episodes in one line, one entry point, no cycles. A skill graph becomes necessary when two arcs can be taken in either order — likely at arc 6, since things-and-numbers does not depend on conversation repair. Model it then; the accessors (`prerequisiteChain`, `canDoCoverage`) are already graph-shaped.
+**Keep the linear chain for now.** Seventeen episodes in one line, one entry point, no cycles. A skill graph becomes necessary when two arcs can be taken in either order — likely at arc 6, since things-and-numbers does not depend on conversation repair. Model it then; the accessors (`prerequisiteChain`, `canDoCoverage`) are already graph-shaped.
 
-**Split episode metadata from steps when a second level lands, not before.** Re-measured after
-arc 5: the entry bundle moved 363.33 → 370.90 kB for three episodes, a hosted story and the
-repair evaluator, still far under the 500 kB budget and still with no chunk warning. Home already pulls the full episode list through the planner; splitting today would be refactoring for a problem Pre-A1 does not have.
+**Split the episode content before A1 lands — measured, not guessed.** The entry bundle across
+the last three sprints: 361 kB (12 episodes) → 371 kB (15) → **401 kB (17)**, gzip 120 kB. Still
+under the 500 kB budget and still with no chunk warning, but the trend is now clear: roughly
+6 kB of entry per episode, and A1 would take it past the budget on its own.
+
+Two levers, in order of size:
+
+1. **`src/i18n/translations.js` (59 kB source) is eager** while all seven other locales are lazy.
+   The English episode copy is the single biggest thing the entry carries for content nobody has
+   opened yet.
+2. **`src/learning/episodes/index.js` (53 kB source)** holds every step of every episode. Home
+   only needs the metadata; the steps could load with the episode.
+
+Neither is urgent for Pre-A1 and both are the graduation sprint's business. Doing them now would
+be a large refactor inside a content sprint, which is how content sprints stop being about
+content. Home already pulls the full episode list through the planner; splitting today would be refactoring for a problem Pre-A1 does not have.
 
 **Before the next arc:** nothing outstanding on metadata — the three inert fields are derived now. See [adaptive-support.md](adaptive-support.md) for what the support engine expects a new arc to declare.

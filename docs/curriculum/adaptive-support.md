@@ -156,7 +156,36 @@ episode 6, and the metric that matters is turns the learner has to produce, not 
 
 ---
 
-## 8. What arc 5 found
+## 8. What arc 6 found
+
+The sixth arc was the second content written against this engine, and it found less
+than the fifth did — which is the point of the fifth having found what it did. Two
+things came out of it, both about SEMANTICS rather than support:
+
+**A remembered like was not a preference.** Episode 7's gap stores whatever the
+learner types, and four surfaces said it back out loud: the episode subject, the
+day's topic on Home, the practice room's opening line and the Memory Garden nudge.
+With "tired" and "Bogotá" in the model, the app asked "Do you like Bogotá?" and
+announced "Something you mentioned: tired". The gate now lives where the fact is
+CHOSEN — `selectLearnerFact({ accept })` — so an unusable value can no longer hide
+a perfectly good one behind it, and `asSubjectValue` is the single place that says
+what a subject may be.
+
+**Countability is a real grammatical property and the arc needed it.** "It's a
+water.", "two coffee" and "two sandwichs" are three sentences the material would
+have produced without it. The thing catalogue carries singular, plural, article and
+countability for the handful of nouns this level uses; plurals are looked up, and a
+counted turn that names an uncountable thing is refused rather than guessed at.
+
+Support itself needed no changes: episode 16 starts at `medium` for a learner who
+has finished the repair arc — strong prerequisites, brand-new language — and
+episode 17 keeps `medium` because numbers are new even though identifying is not.
+That is the behaviour the fifth arc's fixes were meant to produce, arriving without
+anyone touching the engine.
+
+---
+
+## 9. What arc 5 found
 
 The repair arc was the first content written *against* this engine rather than before it, and it
 surfaced three real defects in it. All three are fixed and pinned by checks.

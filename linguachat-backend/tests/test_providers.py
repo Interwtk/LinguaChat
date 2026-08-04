@@ -81,11 +81,19 @@ def test_the_provider_only_receives_linguistic_context():
         # same class as expected_intent. Without it a provider grading a repair is
         # answering a different question than the one the learner was asked.
         "repair_kind",
+        # and the same for a quantity: which shape was asked for, of what, and how
+        # many. All three describe the task; none describes the learner.
+        "quantity_form", "target_thing", "target_count",
     }
     # the support level and the attempt count were in the payload above and are
     # still not here; a new linguistic field must not smuggle them in
     assert context.repair_kind == "", "an unrelated payload must leave it empty"
     assert not any("scaffold" in f or "attempt" in f or "assistance" in f for f in visible)
+    # and nothing about how far along the learner is. Matched on whole words:
+    # "expected_intent" contains the letters of "xp" and is perfectly innocent.
+    progress_words = {"ready", "readiness", "skill", "skills", "overdue", "xp", "reason", "codes"}
+    for field in visible:
+        assert not (set(field.split("_")) & progress_words), f"{field} exposes how far along the learner is"
     # nothing about progress, rewards or the learner model may be in scope
     forbidden = {"xp", "garden", "mastery", "activity", "preferences", "storage", "signals", "runs"}
     for field in visible:

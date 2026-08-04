@@ -34,9 +34,9 @@ const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8')
 
 /* ---- 1) three episodes, one arc, in order, behind the café ---- */
 {
-  assert.deepEqual(ARCS, ['greetings', 'connect', 'choose', 'cafe', 'repair'])
+  assert.deepEqual(ARCS, ['greetings', 'connect', 'choose', 'cafe', 'repair', 'things'])
   assert.deepEqual(episodesInArc('repair').map(e => e.id), REPAIR_IDS)
-  assert.equal(ARC.length, 15)
+  assert.equal(ARC.length, 17)
   assert.deepEqual(EP13.prerequisites, ['your_first_order'])
   assert.deepEqual(EP14.prerequisites, ['lost_you'])
   assert.deepEqual(EP15.prerequisites, ['say_again'])
@@ -325,25 +325,27 @@ const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8')
   ok()
 }
 
-/* ---- 11) finishing the arc is not finishing Pre-A1 ---- */
+/* ---- 11) what arc 5 owes the level, and what the level now owes it ---- */
 {
-  const taught = new Set(ARC.map(e => e.canDoId))
-  const stillMissing = PRE_A1_EXIT_CRITERIA.requiredCanDos.filter(id => !taught.has(id))
-  assert.ok(stillMissing.length >= 1,
-    'after episode 15 the exit criteria must still fail — arc 6 has not been built')
-  for (const id of stillMissing) {
-    const planned = CAPABILITY_MAP.find(c => c.status === 'missing_required' && c.canDo === id)
-    assert.ok(planned, `${id} is required, missing, and not planned anywhere`)
-    assert.ok(planned.why, `${planned.id} must say why it is required`)
-  }
-  // repair and closing are taught now, and must be on the list rather than dropped
+  /*
+   * This group used to assert that two required capabilities were still
+   * missing. That was true of the curriculum in the week arc 5 shipped, not of
+   * arc 5, and arc 6 built both — so the assertion becomes the part that IS
+   * about arc 5: its two capabilities are required, and the goodbye it could
+   * not reuse has since been reused rather than quietly re-graded.
+   */
   assert.ok(PRE_A1_EXIT_CRITERIA.requiredCanDos.includes('ask_for_repair'))
   assert.ok(PRE_A1_EXIT_CRITERIA.requiredCanDos.includes('close_an_encounter'))
-  // and closing is honestly still fragile: one episode, no reuse yet
+
   const close = CAPABILITY_MAP.find(c => c.covers?.canDo === 'close_an_encounter')
-  assert.equal(close.status, 'needs_reuse',
-    'a capability taught in the last episode and never asked for again is not covered')
-  assert.deepEqual(canDoCoverage('close_an_encounter').reusedIn, [])
+  assert.equal(close.status, 'covered', 'closing was reused by a later arc, and the map says so')
+  const reused = canDoCoverage('close_an_encounter').reusedIn
+  assert.ok(reused.length >= 1, 'a capability may only be called covered once something asks for it again')
+  assert.ok(!reused.includes('we_can_continue'), 'reuse means a DIFFERENT episode requiring it')
+
+  // repair travelled furthest: three episodes, two of them not about repair
+  const repair = canDoCoverage('ask_for_repair').reusedIn
+  assert.ok(repair.includes('how_many'), 'the repair arc must still be reused outside itself')
   ok()
 }
 

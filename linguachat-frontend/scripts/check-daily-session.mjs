@@ -6,6 +6,7 @@
  */
 import assert from 'node:assert/strict'
 import { ARC } from '../src/learning/episodes/index.js'
+import { PRE_A1_EXIT_CRITERIA, productiveItemsOf } from '../src/learning/curriculum/preA1Map.js'
 import { createLearnerModel, setEpisodeState, markRecurringError } from '../src/learning/engine/learnerModel.js'
 import {
   buildSessionPlan, getOrCreateSession, DURATION_MODES, dayKeyFor,
@@ -14,6 +15,7 @@ import {
 } from '../src/learning/engine/session.js'
 
 const AT = Date.parse('2026-07-21T09:00:00Z')
+const DAY = 24 * 60 * 60 * 1000
 let n = 0
 const ok = () => { n++ }
 const types = (s) => s.blocks.map(b => b.type)
@@ -103,13 +105,36 @@ function seedDueReview(model, itemId, atMs = AT) {
   ok()
 }
 
-// 6) everything done and nothing due → free conversation, never an empty session
+// 6) everything done → consolidation while it is needed, conversation after
 {
+  /*
+   * This used to assert that finishing the curriculum left free chat as the
+   * only thing to offer. It is still never an empty session — but a learner who
+   * has finished every episode without proving much gets the one thing
+   * readiness says is missing, and only a learner with nothing left to prove
+   * gets handed an open conversation.
+   */
   const model = createLearnerModel()
   for (const ep of ARC) setEpisodeState(model, ep.id, { status: 'completed', stepIndex: 0, awarded: true })
   const s = buildSessionPlan(model, ARC, { durationMode: 'quick', atMs: AT })
   assert.ok(s.blocks.length >= 2)
-  assert.ok(types(s).includes('free_chat_option'))
+  assert.ok(types(s).some(t => ['integrated_practice', 'recall', 'free_chat_option'].includes(t)),
+    'the day after the last episode must still have something in it')
+
+  // a learner with the evidence gets conversation rather than consolidation
+  const proven = createLearnerModel()
+  for (const ep of ARC) {
+    setEpisodeState(proven, ep.id, { status: 'completed', stepIndex: 0, awarded: true })
+    proven.canDo[ep.canDoId] = { attempts: 2, successes: 2, independentSuccesses: 2, status: 'can_do', contexts: [ep.id], lastPracticedAt: new Date(AT - DAY).toISOString() }
+  }
+  for (const id of PRE_A1_EXIT_CRITERIA.requiredCanDos) {
+    for (const item of productiveItemsOf(id)) {
+      proven.languageItems[item] = { status: 'can_do', learningState: 'can_use', correct: 3, incorrect: 0, independentCorrect: 3, guidedCorrect: 0, recognisedCorrect: 0, streak: 2, nextReviewAt: new Date(AT + 5 * DAY).toISOString(), lastSeenAt: new Date(AT - DAY).toISOString() }
+    }
+  }
+  proven.episodeRuns = { how_many: [{ runId: 'r', episodeId: 'how_many', mode: 'first_run', startedAt: new Date(AT - 2 * DAY).toISOString(), completedAt: new Date(AT - DAY).toISOString(), independentEvidence: true, assistanceUsed: 0, rewarded: true }] }
+  const after = buildSessionPlan(proven, ARC, { durationMode: 'quick', atMs: AT })
+  assert.ok(types(after).includes('free_chat_option'), 'nothing left to consolidate → open conversation')
   ok()
 }
 

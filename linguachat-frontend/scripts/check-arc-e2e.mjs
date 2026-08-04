@@ -1,7 +1,7 @@
 /*
  * check-arc-e2e — deterministic end-to-end simulation of the full Pre-A1 arc.
  *
- * Drives the FIFTEEN real episode definitions through the REAL evaluation and
+ * Drives the SEVENTEEN real episode definitions through the REAL evaluation and
  * learner-model modules, mirroring exactly what EpisodeShell does for each step
  * type (submitFree / recordItems / adaptScaffold / finish) and what AppContext
  * does for the Memory Garden (awardEpisode dedup). No browser, no React — so the
@@ -53,6 +53,7 @@ const CANONICAL = {
   finish_order: 'That’s all, thanks.',
   cafe_order_conversation: 'Can I have water, please? That’s all, thanks.',
   close_encounter: 'Bye.',
+  ask_what_thing: 'What\u2019s this?',
 }
 /*
  * Repair is one intent with three strategies, so its canonical answer depends on
@@ -64,8 +65,21 @@ const CANONICAL_REPAIR = {
   repeat: 'Can you repeat, please?',
   slow_down: 'Please speak slowly.',
 }
+/* A quantity's shape decides its whole sentence, the way a repair's does. */
+const CANONICAL_QUANTITY = {
+  bare: () => 'Two.',
+  with_object: (step) => `${step.count === 3 ? 'Three' : 'Two'} ${step.thingId === 'sandwich' ? 'sandwiches' : 'books'}.`,
+  polite_request: (step) => `Can I have two ${step.thingId === 'sandwich' ? 'sandwiches' : 'books'}, please?`,
+}
+
 function answerFor(step) {
   if (step.suggestionEn) return resolve(step.suggestionEn)
+  if (step.evalKind === 'identify_thing') return `It\u2019s a ${step.thingId || 'book'}.`
+  if (step.evalKind === 'use_quantity') {
+    const build = CANONICAL_QUANTITY[step.quantityForm]
+    if (!build) throw new Error('quantity step without a known form: ' + step.quantityForm)
+    return build(step)
+  }
   if (step.evalKind === 'repair_request') {
     const canonical = CANONICAL_REPAIR[step.repairKind]
     if (!canonical) throw new Error('repair step without a known repairKind: ' + step.repairKind)
@@ -114,7 +128,7 @@ function playEpisode(model, ep, { mode }) {
       const fromSuggestion = mode === 'always_helped' || (mode === 'helped' && Boolean(step.suggestionEn))
       const independent = !fromSuggestion && scaffold !== 'high'
       const turnContext = { linguaSaid: resolve(step.promptEn || step.sceneEn || '') }
-      const res = evaluateFree(step.evalKind, answerFor(step), { name: NAME, independent, turnContext, place: PLACE, targetNoun: VARS.noun, repairKind: step.repairKind })
+      const res = evaluateFree(step.evalKind, answerFor(step), { name: NAME, independent, turnContext, place: PLACE, targetNoun: VARS.noun, repairKind: step.repairKind, targetThing: step.thingId, quantityForm: step.quantityForm, targetCount: step.count })
       assert.ok(res.completedObjective, `${ep.id} step ${i} (${step.evalKind}): intended answer rejected → ${JSON.stringify(res)}`)
       ;(step.itemIds || []).forEach(id => recordItemAttempt(model, id, { correct: true, independent }))
       // mirrors the shell: "help was used" means the learner reached for the
@@ -168,7 +182,7 @@ function playEpisode(model, ep, { mode }) {
 const model = createLearnerModel()
 const garden = []
 let xp = 0
-assert.equal(ARC.length, 15, 'all five Pre-A1 arcs must be playable end to end')
+assert.equal(ARC.length, 17, 'all six Pre-A1 arcs must be playable end to end')
 
 for (const ep of ARC) {
   const { awarded } = playEpisode(model, ep, { mode: 'helped' })
@@ -180,7 +194,7 @@ for (const ep of ARC) {
 
 const expectedXp = ARC.reduce((sum, ep) => sum + ep.xp, 0)
 assert.equal(xp, expectedXp, `arc XP should total ${expectedXp}, got ${xp}`)
-assert.equal(xp, 870, 'all five arcs together should award 870 XP')
+assert.equal(xp, 1000, 'all six arcs together should award 1000 XP')
 
 // garden: deduped union of all gardenItems, order-independent
 const expectedGarden = [
@@ -192,6 +206,8 @@ const expectedGarden = [
   'water', 'coffee', 'tea', 'juice', 'thank_you', 'can_i_have', 'here_you_are', 'can_i_have_pattern',
   'anything_else', 'thats_all',
   'i_dont_understand', 'can_you_repeat', 'speak_slowly', 'repair_pattern', 'bye', 'see_you',
+  'whats_this', 'its_a_pattern', 'book', 'phone', 'bag',
+  'numbers_1_10', 'how_many', 'quantity_pattern',
 ]
 assert.deepEqual([...garden].sort(), [...expectedGarden].sort(), 'garden must be the deduped union')
 assert.equal(garden.length, new Set(garden).size, 'garden must have no duplicates')

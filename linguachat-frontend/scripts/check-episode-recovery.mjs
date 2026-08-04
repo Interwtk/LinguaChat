@@ -111,6 +111,8 @@ const ok = () => { n++ }
     'water', 'coffee', 'tea', 'juice', 'thank_you', 'can_i_have', 'here_you_are', 'can_i_have_pattern',
     'anything_else', 'thats_all',
     'i_dont_understand', 'can_you_repeat', 'speak_slowly', 'repair_pattern', 'bye', 'see_you',
+    'whats_this', 'its_a_pattern', 'book', 'phone', 'bag',
+    'numbers_1_10', 'how_many', 'quantity_pattern',
   ].sort())
   ok()
 }

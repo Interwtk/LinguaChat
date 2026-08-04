@@ -17,6 +17,8 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { ARC, ARCS, getEpisode, episodesInArc } from '../src/learning/episodes/index.js'
+import { createLearnerModel, setEpisodeState, recordCanDoAttempt } from '../src/learning/engine/learnerModel.js'
+import { derivePreA1Readiness } from '../src/learning/curriculum/readiness.js'
 import { SEED_VOCAB_BY_ID } from '../src/data/vocabulary.js'
 import { practiceKindForItem, practiceKindForCanDo } from '../src/learning/engine/session.js'
 import { INTENT_SLOTS } from '../src/learning/engine/semanticContext.js'
@@ -201,10 +203,29 @@ const ok = () => { n++ }
     assert.ok(taught.has(id) || planned.has(id),
       `exit criteria require ${id}, which is neither taught nor planned`)
   }
-  // completing every episode must NOT be sufficient on its own
-  const notYetTaught = c.requiredCanDos.filter(id => !taught.has(id))
-  assert.ok(notYetTaught.length > 0,
-    'if every required can-do were already taught, "finished all episodes" would mean "ready for A1"')
+  /*
+   * Completing every episode must NOT be sufficient on its own.
+   *
+   * This used to be guaranteed by arithmetic — two required capabilities had no
+   * episode yet, so the criteria could not be met however much anyone played.
+   * Arc 6 built both, and the guarantee is now the one that was always meant:
+   * evidence. A learner who walked through all seventeen episodes leaning on
+   * the model answer at every turn has finished the curriculum and is not
+   * ready, and `derivePreA1Readiness` is what draws that line.
+   */
+  assert.deepEqual(c.requiredCanDos.filter(id => !taught.has(id)), [],
+    'every required capability should be built by now')
+
+  const walkedThrough = createLearnerModel()
+  for (const ep of ARC) {
+    setEpisodeState(walkedThrough, ep.id, { status: 'completed', awarded: true })
+    // completed with help: a success, and never an unaided one
+    recordCanDoAttempt(walkedThrough, ep.canDoId, { success: true, independent: false, context: ep.id })
+  }
+  const verdict = derivePreA1Readiness(walkedThrough)
+  assert.equal(verdict.curriculumComplete, true, 'seventeen episodes finished is a fact about the curriculum')
+  assert.equal(verdict.ready, false, 'and it is not, by itself, a fact about the learner')
+  assert.ok(verdict.reasonCodes.length > 0, 'and the reason must be nameable')
   ok()
 }
 

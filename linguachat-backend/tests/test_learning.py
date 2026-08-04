@@ -785,6 +785,7 @@ def test_every_intent_still_answers_after_the_support_changes():
         ("respond_anything_else", "No, thank you."), ("finish_order", "That is all, thanks."),
         ("cafe_order_conversation", "Can I have water, please? That is all, thanks."),
         ("close_encounter", "Bye."),
+        ("ask_what_thing", "What's this?"),
     ]:
         r = evaluate_deterministic(_payload(expected_intent=intent, learner_response=text))
         assert r["completed_objective"] is True, f"{intent} rejected {text!r}"
@@ -797,6 +798,14 @@ def test_every_intent_still_answers_after_the_support_changes():
         r = evaluate_deterministic(_payload(expected_intent="repair_request",
                                             repair_kind=kind, learner_response=text))
         assert r["completed_objective"] is True, f"repair/{kind} rejected {text!r}"
+    # identifying and counting both need to know what they are talking about
+    assert evaluate_deterministic(_payload(expected_intent="identify_thing", target_thing="book",
+                                           learner_response="It's a book."))["completed_objective"] is True
+    for form, text in [("bare", "Two."), ("with_object", "Two books."),
+                       ("polite_request", "Can I have two books, please?")]:
+        r = evaluate_deterministic(_payload(expected_intent="use_quantity", quantity_form=form,
+                                            target_thing="book", target_count=2, learner_response=text))
+        assert r["completed_objective"] is True, f"quantity/{form} rejected {text!r}"
 
 # ---------- no regression on /chat, mission, translation ----------
 def test_chat_still_works():
@@ -1057,6 +1066,243 @@ def test_a_malformed_repair_verdict_is_discarded(monkeypatch):
     r = evaluator.evaluate_episode_response(_payload(expected_intent="repair_request",
                                                      repair_kind="slow_down",
                                                      learner_response="Please speak slowly."))
+    assert r.source == "fallback"
+    assert r.completed_objective is True
+    assert not (r.completed_objective and r.retry_required)
+
+
+# ---------- sixth arc: things, and how many ----------
+def _ask(text):
+    return evaluate_deterministic(_payload(expected_intent="ask_what_thing", learner_response=text))
+
+
+def _identify(text, thing="book"):
+    return evaluate_deterministic(_payload(expected_intent="identify_thing", target_thing=thing,
+                                           learner_response=text))
+
+
+def _quantity(text, form="bare", thing="book", count=2):
+    return evaluate_deterministic(_payload(expected_intent="use_quantity", quantity_form=form,
+                                           target_thing=thing, target_count=count, learner_response=text))
+
+
+@pytest.mark.parametrize("text", ["What's this?", "What is this?", "what’s this", "What's that?"])
+def test_asking_what_a_thing_is_is_accepted(text):
+    assert _ask(text)["completed_objective"] is True, text
+
+
+@pytest.mark.parametrize("text", ["What's this called?", "What do you call this?"])
+def test_a_wider_way_of_asking_is_still_asking(text):
+    """A learner is never wrong for being correct, even off-script."""
+    r = _ask(text)
+    assert r["completed_objective"] is True, text
+    assert r["accepted_variant"] is True
+
+
+@pytest.mark.parametrize("text", ["Where is this?", "Who is this?"])
+def test_a_different_question_word_is_a_different_question(text):
+    r = _ask(text)
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "wrong_question_word"
+    assert r["understood"] is True
+
+
+@pytest.mark.parametrize("text", ["What this?", "This?"])
+def test_a_partial_question_is_incomplete(text):
+    r = _ask(text)
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "incomplete_question"
+
+
+@pytest.mark.parametrize("text", ["It's a book.", "It is a book.", "This is a book."])
+def test_identifying_a_thing_is_accepted(text):
+    assert _identify(text)["completed_objective"] is True, text
+
+
+def test_the_article_follows_the_thing():
+    assert _identify("", "apple")["natural_version"] == "It’s an apple."
+    assert _identify("", "book")["natural_version"] == "It’s a book."
+
+
+@pytest.mark.parametrize("text", ["Book.", "book", "a book"])
+def test_a_bare_noun_identifies_and_does_not_complete(text):
+    r = _identify(text)
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "bare_noun"
+    assert r["understood"] is True, "it does name the thing"
+
+
+def test_half_the_frame_is_named_as_such():
+    assert _identify("It book.")["error_type"] == "incomplete_identification"
+
+
+@pytest.mark.parametrize("text", ["Two.", "two", "2"])
+def test_a_bare_number_answers_how_many(text):
+    assert _quantity(text)["completed_objective"] is True, text
+
+
+def test_the_shape_the_turn_asked_for_decides_the_verdict():
+    """"Two." is a whole answer to "How many?" and half of an order."""
+    assert _quantity("Two.", "bare")["completed_objective"] is True
+    later = _quantity("Two.", "with_object")
+    assert later["completed_objective"] is False
+    assert later["error_type"] == "missing_counted_noun"
+    order = _quantity("Two books.", "polite_request")
+    assert order["completed_objective"] is False
+    assert order["error_type"] == "missing_request_frame"
+
+
+def test_plurals_are_looked_up_not_invented():
+    wrong = _quantity("Two book.", "with_object")
+    assert wrong["completed_objective"] is False
+    assert wrong["error_type"] == "wrong_number_form"
+    assert wrong["natural_version"] == "Two books."
+    sandwiches = _quantity("Can I have two sandwiches, please?", "polite_request", thing="sandwich")
+    assert sandwiches["completed_objective"] is True
+    assert _quantity("Can I have two sandwich, please?", "polite_request", thing="sandwich")["error_type"] == "wrong_number_form"
+    assert _quantity("One book.", "with_object", count=1)["completed_objective"] is True
+
+
+def test_a_number_outside_the_taught_range_is_still_a_number():
+    r = _quantity("Eleven.", "bare")
+    assert r["completed_objective"] is True, "it answers the question"
+    assert r["accepted_variant"] is True, "and the arc only teaches ten of them"
+
+
+@pytest.mark.parametrize("text", ["Many.", "A lot.", "Some."])
+def test_a_vague_quantity_is_understood_and_not_a_number(text):
+    r = _quantity(text)
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "not_a_number"
+    assert r["understood"] is True
+
+
+def test_a_quantity_of_something_uncountable_is_refused():
+    """"two water" is a content bug, and the evaluator refuses to invent a plural."""
+    r = _quantity("Two waters.", "with_object", thing="water")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "uncountable_target"
+
+
+@pytest.mark.parametrize("intent", ["ask_what_thing", "identify_thing", "use_quantity"])
+def test_sixth_arc_empty_replies_are_safe(intent):
+    r = evaluate_deterministic(_payload(expected_intent=intent, learner_response=""))
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "empty"
+    assert r["natural_version"]
+
+
+@pytest.mark.parametrize("intent", ["ask_what_thing", "identify_thing", "use_quantity"])
+def test_sixth_arc_never_returns_a_contradiction(intent):
+    for text in ["", "???", "What's this?", "It's a book.", "Two.", "aaaaaaa", "😀"]:
+        for form in ["bare", "with_object", "polite_request", "nonsense"]:
+            r = evaluate_deterministic(_payload(expected_intent=intent, quantity_form=form,
+                                                target_thing="book", target_count=2, learner_response=text))
+            assert not (r["completed_objective"] and r["retry_required"]), (intent, text)
+            assert r["natural_version"], (intent, text)
+
+
+def test_sixth_arc_intents_work_through_the_endpoint_without_openai():
+    cases = [
+        ("ask_what_thing", None, "What's this?"),
+        ("identify_thing", None, "It's a book."),
+        ("use_quantity", "bare", "Two."),
+        ("use_quantity", "with_object", "Two books."),
+    ]
+    for intent, form, text in cases:
+        res = client.post("/learning/evaluate", json=_payload(expected_intent=intent, quantity_form=form,
+                                                              target_thing="book", target_count=2,
+                                                              learner_response=text))
+        assert res.status_code == 200, intent
+        body = res.json()
+        assert body["completed_objective"] is True, f"{intent}/{form} rejected {text!r}"
+        assert body["source"] == "deterministic"
+
+
+def test_quantity_fields_are_bounded():
+    long_form = client.post("/learning/evaluate", json=_payload(expected_intent="use_quantity",
+                                                                quantity_form="x" * 200,
+                                                                learner_response="Two."))
+    assert long_form.status_code == 422, "an unbounded field is an injection surface"
+    huge_count = client.post("/learning/evaluate", json=_payload(expected_intent="use_quantity",
+                                                                 quantity_form="bare", target_count=10 ** 6,
+                                                                 learner_response="Two."))
+    assert huge_count.status_code == 422
+
+
+def test_an_ambiguous_identification_reaches_the_remote(monkeypatch):
+    """"That would be a book, I think." is real English the local rules miss."""
+    _enable_openai(monkeypatch)
+    seen = {}
+
+    def fake(payload):
+        seen.update(payload)
+        return {"completed_objective": True, "retry_required": False, "confidence": 0.8}
+
+    monkeypatch.setattr(evaluator, "evaluate_with_openai", fake)
+    r = evaluator.evaluate_episode_response(_payload(expected_intent="identify_thing", target_thing="book",
+                                                     learner_response="That would be a book, I think."))
+    assert r.completed_objective is True
+    assert seen.get("target_thing") == "book", "the provider must know what was pointed at"
+
+
+def test_an_ambiguous_quantity_reaches_the_remote_with_its_shape(monkeypatch):
+    _enable_openai(monkeypatch)
+    seen = {}
+
+    def fake(payload):
+        seen.update(payload)
+        return {"completed_objective": True, "retry_required": False, "confidence": 0.8}
+
+    monkeypatch.setattr(evaluator, "evaluate_with_openai", fake)
+    r = evaluator.evaluate_episode_response(_payload(expected_intent="use_quantity", quantity_form="polite_request",
+                                                     target_thing="sandwich", target_count=2,
+                                                     learner_response="Could I get a couple of sandwiches?"))
+    assert r.completed_objective is True
+    assert seen.get("quantity_form") == "polite_request"
+    assert seen.get("target_count") == 2
+
+
+def test_the_provider_never_sees_readiness_or_progress(monkeypatch):
+    """Readiness is local pedagogy. It has no business leaving the device."""
+    _enable_openai(monkeypatch)
+    seen = {}
+
+    def fake(payload):
+        seen.update(payload)
+        return {"completed_objective": True, "retry_required": False}
+
+    monkeypatch.setattr(evaluator, "evaluate_with_openai", fake)
+    evaluator.evaluate_episode_response(_payload(
+        expected_intent="use_quantity", quantity_form="bare", learner_response="Two.",
+        scaffold_level="high", previous_attempts=3, assistance_used=True,
+    ))
+    for forbidden in ["ready", "readiness", "missing_skills", "fragile_skills", "overdue_reviews",
+                      "xp", "garden", "scaffold_level", "assistance_used", "previous_attempts",
+                      "reason_codes", "reasonCodes"]:
+        assert forbidden not in seen, f"{forbidden} must never reach the provider"
+
+
+def test_a_quantity_survives_a_remote_timeout(monkeypatch):
+    _enable_openai(monkeypatch)
+
+    def boom(payload):
+        raise TimeoutError("slow")
+
+    monkeypatch.setattr(evaluator, "evaluate_with_openai", boom)
+    r = evaluator.evaluate_episode_response(_payload(expected_intent="use_quantity", quantity_form="with_object",
+                                                     target_thing="book", target_count=2,
+                                                     learner_response="Two books."))
+    assert r.completed_objective is True, "the deterministic verdict still stands"
+    assert r.source == "fallback"
+
+
+def test_a_malformed_identification_verdict_is_discarded(monkeypatch):
+    _enable_openai(monkeypatch)
+    monkeypatch.setattr(evaluator, "evaluate_with_openai",
+                        lambda payload: {"completed_objective": "maybe", "retry_required": True})
+    r = evaluator.evaluate_episode_response(_payload(expected_intent="identify_thing", target_thing="book",
+                                                     learner_response="It's a book."))
     assert r.source == "fallback"
     assert r.completed_objective is True
     assert not (r.completed_objective and r.retry_required)

@@ -69,7 +69,7 @@ check('accept nice too (variant)', evaluateNiceToMeet('Nice to meet you too.').a
 check('reject nice partial', evaluateNiceToMeet('meet you').completedObjective === false)
 
 /* ---- arc integrity ---- */
-check('arc has 15 episodes across five connected arcs', ARC.length === 15)
+check('arc has 17 episodes across six connected arcs', ARC.length === 17)
 const ids = new Set(ARC.map(e => e.id))
 check('arc ids unique', ids.size === ARC.length)
 for (const ep of ARC) {
