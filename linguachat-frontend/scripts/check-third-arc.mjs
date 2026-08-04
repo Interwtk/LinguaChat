@@ -22,6 +22,7 @@ import {
   getInterestObject, leastRecentlyUsed, INTEREST_CONTEXTS, NEUTRAL_CONTEXT, KNOWN_INTERESTS,
 } from '../src/learning/engine/interests.js'
 import { practiceKindForItem, practiceKindForCanDo, practiceKindForError } from '../src/learning/engine/session.js'
+import { targetsOf, reviewsOf } from '../src/learning/curriculum/preA1Map.js'
 
 let n = 0
 const ok = () => { n++ }
@@ -79,7 +80,7 @@ const THIRD = ['what_you_like', 'what_you_want', 'make_a_plan']
   const REQUIRED = ['en', 'es', 'pt', 'fr', 'it', 'de', 'ja', 'ar']
   for (const id of THIRD.flatMap(x => {
     const ep = getEpisode(x)
-    return [...(ep.gardenItems || []), ...(ep.targetItems || []), ...(ep.reviewItems || [])]
+    return [...(ep.gardenItems || []), ...targetsOf(ep.id), ...reviewsOf(ep.id)]
   })) {
     const item = SEED_VOCAB_BY_ID[id]
     assert.ok(item, `unknown vocab item ${id}`)

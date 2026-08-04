@@ -255,3 +255,84 @@ export const PRE_A1_EXIT_CRITERIA = {
 
 export const LAST_PRE_A1_CAPABILITY = 'small_numbers_and_quantity'
 export const FIRST_A1_CAPABILITY = 'daily_routines'
+
+/* ------------------------------------------------- derived episode metadata -*/
+
+/*
+ * `targetItems`, `reviewItems` and `personalized` used to be declared on every
+ * episode and read by nothing. Three hand-maintained lists describing content
+ * that the steps already state outright is exactly how a declared curriculum
+ * drifts from the executed one — and it did.
+ *
+ * They are gone from the episode data. Each is now DERIVED from the steps, so
+ * the answer cannot be stale, and each has a real consumer:
+ *
+ *   targetsOf()      what the episode teaches for the first time — used by the
+ *                    scaffolding engine to decide whether a skill is new
+ *   reviewsOf()      what it deliberately brings back, read from its own
+ *                    review steps
+ *   personalisesOf() which slots it fills from the learner, taken from the
+ *                    placeholders and captures actually present
+ */
+
+/* Every item the episode asks the learner to produce or recognise. */
+export function itemsOf(episodeId) {
+  const ep = getEpisode(episodeId)
+  const out = new Set()
+  for (const s of ep?.steps || []) {
+    ;(s.itemIds || []).forEach(i => out.add(i))
+    if (s.itemId) out.add(s.itemId)
+    ;(s.meaningItems || []).forEach(i => out.add(i))
+  }
+  return [...out]
+}
+
+/*
+ * What this episode teaches first. An item belongs to the first episode in
+ * curriculum order that grants it, so "target" means "new here" rather than
+ * "mentioned here".
+ */
+export function targetsOf(episodeId) {
+  const ep = getEpisode(episodeId)
+  if (!ep) return []
+  return (ep.gardenItems || []).filter(id => {
+    const first = ARC.find(e => (e.gardenItems || []).includes(id))
+    return first && first.id === ep.id
+  })
+}
+
+/* What the episode brings back on purpose: the items on its review steps. */
+export function reviewsOf(episodeId) {
+  const ep = getEpisode(episodeId)
+  const out = new Set()
+  for (const s of ep?.steps || []) {
+    if (!s.review) continue
+    ;(s.itemIds || []).forEach(i => out.add(i))
+    if (s.itemId) out.add(s.itemId)
+  }
+  return [...out]
+}
+
+/*
+ * Which parts of the learner this episode actually uses. Read from the
+ * placeholders in its own text and the facts it captures — never a boolean
+ * somebody remembered to set. semanticContext still decides whether a value
+ * may fill a slot; this only reports which slots exist.
+ */
+export function personalisesOf(episodeId) {
+  const ep = getEpisode(episodeId)
+  const slots = new Set()
+  for (const s of ep?.steps || []) {
+    const strings = [s.promptEn, s.sceneEn, s.suggestionEn, s.target, s.response]
+      .concat((s.options || []).map(o => o.textEn))
+      .concat(s.tokens || [])
+      .filter(Boolean)
+      .join(' ')
+    for (const m of strings.matchAll(/\{(\w+)\}/g)) slots.add(m[1])
+    if (s.captureFact) slots.add(`fact:${s.captureFact}`)
+    if (s.contextIntent) slots.add('semantic')
+  }
+  return [...slots]
+}
+
+export const isPersonalised = (episodeId) => personalisesOf(episodeId).length > 0

@@ -22,8 +22,6 @@ const GREETINGS_01 = {
   estimatedMinutes: 6,
   xp: 40,
   prerequisites: [],
-  targetItems: ['hi', 'im', 'im_pattern'],
-  reviewItems: [],
   gardenItems: ['hi', 'hello', 'im', 'whats_your_name'],
   steps: [
     { type: 'scene', mood: 'welcoming', titleKey: 'ep1IntroTitle', bodyKey: 'ep1IntroBody', showGoal: true, ctaKey: 'ep1Start' },
@@ -52,8 +50,6 @@ const GREETINGS_02 = {
   estimatedMinutes: 7,
   xp: 45,
   prerequisites: ['first_greeting'],
-  targetItems: ['whats_your_name', 'my_name_is', 'whats_your_pattern'],
-  reviewItems: ['hi', 'im'],
   gardenItems: ['whats_your_name', 'my_name_is', 'name'],
   steps: [
     { type: 'recall', review: true, instructionKey: 'ep2RecallInstruction', evalKind: 'introduction', itemIds: ['im'] },
@@ -83,8 +79,6 @@ const GREETINGS_03 = {
   estimatedMinutes: 8,
   xp: 55,
   prerequisites: ['ask_name'],
-  targetItems: ['nice_to_meet'],
-  reviewItems: ['hi', 'im', 'whats_your_name', 'my_name_is'],
   gardenItems: ['nice_to_meet', 'my_name_is', 'name'],
   steps: [
     { type: 'recall', review: true, instructionKey: 'ep3RecallInstruction', evalKind: 'introduction', itemIds: ['im'] },
@@ -123,8 +117,6 @@ const CONNECT_01 = {
   estimatedMinutes: 7,
   xp: 50,
   prerequisites: ['nice_to_meet'],
-  targetItems: ['how_are_you', 'im_good', 'and_you', 'im_feeling_pattern'],
-  reviewItems: ['hi', 'im'],
   gardenItems: ['how_are_you', 'im_good', 'and_you', 'good', 'fine', 'tired', 'im_feeling_pattern'],
   steps: [
     // 1. recover the first arc before adding anything new
@@ -160,8 +152,6 @@ const CONNECT_02 = {
   estimatedMinutes: 8,
   xp: 55,
   prerequisites: ['how_are_you'],
-  targetItems: ['where_from', 'im_from', 'im_from_pattern'],
-  reviewItems: ['im', 'whats_your_name', 'how_are_you'],
   gardenItems: ['where_from', 'im_from', 'from', 'what_about_you', 'im_from_pattern'],
   steps: [
     { type: 'recall', review: true, instructionKey: 'ep5RecallInstruction', evalKind: 'introduction', itemIds: ['im'] },
@@ -197,8 +187,6 @@ const CONNECT_03 = {
   estimatedMinutes: 10,
   xp: 70,
   prerequisites: ['where_from'],
-  targetItems: ['hi', 'im', 'whats_your_name', 'nice_to_meet', 'how_are_you', 'where_from'],
-  reviewItems: ['im', 'whats_your_name', 'nice_to_meet', 'how_are_you', 'where_from'],
   gardenItems: ['how_are_you', 'where_from', 'nice_to_meet'],
   // Deliberately conversation-first: one short scene, then a real exchange of
   // turns instead of a deck of cards.
@@ -246,9 +234,6 @@ const CHOOSE_01 = {
   estimatedMinutes: 8,
   xp: 55,
   prerequisites: ['first_conversation'],
-  personalized: true,
-  targetItems: ['i_like', 'i_dont_like', 'what_do_you_like', 'i_like_pattern'],
-  reviewItems: ['im', 'how_are_you'],
   gardenItems: ['like', 'i_like', 'i_dont_like', 'what_do_you_like', 'do_you_like', 'i_like_pattern'],
   steps: [
     { type: 'recall', review: true, instructionKey: 'ep7RecallInstruction', evalKind: 'ask_wellbeing', itemIds: ['how_are_you'] },
@@ -284,9 +269,6 @@ const CHOOSE_02 = {
   estimatedMinutes: 8,
   xp: 55,
   prerequisites: ['what_you_like'],
-  personalized: true,
-  targetItems: ['i_want', 'i_need', 'do_you_want', 'i_want_pattern'],
-  reviewItems: ['i_like', 'what_do_you_like'],
   gardenItems: ['want', 'need', 'help', 'please', 'i_want', 'i_need', 'do_you_want', 'yes_please', 'no_thank_you', 'i_want_pattern'],
   steps: [
     { type: 'recall', review: true, instructionKey: 'ep8RecallInstruction', evalKind: 'express_like', itemIds: ['i_like'] },
@@ -323,11 +305,8 @@ const CHOOSE_03 = {
   estimatedMinutes: 10,
   xp: 75,
   prerequisites: ['what_you_want'],
-  personalized: true,
   // a small controlled story: one decision point, two branches, same objective
   story: { branchStep: 5, branches: ['accept', 'decline'], branchLines: { accept: 'Great! Let’s get ready.', decline: 'No problem. Maybe another day.' } },
-  targetItems: ['i_like', 'do_you_want', 'yes_please', 'no_thank_you'],
-  reviewItems: ['im', 'i_like', 'i_want', 'do_you_want'],
   gardenItems: ['i_like', 'do_you_want', 'yes_please', 'no_thank_you'],
   steps: [
     { type: 'scene', mood: 'welcoming', titleKey: 'ep9SceneTitle', bodyKey: 'ep9SceneBody', showGoal: true, ctaKey: 'ep9Start' },
@@ -382,9 +361,6 @@ const CAFE_01 = {
   estimatedMinutes: 8,
   xp: 55,
   prerequisites: ['make_a_plan'],
-  personalized: true,
-  targetItems: ['can_i_have', 'please', 'thank_you', 'can_i_have_pattern'],
-  reviewItems: ['i_want', 'water'],
   gardenItems: ['water', 'coffee', 'tea', 'juice', 'please', 'thank_you', 'can_i_have', 'here_you_are', 'can_i_have_pattern'],
   steps: [
     { type: 'recall', review: true, instructionKey: 'ep10RecallInstruction', evalKind: 'express_want', itemIds: ['i_want'] },
@@ -421,11 +397,8 @@ const CAFE_02 = {
   estimatedMinutes: 8,
   xp: 55,
   prerequisites: ['a_coffee_please'],
-  personalized: true,
   // one decision, two endings, both entirely correct
   story: { branchStep: 6, branches: ['accept', 'decline'], branchLines: { accept: 'Sure. Here you are.', decline: 'No problem. Here you are.' } },
-  targetItems: ['anything_else', 'yes_please', 'no_thank_you', 'thats_all'],
-  reviewItems: ['can_i_have', 'please'],
   gardenItems: ['anything_else', 'yes_please', 'no_thank_you', 'thats_all', 'thank_you'],
   steps: [
     { type: 'recall', review: true, instructionKey: 'ep11RecallInstruction', evalKind: 'polite_request', itemIds: ['can_i_have'] },
@@ -460,10 +433,7 @@ const CAFE_03 = {
   estimatedMinutes: 10,
   xp: 75,
   prerequisites: ['anything_else'],
-  personalized: true,
   story: { branchStep: 2, branches: ['accept', 'decline'], branchLines: { accept: 'Of course. And after that?', decline: 'No problem. Is that everything?' } },
-  targetItems: ['can_i_have', 'please', 'thank_you', 'thats_all'],
-  reviewItems: ['can_i_have', 'anything_else', 'yes_please', 'no_thank_you'],
   gardenItems: ['can_i_have', 'please', 'thank_you', 'thats_all', 'here_you_are'],
   steps: [
     { type: 'scene', mood: 'welcoming', titleKey: 'ep12SceneTitle', bodyKey: 'ep12SceneBody', showGoal: true, ctaKey: 'ep12Start' },

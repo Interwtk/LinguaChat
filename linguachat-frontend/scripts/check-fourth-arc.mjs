@@ -31,6 +31,7 @@ import {
 } from '../src/learning/engine/learnerModel.js'
 import { isEpisodeUnlocked } from '../src/learning/engine/planner.js'
 import { selectCompatibleContext } from '../src/learning/engine/semanticContext.js'
+import { targetsOf, reviewsOf } from '../src/learning/curriculum/preA1Map.js'
 
 let n = 0
 const ok = () => { n++ }
@@ -83,7 +84,8 @@ const EP12 = getEpisode('your_first_order')
       assert.ok(SEED_VOCAB_BY_ID[id], `${ep.id}: garden item ${id} must be real vocabulary`)
       assert.ok(SEED_VOCAB_BY_ID[id].meaning?.es, `${id} must carry a native meaning`)
     }
-    for (const id of [...(ep.targetItems || []), ...(ep.reviewItems || [])]) {
+    // targets and reviews are derived from the steps now, not hand-listed
+    for (const id of [...targetsOf(ep.id), ...reviewsOf(ep.id)]) {
       assert.ok(SEED_VOCAB_BY_ID[id], `${ep.id}: item ${id} must be real vocabulary`)
     }
     for (const step of ep.steps) {

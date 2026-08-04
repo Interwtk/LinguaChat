@@ -10,6 +10,7 @@ import { evaluateFree } from '../src/learning/engine/responseEvaluation.js'
 import { createLearnerModel, setEpisodeState } from '../src/learning/engine/learnerModel.js'
 import { isEpisodeUnlocked } from '../src/learning/engine/planner.js'
 import { partnerFor, placeFor, PARTNER_PLACE_NAMES } from '../src/learning/engine/variation.js'
+import { targetsOf, reviewsOf } from '../src/learning/curriculum/preA1Map.js'
 
 let n = 0
 const ok = () => { n++ }
@@ -70,7 +71,7 @@ const NEW_IDS = ['how_are_you', 'where_from', 'first_conversation']
 // 4) every referenced vocabulary id exists (garden, targets, reviews)
 {
   for (const ep of ARC) {
-    for (const id of [...(ep.gardenItems || []), ...(ep.targetItems || []), ...(ep.reviewItems || [])]) {
+    for (const id of [...(ep.gardenItems || []), ...targetsOf(ep.id), ...reviewsOf(ep.id)]) {
       assert.ok(SEED_VOCAB_BY_ID[id], `${ep.id} references unknown vocab item ${id}`)
     }
   }
