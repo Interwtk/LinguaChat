@@ -1,7 +1,7 @@
 /*
  * check-arc-e2e — deterministic end-to-end simulation of the full Pre-A1 arc.
  *
- * Drives the TWELVE real episode definitions through the REAL evaluation and
+ * Drives the FIFTEEN real episode definitions through the REAL evaluation and
  * learner-model modules, mirroring exactly what EpisodeShell does for each step
  * type (submitFree / recordItems / adaptScaffold / finish) and what AppContext
  * does for the Memory Garden (awardEpisode dedup). No browser, no React — so the
@@ -14,6 +14,7 @@
  */
 import assert from 'node:assert/strict'
 import { ARC } from '../src/learning/episodes/index.js'
+import { getStory, storyBranches, storyTurns, turnText } from '../src/learning/engine/miniStory.js'
 import { evaluateFree } from '../src/learning/engine/responseEvaluation.js'
 import {
   createLearnerModel, recordItemAttempt, recordCanDoAttempt, markRecurringError,
@@ -51,9 +52,25 @@ const CANONICAL = {
   respond_anything_else: 'No, thank you.',
   finish_order: 'That’s all, thanks.',
   cafe_order_conversation: 'Can I have water, please? That’s all, thanks.',
+  close_encounter: 'Bye.',
+}
+/*
+ * Repair is one intent with three strategies, so its canonical answer depends on
+ * the strategy the step asked for. A step that asks for a repetition and gets
+ * "I don't understand." is understood but is not what was practised.
+ */
+const CANONICAL_REPAIR = {
+  signal_nonunderstanding: "I don't understand.",
+  repeat: 'Can you repeat, please?',
+  slow_down: 'Please speak slowly.',
 }
 function answerFor(step) {
   if (step.suggestionEn) return resolve(step.suggestionEn)
+  if (step.evalKind === 'repair_request') {
+    const canonical = CANONICAL_REPAIR[step.repairKind]
+    if (!canonical) throw new Error('repair step without a known repairKind: ' + step.repairKind)
+    return canonical
+  }
   const canonical = CANONICAL[step.evalKind]
   if (canonical) return canonical
   throw new Error('no canonical answer for evalKind ' + step.evalKind)
@@ -97,12 +114,38 @@ function playEpisode(model, ep, { mode }) {
       const fromSuggestion = mode === 'always_helped' || (mode === 'helped' && Boolean(step.suggestionEn))
       const independent = !fromSuggestion && scaffold !== 'high'
       const turnContext = { linguaSaid: resolve(step.promptEn || step.sceneEn || '') }
-      const res = evaluateFree(step.evalKind, answerFor(step), { name: NAME, independent, turnContext, place: PLACE, targetNoun: VARS.noun })
+      const res = evaluateFree(step.evalKind, answerFor(step), { name: NAME, independent, turnContext, place: PLACE, targetNoun: VARS.noun, repairKind: step.repairKind })
       assert.ok(res.completedObjective, `${ep.id} step ${i} (${step.evalKind}): intended answer rejected → ${JSON.stringify(res)}`)
       ;(step.itemIds || []).forEach(id => recordItemAttempt(model, id, { correct: true, independent }))
       // mirrors the shell: "help was used" means the learner reached for the
       // model answer, not merely that support was still on screen
       adapt({ correct: true, usedHelp: fromSuggestion })
+    } else if (step.type === 'mini_story') {
+      /*
+       * An episode-hosted story, played through the SAME story data the renderer
+       * uses. Both branches must be walkable; the arc is only "playable end to
+       * end" if the story inside episode 15 is too.
+       */
+      const story = getStory(step.storyObjective)
+      assert.ok(story, `${ep.id} step ${i}: unknown story objective ${step.storyObjective}`)
+      for (const branch of storyBranches(story)) {
+        for (const turn of storyTurns(story)) {
+          if (turn.kind === 'choose') {
+            assert.ok(turn.options.some(o => o.branch === branch), `story ${story.storyId}: no option for branch ${branch}`)
+            continue
+          }
+          if (turn.kind !== 'reply') {
+            assert.ok(turnText(turn, branch, story), `story ${story.storyId}: ${turn.kind} turn empty on branch ${branch}`)
+            continue
+          }
+          const fromSuggestion = mode !== 'independent'
+          const independent = !fromSuggestion && scaffold !== 'high'
+          const res = evaluateFree(turn.evalKind, answerFor(turn), { name: NAME, independent, place: PLACE, targetNoun: VARS.noun, repairKind: turn.repairKind })
+          assert.ok(res.completedObjective, `story ${story.storyId} (${branch}) ${turn.evalKind}: intended answer rejected → ${JSON.stringify(res)}`)
+          ;(turn.itemIds || []).forEach(id => recordItemAttempt(model, id, { correct: true, independent }))
+          adapt({ correct: true, usedHelp: fromSuggestion })
+        }
+      }
     }
     // scene / model / completion carry no evaluation
   }
@@ -125,7 +168,7 @@ function playEpisode(model, ep, { mode }) {
 const model = createLearnerModel()
 const garden = []
 let xp = 0
-assert.equal(ARC.length, 12, 'all four Pre-A1 arcs must be playable end to end')
+assert.equal(ARC.length, 15, 'all five Pre-A1 arcs must be playable end to end')
 
 for (const ep of ARC) {
   const { awarded } = playEpisode(model, ep, { mode: 'helped' })
@@ -137,7 +180,7 @@ for (const ep of ARC) {
 
 const expectedXp = ARC.reduce((sum, ep) => sum + ep.xp, 0)
 assert.equal(xp, expectedXp, `arc XP should total ${expectedXp}, got ${xp}`)
-assert.equal(xp, 685, 'all four arcs together should award 685 XP')
+assert.equal(xp, 870, 'all five arcs together should award 870 XP')
 
 // garden: deduped union of all gardenItems, order-independent
 const expectedGarden = [
@@ -148,6 +191,7 @@ const expectedGarden = [
   'want', 'need', 'help', 'please', 'i_want', 'i_need', 'do_you_want', 'yes_please', 'no_thank_you', 'i_want_pattern',
   'water', 'coffee', 'tea', 'juice', 'thank_you', 'can_i_have', 'here_you_are', 'can_i_have_pattern',
   'anything_else', 'thats_all',
+  'i_dont_understand', 'can_you_repeat', 'speak_slowly', 'repair_pattern', 'bye', 'see_you',
 ]
 assert.deepEqual([...garden].sort(), [...expectedGarden].sort(), 'garden must be the deduped union')
 assert.equal(garden.length, new Set(garden).size, 'garden must have no duplicates')

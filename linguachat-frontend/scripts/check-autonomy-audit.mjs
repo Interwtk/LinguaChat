@@ -28,6 +28,31 @@ import {
 import {
   CAN_DO_INTENT, intentsForEpisode, targetsOf, reviewsOf, personalisesOf,
 } from '../src/learning/curriculum/preA1Map.js'
+import { getStory, storyTurns } from '../src/learning/engine/miniStory.js'
+
+/*
+ * A hosted story is a conversation, not one step. Its `reply` turns are open
+ * production with a model answer on offer; its `choose` turn is recognition; its
+ * lines are the partner talking. Flattening it into pseudo-steps lets every
+ * metric below stay one function instead of growing a special case.
+ */
+function flatten(steps) {
+  const out = []
+  for (const s of steps) {
+    if (s.type !== 'mini_story') { out.push(s); continue }
+    for (const t of storyTurns(getStory(s.storyObjective))) {
+      if (t.kind === 'reply') {
+        out.push({ type: 'free_reply', format: 'mini_story', evalKind: t.evalKind,
+          suggestionEn: t.suggestionEn, itemIds: t.itemIds || [], storyTurn: true })
+      } else if (t.kind === 'choose') {
+        out.push({ type: 'choice', format: 'mini_story', options: t.options || [], storyTurn: true })
+      } else {
+        out.push({ type: 'scene', format: 'mini_story', storyTurn: true })
+      }
+    }
+  }
+  return out
+}
 
 let n = 0
 const ok = () => { n++ }
@@ -35,14 +60,14 @@ const ok = () => { n++ }
 /* ------------------------------------------------------------- the metrics -*/
 
 function measure(ep) {
-  const steps = ep.steps || []
+  const steps = flatten(ep.steps || [])
   const productive = steps.filter(s => s.type === 'free_reply' || s.type === 'recall')
   const openTurns = productive.filter(s => evidenceKindForStep(s) === EVIDENCE.OPEN)
   const guided = steps.filter(s => evidenceKindForStep(s) === EVIDENCE.GUIDED)
   const recognition = steps.filter(s => evidenceKindForStep(s) === EVIDENCE.RECOGNITION)
   const modelsShown = productive.filter(s => s.suggestionEn)
   const roleplay = steps.filter(s => s.format === 'roleplay')
-  const stories = steps.filter(s => s.format === 'mini_story')
+  const stories = (ep.steps || []).filter(s => s.type === 'mini_story')
   // the longest unbroken run of free production
   let run = 0, longest = 0
   for (const s of steps) {
@@ -102,7 +127,14 @@ const byId = Object.fromEntries(metrics.map(m => [m.id, m]))
     const step = ep.steps.find(s => s.evalKind === intent && s.suggestionEn)
     if (step) {
       const answer = step.suggestionEn.replace(/\{\w+\}/g, 'water')
-      const r = evaluateFree(intent, answer, {})
+      /*
+       * Graded with the step's OWN context, not a bare object. Repair is one
+       * intent with three strategies, and "Can you repeat, please?" is only the
+       * right answer to a step that asked for a repetition — checking it against
+       * a default would either fail honest content or force the evaluator to
+       * accept any repair anywhere.
+       */
+      const r = evaluateFree(intent, answer, { repairKind: step.repairKind })
       assert.ok(r.completedObjective, `${ep.id}: its own model answer for ${intent} is rejected`)
     }
   }
@@ -198,7 +230,9 @@ for (const id of ['ask_name', ...finales]) {
   const m = byId[id]
   console.log(`  ${id.padEnd(20)} exchange ${String(m.longestExchange).padStart(2)}  intents ${String(m.intents).padStart(2)}  unaided ${m.unaidedOpportunities}/${m.productive}`)
 }
-const stories = metrics.reduce((a, m) => a + m.stories, 0)
-if (stories === 0) console.log('\n  note: mini_story is a real format that no episode uses — sessions only')
+const withStories = metrics.filter(m => m.stories > 0).map(m => m.id)
+console.log(withStories.length
+  ? `\n  note: mini_story is hosted inside ${withStories.join(', ')}; the daily session has its own`
+  : '\n  note: mini_story is a real format that no episode uses — sessions only')
 
 console.log(`\ncheck-autonomy-audit — OK  (${n} audit groups verified)`)

@@ -27,7 +27,7 @@ import {
 import { getInterestContext } from '../src/learning/engine/interests.js'
 import {
   getStory, storyTurns, storyLength, turnText, createStoryState, normalizeStoryState,
-  advanceStory, isStoryFinished, defaultBranch, STORY_BRANCHES, STORY_OBJECTIVES,
+  advanceStory, isStoryFinished, defaultBranch, STORY_BRANCHES, storyBranches, storyHome, STORY_OBJECTIVES,
 } from '../src/learning/engine/miniStory.js'
 import { dayKeyFor } from '../src/learning/engine/session.js'
 
@@ -161,10 +161,26 @@ const MUSIC = { type: 'like', value: 'music' }
     const turns = storyTurns(story)
     assert.ok(turns.length >= 5 && turns.length <= 7, `${objective}: 5–7 interactions, got ${turns.length}`)
     assert.equal(turns.filter(t => t.kind === 'choose').length, 1, `${objective}: exactly one decision`)
-    assert.equal(turns.filter(t => t.kind === 'reply').length, 1, `${objective}: exactly one produced sentence`)
+    /*
+     * A session block asks for exactly one sentence — it is one block of a
+     * short day. A story an EPISODE hosts has room for a real exchange, so it
+     * may ask for two; more than that is a lesson, not a scene.
+     */
+    const replies = turns.filter(t => t.kind === 'reply').length
+    if (storyHome(story) === 'episode') {
+      assert.ok(replies >= 1 && replies <= 2, `${objective}: an episode story asks for one or two sentences, got ${replies}`)
+    } else {
+      assert.equal(replies, 1, `${objective}: a session story asks for exactly one produced sentence`)
+    }
     assert.equal(turns.at(-1).kind, 'close', `${objective}: must end`)
     const choose = turns.find(t => t.kind === 'choose')
-    assert.deepEqual(choose.options.map(o => o.branch), STORY_BRANCHES, `${objective}: two branches, both named`)
+    /*
+     * Two branches, both named — but a story declares WHICH two. The repair
+     * story's endings are two strategies rather than accepting or declining,
+     * and neither is the better one.
+     */
+    assert.deepEqual(choose.options.map(o => o.branch), storyBranches(getStory(objective)),
+      `${objective}: two branches, both named`)
     for (const option of choose.options) {
       assert.ok(option.textEn && option.textEn.length <= 30, `${objective}: options stay short`)
     }
@@ -179,8 +195,9 @@ const MUSIC = { type: 'like', value: 'music' }
     const branching = storyTurns(story).filter(t => t.byBranch)
     assert.ok(branching.length >= 1, `${objective}: the decision must change something`)
     for (const turn of branching) {
-      const a = turnText(turn, 'accept')
-      const b = turnText(turn, 'decline')
+      const [first, second] = storyBranches(story)
+      const a = turnText(turn, first, story)
+      const b = turnText(turn, second, story)
       assert.ok(a && b, `${objective}: both endings must exist`)
       assert.notEqual(a, b, `${objective}: the endings must differ`)
       assert.ok(Math.abs(a.split(' ').length - b.split(' ').length) <= 4, `${objective}: comparable length`)
@@ -244,8 +261,8 @@ const MUSIC = { type: 'like', value: 'music' }
 {
   for (const objective of STORY_OBJECTIVES) {
     for (const turn of storyTurns(getStory(objective))) {
-      for (const branch of STORY_BRANCHES) {
-        const text = turnText(turn, branch)
+      for (const branch of storyBranches(getStory(objective))) {
+        const text = turnText(turn, branch, getStory(objective))
         if (!text) continue
         assert.ok(text.length <= 70, `${objective}: a story line stays short (${text})`)
         for (const placeholder of text.match(/\{(\w+)\}/g) || []) {
@@ -271,12 +288,36 @@ const MUSIC = { type: 'like', value: 'music' }
   ok()
 }
 
-// 18) the planner only offers a story where a story actually exists
+/*
+ * 18) the planner offers exactly the stories that belong to a session.
+ *
+ * This used to read "every story is plannable", which was true while every story
+ * lived in the daily session. It is now the wrong rule: a story may declare
+ * `home: 'episode'`, and the repair story is one — it is a step inside episode
+ * 15, with the episode's own partner, support level and progress. Handing it to
+ * the planner as a standalone block would drop the learner into the middle of a
+ * conversation that the surrounding episode had set up.
+ *
+ * So the rule is now two-sided and strictly narrower: session stories MUST be
+ * plannable, episode stories MUST NOT be.
+ */
 {
   const { formatSupportsObjective, BLOCK_CANDIDATES } = await import('../src/learning/engine/formatChoice.js')
+  const { storyHome, getStory, sessionStoryObjectives } = await import('../src/learning/engine/miniStory.js')
   assert.ok(BLOCK_CANDIDATES.extra_practice.includes('mini_story'), 'a story must be plannable at all')
-  for (const objective of STORY_OBJECTIVES) {
-    assert.ok(formatSupportsObjective('mini_story', objective), `${objective} has a story, so it may be offered`)
+
+  const sessionStories = sessionStoryObjectives()
+  const episodeStories = STORY_OBJECTIVES.filter(o => storyHome(getStory(o)) === 'episode')
+  assert.ok(sessionStories.length >= 3, 'the daily session must still have stories of its own')
+  assert.ok(episodeStories.includes('repair_request'), 'the repair story is hosted by episode 15')
+  assert.equal(sessionStories.length + episodeStories.length, STORY_OBJECTIVES.length, 'every story has a home')
+
+  for (const objective of sessionStories) {
+    assert.ok(formatSupportsObjective('mini_story', objective), `${objective} is a session story, so it may be offered`)
+  }
+  for (const objective of episodeStories) {
+    assert.equal(formatSupportsObjective('mini_story', objective), false,
+      `${objective} is hosted by an episode and must never be planned as a loose block`)
   }
   for (const objective of ['full_intro_conversation', 'simple_plan_conversation', 'ask_name']) {
     assert.equal(formatSupportsObjective('mini_story', objective), false,

@@ -77,7 +77,15 @@ def test_the_provider_only_receives_linguistic_context():
     assert visible == {
         "expected_intent", "step_type", "required_elements", "learner_response",
         "learner_name", "native_language", "target_language", "turn_context",
+        # which repair strategy the turn asked for: a property of the TASK, in the
+        # same class as expected_intent. Without it a provider grading a repair is
+        # answering a different question than the one the learner was asked.
+        "repair_kind",
     }
+    # the support level and the attempt count were in the payload above and are
+    # still not here; a new linguistic field must not smuggle them in
+    assert context.repair_kind == "", "an unrelated payload must leave it empty"
+    assert not any("scaffold" in f or "attempt" in f or "assistance" in f for f in visible)
     # nothing about progress, rewards or the learner model may be in scope
     forbidden = {"xp", "garden", "mastery", "activity", "preferences", "storage", "signals", "runs"}
     for field in visible:

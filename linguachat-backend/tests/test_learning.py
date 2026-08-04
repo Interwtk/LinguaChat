@@ -768,7 +768,7 @@ def test_a_timeout_yields_exactly_one_conservative_verdict(monkeypatch):
 
 
 def test_every_intent_still_answers_after_the_support_changes():
-    """The twelve episodes' intents are untouched by the frontend rework."""
+    """The fifteen episodes' intents all still answer."""
     for intent, text in [
         ("introduction", "Hi, I'm Sebastian."), ("ask_name", "What's your name?"),
         ("nice_to_meet", "Nice to meet you."), ("ask_wellbeing", "How are you?"),
@@ -784,9 +784,19 @@ def test_every_intent_still_answers_after_the_support_changes():
         ("polite_request", "Can I have water, please?"), ("thank_service", "Thank you."),
         ("respond_anything_else", "No, thank you."), ("finish_order", "That is all, thanks."),
         ("cafe_order_conversation", "Can I have water, please? That is all, thanks."),
+        ("close_encounter", "Bye."),
     ]:
         r = evaluate_deterministic(_payload(expected_intent=intent, learner_response=text))
         assert r["completed_objective"] is True, f"{intent} rejected {text!r}"
+    # repair is one intent with three strategies, so it is checked per strategy
+    for kind, text in [
+        ("signal_nonunderstanding", "I don't understand."),
+        ("repeat", "Can you repeat, please?"),
+        ("slow_down", "Please speak slowly."),
+    ]:
+        r = evaluate_deterministic(_payload(expected_intent="repair_request",
+                                            repair_kind=kind, learner_response=text))
+        assert r["completed_objective"] is True, f"repair/{kind} rejected {text!r}"
 
 # ---------- no regression on /chat, mission, translation ----------
 def test_chat_still_works():
@@ -856,3 +866,197 @@ def test_translation_and_meaning_still_work():
     assert "cheese" in r1.json()["reply"].lower()
     r2 = client.post("/chat", json={"message": "que significa cheese", "level": "A1"})
     assert r2.status_code == 200
+
+
+# ---------- fifth arc: repair and closing ----------
+REPAIR_KINDS = ["signal_nonunderstanding", "repeat", "slow_down"]
+
+
+def _repair(text, kind="signal_nonunderstanding"):
+    return evaluate_deterministic(_payload(expected_intent="repair_request",
+                                          repair_kind=kind, learner_response=text))
+
+
+def _close(text):
+    return evaluate_deterministic(_payload(expected_intent="close_encounter", learner_response=text))
+
+
+@pytest.mark.parametrize("text", [
+    "I don't understand.", "I do not understand.", "Sorry, I don't understand.",
+    "I don’t understand.", "I didn't catch that.",
+])
+def test_signalling_non_understanding_is_accepted(text):
+    r = _repair(text)
+    assert r["completed_objective"] is True, text
+    assert r["retry_required"] is False
+
+
+@pytest.mark.parametrize("text", ["Don't understand.", "I not understand.", "No understand."])
+def test_a_partial_signal_is_understood_but_not_complete(text):
+    r = _repair(text)
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "incomplete_repair"
+    assert r["natural_version"] == "I don’t understand."
+
+
+def test_i_dont_know_is_not_i_dont_understand():
+    """A real sentence that answers a question instead of reporting a breakdown."""
+    r = _repair("I don't know.")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "means_dont_know"
+    assert r["understood"] is True, "the learner said something real; do not call it noise"
+
+
+@pytest.mark.parametrize("text", ["What?", "Sorry?", "Huh?", "Pardon?"])
+def test_a_bare_confusion_signal_does_not_complete_the_objective(text):
+    r = _repair(text)
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "too_short_repair"
+
+
+@pytest.mark.parametrize("text", ["Can you repeat, please?", "Could you repeat, please?",
+                                  "Can you repeat?", "Please repeat.", "Say that again."])
+def test_asking_for_a_repetition_is_accepted(text):
+    assert _repair(text, "repeat")["completed_objective"] is True, text
+
+
+@pytest.mark.parametrize("text", ["Repeat please.", "Again?", "Repeat."])
+def test_a_partial_repetition_request_is_incomplete(text):
+    r = _repair(text, "repeat")
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "incomplete_repair"
+
+
+@pytest.mark.parametrize("text", ["Please speak slowly.", "Speak slowly, please.",
+                                  "Can you speak slowly, please?", "Could you speak more slowly?"])
+def test_asking_for_slower_speech_is_accepted(text):
+    assert _repair(text, "slow_down")["completed_objective"] is True, text
+
+
+@pytest.mark.parametrize("text", ["Speak slow.", "Slow, please.", "Slow down."])
+def test_a_partial_slow_request_is_incomplete(text):
+    r = _repair(text, "slow_down")
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "incomplete_repair"
+
+
+def test_the_strategy_asked_for_decides_the_verdict():
+    """The same sentence is right for one turn and a different repair in another."""
+    asked_repeat = _repair("Can you repeat, please?", "repeat")
+    asked_signal = _repair("Can you repeat, please?", "signal_nonunderstanding")
+    assert asked_repeat["completed_objective"] is True
+    assert asked_signal["completed_objective"] is False
+    assert asked_signal["error_type"] == "other_repair", "a different repair is still a repair"
+    assert asked_signal["understood"] is True
+
+
+def test_an_unknown_or_missing_strategy_falls_back_to_the_first_one():
+    for kind in [None, "", "shout_louder"]:
+        r = evaluate_deterministic(_payload(expected_intent="repair_request",
+                                           repair_kind=kind, learner_response="I don't understand."))
+        assert r["completed_objective"] is True, kind
+        assert r["natural_version"] == "I don’t understand."
+
+
+@pytest.mark.parametrize("text", ["Bye.", "Goodbye.", "See you.", "See you later.",
+                                  "Thanks, bye.", "Thank you, bye.", "Take care."])
+def test_closing_an_encounter_is_accepted(text):
+    assert _close(text)["completed_objective"] is True, text
+
+
+def test_thanks_alone_is_not_a_goodbye():
+    r = _close("Thank you.")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "not_a_close"
+    assert r["understood"] is True
+
+
+@pytest.mark.parametrize("kind", REPAIR_KINDS)
+def test_repair_empty_replies_are_safe(kind):
+    r = _repair("", kind)
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "empty"
+    assert r["natural_version"]
+
+
+def test_close_empty_reply_is_safe():
+    r = _close("")
+    assert r["error_type"] == "empty"
+    assert r["completed_objective"] is False
+
+
+@pytest.mark.parametrize("intent", ["repair_request", "close_encounter"])
+def test_fifth_arc_never_returns_a_contradiction(intent):
+    for text in ["", "???", "I don't understand.", "Bye.", "yes", "aaaaaaa", "I like music."]:
+        for kind in REPAIR_KINDS:
+            r = evaluate_deterministic(_payload(expected_intent=intent, repair_kind=kind,
+                                               learner_response=text))
+            assert not (r["completed_objective"] and r["retry_required"]), (intent, text)
+            assert r["natural_version"], (intent, text)
+
+
+def test_fifth_arc_intents_work_through_the_endpoint_without_openai():
+    cases = [
+        ("repair_request", "signal_nonunderstanding", "I don't understand."),
+        ("repair_request", "repeat", "Can you repeat, please?"),
+        ("repair_request", "slow_down", "Please speak slowly."),
+        ("close_encounter", None, "See you later."),
+    ]
+    for intent, kind, text in cases:
+        res = client.post("/learning/evaluate", json=_payload(expected_intent=intent,
+                                                              repair_kind=kind, learner_response=text))
+        assert res.status_code == 200, intent
+        body = res.json()
+        assert body["completed_objective"] is True, f"{intent}/{kind} rejected {text!r}"
+        assert body["source"] == "deterministic"
+
+
+def test_repair_kind_is_bounded():
+    res = client.post("/learning/evaluate", json=_payload(expected_intent="repair_request",
+                                                          repair_kind="x" * 200,
+                                                          learner_response="I don't understand."))
+    assert res.status_code == 422, "an unbounded field is an injection surface"
+
+
+def test_an_ambiguous_repair_reaches_the_remote_and_comes_back_localised(monkeypatch):
+    """"Could you say that again, please?" is a real repair the local rules miss."""
+    _enable_openai(monkeypatch)
+    seen = {}
+
+    def fake(payload):
+        seen.update(payload)
+        return {"completed_objective": True, "retry_required": False, "confidence": 0.8}
+
+    monkeypatch.setattr(evaluator, "evaluate_with_openai", fake)
+    r = evaluator.evaluate_episode_response(_payload(expected_intent="repair_request",
+                                                     repair_kind="repeat",
+                                                     learner_response="Could you say that again, please?"))
+    assert r.completed_objective is True
+    assert seen.get("repair_kind") == "repeat", "the provider must be told which repair was asked for"
+    assert "reason_codes" not in seen and "reasonCodes" not in seen
+
+
+def test_a_repair_survives_a_remote_timeout(monkeypatch):
+    _enable_openai(monkeypatch)
+
+    def boom(payload):
+        raise TimeoutError("slow")
+
+    monkeypatch.setattr(evaluator, "evaluate_with_openai", boom)
+    r = evaluator.evaluate_episode_response(_payload(expected_intent="repair_request",
+                                                     repair_kind="repeat",
+                                                     learner_response="Can you repeat, please?"))
+    assert r.completed_objective is True, "the deterministic verdict still stands"
+    assert r.source == "fallback"
+
+
+def test_a_malformed_repair_verdict_is_discarded(monkeypatch):
+    _enable_openai(monkeypatch)
+    monkeypatch.setattr(evaluator, "evaluate_with_openai",
+                        lambda payload: {"completed_objective": "sort of", "retry_required": True})
+    r = evaluator.evaluate_episode_response(_payload(expected_intent="repair_request",
+                                                     repair_kind="slow_down",
+                                                     learner_response="Please speak slowly."))
+    assert r.source == "fallback"
+    assert r.completed_objective is True
+    assert not (r.completed_objective and r.retry_required)

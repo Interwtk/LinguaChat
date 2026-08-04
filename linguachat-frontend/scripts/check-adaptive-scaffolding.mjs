@@ -95,12 +95,15 @@ const EP2 = getEpisode('ask_name')
 const EP6 = getEpisode('first_conversation')
 const EP9 = getEpisode('make_a_plan')
 const EP12 = getEpisode('your_first_order')
+const EP13 = getEpisode('lost_you')
+const EP14 = getEpisode('say_again')
+const EP15 = getEpisode('we_can_continue')
 
 /* --------------------------------------------------------- initial level ---*/
 
 // 1) COHORT A — a brand-new learner is fully supported, everywhere
 {
-  for (const ep of [EP2, EP6, EP9, EP12]) {
+  for (const ep of [EP2, EP6, EP9, EP12, EP13, EP14, EP15]) {
     const s = deriveInitialScaffold({ learnerModel: brandNew(), episode: ep })
     assert.equal(s.currentLevel, 'high', `${ep.id}: a new learner must be supported`)
     assert.ok(s.reasonCodes.includes(REASONS.FRESH_SKILL), `${ep.id}: the reason must be the skill, not the position`)

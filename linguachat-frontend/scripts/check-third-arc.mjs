@@ -30,8 +30,8 @@ const THIRD = ['what_you_like', 'what_you_want', 'make_a_plan']
 
 // 1) structure: nine episodes in three arcs, the new ones well formed
 {
-  assert.equal(ARC.length, 12)
-  assert.deepEqual(ARCS, ['greetings', 'connect', 'choose', 'cafe'])
+  assert.equal(ARC.length, 15)
+  assert.deepEqual(ARCS, ['greetings', 'connect', 'choose', 'cafe', 'repair'])
   assert.deepEqual(episodesInArc('choose').map(e => e.id), THIRD)
   for (const id of THIRD) {
     const ep = getEpisode(id)

@@ -43,9 +43,9 @@ const EP12 = getEpisode('your_first_order')
 
 // 1) structure: three episodes in one new arc, in order, behind episode 9
 {
-  assert.deepEqual(ARCS.slice(-1), ['cafe'])
+  assert.deepEqual(ARCS.slice(3, 4), ['cafe'])
   assert.deepEqual(episodesInArc('cafe').map(e => e.id), CAFE_IDS)
-  assert.equal(ARC.length, 12)
+  assert.equal(ARC.length, 15)
   assert.deepEqual(EP10.prerequisites, ['make_a_plan'])
   assert.deepEqual(EP11.prerequisites, ['a_coffee_please'])
   assert.deepEqual(EP12.prerequisites, ['anything_else'])

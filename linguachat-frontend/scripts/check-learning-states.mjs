@@ -133,10 +133,45 @@ const ok = () => { n++ }
   assert.equal(merged.im.learningState, 'can_use', 'the further-along state wins')
   assert.equal(merged.im.independentCorrect, 2, 'counters take the higher value')
   assert.equal(merged.im.incorrect, 2, 'including the mistakes')
-  assert.equal(merged.im.nextReviewAt, '2026-08-05T00:00:00.000Z', 'the sooner review wins')
+  /*
+   * The review date follows the newest EVIDENCE, not the earliest date.
+   *
+   * "Sooner always wins" read well and was wrong on a single device: every save
+   * merges against what is already in storage, so an item that had just been
+   * reviewed was immediately handed back its old overdue date and could never
+   * leave the review queue. Copy `a` practised on the 4th and copy `b` on the
+   * 3rd, so `a` holds the current schedule.
+   */
+  assert.equal(merged.im.nextReviewAt, '2026-09-01T00:00:00.000Z', 'the newest evidence carries the schedule')
   // merging is stable and order-independent
   assert.deepEqual(mergeLanguageItems(b, a), merged)
   assert.deepEqual(mergeLanguageItems(merged, merged), merged)
+  ok()
+}
+
+// 8b) a reviewed item can leave the queue, and an untouched device keeps its own
+{
+  /*
+   * Found by scheduling a real review of "Can you repeat, please?" in the daily
+   * session: the block was answered correctly, the counters moved, and the item
+   * stayed due forever.
+   */
+  const past = '2026-08-01T00:00:00.000Z'
+  const stored = { can_you_repeat: { status: 'learning', learningState: 'practicing', correct: 1, incorrect: 0, independentCorrect: 1, guidedCorrect: 0, recognisedCorrect: 0, streak: 1, nextReviewAt: past, lastSeenAt: past } }
+  const model = createLearnerModel()
+  model.languageItems = JSON.parse(JSON.stringify(stored))
+  recordItemAttempt(model, 'can_you_repeat', { correct: true, independent: false, evidenceKind: 'guided' })
+  const scheduled = model.languageItems.can_you_repeat.nextReviewAt
+  assert.ok(scheduled > past, 'a correct review must schedule the next one later')
+  const afterSave = mergeLanguageItems(model.languageItems, stored)
+  assert.equal(afterSave.can_you_repeat.nextReviewAt, scheduled,
+    'saving must not hand a reviewed item its old due date back')
+
+  // and the original intent still holds: a device that has NOT practised keeps
+  // its earlier due date, so nothing escapes revision across two devices
+  const sameEvidence = { can_you_repeat: { ...stored.can_you_repeat, nextReviewAt: '2026-12-01T00:00:00.000Z' } }
+  assert.equal(mergeLanguageItems(sameEvidence, stored).can_you_repeat.nextReviewAt, past,
+    'with equally old evidence, the sooner review still wins')
   ok()
 }
 

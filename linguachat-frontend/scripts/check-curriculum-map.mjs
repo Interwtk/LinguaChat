@@ -112,8 +112,28 @@ const ok = () => { n++ }
       `${ep.id} claims "${ep.canDoId}" but never evaluates ${intent}`)
     assert.ok(practiceKindForCanDo(ep.canDoId), `${ep.canDoId} cannot be practised in a session`)
   }
-  const canDos = ARC.map(e => e.canDoId)
-  assert.equal(new Set(canDos).size, canDos.length, 'two episodes claim the same can-do')
+  /*
+   * A can-do has exactly ONE primary episode — the one that teaches it — and any
+   * number of later episodes that reinforce it, marked `reinforces: true`.
+   *
+   * The old rule was "no two episodes share a can-do", which forced one invented
+   * capability per episode. Episode 14 practises the same capability as 13 with a
+   * different strategy; giving it a can-do of its own would put a capability on
+   * the Pre-A1 exit criteria that the curriculum audit never declared required.
+   * This rule is narrower than the old one, not looser: a shared can-do is only
+   * legal when exactly one of the episodes claims to be the one that teaches it,
+   * and the reinforcement comes after it.
+   */
+  const byCanDo = {}
+  for (const ep of ARC) (byCanDo[ep.canDoId] ||= []).push(ep)
+  for (const [canDoId, episodes] of Object.entries(byCanDo)) {
+    const primary = episodes.filter(e => !e.reinforces)
+    assert.equal(primary.length, 1, `${canDoId} must have exactly one primary episode, found ${primary.length}`)
+    for (const ep of episodes.filter(e => e.reinforces)) {
+      assert.ok(ARC.indexOf(ep) > ARC.indexOf(primary[0]),
+        `${ep.id} reinforces ${canDoId} but comes before ${primary[0].id} teaches it`)
+    }
+  }
   ok()
 }
 
