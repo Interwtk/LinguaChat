@@ -142,9 +142,44 @@ A check fails if a look-alike field reappears on an episode.
 
 Nothing new, which is the point — the engine reads what episodes already declare:
 
-- **`prerequisites`** carry the transfer. An arc whose prerequisites are honest gets sensible starting support for free.
+- **`skillPrerequisites`** carry the transfer, and `prerequisites` are the curricular gate. Arc 5
+  is why these are now two fields: ordering a coffee is simply the episode before the repair arc
+  and has nothing to do with being able to repair a conversation. An episode that declares no
+  `skillPrerequisites` falls back to its prerequisite episodes' can-dos, so nothing had to change
+  for the first four arcs.
 - **`canDoId`**, and an entry in `CAN_DO_INTENT` naming the intent that stands for it.
 - **Open turns** for the can-do it claims: a skill that is never asked for in a free reply can never be shown as usable.
 - **Patterns as items** where a pattern is taught, so novelty can be detected.
 
-Two things to keep in mind when writing it: a conversational finale should exceed episode 6's seven turns rather than sit below it, and `mini_story` still appears in no episode at all — only in daily sessions.
+One thing to keep in mind when writing it: a conversational finale should match or exceed
+episode 6, and the metric that matters is turns the learner has to produce, not screens.
+
+---
+
+## 8. What arc 5 found
+
+The repair arc was the first content written *against* this engine rather than before it, and it
+surfaced three real defects in it. All three are fixed and pinned by checks.
+
+**The reinforcement episode was answering for the capability.** `ARC_BY_CANDO` was built with
+`Object.fromEntries`, so the last episode claiming a can-do won the key — episode 14, which
+reinforces `ask_for_repair`. Strength was therefore measured against episode 14's not-yet-seen
+targets, and a learner who had cleanly finished episode 13 read as `fragile_skill`. The map now
+prefers the episode that does not declare `reinforces`.
+
+**Novelty could not see a new phrase.** `noveltyOf` inspected patterns and intents whose can-do
+had no attempts, which made two brand-new sentences invisible: a learner solid at episode 13 was
+handed episode 14 — where "Can you repeat, please?" and "Please speak slowly." are both new —
+with no support at all. Novelty now also reads `targetsOf`, and the guardrail fires even when the
+target skill is already solid. The observed progression is medium → medium → medium across the
+arc, and low on a replay of a mastered episode, which is the shape the engine was built for.
+
+**A hosted story lost its ending.** `MiniStory` called `onDone()` with no argument, so an episode
+that hosts a story recorded `branchId: null`; the "try the other strategy" offer then pointed
+back at the strategy the learner had just played. The story now reports its branch to whoever
+hosts it, and the episode records it exactly the way a branching reply is recorded.
+
+Two smaller things came out of walking the episodes in a browser rather than from the checks: a
+gap-fill's placeholder was literally its answer, and `fill_blank` accepted anything non-empty
+because the format was built for capture steps. A gap now declares `expects` when it has one
+right answer, and is checked; a capture gap behaves exactly as before.
