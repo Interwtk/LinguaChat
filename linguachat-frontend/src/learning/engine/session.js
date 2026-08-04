@@ -56,6 +56,13 @@ const ITEM_KIND = {
   do_you_want: 'ask_want',
   yes_please: 'accept_offer', please: 'accept_offer',
   no_thank_you: 'decline_offer',
+  // fourth arc: the cafe. What you ask for is practised as a REQUEST, never as
+  // a preference — asking for a coffee and liking coffee are different moves.
+  water: 'polite_request', coffee: 'polite_request', tea: 'polite_request', juice: 'polite_request',
+  can_i_have: 'polite_request', can_i_have_pattern: 'polite_request',
+  thank_you: 'thank_service', here_you_are: 'thank_service',
+  anything_else: 'respond_anything_else',
+  thats_all: 'finish_order',
 }
 const ERROR_KIND = {
   missing_copula: 'introduction',
@@ -75,6 +82,14 @@ const ERROR_KIND = {
   missing_negation: 'express_dislike',
   no_preference: 'express_like',
   no_request: 'express_want',
+  // fourth arc
+  missing_request_form: 'polite_request',
+  missing_request_object: 'polite_request',
+  previous_structure: 'polite_request',
+  no_thanks: 'thank_service',
+  incomplete_politeness: 'respond_anything_else',
+  no_close: 'finish_order',
+  no_order: 'cafe_order_conversation',
 }
 const CANDO_KIND = {
   introduce_self: 'introduction',
@@ -86,6 +101,9 @@ const CANDO_KIND = {
   express_preferences: 'express_like',
   express_needs: 'express_want',
   make_plan: 'simple_plan_conversation',
+  polite_request: 'polite_request',
+  respond_anything_else: 'respond_anything_else',
+  cafe_order: 'cafe_order_conversation',
 }
 
 export const practiceKindForItem = (id) => ITEM_KIND[id] || null

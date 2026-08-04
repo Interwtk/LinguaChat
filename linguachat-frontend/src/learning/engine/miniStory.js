@@ -77,6 +77,32 @@ const STORIES = {
       { kind: 'close', textEn: 'Perfect. Let’s sit down.', noteKey: 'storyNoteClose' },
     ],
   },
+  polite_request: {
+    storyId: 'cafe_counter',
+    objective: 'polite_request',
+    turns: [
+      { kind: 'scene', textEn: 'You are in a café with {partner}. It is your turn to order.', noteKey: 'storyNoteScene' },
+      { kind: 'line', speaker: 'partner', textEn: 'Hi! What can I get for you?' },
+      {
+        kind: 'choose',
+        promptKey: 'storyChooseReply',
+        options: [
+          { branch: 'accept', textEn: 'Can I have {item}, please?' },
+          { branch: 'decline', textEn: 'Just a moment, please.' },
+        ],
+      },
+      {
+        kind: 'line',
+        speaker: 'partner',
+        byBranch: {
+          accept: 'Of course. Anything else?',
+          decline: 'No problem. Take your time. Ready now?',
+        },
+      },
+      { kind: 'reply', evalKind: 'polite_request', instructionKey: 'storyReplyRequest', suggestionEn: 'Can I have {item}, please?', itemIds: ['can_i_have'] },
+      { kind: 'close', textEn: 'Here you are. Enjoy!', noteKey: 'storyNoteClose' },
+    ],
+  },
   introduction: {
     storyId: 'first_day',
     objective: 'introduction',

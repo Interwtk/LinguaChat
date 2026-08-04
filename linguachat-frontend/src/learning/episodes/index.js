@@ -325,7 +325,7 @@ const CHOOSE_03 = {
   prerequisites: ['what_you_want'],
   personalized: true,
   // a small controlled story: one decision point, two branches, same objective
-  story: { branchStep: 5, branches: ['accept', 'decline'] },
+  story: { branchStep: 5, branches: ['accept', 'decline'], branchLines: { accept: 'Great! Let’s get ready.', decline: 'No problem. Maybe another day.' } },
   targetItems: ['i_like', 'do_you_want', 'yes_please', 'no_thank_you'],
   reviewItems: ['im', 'i_like', 'i_want', 'do_you_want'],
   gardenItems: ['i_like', 'do_you_want', 'yes_please', 'no_thank_you'],
@@ -354,12 +354,140 @@ const CHOOSE_03 = {
   ],
 }
 
+
+/* ===========================================================================
+ * FOURTH ARC — "In a café"
+ *
+ * The first arc where English leaves the introduction and does something. The
+ * learner already knows "I want water."; here they learn to ask for it the way
+ * people actually do, and to hold a very short exchange while someone serves
+ * them.
+ *
+ * Two deliberate limits. The catalogue is tiny — four drinks — because this arc
+ * is about a POLITE REQUEST, not about vocabulary. And the character says
+ * things the learner never has to produce ("What can I get for you?", "Here you
+ * are."): passive comprehension is part of a real café, and demanding it back
+ * would be a different, much harder objective.
+ * ==========================================================================*/
+
+const CAFE_01 = {
+  id: 'a_coffee_please',
+  arc: 'cafe',
+  level: 'Pre-A1',
+  titleKey: 'ep10Title',
+  goalKey: 'ep10Goal',
+  canDoId: 'polite_request',
+  canDoNameKey: 'ep10CanDoName',
+  durationKey: 'ep10Duration',
+  estimatedMinutes: 8,
+  xp: 55,
+  prerequisites: ['make_a_plan'],
+  personalized: true,
+  targetItems: ['can_i_have', 'please', 'thank_you', 'can_i_have_pattern'],
+  reviewItems: ['i_want', 'water'],
+  gardenItems: ['water', 'coffee', 'tea', 'juice', 'please', 'thank_you', 'can_i_have', 'here_you_are', 'can_i_have_pattern'],
+  steps: [
+    { type: 'recall', review: true, instructionKey: 'ep10RecallInstruction', evalKind: 'express_want', itemIds: ['i_want'] },
+    { type: 'scene', mood: 'welcoming', titleKey: 'ep10SceneTitle', bodyKey: 'ep10SceneBody', showGoal: true, ctaKey: 'ep1Continue' },
+    { type: 'model', target: 'Can I have water, please?', meaningItems: ['can_i_have', 'please'], explainKey: 'ep10ModelExplain' },
+    { type: 'comprehension', instructionKey: 'ep10ComprehensionInstruction', target: 'Can I have water, please?', itemId: 'can_i_have',
+      options: [{ key: 'ep10CompOptCorrect', correct: true }, { key: 'ep10CompOptWrong1' }, { key: 'ep10CompOptWrong2' }] },
+    { type: 'word_order', instructionKey: 'ep10BuildInstruction', hintKey: 'ep1BuildHint', itemId: 'can_i_have',
+      tokens: ['Can', 'I', 'have', 'water,', 'please', '?'] },
+    { type: 'choice', instructionKey: 'ep10ChoiceInstruction', promptEn: 'What can I get for you?', itemId: 'can_i_have',
+      options: [{ textEn: 'Can I have coffee, please?', correct: true }, { textEn: 'Can I have tea, please?', correct: true }, { textEn: 'Can I have juice, please?', correct: true }] },
+    { type: 'fill_blank', instructionKey: 'ep10FillInstruction', before: 'Can I have', after: ', please?', hintKey: 'ep10FillHint',
+      itemId: 'can_i_have_pattern', placeholderKey: 'ep10ItemPlaceholder', exampleVar: 'item', contextIntent: 'polite_request' },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Hi! What can I get for you?', instructionKey: 'ep10RequestInstruction',
+      evalKind: 'polite_request', suggestionEn: 'Can I have {item}, please?', itemIds: ['can_i_have', 'please'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Here you are.', instructionKey: 'ep10ThanksInstruction',
+      evalKind: 'thank_service', suggestionEn: 'Thank you.', itemIds: ['thank_you'] },
+    { type: 'free_reply', variation: true, sceneEn: 'Later, someone else asks what you would like.', instructionKey: 'ep10VariationInstruction',
+      evalKind: 'polite_request', suggestionEn: 'Can I have {otherItem}, please?', itemIds: ['can_i_have'] },
+    { type: 'recall', instructionKey: 'ep10FinalInstruction', evalKind: 'polite_request', itemIds: ['can_i_have', 'please'] },
+    { type: 'completion', canDoNameKey: 'ep10CanDoName', titleKey: 'ep10CloseTitle', bodyKey: 'ep10CloseBody', ctaKey: 'ep1CloseCta' },
+  ],
+}
+
+const CAFE_02 = {
+  id: 'anything_else',
+  arc: 'cafe',
+  level: 'Pre-A1',
+  titleKey: 'ep11Title',
+  goalKey: 'ep11Goal',
+  canDoId: 'respond_anything_else',
+  canDoNameKey: 'ep11CanDoName',
+  durationKey: 'ep11Duration',
+  estimatedMinutes: 8,
+  xp: 55,
+  prerequisites: ['a_coffee_please'],
+  personalized: true,
+  // one decision, two endings, both entirely correct
+  story: { branchStep: 6, branches: ['accept', 'decline'], branchLines: { accept: 'Sure. Here you are.', decline: 'No problem. Here you are.' } },
+  targetItems: ['anything_else', 'yes_please', 'no_thank_you', 'thats_all'],
+  reviewItems: ['can_i_have', 'please'],
+  gardenItems: ['anything_else', 'yes_please', 'no_thank_you', 'thats_all', 'thank_you'],
+  steps: [
+    { type: 'recall', review: true, instructionKey: 'ep11RecallInstruction', evalKind: 'polite_request', itemIds: ['can_i_have'] },
+    { type: 'scene', mood: 'welcoming', titleKey: 'ep11SceneTitle', bodyKey: 'ep11SceneBody', showGoal: true, ctaKey: 'ep1Continue' },
+    { type: 'model', target: 'Anything else?', response: 'No, thank you.', meaningItems: ['anything_else', 'no_thank_you'], explainKey: 'ep11ModelExplain' },
+    { type: 'comprehension', instructionKey: 'ep11ComprehensionInstruction', target: 'Anything else?', itemId: 'anything_else',
+      options: [{ key: 'ep11CompOptCorrect', correct: true }, { key: 'ep11CompOptWrong1' }, { key: 'ep11CompOptWrong2' }] },
+    { type: 'choice', instructionKey: 'ep11ChoiceInstruction', promptEn: 'Anything else?', itemId: 'no_thank_you',
+      options: [{ textEn: 'Yes, please.', correct: true }, { textEn: 'No, thank you.', correct: true }, { textEn: 'That’s all, thanks.', correct: true }] },
+    { type: 'word_order', instructionKey: 'ep11BuildInstruction', hintKey: 'ep1BuildHint', itemId: 'thats_all',
+      tokens: ['That’s', 'all,', 'thanks', '.'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Anything else?', instructionKey: 'ep11DecideInstruction',
+      evalKind: 'respond_anything_else', suggestionEn: 'No, thank you.', itemIds: ['no_thank_you', 'yes_please'], branchOn: 'accept_decline' },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: '{branchLine}', instructionKey: 'ep10ThanksInstruction',
+      evalKind: 'thank_service', suggestionEn: 'Thank you.', itemIds: ['thank_you'] },
+    { type: 'free_reply', variation: true, sceneEn: 'The next day, the same question: Anything else?', instructionKey: 'ep11VariationInstruction',
+      evalKind: 'finish_order', suggestionEn: 'That’s all, thanks.', itemIds: ['thats_all'] },
+    { type: 'recall', instructionKey: 'ep11FinalInstruction', evalKind: 'respond_anything_else', itemIds: ['no_thank_you'] },
+    { type: 'completion', canDoNameKey: 'ep11CanDoName', titleKey: 'ep11CloseTitle', bodyKey: 'ep11CloseBody', ctaKey: 'ep1CloseCta' },
+  ],
+}
+
+const CAFE_03 = {
+  id: 'your_first_order',
+  arc: 'cafe',
+  level: 'Pre-A1',
+  titleKey: 'ep12Title',
+  goalKey: 'ep12Goal',
+  canDoId: 'cafe_order',
+  canDoNameKey: 'ep12CanDoName',
+  durationKey: 'ep12Duration',
+  estimatedMinutes: 10,
+  xp: 75,
+  prerequisites: ['anything_else'],
+  personalized: true,
+  story: { branchStep: 2, branches: ['accept', 'decline'], branchLines: { accept: 'Of course. And after that?', decline: 'No problem. Is that everything?' } },
+  targetItems: ['can_i_have', 'please', 'thank_you', 'thats_all'],
+  reviewItems: ['can_i_have', 'anything_else', 'yes_please', 'no_thank_you'],
+  gardenItems: ['can_i_have', 'please', 'thank_you', 'thats_all', 'here_you_are'],
+  steps: [
+    { type: 'scene', mood: 'welcoming', titleKey: 'ep12SceneTitle', bodyKey: 'ep12SceneBody', showGoal: true, ctaKey: 'ep12Start' },
+    // the whole episode is one conversation; the character speaks language the
+    // learner only has to understand
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Hi! What can I get for you?', instructionKey: 'ep12OrderInstruction',
+      evalKind: 'polite_request', suggestionEn: 'Can I have {item}, please?', itemIds: ['can_i_have', 'please'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Sure. Anything else?', instructionKey: 'ep12DecideInstruction',
+      evalKind: 'respond_anything_else', suggestionEn: 'No, thank you.', itemIds: ['no_thank_you', 'yes_please'], branchOn: 'accept_decline' },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: '{branchLine}', instructionKey: 'ep12FollowInstruction',
+      evalKind: 'finish_order', suggestionEn: 'That’s all, thanks.', itemIds: ['thats_all'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Here you are.', instructionKey: 'ep12ThanksInstruction',
+      evalKind: 'thank_service', suggestionEn: 'Thank you.', itemIds: ['thank_you'] },
+    { type: 'recall', instructionKey: 'ep12FinalInstruction', evalKind: 'cafe_order_conversation', itemIds: ['can_i_have', 'please'] },
+    { type: 'completion', canDoNameKey: 'ep12CanDoName', titleKey: 'ep12CloseTitle', bodyKey: 'ep12CloseBody', ctaKey: 'ep1CloseCta' },
+  ],
+}
+
 GREETINGS_01.arc = 'greetings'
 GREETINGS_02.arc = 'greetings'
 GREETINGS_03.arc = 'greetings'
 
-export const ARC = [GREETINGS_01, GREETINGS_02, GREETINGS_03, CONNECT_01, CONNECT_02, CONNECT_03, CHOOSE_01, CHOOSE_02, CHOOSE_03]
-export const ARCS = ['greetings', 'connect', 'choose']
+export const ARC = [GREETINGS_01, GREETINGS_02, GREETINGS_03, CONNECT_01, CONNECT_02, CONNECT_03, CHOOSE_01, CHOOSE_02, CHOOSE_03, CAFE_01, CAFE_02, CAFE_03]
+export const ARCS = ['greetings', 'connect', 'choose', 'cafe']
 export const getEpisode = (id) => ARC.find(e => e.id === id) || null
 export const firstEpisode = () => ARC[0]
 export const episodesInArc = (arcId) => ARC.filter(e => e.arc === arcId)

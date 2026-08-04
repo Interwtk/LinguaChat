@@ -363,6 +363,39 @@ const NO_DONT = /\b(no,? i (don'?t|do not)|no|nope)\b/
 // a noun-ish remainder means the learner did name something
 const hasObject = (n) => /\p{L}/u.test(n.replace(/\b(i|like|want|need|don'?t|do|not|really|the|a|an|please|thank|you|yes|no)\b/g, '').trim())
 
+/* ---- Fourth arc: the cafe ----
+ *
+ * The polite request is a QUESTION form ("Can I have ...?"), which is why it
+ * gets its own object test: `hasObject` would see the words "can" and "have"
+ * and happily report an object in "Can I have, please?".
+ */
+const REQUEST_FORM = /\b(can i have|can i get|could i have|could i get|may i have|may i get|i'?d like|i would like)\b/
+const REQUEST_FORM_G = /\b(can i have|can i get|could i have|could i get|may i have|may i get|i'?d like|i would like)\b/g
+const PLEASE = /\bplease\b/
+const THANKS = /\b(thank you|thanks|thank u|thank you very much|thanks a lot|many thanks)\b/
+const FINISH = /\b(that'?s all|that is all|that'?s it|nothing else|no more|that'?ll be all|that will be all)\b/
+const BARE_YES = /^(yes|yeah|yep|yup|ok|okay|sure)$/
+const BARE_NO = /^(no|nope|nah)$/
+
+// What is left once the request frame and its politeness are removed.
+const requestedThing = (n) => n
+  .replace(REQUEST_FORM_G, ' ')
+  .replace(/\b(please|thanks|thank you|thank|you|some|a|an|the|of|and|for|me)\b/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim()
+const namesAThing = (n) => /\p{L}/u.test(requestedThing(n))
+
+/*
+ * Which way a cafe decision went. Shared with the episode shell so a branch is
+ * decided by the same reading of the answer that evaluates it — "That's all,
+ * thanks." is a refusal even though it never says "no".
+ */
+export const isDeclineReply = (text) => {
+  const n = normalize(text)
+  return DECLINE.test(n) || FINISH.test(n) || BARE_NO.test(n)
+}
+
+
 export function evaluateExpressLike(text, { independent = false, targetNoun = 'music' } = {}) {
   const n = normalize(text)
   const r = base(independent)
@@ -557,6 +590,124 @@ export function evaluateSimplePlanConversation(text, { independent = false, targ
   return { ...r, errorType: 'no_preference', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep9RetryExplainStart', explanation: 'ep9RetryExplainStart', retryRequired: true, retryPrompt: 'ep9RetryPromptStart' }
 }
 
+
+/* ---- Episode 10: ask for something politely ---- */
+export function evaluatePoliteRequest(text, { independent = false, targetThing = 'water' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = `Can I have ${targetThing}, please?`
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep10RetryPromptEmpty' }
+  if (REQUEST_FORM.test(n) && namesAThing(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    // The frame is what is being taught; "please" is warmth on top of it, and
+    // withholding success for a missing "please" would teach fear, not English.
+    r.acceptedVariant = !PLEASE.test(n) || !/^can i have /.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep10PraiseIndependent' : 'ep10PraiseAsked'
+    return r
+  }
+  // The frame is there but nothing was named — "Can I have, please?".
+  if (REQUEST_FORM.test(n)) {
+    return { ...r, errorType: 'missing_request_object', priorityCorrection: 'ep10RetryExplainThing', explanation: 'ep10RetryExplainThing', retryRequired: true, retryPrompt: 'ep10RetryPromptThing' }
+  }
+  // "Water, please." — perfectly polite, perfectly understood, and not yet the
+  // structure this episode exists to teach.
+  if (PLEASE.test(n) && namesAThing(n)) {
+    return { ...r, errorType: 'missing_request_form', priorityCorrection: 'ep10RetryExplainForm', explanation: 'ep10RetryExplainForm', retryRequired: true, retryPrompt: 'ep10RetryPromptForm' }
+  }
+  // "I want water." — the previous episode's structure. Understood, and blunt
+  // in a cafe; the correction is about register, never about being wrong.
+  if ((WANT.test(n) || NEED.test(n)) && hasObject(n)) {
+    return { ...r, errorType: 'previous_structure', priorityCorrection: 'ep10RetryExplainPolite', explanation: 'ep10RetryExplainPolite', retryRequired: true, retryPrompt: 'ep10RetryPromptForm' }
+  }
+  if (namesAThing(n) && wordCount(n) <= 3) {
+    return { ...r, errorType: 'missing_request_form', priorityCorrection: 'ep10RetryExplainForm', explanation: 'ep10RetryExplainForm', retryRequired: true, retryPrompt: 'ep10RetryPromptForm' }
+  }
+  return { ...r, errorType: 'no_request', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep10RetryExplainForm', explanation: 'ep10RetryExplainForm', retryRequired: true, retryPrompt: 'ep10RetryPromptForm' }
+}
+
+/* ---- Episode 10 & 12: thank whoever served you ---- */
+export function evaluateThankService(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'Thank you.'
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep10RetryPromptEmpty' }
+  if (THANKS.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.96
+    r.acceptedVariant = !/^thank you$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep10PraiseIndependent' : 'ep10PraiseThanked'
+    return r
+  }
+  return { ...r, errorType: 'no_thanks', conclusive: wordCount(n) < 4, confidence: 0.85, priorityCorrection: 'ep10RetryExplainThanks', explanation: 'ep10RetryExplainThanks', retryRequired: true, retryPrompt: 'ep10RetryPromptThanks' }
+}
+
+/* ---- Episode 11: answer "Anything else?" ---- */
+export function evaluateRespondAnythingElse(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'No, thank you.'
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep11RetryPromptEmpty' }
+  // Wanting more and wanting nothing more are equally correct answers.
+  if (ACCEPT.test(n) || DECLINE.test(n) || FINISH.test(n) || (REQUEST_FORM.test(n) && namesAThing(n))) {
+    r.completedObjective = true
+    r.confidence = 0.94
+    r.acceptedVariant = !/^no,? thank you$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep11PraiseIndependent' : 'ep11PraiseAnswered'
+    return r
+  }
+  /*
+   * A bare "Yes." or "No." IS understood — it answers the question — but in a
+   * cafe it lands as abrupt, and the episode is about the polite pair. So it is
+   * received as an answer and sent back for the missing half, never treated as
+   * a failure to understand.
+   */
+  if (BARE_YES.test(n) || BARE_NO.test(n)) {
+    return { ...r, errorType: 'incomplete_politeness', confidence: 0.9, priorityCorrection: 'ep11RetryExplainPolite', explanation: 'ep11RetryExplainPolite', retryRequired: true, retryPrompt: 'ep11RetryPromptPolite' }
+  }
+  return { ...r, errorType: 'no_answer', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep11RetryExplainAnswer', explanation: 'ep11RetryExplainAnswer', retryRequired: true, retryPrompt: 'ep11RetryPromptPolite' }
+}
+
+/* ---- Episode 11 & 12: close the order ---- */
+export function evaluateFinishOrder(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'That’s all, thanks.'
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep11RetryPromptEmpty' }
+  if (FINISH.test(n) || DECLINE.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.94
+    r.acceptedVariant = !/^that'?s all,? thanks$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep11PraiseIndependent' : 'ep11PraiseClosed'
+    return r
+  }
+  if (BARE_NO.test(n)) {
+    return { ...r, errorType: 'incomplete_politeness', confidence: 0.9, priorityCorrection: 'ep11RetryExplainClose', explanation: 'ep11RetryExplainClose', retryRequired: true, retryPrompt: 'ep11RetryPromptClose' }
+  }
+  return { ...r, errorType: 'no_close', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep11RetryExplainClose', explanation: 'ep11RetryExplainClose', retryRequired: true, retryPrompt: 'ep11RetryPromptClose' }
+}
+
+/* ---- Episode 12: the whole order in one turn ---- */
+export function evaluateCafeOrderConversation(text, { independent = false, targetThing = 'water' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = `Can I have ${targetThing}, please? That’s all, thanks.`
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep12RetryPromptEmpty' }
+  const asks = REQUEST_FORM.test(n) && namesAThing(n)
+  const closes = THANKS.test(n) || FINISH.test(n) || PLEASE.test(n)
+  if (asks && closes) {
+    r.completedObjective = true
+    r.confidence = 0.93
+    r.acceptedVariant = true
+    r.praiseKey = r.masteryEvidence.independent ? 'ep12PraiseIndependent' : 'ep12PraiseOrdered'
+    return r
+  }
+  if (asks) {
+    return { ...r, errorType: 'incomplete_turn', priorityCorrection: 'ep12RetryExplainMore', explanation: 'ep12RetryExplainMore', retryRequired: true, retryPrompt: 'ep12RetryPromptMore' }
+  }
+  return { ...r, errorType: 'no_order', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep12RetryExplainStart', explanation: 'ep12RetryExplainStart', retryRequired: true, retryPrompt: 'ep12RetryPromptStart' }
+}
+
 // Dispatcher used by the engine for free_reply / roleplay steps.
 export function evaluateFree(kind, text, ctx = {}) {
   switch (kind) {
@@ -579,6 +730,11 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'accept_offer': return evaluateAcceptOffer(text, ctx)
     case 'decline_offer': return evaluateDeclineOffer(text, ctx)
     case 'simple_plan_conversation': return evaluateSimplePlanConversation(text, ctx)
+    case 'polite_request': return evaluatePoliteRequest(text, ctx)
+    case 'thank_service': return evaluateThankService(text, ctx)
+    case 'respond_anything_else': return evaluateRespondAnythingElse(text, ctx)
+    case 'finish_order': return evaluateFinishOrder(text, ctx)
+    case 'cafe_order_conversation': return evaluateCafeOrderConversation(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }

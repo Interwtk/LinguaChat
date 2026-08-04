@@ -164,6 +164,13 @@ const OBJECTIVE_FORMATS = {
   decline_offer: ['guided_reply', 'choice', 'free_reply', 'recall'],
   full_intro_conversation: ['roleplay', 'free_reply', 'recall'],
   simple_plan_conversation: ['roleplay', 'free_reply', 'recall'],
+  // the cafe. A request is a question form, so it is never practised by
+  // ticking a box; the short polite replies legitimately can be.
+  polite_request: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'mini_story'],
+  thank_service: ['guided_reply', 'choice', 'free_reply', 'recall'],
+  respond_anything_else: ['guided_reply', 'choice', 'free_reply', 'recall'],
+  finish_order: ['guided_reply', 'word_order', 'choice', 'free_reply', 'recall'],
+  cafe_order_conversation: ['roleplay', 'free_reply', 'recall'],
 }
 
 export function formatSupportsObjective(format, objective) {
