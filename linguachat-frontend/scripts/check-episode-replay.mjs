@@ -10,6 +10,7 @@
  *     saving over each other.
  */
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { getEpisode, ARC } from '../src/learning/episodes/index.js'
 import {
   createLearnerModel, setEpisodeState, getEpisodeState, migrateLearnerModel, MODEL_VERSION,
@@ -271,6 +272,26 @@ const completed = (episodeId) => {
     const m = completed(ep.id)
     assert.equal(resolveRunMode(m, ep.id), RUN_REPLAY, `${ep.id} must be replayable`)
   }
+  ok()
+}
+
+/*
+ * The completion card may only promise what this run will actually pay.
+ * It announced "+55 XP" at the end of every replay, which was simply untrue —
+ * the reward is gated by the episode, not by finishing the screen again.
+ */
+{
+  const shell = readFileSync(new URL('../src/components/episode/EpisodeShell.jsx', import.meta.url), 'utf8')
+  assert.ok(/const willReward = runEarnsReward\(run\?\.mode\) && !getEpisodeState\(/.test(shell),
+    'the card must ask whether THIS run pays out')
+  assert.ok(/willReward \? ` · \+\$\{ep\.xp\} XP` : ''/.test(shell),
+    'the XP line must be conditional on that answer')
+  assert.ok(!/\{t\(step\.canDoNameKey\)\} · \+\{ep\.xp\} XP/.test(shell),
+    'the unconditional XP promise must be gone')
+  // and the underlying rule the card is reading is still the real one
+  assert.equal(runEarnsReward(RUN_BRANCH_REPLAY), false)
+  assert.equal(runEarnsReward(RUN_REPLAY), false)
+  assert.equal(runEarnsReward(RUN_FIRST), true)
   ok()
 }
 

@@ -538,6 +538,164 @@ def test_third_arc_falls_back_when_remote_is_broken(monkeypatch):
     assert r.completed_objective is True     # the deterministic verdict still stands
 
 
+# ---------- fourth arc: the cafe ----------
+CAFE_INTENTS = [
+    "polite_request", "thank_service", "respond_anything_else",
+    "finish_order", "cafe_order_conversation",
+]
+
+
+@pytest.mark.parametrize("text", [
+    "Can I have water, please?",
+    "Can I have a coffee, please?",
+    "Could I have tea, please?",
+    "May I have juice, please?",
+    "I would like a tea, please.",
+    "Can I have water?",              # no "please": less warm, still the frame
+])
+def test_polite_request_accepts_the_taught_frame(text):
+    r = evaluate_deterministic(_payload(expected_intent="polite_request", learner_response=text))
+    assert r["completed_objective"] is True, text
+
+
+def test_water_please_is_understood_but_not_yet_the_structure():
+    """The learner was polite and clear. That is not a failure — it is a step."""
+    r = evaluate_deterministic(_payload(expected_intent="polite_request", learner_response="Water, please."))
+    assert r["understood"] is True
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "missing_request_form"
+
+
+def test_i_want_water_is_a_register_note_not_a_mistake():
+    """Episode 8's structure is correct English; in a cafe it is simply blunt."""
+    r = evaluate_deterministic(_payload(expected_intent="polite_request", learner_response="I want water."))
+    assert r["understood"] is True
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "previous_structure"
+
+
+def test_a_request_frame_with_nothing_in_it():
+    r = evaluate_deterministic(_payload(expected_intent="polite_request", learner_response="Can I have, please?"))
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "missing_request_object"
+
+
+@pytest.mark.parametrize("thing,expected", [
+    ("tea", "Can I have tea, please?"),
+    ("coffee", "Can I have coffee, please?"),
+    ("", "Can I have water, please?"),     # neutral default, never a placeholder
+])
+def test_the_model_answer_names_what_the_prompt_named(thing, expected):
+    r = evaluate_deterministic(_payload(expected_intent="polite_request",
+                                        learner_response="hmm", target_thing=thing))
+    assert r["natural_version"] == expected
+
+
+def test_target_thing_never_leaks_into_a_want_or_a_preference():
+    """An orderable thing belongs to the cafe intents, not to every sentence."""
+    like = evaluate_deterministic(_payload(expected_intent="express_like",
+                                           learner_response="hmm", target_thing="tea", target_noun="music"))
+    assert like["natural_version"] == "I like music."
+    want = evaluate_deterministic(_payload(expected_intent="express_want",
+                                           learner_response="hmm", target_thing="tea"))
+    assert want["natural_version"] == "I want water."
+
+
+@pytest.mark.parametrize("text", ["Yes, please.", "No, thank you.", "That’s all, thanks.", "Can I have tea, please?"])
+def test_anything_else_accepts_both_endings(text):
+    r = evaluate_deterministic(_payload(expected_intent="respond_anything_else", learner_response=text))
+    assert r["completed_objective"] is True, text
+
+
+@pytest.mark.parametrize("text", ["Yes", "No", "yeah", "nope"])
+def test_a_bare_yes_or_no_is_understood_but_incomplete(text):
+    r = evaluate_deterministic(_payload(expected_intent="respond_anything_else", learner_response=text))
+    assert r["understood"] is True, "it does answer the question"
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "incomplete_politeness"
+
+
+@pytest.mark.parametrize("text", ["That’s all, thanks.", "That is all, thank you.", "Nothing else, thanks.", "No, thank you."])
+def test_closing_an_order(text):
+    r = evaluate_deterministic(_payload(expected_intent="finish_order", learner_response=text))
+    assert r["completed_objective"] is True, text
+
+
+@pytest.mark.parametrize("text", ["Thank you.", "Thanks!", "Thank you very much."])
+def test_thanking_whoever_served_you(text):
+    r = evaluate_deterministic(_payload(expected_intent="thank_service", learner_response=text))
+    assert r["completed_objective"] is True, text
+
+
+def test_thank_service_needs_actual_thanks():
+    r = evaluate_deterministic(_payload(expected_intent="thank_service", learner_response="ok"))
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "no_thanks"
+
+
+def test_the_whole_order_needs_both_halves():
+    full = evaluate_deterministic(_payload(expected_intent="cafe_order_conversation",
+                                           learner_response="Can I have tea, please? That’s all, thanks."))
+    assert full["completed_objective"] is True
+    half = evaluate_deterministic(_payload(expected_intent="cafe_order_conversation",
+                                           learner_response="Can I have tea?"))
+    assert half["completed_objective"] is False
+    assert half["error_type"] == "incomplete_turn"
+    none = evaluate_deterministic(_payload(expected_intent="cafe_order_conversation",
+                                           learner_response="Hello there!"))
+    assert none["error_type"] == "no_order"
+
+
+def test_fourth_arc_intents_work_through_the_endpoint_without_openai():
+    for intent, text in [
+        ("polite_request", "Can I have water, please?"),
+        ("thank_service", "Thank you."),
+        ("respond_anything_else", "No, thank you."),
+        ("finish_order", "That’s all, thanks."),
+        ("cafe_order_conversation", "Can I have water, please? That’s all, thanks."),
+    ]:
+        res = client.post("/learning/evaluate", json=_payload(expected_intent=intent, learner_response=text))
+        assert res.status_code == 200, intent
+        body = res.json()
+        assert body["completed_objective"] is True, f"{intent} rejected {text!r}"
+        assert body["source"] == "deterministic"
+
+
+@pytest.mark.parametrize("intent", CAFE_INTENTS)
+def test_fourth_arc_empty_replies_are_safe(intent):
+    r = evaluate_deterministic(_payload(expected_intent=intent, learner_response=""))
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "empty"
+
+
+@pytest.mark.parametrize("intent", CAFE_INTENTS)
+def test_fourth_arc_never_returns_a_contradiction(intent):
+    """Success and "try again" can never both be true, whatever comes in."""
+    for text in ["", "???", "Can I have water, please?", "I want water.", "yes", "aaaaaaa"]:
+        r = evaluate_deterministic(_payload(expected_intent=intent, learner_response=text))
+        assert not (r["completed_objective"] and r["retry_required"]), (intent, text)
+        assert r["natural_version"], (intent, text)
+
+
+def test_a_cafe_answer_survives_a_broken_remote(monkeypatch):
+    _enable_openai(monkeypatch)
+    monkeypatch.setattr(evaluator, "evaluate_with_openai", lambda payload: {"completed_objective": "maybe"})
+    r = evaluator.evaluate_episode_response(_payload(expected_intent="polite_request",
+                                                     learner_response="Can I have water, please?"))
+    assert r.source == "fallback"
+    assert r.completed_objective is True     # the deterministic verdict still stands
+
+
+def test_target_thing_is_bounded_and_optional():
+    res = client.post("/learning/evaluate", json=_payload(expected_intent="polite_request",
+                                                          learner_response="Can I have water, please?",
+                                                          target_thing="x" * 200))
+    assert res.status_code == 422, "an unbounded field is an injection surface"
+    res_ok = client.post("/learning/evaluate", json=_payload(expected_intent="polite_request",
+                                                             learner_response="Can I have water, please?"))
+    assert res_ok.status_code == 200
+
+
 # ---------- no regression on /chat, mission, translation ----------
 def test_chat_still_works():
     res = client.post("/chat", json={"message": "hello", "level": "A1"})

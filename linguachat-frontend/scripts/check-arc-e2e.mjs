@@ -1,7 +1,7 @@
 /*
  * check-arc-e2e — deterministic end-to-end simulation of the full Pre-A1 arc.
  *
- * Drives the THREE real episode definitions through the REAL evaluation and
+ * Drives the TWELVE real episode definitions through the REAL evaluation and
  * learner-model modules, mirroring exactly what EpisodeShell does for each step
  * type (submitFree / recordItems / adaptScaffold / finish) and what AppContext
  * does for the Memory Garden (awardEpisode dedup). No browser, no React — so the
@@ -22,7 +22,7 @@ import {
 
 const NAME = 'Sebastian'
 const PLACE = 'Bogotá'
-const VARS = { name: NAME, partner: 'Sam', place: PLACE, partnerPlace: 'Japan', noun: 'music', object: 'pop music', activity: 'listen to music', branchLine: 'Great!' }
+const VARS = { name: NAME, partner: 'Sam', place: PLACE, partnerPlace: 'Japan', noun: 'music', object: 'pop music', activity: 'listen to music', branchLine: 'Great!', item: 'water', otherItem: 'tea' }
 const resolve = (s) => String(s || '').replace(/\{(\w+)\}/g, (m, k) => (VARS[k] ?? m))
 
 // canonical correct answer for a free/recall step (suggestion when present)
@@ -46,6 +46,11 @@ const CANONICAL = {
   accept_offer: 'Yes, please.',
   decline_offer: 'No, thank you.',
   simple_plan_conversation: 'I like music. Do you want to listen to music?',
+  polite_request: 'Can I have water, please?',
+  thank_service: 'Thank you.',
+  respond_anything_else: 'No, thank you.',
+  finish_order: 'That’s all, thanks.',
+  cafe_order_conversation: 'Can I have water, please? That’s all, thanks.',
 }
 function answerFor(step) {
   if (step.suggestionEn) return resolve(step.suggestionEn)
@@ -120,7 +125,7 @@ function playEpisode(model, ep, { mode }) {
 const model = createLearnerModel()
 const garden = []
 let xp = 0
-assert.equal(ARC.length, 9, 'all three Pre-A1 arcs must be playable end to end')
+assert.equal(ARC.length, 12, 'all four Pre-A1 arcs must be playable end to end')
 
 for (const ep of ARC) {
   const { awarded } = playEpisode(model, ep, { mode: 'helped' })
@@ -132,7 +137,7 @@ for (const ep of ARC) {
 
 const expectedXp = ARC.reduce((sum, ep) => sum + ep.xp, 0)
 assert.equal(xp, expectedXp, `arc XP should total ${expectedXp}, got ${xp}`)
-assert.equal(xp, 500, 'all three arcs together should award 500 XP')
+assert.equal(xp, 685, 'all four arcs together should award 685 XP')
 
 // garden: deduped union of all gardenItems, order-independent
 const expectedGarden = [
@@ -141,6 +146,8 @@ const expectedGarden = [
   'where_from', 'im_from', 'from', 'what_about_you', 'im_from_pattern',
   'like', 'i_like', 'i_dont_like', 'what_do_you_like', 'do_you_like', 'i_like_pattern',
   'want', 'need', 'help', 'please', 'i_want', 'i_need', 'do_you_want', 'yes_please', 'no_thank_you', 'i_want_pattern',
+  'water', 'coffee', 'tea', 'juice', 'thank_you', 'can_i_have', 'here_you_are', 'can_i_have_pattern',
+  'anything_else', 'thats_all',
 ]
 assert.deepEqual([...garden].sort(), [...expectedGarden].sort(), 'garden must be the deduped union')
 assert.equal(garden.length, new Set(garden).size, 'garden must have no duplicates')

@@ -418,6 +418,97 @@ def _simple_plan(text: str, noun: str, activity: str = "") -> dict:
     return _base(error_type="no_preference", retry_required=True, natural_version=natural, confidence=0.7)
 
 
+
+# ---- fourth Pre-A1 arc: the cafe ----
+# The request is a QUESTION ("Can I have ...?"), so it needs its own object
+# test: _has_object would see "can" and "have" and report an object in
+# "Can I have, please?".
+_REQUEST_FORM = re.compile(r"\b(can i have|can i get|could i have|could i get|may i have|may i get|i'?d like|i would like)\b")
+_PLEASE = re.compile(r"\bplease\b")
+_THANKS = re.compile(r"\b(thank you|thanks|thank u|thank you very much|thanks a lot|many thanks)\b")
+_FINISH = re.compile(r"\b(that'?s all|that is all|that'?s it|nothing else|no more|that'?ll be all|that will be all)\b")
+_BARE_YES = re.compile(r"^(yes|yeah|yep|yup|ok|okay|sure)$")
+_BARE_NO = re.compile(r"^(no|nope|nah)$")
+_REQUEST_FILLER = re.compile(r"\b(please|thanks|thank you|thank|you|some|a|an|the|of|and|for|me)\b")
+
+
+def _names_a_thing(n: str) -> bool:
+    rest = _REQUEST_FILLER.sub(" ", _REQUEST_FORM.sub(" ", n)).strip()
+    return bool(re.search(r"[^\W\d_]", rest, re.UNICODE))
+
+
+def _polite_request(text: str, thing: str) -> dict:
+    n = normalize(text)
+    natural = f"Can I have {thing or 'water'}, please?"
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _REQUEST_FORM.search(n) and _names_a_thing(n):
+        # "please" is warmth on top of the taught frame, never the pass mark
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=not _PLEASE.search(n) or not n.startswith("can i have "),
+                     confidence=0.95)
+    if _REQUEST_FORM.search(n):
+        return _base(error_type="missing_request_object", retry_required=True, natural_version=natural, confidence=0.85)
+    # "Water, please." — polite and understood, just not the structure taught
+    if _PLEASE.search(n) and _names_a_thing(n):
+        return _base(error_type="missing_request_form", retry_required=True, natural_version=natural, confidence=0.85)
+    # "I want water." — the previous episode's structure; a register note
+    if (_WANT.search(n) or _NEED.search(n)) and _has_object(n):
+        return _base(error_type="previous_structure", retry_required=True, natural_version=natural, confidence=0.85)
+    return _base(error_type="no_request", retry_required=True, natural_version=natural, confidence=0.7)
+
+
+def _thank_service(text: str) -> dict:
+    n = normalize(text)
+    natural = "Thank you."
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _THANKS.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=n != "thank you", confidence=0.96)
+    return _base(error_type="no_thanks", retry_required=True, natural_version=natural, confidence=0.85)
+
+
+def _respond_anything_else(text: str) -> dict:
+    n = normalize(text)
+    natural = "No, thank you."
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if (_ACCEPT.search(n) or _DECLINE.search(n) or _FINISH.search(n)
+            or (_REQUEST_FORM.search(n) and _names_a_thing(n))):
+        return _base(completed_objective=True, natural_version=natural, confidence=0.94)
+    # a bare yes/no answers the question but misses the polite half
+    if _BARE_YES.search(n) or _BARE_NO.search(n):
+        return _base(error_type="incomplete_politeness", retry_required=True, natural_version=natural, confidence=0.9)
+    return _base(error_type="no_answer", retry_required=True, natural_version=natural, confidence=0.7)
+
+
+def _finish_order(text: str) -> dict:
+    n = normalize(text)
+    natural = "That’s all, thanks."
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _FINISH.search(n) or _DECLINE.search(n):
+        return _base(completed_objective=True, natural_version=natural, confidence=0.94)
+    if _BARE_NO.search(n):
+        return _base(error_type="incomplete_politeness", retry_required=True, natural_version=natural, confidence=0.9)
+    return _base(error_type="no_close", retry_required=True, natural_version=natural, confidence=0.7)
+
+
+def _cafe_order(text: str, thing: str) -> dict:
+    n = normalize(text)
+    natural = f"Can I have {thing or 'water'}, please? That’s all, thanks."
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    asks = bool(_REQUEST_FORM.search(n) and _names_a_thing(n))
+    closes = bool(_THANKS.search(n) or _FINISH.search(n) or _PLEASE.search(n))
+    if asks and closes:
+        return _base(completed_objective=True, accepted_variant=True, natural_version=natural, confidence=0.93)
+    if asks:
+        return _base(error_type="incomplete_turn", retry_required=True, natural_version=natural, confidence=0.85)
+    return _base(error_type="no_order", retry_required=True, natural_version=natural, confidence=0.7)
+
+
 def evaluate_deterministic(payload: dict) -> dict:
     kind = (payload.get("expected_intent") or payload.get("step_type") or "").strip()
     text = payload.get("learner_response") or ""
@@ -469,6 +560,20 @@ def evaluate_deterministic(payload: dict) -> dict:
         return _offer_reply(text, "No, thank you.")
     if kind == "simple_plan_conversation":
         return _simple_plan(text, noun, payload.get("target_activity") or "")
+    # fourth arc — what is asked for comes from the frontend's semantic layer,
+    # which has already refused anything that is not orderable. An empty value
+    # falls back to water rather than to whatever the learner happens to like.
+    thing = payload.get("target_thing") or ""
+    if kind == "polite_request":
+        return _polite_request(text, thing)
+    if kind == "thank_service":
+        return _thank_service(text)
+    if kind == "respond_anything_else":
+        return _respond_anything_else(text)
+    if kind == "finish_order":
+        return _finish_order(text)
+    if kind == "cafe_order_conversation":
+        return _cafe_order(text, thing)
     # unknown step type — do not pretend to judge it
     return _base(understood=False, error_type="unclear", retry_required=True, confidence=0.4)
 

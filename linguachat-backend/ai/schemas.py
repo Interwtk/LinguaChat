@@ -94,6 +94,10 @@ class EvaluateRequest(BaseModel):
     # The English noun the current episode is personalised around (from a
     # controlled catalogue). An interest ID at most — never the learner's profile.
     target_noun: str | None = Field(default=None, max_length=40)
+    # The thing the learner is asking for in a cafe turn ("water", "tea"). It
+    # arrives already checked by the frontend's semantic layer, so it is always
+    # something orderable; an empty value simply falls back to water.
+    target_thing: str | None = Field(default=None, max_length=40)
     # The simple thing this episode proposes doing together ("plan a trip"),
     # also from the controlled catalogue. Used only to build a model answer.
     target_activity: str | None = Field(default=None, max_length=60)

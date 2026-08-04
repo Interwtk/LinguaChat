@@ -46,6 +46,27 @@ Para probar sin OpenAI, elimina `OPENAI_API_KEY` o usa
 `OPENAI_ENABLED=false`. FastAPI seguira respondiendo con el motor local y el
 header `X-LinguaChat-Provider: local`.
 
+### Provider simulado (solo desarrollo y pruebas)
+
+La evaluacion remota vive detras de un `EvaluationProvider`. Junto al real hay
+uno falso que reproduce, a proposito, los casos feos que no se pueden esperar a
+que ocurran solos:
+
+```powershell
+$env:LINGUACHAT_FAKE_PROVIDER = "success"       # veredicto valido
+$env:LINGUACHAT_FAKE_PROVIDER = "timeout"       # la peticion nunca vuelve a tiempo
+$env:LINGUACHAT_FAKE_PROVIDER = "invalid"       # JSON que no cumple el contrato
+$env:LINGUACHAT_FAKE_PROVIDER = "contradictory" # "exito" y "reintenta" a la vez
+$env:LINGUACHAT_FAKE_PROVIDER = "error"         # el proveedor lanza una excepcion
+$env:LINGUACHAT_FAKE_PROVIDER = "disabled"      # no hay proveedor remoto
+```
+
+Solo se activa cuando esa variable existe: sin ella nunca se elige, asi que un
+despliegue normal no puede terminar sobre mocks. Nunca llama a OpenAI real y no
+debe usarse en produccion; es para desarrollo y para las pruebas automaticas.
+Cualquiera que sea la respuesta, sigue pasando por la validacion estricta antes
+de que se confie en ella.
+
 ## Frontend oficial
 
 Instalacion:
