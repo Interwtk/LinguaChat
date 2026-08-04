@@ -98,6 +98,97 @@ export function canDoCoverage(canDoId) {
  * repair arc; it is not what makes repair possible, and telling the support
  * engine otherwise would be a lie it acts on.
  */
+/*
+ * The intents that make up a capability.
+ *
+ * Most capabilities are one function and need no entry here. Two are not:
+ * identifying a thing is asking AND answering, and a learner who has only ever
+ * asked has not got the capability. Declared rather than inferred, because
+ * "which functions is this skill made of" is a pedagogical judgement.
+ */
+export const CAN_DO_INTENTS = {
+  identify_things: ['ask_what_thing', 'identify_thing'],
+}
+
+export const intentsOfCanDo = (canDoId) =>
+  CAN_DO_INTENTS[canDoId] || (CAN_DO_INTENT[canDoId] ? [CAN_DO_INTENT[canDoId]] : [])
+
+/*
+ * The language items a capability is actually made of: what the learner
+ * PRODUCES in the turns that practise it, with anything only ever heard or
+ * carried inside a larger phrase left out.
+ *
+ * Derived from the steps, so it cannot drift from the episodes the way a
+ * hand-kept list would.
+ */
+export function productiveItemsOf(canDoId) {
+  const intents = intentsOfCanDo(canDoId)
+  if (!intents.length) return []
+  const out = new Set()
+  for (const ep of ARC.filter(e => e.canDoId === canDoId)) {
+    for (const step of ep.steps || []) {
+      if (!intents.includes(step.evalKind)) continue
+      if (step.type !== 'free_reply' && step.type !== 'recall') continue
+      for (const id of step.itemIds || []) {
+        if (RECEPTIVE_ITEMS.includes(id) || INCIDENTAL_ITEMS.includes(id)) continue
+        out.add(id)
+      }
+    }
+  }
+  return [...out]
+}
+
+/*
+ * The episodes that are a conversation rather than a set of exercises.
+ *
+ * Derived from shape, not from a list: several productive turns in a row and
+ * several different things to do in them. The arc finales qualify; an episode
+ * that drills one sentence eight times does not, however long it is.
+ */
+export const INTEGRATED_MIN_TURNS = 5
+export const INTEGRATED_MIN_INTENTS = 4
+
+/* The steps a learner actually walks, with a hosted story opened out. */
+function walkableSteps(ep) {
+  return (ep.steps || []).flatMap((step) => {
+    if (step.type !== 'mini_story') return [step]
+    return storyTurns(getStory(step.storyObjective)).map(turn => (turn.kind === 'reply'
+      ? { type: 'free_reply', evalKind: turn.evalKind, inStory: true }
+      : turn.kind === 'choose' ? { type: 'choice', inStory: true } : { type: 'scene', inStory: true }))
+  })
+}
+
+/* The longest unbroken run of turns the learner speaks in, and how varied it is. */
+export function longestExchange(episodeId) {
+  const ep = getEpisode(episodeId)
+  if (!ep) return { turns: 0, intents: 0 }
+  let run = 0
+  let intents = new Set()
+  let best = { turns: 0, intents: 0 }
+  for (const step of walkableSteps(ep)) {
+    if (step.type === 'free_reply' || step.type === 'recall') {
+      run += 1
+      if (step.evalKind) intents.add(step.evalKind)
+      if (run > best.turns || (run === best.turns && intents.size > best.intents)) {
+        best = { turns: run, intents: intents.size }
+      }
+    } else if (step.type === 'scene' || step.inStory) {
+      /* a scene sets up the next turn, and a choice inside a story IS a turn */
+    } else {
+      run = 0
+      intents = new Set()
+    }
+  }
+  return best
+}
+
+export function integratedEpisodes() {
+  return ARC.filter((ep) => {
+    const { turns, intents } = longestExchange(ep.id)
+    return turns >= INTEGRATED_MIN_TURNS && intents >= INTEGRATED_MIN_INTENTS
+  }).map(ep => ep.id)
+}
+
 export function skillPrerequisitesOf(episodeId) {
   const ep = getEpisode(episodeId)
   if (!ep) return []
@@ -125,6 +216,15 @@ export const CAN_DO_INTENT = {
   cafe_order: 'cafe_order_conversation',
   ask_for_repair: 'repair_request',
   close_an_encounter: 'close_encounter',
+  /*
+   * `identify_things` covers two functions — asking and answering — and the
+   * intent named here is the one coverage and the planner use. The evidence a
+   * learner needs for it is declared separately, below, precisely so that
+   * asking "What's this?" once cannot stand in for never having identified
+   * anything.
+   */
+  identify_things: 'identify_thing',
+  use_small_numbers: 'use_quantity',
 }
 
 /* --------------------------------------------------------------- declared --*/
@@ -137,7 +237,12 @@ export const CAN_DO_INTENT = {
  * Garden; counting them as production would inflate the curriculum with things
  * nobody ever practised.
  */
-export const RECEPTIVE_ITEMS = ['hello', 'here_you_are', 'anything_else']
+/*
+ * `how_many` joins these deliberately: the learner has to UNDERSTAND the
+ * question to answer it, and Pre-A1 never needs to ask it. Declaring it here is
+ * what stops the Garden from claiming it as something they can say.
+ */
+export const RECEPTIVE_ITEMS = ['hello', 'here_you_are', 'anything_else', 'how_many']
 
 /*
  * Words the learner does say, but only inside a phrase that is tracked as a
@@ -178,6 +283,14 @@ export const PATTERN_COVERAGE = {
    * table exists to catch.
    */
   repair_pattern: { term: 'Can you + verb + please?', reaches: 'guided_production', trackedAs: 'repair_pattern' },
+  /*
+   * Both reach independent production: episode 16 ends by asking for an
+   * identification with no model on screen, and episode 17's last recall asks
+   * for a counted noun the same way.
+   */
+  its_a_pattern: { term: 'It’s a + thing', reaches: 'independent', trackedAs: 'its_a_pattern' },
+  quantity_pattern: { term: 'number + thing', reaches: 'independent', trackedAs: 'quantity_pattern' },
+  numbers_1_10: { term: 'one … ten', reaches: 'independent', trackedAs: 'numbers_1_10' },
 }
 
 /*
@@ -232,27 +345,55 @@ export const CAPABILITY_MAP = [
    * same optimism this map exists to prevent. The next arc has to ASK for a
    * goodbye rather than teach one.
    */
-  { id: 'say_thank_you_and_goodbye', status: 'needs_reuse',
+  /*
+   * Was `needs_reuse` after arc 5, and the note said the next arc should ASK
+   * for a goodbye rather than teach one. Episode 17 does: the counter exchange
+   * ends with the learner closing it. That is what moved this line, not a
+   * decision to feel better about it.
+   */
+  { id: 'say_thank_you_and_goodbye', status: 'covered',
     covers: { canDo: 'close_an_encounter', intent: 'close_encounter' },
-    note: 'episode 15 only; the first capability arc 6 should require rather than introduce' },
+    note: 'episode 15 teaches it; episode 17 requires it at the end of the counter exchange' },
 
-  /* ---- Pre-A1 is still not finished without these ---- */
+  /* ---- built by arc 6; nothing required is missing now ---- */
 
-  { id: 'name_and_ask_about_things', status: 'missing_required', priority: 'should',
-    why: 'Every later level needs a way to acquire vocabulary from the world. "What’s this?" / "It’s a…" is the smallest engine for that, and it also gives the café arc something to point at.',
-    canDo: 'identify_things',
-    prerequisites: ['express_preferences'],
-    vocabularyBudget: 8,
-    newPatterns: ['What’s this?', 'It’s a + noun'],
-    reuseTargets: ['express_like', 'polite_request'] },
+  /*
+   * Both were `missing_required` until this arc. Neither is `covered` by
+   * arithmetic: they are covered because the episodes ask for the capability in
+   * open turns, and because episode 17 puts identifying, counting, repairing,
+   * ordering and closing in one exchange rather than in five exercises.
+   *
+   * "How much is it?" was in the original plan for numbers and is NOT here.
+   * Prices need a second thing (money) and a second question form, and the
+   * capability the audit asked for — answer "How many?" and ask for two of
+   * something — is complete without them. It moves to the optional list rather
+   * than being quietly dropped.
+   */
+  /*
+   * The asking half, tracked separately because it carries its own forgetting
+   * risk: "What's this?" is produced in episode 16 and never asked again, even
+   * though it is the question that lets a learner pick up words on their own.
+   * A1 should require it, not re-teach it.
+   */
+  { id: 'ask_what_a_thing_is', status: 'needs_reuse', covers: { intent: 'ask_what_thing' },
+    note: 'episode 16 only; identifying comes back in episode 17, asking does not' },
 
-  { id: 'small_numbers_and_quantity', status: 'missing_required', priority: 'should',
-    why: 'The café already asks for things and cannot ask for two of them. One to ten plus "How much is it?" is the minimum that makes the transaction the learner can already start actually finishable.',
-    canDo: 'use_small_numbers',
-    prerequisites: ['polite_request'],
-    vocabularyBudget: 12,
-    newPatterns: ['two + noun', 'How much is it?'],
-    reuseTargets: ['polite_request', 'finish_order'] },
+  { id: 'name_and_ask_about_things', status: 'covered', covers: { canDo: 'identify_things' },
+    note: 'episode 16: asking comes before answering, and three nouns appear because a frame needs something to be about' },
+
+  /*
+   * Taught, used four times inside its own episode, and then nowhere else —
+   * because episode 17 is where the curriculum ends. Exactly the position
+   * closing an encounter was in after arc 5, and it gets exactly the same
+   * honest label rather than a promotion for being last.
+   *
+   * This is the one capability A1 must ASK for rather than introduce.
+   */
+  { id: 'small_numbers_and_quantity', status: 'needs_reuse', covers: { canDo: 'use_small_numbers', intent: 'use_quantity' },
+    note: 'episode 17 only: one to ten as a single item, then counted, requested and confirmed at a counter — and never required again' },
+
+  { id: 'ask_a_price', status: 'optional', priority: 'optional',
+    why: 'The other half of the café transaction. It needs money as a second countable domain, which is an A1-sized addition rather than a Pre-A1 one.' },
 
   /* ---- would help, would not be missed ---- */
   { id: 'say_your_age', status: 'optional', priority: 'optional',

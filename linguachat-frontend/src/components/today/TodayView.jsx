@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 import { getTodayPhrase, MOCK_STATS, LAST_MISTAKES } from '../../data/mockData'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
@@ -6,6 +7,7 @@ import { getLocalizedMeaning } from '../../services/learningContent'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { ARC, getEpisode } from '../../learning/episodes/index.js'
 import { planDay, arcProgress } from '../../learning/engine/planner.js'
+import { derivePreA1Readiness, readinessFocus } from '../../learning/curriculum/readiness.js'
 import { DurationPicker } from '../session/DurationPicker'
 import { sessionHasReview, sessionHeadline, sessionProgress } from '../../learning/engine/session.js'
 import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
@@ -25,6 +27,19 @@ export function TodayView() {
     dailySession, previewSession, beginSession } = useApp()
   const plan = planDay(loadLearnerModel(), ARC)
   const planEpisode = plan.episodeId ? getEpisode(plan.episodeId) : null
+  /*
+   * Once every episode is done there is no card to point at, and the honest
+   * thing to show is where the learner stands: the road is finished, and
+   * whether the language is theirs yet is a separate question with a separate
+   * answer. Derived here, never stored, and never shown as a score.
+   */
+  const readiness = useMemo(() => derivePreA1Readiness(loadLearnerModel()), [episodeArcVersion])
+  const focus = readinessFocus(readiness)
+  const focusLine = !focus ? null
+    : focus.kind === 'strengthen_skill' ? t('preA1FocusSkill').replace('{skill}', t((ARC.find(e => e.canDoId === focus.canDoId) || {}).canDoNameKey || 'preA1LevelBadge'))
+      : focus.kind === 'catch_up_reviews' ? t('preA1FocusReviews')
+        : focus.kind === 'have_a_conversation' ? t('preA1FocusConversation')
+          : focus.kind === 'finish_curriculum' ? t('preA1FocusFinish') : null
   const arc = arcProgress(loadLearnerModel(), ARC)
   // The recommended session for today. Read-only here: the plan is deterministic,
   // so this preview is exactly what beginSession will store — and rendering it
@@ -125,6 +140,28 @@ export function TodayView() {
             <DurationPicker disabled={sessionStarted} />
           </div>
         </div>
+
+        {/* The road is finished: say so, and say what is still worth doing */}
+        {!planEpisode && readiness.curriculumComplete && (
+          <div className="card-lift w-full rounded-3xl p-5 mb-6 flex items-center gap-4 animate-fade-up"
+            style={{ animationDelay: '0.02s', background: 'linear-gradient(135deg, var(--violet-soft), var(--blue-soft))', border: '1.5px solid var(--violet)' }}>
+            <ChattoMascot mood={readiness.ready ? 'celebrate' : 'welcoming'} size={56} decorative intensity="ambient" />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
+                {t('preA1LevelBadge')} · {arc.completed}/{arc.total}
+              </p>
+              <p lang={nativeLanguageInfo.base} style={{ fontSize: '1.0625rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25, marginTop: 2 }}>
+                {readiness.ready ? t('preA1ReadyTitle') : t('preA1DoneTitle')}
+              </p>
+              <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45, marginTop: 3 }}>
+                {readiness.ready ? t('preA1ReadyBody') : t('preA1DoneBody')}
+              </p>
+              {!readiness.ready && focusLine && (
+                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--violet)', marginTop: 6 }}>{focusLine}</p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Direct access to the planned episode is still available */}
         {planEpisode && (
