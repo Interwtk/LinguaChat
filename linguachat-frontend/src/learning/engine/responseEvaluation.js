@@ -272,9 +272,18 @@ const ORIGIN_LEAD = /^\s*(i\s*'?\s*m|i\s+am|i)?\s*(from)?\s*/i
  * a previously stored place, which would read as a correction of their answer.
  * Returns '' when nothing place-like is left.
  */
+// A reply that ASKS something is not naming a place, however short it is.
+const LOOKS_LIKE_QUESTION = /^(where|what|who|when|why|how|which|do|does|are|is|can)\b/i
+
 export function placeFromAnswer(text) {
   const raw = String(text || '').trim().replace(/[.!?¡¿,;:]+$/u, '')
   if (!raw) return ''
+  /*
+   * Someone answering "where are you from?" with another question has not
+   * given us a place. Treating their words as one produced model answers like
+   * "I'm from Where you from." — nonsense offered as the correct version.
+   */
+  if (String(text).includes('?') || LOOKS_LIKE_QUESTION.test(raw)) return ''
   const rest = raw.replace(ORIGIN_LEAD, '').trim()
   if (!rest || !/\p{L}/u.test(rest)) return ''
   // keep it to a short place-like phrase, never a whole sentence

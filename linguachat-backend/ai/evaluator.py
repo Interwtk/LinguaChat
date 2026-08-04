@@ -226,6 +226,9 @@ def _ask_origin(text: str) -> dict:
 _ORIGIN_LEAD = re.compile(r"^\s*(i\s*'?\s*m|i\s+am|i)?\s*(from)?\s*", re.IGNORECASE)
 
 
+_LOOKS_LIKE_QUESTION = re.compile(r"^(where|what|who|when|why|how|which|do|does|are|is|can)", re.I)
+
+
 def place_from_answer(text: str) -> str:
     """
     The place the learner just named, in their own words, so the model answer
@@ -234,6 +237,10 @@ def place_from_answer(text: str) -> str:
     """
     raw = str(text or "").strip().rstrip(".!?¡¿,;: ")
     if not raw:
+        return ""
+    # A reply that ASKS something is not naming a place, however short it is:
+    # treating it as one produced model answers like "I'm from Where you from."
+    if "?" in str(text) or _LOOKS_LIKE_QUESTION.match(raw):
         return ""
     rest = _ORIGIN_LEAD.sub("", raw, count=1).strip()
     if not rest or not re.search(r"[^\W\d_]", rest, re.UNICODE):
@@ -560,16 +567,26 @@ def evaluate_with_openai(payload: dict) -> dict:
 
 
 def evaluate_episode_response(payload: dict) -> EvaluationResult:
-    """Single, never-raising entry point. Returns a validated EvaluationResult."""
-    if openai_tutor.configured:
+    """Single, never-raising entry point. Returns a validated EvaluationResult.
+
+    The provider is asked only when one is actually configured, and whatever it
+    answers must survive validation before it is trusted: a timeout, an error, a
+    malformed verdict or a self-contradicting one all land on the same
+    conservative deterministic fallback, so the learner is never blocked and
+    never told they succeeded on the strength of a broken answer.
+    """
+    from ai.providers import EvaluationContext, get_provider
+
+    provider = get_provider()
+    if provider.configured:
         try:
-            raw = evaluate_with_openai(payload)
+            raw = provider.evaluate(EvaluationContext.from_payload(payload))
             validated = validate_remote(raw)
             if validated is not None:
                 return EvaluationResult(**validated)
-            logger.warning("evaluator: remote verdict failed validation; using fallback")
+            logger.warning("evaluator: %s verdict failed validation; using fallback", provider.name)
         except Exception as exc:  # timeout, network, invalid JSON, etc.
-            logger.warning("evaluator: OpenAI path failed (%s); using fallback", exc)
+            logger.warning("evaluator: %s path failed (%s); using fallback", provider.name, exc)
         result = evaluate_deterministic(payload)
         result["source"] = "fallback"
         return EvaluationResult(**result)
