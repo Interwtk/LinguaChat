@@ -110,7 +110,7 @@ export function MiniStory({ block, vars, onDone }) {
     const token = guardRef.current.begin()
     if (token === null) return
     const turnContext = { linguaSaid: resolve(turnText(turns[state.currentTurn - 1], state.branchId), vars) }
-    const evalCtx = { name: vars.name, independent: !fromSuggestion, turnContext, place: vars.place, targetNoun: vars.noun, activity: vars.activity }
+    const evalCtx = { name: vars.name, independent: !fromSuggestion, turnContext, place: vars.place, targetNoun: vars.noun, targetThing: vars.item, activity: vars.activity }
     const preview = evaluateFree(turn.evalKind, text, evalCtx)
     const controller = new AbortController()
     abortRef.current = controller
@@ -121,7 +121,7 @@ export function MiniStory({ block, vars, onDone }) {
       result = await evaluateEpisodeResponse({
         episode: null, step: { evalKind: turn.evalKind, itemIds: turn.itemIds || [] },
         learnerResponse: text, learnerName: vars.name, place: vars.place,
-        targetNoun: vars.noun, activity: vars.activity,
+        targetNoun: vars.noun, targetThing: vars.item, activity: vars.activity,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: 'medium', assistanceUsed: fromSuggestion,
         previousAttempts: 0, turnContext, signal: controller.signal,

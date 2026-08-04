@@ -17,6 +17,7 @@ import { currentBlock, sessionProgress, dayKeyFor } from '../../learning/engine/
 import {
   loadLearnerModel, saveLearnerModel, recordItemAttempt, markRecurringError, recordActivitySignalOnce,
 } from '../../learning/engine/learnerModel.js'
+import { selectCompatibleContext } from '../../learning/engine/semanticContext.js'
 
 const En = ({ children, style }) => <span lang="en" dir="ltr" style={style}>{children}</span>
 
@@ -43,6 +44,13 @@ const MODEL_ANSWER = {
   accept_offer: () => 'Yes, please.',
   decline_offer: () => 'No, thank you.',
   simple_plan_conversation: (v) => `I like ${v.noun}. Do you want to ${v.activity}?`,
+  // fourth arc — the thing asked for comes from the semantic layer, so a
+  // remembered interest can never turn into "Can I have music, please?"
+  polite_request: (v) => `Can I have ${v.item}, please?`,
+  thank_service: () => 'Thank you.',
+  respond_anything_else: () => 'No, thank you.',
+  finish_order: () => 'That’s all, thanks.',
+  cafe_order_conversation: (v) => `Can I have ${v.item}, please? That’s all, thanks.`,
 }
 // What Lingua says to open the practice turn, so the reply has a real context.
 const PROMPT = {
@@ -65,6 +73,11 @@ const PROMPT = {
   accept_offer: () => 'Do you want some water?',
   decline_offer: () => 'Do you want coffee too?',
   simple_plan_conversation: () => 'Hi! What do you like?',
+  polite_request: () => 'Hi! What can I get for you?',
+  thank_service: () => 'Here you are.',
+  respond_anything_else: () => 'Anything else?',
+  finish_order: () => 'Anything else?',
+  cafe_order_conversation: () => 'Hi! What can I get for you?',
 }
 
 /*
@@ -105,6 +118,18 @@ function PracticeTurn({ block, topic = null, onDone }) {
     // with their own words rather than a catalogue noun
     noun: topic?.factValue || ctx.targetNoun,
     activity: ctx.activity,
+    /*
+     * What a cafe turn asks for. The objective decides which KIND of thing may
+     * fill the slot, so today's topic reaches the sentence only when it makes
+     * sense there — otherwise the neutral catalogue answers and the English
+     * stays correct.
+     */
+    item: selectCompatibleContext({
+      intent: kind,
+      facts: [topic?.factValue].filter(Boolean),
+      interests: [ctx.targetNoun],
+      seed: `session:${kind}:${name}`,
+    })?.value || 'water',
   }
   const nativeLang = nativeLanguageInfo.base
 
@@ -169,7 +194,10 @@ function PracticeTurn({ block, topic = null, onDone }) {
     const token = guardRef.current.begin()
     if (token === null) return
     const turnContext = { linguaSaid }
-    const preview = evaluateFree(kind, text, { name, independent: !fromSuggestion, turnContext, place: vars.place })
+    // Same context the model answer was built from, so a correction can never
+    // name something the prompt never mentioned.
+    const evalCtx = { name, independent: !fromSuggestion, turnContext, place: vars.place, targetNoun: vars.noun, targetThing: vars.item }
+    const preview = evaluateFree(kind, text, evalCtx)
     const controller = new AbortController()
     abortRef.current = controller
     if (shouldEscalate(preview)) { setReviewing(true); setLive(t('epEvaluating')) }
@@ -179,6 +207,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
       result = await evaluateEpisodeResponse({
         episode: null, step: { evalKind: kind, itemIds: block.payload?.itemId ? [block.payload.itemId] : [] },
         learnerResponse: text, learnerName: name, place: vars.place,
+        targetNoun: vars.noun, targetThing: vars.item,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: 'medium', assistanceUsed: fromSuggestion,
         previousAttempts: 0, turnContext, signal: controller.signal,
@@ -447,8 +476,15 @@ export function SessionRunner() {
     return {
       name, partner, place: model.facts?.place || '', partnerPlace: placeFor(partner),
       noun: dailySession?.topic?.factValue || ctx.targetNoun, activity: ctx.activity,
+      // a story that asks for something must ask for something orderable
+      item: selectCompatibleContext({
+        intent: block?.objective,
+        facts: [dailySession?.topic?.factValue].filter(Boolean),
+        interests: [ctx.targetNoun],
+        seed: `story:${dailySession?.id || ''}`,
+      })?.value || 'water',
     }
-  }, [dailySession, profile.name])
+  }, [dailySession, profile.name, block?.objective])
 
   if (!dailySession || !block) return null
 

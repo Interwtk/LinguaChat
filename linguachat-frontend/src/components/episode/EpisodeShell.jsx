@@ -5,7 +5,8 @@ import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { SEED_VOCAB_BY_ID } from '../../data/vocabulary'
 import { getLocalizedMeaning } from '../../services/learningContent'
 import { getEpisode } from '../../learning/episodes/index.js'
-import { evaluateFree, shouldEscalate } from '../../learning/engine/responseEvaluation.js'
+import { evaluateFree, shouldEscalate, isDeclineReply } from '../../learning/engine/responseEvaluation.js'
+import { selectCompatibleContext, otherNeutral } from '../../learning/engine/semanticContext.js'
 import { evaluateEpisodeResponse } from '../../learning/engine/hybridEvaluation.js'
 import { createSubmissionGuard } from '../../learning/engine/submitGuard.js'
 import { partnerFor, placeFor } from '../../learning/engine/variation.js'
@@ -21,7 +22,7 @@ import { FormatFeedback } from './FormatFeedback'
 import {
   beginEpisodeRun, completeEpisodeRun, updateActiveRun, runEarnsReward, otherBranch, RUN_BRANCH_REPLAY,
 } from '../../learning/engine/episodeRuns.js'
-import { recordLearnerFact, selectLearnerFact } from '../../learning/engine/learnerFacts.js'
+import { recordLearnerFact, selectLearnerFact, factsOfType } from '../../learning/engine/learnerFacts.js'
 
 // Fill {name} / {partner} / {place} / {partnerPlace} in the English target text.
 // An unknown placeholder is left untouched rather than printed as "undefined".
@@ -218,7 +219,39 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
    * rewriting the decision the learner originally made.
    */
   const branch = run?.branchId || modelRef.current.facts?.[`branch:${ep.id}`] || 'accept'
-  const branchLine = branch === 'decline' ? 'No problem. Maybe another day.' : 'Great! Let’s get ready.'
+  /*
+   * How the story answers the decision. Each episode may bring its own pair,
+   * because a line that fits one scene is nonsense in another: "No problem.
+   * Maybe another day." is a kind refusal of a plan and a baffling reply to
+   * "Anything else?" at a counter.
+   */
+  const branchLines = ep.story?.branchLines || { accept: 'Great! Let’s get ready.', decline: 'No problem. Maybe another day.' }
+  const branchLine = branchLines[branch] || branchLines.accept
+
+  /*
+   * What the learner is asking for, when a step asks for something.
+   *
+   * The step's intent decides which KIND of thing may fill the slot, so a
+   * remembered "I like music." can never become "Can I have music, please?".
+   * A memory that does not fit is skipped in silence and the neutral catalogue
+   * answers instead: a correct ordinary example beats a personalised absurdity.
+   */
+  /*
+   * A step that is not evaluated can still talk about something — a gap-fill
+   * has no `evalKind`, but its worked example still has to name a drink and
+   * not the learner ("Can I have Sebastian, please?"). `contextIntent` lets
+   * such a step say which slot it is filling.
+   */
+  const contextIntent = step.contextIntent || step.evalKind
+  const contextItem = selectCompatibleContext({
+    intent: contextIntent,
+    facts: factsOfType(modelRef.current, 'like').map(f => f.value),
+    interests: [interestCtx.targetNoun],
+    seed: `${name}:${ep.id}:item`,
+  })
+  // A second visit to the same request asks for something else, so a variation
+  // step is a real variation and not the same sentence twice.
+  const otherItem = otherNeutral(contextIntent, `${name}:${ep.id}:other`, contextItem)
 
   const vars = {
     name, partner, place, partnerPlace,
@@ -226,9 +259,19 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
     object: interestObject,
     activity: interestCtx.activity,
     branchLine,
+    item: contextItem?.value,
+    otherItem: otherItem?.value,
   }
+  // The model answer must name the same thing the prompt did.
+  const requestedThing = /\{otherItem\}/.test(step?.suggestionEn || '')
+    ? vars.otherItem
+    : (/\{item\}/.test(step?.suggestionEn || '') ? vars.item : null)
 
   const remoteEvaluator = (payload, abortSignal) => evaluateLearningResponse(payload, { signal: abortSignal })
+
+  // Whether THIS run will actually pay out, which is what the completion card
+  // is allowed to promise: a replay earns evidence and practice, not XP.
+  const willReward = runEarnsReward(run?.mode) && !getEpisodeState(modelRef.current, ep.id).awarded
 
   // "Long" means the episode really was a conversation, not a single card.
   const longRoleplay = ep.steps.filter(s => s.type === 'free_reply' || s.type === 'recall').length >= 4
@@ -316,6 +359,10 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
   function fillExample(s) {
     if (s.captureFact === 'place') return place || partnerPlace
     if (s.captureFact === 'likes') return subjectNoun
+    // A gap that is not capturing anything still has to be filled with the
+    // right KIND of word: "Can I have Sebastian, please?" is not an example.
+    // If the slot could not be resolved, show nothing rather than a wrong noun.
+    if (s.exampleVar) return vars[s.exampleVar] || ''
     return s.captureFact ? interestCtx.targetNoun : name
   }
 
@@ -335,7 +382,9 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
 
     // Decide up front whether we will need Lingua, only to show a calm status.
     // targetNoun keeps the model answer in the learner's own subject matter
-    const evalCtx = { name, independent, turnContext, place, targetNoun: subjectNoun, activity: interestCtx.activity }
+    // targetThing is only set where the step actually asked for a thing, so the
+    // arcs that never mention one keep their own catalogue examples.
+    const evalCtx = { name, independent, turnContext, place, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}) }
     const preview = evaluateFree(evalKind, text, evalCtx)
     const willEscalate = shouldEscalate(preview)
 
@@ -347,7 +396,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
     try {
       result = await evaluateEpisodeResponse({
         episode: ep, step, learnerResponse: text, learnerName: name, place,
-        targetNoun: subjectNoun, activity: interestCtx.activity, interestId: interestCtx.interestId,
+        targetNoun: subjectNoun, targetThing: requestedThing || undefined, activity: interestCtx.activity, interestId: interestCtx.interestId,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
         previousAttempts: attemptsRef.current, turnContext,
@@ -370,8 +419,9 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
        * to the same can-do; only the wording differs.
        */
       if (step.branchOn === 'accept_decline') {
-        const declined = /\b(no,? thank|no,? thanks|not now|maybe later)\b/i.test(text)
-        const chosen = declined ? 'decline' : 'accept'
+        // Read by the same rule the evaluator uses, so "That's all, thanks."
+        // is a refusal here too instead of quietly counting as a yes.
+        const chosen = isDeclineReply(text) ? 'decline' : 'accept'
         runRef.current = updateActiveRun(modelRef.current, { branchId: chosen }) || runRef.current
         // The historic outcome is written once, by the run that counted. Later
         // practice explores the other ending without erasing the first one.
@@ -678,7 +728,9 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
             <p style={{ fontSize: '0.9375rem', color: 'var(--ink-muted)', lineHeight: 1.55, marginBottom: 16 }}>{t(step.bodyKey)}</p>
             <div className="rounded-2xl px-4 py-3 mb-5 inline-flex items-center gap-2" style={{ background: 'var(--green-soft)', border: '1px solid var(--green)' }}>
               <span style={{ fontSize: 16 }}>✓</span>
-              <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--ink)' }}>{t(step.canDoNameKey)} · +{ep.xp} XP</span>
+              {/* Practice is worth doing and worth nothing extra. Announcing
+                  "+55 XP" at the end of a replay was simply untrue. */}
+              <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--ink)' }}>{t(step.canDoNameKey)}{willReward ? ` · +${ep.xp} XP` : ''}</span>
             </div>
             {/* Only after a long conversational episode, never after every card. */}
             {longRoleplay && <FormatFeedback format="roleplay" momentId={ep.id} />}
