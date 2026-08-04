@@ -107,6 +107,14 @@ function buildRemotePayload(params, kind) {
      * against "I don’t understand."
      */
     repair_kind: params.repairKind ?? '',
+    /*
+     * What shape of quantity the turn asked for, and how many of what. Separate
+     * fields on purpose: "two" and "sandwiches" mean different things, and the
+     * one time this project put two meanings in one string it produced "I need
+     * music."
+     */
+    quantity_form: params.quantityForm ?? '',
+    target_count: Number.isInteger(params.targetCount) ? params.targetCount : null,
     interest_id: params.interestId ?? null,
     native_language: params.nativeLanguage ?? 'en',
     interface_language: params.interfaceLanguage ?? 'en',
@@ -119,7 +127,7 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', repairKind = '', signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', repairKind = '', quantityForm = '', targetCount = null, signal, remote } = params
   const kind = step?.evalKind
   /*
    * Whether this counts as unaided production, used only to choose the wording
@@ -139,6 +147,8 @@ export async function evaluateEpisodeResponse(params) {
     ...(targetThing ? { targetThing } : {}),
     ...(activity ? { activity } : {}),
     ...(repairKind ? { repairKind } : {}),
+    ...(quantityForm ? { quantityForm } : {}),
+    ...(Number.isInteger(targetCount) ? { targetCount } : {}),
   })
 
   // Conclusive local verdict (closed step, clear accept, empty, clear failure).

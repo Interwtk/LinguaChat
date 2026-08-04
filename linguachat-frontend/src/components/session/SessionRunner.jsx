@@ -18,7 +18,7 @@ import { currentBlock, sessionProgress, dayKeyFor } from '../../learning/engine/
 import {
   loadLearnerModel, saveLearnerModel, recordItemAttempt, markRecurringError, recordActivitySignalOnce,
 } from '../../learning/engine/learnerModel.js'
-import { selectCompatibleContext } from '../../learning/engine/semanticContext.js'
+import { selectCompatibleContext, asSubjectValue } from '../../learning/engine/semanticContext.js'
 import {
   deriveInitialScaffold, updateScaffoldAfterTurn, evidenceKindForStep,
   isIndependentEvidence, showsModelAnswer,
@@ -166,7 +166,9 @@ function PracticeTurn({ block, topic = null, onDone }) {
     place: modelRef.current.facts?.place || '',
     // if today is built around something the learner told Lingua, practise
     // with their own words rather than a catalogue noun
-    noun: topic?.factValue || ctx.targetNoun,
+    // the same gate as an episode: today's topic reaches the sentence only when
+    // it is something a person can be asked to like
+    noun: (topic?.factValue && asSubjectValue(topic.factValue)?.value) || ctx.targetNoun,
     activity: ctx.activity,
     /*
      * What a cafe turn asks for. The objective decides which KIND of thing may
@@ -562,7 +564,7 @@ export function SessionRunner() {
 
   // Episode blocks reuse the existing shell untouched; the session only decides
   // what happens when the episode finishes.
-  if (block.type === 'continue_episode' || block.type === 'start_episode') {
+  if (block.type === 'continue_episode' || block.type === 'start_episode' || block.type === 'integrated_practice') {
     const ep = getEpisode(block.payload.episodeId)
     if (!ep) { advanceSession(); return null }
     // The topic was pinned when the plan was made, so the episode talks about

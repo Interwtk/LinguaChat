@@ -593,6 +593,155 @@ def _close_encounter(text: str) -> dict:
                  confidence=0.85 if len(n.split()) < 4 else 0.5)
 
 
+
+# ---- sixth arc: things, and how many (mirrors the frontend evaluator) ----
+#
+# Asking and answering are two intents, the way `ask_origin` and `answer_origin`
+# already are. Quantity is one intent whose shape the turn decides, so it carries
+# `quantity_form` exactly as repair carries `repair_kind`.
+_QUANTITY_FORMS = ("bare", "with_object", "polite_request")
+
+_ASK_WHAT = re.compile(r"\b(what'?s (this|that)|what is (this|that))\b")
+_ASK_WHAT_WIDER = re.compile(
+    r"\b((what'?s|what is) (this|that) called|what do you call (this|that)|what are (these|those))\b")
+_ASK_WHAT_LOOSE = re.compile(r"\b(what|this|that)\b")
+_ASK_WHERE_Q = re.compile(r"\b(where'?s|where is|where are)\b")
+_ASK_WHO_Q = re.compile(r"\b(who'?s|who is|who are)\b")
+
+_IDENTIFY = re.compile(r"\b(it'?s (a|an)|it is (a|an)|this is (a|an)|that'?s (a|an)|that is (a|an))\s+\w+")
+_IDENTIFY_LOOSE = re.compile(r"\b(it'?s|it is|this is|that'?s|that is|it|this|that|a|an)\b")
+_BARE_NOUN = re.compile(r"^(a |an )?\w+$")
+
+# The catalogue, kept to what the arc uses. Plurals are looked up, never built
+# by adding an "s": "two sandwichs" is the sentence this prevents.
+_THINGS = {
+    "book": {"singular": "book", "plural": "books", "article": "a", "count": True},
+    "phone": {"singular": "phone", "plural": "phones", "article": "a", "count": True},
+    "bag": {"singular": "bag", "plural": "bags", "article": "a", "count": True},
+    "cup": {"singular": "cup", "plural": "cups", "article": "a", "count": True},
+    "sandwich": {"singular": "sandwich", "plural": "sandwiches", "article": "a", "count": True},
+    "apple": {"singular": "apple", "plural": "apples", "article": "an", "count": True},
+    "water": {"singular": "water", "plural": "water", "article": None, "count": False},
+    "coffee": {"singular": "coffee", "plural": "coffee", "article": None, "count": False},
+    "tea": {"singular": "tea", "plural": "tea", "article": None, "count": False},
+}
+
+_NUMBER_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15,
+    "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20,
+}
+_TAUGHT_NUMBERS = list(_NUMBER_WORDS)[:10]
+_VAGUE_QUANTITY = re.compile(r"\b(many|a lot|lots|some|a few|several|much)\b")
+
+
+def _thing(thing_id: str) -> dict | None:
+    return _THINGS.get(str(thing_id or "").lower())
+
+
+def _with_article(entry: dict) -> str:
+    return f"{entry['article']} {entry['singular']}" if entry.get("article") else entry["singular"]
+
+
+def _counted(entry: dict, count: int) -> str:
+    if not entry or not entry.get("count") or not isinstance(count, int) or count < 1:
+        return ""
+    return entry["singular"] if count == 1 else entry["plural"]
+
+
+def _number_in(text: str) -> int | None:
+    n = normalize(text)
+    if not n:
+        return None
+    for word, value in _NUMBER_WORDS.items():
+        if re.search(rf"\b{word}\b", n):
+            return value
+    digits = re.search(r"\b(\d{1,3})\b", n)
+    return int(digits.group(1)) if digits else None
+
+
+def _ask_what_thing(text: str) -> dict:
+    natural = "What’s this?"
+    n = normalize(text)
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _ASK_WHAT.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=n not in ("what's this", "whats this"), confidence=0.95)
+    # a wider, perfectly good way to ask the same thing
+    if _ASK_WHAT_WIDER.search(n):
+        return _base(completed_objective=True, natural_version=natural, accepted_variant=True, confidence=0.9)
+    if _ASK_WHERE_Q.search(n) or _ASK_WHO_Q.search(n):
+        return _base(error_type="wrong_question_word", retry_required=True, natural_version=natural, confidence=0.92)
+    if _ASK_WHAT_LOOSE.search(n):
+        return _base(error_type="incomplete_question", retry_required=True, natural_version=natural, confidence=0.88)
+    return _base(error_type="no_question", retry_required=True, natural_version=natural,
+                 confidence=0.85 if len(n.split()) < 4 else 0.5)
+
+
+def _identify_thing(text: str, thing_id: str) -> dict:
+    entry = _thing(thing_id) or _THINGS["book"]
+    natural = f"It’s {_with_article(entry)}."
+    n = normalize(text)
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _IDENTIFY.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=not n.startswith("it's a"), confidence=0.95)
+    # a bare noun identifies the thing and is not the sentence being practised
+    if len(n.split()) <= 2 and _BARE_NOUN.match(n):
+        return _base(error_type="bare_noun", retry_required=True, natural_version=natural, confidence=0.9)
+    if _IDENTIFY_LOOSE.search(n):
+        return _base(error_type="incomplete_identification", retry_required=True, natural_version=natural, confidence=0.88)
+    return _base(error_type="no_identification", retry_required=True, natural_version=natural,
+                 confidence=0.85 if len(n.split()) < 4 else 0.5)
+
+
+def _use_quantity(text: str, quantity_form: str, thing_id: str, target_count) -> dict:
+    form = quantity_form if quantity_form in _QUANTITY_FORMS else "bare"
+    entry = _thing(thing_id) or _THINGS["book"]
+    count = target_count if isinstance(target_count, int) and target_count >= 1 else 2
+    word = _TAUGHT_NUMBERS[min(count, 10) - 1]
+    counted = _counted(entry, count) or "books"
+    targets = {
+        "bare": f"{word.capitalize()}.",
+        "with_object": f"{word.capitalize()} {counted}.",
+        "polite_request": f"Can I have {word} {counted}, please?",
+    }
+    natural = targets[form]
+    n = normalize(text)
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    # a quantity of something uncountable is a content bug, not a learner error
+    if form != "bare" and not entry.get("count"):
+        return _base(understood=False, error_type="uncountable_target", retry_required=True,
+                     natural_version=natural, confidence=0.5)
+
+    said = _number_in(n)
+    if said is None:
+        if _VAGUE_QUANTITY.search(n):
+            return _base(error_type="not_a_number", retry_required=True, natural_version=natural, confidence=0.9)
+        return _base(error_type="no_quantity", retry_required=True, natural_version=natural,
+                     confidence=0.85 if len(n.split()) < 4 else 0.5)
+
+    expected = _counted(entry, said)
+    names_thing = bool(re.search(rf"\b({entry['singular']}|{entry['plural']})\b", n))
+    names_correct_form = bool(re.search(rf"\b{expected}\b", n)) if expected else names_thing
+    asks = bool(_REQUEST_FORM.search(n))
+
+    done = True if form == "bare" else (names_correct_form if form == "with_object" else (asks and names_correct_form))
+    if done:
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=said > 10 or normalize(natural) != n, confidence=0.94)
+    # the noun is there in the wrong shape: "two book"
+    if names_thing and not names_correct_form:
+        return _base(error_type="wrong_number_form", retry_required=True, natural_version=natural, confidence=0.9)
+    if form == "with_object":
+        return _base(error_type="missing_counted_noun", retry_required=True, natural_version=natural, confidence=0.88)
+    return _base(error_type="missing_request_frame", retry_required=True, natural_version=natural, confidence=0.88)
+
+
 def evaluate_deterministic(payload: dict) -> dict:
     kind = (payload.get("expected_intent") or payload.get("step_type") or "").strip()
     text = payload.get("learner_response") or ""
@@ -665,6 +814,16 @@ def evaluate_deterministic(payload: dict) -> dict:
         return _repair_request(text, payload.get("repair_kind") or "")
     if kind == "close_encounter":
         return _close_encounter(text)
+    # sixth arc — the thing and the shape of the quantity travel with the turn,
+    # for the same reason the repair strategy does: without them the verdict is
+    # about a different question.
+    if kind == "ask_what_thing":
+        return _ask_what_thing(text)
+    if kind == "identify_thing":
+        return _identify_thing(text, payload.get("target_thing") or "")
+    if kind == "use_quantity":
+        return _use_quantity(text, payload.get("quantity_form") or "",
+                             payload.get("target_thing") or "", payload.get("target_count"))
     # unknown step type — do not pretend to judge it
     return _base(understood=False, error_type="unclear", retry_required=True, confidence=0.4)
 

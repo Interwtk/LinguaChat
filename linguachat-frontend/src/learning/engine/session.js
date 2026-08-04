@@ -14,6 +14,8 @@
  * it never interrupts an activity in progress.
  */
 import { getDueReviews, getEpisodeState } from './learnerModel.js'
+import { derivePreA1Readiness, readinessFocus } from '../curriculum/readiness.js'
+import { integratedEpisodes } from '../curriculum/preA1Map.js'
 import { isEpisodeUnlocked } from './planner.js'
 import { selectEquivalentActivityFormat, BLOCK_CANDIDATES } from './formatChoice.js'
 import { getInterestContext, getLearnerInterests } from './interests.js'
@@ -69,6 +71,20 @@ const ITEM_KIND = {
   speak_slowly: 'repair_request',
   repair_pattern: 'repair_request',
   bye: 'close_encounter',
+  // sixth arc
+  whats_this: 'ask_what_thing',
+  its_a_pattern: 'identify_thing',
+  book: 'identify_thing',
+  phone: 'identify_thing',
+  bag: 'identify_thing',
+  /*
+   * `how_many` is receptive: the learner understands the question and never
+   * asks it. Reviewing it means being asked and answering — exactly what
+   * `anything_else` already does with the answer to "Anything else?".
+   */
+  how_many: 'use_quantity',
+  numbers_1_10: 'use_quantity',
+  quantity_pattern: 'use_quantity',
   see_you: 'close_encounter',
 }
 const ERROR_KIND = {
@@ -108,6 +124,17 @@ const ERROR_KIND = {
   means_dont_know: 'repair_request',
   other_repair: 'repair_request',
   not_a_close: 'close_encounter',
+  incomplete_question: 'ask_what_thing',
+  wrong_question_word: 'ask_what_thing',
+  no_question_asked: 'ask_what_thing',
+  bare_noun: 'identify_thing',
+  incomplete_identification: 'identify_thing',
+  no_identification: 'identify_thing',
+  not_a_number: 'use_quantity',
+  no_quantity: 'use_quantity',
+  wrong_number_form: 'use_quantity',
+  missing_counted_noun: 'use_quantity',
+  missing_request_frame: 'use_quantity',
   no_close_yet: 'close_encounter',
 }
 const CANDO_KIND = {
@@ -125,6 +152,8 @@ const CANDO_KIND = {
   cafe_order: 'cafe_order_conversation',
   ask_for_repair: 'repair_request',
   close_an_encounter: 'close_encounter',
+  identify_things: 'identify_thing',
+  use_small_numbers: 'use_quantity',
 }
 
 export const practiceKindForItem = (id) => ITEM_KIND[id] || null
@@ -183,6 +212,42 @@ function reviewBlock(model, atMs, ctx) {
     format: formatFor('review', { ...ctx, objective, seed: `${ctx.seed}:review:${itemId}` }),
     payload: { itemId, itemIds: due.slice(0, 4) },
   }
+}
+
+/*
+ * The main goal of a session once every episode is done.
+ *
+ * Readiness decides what is worth doing: an unfinished capability is practised,
+ * and a learner who has everything except a conversation they held on their own
+ * is offered exactly that — as a REPLAY of an episode the curriculum considers
+ * integrated, so no XP is paid twice and the evidence is real.
+ */
+function consolidationBlock(model, arc, ctx) {
+  const readiness = derivePreA1Readiness(model, { atMs: ctx.atMs })
+  if (!readiness.curriculumComplete || readiness.ready) return null
+  const focus = readinessFocus(readiness)
+  if (!focus) return null
+
+  if (focus.kind === 'strengthen_skill' && focus.intent) {
+    return {
+      id: `consolidate:${focus.canDoId}`, type: 'recall', source: 'readiness',
+      objective: focus.intent, estimatedMinutes: 2,
+      format: formatFor('recall', { ...ctx, objective: focus.intent, seed: `${ctx.seed}:ready:${focus.canDoId}` }),
+      payload: { canDoId: focus.canDoId },
+    }
+  }
+  if (focus.kind === 'have_a_conversation') {
+    const episodes = integratedEpisodes()
+    const target = episodes[episodes.length - 1] || null
+    if (!target) return null
+    const ep = arc.find(e => e.id === target)
+    return {
+      id: `conversation:${target}`, type: 'integrated_practice', source: 'readiness',
+      objective: ep?.canDoId || null, estimatedMinutes: Math.max(3, (ep?.estimatedMinutes || 8) - 2),
+      payload: { episodeId: target },
+    }
+  }
+  return null
 }
 
 function mainEpisodeBlock(model, arc) {
@@ -274,10 +339,10 @@ export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs =
   const mode = isDurationMode(durationMode) ? durationMode : 'standard'
   const { minutes, maxBlocks } = DURATION_MODES[mode]
   const dayKey = dayKeyFor(atMs)
-  const ctx = { model, scaffold: planningScaffold(model), durationMode: mode, seed: `${learnerKey}:${dayKey}` }
+  const ctx = { model, scaffold: planningScaffold(model), durationMode: mode, seed: `${learnerKey}:${dayKey}`, atMs }
 
   const review = reviewBlock(model, atMs, ctx)
-  const main = mainEpisodeBlock(model, arc)
+  const main = mainEpisodeBlock(model, arc) || consolidationBlock(model, arc, ctx)
   const retry = targetedRetryBlock(model, ctx)
   const fragile = fragileSkillBlock(model, ctx)
 

@@ -64,6 +64,12 @@ class EvaluationContext:
     # "Can you repeat, please?" is right for one turn and a different repair in
     # another. Linguistic information about the task, not support state.
     repair_kind: str = ""
+    # The shape of quantity asked for, and of what. Linguistic properties of the
+    # TASK, in the same class as expected_intent — never anything about the
+    # learner's progress, readiness or support.
+    quantity_form: str = ""
+    target_thing: str = ""
+    target_count: int | None = None
 
     @classmethod
     def from_payload(cls, payload: dict) -> "EvaluationContext":
@@ -89,6 +95,9 @@ class EvaluationContext:
             target_language="en",
             turn_context=turn,
             repair_kind=str(payload.get("repair_kind") or ""),
+            quantity_form=str(payload.get("quantity_form") or ""),
+            target_thing=str(payload.get("target_thing") or ""),
+            target_count=payload.get("target_count") if isinstance(payload.get("target_count"), int) else None,
         )
 
 
@@ -205,6 +214,9 @@ def _context_to_payload(context: EvaluationContext) -> dict:
         "learner_response": context.learner_response,
         "learner_name": context.learner_name,
         "repair_kind": context.repair_kind,
+        "quantity_form": context.quantity_form,
+        "target_thing": context.target_thing,
+        "target_count": context.target_count,
         "native_language": context.native_language,
         "target_language": context.target_language,
         "turn_context": context.turn_context,

@@ -6,7 +6,7 @@ import { SEED_VOCAB_BY_ID } from '../../data/vocabulary'
 import { getLocalizedMeaning } from '../../services/learningContent'
 import { getEpisode } from '../../learning/episodes/index.js'
 import { evaluateFree, shouldEscalate, isDeclineReply } from '../../learning/engine/responseEvaluation.js'
-import { selectCompatibleContext, otherNeutral } from '../../learning/engine/semanticContext.js'
+import { selectCompatibleContext, otherNeutral, asSubjectValue, thingById, withArticle, countedThing } from '../../learning/engine/semanticContext.js'
 import { evaluateEpisodeResponse } from '../../learning/engine/hybridEvaluation.js'
 import { createSubmissionGuard } from '../../learning/engine/submitGuard.js'
 import { partnerFor, placeFor } from '../../learning/engine/variation.js'
@@ -237,9 +237,14 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
   const practiceFact = useMemo(() => {
     const mode = runRef.current?.mode
     if (mode !== 'replay' && mode !== 'branch_replay') return null
-    return selectLearnerFact(modelRef.current, { type: 'like', seed: `${episodeId}:practice`, allowRecent: true })
+    return selectLearnerFact(modelRef.current, { type: 'like', seed: `${episodeId}:practice`, allowRecent: true, accept: (f) => Boolean(asSubjectValue(f.value)) })
   }, [episodeId])
-  const subjectNoun = practiceFact?.value || interestCtx.targetNoun
+  /*
+   * A remembered like only colours the episode when it is the kind of thing a
+   * person can be asked to like. Episode 7's gap stores whatever was typed, so
+   * without this a replay asked "Do you like Bogota?" or "Do you like tired?".
+   */
+  const subjectNoun = (practiceFact && asSubjectValue(practiceFact.value)?.value) || interestCtx.targetNoun
 
   if (!ep) return null
 
@@ -288,6 +293,15 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
   // step is a real variation and not the same sentence twice.
   const otherItem = otherNeutral(contextIntent, `${name}:${ep.id}:other`, contextItem)
 
+  /*
+   * The sixth arc names its thing explicitly rather than inferring one from a
+   * placeholder: a quantity needs to know WHICH thing and HOW MANY to build
+   * "two sandwiches", and guessing from a string is how "I need music." got
+   * shipped. Separate fields, because they mean separate things.
+   */
+  const stepThing = step?.thingId ? thingById(step.thingId) : null
+  const stepCount = Number.isInteger(step?.count) ? step.count : null
+
   const vars = {
     name, partner, place, partnerPlace,
     noun: subjectNoun,
@@ -296,7 +310,11 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
     branchLine,
     item: contextItem?.value,
     otherItem: otherItem?.value,
+    thing: stepThing ? withArticle(stepThing.id) : '',
+    thingWord: stepThing ? stepThing.singular : '',
+    counted: stepThing && stepCount ? countedThing(stepThing.id, stepCount) : '',
   }
+
   // The model answer must name the same thing the prompt did.
   const requestedThing = /\{otherItem\}/.test(step?.suggestionEn || '')
     ? vars.otherItem
@@ -447,7 +465,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
     // targetNoun keeps the model answer in the learner's own subject matter
     // targetThing is only set where the step actually asked for a thing, so the
     // arcs that never mention one keep their own catalogue examples.
-    const evalCtx = { name, independent, turnContext, place, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}) }
+    const evalCtx = { name, independent, turnContext, place, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(stepCount ? { targetCount: stepCount } : {}) }
     const preview = evaluateFree(evalKind, text, evalCtx)
     const willEscalate = shouldEscalate(preview)
 
@@ -459,8 +477,10 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
     try {
       result = await evaluateEpisodeResponse({
         episode: ep, step, learnerResponse: text, learnerName: name, place,
-        targetNoun: subjectNoun, targetThing: requestedThing || undefined, activity: interestCtx.activity, interestId: interestCtx.interestId,
+        targetNoun: subjectNoun, targetThing: (stepThing && stepThing.id) || requestedThing || undefined, activity: interestCtx.activity, interestId: interestCtx.interestId,
         repairKind: step.repairKind || undefined,
+        quantityForm: step.quantityForm || undefined,
+        targetCount: stepCount || undefined,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion, independent,
         previousAttempts: attemptsRef.current, turnContext,

@@ -17,6 +17,8 @@
  * deterministic verdict is still used as a safe, conservative fallback (Level 3).
  */
 
+import { thingById, withArticle, countedThing } from './semanticContext.js'
+
 // Normalize: lowercase, unify apostrophes, drop emojis/symbols, keep letters
 // (incl. accents) + digits + spaces + apostrophes, collapse spaces.
 export function normalize(text) {
@@ -841,6 +843,202 @@ export function evaluateCloseEncounter(text, { independent = false } = {}) {
   return { ...r, errorType: 'no_close_yet', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep15RetryExplainClose', explanation: 'ep15RetryExplainClose', retryRequired: true, retryPrompt: 'ep15RetryPromptClose' }
 }
 
+
+/* ===========================================================================
+ * SIXTH ARC — things, and how many
+ *
+ * Asking and answering are two intents, not one with a subtype. Repair was one
+ * function done three ways; this is two different jobs — the same distinction
+ * the curriculum already makes between `ask_origin` and `answer_origin`.
+ *
+ * Quantity is one intent whose SHAPE depends on what the turn asked for, so it
+ * carries `quantityForm` the way repair carries `repairKind`: a bare number is a
+ * complete answer to "How many?" and is not a complete answer to "Ask for two
+ * sandwiches."
+ * ==========================================================================*/
+export const QUANTITY_FORMS = ['bare', 'with_object', 'polite_request']
+
+const ASK_WHAT = /\b(what'?s (this|that)|what is (this|that))\b/
+/* "What's this called?" is a real question and is not what the arc teaches. */
+const ASK_WHAT_WIDER = /\b((what'?s|what is) (this|that) called|what do you call (this|that)|what are (these|those))\b/
+const ASK_WHAT_LOOSE = /\b(what|this|that)\b/
+/* the two questions most easily confused with it, and they are not it */
+const ASK_WHERE = /\b(where'?s|where is|where are)\b/
+const ASK_WHO = /\b(who'?s|who is|who are)\b/
+
+const IDENTIFY = /\b(it'?s (a|an)|it is (a|an)|this is (a|an)|that'?s (a|an)|that is (a|an))\s+\p{L}+/u
+/* bare `it`/`this` too: "It book." is a reach for the frame, not silence */
+const IDENTIFY_LOOSE = /\b(it'?s|it is|this is|that'?s|that is|it|this|that|a|an)\b/
+
+/*
+ * The arc TEACHES one to ten. It RECOGNISES further, because a learner who
+ * answers "Eleven." has answered the question, and telling them they gave no
+ * quantity would simply be false.
+ */
+const NUMBER_WORDS = {
+  one: 1, two: 2, three: 3, four: 4, five: 5,
+  six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+  eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
+  sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
+}
+export const TAUGHT_NUMBERS = Object.keys(NUMBER_WORDS).slice(0, 10)
+const VAGUE_QUANTITY = /\b(many|a lot|lots|some|a few|several|much)\b/
+
+/* The number a reply names, as a word or a digit, or null. */
+export function numberIn(text) {
+  const n = normalize(text)
+  if (!n) return null
+  for (const [word, value] of Object.entries(NUMBER_WORDS)) {
+    if (new RegExp(`\\b${word}\\b`).test(n)) return value
+  }
+  const digits = n.match(/\b(\d{1,3})\b/)
+  if (digits) return Number(digits[1])
+  return null
+}
+
+export function evaluateAskWhatThing(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'What\u2019s this?'
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep16RetryPromptEmpty' }
+
+  if (ASK_WHAT.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = !/^what'?s this$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep16PraiseIndependent' : 'ep16PraiseAsked'
+    return r
+  }
+  /*
+   * A wider, perfectly good way of asking the same thing. Accepted — a learner
+   * is never wrong for being correct — and flagged as a variant so the arc can
+   * still show the sentence it teaches.
+   */
+  if (ASK_WHAT_WIDER.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.acceptedVariant = true
+    r.praiseKey = r.masteryEvidence.independent ? 'ep16PraiseIndependent' : 'ep16PraiseAsked'
+    return r
+  }
+  /* asking a real question, about the wrong thing */
+  if (ASK_WHERE.test(n) || ASK_WHO.test(n)) {
+    return { ...r, errorType: 'wrong_question_word', confidence: 0.92, priorityCorrection: 'ep16RetryExplainWh', explanation: 'ep16RetryExplainWh', retryRequired: true, retryPrompt: 'ep16RetryPromptAsk' }
+  }
+  /* "What this?" / "This?" — the idea is there, the sentence is not */
+  if (ASK_WHAT_LOOSE.test(n)) {
+    return { ...r, errorType: 'incomplete_question', confidence: 0.88, priorityCorrection: 'ep16RetryExplainAsk', explanation: 'ep16RetryExplainAsk', retryRequired: true, retryPrompt: 'ep16RetryPromptAsk' }
+  }
+  return { ...r, errorType: 'no_question', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep16RetryExplainAsk', explanation: 'ep16RetryExplainAsk', retryRequired: true, retryPrompt: 'ep16RetryPromptAsk' }
+}
+
+export function evaluateIdentifyThing(text, { independent = false, targetThing = 'book' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  const thing = thingById(targetThing)
+  const named = thing ? withArticle(thing.id) : 'a book'
+  r.naturalVersion = `It\u2019s ${named}.`
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep16RetryPromptEmpty' }
+
+  if (IDENTIFY.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = !n.startsWith('it\'s a') && !n.startsWith('its a')
+    r.praiseKey = r.masteryEvidence.independent ? 'ep16PraiseIndependent' : 'ep16PraiseIdentified'
+    return r
+  }
+  /*
+   * A bare noun. It identifies the thing perfectly and it is not the sentence
+   * being practised, so it is understood and does not complete the objective —
+   * the same treatment "Water, please." gets in the caf\u00e9.
+   */
+  const bare = wordCount(n) <= 2 && /^(a |an )?\p{L}+$/u.test(n)
+  if (bare) {
+    return { ...r, errorType: 'bare_noun', confidence: 0.9, priorityCorrection: 'ep16RetryExplainSay', explanation: 'ep16RetryExplainSay', retryRequired: true, retryPrompt: 'ep16RetryPromptSay' }
+  }
+  /* "It book." / "Is a book." — half the frame */
+  if (IDENTIFY_LOOSE.test(n)) {
+    return { ...r, errorType: 'incomplete_identification', confidence: 0.88, priorityCorrection: 'ep16RetryExplainSay', explanation: 'ep16RetryExplainSay', retryRequired: true, retryPrompt: 'ep16RetryPromptSay' }
+  }
+  return { ...r, errorType: 'no_identification', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep16RetryExplainSay', explanation: 'ep16RetryExplainSay', retryRequired: true, retryPrompt: 'ep16RetryPromptSay' }
+}
+
+/*
+ * One evaluator, three shapes.
+ *
+ *   bare            answering "How many?" — "Two." is the whole answer
+ *   with_object     "Two books." — the number has to carry its noun
+ *   polite_request  "Can I have two sandwiches, please?" — the caf\u00e9 frame,
+ *                   now with a quantity in it
+ */
+export function evaluateUseQuantity(text, { independent = false, quantityForm = 'bare', targetThing = 'book', targetCount = 2 } = {}) {
+  const form = QUANTITY_FORMS.includes(quantityForm) ? quantityForm : 'bare'
+  const n = normalize(text)
+  const r = base(independent)
+  const thing = thingById(targetThing)
+  const counted = thing ? countedThing(thing.id, targetCount) : ''
+  const numberWord = TAUGHT_NUMBERS[Math.min(Math.max(1, Number(targetCount) || 2), 10) - 1] || 'two'
+  const TARGET = {
+    bare: `${numberWord[0].toUpperCase()}${numberWord.slice(1)}.`,
+    with_object: `${numberWord[0].toUpperCase()}${numberWord.slice(1)} ${counted || 'books'}.`,
+    polite_request: `Can I have ${numberWord} ${counted || 'books'}, please?`,
+  }
+  r.naturalVersion = TARGET[form]
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep17RetryPromptEmpty' }
+  /*
+   * "two water" is not a sentence this level should ever be asked to produce.
+   * A step that names an uncountable thing for a counted form is a content bug;
+   * the check forbids it and this is the backstop that refuses to invent a
+   * plural for it.
+   */
+  if (form !== 'bare' && thing && thing.countability !== 'count') {
+    return { ...r, understood: false, conclusive: true, errorType: 'uncountable_target', confidence: 0.5, retryRequired: true, retryPrompt: 'ep17RetryPromptEmpty' }
+  }
+
+  const count = numberIn(n)
+  /*
+   * The form has to MATCH the number the learner actually said: "two book" is
+   * not a sentence, and accepting it because the noun appears somewhere would
+   * teach exactly the mistake the catalogue exists to prevent. The expected
+   * word is looked up, never built by adding an "s".
+   */
+  const expected = thing && count !== null ? countedThing(thing.id, count) : ''
+  const namesThing = thing ? new RegExp(`\\b(${thing.singular}|${thing.plural})\\b`).test(n) : /\b\p{L}{3,}\b/u.test(n)
+  const namesCorrectForm = expected ? new RegExp(`\\b${expected}\\b`).test(n) : namesThing
+  const asks = REQUEST_FORM.test(n)
+
+  if (count === null) {
+    /* "Many." / "A lot." communicate a quantity and are not a number */
+    if (VAGUE_QUANTITY.test(n)) {
+      return { ...r, errorType: 'not_a_number', confidence: 0.9, priorityCorrection: 'ep17RetryExplainNumber', explanation: 'ep17RetryExplainNumber', retryRequired: true, retryPrompt: `ep17RetryPrompt_${form}` }
+    }
+    return { ...r, errorType: 'no_quantity', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep17RetryExplainNumber', explanation: 'ep17RetryExplainNumber', retryRequired: true, retryPrompt: `ep17RetryPrompt_${form}` }
+  }
+
+  const done = form === 'bare' ? true
+    : form === 'with_object' ? namesCorrectForm
+      : asks && namesCorrectForm
+  if (done) {
+    r.completedObjective = true
+    r.confidence = 0.94
+    /*
+     * A number outside one-to-ten is still a number and still answers the
+     * question. The arc teaches ten of them; it does not own the rest.
+     */
+    r.acceptedVariant = count > 10 || normalize(TARGET[form]) !== n
+    r.praiseKey = r.masteryEvidence.independent ? 'ep17PraiseIndependent' : 'ep17PraiseCounted'
+    return r
+  }
+  /* the noun is there in the wrong shape: "two book" */
+  if (namesThing && !namesCorrectForm) {
+    return { ...r, errorType: 'wrong_number_form', confidence: 0.9, priorityCorrection: 'ep17RetryExplainPlural', explanation: 'ep17RetryExplainPlural', retryRequired: true, retryPrompt: `ep17RetryPrompt_${form}` }
+  }
+  if (form === 'with_object') {
+    return { ...r, errorType: 'missing_counted_noun', confidence: 0.88, priorityCorrection: 'ep17RetryExplainObject', explanation: 'ep17RetryExplainObject', retryRequired: true, retryPrompt: 'ep17RetryPrompt_with_object' }
+  }
+  return { ...r, errorType: 'missing_request_frame', confidence: 0.88, priorityCorrection: 'ep17RetryExplainRequest', explanation: 'ep17RetryExplainRequest', retryRequired: true, retryPrompt: 'ep17RetryPrompt_polite_request' }
+}
+
 // Dispatcher used by the engine for free_reply / roleplay steps.
 export function evaluateFree(kind, text, ctx = {}) {
   switch (kind) {
@@ -870,6 +1068,9 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'cafe_order_conversation': return evaluateCafeOrderConversation(text, ctx)
     case 'repair_request': return evaluateRepairRequest(text, ctx)
     case 'close_encounter': return evaluateCloseEncounter(text, ctx)
+    case 'ask_what_thing': return evaluateAskWhatThing(text, ctx)
+    case 'identify_thing': return evaluateIdentifyThing(text, ctx)
+    case 'use_quantity': return evaluateUseQuantity(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }

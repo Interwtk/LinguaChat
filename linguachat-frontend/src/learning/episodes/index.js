@@ -631,12 +631,129 @@ const REPAIR_03 = {
   ],
 }
 
+
+/* ===========================================================================
+ * SIXTH ARC — "Things, and how many"
+ *
+ * The last two capabilities Pre-A1 owes, and they are tools rather than topics.
+ *
+ * "What's this?" exists so the learner can acquire vocabulary inside a
+ * conversation instead of waiting for a lesson to hand it to them. It is not an
+ * excuse to memorise ten objects: three nouns appear, and they are there because
+ * a frame needs something to be about.
+ *
+ * Numbers are taught as a group, once, and then USED. Ten separate exercises
+ * would make the arc feel like arithmetic; the capability is answering "How
+ * many?" and asking for two of something, which is what the cafe has been unable
+ * to do since episode 10.
+ *
+ * Episode 17 closes the level, so it is deliberately the most integrated episode
+ * in it: identifying, counting, repairing, ordering, declining and saying
+ * goodbye all happen in one unbroken exchange at a counter. Nothing is added to
+ * lengthen it — every turn is a capability the learner already owes.
+ * ==========================================================================*/
+
+const THINGS_01 = {
+  id: 'what_is_this',
+  arc: 'things',
+  level: 'Pre-A1',
+  titleKey: 'ep16Title',
+  goalKey: 'ep16Goal',
+  canDoId: 'identify_things',
+  canDoNameKey: 'ep16CanDoName',
+  durationKey: 'ep16Duration',
+  estimatedMinutes: 7,
+  xp: 55,
+  prerequisites: ['we_can_continue'],
+  /*
+   * What it actually leans on: having asked a question before. "What's this?"
+   * is the same frame as "What's your name?", which is why episode 2 is the
+   * honest ancestor here and the repair arc is not.
+   */
+  skillPrerequisites: ['ask_name'],
+  gardenItems: ['whats_this', 'its_a_pattern', 'book', 'phone', 'bag'],
+  steps: [
+    { type: 'scene', mood: 'thinking', titleKey: 'ep16SceneTitle', bodyKey: 'ep16SceneBody', showGoal: true, ctaKey: 'ep1Continue' },
+    { type: 'model', target: 'What’s this?', meaningItems: ['whats_this'], explainKey: 'ep16ModelExplain' },
+    { type: 'comprehension', instructionKey: 'ep16ComprehensionInstruction', target: 'What’s this?', itemId: 'whats_this',
+      options: [{ key: 'ep16CompOptCorrect', correct: true }, { key: 'ep16CompOptWrong1' }, { key: 'ep16CompOptWrong2' }] },
+    { type: 'word_order', instructionKey: 'ep16BuildInstruction', hintKey: 'ep1BuildHint', itemId: 'whats_this',
+      tokens: ['What’s', 'this', '?'] },
+    /* the learner asks first, and only then learns how to answer */
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Look — I have something here.', instructionKey: 'ep16AskInstruction',
+      evalKind: 'ask_what_thing', suggestionEn: 'What’s this?', itemIds: ['whats_this'] },
+    { type: 'model', target: 'It’s a book.', meaningItems: ['its_a_pattern', 'book'], explainKey: 'ep16AnswerExplain' },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Now you show me one. What’s this?', instructionKey: 'ep16IdentifyInstruction',
+      evalKind: 'identify_thing', thingId: 'book', suggestionEn: 'It’s a book.', itemIds: ['its_a_pattern', 'book'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'And this one? What’s this?', instructionKey: 'ep16OtherInstruction',
+      evalKind: 'identify_thing', thingId: 'phone', suggestionEn: 'It’s a phone.', itemIds: ['its_a_pattern', 'phone'] },
+    /* the loop closes: ask, get an answer, ask again about something else */
+    { type: 'free_reply', variation: true, sceneEn: 'Later, someone puts something on the table you have never seen.', instructionKey: 'ep16VariationInstruction',
+      evalKind: 'ask_what_thing', suggestionEn: 'What’s this?', itemIds: ['whats_this'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'It’s a bag. And this one — what’s this?', instructionKey: 'ep16BagInstruction',
+      evalKind: 'identify_thing', thingId: 'bag', suggestionEn: 'It’s a bag.', itemIds: ['its_a_pattern', 'bag'] },
+    { type: 'recall', instructionKey: 'ep16FinalInstruction', evalKind: 'ask_what_thing', itemIds: ['whats_this'] },
+    { type: 'completion', canDoNameKey: 'ep16CanDoName', titleKey: 'ep16CloseTitle', bodyKey: 'ep16CloseBody', ctaKey: 'ep1CloseCta' },
+  ],
+}
+
+const THINGS_02 = {
+  id: 'how_many',
+  arc: 'things',
+  level: 'Pre-A1',
+  titleKey: 'ep17Title',
+  goalKey: 'ep17Goal',
+  canDoId: 'use_small_numbers',
+  canDoNameKey: 'ep17CanDoName',
+  durationKey: 'ep17Duration',
+  estimatedMinutes: 9,
+  xp: 75,
+  prerequisites: ['what_is_this'],
+  skillPrerequisites: ['identify_things', 'polite_request'],
+  gardenItems: ['numbers_1_10', 'how_many', 'quantity_pattern'],
+  steps: [
+    { type: 'recall', review: true, instructionKey: 'ep17RecallInstruction', evalKind: 'identify_thing', thingId: 'book', itemIds: ['its_a_pattern'] },
+    { type: 'scene', mood: 'welcoming', titleKey: 'ep17SceneTitle', bodyKey: 'ep17SceneBody', showGoal: true, ctaKey: 'ep17Start' },
+    { type: 'model', target: 'one two three four five', meaningItems: ['numbers_1_10'], explainKey: 'ep17ModelExplain' },
+    /*
+     * "How many?" is RECEPTIVE here: the learner has to understand the question
+     * to answer it, and Pre-A1 does not need them to ask it. Recognising it is
+     * what the following six turns depend on.
+     */
+    { type: 'comprehension', instructionKey: 'ep17ComprehensionInstruction', target: 'How many?', itemId: 'how_many',
+      options: [{ key: 'ep17CompOptCorrect', correct: true }, { key: 'ep17CompOptWrong1' }, { key: 'ep17CompOptWrong2' }] },
+    { type: 'choice', instructionKey: 'ep17ChoiceInstruction', promptEn: 'There are three books here. How many?', itemId: 'numbers_1_10',
+      options: [{ textEn: 'Three.', correct: true }, { textEn: 'Thank you.' }, { textEn: 'It’s a book.' }] },
+    /*
+     * From here it is one unbroken exchange at a counter: count, ask for a
+     * repetition when it goes too fast, order with a quantity, decline, close.
+     * Six consecutive productive turns, all of them capabilities already owed.
+     */
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'I have some books for you. How many?', instructionKey: 'ep17BareInstruction',
+      evalKind: 'use_quantity', quantityForm: 'bare', thingId: 'book', count: 2, suggestionEn: 'Two.', itemIds: ['numbers_1_10'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Sorry — how many books?', instructionKey: 'ep17ObjectInstruction',
+      evalKind: 'use_quantity', quantityForm: 'with_object', thingId: 'book', count: 3, suggestionEn: 'Three books.', itemIds: ['numbers_1_10', 'quantity_pattern'] },
+    /* the repair arc comes back, in a conversation that was not about repair */
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Andforyou—howmanysandwiches?', instructionKey: 'ep17RepairInstruction',
+      evalKind: 'repair_request', repairKind: 'repeat', suggestionEn: 'Can you repeat, please?', itemIds: ['can_you_repeat'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Of course. How many sandwiches?', instructionKey: 'ep17RequestInstruction',
+      evalKind: 'use_quantity', quantityForm: 'polite_request', thingId: 'sandwich', count: 2, suggestionEn: 'Can I have two sandwiches, please?', itemIds: ['numbers_1_10', 'can_i_have_pattern'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Anything else?', instructionKey: 'ep17ElseInstruction',
+      evalKind: 'respond_anything_else', suggestionEn: 'No, thank you.', itemIds: ['no_thank_you'] },
+    /* and the goodbye the previous arc had nowhere to reuse */
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Here you are. See you!', instructionKey: 'ep17CloseInstruction',
+      evalKind: 'close_encounter', suggestionEn: 'Thanks, bye.', itemIds: ['bye'] },
+    { type: 'recall', instructionKey: 'ep17FinalInstruction', evalKind: 'use_quantity', quantityForm: 'with_object', thingId: 'book', count: 2, itemIds: ['numbers_1_10', 'quantity_pattern'] },
+    { type: 'completion', canDoNameKey: 'ep17CanDoName', titleKey: 'ep17CloseTitle', bodyKey: 'ep17CloseBody', ctaKey: 'ep1CloseCta' },
+  ],
+}
+
 GREETINGS_01.arc = 'greetings'
 GREETINGS_02.arc = 'greetings'
 GREETINGS_03.arc = 'greetings'
 
-export const ARC = [GREETINGS_01, GREETINGS_02, GREETINGS_03, CONNECT_01, CONNECT_02, CONNECT_03, CHOOSE_01, CHOOSE_02, CHOOSE_03, CAFE_01, CAFE_02, CAFE_03, REPAIR_01, REPAIR_02, REPAIR_03]
-export const ARCS = ['greetings', 'connect', 'choose', 'cafe', 'repair']
+export const ARC = [GREETINGS_01, GREETINGS_02, GREETINGS_03, CONNECT_01, CONNECT_02, CONNECT_03, CHOOSE_01, CHOOSE_02, CHOOSE_03, CAFE_01, CAFE_02, CAFE_03, REPAIR_01, REPAIR_02, REPAIR_03, THINGS_01, THINGS_02]
+export const ARCS = ['greetings', 'connect', 'choose', 'cafe', 'repair', 'things']
 export const getEpisode = (id) => ARC.find(e => e.id === id) || null
 export const firstEpisode = () => ARC[0]
 export const episodesInArc = (arcId) => ARC.filter(e => e.arc === arcId)

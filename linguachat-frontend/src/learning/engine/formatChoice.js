@@ -178,6 +178,13 @@ const OBJECTIVE_FORMATS = {
    */
   repair_request: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
   close_encounter: ['guided_reply', 'word_order', 'choice', 'free_reply', 'recall'],
+  /*
+   * Things and quantities. `mini_story` is absent from all three for the same
+   * reason repair's is: the only story that exists belongs to episode 15.
+   */
+  ask_what_thing: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay', 'choice'],
+  identify_thing: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  use_quantity: ['guided_reply', 'choice', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
 }
 
 export function formatSupportsObjective(format, objective) {

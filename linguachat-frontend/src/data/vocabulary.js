@@ -142,6 +142,32 @@ export const SEED_VOCAB = [
    * "repeat" or "slowly" on their own, so listing them as separate words would
    * inflate the Garden with vocabulary that was never practised.
    */
+  /*
+   * The sixth arc. Two frames and three things — the frames are the point, and
+   * the nouns are only there because a frame needs something to be about.
+   *
+   * The numbers are ONE item rather than ten. Ten cards would fill a third of
+   * the Memory Garden with words that are never reviewed individually, and the
+   * capability is "answer with a small quantity", not "recite a list". Evidence
+   * still comes from what the learner produced; it simply accumulates on the
+   * group, the same way a pattern does.
+   */
+  { id: 'whats_this', term: 'What’s this?', kind: 'phrase', emoji: '?', example: 'What’s this?',
+    meaning: { en: 'asking what an unknown thing is', es: '¿Qué es esto?', pt: 'O que é isto?', fr: 'Qu’est-ce que c’est ?', it: 'Che cos’è questo?', de: 'Was ist das?', ja: 'これは何ですか。', ar: 'ما هذا؟' } },
+  { id: 'its_a_pattern', term: 'It’s a + thing', kind: 'pattern', emoji: '=', example: 'It’s a book.',
+    meaning: { en: '“It’s” + a thing', es: '“It’s” + una cosa', pt: '“It’s” + uma coisa', fr: '« It’s » + une chose', it: '“It’s” + una cosa', de: '‚It’s‘ + eine Sache', ja: '“It’s” + もの', ar: '“It’s” + شيء' } },
+  { id: 'book', term: 'book', kind: 'word', emoji: '[]', example: 'It’s a book.',
+    meaning: { en: 'a book', es: 'un libro', pt: 'um livro', fr: 'un livre', it: 'un libro', de: 'ein Buch', ja: '本', ar: 'كتاب' } },
+  { id: 'phone', term: 'phone', kind: 'word', emoji: '()', example: 'It’s a phone.',
+    meaning: { en: 'a phone', es: 'un teléfono', pt: 'um telemóvel', fr: 'un téléphone', it: 'un telefono', de: 'ein Telefon', ja: '電話', ar: 'هاتف' } },
+  { id: 'bag', term: 'bag', kind: 'word', emoji: 'B', example: 'It’s a bag.',
+    meaning: { en: 'a bag', es: 'una bolsa', pt: 'um saco', fr: 'un sac', it: 'una borsa', de: 'eine Tasche', ja: 'カバン', ar: 'حقيبة' } },
+  { id: 'numbers_1_10', term: 'one … ten', kind: 'pattern', emoji: '12', example: 'Two, please.',
+    meaning: { en: 'the numbers one to ten', es: 'los números del uno al diez', pt: 'os números de um a dez', fr: 'les nombres de un à dix', it: 'i numeri da uno a dieci', de: 'die Zahlen eins bis zehn', ja: '１から１０の数', ar: 'الأرقام من واحد إلى عشرة' } },
+  { id: 'how_many', term: 'How many?', kind: 'phrase', emoji: '#', example: 'How many?',
+    meaning: { en: 'asking for a quantity', es: '¿Cuántos?', pt: 'Quantos?', fr: 'Combien ?', it: 'Quanti?', de: 'Wie viele?', ja: 'いくつですか。', ar: 'كم واحد؟' } },
+  { id: 'quantity_pattern', term: 'number + thing', kind: 'pattern', emoji: '12', example: 'two books',
+    meaning: { en: 'a number and what you are counting', es: 'un número y lo que cuentas', pt: 'um número e o que contas', fr: 'un nombre et ce que tu comptes', it: 'un numero e ciò che conti', de: 'eine Zahl und das Gezählte', ja: '数 ＋ 数えるもの', ar: 'رقم + الشيء المعدود' } },
   { id: 'i_dont_understand', term: 'I don’t understand.', kind: 'phrase', emoji: '?', example: 'Sorry, I don’t understand.',
     meaning: { en: 'saying a conversation stopped making sense', es: 'No entiendo.', pt: 'Não entendo.', fr: 'Je ne comprends pas.', it: 'Non capisco.', de: 'Ich verstehe nicht.', ja: 'わかりません。', ar: 'لا أفهم.' } },
   { id: 'can_you_repeat', term: 'Can you repeat, please?', kind: 'phrase', emoji: '<>', example: 'Can you repeat, please?',

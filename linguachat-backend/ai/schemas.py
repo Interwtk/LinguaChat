@@ -106,6 +106,12 @@ class EvaluateRequest(BaseModel):
     # with three strategies, so a verdict without this is a verdict about a
     # different question. Anything unexpected is treated as absent.
     repair_kind: str | None = Field(default=None, max_length=32)
+    # Which shape of quantity the turn asked for ("bare", "with_object",
+    # "polite_request") and how many of the thing. Separate fields: "two" and
+    # "sandwiches" are different pieces of information, and the one time this
+    # project put two meanings in one string it produced "I need music."
+    quantity_form: str | None = Field(default=None, max_length=32)
+    target_count: int | None = Field(default=None, ge=0, le=99)
     interest_id: str | None = Field(default=None, max_length=40)
     native_language: str | LanguageInfo | dict | None = None
     interface_language: str | LanguageInfo | dict | None = None
