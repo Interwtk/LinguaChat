@@ -33,10 +33,21 @@
  *   turn cannot flip the experience back and forth.
  */
 import { ARC, getEpisode } from '../episodes/index.js'
-import { CAN_DO_INTENT, intentsForEpisode } from '../curriculum/preA1Map.js'
+import { CAN_DO_INTENT, intentsForEpisode, skillPrerequisitesOf, targetsOf } from '../curriculum/preA1Map.js'
 
-/* Which episode teaches each can-do, so its own targets can be consulted. */
-const ARC_BY_CANDO = Object.fromEntries(ARC.map(e => [e.canDoId, e]))
+/*
+ * Which episode teaches each can-do, so its own targets can be consulted.
+ *
+ * A capability may be reinforced by a later episode — repair is taught in 13 and
+ * extended in 14 — and the episode that OWNS it is the one to measure against.
+ * Keying by simple assignment let the reinforcement episode win, so strength was
+ * judged against language the learner had not reached yet and a consolidated
+ * skill read as fragile.
+ */
+const ARC_BY_CANDO = {}
+for (const ep of ARC) {
+  if (!ARC_BY_CANDO[ep.canDoId] || !ep.reinforces) ARC_BY_CANDO[ep.canDoId] = ep
+}
 
 export const LEVELS = ['high', 'medium', 'low']
 const idx = (level) => Math.max(0, LEVELS.indexOf(level || 'high'))
@@ -209,7 +220,7 @@ function recentStrain(model) {
  * episode ids.
  */
 export function noveltyOf(model, episode) {
-  if (!episode) return { newPattern: false, newIntent: false }
+  if (!episode) return { newPattern: false, newIntent: false, newLanguage: false }
   let newPattern = false
   for (const s of episode.steps || []) {
     const ids = [...(s.itemIds || []), s.itemId].filter(Boolean)
@@ -224,7 +235,15 @@ export function noveltyOf(model, episode) {
     if (!canDo) return false
     return !canDoState(model, canDo)?.attempts
   })
-  return { newPattern, newIntent }
+  /*
+   * Language this episode is the first to grant, that the learner has not met.
+   * Patterns alone were not enough: episode 14 reinforces a skill the learner
+   * may already be solid at while introducing two new sentences, and reading
+   * only the skill would have handed them a blank page for language they had
+   * never seen.
+   */
+  const newLanguage = targetsOf(episode.id).some(id => !itemState(model, id))
+  return { newPattern, newIntent, newLanguage }
 }
 
 /* ------------------------------------------------------ initial derivation -*/
@@ -253,8 +272,14 @@ export function deriveInitialScaffold({
   const reasons = []
 
   const target = skillStrength(model, canDo)
-  /* prerequisite strength: the episode's own declared dependencies */
-  const prereqCanDos = (ep?.prerequisites || []).map(id => getEpisode(id)?.canDoId).filter(Boolean)
+  /*
+   * Prerequisite strength, from the skills the episode genuinely leans on
+   * rather than from whatever episode happens to precede it. Ordering a coffee
+   * gates the repair arc curricularly and has nothing to do with being able to
+   * repair a conversation; reading the gate as a skill would mean support
+   * followed the running order again.
+   */
+  const prereqCanDos = ep ? skillPrerequisitesOf(ep.id) : []
   const prereqStates = prereqCanDos.map(c => skillStrength(model, c))
   const allPrereqsSolid = prereqStates.length > 0 && prereqStates.every(s => s === 'solid')
   const anyPrereqWeak = prereqStates.some(s => s !== 'solid')
@@ -283,8 +308,12 @@ export function deriveInitialScaffold({
 
   /* --- guardrails, each able only to ADD help ---------------------------- */
 
-  // something new to say keeps support, however strong the learner is
-  if (target !== 'solid' && (novelty.newPattern || novelty.newIntent)) {
+  /*
+   * Something new to say keeps support, however strong the learner is — and new
+   * LANGUAGE keeps it even when the skill itself is already solid, which is the
+   * case for an episode that extends a capability the learner has earned.
+   */
+  if (novelty.newLanguage || (target !== 'solid' && (novelty.newPattern || novelty.newIntent))) {
     level = weakerOf(level, 'medium')
     reasons.push(REASONS.NEW_COMPLEXITY)
   }

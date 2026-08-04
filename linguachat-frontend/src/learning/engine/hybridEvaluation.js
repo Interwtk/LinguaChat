@@ -100,6 +100,13 @@ function buildRemotePayload(params, kind) {
     target_noun: params.targetNoun ?? '',
     target_thing: params.targetThing ?? '',
     target_activity: params.activity ?? '',
+    /*
+     * Which repair the turn asked for. Repair is one intent with three
+     * strategies, so a verdict without this field is a verdict about a different
+     * question — and Lingua would be asked to grade "Can you repeat, please?"
+     * against "I don’t understand."
+     */
+    repair_kind: params.repairKind ?? '',
     interest_id: params.interestId ?? null,
     native_language: params.nativeLanguage ?? 'en',
     interface_language: params.interfaceLanguage ?? 'en',
@@ -112,7 +119,7 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', repairKind = '', signal, remote } = params
   const kind = step?.evalKind
   /*
    * Whether this counts as unaided production, used only to choose the wording
@@ -131,6 +138,7 @@ export async function evaluateEpisodeResponse(params) {
     ...(targetNoun ? { targetNoun } : {}),
     ...(targetThing ? { targetThing } : {}),
     ...(activity ? { activity } : {}),
+    ...(repairKind ? { repairKind } : {}),
   })
 
   // Conclusive local verdict (closed step, clear accept, empty, clear failure).

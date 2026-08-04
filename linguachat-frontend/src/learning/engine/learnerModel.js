@@ -260,13 +260,20 @@ function mergeActivityEvidence(model) {
 }
 
 /*
- * Language items merge monotonically: counters take the higher value, the
- * learning state takes the further-along one, and the review date takes the
- * sooner of the two so nothing escapes revision.
+ * Language items merge monotonically: counters take the higher value and the
+ * learning state takes the further-along one.
  *
  * Without this, two copies of the model saving over each other lost whichever
  * item the other one had just recorded — a Garden entry, or the evidence behind
  * it, quietly disappearing.
+ *
+ * The review date follows the copy with the more recent EVIDENCE, and only falls
+ * back to the sooner of the two when neither copy has practised more recently.
+ * "Sooner always wins" was wrong on one device: every save merges against what
+ * is already in storage, so a freshly reviewed item was immediately handed back
+ * its old overdue date and could never leave the review queue. Reading recency
+ * first keeps the original intent — an untouched device's due date survives —
+ * without letting stale storage undo the attempt that just happened.
  */
 export function mergeLanguageItems(mine, theirs) {
   const a = (mine && typeof mine === 'object') ? mine : {}
@@ -281,6 +288,11 @@ export function mergeLanguageItems(mine, theirs) {
     const state = higherLearningState(x.learningState || 'seen', y.learningState || 'seen')
     const soonest = [x.nextReviewAt, y.nextReviewAt].filter(Boolean).sort()[0] || null
     const latestSeen = [x.lastSeenAt, y.lastSeenAt].filter(Boolean).sort().pop() || null
+    // whichever copy holds the newest evidence also holds the current schedule
+    const fresher = (x.lastSeenAt || '') === (y.lastSeenAt || '')
+      ? null
+      : ((x.lastSeenAt || '') > (y.lastSeenAt || '') ? x : y)
+    const nextReviewAt = (fresher && fresher.nextReviewAt) || soonest
     out[id] = {
       status: state === 'can_use' ? 'can_do' : (x.status === 'new' && y.status === 'new' ? 'new' : 'learning'),
       learningState: state,
@@ -290,7 +302,7 @@ export function mergeLanguageItems(mine, theirs) {
       guidedCorrect: maxNum('guidedCorrect'),
       recognisedCorrect: maxNum('recognisedCorrect'),
       streak: maxNum('streak'),
-      nextReviewAt: soonest,
+      nextReviewAt,
       lastSeenAt: latestSeen,
     }
   }
