@@ -199,4 +199,24 @@ const NEW_IDS = ['how_are_you', 'where_from', 'first_conversation']
   ok()
 }
 
+/*
+ * 13) a question is not a place. Answering "where are you from?" with another
+ *     question used to be mined for a place name, so the model answer offered
+ *     back was "I'm from Where you from." — nonsense presented as correct.
+ */
+{
+  const { placeFromAnswer, evaluateAnswerOrigin } = await import('../src/learning/engine/responseEvaluation.js')
+  for (const question of ['Where you from?', 'Where are you from?', 'What about you?', 'How are you']) {
+    assert.equal(placeFromAnswer(question), '', `"${question}" names no place`)
+  }
+  for (const answer of ['Bogotá', 'Medellín.', "I'm from Tokyo", 'from Spain']) {
+    assert.ok(placeFromAnswer(answer), `"${answer}" does name a place`)
+  }
+  const verdict = evaluateAnswerOrigin('Where you from?', { place: 'Bogotá' })
+  assert.equal(verdict.completedObjective, false)
+  assert.equal(verdict.naturalVersion, "I'm from Bogotá.", 'it must fall back to the place they really gave')
+  assert.ok(!/Where/i.test(verdict.naturalVersion), 'never echo the question back as a place')
+  ok()
+}
+
 console.log(`check-second-arc — OK  (${n} arc groups verified)`)
