@@ -137,8 +137,13 @@ export function selectEquivalentActivityFormat({
  * Which formats can carry which objective. A "no" here is a pedagogical
  * statement: you cannot practise producing a question by ticking a box.
  */
+/*
+ * `mini_story` is only offered where an actual story exists (see miniStory.js).
+ * A long conversation objective is better served by roleplay than by a scene
+ * that would have to be invented for it.
+ */
 const OBJECTIVE_FORMATS = {
-  introduction: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  introduction: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'mini_story'],
   ask_name: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   nice_to_meet: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   ask_wellbeing: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
@@ -157,8 +162,8 @@ const OBJECTIVE_FORMATS = {
   ask_want: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   accept_offer: ['guided_reply', 'choice', 'free_reply', 'recall'],
   decline_offer: ['guided_reply', 'choice', 'free_reply', 'recall'],
-  full_intro_conversation: ['roleplay', 'free_reply', 'recall', 'mini_story'],
-  simple_plan_conversation: ['roleplay', 'free_reply', 'recall', 'mini_story'],
+  full_intro_conversation: ['roleplay', 'free_reply', 'recall'],
+  simple_plan_conversation: ['roleplay', 'free_reply', 'recall'],
 }
 
 export function formatSupportsObjective(format, objective) {

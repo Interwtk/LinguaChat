@@ -4,6 +4,7 @@ import { ChattoMascot } from '../mascot/ChattoMascot'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { EpisodeShell, scrambleTokens } from '../episode/EpisodeShell'
 import { FormatFeedback } from '../episode/FormatFeedback'
+import { MiniStory } from './MiniStory'
 import { getEpisode } from '../../learning/episodes/index.js'
 import { evaluateEpisodeResponse } from '../../learning/engine/hybridEvaluation.js'
 import { evaluateFree, shouldEscalate } from '../../learning/engine/responseEvaluation.js'
@@ -236,7 +237,8 @@ function PracticeTurn({ block, topic = null, onDone }) {
       : block.type === 'extra_practice' ? 'sessionExtraTitle' : 'sessionReviewTitle'
 
   const isBuildFormat = format === 'word_order' || format === 'guided_reply'
-  const isOpenFormat = !isBuildFormat && format !== 'fill_blank' && format !== 'choice'
+  // mini_story has its own renderer; everything else falls back to free text
+  const isOpenFormat = !isBuildFormat && format !== 'fill_blank' && format !== 'choice' && format !== 'mini_story'
   // Distractors are other real English replies — wrong here, never nonsense.
   const choiceOptions = [modelAnswer, MODEL_ANSWER.nice_to_meet(vars), MODEL_ANSWER.ask_wellbeing(vars)]
     .filter((v, i, arr) => arr.indexOf(v) === i)
@@ -431,10 +433,22 @@ function SessionCompletion({ session, onFinish }) {
 }
 
 export function SessionRunner() {
-  const { t, dailySession, advanceSession, finishSession, exitSession, setView, nativeLanguageInfo } = useApp()
+  const { t, dailySession, advanceSession, finishSession, exitSession, setView, nativeLanguageInfo, profile } = useApp()
   const nativeLang = nativeLanguageInfo.base
   const block = currentBlock(dailySession)
   const { done, total } = sessionProgress(dailySession)
+  const isStoryBlock = block?.format === 'mini_story'
+  // the story talks about whatever this session is already about
+  const storyVars = useMemo(() => {
+    const model = loadLearnerModel()
+    const ctx = getInterestContext(dailySession?.topic?.interestId ? [dailySession.topic.interestId] : [], `story:${dailySession?.id || ''}`)
+    const name = (profile.name || '').trim() || 'Alex'
+    const partner = partnerFor(profile.name || 'guest')
+    return {
+      name, partner, place: model.facts?.place || '', partnerPlace: placeFor(partner),
+      noun: dailySession?.topic?.factValue || ctx.targetNoun, activity: ctx.activity,
+    }
+  }, [dailySession, profile.name])
 
   if (!dailySession || !block) return null
 
@@ -465,7 +479,12 @@ export function SessionRunner() {
     <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6" style={{ background: 'var(--bg-main)' }}>
       <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
         {header}
-        {(block.type === 'review' || block.type === 'targeted_retry' || block.type === 'recall' || block.type === 'extra_practice') && (
+        {/* A planned mini story gets its own small scene rather than the
+            generic reply turn it used to borrow. */}
+        {isStoryBlock && (
+          <MiniStory key={block.id} block={block} vars={storyVars} onDone={() => advanceSession()} />
+        )}
+        {!isStoryBlock && (block.type === 'review' || block.type === 'targeted_retry' || block.type === 'recall' || block.type === 'extra_practice') && (
           /*
            * Keyed by block: without this React reuses ONE PracticeTurn across
            * every block of the session, so the previous block's correction was

@@ -300,6 +300,24 @@ const base = {
 
   sessionExtraTitle: "One more, your way",
 
+  storyBadge: "SHORT STORY",
+
+  storyTitle: "A small scene",
+
+  storyNoteScene: "Read the scene. You will answer in a moment.",
+
+  storyNoteClose: "That is the whole scene.",
+
+  storyChooseReply: "Choose your reply:",
+
+  storyReplyLike: "Say what you like.",
+
+  storyReplyWant: "Say what you want.",
+
+  storyReplyIntro: "Greet and say your name.",
+
+  storyFinish: "Finish",
+
   sessionBuildInstruction: "Put the words in order.",
 
   sessionGapInstruction: "Complete the sentence.",

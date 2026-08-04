@@ -127,6 +127,24 @@ export default {
 
   sessionExtraTitle: "もう一つ、あなたのやり方で",
 
+  storyBadge: "ショートストーリー",
+
+  storyTitle: "小さな場面",
+
+  storyNoteScene: "場面を読みましょう。すぐに答えます。",
+
+  storyNoteClose: "これで場面はおしまいです。",
+
+  storyChooseReply: "返事を選びましょう：",
+
+  storyReplyLike: "好きなことを言いましょう。",
+
+  storyReplyWant: "欲しいものを言いましょう。",
+
+  storyReplyIntro: "あいさつして名前を言いましょう。",
+
+  storyFinish: "終わる",
+
   sessionBuildInstruction: "単語を正しい順に並べましょう。",
 
   sessionGapInstruction: "文を完成させましょう。",

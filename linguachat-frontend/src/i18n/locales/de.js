@@ -127,6 +127,24 @@ export default {
 
   sessionExtraTitle: "Noch eine, auf deine Art",
 
+  storyBadge: "KURZE GESCHICHTE",
+
+  storyTitle: "Eine kleine Szene",
+
+  storyNoteScene: "Lies die Szene. Gleich antwortest du.",
+
+  storyNoteClose: "Das ist die ganze Szene.",
+
+  storyChooseReply: "Wähle deine Antwort:",
+
+  storyReplyLike: "Sag, was du magst.",
+
+  storyReplyWant: "Sag, was du möchtest.",
+
+  storyReplyIntro: "Begrüße und sag deinen Namen.",
+
+  storyFinish: "Abschließen",
+
   sessionBuildInstruction: "Bring die Wörter in die richtige Reihenfolge.",
 
   sessionGapInstruction: "Vervollständige den Satz.",

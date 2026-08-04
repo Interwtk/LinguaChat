@@ -157,6 +157,24 @@ export default {
 
   sessionExtraTitle: "Una más, a tu manera",
 
+  storyBadge: "HISTORIA BREVE",
+
+  storyTitle: "Una escena pequeña",
+
+  storyNoteScene: "Lee la escena. Responderás en un momento.",
+
+  storyNoteClose: "Esa es toda la escena.",
+
+  storyChooseReply: "Elige tu respuesta:",
+
+  storyReplyLike: "Di lo que te gusta.",
+
+  storyReplyWant: "Di lo que quieres.",
+
+  storyReplyIntro: "Saluda y di tu nombre.",
+
+  storyFinish: "Terminar",
+
   sessionBuildInstruction: "Ordena las palabras.",
 
   sessionGapInstruction: "Completa la frase.",

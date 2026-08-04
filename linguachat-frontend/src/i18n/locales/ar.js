@@ -127,6 +127,24 @@ export default {
 
   sessionExtraTitle: "واحدة أخرى، على طريقتك",
 
+  storyBadge: "قصة قصيرة",
+
+  storyTitle: "مشهد صغير",
+
+  storyNoteScene: "اقرأ المشهد. ستجيب بعد قليل.",
+
+  storyNoteClose: "هذا هو المشهد كله.",
+
+  storyChooseReply: "اختر ردّك:",
+
+  storyReplyLike: "قل ما تحب.",
+
+  storyReplyWant: "قل ما تريد.",
+
+  storyReplyIntro: "حيِّ وقل اسمك.",
+
+  storyFinish: "إنهاء",
+
   sessionBuildInstruction: "رتّب الكلمات.",
 
   sessionGapInstruction: "أكمل الجملة.",
