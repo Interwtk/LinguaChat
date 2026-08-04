@@ -390,6 +390,46 @@ const namesAThing = (n) => /\p{L}/u.test(requestedThing(n))
  * decided by the same reading of the answer that evaluates it — "That's all,
  * thanks." is a refusal even though it never says "no".
  */
+/* ---- Fifth arc: staying in the conversation ----
+ *
+ * Repair is ONE communicative function with three ways of doing it, not three
+ * intents. "I don't understand.", "Can you repeat, please?" and "Please speak
+ * slowly." all do the same job — they keep an exchange alive — and a learner
+ * who has one of them has the strategy. The step names which one it is asking
+ * for (`repairKind`); the evaluator accepts any repair as understood and holds
+ * the requested one to its own target.
+ *
+ * The alternative was five intents for five sentences, which is how a flat
+ * list of intents becomes three hundred.
+ */
+export const REPAIR_KINDS = ['signal_nonunderstanding', 'repeat', 'slow_down']
+
+const NOT_UNDERSTAND = /\b(i (really )?(don'?t|do not) understand|i (don'?t|do not) get (it|that)|i'?m (not sure|lost)|i didn'?t (understand|catch|get) (that|it))\b/
+const NOT_UNDERSTAND_LOOSE = /\b((don'?t|do not|not) understand|no understand|understand not)\b/
+const ASK_REPEAT = /\b((can|could|would) you (please )?(repeat|say (that|it) again)|please repeat|repeat that|say (that|it) again)\b/
+const ASK_REPEAT_LOOSE = /\b(repeat|again)\b/
+/*
+ * The adverb is the target. "Speak slow." and "Slow, please." communicate
+ * perfectly and are not the sentence this arc teaches, so they land as
+ * incomplete with the natural form offered — the same treatment "Water,
+ * please." gets in the cafe.
+ */
+const ASK_SLOW = /\b((can|could) you (please )?speak (more )?slowly|please speak (more )?slowly|speak (more )?slowly|slowly,? please)\b/
+const ASK_SLOW_LOOSE = /\b(slow(ly)?|slow down)\b/
+/* "I don't know" answers a question; it does not report a breakdown. */
+const DONT_KNOW = /\b(i (don'?t|do not) know|no idea|dunno)\b/
+const BARE_CONFUSION = /^(what|sorry|huh|eh|again|pardon|excuse me)[?!.]*$/
+const SORRY = /\b(sorry|excuse me|pardon)\b/
+
+const CLOSE = /\b(good ?bye|bye bye|bye|see you( later| soon| tomorrow)?|see ya|catch you later|take care)\b/
+const THANKS_ONLY = /^(thank you|thanks|thank you very much|thanks a lot)[.!]*$/
+
+/* Any of the three counts as "the learner tried to repair". */
+export const isRepairAttempt = (text) => {
+  const n = normalize(text)
+  return NOT_UNDERSTAND.test(n) || ASK_REPEAT.test(n) || ASK_SLOW.test(n)
+}
+
 export const isDeclineReply = (text) => {
   const n = normalize(text)
   return DECLINE.test(n) || FINISH.test(n) || BARE_NO.test(n)
@@ -708,6 +748,99 @@ export function evaluateCafeOrderConversation(text, { independent = false, targe
   return { ...r, errorType: 'no_order', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep12RetryExplainStart', explanation: 'ep12RetryExplainStart', retryRequired: true, retryPrompt: 'ep12RetryPromptStart' }
 }
 
+
+/* ---- Episodes 13-15: keep the conversation alive ----
+ *
+ * One evaluator, three targets. `repairKind` says which one this turn asked
+ * for; a learner who repairs a different way is understood and told what the
+ * turn was practising, never marked wrong for communicating.
+ */
+export function evaluateRepairRequest(text, { independent = false, repairKind = 'signal_nonunderstanding' } = {}) {
+  const n = normalize(text)
+  const kind = REPAIR_KINDS.includes(repairKind) ? repairKind : 'signal_nonunderstanding'
+  const r = base(independent)
+  const TARGET = {
+    signal_nonunderstanding: 'I don’t understand.',
+    repeat: 'Can you repeat, please?',
+    slow_down: 'Please speak slowly.',
+  }
+  r.naturalVersion = TARGET[kind]
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep13RetryPromptEmpty' }
+
+  const signalled = NOT_UNDERSTAND.test(n)
+  const askedRepeat = ASK_REPEAT.test(n)
+  const askedSlow = ASK_SLOW.test(n)
+
+  /* the requested strategy, done properly */
+  const done = kind === 'signal_nonunderstanding' ? signalled : kind === 'repeat' ? askedRepeat : askedSlow
+  if (done) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = normalize(TARGET[kind]) !== n
+    r.praiseKey = r.masteryEvidence.independent ? 'ep13PraiseIndependent' : 'ep13PraiseRepaired'
+    return r
+  }
+
+  /*
+   * A different repair. The learner kept the conversation alive, which is the
+   * whole skill — so this is understood and praised, and the turn simply says
+   * what it was practising.
+   */
+  if (signalled || askedRepeat || askedSlow) {
+    return { ...r, errorType: 'other_repair', confidence: 0.9, priorityCorrection: 'ep14RetryExplainOther', explanation: 'ep14RetryExplainOther', retryRequired: true, retryPrompt: `ep13RetryPrompt_${kind}` }
+  }
+
+  /*
+   * "I don't know." is a real English sentence that means something else: it
+   * answers a question instead of reporting that one was not understood. Worth
+   * naming precisely rather than rejecting.
+   */
+  if (DONT_KNOW.test(n)) {
+    return { ...r, errorType: 'means_dont_know', confidence: 0.92, priorityCorrection: 'ep13RetryExplainKnow', explanation: 'ep13RetryExplainKnow', retryRequired: true, retryPrompt: `ep13RetryPrompt_${kind}` }
+  }
+
+  /* the idea is there, the sentence is not: "Don't understand.", "Repeat please." */
+  const loose = kind === 'signal_nonunderstanding' ? NOT_UNDERSTAND_LOOSE.test(n)
+    : kind === 'repeat' ? ASK_REPEAT_LOOSE.test(n) : ASK_SLOW_LOOSE.test(n)
+  if (loose) {
+    return { ...r, errorType: 'incomplete_repair', confidence: 0.88, priorityCorrection: `ep13RetryExplain_${kind}`, explanation: `ep13RetryExplain_${kind}`, retryRequired: true, retryPrompt: `ep13RetryPrompt_${kind}` }
+  }
+
+  /*
+   * "What?" and a bare "Sorry?" DO signal a breakdown, and a real speaker uses
+   * them. They are understood — and they are not the polite full sentence this
+   * arc exists to teach, so they do not complete the objective.
+   */
+  if (BARE_CONFUSION.test(n) || SORRY.test(n)) {
+    return { ...r, errorType: 'too_short_repair', confidence: 0.9, priorityCorrection: `ep13RetryExplain_${kind}`, explanation: `ep13RetryExplain_${kind}`, retryRequired: true, retryPrompt: `ep13RetryPrompt_${kind}` }
+  }
+
+  return { ...r, errorType: 'no_repair', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: `ep13RetryExplain_${kind}`, explanation: `ep13RetryExplain_${kind}`, retryRequired: true, retryPrompt: `ep13RetryPrompt_${kind}` }
+}
+
+/* ---- Episode 15: end the encounter ---- */
+export function evaluateCloseEncounter(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'Bye.'
+  if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep15RetryPromptEmpty' }
+  if (CLOSE.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = !/^(bye|good ?bye)$/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep15PraiseIndependent' : 'ep15PraiseClosed'
+    return r
+  }
+  /*
+   * Thanking someone is warm and it is not a goodbye. The learner is understood
+   * and asked for the one thing this turn is about.
+   */
+  if (THANKS_ONLY.test(n) || THANKS.test(n)) {
+    return { ...r, errorType: 'not_a_close', confidence: 0.9, priorityCorrection: 'ep15RetryExplainClose', explanation: 'ep15RetryExplainClose', retryRequired: true, retryPrompt: 'ep15RetryPromptClose' }
+  }
+  return { ...r, errorType: 'no_close_yet', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep15RetryExplainClose', explanation: 'ep15RetryExplainClose', retryRequired: true, retryPrompt: 'ep15RetryPromptClose' }
+}
+
 // Dispatcher used by the engine for free_reply / roleplay steps.
 export function evaluateFree(kind, text, ctx = {}) {
   switch (kind) {
@@ -735,6 +868,8 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'respond_anything_else': return evaluateRespondAnythingElse(text, ctx)
     case 'finish_order': return evaluateFinishOrder(text, ctx)
     case 'cafe_order_conversation': return evaluateCafeOrderConversation(text, ctx)
+    case 'repair_request': return evaluateRepairRequest(text, ctx)
+    case 'close_encounter': return evaluateCloseEncounter(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }

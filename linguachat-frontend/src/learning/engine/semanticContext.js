@@ -74,6 +74,14 @@ export const INTENT_SLOTS = {
   answer_origin: ['place'],
   answer_wellbeing: ['feeling'],
   simple_plan_conversation: ['interest', 'activity'],
+  /*
+   * Repair takes no personalised value at all. "Can you repeat, please?" is the
+   * whole sentence; dropping a noun into it would produce "Can you repeat
+   * music, please?". Personalisation belongs to the question being rescued, not
+   * to the rescue.
+   */
+  repair_request: [],
+  close_encounter: [],
 }
 
 export const slotsFor = (intent) => INTENT_SLOTS[intent] || []

@@ -14,7 +14,21 @@
  */
 import { seedFrom } from './variation.js'
 
+/*
+ * The default pair of endings. A story may declare its own — the repair story's
+ * two endings are two STRATEGIES ("ask them to repeat" / "ask them to slow
+ * down"), which is a different axis from accepting or declining an offer, and
+ * both are equally correct.
+ */
 export const STORY_BRANCHES = ['accept', 'decline']
+export const storyBranches = (story) =>
+  (Array.isArray(story?.branches) && story.branches.length === 2 ? story.branches : STORY_BRANCHES)
+
+/* Where a story is meant to be told: inside an episode, or in a daily session. */
+export const storyHome = (story) => (story?.home === 'episode' ? 'episode' : 'session')
+/* Stories a daily session may offer. An episode's story is not one of them. */
+export const sessionStoryObjectives = () =>
+  Object.keys(STORIES).filter(o => storyHome(STORIES[o]) === 'session')
 
 /*
  * One story per objective we can honestly tell at Pre-A1. Each turn is:
@@ -103,6 +117,43 @@ const STORIES = {
       { kind: 'close', textEn: 'Here you are. Enjoy!', noteKey: 'storyNoteClose' },
     ],
   },
+  repair_request: {
+    storyId: 'lost_the_thread',
+    objective: 'repair_request',
+    /*
+     * The one story an EPISODE hosts rather than a daily session. An episode has
+     * room for a real exchange, so this one asks for two sentences: the answer
+     * that proves the repair worked, and the goodbye that ends the encounter.
+     * A session block still gets a single produced sentence.
+     */
+    home: 'episode',
+    /* two ways out of the same problem, neither better than the other */
+    branches: ['repeat', 'slow_down'],
+    turns: [
+      /* the breakdown is the scene: they said something and you missed it */
+      { kind: 'scene', textEn: 'You meet {partner} again. They ask something — too fast.', noteKey: 'storyNoteScene' },
+      {
+        kind: 'choose',
+        promptKey: 'storyChooseRepair',
+        options: [
+          { branch: 'repeat', textEn: 'Can you repeat, please?' },
+          { branch: 'slow_down', textEn: 'Please speak slowly.' },
+        ],
+      },
+      {
+        kind: 'line',
+        speaker: 'partner',
+        byBranch: {
+          repeat: 'Of course. Do you like {noun}?',
+          slow_down: 'Sorry! Do… you… like… {noun}?',
+        },
+      },
+      { kind: 'reply', evalKind: 'yes_no_preference', instructionKey: 'storyReplyPreference', suggestionEn: 'Yes, I do.', itemIds: ['do_you_like'] },
+      { kind: 'line', speaker: 'partner', textEn: 'Me too. I have to go now!' },
+      { kind: 'reply', evalKind: 'close_encounter', instructionKey: 'storyReplyClose', suggestionEn: 'Bye.', itemIds: ['bye'] },
+      { kind: 'close', textEn: 'See you!', noteKey: 'storyNoteClose' },
+    ],
+  },
   introduction: {
     storyId: 'first_day',
     objective: 'introduction',
@@ -145,14 +196,18 @@ export const storyLength = (story) => storyTurns(story).length
  * The branch a story takes for a given run. Fixed by seed so a reload keeps
  * the same story, and only ever one of the two declared branches.
  */
-export function defaultBranch(seed = '') {
-  return STORY_BRANCHES[seedFrom(String(seed)) % STORY_BRANCHES.length]
+export function defaultBranch(seed = '', story = null) {
+  const branches = storyBranches(story)
+  return branches[seedFrom(String(seed)) % branches.length]
 }
 
 // The English line for a turn, taking the branch into account.
-export function turnText(turn, branch) {
+export function turnText(turn, branch, story = null) {
   if (!turn) return ''
-  if (turn.byBranch) return turn.byBranch[branch] || turn.byBranch[STORY_BRANCHES[0]] || ''
+  if (turn.byBranch) {
+    const fallback = storyBranches(story)[0]
+    return turn.byBranch[branch] || turn.byBranch[fallback] || Object.values(turn.byBranch)[0] || ''
+  }
   return turn.textEn || ''
 }
 
@@ -178,7 +233,7 @@ export function normalizeStoryState(raw, story) {
     storyId: story.storyId,
     objective: story.objective,
     currentTurn: Number.isFinite(turn) ? Math.min(Math.max(0, Math.trunc(turn)), storyLength(story) - 1) : 0,
-    branchId: STORY_BRANCHES.includes(raw.branchId) ? raw.branchId : null,
+    branchId: storyBranches(story).includes(raw.branchId) ? raw.branchId : null,
     seed: typeof raw.seed === 'string' ? raw.seed.slice(0, 80) : '',
   }
 }

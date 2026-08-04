@@ -35,7 +35,12 @@ const resolve = (str, vars = {}) =>
  * breakpoint change picks it up exactly where it was rather than restarting a
  * story the learner has already half-heard.
  */
-export function MiniStory({ block, vars, onDone }) {
+/*
+ * `scaffoldLevel` and `runMode` let an EPISODE hand the story its own support
+ * instead of the story deriving a second one. Omitted — as a daily session
+ * omits them — the story derives its own from the objective, exactly as before.
+ */
+export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode = 'review' }) {
   const { t, nativeLanguageInfo, interfaceLanguageInfo } = useApp()
   const nativeLang = nativeLanguageInfo.base
   const story = useMemo(() => getStory(block.objective), [block.objective])
@@ -52,17 +57,18 @@ export function MiniStory({ block, vars, onDone }) {
     storyScaffoldRef.current = deriveInitialScaffold({
       learnerModel: modelRef.current,
       targetIntent: block.objective,
-      runMode: 'review',
+      runMode,
       blockType: block.type,
     })
   }
-  const storyScaffold = storyScaffoldRef.current.currentLevel
+  // the host's level wins when there is one; there is never a second scale
+  const storyScaffold = scaffoldLevel || storyScaffoldRef.current.currentLevel
   const [state, setState] = useState(() => {
     try {
       const stored = normalizeStoryState(JSON.parse(localStorage.getItem(STORY_STORAGE_KEY) || 'null'), story)
       if (stored && stored.seed === seed) return stored
     } catch { /* unreadable storage starts a fresh story */ }
-    return createStoryState(story, { seed, branch: defaultBranch(seed) })
+    return createStoryState(story, { seed, branch: defaultBranch(seed, story) })
   })
   const [reply, setReply] = useState('')
   const [retry, setRetry] = useState(null)
@@ -104,7 +110,13 @@ export function MiniStory({ block, vars, onDone }) {
     doneRef.current = true
     mark('completed')
     try { localStorage.removeItem(STORY_STORAGE_KEY) } catch { /* noop */ }
-    onDone()
+    /*
+     * The host is told which way the story went. A session block has nothing to
+     * do with it and ignores the argument; an episode needs it, because the
+     * "try the other way" offer is meaningless if the run does not know which
+     * ending the learner actually played.
+     */
+    onDone(state.branchId || null)
   }
 
   function next() {
@@ -125,7 +137,7 @@ export function MiniStory({ block, vars, onDone }) {
     if (!text.trim()) return
     const token = guardRef.current.begin()
     if (token === null) return
-    const turnContext = { linguaSaid: resolve(turnText(turns[state.currentTurn - 1], state.branchId), vars) }
+    const turnContext = { linguaSaid: resolve(turnText(turns[state.currentTurn - 1], state.branchId, story), vars) }
     const independent = isIndependentEvidence({ step: { type: 'free_reply', format: 'mini_story' }, assistanceUsed: fromSuggestion, correct: true })
     const evalCtx = { name: vars.name, independent, turnContext, place: vars.place, targetNoun: vars.noun, targetThing: vars.item, activity: vars.activity }
     const preview = evaluateFree(turn.evalKind, text, evalCtx)
@@ -152,7 +164,17 @@ export function MiniStory({ block, vars, onDone }) {
     abortRef.current = null
     setReviewing(false)
 
-    ;(turn.itemIds || []).forEach(id => recordItemAttempt(modelRef.current, id, { correct: result.completedObjective, independent: result.completedObjective && !fromSuggestion }))
+    /*
+     * A story's free reply is open production, so it can reach `can_use` — but
+     * only when the learner wrote it themselves. The closed branch decision is
+     * evidence of a strategy, not of production, and is deliberately not
+     * recorded here.
+     */
+    ;(turn.itemIds || []).forEach(id => recordItemAttempt(modelRef.current, id, {
+      correct: result.completedObjective,
+      independent: result.completedObjective && independent,
+      evidenceKind: 'open',
+    }))
     if (!result.completedObjective) markRecurringError(modelRef.current, result.errorType)
     saveLearnerModel(modelRef.current)
 
@@ -187,7 +209,7 @@ export function MiniStory({ block, vars, onDone }) {
       <div className="flex flex-col gap-2 mb-3">
         {turns.slice(0, state.currentTurn + 1).map((tn, i) => {
           if (tn.kind === 'choose' || tn.kind === 'reply') return null
-          const text = resolve(turnText(tn, state.branchId), vars)
+          const text = resolve(turnText(tn, state.branchId, story), vars)
           if (!text) return null
           return (
             <div key={i} className="flex gap-3">

@@ -63,6 +63,13 @@ const ITEM_KIND = {
   thank_you: 'thank_service', here_you_are: 'thank_service',
   anything_else: 'respond_anything_else',
   thats_all: 'finish_order',
+  // fifth arc: repair is practised as repair, and a goodbye as a goodbye
+  i_dont_understand: 'repair_request',
+  can_you_repeat: 'repair_request',
+  speak_slowly: 'repair_request',
+  repair_pattern: 'repair_request',
+  bye: 'close_encounter',
+  see_you: 'close_encounter',
 }
 const ERROR_KIND = {
   missing_copula: 'introduction',
@@ -90,6 +97,18 @@ const ERROR_KIND = {
   incomplete_politeness: 'respond_anything_else',
   no_close: 'finish_order',
   no_order: 'cafe_order_conversation',
+  /*
+   * Fifth arc. Without these a learner who fumbles "Can you repeat, please?"
+   * would be sent off to practise ordering coffee, because the old map had no
+   * home for a repair error.
+   */
+  no_repair: 'repair_request',
+  incomplete_repair: 'repair_request',
+  too_short_repair: 'repair_request',
+  means_dont_know: 'repair_request',
+  other_repair: 'repair_request',
+  not_a_close: 'close_encounter',
+  no_close_yet: 'close_encounter',
 }
 const CANDO_KIND = {
   introduce_self: 'introduction',
@@ -104,9 +123,24 @@ const CANDO_KIND = {
   polite_request: 'polite_request',
   respond_anything_else: 'respond_anything_else',
   cafe_order: 'cafe_order_conversation',
+  ask_for_repair: 'repair_request',
+  close_an_encounter: 'close_encounter',
 }
 
 export const practiceKindForItem = (id) => ITEM_KIND[id] || null
+
+/*
+ * Repair is one intent with three strategies, so a block that practises one of
+ * its phrases has to say WHICH — otherwise the turn asks for a repetition and
+ * grades the answer against "I don't understand."
+ */
+const REPAIR_KIND_BY_ITEM = {
+  i_dont_understand: 'signal_nonunderstanding',
+  can_you_repeat: 'repeat',
+  repair_pattern: 'repeat',
+  speak_slowly: 'slow_down',
+}
+export const repairKindForItem = (id) => REPAIR_KIND_BY_ITEM[id] || null
 export const practiceKindForError = (errorType) => ERROR_KIND[errorType] || null
 export const practiceKindForCanDo = (canDoId) => CANDO_KIND[canDoId] || null
 

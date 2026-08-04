@@ -171,6 +171,13 @@ const OBJECTIVE_FORMATS = {
   respond_anything_else: ['guided_reply', 'choice', 'free_reply', 'recall'],
   finish_order: ['guided_reply', 'word_order', 'choice', 'free_reply', 'recall'],
   cafe_order_conversation: ['roleplay', 'free_reply', 'recall'],
+  /*
+   * Repair. `mini_story` is deliberately absent: the repair story belongs to
+   * episode 15, which hosts it, and a daily session should not hand out an
+   * episode's scene as a two-minute block.
+   */
+  repair_request: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  close_encounter: ['guided_reply', 'word_order', 'choice', 'free_reply', 'recall'],
 }
 
 export function formatSupportsObjective(format, objective) {

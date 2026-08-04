@@ -226,7 +226,7 @@ def _ask_origin(text: str) -> dict:
 _ORIGIN_LEAD = re.compile(r"^\s*(i\s*'?\s*m|i\s+am|i)?\s*(from)?\s*", re.IGNORECASE)
 
 
-_LOOKS_LIKE_QUESTION = re.compile(r"^(where|what|who|when|why|how|which|do|does|are|is|can)", re.I)
+_LOOKS_LIKE_QUESTION = re.compile(r"^(where|what|who|when|why|how|which|do|does|are|is|can)\b", re.I)
 
 
 def place_from_answer(text: str) -> str:
@@ -509,6 +509,90 @@ def _cafe_order(text: str, thing: str) -> dict:
     return _base(error_type="no_order", retry_required=True, natural_version=natural, confidence=0.7)
 
 
+
+# ---- fifth arc: repair and closing (mirrors the frontend evaluator) ----
+#
+# One intent with three strategies, chosen by `repair_kind`, plus the close. The
+# frontend sends which strategy the turn asked for; without it the safest target
+# is the one the arc introduces first.
+_REPAIR_KINDS = ("signal_nonunderstanding", "repeat", "slow_down")
+_NOT_UNDERSTAND = re.compile(
+    r"\b(i (really )?(don'?t|do not) understand|i (don'?t|do not) get (it|that)"
+    r"|i'?m (not sure|lost)|i didn'?t (understand|catch|get) (that|it))\b")
+_NOT_UNDERSTAND_LOOSE = re.compile(r"\b((don'?t|do not|not) understand|no understand|understand not)\b")
+_ASK_REPEAT = re.compile(
+    r"\b((can|could|would) you (please )?(repeat|say (that|it) again)|please repeat"
+    r"|repeat that|say (that|it) again)\b")
+_ASK_REPEAT_LOOSE = re.compile(r"\b(repeat|again)\b")
+# the adverb is the target: "Speak slow." communicates and is not the sentence taught
+_ASK_SLOW = re.compile(
+    r"\b((can|could) you (please )?speak (more )?slowly|please speak (more )?slowly"
+    r"|speak (more )?slowly|slowly,? please)\b")
+_ASK_SLOW_LOOSE = re.compile(r"\b(slow(ly)?|slow down)\b")
+_DONT_KNOW = re.compile(r"\b(i (don'?t|do not) know|no idea|dunno)\b")
+_BARE_CONFUSION = re.compile(r"^(what|sorry|huh|eh|again|pardon|excuse me)[?!.]*$")
+_SORRY = re.compile(r"\b(sorry|excuse me|pardon)\b")
+_CLOSE_ENCOUNTER = re.compile(
+    r"\b(good ?bye|bye bye|bye|see you( later| soon| tomorrow)?|see ya|catch you later|take care)\b")
+
+_REPAIR_TARGET = {
+    "signal_nonunderstanding": "I don’t understand.",
+    "repeat": "Can you repeat, please?",
+    "slow_down": "Please speak slowly.",
+}
+
+
+def _repair_request(text: str, repair_kind: str) -> dict:
+    kind = repair_kind if repair_kind in _REPAIR_KINDS else "signal_nonunderstanding"
+    natural = _REPAIR_TARGET[kind]
+    n = normalize(text)
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+
+    signalled = bool(_NOT_UNDERSTAND.search(n))
+    asked_repeat = bool(_ASK_REPEAT.search(n))
+    asked_slow = bool(_ASK_SLOW.search(n))
+    done = signalled if kind == "signal_nonunderstanding" else asked_repeat if kind == "repeat" else asked_slow
+    if done:
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=normalize(natural) != n, confidence=0.95)
+
+    # a different repair: the conversation was kept alive, which is the skill
+    if signalled or asked_repeat or asked_slow:
+        return _base(error_type="other_repair", retry_required=True, natural_version=natural, confidence=0.9)
+
+    # "I don't know." answers a question instead of reporting a breakdown
+    if _DONT_KNOW.search(n):
+        return _base(error_type="means_dont_know", retry_required=True, natural_version=natural, confidence=0.92)
+
+    loose = (_NOT_UNDERSTAND_LOOSE if kind == "signal_nonunderstanding"
+             else _ASK_REPEAT_LOOSE if kind == "repeat" else _ASK_SLOW_LOOSE)
+    if loose.search(n):
+        return _base(error_type="incomplete_repair", retry_required=True, natural_version=natural, confidence=0.88)
+
+    # "What?" does signal a breakdown, and is not the polite sentence taught
+    if _BARE_CONFUSION.search(n) or _SORRY.search(n):
+        return _base(error_type="too_short_repair", retry_required=True, natural_version=natural, confidence=0.9)
+
+    return _base(error_type="no_repair", retry_required=True, natural_version=natural,
+                 confidence=0.85 if len(n.split()) < 4 else 0.5)
+
+
+def _close_encounter(text: str) -> dict:
+    natural = "Bye."
+    n = normalize(text)
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
+    if _CLOSE_ENCOUNTER.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=not re.fullmatch(r"(bye|good ?bye)", n), confidence=0.95)
+    # thanking someone is warm, and it is not a goodbye
+    if _THANKS.search(n):
+        return _base(error_type="not_a_close", retry_required=True, natural_version=natural, confidence=0.9)
+    return _base(error_type="no_close_yet", retry_required=True, natural_version=natural,
+                 confidence=0.85 if len(n.split()) < 4 else 0.5)
+
+
 def evaluate_deterministic(payload: dict) -> dict:
     kind = (payload.get("expected_intent") or payload.get("step_type") or "").strip()
     text = payload.get("learner_response") or ""
@@ -574,6 +658,13 @@ def evaluate_deterministic(payload: dict) -> dict:
         return _finish_order(text)
     if kind == "cafe_order_conversation":
         return _cafe_order(text, thing)
+    # fifth arc — which repair the turn asked for travels with the request; an
+    # absent value falls back to the strategy the arc teaches first rather than
+    # guessing from the sentence.
+    if kind == "repair_request":
+        return _repair_request(text, payload.get("repair_kind") or "")
+    if kind == "close_encounter":
+        return _close_encounter(text)
     # unknown step type — do not pretend to judge it
     return _base(understood=False, error_type="unclear", retry_required=True, confidence=0.4)
 
@@ -655,6 +746,11 @@ def evaluate_with_openai(payload: dict) -> dict:
         f"Native language for explanation: {native}\n"
         f"Learner answer: {payload.get('learner_response')!r}"
     )
+    # only for the repair family, and only when the turn said which strategy
+    repair_kind = payload.get("repair_kind") or ""
+    if payload.get("expected_intent") == "repair_request" and repair_kind:
+        context += f"\nRepair strategy this turn practises: {repair_kind}"
+
     response = client.responses.parse(
         model=openai_tutor.model,
         input=[

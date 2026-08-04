@@ -59,6 +59,11 @@ class EvaluationContext:
     native_language: str
     target_language: str
     turn_context: dict
+    # Which repair strategy the turn asked for. Repair is one intent with three
+    # strategies, so without this a provider is judging a different question:
+    # "Can you repeat, please?" is right for one turn and a different repair in
+    # another. Linguistic information about the task, not support state.
+    repair_kind: str = ""
 
     @classmethod
     def from_payload(cls, payload: dict) -> "EvaluationContext":
@@ -83,6 +88,7 @@ class EvaluationContext:
             # the target language is never negotiable
             target_language="en",
             turn_context=turn,
+            repair_kind=str(payload.get("repair_kind") or ""),
         )
 
 
@@ -198,6 +204,7 @@ def _context_to_payload(context: EvaluationContext) -> dict:
         "required_elements": context.required_elements,
         "learner_response": context.learner_response,
         "learner_name": context.learner_name,
+        "repair_kind": context.repair_kind,
         "native_language": context.native_language,
         "target_language": context.target_language,
         "turn_context": context.turn_context,

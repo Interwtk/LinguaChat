@@ -452,12 +452,191 @@ const CAFE_03 = {
   ],
 }
 
+
+/* ===========================================================================
+ * FIFTH ARC — "Staying in the conversation"
+ *
+ * Everything up to here taught the learner things to SAY. This arc teaches
+ * what to do when the other person says something they do not catch — which is
+ * what actually happens, and until now ended the conversation.
+ *
+ * Three decisions shape it.
+ *
+ * Repair is ONE function with three ways of doing it: say you did not
+ * understand, ask for a repetition, ask them to slow down. They are subtypes of
+ * a single intent, not three intents, because a learner who has any of them has
+ * the strategy — and because a flat list of intents becomes three hundred if
+ * every sentence gets its own.
+ *
+ * A repair is never the end of a turn. Every time the learner repairs
+ * something, the conversation CONTINUES and they have to answer the question
+ * they just rescued. Repair that leads straight to a completion screen would
+ * teach the phrase and not the skill.
+ *
+ * And the language is deliberately old. These episodes introduce five phrases
+ * and otherwise recover things the learner already met — where they are from,
+ * what they like, declining an offer, asking a question back. The new thing is
+ * the strategy, not the vocabulary.
+ * ==========================================================================*/
+
+const REPAIR_01 = {
+  id: 'lost_you',
+  arc: 'repair',
+  level: 'Pre-A1',
+  titleKey: 'ep13Title',
+  goalKey: 'ep13Goal',
+  canDoId: 'ask_for_repair',
+  canDoNameKey: 'ep13CanDoName',
+  durationKey: 'ep13Duration',
+  estimatedMinutes: 7,
+  xp: 55,
+  prerequisites: ['your_first_order'],
+  /*
+   * What this episode actually leans on linguistically: being able to hold a
+   * short exchange at all. The cafe is the curricular gate (it is simply the
+   * episode before), and saying so separately keeps the support engine honest
+   * about which skills matter here.
+   */
+  skillPrerequisites: ['full_conversation'],
+  gardenItems: ['i_dont_understand'],
+  steps: [
+    { type: 'recall', review: true, instructionKey: 'ep13RecallInstruction', evalKind: 'answer_origin', itemIds: ['im_from'] },
+    { type: 'scene', mood: 'thinking', titleKey: 'ep13SceneTitle', bodyKey: 'ep13SceneBody', showGoal: true, ctaKey: 'ep1Continue' },
+    { type: 'model', target: 'I don’t understand.', meaningItems: ['i_dont_understand'], explainKey: 'ep13ModelExplain' },
+    { type: 'comprehension', instructionKey: 'ep13ComprehensionInstruction', target: 'I don’t understand.', itemId: 'i_dont_understand',
+      options: [{ key: 'ep13CompOptCorrect', correct: true }, { key: 'ep13CompOptWrong1' }, { key: 'ep13CompOptWrong2' }] },
+    { type: 'word_order', instructionKey: 'ep13BuildInstruction', hintKey: 'ep1BuildHint', itemId: 'i_dont_understand',
+      tokens: ['I', 'don’t', 'understand', '.'] },
+    { type: 'fill_blank', instructionKey: 'ep13FillInstruction', before: 'I don’t', after: '.', hintKey: 'ep13FillHint',
+      itemId: 'i_dont_understand', placeholderKey: 'ep13FillPlaceholder', expects: 'understand' },
+    /* the breakdown, then the repair, then the conversation carrying on */
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'So, mmm… mmm… {noun}?', instructionKey: 'ep13RepairInstruction',
+      evalKind: 'repair_request', repairKind: 'signal_nonunderstanding', suggestionEn: 'I don’t understand.', itemIds: ['i_dont_understand'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Sorry! Do you like {noun}?', instructionKey: 'ep13ContinueInstruction',
+      evalKind: 'yes_no_preference', suggestionEn: 'Yes, I do.', itemIds: ['do_you_like'] },
+    { type: 'free_reply', variation: true, sceneEn: 'Later, someone says something you miss again.', instructionKey: 'ep13VariationInstruction',
+      evalKind: 'repair_request', repairKind: 'signal_nonunderstanding', suggestionEn: 'Sorry, I don’t understand.', itemIds: ['i_dont_understand'] },
+    { type: 'recall', instructionKey: 'ep13FinalInstruction', evalKind: 'repair_request', repairKind: 'signal_nonunderstanding', itemIds: ['i_dont_understand'] },
+    { type: 'completion', canDoNameKey: 'ep13CanDoName', titleKey: 'ep13CloseTitle', bodyKey: 'ep13CloseBody', ctaKey: 'ep1CloseCta' },
+  ],
+}
+
+const REPAIR_02 = {
+  id: 'say_again',
+  arc: 'repair',
+  level: 'Pre-A1',
+  titleKey: 'ep14Title',
+  goalKey: 'ep14Goal',
+  /*
+   * The SAME can-do as episode 13. Repair is one capability with more than one
+   * strategy, and inventing a second required can-do just because there is a
+   * second episode would put a capability on the Pre-A1 exit criteria that
+   * nobody decided was required. `reinforces` says which episode is the primary
+   * one, so coverage still has a single answer.
+   */
+  canDoId: 'ask_for_repair',
+  reinforces: true,
+  canDoNameKey: 'ep14CanDoName',
+  durationKey: 'ep14Duration',
+  estimatedMinutes: 8,
+  xp: 55,
+  prerequisites: ['lost_you'],
+  skillPrerequisites: ['ask_for_repair'],
+  gardenItems: ['can_you_repeat', 'speak_slowly', 'repair_pattern'],
+  steps: [
+    { type: 'recall', review: true, instructionKey: 'ep14RecallInstruction', evalKind: 'repair_request', repairKind: 'signal_nonunderstanding', itemIds: ['i_dont_understand'] },
+    { type: 'scene', mood: 'thinking', titleKey: 'ep14SceneTitle', bodyKey: 'ep14SceneBody', showGoal: true, ctaKey: 'ep1Continue' },
+    { type: 'model', target: 'Can you repeat, please?', meaningItems: ['can_you_repeat'], explainKey: 'ep14ModelExplain' },
+    /* which repair fits which problem — recognition before production */
+    { type: 'choice', instructionKey: 'ep14ChoiceInstruction', promptEn: 'I couldn’t hear you.', itemId: 'can_you_repeat',
+      options: [{ textEn: 'Can you repeat, please?', correct: true }, { textEn: 'I like it.' }, { textEn: 'Yes, please.' }] },
+    /*
+     * The one productive pattern of the arc, and it lives here rather than in
+     * episode 13 because this is the sentence that carries it: "Can you ___,
+     * please?" is the frame both repairs share, and episode 13 never says it.
+     */
+    { type: 'fill_blank', instructionKey: 'ep14FillInstruction', before: 'Can you', after: ', please?', hintKey: 'ep14FillHint',
+      itemId: 'repair_pattern', placeholderKey: 'ep14FillPlaceholder', expects: 'repeat' },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'And… mmm… where…', instructionKey: 'ep14RepeatInstruction',
+      evalKind: 'repair_request', repairKind: 'repeat', suggestionEn: 'Can you repeat, please?', itemIds: ['can_you_repeat'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Of course. Where are you from?', instructionKey: 'ep14AnswerInstruction',
+      evalKind: 'answer_origin', suggestionEn: 'I’m from {place}.', itemIds: ['im_from'] },
+    /* the reciprocal question comes back, eight episodes after it was taught */
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Nice! I’m from {partnerPlace}.', instructionKey: 'ep14ReciprocalInstruction',
+      evalKind: 'reciprocal_question', suggestionEn: 'What about you?', itemIds: ['what_about_you'] },
+    { type: 'model', target: 'Please speak slowly.', meaningItems: ['speak_slowly'], explainKey: 'ep14SlowExplain' },
+    { type: 'word_order', instructionKey: 'ep14BuildInstruction', hintKey: 'ep1BuildHint', itemId: 'speak_slowly',
+      tokens: ['Please', 'speak', 'slowly', '.'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Sorry—whatdoyoulike?', instructionKey: 'ep14SlowInstruction',
+      evalKind: 'repair_request', repairKind: 'slow_down', suggestionEn: 'Please speak slowly.', itemIds: ['speak_slowly'] },
+    { type: 'recall', instructionKey: 'ep14FinalInstruction', evalKind: 'repair_request', repairKind: 'repeat', itemIds: ['can_you_repeat'] },
+    { type: 'completion', canDoNameKey: 'ep14CanDoName', titleKey: 'ep14CloseTitle', bodyKey: 'ep14CloseBody', ctaKey: 'ep1CloseCta' },
+  ],
+}
+
+const REPAIR_03 = {
+  id: 'we_can_continue',
+  arc: 'repair',
+  level: 'Pre-A1',
+  titleKey: 'ep15Title',
+  goalKey: 'ep15Goal',
+  canDoId: 'close_an_encounter',
+  canDoNameKey: 'ep15CanDoName',
+  durationKey: 'ep15Duration',
+  estimatedMinutes: 10,
+  xp: 75,
+  prerequisites: ['say_again'],
+  skillPrerequisites: ['ask_for_repair', 'full_conversation'],
+  /*
+   * The first episode to host a mini story. The scene IS the exercise: a
+   * conversation goes wrong, the learner chooses how to rescue it, answers the
+   * question they rescued, and says goodbye. Both endings are strategies rather
+   * than a right and a wrong answer.
+   */
+  story: { objective: 'repair_request', branches: ['repeat', 'slow_down'] },
+  gardenItems: ['bye', 'see_you'],
+  steps: [
+    { type: 'scene', mood: 'welcoming', titleKey: 'ep15SceneTitle', bodyKey: 'ep15SceneBody', showGoal: true, ctaKey: 'ep15Start' },
+    /*
+     * The goodbye is taught here, before the conversation starts, because the
+     * story ends by asking for one. A model AFTER the story would be explaining
+     * a sentence the learner had already been asked to produce.
+     */
+    { type: 'model', target: 'See you.', meaningItems: ['see_you'], explainKey: 'ep15ModelExplain' },
+    /*
+     * From here to the story it is one unbroken encounter: no gaps, no closed
+     * exercises. Four earlier skills come back in it — introducing yourself,
+     * saying how you are, declining an offer, repairing — which is what makes it
+     * comparable to episode 6 without adding a single decorative turn.
+     */
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Hi again! Nice to see you.', instructionKey: 'ep15GreetInstruction',
+      evalKind: 'introduction', suggestionEn: 'Hi, I’m {name}.', itemIds: ['hi', 'im'] },
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'How are you?', instructionKey: 'ep15WellbeingInstruction',
+      evalKind: 'answer_wellbeing', suggestionEn: 'I’m good.', itemIds: ['im_good'] },
+    /*
+     * And the other way of keeping a conversation alive: hand it back. "And
+     * you?" is produced in episodes 4, 5 and 14 and this is the turn where it
+     * belongs rather than an exercise bolted on to lengthen the episode.
+     */
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Good, thanks!', instructionKey: 'ep15ReciprocalInstruction',
+      evalKind: 'reciprocal_question', suggestionEn: 'And you?', itemIds: ['and_you'] },
+    /* declining an offer returns, seven episodes after episode 8 taught it */
+    { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Do you want coffee?', instructionKey: 'ep15DeclineInstruction',
+      evalKind: 'decline_offer', suggestionEn: 'No, thank you.', itemIds: ['no_thank_you'] },
+    { type: 'mini_story', storyObjective: 'repair_request', instructionKey: 'ep15StoryInstruction' },
+    { type: 'free_reply', variation: true, sceneEn: 'Another day, someone has to leave.', instructionKey: 'ep15CloseInstruction',
+      evalKind: 'close_encounter', suggestionEn: 'See you.', itemIds: ['see_you'] },
+    { type: 'recall', instructionKey: 'ep15FinalInstruction', evalKind: 'repair_request', repairKind: 'repeat', itemIds: ['can_you_repeat'] },
+    { type: 'completion', canDoNameKey: 'ep15CanDoName', titleKey: 'ep15CloseTitle', bodyKey: 'ep15CloseBody', ctaKey: 'ep1CloseCta' },
+  ],
+}
+
 GREETINGS_01.arc = 'greetings'
 GREETINGS_02.arc = 'greetings'
 GREETINGS_03.arc = 'greetings'
 
-export const ARC = [GREETINGS_01, GREETINGS_02, GREETINGS_03, CONNECT_01, CONNECT_02, CONNECT_03, CHOOSE_01, CHOOSE_02, CHOOSE_03, CAFE_01, CAFE_02, CAFE_03]
-export const ARCS = ['greetings', 'connect', 'choose', 'cafe']
+export const ARC = [GREETINGS_01, GREETINGS_02, GREETINGS_03, CONNECT_01, CONNECT_02, CONNECT_03, CHOOSE_01, CHOOSE_02, CHOOSE_03, CAFE_01, CAFE_02, CAFE_03, REPAIR_01, REPAIR_02, REPAIR_03]
+export const ARCS = ['greetings', 'connect', 'choose', 'cafe', 'repair']
 export const getEpisode = (id) => ARC.find(e => e.id === id) || null
 export const firstEpisode = () => ARC[0]
 export const episodesInArc = (arcId) => ARC.filter(e => e.arc === arcId)

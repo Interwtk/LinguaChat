@@ -8,6 +8,7 @@ import { MiniStory } from './MiniStory'
 import { getEpisode } from '../../learning/episodes/index.js'
 import { evaluateEpisodeResponse } from '../../learning/engine/hybridEvaluation.js'
 import { evaluateFree, shouldEscalate } from '../../learning/engine/responseEvaluation.js'
+import { repairKindForItem } from '../../learning/engine/session.js'
 import { createSubmissionGuard } from '../../learning/engine/submitGuard.js'
 import { partnerFor, placeFor } from '../../learning/engine/variation.js'
 import { getInterestContext } from '../../learning/engine/interests.js'
@@ -55,6 +56,21 @@ const MODEL_ANSWER = {
   respond_anything_else: () => 'No, thank you.',
   finish_order: () => 'That’s all, thanks.',
   cafe_order_conversation: (v) => `Can I have ${v.item}, please? That’s all, thanks.`,
+  // fifth arc — the strategy the block practises decides the sentence
+  repair_request: (v) => REPAIR_TARGET[v.repairKind] || REPAIR_TARGET.signal_nonunderstanding,
+  close_encounter: () => 'Bye.',
+}
+
+/* The three ways out, and what a turn practising each one asks for. */
+const REPAIR_TARGET = {
+  signal_nonunderstanding: 'I don’t understand.',
+  repeat: 'Can you repeat, please?',
+  slow_down: 'Please speak slowly.',
+}
+const REPAIR_PROMPT = {
+  signal_nonunderstanding: (v) => `So, mmm… mmm… ${v.noun}?`,
+  repeat: () => `And… mmm… where…`,
+  slow_down: () => 'Sorry—whatdoyoulike?',
 }
 // What Lingua says to open the practice turn, so the reply has a real context.
 const PROMPT = {
@@ -67,6 +83,8 @@ const PROMPT = {
   ask_origin: (v) => `I'm from ${v.partnerPlace}.`,
   answer_origin: () => 'Where are you from?',
   full_intro_conversation: () => 'Hi there!',
+  repair_request: (v) => (REPAIR_PROMPT[v.repairKind] || REPAIR_PROMPT.signal_nonunderstanding)(v),
+  close_encounter: () => 'I have to go now!',
   express_like: () => 'Tell me something you like.',
   express_dislike: () => 'And something you don’t like?',
   ask_preference: () => 'There is a lot I enjoy.',
@@ -134,8 +152,16 @@ function PracticeTurn({ block, topic = null, onDone }) {
   // The session's own subject matter, so a practice turn talks about the same
   // thing Home promised this morning.
   const ctx = useMemo(() => getInterestContext(topic?.interestId ? [topic.interestId] : [], `session:${topic?.interestId || ''}`), [topic])
+  /*
+   * Which repair this block is about. A due review knows its item, so the
+   * strategy comes from the phrase that fell due; anything else practises the
+   * one the arc teaches first rather than guessing.
+   */
+  const repairKind = kind === 'repair_request'
+    ? (repairKindForItem(block.payload?.itemId) || 'signal_nonunderstanding')
+    : null
   const vars = {
-    name, partner,
+    name, partner, repairKind,
     partnerPlace: placeFor(partner),
     place: modelRef.current.facts?.place || '',
     // if today is built around something the learner told Lingua, practise
@@ -222,7 +248,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
     // name something the prompt never mentioned.
     const stepShape = { type: 'free_reply', format }
     const independent = isIndependentEvidence({ step: stepShape, assistanceUsed: fromSuggestion, correct: true })
-    const evalCtx = { name, independent, turnContext, place: vars.place, targetNoun: vars.noun, targetThing: vars.item }
+    const evalCtx = { name, independent, turnContext, place: vars.place, targetNoun: vars.noun, targetThing: vars.item, ...(repairKind ? { repairKind } : {}) }
     const preview = evaluateFree(kind, text, evalCtx)
     const controller = new AbortController()
     abortRef.current = controller
@@ -234,6 +260,8 @@ function PracticeTurn({ block, topic = null, onDone }) {
         episode: null, step: { evalKind: kind, itemIds: block.payload?.itemId ? [block.payload.itemId] : [] },
         learnerResponse: text, learnerName: name, place: vars.place,
         targetNoun: vars.noun, targetThing: vars.item,
+        // the strategy travels to Lingua too, or the remote grades another question
+        ...(repairKind ? { repairKind } : {}),
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
         previousAttempts: 0, turnContext, signal: controller.signal,

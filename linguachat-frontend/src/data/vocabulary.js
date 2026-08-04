@@ -137,6 +137,23 @@ export const SEED_VOCAB = [
     meaning: { en: 'said when handing something over', es: 'Aquí tienes.', pt: 'Aqui está.', fr: 'Voilà.', it: 'Ecco a te.', de: 'Bitte sehr.', ja: 'どうぞ。', ar: 'تفضل.' } },
   { id: 'can_i_have_pattern', term: 'Can I have + item + please?', kind: 'pattern', emoji: '?', example: 'Can I have tea, please?',
     meaning: { en: '“Can I have” + a thing + “please”', es: '“Can I have” + una cosa + “please”', pt: '“Can I have” + uma coisa + “please”', fr: '« Can I have » + une chose + « please »', it: '“Can I have” + una cosa + “please”', de: '„Can I have“ + eine Sache + „please“', ja: '“Can I have” + もの + “please”', ar: '“Can I have” + شيء + “please”' } },
+  /*
+   * The fifth arc. Functional PHRASES, not their parts: nobody is taught
+   * "repeat" or "slowly" on their own, so listing them as separate words would
+   * inflate the Garden with vocabulary that was never practised.
+   */
+  { id: 'i_dont_understand', term: 'I don’t understand.', kind: 'phrase', emoji: '?', example: 'Sorry, I don’t understand.',
+    meaning: { en: 'saying a conversation stopped making sense', es: 'No entiendo.', pt: 'Não entendo.', fr: 'Je ne comprends pas.', it: 'Non capisco.', de: 'Ich verstehe nicht.', ja: 'わかりません。', ar: 'لا أفهم.' } },
+  { id: 'can_you_repeat', term: 'Can you repeat, please?', kind: 'phrase', emoji: '<>', example: 'Can you repeat, please?',
+    meaning: { en: 'asking for something to be said again', es: '¿Puedes repetir, por favor?', pt: 'Podes repetir, por favor?', fr: 'Tu peux répéter, s’il te plaît ?', it: 'Puoi ripetere, per favore?', de: 'Kannst du das wiederholen, bitte?', ja: 'もう一度言ってくれますか。', ar: 'هل يمكنك التكرار، من فضلك؟' } },
+  { id: 'speak_slowly', term: 'Please speak slowly.', kind: 'phrase', emoji: '~', example: 'Please speak slowly.',
+    meaning: { en: 'asking someone to slow down', es: 'Habla despacio, por favor.', pt: 'Fala devagar, por favor.', fr: 'Parle lentement, s’il te plaît.', it: 'Parla lentamente, per favore.', de: 'Sprich bitte langsam.', ja: 'ゆっくり話してください。', ar: 'تكلم ببطء، من فضلك.' } },
+  { id: 'bye', term: 'Bye.', kind: 'phrase', emoji: 'o/', example: 'Thanks, bye.',
+    meaning: { en: 'ending a conversation', es: 'Adiós.', pt: 'Adeus.', fr: 'Au revoir.', it: 'Ciao.', de: 'Tschüss.', ja: 'さようなら。', ar: 'وداعًا.' } },
+  { id: 'see_you', term: 'See you.', kind: 'phrase', emoji: 'o/', example: 'See you later.',
+    meaning: { en: 'a friendly goodbye', es: 'Hasta luego.', pt: 'Até logo.', fr: 'À bientôt.', it: 'A presto.', de: 'Bis bald.', ja: 'またね。', ar: 'إلى اللقاء.' } },
+  { id: 'repair_pattern', term: 'Can you + verb + please?', kind: 'pattern', emoji: '?', example: 'Can you repeat, please?',
+    meaning: { en: '“Can you” + an action + “please”', es: '“Can you” + una acción + “please”', pt: '“Can you” + uma ação + “please”', fr: '« Can you » + une action + « please »', it: '“Can you” + un’azione + “please”', de: '‚Can you‘ + eine Handlung + ‚please‘', ja: '“Can you” + 動作 + “please”', ar: '“Can you” + فعل + “please”' } },
   { id: 'i_want_pattern', term: 'I want + noun', kind: 'pattern', emoji: '->', example: 'I want coffee.',
     meaning: { en: '“I want” followed by a thing', es: '“I want” + una cosa', pt: '“I want” + uma coisa', fr: '« I want » + une chose', it: '“I want” + una cosa', de: '„I want“ + eine Sache', ja: '“I want” + もの', ar: '“I want” + شيء' } },
 ]

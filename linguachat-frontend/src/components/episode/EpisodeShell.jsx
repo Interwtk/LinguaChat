@@ -23,6 +23,7 @@ import {
 import { dayKeyFor } from '../../learning/engine/session.js'
 import { seedFrom } from '../../learning/engine/variation.js'
 import { FormatFeedback } from './FormatFeedback'
+import { MiniStory } from '../session/MiniStory'
 import {
   beginEpisodeRun, completeEpisodeRun, updateActiveRun, runEarnsReward, otherBranch, RUN_BRANCH_REPLAY,
 } from '../../learning/engine/episodeRuns.js'
@@ -40,6 +41,7 @@ const resolve = (str, vars = {}) =>
 const STEP_FORMAT = {
   comprehension: 'comprehension', choice: 'choice', word_order: 'word_order',
   fill_blank: 'fill_blank', free_reply: 'free_reply', recall: 'recall',
+  mini_story: 'mini_story',
 }
 export const formatOfStep = (step) => (step && (step.format || STEP_FORMAT[step.type])) || null
 
@@ -417,6 +419,12 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
     // right KIND of word: "Can I have Sebastian, please?" is not an example.
     // If the slot could not be resolved, show nothing rather than a wrong noun.
     if (s.exampleVar) return vars[s.exampleVar] || ''
+    /*
+     * A gap with one right answer shows that answer here — the hint is the
+     * high-support affordance, and it is the only place the target may appear.
+     * Without this the fallback below produced "Can you sebastian, please?".
+     */
+    if (s.expects) return s.expects
     return s.captureFact ? interestCtx.targetNoun : name
   }
 
@@ -439,7 +447,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
     // targetNoun keeps the model answer in the learner's own subject matter
     // targetThing is only set where the step actually asked for a thing, so the
     // arcs that never mention one keep their own catalogue examples.
-    const evalCtx = { name, independent, turnContext, place, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}) }
+    const evalCtx = { name, independent, turnContext, place, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}) }
     const preview = evaluateFree(evalKind, text, evalCtx)
     const willEscalate = shouldEscalate(preview)
 
@@ -452,6 +460,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
       result = await evaluateEpisodeResponse({
         episode: ep, step, learnerResponse: text, learnerName: name, place,
         targetNoun: subjectNoun, targetThing: requestedThing || undefined, activity: interestCtx.activity, interestId: interestCtx.interestId,
+        repairKind: step.repairKind || undefined,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion, independent,
         previousAttempts: attemptsRef.current, turnContext,
@@ -721,9 +730,29 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
                 saveLearnerModel(modelRef.current)
                 if (step.captureFact === 'place') setPlace(value)
               }
-              recordItems([step.itemId].filter(Boolean), { correct: true, independent: false })
+              /*
+               * A gap with a single right answer is checked; a capture gap is
+               * not, because there is nothing to check it against.
+               */
+              if (step.expects) {
+                const typed = fillValue.trim().toLowerCase().replace(/[^\w'’\s]/g, '')
+                const want = resolve(step.expects, vars).toLowerCase()
+                const correct = typed === want || typed === want.replace(/'/g, '’')
+                recordItems([step.itemId].filter(Boolean), { correct, independent: false })
+                if (!correct) {
+                  // its own wording: a gap has no word ORDER to get wrong
+                  setRetry({ explainKey: 'ep1FillRetry', natural: resolve(`${step.before} ${want}${step.after}`, vars) })
+                  setFillValue('')
+                  setLive(t('ep1RetryTitle'))
+                  return
+                }
+                setRetry(null)
+              } else {
+                recordItems([step.itemId].filter(Boolean), { correct: true, independent: false })
+              }
               setLive(t('ep1Correct')); advance()
             }} className="w-full py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]" style={{ background: 'var(--violet)', opacity: fillValue.trim() ? 1 : 0.5 }}>{t('ep1Check')}</button>
+            {retry && <p lang={nativeLang} className="mt-3" style={{ fontSize: '0.8125rem', color: 'var(--coral)', fontWeight: 600 }}>{t(retry.explainKey)} <En style={{ fontWeight: 700 }}>{retry.natural}</En></p>}
           </div>
         )}
 
@@ -784,6 +813,36 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
         )}
 
         {/* ---------------- COMPLETION ---------------- */}
+        {/* ---------------- MINI STORY ----------------
+            The very same component a daily session renders. An episode owns the
+            run, so it hands the story its support level and run mode; the story
+            keeps its own turn, branch and persistence, and finishing it simply
+            advances the episode. There is no second story engine. */}
+        {step.type === 'mini_story' && (
+          <MiniStory
+            key={`${ep.id}:${stepIndex}`}
+            block={{ id: `${ep.id}:story`, objective: step.storyObjective, type: 'episode_story' }}
+            vars={vars}
+            scaffoldLevel={scaffold}
+            runMode={run?.mode || 'first_run'}
+            onDone={(branchId) => {
+              /*
+               * Recorded exactly the way a branching reply is: on the run, and
+               * once in the facts by the run that counted, so a later replay can
+               * offer the ending the learner has not seen.
+               */
+              if (branchId) {
+                runRef.current = updateActiveRun(modelRef.current, { branchId }) || runRef.current
+                if (runEarnsReward(run?.mode) && !modelRef.current.facts?.[`branch:${ep.id}`]) {
+                  modelRef.current.facts = { ...(modelRef.current.facts || {}), [`branch:${ep.id}`]: branchId }
+                }
+                saveLearnerModel(modelRef.current)
+              }
+              advance()
+            }}
+          />
+        )}
+
         {step.type === 'completion' && (
           <div className="animate-scale-in rounded-3xl p-6 text-center" style={{ background: 'var(--bg-paper)', border: '1px solid var(--green)', boxShadow: '0 0 0 3px var(--green-soft)' }}>
             <div className="flex justify-center"><ChattoMascot mood="celebrating" size="medium" variant="green" intensity="celebrate" /></div>

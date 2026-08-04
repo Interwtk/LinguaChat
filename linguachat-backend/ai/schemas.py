@@ -101,6 +101,11 @@ class EvaluateRequest(BaseModel):
     # The simple thing this episode proposes doing together ("plan a trip"),
     # also from the controlled catalogue. Used only to build a model answer.
     target_activity: str | None = Field(default=None, max_length=60)
+    # Which repair strategy this turn asked for: signalling non-understanding,
+    # asking for a repetition, or asking for slower speech. Repair is one intent
+    # with three strategies, so a verdict without this is a verdict about a
+    # different question. Anything unexpected is treated as absent.
+    repair_kind: str | None = Field(default=None, max_length=32)
     interest_id: str | None = Field(default=None, max_length=40)
     native_language: str | LanguageInfo | dict | None = None
     interface_language: str | LanguageInfo | dict | None = None

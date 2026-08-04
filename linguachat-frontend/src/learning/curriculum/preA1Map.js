@@ -17,6 +17,7 @@
  * the episodes, it MUST be answered by reading the episodes.
  */
 import { ARC, ARCS, getEpisode, episodesInArc } from '../episodes/index.js'
+import { getStory, storyTurns } from '../engine/miniStory.js'
 
 export const LEVEL = 'pre_a1'
 
@@ -39,9 +40,21 @@ export function prerequisiteChain(id, seen = new Set()) {
   return [...new Set(chain)]
 }
 
-/* Every intent an episode actually evaluates. */
+/*
+ * The turns hidden inside a step. A `mini_story` step is a whole conversation:
+ * it evaluates intents and records language items that appear nowhere in the
+ * step itself. Reading only `step.evalKind` would leave the registry blind to
+ * everything episode 15's story practises — exactly the kind of inert
+ * metadata this project keeps having to dig back out.
+ */
+const innerTurns = (step) =>
+  (step?.type === 'mini_story' ? storyTurns(getStory(step.storyObjective)) : [])
+
+/* Every intent an episode actually evaluates, story turns included. */
 export const intentsForEpisode = (id) =>
-  [...new Set((getEpisode(id)?.steps || []).map(s => s.evalKind).filter(Boolean))]
+  [...new Set((getEpisode(id)?.steps || [])
+    .flatMap(s => [s.evalKind, ...innerTurns(s).map(t => t.evalKind)])
+    .filter(Boolean))]
 
 /*
  * Where a language item is PRODUCED, as opposed to merely granted. A free
@@ -53,19 +66,43 @@ export function episodesProducing(itemId) {
   for (const ep of ARC) {
     const produces = (ep.steps || []).some(s =>
       ((s.type === 'free_reply' || s.type === 'recall') && (s.itemIds || []).includes(itemId))
-      || (['word_order', 'fill_blank', 'choice'].includes(s.type) && s.itemId === itemId))
+      || (['word_order', 'fill_blank', 'choice'].includes(s.type) && s.itemId === itemId)
+      // a story's reply turn is a produced sentence like any other
+      || innerTurns(s).some(t => t.kind === 'reply' && (t.itemIds || []).includes(itemId)))
     if (produces) out.push(ep.id)
   }
   return out
 }
 
-/* Where a can-do is first earned, and everywhere its intent comes back. */
+/*
+ * Where a can-do is first earned, where it is deliberately reinforced, and
+ * everywhere its intent comes back.
+ *
+ * A capability can need more than one episode — repair has three strategies and
+ * two episodes teaching them — without becoming two capabilities. The episode
+ * that owns it is the one that does not declare `reinforces`, so coverage still
+ * has exactly one answer for "where is this taught".
+ */
 export function canDoCoverage(canDoId) {
-  const home = ARC.find(e => e.canDoId === canDoId)
-  if (!home) return null
+  const primary = ARC.find(e => e.canDoId === canDoId && !e.reinforces)
+  if (!primary) return null
   const intent = CAN_DO_INTENT[canDoId] || null
-  const reusedIn = intent ? ARC.filter(e => e.id !== home.id && intentsForEpisode(e.id).includes(intent)).map(e => e.id) : []
-  return { canDoId, intent, introducedIn: home.id, arc: home.arc || 'greetings', reusedIn }
+  const reinforcedIn = ARC.filter(e => e.canDoId === canDoId && e.reinforces).map(e => e.id)
+  const reusedIn = intent ? ARC.filter(e => e.id !== primary.id && intentsForEpisode(e.id).includes(intent)).map(e => e.id) : []
+  return { canDoId, intent, introducedIn: primary.id, arc: primary.arc || 'greetings', reinforcedIn, reusedIn }
+}
+
+/*
+ * The skills an episode genuinely leans on, as opposed to the episode that
+ * merely precedes it. Ordering a coffee is the curricular gate before the
+ * repair arc; it is not what makes repair possible, and telling the support
+ * engine otherwise would be a lie it acts on.
+ */
+export function skillPrerequisitesOf(episodeId) {
+  const ep = getEpisode(episodeId)
+  if (!ep) return []
+  if (Array.isArray(ep.skillPrerequisites)) return ep.skillPrerequisites
+  return (ep.prerequisites || []).map(id => getEpisode(id)?.canDoId).filter(Boolean)
 }
 
 /*
@@ -86,6 +123,8 @@ export const CAN_DO_INTENT = {
   polite_request: 'polite_request',
   respond_anything_else: 'respond_anything_else',
   cafe_order: 'cafe_order_conversation',
+  ask_for_repair: 'repair_request',
+  close_an_encounter: 'close_encounter',
 }
 
 /* --------------------------------------------------------------- declared --*/
@@ -132,6 +171,13 @@ export const PATTERN_COVERAGE = {
   i_like_pattern: { term: 'I like + noun', reaches: 'guided_production', trackedAs: 'i_like_pattern' },
   i_want_pattern: { term: 'I want + noun', reaches: 'guided_production', trackedAs: 'i_want_pattern' },
   can_i_have_pattern: { term: 'Can I have + item + please?', reaches: 'guided_production', trackedAs: 'can_i_have_pattern' },
+  /*
+   * Guided only, and it will stay guided while the arc says "Please speak
+   * slowly." rather than "Can you speak slowly, please?": the frame is filled in
+   * once, with the verb supplied. Claiming more would be the overstatement this
+   * table exists to catch.
+   */
+  repair_pattern: { term: 'Can you + verb + please?', reaches: 'guided_production', trackedAs: 'repair_pattern' },
 }
 
 /*
@@ -166,32 +212,31 @@ export const CAPABILITY_MAP = [
   /* ---- taught once and never asked for again ---- */
   { id: 'say_what_you_dislike', status: 'fragile', covers: { intent: 'express_dislike' },
     note: 'produced only in episode 7; "I don’t like…" never returns' },
-  { id: 'answer_a_yes_no_preference', status: 'fragile', covers: { intent: 'yes_no_preference' },
-    note: 'produced only in episode 7' },
+  { id: 'answer_a_yes_no_preference', status: 'covered', covers: { intent: 'yes_no_preference' },
+    note: 'episode 7, then episode 13 and inside episode 15’s story — answering a yes/no question is now what a repaired conversation leads back into' },
   { id: 'say_what_you_need', status: 'fragile', covers: { intent: 'express_need' },
     note: 'produced only in episode 8; the café practises wanting, never needing' },
-  { id: 'decline_an_offer', status: 'needs_reuse', covers: { intent: 'decline_offer' },
-    note: 'episode 8 only as its own turn; later arcs let the learner decline but never require it' },
-  { id: 'bounce_a_question_back', status: 'needs_reuse', covers: { intent: 'reciprocal_question' },
-    note: '"And you?" is produced in episodes 4 and 5 and then disappears for seven episodes' },
+  { id: 'decline_an_offer', status: 'covered', covers: { intent: 'decline_offer' },
+    note: 'episode 8, then required again in episode 15 seven episodes later' },
+  { id: 'bounce_a_question_back', status: 'covered', covers: { intent: 'reciprocal_question' },
+    note: 'episodes 4 and 5, then produced again in episode 14 after a nine-episode gap' },
 
-  /* ---- Pre-A1 is not finished without these ---- */
-  { id: 'repair_understanding', status: 'missing_required', priority: 'must',
-    why: 'A learner who cannot say "I don’t understand." leaves every conversation the moment it goes off-script. This is the difference between language that works and language that only works when nothing surprising happens — and every capability already taught is exposed to it.',
-    canDo: 'ask_for_repair',
-    prerequisites: ['full_conversation'],
-    vocabularyBudget: 5,
-    newPatterns: ['I don’t understand.', 'Can you repeat, please?'],
-    reuseTargets: ['polite_request', 'answer_wellbeing', 'introduction'],
-    idealContext: 'inside a conversation the learner is already having, not a lesson about failure' },
+  /* ---- built by the fifth arc ---- */
+  { id: 'repair_understanding', status: 'covered', covers: { canDo: 'ask_for_repair' },
+    note: 'episodes 13 and 14; three strategies under one function, and every repair leads back into the conversation' },
+  /*
+   * Taught, and honestly not yet safe. Closing an encounter is produced twice
+   * inside episode 15 — the story’s last turn and the variation after it — and
+   * then never again, because episode 15 is where the curriculum currently ends.
+   * That is the definition of `needs_reuse`, and calling it covered would be the
+   * same optimism this map exists to prevent. The next arc has to ASK for a
+   * goodbye rather than teach one.
+   */
+  { id: 'say_thank_you_and_goodbye', status: 'needs_reuse',
+    covers: { canDo: 'close_an_encounter', intent: 'close_encounter' },
+    note: 'episode 15 only; the first capability arc 6 should require rather than introduce' },
 
-  { id: 'say_thank_you_and_goodbye', status: 'missing_required', priority: 'must',
-    why: 'The curriculum can open a conversation and can close an order, but it cannot end an encounter. "Bye." and "See you." are the other half of "Hi." and are assumed by every roleplay already written.',
-    canDo: 'close_an_encounter',
-    prerequisites: ['full_conversation'],
-    vocabularyBudget: 4,
-    newPatterns: ['Goodbye.', 'See you.'],
-    reuseTargets: ['nice_to_meet', 'thank_service'] },
+  /* ---- Pre-A1 is still not finished without these ---- */
 
   { id: 'name_and_ask_about_things', status: 'missing_required', priority: 'should',
     why: 'Every later level needs a way to acquire vocabulary from the world. "What’s this?" / "It’s a…" is the smallest engine for that, and it also gives the café arc something to point at.',
@@ -240,8 +285,14 @@ export const PRE_A1_EXIT_CRITERIA = {
     'introduce_self', 'ask_name', 'ask_wellbeing', 'ask_origin',
     'full_conversation', 'express_preferences', 'express_needs',
     'polite_request', 'cafe_order',
-    'ask_for_repair',        // not built yet — see CAPABILITY_MAP
-    'close_an_encounter',    // not built yet
+    'ask_for_repair', 'close_an_encounter',   // arc 5
+    /*
+     * Still not built. These two are the reason finishing episode 15 does not
+     * mean "ready for A1": the audit declared both required, and both are
+     * waiting in CAPABILITY_MAP as `missing_required`. They stay on this list
+     * precisely so the criteria keep failing while they are missing.
+     */
+    'identify_things', 'use_small_numbers',
   ],
   /* every required can-do produced at least twice with no model answer on screen */
   independentEvidencePerCanDo: 2,
