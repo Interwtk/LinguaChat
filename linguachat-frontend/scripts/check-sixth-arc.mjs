@@ -13,11 +13,8 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { ARC, ARCS, getEpisode, episodesInArc } from '../src/learning/episodes/index.js'
-import {
-  CAN_DO_INTENT, CAN_DO_INTENTS, CAPABILITY_MAP, PRE_A1_EXIT_CRITERIA, LAST_PRE_A1_CAPABILITY,
-  FIRST_A1_CAPABILITY, canDoCoverage, intentsForEpisode, episodesProducing, productiveItemsOf,
-  integratedEpisodes, longestExchange, skillPrerequisitesOf, prerequisiteChain, RECEPTIVE_ITEMS,
-} from '../src/learning/curriculum/preA1Map.js'
+import { CAN_DO_INTENT, CAN_DO_INTENTS, PRE_A1_EXIT_CRITERIA, canDoCoverage, intentsForEpisode, episodesProducing, productiveItemsOf, integratedEpisodes, longestExchange, skillPrerequisitesOf, prerequisiteChain, RECEPTIVE_ITEMS } from '../src/learning/curriculum/preA1Map.js'
+import { CAPABILITY_MAP, LAST_PRE_A1_CAPABILITY, FIRST_A1_CAPABILITY } from '../src/learning/curriculum/preA1Audit.js'
 import { THINGS, COUNTABLE_THINGS, thingById, withArticle, countedThing } from '../src/learning/engine/semanticContext.js'
 import { TAUGHT_NUMBERS, QUANTITY_FORMS } from '../src/learning/engine/responseEvaluation.js'
 import { SEED_VOCAB } from '../src/data/vocabulary.js'

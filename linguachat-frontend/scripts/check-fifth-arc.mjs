@@ -18,10 +18,8 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { ARC, ARCS, getEpisode, episodesInArc } from '../src/learning/episodes/index.js'
 import { getStory, storyTurns, storyBranches, storyHome, defaultBranch, turnText } from '../src/learning/engine/miniStory.js'
-import {
-  CAN_DO_INTENT, PRE_A1_EXIT_CRITERIA, CAPABILITY_MAP, canDoCoverage,
-  intentsForEpisode, episodesProducing, skillPrerequisitesOf, prerequisiteChain,
-} from '../src/learning/curriculum/preA1Map.js'
+import { CAN_DO_INTENT, PRE_A1_EXIT_CRITERIA, canDoCoverage, intentsForEpisode, episodesProducing, skillPrerequisitesOf, prerequisiteChain } from '../src/learning/curriculum/preA1Map.js'
+import { CAPABILITY_MAP } from '../src/learning/curriculum/preA1Audit.js'
 import { REPAIR_KINDS } from '../src/learning/engine/responseEvaluation.js'
 import { SEED_VOCAB } from '../src/data/vocabulary.js'
 

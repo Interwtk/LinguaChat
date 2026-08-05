@@ -1,5 +1,5 @@
 import { useApp } from '../../context/AppContext'
-import { ARC } from '../../learning/episodes/index.js'
+import { EPISODE_SKELETON as ARC } from '../../learning/curriculum/preA1Skeleton.generated.js'
 import { getEpisodeState, loadLearnerModel } from '../../learning/engine/learnerModel.js'
 import { timesPractised, canTryOtherBranch } from '../../learning/engine/episodeRuns.js'
 

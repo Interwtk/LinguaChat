@@ -22,13 +22,8 @@ import { derivePreA1Readiness } from '../src/learning/curriculum/readiness.js'
 import { SEED_VOCAB_BY_ID } from '../src/data/vocabulary.js'
 import { practiceKindForItem, practiceKindForCanDo } from '../src/learning/engine/session.js'
 import { INTENT_SLOTS } from '../src/learning/engine/semanticContext.js'
-import {
-  LEVEL, CAPABILITY_MAP, CAN_DO_INTENT, RECEPTIVE_ITEMS, INCIDENTAL_ITEMS,
-  PATTERN_COVERAGE, PRE_A1_EXIT_CRITERIA, LAST_PRE_A1_CAPABILITY, FIRST_A1_CAPABILITY,
-  episodesForLevel, arcsForLevel, getArcForEpisode, getPrerequisites,
-  getCanDoForEpisode, prerequisiteChain, intentsForEpisode, episodesProducing,
-  canDoCoverage, capabilitiesWithStatus,
-} from '../src/learning/curriculum/preA1Map.js'
+import { LEVEL, CAN_DO_INTENT, RECEPTIVE_ITEMS, INCIDENTAL_ITEMS, PRE_A1_EXIT_CRITERIA, episodesForLevel, arcsForLevel, getArcForEpisode, getPrerequisites, getCanDoForEpisode, prerequisiteChain, intentsForEpisode, episodesProducing, canDoCoverage } from '../src/learning/curriculum/preA1Map.js'
+import { CAPABILITY_MAP, PATTERN_COVERAGE, LAST_PRE_A1_CAPABILITY, FIRST_A1_CAPABILITY, capabilitiesWithStatus } from '../src/learning/curriculum/preA1Audit.js'
 
 let n = 0
 const ok = () => { n++ }

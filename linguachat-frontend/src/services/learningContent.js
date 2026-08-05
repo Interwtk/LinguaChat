@@ -1,43 +1,15 @@
 /*
- * learningContent — resolves NATIVE-language meanings for pedagogical items.
+ * learningContent — the seed vocabulary, looked up and localized.
  *
- * Fallback priority (never Spanish as a universal fallback):
- *   1. native full code   (e.g. ja-JP)
- *   2. native base        (e.g. ja)
- *   3. interface base     (e.g. the UI language)
- *   4. English
- *
- * Accepts language info objects ({ code, base }) or plain strings.
+ * The language resolver itself lives in `localizedMeaning.js` and is re-exported
+ * here: it is a pure function, and keeping it in this module meant every screen
+ * that resolves a meaning also downloaded the entire catalogue. Home does that
+ * before a learner has opened anything.
  */
 import { SEED_VOCAB, SEED_VOCAB_BY_ID } from '../data/vocabulary'
+import { getLocalizedMeaning } from './localizedMeaning'
 
-function baseOf(lang) {
-  if (!lang) return null
-  const raw = typeof lang === 'string' ? lang : (lang.base || lang.code || '')
-  return String(raw).split('-')[0].toLowerCase() || null
-}
-
-function fullOf(lang) {
-  if (!lang) return null
-  const raw = typeof lang === 'string' ? lang : (lang.code || lang.base || '')
-  return String(raw).toLowerCase() || null
-}
-
-export function getLocalizedMeaning(meaning, nativeLanguage, interfaceLanguage) {
-  if (!meaning) return ''
-  if (typeof meaning === 'string') return meaning
-  const candidates = [
-    fullOf(nativeLanguage),
-    baseOf(nativeLanguage),
-    baseOf(interfaceLanguage),
-    'en',
-  ]
-  for (const code of candidates) {
-    if (code && meaning[code]) return meaning[code]
-  }
-  // Last resort: English, then any available value — but never silently Spanish-first.
-  return meaning.en || Object.values(meaning)[0] || ''
-}
+export { getLocalizedMeaning }
 
 export function getVocabItem(id) {
   return SEED_VOCAB_BY_ID[id] || null

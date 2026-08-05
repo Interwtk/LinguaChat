@@ -1,0 +1,223 @@
+/*
+ * check-curriculum-loading — knowing about the curriculum is not downloading it.
+ *
+ * Everything the product needs before a learner opens anything is structural:
+ * which episode comes next, what it teaches, what is due, whether they are
+ * ready. None of it is a word Lingua says. Yet asking any of those questions
+ * used to load the whole level — every prompt, scene, model answer and hosted
+ * story — into the first chunk, because the answers were derived by walking the
+ * episode definitions.
+ *
+ * Three things are checked here, and the first is the one that keeps the other
+ * two honest:
+ *
+ *   1. the generated skeleton still says exactly what the episodes say
+ *   2. the first chunk carries the shape and not the content
+ *   3. the content is really in a chunk that loads on demand, and a failure to
+ *      fetch it is recoverable rather than a dead screen
+ *
+ * The build assertions read dist/, so they skip (without failing) on a fresh
+ * clone that has not built yet — the skeleton check always runs.
+ */
+import assert from 'node:assert/strict'
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { join } from 'node:path'
+
+import { ARC } from '../src/learning/episodes/index.js'
+import { EPISODE_SKELETON, SKELETON_BY_ID } from '../src/learning/curriculum/preA1Skeleton.generated.js'
+import { intentsForEpisode, productiveItemsOf, itemsOf, personalisesOf } from '../src/learning/curriculum/preA1Map.js'
+import { PRE_A1_EXIT_CRITERIA } from '../src/learning/curriculum/preA1Map.js'
+
+let groups = 0
+const ok = () => { groups += 1 }
+
+const SKELETON_PATH = 'src/learning/curriculum/preA1Skeleton.generated.js'
+
+/*
+ * Sentences that exist ONLY in the episode definitions and the hosted stories.
+ *
+ * Plenty of episode lines are interface strings too — the base dictionary
+ * genuinely contains "Can I have two sandwiches, please?" as an example — and
+ * the first chunk is entitled to the interface. Probing with those would prove
+ * nothing either way, so they are excluded by looking at every other source
+ * file in the project.
+ */
+const CURRICULUM_SOURCES = ['src/learning/episodes', 'src/learning/engine/miniStory.js']
+
+const everythingElse = (() => {
+  const texts = []
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = `${dir}/${entry.name}`
+      if (CURRICULUM_SOURCES.some(c => path.startsWith(c))) continue
+      if (entry.isDirectory()) walk(path)
+      else if (/\.(jsx?|mjs)$/.test(entry.name)) texts.push(readFileSync(path, 'utf8'))
+    }
+  }
+  walk('src')
+  return texts.join('\n')
+})()
+
+const curriculumOnlyProse = (minLength = 14) => {
+  const lines = ARC.flatMap(ep => ep.steps.flatMap(s => [s.promptEn, s.sceneEn, s.suggestionEn, s.target, s.response]))
+    .filter(t => typeof t === 'string' && t.length > minLength && !t.includes('{'))
+  return [...new Set(lines)].filter(text => !everythingElse.includes(text))
+}
+
+
+/* ---- 1) the skeleton is the curriculum, not a second opinion about it ---- */
+{
+  const committed = readFileSync(SKELETON_PATH, 'utf8')
+  execFileSync(process.execPath, ['scripts/build-curriculum-skeleton.mjs'], { stdio: 'pipe' })
+  const regenerated = readFileSync(SKELETON_PATH, 'utf8')
+  assert.equal(regenerated, committed,
+    'the committed skeleton differs from the episodes — run `npm run build:skeleton` and commit the result')
+
+  assert.equal(EPISODE_SKELETON.length, ARC.length, 'every episode must be described')
+  for (const ep of ARC) {
+    const skeleton = SKELETON_BY_ID[ep.id]
+    assert.ok(skeleton, `${ep.id} is missing from the skeleton`)
+    assert.equal(skeleton.canDoId, ep.canDoId, `${ep.id}: capability`)
+    assert.equal(skeleton.xp, ep.xp, `${ep.id}: reward`)
+    assert.equal(skeleton.arc, ep.arc, `${ep.id}: arc`)
+    assert.deepEqual(skeleton.prerequisites, ep.prerequisites || [], `${ep.id}: prerequisites`)
+    assert.deepEqual(skeleton.gardenItems || [], ep.gardenItems || [], `${ep.id}: garden`)
+    assert.equal(skeleton.steps.length, ep.steps.length, `${ep.id}: step count`)
+    ep.steps.forEach((step, i) => {
+      assert.equal(skeleton.steps[i].type, step.type, `${ep.id} step ${i}: type`)
+      assert.equal(skeleton.steps[i].evalKind, step.evalKind, `${ep.id} step ${i}: intent`)
+    })
+  }
+  ok()
+}
+
+/* ---- 2) and it carries no prose ---- */
+{
+  const skeleton = readFileSync(SKELETON_PATH, 'utf8')
+  /*
+   * Probes taken from the episodes themselves: sentences the learner reads. If
+   * any of them appear here, the skeleton has started carrying content and the
+   * whole point of it is gone.
+   */
+  const prose = curriculumOnlyProse(12)
+  assert.ok(prose.length >= 20, `the episodes should have plenty of prose to look for, found ${prose.length}`)
+  const leaked = prose.filter(text => skeleton.includes(text))
+  assert.deepEqual(leaked, [], `the skeleton is carrying rendered text: ${leaked.slice(0, 3).join(' | ')}`)
+  ok()
+}
+
+/* ---- 3) the derivations still answer, and answer the same ---- */
+{
+  /*
+   * The skeleton exists to be read by the registry, so the registry's answers
+   * are what actually matter. These are the questions the planner, the support
+   * engine and the readiness rules ask.
+   */
+  for (const ep of ARC) {
+    const intents = intentsForEpisode(ep.id)
+    const declared = [...new Set(ep.steps.map(s => s.evalKind).filter(Boolean))]
+    for (const intent of declared) {
+      assert.ok(intents.includes(intent), `${ep.id}: ${intent} was evaluated and the registry cannot see it`)
+    }
+    assert.ok(itemsOf(ep.id).length > 0, `${ep.id} touches no language at all`)
+  }
+  for (const canDoId of PRE_A1_EXIT_CRITERIA.requiredCanDos) {
+    assert.ok(productiveItemsOf(canDoId).length > 0, `${canDoId} produces nothing the registry can name`)
+  }
+  // the one derivation that reads the English: personalisation, via placeholders
+  assert.ok(personalisesOf('first_greeting').includes('name'),
+    'the first episode uses the learner’s name and the registry should know')
+  assert.ok(personalisesOf('where_from').length > 0, 'and the origin episode personalises something')
+  ok()
+}
+
+/* ---- 4) the first chunk carries the shape, not the level ---- */
+const DIST = 'dist/assets'
+if (!existsSync(DIST)) {
+  console.log('\ncheck-curriculum-loading — build assertions SKIPPED (no dist/, run `npm run build`)')
+} else {
+  const files = readdirSync(DIST).filter(f => f.endsWith('.js'))
+  const entryName = files.find(f => /^index-.*\.js$/.test(f))
+  assert.ok(entryName, 'there should be an entry chunk')
+  const entry = readFileSync(join(DIST, entryName), 'utf8')
+
+  {
+    /*
+     * Sentences from the episodes and from the hosted stories. A learner opening
+     * Home has not asked for any of them.
+     */
+    const probes = curriculumOnlyProse()
+    assert.ok(probes.length >= 15, `there should be plenty to probe with, found ${probes.length}`)
+    const leaked = probes.filter(text => entry.includes(text))
+    assert.deepEqual(leaked, [], `episode content is in the entry chunk: ${leaked.slice(0, 3).join(' | ')}`)
+
+    // and neither is the vocabulary catalogue, which only the learning screens show
+    const vocabProbes = ['Sorry, I don’t understand', 'Here you are']
+    const vocabLeaked = vocabProbes.filter(text => entry.includes(text))
+    assert.deepEqual(vocabLeaked, [], `the vocabulary catalogue is in the entry chunk: ${vocabLeaked.join(' | ')}`)
+
+    // the shape, on the other hand, must be there: Home cannot plan without it
+    assert.ok(entry.includes('first_greeting') && entry.includes('how_many'),
+      'the entry needs the shape of the level to plan the day')
+    ok()
+  }
+
+  {
+    /*
+     * The content has to be somewhere, and that somewhere must load on demand.
+     * A chunk nobody fetches is not lazy, it is missing.
+     */
+    const sample = curriculumOnlyProse()[0]
+    const carriers = files.filter(f => f !== entryName && readFileSync(join(DIST, f), 'utf8').includes(sample))
+    assert.ok(carriers.length >= 1, 'the episode content must live in some chunk')
+    for (const carrier of carriers) {
+      assert.ok(entry.includes(carrier.replace(/^/, '')) || entry.includes(carrier.split('-')[0]),
+        `${carrier} must be reachable from the entry as a dynamic import`)
+    }
+    console.log(`\n  episode content: ${carriers.join(', ')}`)
+    ok()
+  }
+
+  {
+    // the budget, and no raising of the warning threshold to meet it
+    const entryKb = statSync(join(DIST, entryName)).size / 1024
+    assert.ok(entryKb < 400, `the entry chunk is ${entryKb.toFixed(1)} kB`)
+    const viteConfig = readFileSync('vite.config.js', 'utf8')
+    assert.ok(!/chunkSizeWarningLimit/.test(viteConfig),
+      'the size warning must be earned, not silenced')
+    console.log(`  entry ${entryKb.toFixed(1)} kB with the curriculum out of it`)
+    ok()
+  }
+
+  {
+    /*
+     * A chunk that fails to arrive — a flaky connection, a stale deploy — must
+     * be recoverable from the screen the learner is looking at.
+     */
+    const boundary = readFileSync('src/components/ui/LazyBoundary.jsx', 'utf8')
+
+    // the rejection is caught, so a missing chunk shows a message rather than nothing
+    assert.ok(/\.catch\(/.test(boundary), 'a failed chunk must be caught, not thrown at the learner')
+    assert.ok(/setFailed\(true\)/.test(boundary), 'and must put the screen into a state it can report')
+    assert.ok(/retryLabel/.test(boundary), 'with a way to try again, in the learner’s language')
+
+    /*
+     * Retrying has to actually retry. React.lazy would memoise the first
+     * rejection and hand back the same failure for the rest of the page's life,
+     * which is why this loads the module itself and re-runs the factory.
+     */
+    assert.ok(/setAttempt/.test(boundary), 'a retry must re-run the import')
+    assert.ok(/\[attempt\]/.test(boundary), 'and the loader must depend on the attempt')
+    // the file's own comments explain why React.lazy is avoided, so read past them
+    const boundaryCode = boundary.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    assert.ok(!/React\.lazy|\blazy\(/.test(boundaryCode), 'React.lazy would cache the failure for ever')
+
+    // a stale deploy needs one reload, and exactly one
+    assert.ok(/RELOAD_GUARD/.test(boundary), 'a cached failure needs a reload to clear the module map')
+    assert.ok(/sessionStorage/.test(boundary), 'guarded so a permanently missing chunk cannot loop')
+    ok()
+  }
+}
+
+console.log(`\ncheck-curriculum-loading — OK  (${groups} loading groups verified)`)

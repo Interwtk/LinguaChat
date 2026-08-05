@@ -44,8 +44,8 @@ import {
   saveTextSize,
   saveTutorPreferences,
 } from '../services/tutorPreferences'
-import { SEED_VOCAB_BY_ID } from '../data/vocabulary'
-import { ARC } from '../learning/episodes/index.js'
+// the planner works from the shape of the level; the episode itself loads when it starts
+import { EPISODE_SKELETON as ARC } from '../learning/curriculum/preA1Skeleton.generated.js'
 import { loadLearnerModel, saveLearnerModel, recordItemSeen } from '../learning/engine/learnerModel.js'
 import { markFactUsed, rotateFactUsage, selectLearnerFact } from '../learning/engine/learnerFacts.js'
 import { loadMemoryContext } from '../learning/engine/memoryContext.js'
@@ -450,7 +450,14 @@ export function AppProvider({ children }) {
     // would silently never be granted. completeSession stays idempotent, so a
     // double tap still awards exactly once.
     if (dailySession) {
-      const { session, awarded } = completeSession(dailySession)
+      /*
+       * The learner model goes in so a session that consolidated the last
+       * missing capability records the milestone here, at the moment the
+       * evidence changed, rather than the next time a screen renders.
+       */
+      const model = loadLearnerModel()
+      const { session, awarded } = completeSession(dailySession, model)
+      saveLearnerModel(model)
       saveSession(session)
       setDailySession(session)
       if (awarded) setLocalProgress(p => ({ ...p, xp: (p.xp || 0) + SESSION_BONUS_XP }))
@@ -477,22 +484,22 @@ export function AppProvider({ children }) {
    * really produced are already further along and are not pushed back, because
    * `recordItemSeen` only ever raises a state.
    */
-  const awardEpisode = useCallback((episode) => {
+  /*
+   * `grants` are the episode's Garden items already resolved to real vocabulary
+   * by the screen that played it — the only caller, and one that has the
+   * catalogue in hand because it just rendered those words. Passing them in
+   * keeps every term and its eight translations out of the first chunk, which a
+   * learner downloads long before any of this can happen.
+   */
+  const awardEpisode = useCallback((episode, { grants = [] } = {}) => {
     const model = loadLearnerModel()
-    for (const id of episode.gardenItems || []) {
-      if (SEED_VOCAB_BY_ID[id]) recordItemSeen(model, id)
-    }
+    for (const grant of grants) recordItemSeen(model, grant.vocabId)
     saveLearnerModel(model)
     setLocalProgress(previous => {
       const existing = new Set((previous.learnedItems || []).map(i => i.vocabId).filter(Boolean))
-      const additions = (episode.gardenItems || [])
-        .filter(id => !existing.has(id) && SEED_VOCAB_BY_ID[id])
-        .map(id => ({
-          vocabId: id,
-          word: SEED_VOCAB_BY_ID[id].term,
-          kind: SEED_VOCAB_BY_ID[id].kind,
-          lastSeenAt: Date.now(),
-        }))
+      const additions = grants
+        .filter(grant => !existing.has(grant.vocabId))
+        .map(grant => ({ ...grant, lastSeenAt: Date.now() }))
       return {
         ...previous,
         learnedItems: [...additions, ...(previous.learnedItems || [])],
