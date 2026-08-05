@@ -1217,6 +1217,11 @@ export default {
   preA1FocusReviews: "بعض العبارات تنتظر أن تعود إليك.",
   preA1FocusConversation: "حوار كامل بلا مساعدة، وتكون قد وصلت.",
   preA1FocusFinish: "ما زال في الطريق القليل.",
+  preA1GraduatedTitle: "أكملت مستوى Pre-A1",
+  preA1GraduatedBody: "تستطيع أن تبدأ محادثة وتُكمِلها وتطلب المساعدة عندما تفقد الخيط — بنفسك. هذا يبقى لك.",
+  preA1GraduatedOn: "تحقّق في {date}",
+  preA1GraduatedReviewsDue: "بعض العبارات جاء وقت مراجعتها. هذه ممارسة، وليست خطوة إلى الوراء.",
+  preA1CelebrationNote: "كان Chatto ينتظر ليقول لك: أحسنت.",
   preA1LevelBadge: "PRE-A1",
   sessionTopicToday: "اليوم: {topic}",
 }

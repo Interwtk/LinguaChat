@@ -1217,6 +1217,11 @@ export default {
   preA1FocusReviews: "Hay unas frases esperando volver a ti.",
   preA1FocusConversation: "Una conversación entera, sin ayuda, y ya está.",
   preA1FocusFinish: "Todavía queda un poco de camino.",
+  preA1GraduatedTitle: "Terminaste Pre-A1",
+  preA1GraduatedBody: "Puedes empezar una conversación, sostenerla y pedir ayuda cuando pierdes el hilo — por tu cuenta. Eso se queda contigo.",
+  preA1GraduatedOn: "Conseguido el {date}",
+  preA1GraduatedReviewsDue: "Algunas frases toca repasarlas. Eso es práctica, no un paso atrás.",
+  preA1CelebrationNote: "Chatto llevaba rato queriendo decírtelo: bien hecho.",
   preA1LevelBadge: "PRE-A1",
   sessionTopicToday: "Hoy: {topic}",
 }

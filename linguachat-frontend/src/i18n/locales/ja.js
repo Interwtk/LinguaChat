@@ -1217,6 +1217,11 @@ export default {
   preA1FocusReviews: "戻ってくるのを待っている表現がいくつかあります。",
   preA1FocusConversation: "助けなしの会話をひとつ。それで届きます。",
   preA1FocusFinish: "道のりはもう少し残っています。",
+  preA1GraduatedTitle: "Pre-A1を修了しました",
+  preA1GraduatedBody: "会話を始めて、続けて、わからなくなったら助けを求める——ひとりでできます。これはずっとあなたのものです。",
+  preA1GraduatedOn: "達成日：{date}",
+  preA1GraduatedReviewsDue: "いくつかの表現は復習の時期です。後退ではなく、練習です。",
+  preA1CelebrationNote: "Chattoがずっと言いたかったこと：よくできました。",
   preA1LevelBadge: "PRE-A1",
   sessionTopicToday: "今日：{topic}",
 }

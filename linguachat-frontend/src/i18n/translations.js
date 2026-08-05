@@ -514,6 +514,11 @@ const base = {
   preA1FocusReviews: "A few phrases are waiting to come back to you.",
   preA1FocusConversation: "One whole conversation, without help, and you’re there.",
   preA1FocusFinish: "There is still a little of the road left.",
+  preA1GraduatedTitle: "You've finished Pre-A1",
+  preA1GraduatedBody: "You can start a conversation, keep it going and ask for help when you lose the thread — on your own. That stays yours.",
+  preA1GraduatedOn: "Reached on {date}",
+  preA1GraduatedReviewsDue: "Some phrases are due to come back. That is practice, not a step backwards.",
+  preA1CelebrationNote: "Chatto has been waiting to say this: well done.",
   preA1LevelBadge: "PRE-A1",
 
   sessionTopicToday: "Today: {topic}",

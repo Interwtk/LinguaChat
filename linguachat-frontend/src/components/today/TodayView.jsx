@@ -1,13 +1,25 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { getTodayPhrase, MOCK_STATS, LAST_MISTAKES } from '../../data/mockData'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { getMissionForToday } from '../../services/missions'
-import { getLocalizedMeaning } from '../../services/learningContent'
+import { getLocalizedMeaning } from '../../services/localizedMeaning'
 import { ChattoMascot } from '../mascot/ChattoMascot'
-import { ARC, getEpisode } from '../../learning/episodes/index.js'
+// Home names episodes and shows their keys; it never renders their content
+import { EPISODE_SKELETON as ARC, SKELETON_BY_ID } from '../../learning/curriculum/preA1Skeleton.generated.js'
+
+const getEpisode = (id) => SKELETON_BY_ID[id] || null
 import { planDay, arcProgress } from '../../learning/engine/planner.js'
 import { derivePreA1Readiness, readinessFocus } from '../../learning/curriculum/readiness.js'
+import { preA1Status } from '../../learning/curriculum/graduation.js'
+
+/*
+ * Whether this browser has already shown the graduation moment. It is UI state
+ * on purpose: a learner's English does not depend on which device they opened,
+ * and putting it in the milestone would make a pedagogical record answer to a
+ * render.
+ */
+const CELEBRATION_KEY = 'lc2-pre-a1-celebrated'
 import { DurationPicker } from '../session/DurationPicker'
 import { sessionHasReview, sessionHeadline, sessionProgress } from '../../learning/engine/session.js'
 import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
@@ -34,6 +46,36 @@ export function TodayView() {
    * answer. Derived here, never stored, and never shown as a score.
    */
   const readiness = useMemo(() => derivePreA1Readiness(loadLearnerModel()), [episodeArcVersion])
+  /*
+   * Graduated, consolidating, or still on the road. `graduated` is a fact about
+   * a moment that happened; the other two describe today, so only they move.
+   */
+  const levelState = useMemo(() => preA1Status(loadLearnerModel()).state, [episodeArcVersion])
+  const graduated = levelState === 'graduated'
+  const milestone = useMemo(() => preA1Status(loadLearnerModel()).milestone, [episodeArcVersion])
+  /*
+   * Seeing the celebration is a fact about this browser, not about the learner's
+   * English — so it is kept here and never written into the milestone, which
+   * would make a pedagogical record depend on whether a screen had rendered.
+   */
+  const [celebrating, setCelebrating] = useState(false)
+  const celebrationClaimed = useRef(false)
+  useEffect(() => {
+    if (!graduated || celebrationClaimed.current) return
+    celebrationClaimed.current = true
+    try {
+      if (localStorage.getItem(CELEBRATION_KEY) === '1') return
+      localStorage.setItem(CELEBRATION_KEY, '1')
+    } catch { return /* private mode: say nothing rather than say it twice */ }
+    setCelebrating(true)
+  }, [graduated])
+  const graduatedOn = useMemo(() => {
+    if (!milestone?.graduatedAt) return null
+    try {
+      return new Intl.DateTimeFormat(interfaceLanguageInfo?.code || nativeLanguageInfo?.code || 'en',
+        { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date(milestone.graduatedAt))
+    } catch { return new Date(milestone.graduatedAt).toISOString().slice(0, 10) }
+  }, [milestone, interfaceLanguageInfo, nativeLanguageInfo])
   const focus = readinessFocus(readiness)
   const focusLine = !focus ? null
     : focus.kind === 'strengthen_skill' ? t('preA1FocusSkill').replace('{skill}', t((ARC.find(e => e.canDoId === focus.canDoId) || {}).canDoNameKey || 'preA1LevelBadge'))
@@ -145,18 +187,39 @@ export function TodayView() {
         {!planEpisode && readiness.curriculumComplete && (
           <div className="card-lift w-full rounded-3xl p-5 mb-6 flex items-center gap-4 animate-fade-up"
             style={{ animationDelay: '0.02s', background: 'linear-gradient(135deg, var(--violet-soft), var(--blue-soft))', border: '1.5px solid var(--violet)' }}>
-            <ChattoMascot mood={readiness.ready ? 'celebrate' : 'welcoming'} size={56} decorative intensity="ambient" />
+            <ChattoMascot mood={graduated || readiness.ready ? 'celebrate' : 'welcoming'} size={56}
+              decorative intensity={celebrating ? 'lively' : 'ambient'} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
                 {t('preA1LevelBadge')} · {arc.completed}/{arc.total}
               </p>
               <p lang={nativeLanguageInfo.base} style={{ fontSize: '1.0625rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25, marginTop: 2 }}>
-                {readiness.ready ? t('preA1ReadyTitle') : t('preA1DoneTitle')}
+                {graduated ? t('preA1GraduatedTitle') : readiness.ready ? t('preA1ReadyTitle') : t('preA1DoneTitle')}
               </p>
               <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45, marginTop: 3 }}>
-                {readiness.ready ? t('preA1ReadyBody') : t('preA1DoneBody')}
+                {graduated ? t('preA1GraduatedBody') : readiness.ready ? t('preA1ReadyBody') : t('preA1DoneBody')}
               </p>
-              {!readiness.ready && focusLine && (
+              {graduated && graduatedOn && (
+                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--violet)', marginTop: 5 }}>
+                  {t('preA1GraduatedOn').replace('{date}', graduatedOn)}
+                </p>
+              )}
+              {/*
+                * Reviews falling due after graduating is practice, and is said as
+                * practice. A graduate is never told they have become un-ready.
+                */}
+              {graduated && readiness.overdueReviews > 0 && (
+                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginTop: 5 }}>
+                  {t('preA1GraduatedReviewsDue')}
+                </p>
+              )}
+              {graduated && celebrating && (
+                <p role="status" lang={nativeLanguageInfo.base}
+                  style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--violet)', marginTop: 6 }}>
+                  {t('preA1CelebrationNote')}
+                </p>
+              )}
+              {!graduated && !readiness.ready && focusLine && (
                 <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--violet)', marginTop: 6 }}>{focusLine}</p>
               )}
             </div>
