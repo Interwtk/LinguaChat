@@ -12,6 +12,43 @@ Nothing at runtime reads this file. If the markdown and the code disagree, the c
 
 ---
 
+## The collections, and which number belongs to which
+
+Several counts describe this level and they are not the same count. Saying "the
+Garden has 72 items" or "the level teaches 59" would each be wrong in a way that
+is hard to notice, so each collection is named here with the code that answers
+for it. Every figure below is derived, never copied — regenerate them by reading
+the sources named in the last column.
+
+| collection | count | source of truth | what it is for |
+|---|---|---|---|
+| `SEED_VOCAB` — vocabulary catalogue | 72 | `src/data/vocabulary.js` | every entry the app can display, with a meaning in eight languages; one row per item, checked |
+| union of `episode.gardenItems` — granted by the curriculum | 59 | the seventeen episodes | the language a learner meets by playing; each grant enters the learner model at `seen`, and this is what the Memory Garden shows once they have played anything |
+| `itemsOf(...)` across all episodes — touched by a step | 49 | derived from the steps | items a step actually asks for or explains, as opposed to granted alongside |
+| `requiredLevelItems()` — required-core productive | 24 | `PRE_A1_EXIT_CRITERIA` × `productiveItemsOf` | the productive language the level cannot be left without; only these count towards the overdue-review limit |
+| `RECEPTIVE_ITEMS` | 4 | declared in `preA1Map.js` | met to be understood, never claimed as production |
+| `INCIDENTAL_ITEMS` | 8 | declared in `preA1Map.js` | scenery: real English the level does not own |
+| `learner.languageItems` | up to 59 | the learner model | what THIS learner has met, with a state each |
+
+The thirteen catalogue entries no episode grants are intentional, and each has a
+purpose recorded in code:
+
+- `im_pattern` and `whats_your_pattern` are patterns tracked **through the phrase
+  that carries them** (`PATTERN_COVERAGE` names `im` and `whats_your_name` as
+  their `trackedAs`), so they are described in the Garden's vocabulary but never
+  tracked separately. `check-curriculum-map` fails if a tracked phrase is not
+  actually produced somewhere.
+- nine entries — `happy`, `because`, `question`, `travel`, `morning`,
+  `yesterday`, `work`, `easy`, `today` — belong to `DEMO_GARDEN` in
+  `MemoryGarden.jsx`, the preview shown **only** to a learner whose Garden is
+  still empty. They are not Pre-A1 language and are never granted.
+- `music` and `games` are interest topics used for personalisation
+  (`interests.js`, `semanticContext.js`), not items to be learned.
+- `hello`, `name`, `fine`, `tired`, `help`, `water`, `coffee`, `tea`, `juice` and
+  `here_you_are` ARE granted — they appear in the 59 — and are listed here only
+  because they are met rather than produced.
+
+
 ## 1. The philosophy
 
 LinguaChat teaches **capabilities**, not lessons. An episode exists because a learner cannot yet do something they will need to do, and it ends when they have done it. The unit of progress is a can-do that survives outside the screen it was learned on.

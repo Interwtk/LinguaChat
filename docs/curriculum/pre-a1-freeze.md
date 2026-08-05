@@ -15,7 +15,8 @@ The level is finished. This says what that means, what was verified and how, and
 |---|---|
 | arcs | 6 — greetings, connect, choose, cafe, repair, things |
 | episodes | 17, in a fixed order, each teaching a fixed capability |
-| language | 74 items: 32 words, 12 patterns, 30 phrases |
+| vocabulary catalogue | 72 entries: 30 words, 12 patterns, 30 phrases |
+| granted by episodes | 59 of those 72 — see [pre-a1-map.md](pre-a1-map.md) for what the other 13 are for |
 | capability map | 18 covered, 2 fragile, 2 needing reuse, 5 optional, 6 deferred to A1 |
 | learner model | v7 |
 | evidence version | `pre_a1.v1` |
@@ -39,23 +40,33 @@ None of them is required to leave the level. They are visible on purpose: a stat
 
 **Automated, end to end, from a fresh model with no fixtures** (`check-pre-a1-journeys`):
 
-- a strong learner plays all seventeen episodes plus each day's reviews, earns every required capability, and graduates — 1000 XP, exactly seventeen rewarded runs, a Garden of 59 items with receptive language never claimed as production
+- a strong learner plays all seventeen episodes plus each day's reviews, earns every required capability, and graduates — 1000 XP, exactly seventeen rewarded runs, 59 tracked language items with receptive language never claimed as production
 - an assisted learner finishes the curriculum, is **not** ready on the evidence, and recovers through the planner's own recommendations in nine sessions without replaying the level
 - the support level moves with evidence and every high-support episode says why
 
-**Automated, the rest of the product:** 40 checks (`npm run check:all`), 323 backend tests (`pytest`). These cover the episode engine and replay, session planning and recovery, hybrid evaluation and its fallbacks, semantic compatibility, the Memory Garden and learning states, learner facts, activity preferences, i18n across eight languages, structural/visual invariants, edge cases including corrupt storage, and the bundle boundaries.
+**Automated, the rest of the product:** 41 check scripts (the invocations listed in `check:all` in `package.json`), 323 backend tests (`pytest`). These cover the episode engine and replay, session planning and recovery, hybrid evaluation and its fallbacks, semantic compatibility, the Memory Garden and learning states, learner facts, activity preferences, i18n across eight languages, structural/visual invariants, edge cases including corrupt storage, and the bundle boundaries.
 
-**Manually, in a real browser** (dev server and the served production build):
+**Manually, in a real browser** — the closure audit, on the dev server and on the served production build:
 
-- the three graduation states on Home, in Spanish and in Arabic (RTL) at 390 px, with no horizontal overflow
-- the celebration appearing once and not again on reload, with the graduation and its date intact
-- a graduate with reviews due told about practice rather than about being un-ready
-- the served build booting with the entry chunk alone, and fetching the curriculum chunk at the moment an episode starts
+- the three graduation states on Home, in Spanish, Japanese and Arabic (RTL), at 390, 768 and 1440 px, with no horizontal overflow and no clipped controls
+- the celebration shown once and not again after a full session and a reload, with the graduation and its date intact
+- Quick, Standard and Deep sessions played turn by turn: the blocks the planner chose, the evidence each recorded, and clean boundaries between them — no inherited correction, input or hint
+- a session after finishing the seventeen: consolidation rather than an eighteenth episode, and a blocked capability moving to `can_do` from one activity
+- a session after graduating: reviews only, no second graduation, no repeated celebration, no door to A1
+- two browser tabs saving in sequence: both learners' evidence survives the merge, one milestone, the timestamp unmoved
+- the backend stopped: the deterministic path still evaluates and records; an answer that would escalate falls back conservatively and the screen stays usable
+- a slow provider (`LINGUACHAT_FAKE_DELAY=6`) and a provider timeout (`LINGUACHAT_FAKE_PROVIDER=timeout`): one request per submission however many times the button is pressed, one verdict, no duplicated evidence, and the learner can try again
+- interface Spanish with native Japanese: chrome in Spanish, meanings in Japanese, the English target untouched
+- the curriculum chunk removed from the served build: a recoverable message in the learner's language, progress untouched, and the retry loading the episode — during a first entry and during a replay, with XP, runs and the milestone unchanged throughout
 
-**Not done manually this sprint:** a turn-by-turn browser walk of all seventeen episodes, Quick/Standard/Deep sessions by hand, provider timeout and backend-down by hand, the 768 px and 1440 px viewports, Japanese, and mixed-locale checks. Those paths are covered by the automated checks above and were walked by hand in the sprints that built them; this sprint's manual coverage was aimed at what it changed.
+**What the manual pass found.** Three real defects, all invisible to the automated journeys because a harness answers the objective rather than reading the screen: the session runner inferred "used help" from the wording of the reply; both surfaces counted a sentence retyped from a correction as unaided production; and the sixth arc's three intents had no prompt or model answer in the session runner, so consolidating either of the capabilities it teaches showed a greeting and graded an identification. Each is fixed, each has a regression, and each was re-verified in the browser.
 
 ## The decision
 
-Pre-A1 is **frozen for content** and **open for correction**. No new episodes, arcs, capabilities, or vocabulary. Bugs in what exists are still bugs, and a real one may be fixed — three were in this sprint, and each is described where it was fixed.
+**PRE-A1 STATUS: FROZEN / FUNCTIONAL BASELINE** — closure audit passed on 2026-08-05.
+
+Frozen means the required content is closed and the baseline is validated: graduation is reachable by playing, consolidation is reachable for a learner who leans on help, and the architecture is settled enough to design A1 against. It does not mean bug-free for ever, it does not forbid fixing regressions, and it does not mean A1 exists — A1 is **not implemented**, and Supabase remains **deferred**.
+
+No new episodes, arcs, capabilities, or vocabulary. Bugs in what exists are still bugs, and a real one may be fixed — three were found by the closure audit, and each is described where it was fixed.
 
 The question the sprint set out to answer was whether a person can start from zero, walk Pre-A1, consolidate what they need, and graduate legitimately with real evidence — without impossible fixtures, without losing state, and without the browser downloading the whole curriculum before the first screen. All four now hold, and each is held by a check that fails if it stops holding.
