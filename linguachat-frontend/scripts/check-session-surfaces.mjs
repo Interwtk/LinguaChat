@@ -210,4 +210,36 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+/* ---- help is what the learner pressed, not what they happened to write ---- */
+{
+  const runner = readFileSync(new URL('../src/components/session/SessionRunner.jsx', import.meta.url), 'utf8')
+  const shell = readFileSync(new URL('../src/components/episode/EpisodeShell.jsx', import.meta.url), 'utf8')
+
+  /*
+   * The runner used to decide this by comparing the reply with the model answer.
+   * A learner who produced exactly the right sentence out of their own head was
+   * recorded as helped — and on a recall or consolidation block, which shows no
+   * suggestion at all, that reading is impossible: it silently threw away the one
+   * piece of unaided evidence the block existed to collect, left the item short of
+   * `can_use`, and kept its review coming back the next day for ever.
+   */
+  for (const [name, src] of [['the session runner', runner], ['the episode shell', shell]]) {
+    assert.ok(!/fromSuggestion:\s*reply === modelAnswer/.test(src),
+      `${name} must not infer help from the wording of the answer`)
+    assert.ok(/setUsedSuggestion\(true\)/.test(src), `${name} must record the press itself`)
+    /*
+     * And a correction counts too. A wrong answer is answered by spelling the
+     * sentence out — support arriving, as it should — but retyping what was just
+     * displayed is not production from memory, and two of those used to be enough
+     * to move a language item to `can_use`.
+     */
+    assert.ok(/const answerWasShown = \(\) => usedSuggestion \|\|/.test(src),
+      `${name} must treat an answer shown by a correction as help too`)
+    assert.ok(/fromSuggestion:\s*answerWasShown\(\)/.test(src), `${name} must submit what it observed`)
+    assert.ok(!/fromSuggestion: usedSuggestion[,)\s]/.test(src),
+      `${name} must not look only at the suggestion button`)
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)

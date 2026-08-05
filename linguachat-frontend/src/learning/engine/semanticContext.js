@@ -133,7 +133,14 @@ export const NEUTRAL_CATALOG = {
   drink: [typedValue('water', 'water', 'drink'), typedValue('tea', 'tea', 'drink'), typedValue('coffee', 'coffee', 'drink')],
   food: [typedValue('sandwich', 'a sandwich', 'food')],
   consumable: [typedValue('water', 'water', 'drink')],
-  generic_object: [typedValue('water', 'water', 'drink')],
+  /*
+   * Objects, not drinks. This slot used to fall back to water, so a turn that
+   * asked for an object produced "It's a water." and — worse, since water
+   * cannot be counted — "Two waters." These three are the objects episode 16
+   * already teaches, and they carry their article for the sentences that need
+   * one.
+   */
+  generic_object: [typedValue('book', 'a book', 'generic_object'), typedValue('phone', 'a phone', 'generic_object'), typedValue('bag', 'a bag', 'generic_object')],
   interest: [typedValue('music', 'music', 'interest'), typedValue('movies', 'movies', 'interest'), typedValue('games', 'games', 'interest')],
   activity: [typedValue('listen_music', 'listen to music', 'activity')],
   place: [],       // a place is the learner's own; never invent one

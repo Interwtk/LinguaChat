@@ -185,6 +185,14 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
   const guardRef = useRef(createSubmissionGuard())  // double-submit + late-response
   const abortRef = useRef(null)       // cancels the in-flight remote request
   const attemptsRef = useRef(0)       // attempts on the current step
+  /*
+   * The answer having been on the screen — the suggestion taken, or a correction
+   * that spelled the sentence out after a wrong attempt — means this turn is not
+   * unaided production, however correctly it ends. Retyping what was just shown
+   * used to count towards `can_use`, which is meant to mean they can say it
+   * themselves. `attemptsRef` is exactly "they have already had a go here".
+   */
+  const answerWasShown = () => usedSuggestion || attemptsRef.current > 0
   const replyInputRef = useRef(null)
 
   // Cancel any in-flight evaluation if the learner leaves mid-review.
@@ -848,8 +856,8 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
             )}
 
             <div className="flex items-end gap-2 rounded-2xl p-2.5" aria-busy={reviewing} style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', opacity: reviewing ? 0.7 : 1 }}>
-              <input ref={replyInputRef} value={reply} onChange={e => setReply(e.target.value)} disabled={reviewing} lang="en" dir="ltr" onKeyDown={e => { if (e.key === 'Enter' && reply.trim() && !reviewing) submitFree(step.evalKind, step.itemIds, { fromSuggestion: usedSuggestion }) }} placeholder={t('ep1TypeReply')} aria-label={t(step.instructionKey)} className="chat-input flex-1 bg-transparent text-sm" style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
-              <button onClick={() => submitFree(step.evalKind, step.itemIds, { fromSuggestion: usedSuggestion })} disabled={!reply.trim() || reviewing} className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-white transition-all active:scale-[0.98]" style={{ background: reply.trim() && !reviewing ? 'var(--blue)' : 'var(--border)' }}>{t('ep1Send')}</button>
+              <input ref={replyInputRef} value={reply} onChange={e => setReply(e.target.value)} disabled={reviewing} lang="en" dir="ltr" onKeyDown={e => { if (e.key === 'Enter' && reply.trim() && !reviewing) submitFree(step.evalKind, step.itemIds, { fromSuggestion: answerWasShown() }) }} placeholder={t('ep1TypeReply')} aria-label={t(step.instructionKey)} className="chat-input flex-1 bg-transparent text-sm" style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
+              <button onClick={() => submitFree(step.evalKind, step.itemIds, { fromSuggestion: answerWasShown() })} disabled={!reply.trim() || reviewing} className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-white transition-all active:scale-[0.98]" style={{ background: reply.trim() && !reviewing ? 'var(--blue)' : 'var(--border)' }}>{t('ep1Send')}</button>
             </div>
             {praise && <p role="status" lang={nativeLang} className="mt-2" style={{ fontSize: '0.8125rem', color: 'var(--green)', fontWeight: 700 }}>{t(praise)}</p>}
           </div>

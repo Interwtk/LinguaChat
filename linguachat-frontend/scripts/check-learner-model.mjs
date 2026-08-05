@@ -77,6 +77,51 @@ check('confirming owned language earns the ladder', days(ownedSched) === 8)
 const freshSched = scheduleReview({ streak: 2, learningState: 'understood', independentCorrect: 0 }, { correct: true, independent: false })
 check('being helped through new language still means tomorrow', days(freshSched) === 1)
 
+/* ---- an unrecognised version keeps what it came with ---- */
+/*
+ * Everything the migrator does not know by name used to be treated as v1, and
+ * the v1 path rebuilds a model from can-dos and language items alone. That is
+ * right for a real v1 payload, which had nothing else, and wrong for anything
+ * else carrying an unfamiliar version: a model written by a newer build, or one
+ * whose version field was lost or truncated on the way to storage. Those are
+ * complete, and rebuilding them threw away every episode state, every run, the
+ * learner's facts and their graduation — and cleared the `awarded` flags, so the
+ * level could have been paid for a second time.
+ */
+const fullModel = {
+  version: 7,
+  episodes: { first_greeting: { status: 'completed', stepIndex: 8, awarded: true } },
+  languageItems: { im: { status: 'can_do', learningState: 'can_use', correct: 4, incorrect: 0, independentCorrect: 2, guidedCorrect: 1, recognisedCorrect: 0, streak: 2, nextReviewAt: '2026-09-01T00:00:00.000Z', lastSeenAt: '2026-08-01T00:00:00.000Z' } },
+  canDo: { introduce_self: { status: 'can_do', attempts: 3, successes: 2, independentSuccesses: 2, contexts: ['first_greeting'], lastPracticedAt: '2026-08-01T00:00:00.000Z' } },
+  episodeRuns: { first_greeting: [{ runId: 'r1', episodeId: 'first_greeting', mode: 'first_run', rewarded: true, independentEvidence: true, startedAt: '2026-08-01T00:00:00.000Z', endedAt: '2026-08-01T00:09:00.000Z' }] },
+  learnerFacts: [{ type: 'like', value: 'music', sourceEpisodeId: 'what_you_like', at: '2026-08-01T00:00:00.000Z' }],
+  levelMilestones: { pre_a1: { graduatedAt: '2026-08-01T00:00:00.000Z', evidenceVersion: 'pre_a1.v1', source: 'episode_run' } },
+  recurringErrors: [], scaffoldByEpisode: { first_greeting: 'low' }, facts: {},
+  activityPreferences: {}, recentFormats: [], recentInterests: [], signalLog: [], activeRun: null,
+}
+
+for (const version of [0, undefined, 'seven', 99, 8]) {
+  const stored = { ...JSON.parse(JSON.stringify(fullModel)), version }
+  if (version === undefined) delete stored.version
+  const m = migrateLearnerModel(stored)
+  const label = `version=${String(version)}`
+  check(`${label}: episode completion survives`, Object.keys(m.episodes).length === 1 && m.episodes.first_greeting.status === 'completed')
+  check(`${label}: the reward is not payable twice`, m.episodes.first_greeting.awarded === true)
+  check(`${label}: the run history survives`, Object.values(m.episodeRuns).flat().length === 1)
+  check(`${label}: what the learner told Lingua survives`, (m.learnerFacts || []).length === 1)
+  check(`${label}: the graduation survives`, Boolean(m.levelMilestones?.pre_a1?.graduatedAt))
+}
+
+/* A payload that really looks like v1 still takes the v1 path. */
+const fromV1 = migrateLearnerModel({
+  version: 1,
+  canDo: { introduce_self: { status: 'can_do', successfulAttempts: 3, lastPracticedAt: 't' } },
+  languageItems: { hi: { status: 'known', correct: 2 } },
+  preferredScaffold: 'medium',
+})
+check('a real v1 model is still translated', fromV1.canDo.introduce_self.successes === 3
+  && fromV1.languageItems.hi.status === 'can_do'
+  && fromV1.scaffoldByEpisode.first_greeting === 'medium')
 /* ---- scaffolding ---- */
 check('two clean successes lower scaffold high->medium', getRecommendedScaffold('high', { cleanSuccessStreak: 2 }) === 'medium')
 check('a failure raises scaffold low->medium', getRecommendedScaffold('low', { justFailed: true }) === 'medium')

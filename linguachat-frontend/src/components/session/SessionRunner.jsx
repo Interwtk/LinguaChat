@@ -7,7 +7,7 @@ import { FormatFeedback } from '../episode/FormatFeedback'
 import { MiniStory } from './MiniStory'
 import { getEpisode } from '../../learning/episodes/index.js'
 import { evaluateEpisodeResponse } from '../../learning/engine/hybridEvaluation.js'
-import { evaluateFree, shouldEscalate } from '../../learning/engine/responseEvaluation.js'
+import { evaluateFree, shouldEscalate, TAUGHT_NUMBERS } from '../../learning/engine/responseEvaluation.js'
 import { repairKindForItem } from '../../learning/engine/session.js'
 import { createSubmissionGuard } from '../../learning/engine/submitGuard.js'
 import { partnerFor, placeFor } from '../../learning/engine/variation.js'
@@ -18,7 +18,7 @@ import { currentBlock, sessionProgress, dayKeyFor } from '../../learning/engine/
 import {
   loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, markRecurringError, recordActivitySignalOnce,
 } from '../../learning/engine/learnerModel.js'
-import { selectCompatibleContext, asSubjectValue } from '../../learning/engine/semanticContext.js'
+import { selectCompatibleContext, asSubjectValue, thingById } from '../../learning/engine/semanticContext.js'
 import { coreItemsOfIntent } from '../../learning/curriculum/preA1Map.js'
 import { SEED_VOCAB_BY_ID } from '../../data/vocabulary'
 import {
@@ -58,6 +58,14 @@ const MODEL_ANSWER = {
   respond_anything_else: () => 'No, thank you.',
   finish_order: () => 'That’s all, thanks.',
   cafe_order_conversation: (v) => `Can I have ${v.item}, please? That’s all, thanks.`,
+  /*
+   * Sixth arc. Without these three a block carrying one of them fell back to the
+   * introduction: the learner was asked to greet somebody and graded on
+   * identifying an object, which no answer could satisfy.
+   */
+  ask_what_thing: () => 'What’s this?',
+  identify_thing: (v) => `It’s ${v.thingValue}.`,
+  use_quantity: (v) => `${v.countWord[0].toUpperCase()}${v.countWord.slice(1)}.`,
   // fifth arc — the strategy the block practises decides the sentence
   repair_request: (v) => REPAIR_TARGET[v.repairKind] || REPAIR_TARGET.signal_nonunderstanding,
   close_encounter: () => 'Bye.',
@@ -102,6 +110,10 @@ const PROMPT = {
   respond_anything_else: () => 'Anything else?',
   finish_order: () => 'Anything else?',
   cafe_order_conversation: () => 'Hi! What can I get for you?',
+  // sixth arc — Lingua holds something up, or offers a countable number of them
+  ask_what_thing: () => 'Look — I have something here.',
+  identify_thing: () => 'Now you show me one. What’s this?',
+  use_quantity: (v) => `I have some ${v.thingPlural} for you. How many?`,
 }
 
 /*
@@ -114,6 +126,16 @@ const PROMPT = {
  * second evaluation path — and formats that give the answer away are recorded
  * as assisted, so variety can never manufacture mastery.
  */
+/*
+ * Which object, and how many, a sixth-arc turn is about. Deterministic from the
+ * block so the prompt, the answer and the evaluation cannot disagree, and always
+ * countable so "How many?" is a fair question.
+ */
+const COUNTABLE_FOR_SESSIONS = ['book', 'phone', 'bag', 'cup']
+const seedNumber = (seed) => [...String(seed)].reduce((n, ch) => (n * 31 + ch.charCodeAt(0)) % 100000, 7)
+const countableThing = (seed) => thingById(COUNTABLE_FOR_SESSIONS[seedNumber(seed) % COUNTABLE_FOR_SESSIONS.length])
+const countFor = (seed) => (seedNumber(`${seed}:count`) % 9) + 2   // two … ten
+
 /* Words only, for comparing a target phrase against the sentence on screen. */
 const plainText = (text) => String(text || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim()
 
@@ -187,6 +209,23 @@ function PracticeTurn({ block, topic = null, onDone }) {
       interests: [ctx.targetNoun],
       seed: `session:${kind}:${name}`,
     })?.value || 'water',
+    /*
+     * The object and the number a sixth-arc turn is about. Both are picked from
+     * the countable things the arc teaches, deterministically from the block, so
+     * the prompt, the model answer and the evaluator all describe the same turn —
+     * and so "how many" is never asked about something uncountable.
+     */
+    ...(() => {
+      const thing = countableThing(`session:${kind}:${name}`)
+      const count = countFor(`session:${kind}:${name}`)
+      return {
+        thingId: thing.id,
+        thingValue: `${thing.article} ${thing.singular}`,
+        thingPlural: thing.plural,
+        count,
+        countWord: TAUGHT_NUMBERS[count - 1],
+      }
+    })(),
   }
   const nativeLang = nativeLanguageInfo.base
 
@@ -198,6 +237,22 @@ function PracticeTurn({ block, topic = null, onDone }) {
   const [buildOrder, setBuildOrder] = useState([])
   const [gap, setGap] = useState('')
   const [chosen, setChosen] = useState(null)
+  /*
+   * Whether this block's answer was taken from the suggestion. It has to be the
+   * press, not a comparison with the model answer: a learner who says exactly
+   * the right sentence unaided was otherwise recorded as helped — and on a block
+   * that shows no suggestion at all, that reading is not merely unkind, it is
+   * impossible, and it lost the very evidence the block was created to collect.
+   */
+  const [usedSuggestion, setUsedSuggestion] = useState(false)
+  /*
+   * Whether the answer has been on the screen at all during this block: either
+   * the learner took the suggestion, or they got it wrong and the correction
+   * spelled the sentence out. Retyping something just displayed is not unaided
+   * production, and counting it as such was a way to reach `can_use` without
+   * ever having said the sentence from memory.
+   */
+  const answerWasShown = () => usedSuggestion || Boolean(retry)
   const guardRef = useRef(createSubmissionGuard())
   const abortRef = useRef(null)
   const inputRef = useRef(null)
@@ -279,7 +334,15 @@ function PracticeTurn({ block, topic = null, onDone }) {
     // name something the prompt never mentioned.
     const stepShape = { type: 'free_reply', format }
     const independent = isIndependentEvidence({ step: stepShape, assistanceUsed: fromSuggestion, correct: true })
-    const evalCtx = { name, independent, turnContext, place: vars.place, targetNoun: vars.noun, targetThing: vars.item, ...(repairKind ? { repairKind } : {}) }
+    /*
+     * A quantity turn is graded against a specific thing and number, and an
+     * identification against a specific object. Passing them keeps the verdict
+     * about the turn the learner was actually shown.
+     */
+    const thingContext = kind === 'use_quantity' || kind === 'identify_thing'
+      ? { targetThing: vars.thingId, targetCount: vars.count, quantityForm: 'bare' }
+      : { targetThing: vars.item }
+    const evalCtx = { name, independent, turnContext, place: vars.place, targetNoun: vars.noun, ...thingContext, ...(repairKind ? { repairKind } : {}) }
     const preview = evaluateFree(kind, text, evalCtx)
     const controller = new AbortController()
     abortRef.current = controller
@@ -290,7 +353,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
       result = await evaluateEpisodeResponse({
         episode: null, step: { evalKind: kind, itemIds: block.payload?.itemId ? [block.payload.itemId] : [] },
         learnerResponse: text, learnerName: name, place: vars.place,
-        targetNoun: vars.noun, targetThing: vars.item,
+        targetNoun: vars.noun, ...thingContext,
         // the strategy travels to Lingua too, or the remote grades another question
         ...(repairKind ? { repairKind } : {}),
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
@@ -417,7 +480,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
         * the model sentence, which is support arriving when it is needed.
         */}
       {!reviewing && isOpenFormat && showsModelAnswer(scaffold) && block.payload?.requiredPractice !== 'recall' && (
-        <button type="button" onClick={() => { setReply(modelAnswer); mark('assistance') }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]"
+        <button type="button" onClick={() => { setReply(modelAnswer); setUsedSuggestion(true); mark('assistance') }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]"
           style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}>
           {t('ep1UseSuggestion')}: <En>{modelAnswer}</En>
         </button>
@@ -435,10 +498,10 @@ function PracticeTurn({ block, topic = null, onDone }) {
       {isOpenFormat && (
         <div className="flex items-end gap-2 rounded-2xl p-2.5" aria-busy={reviewing} style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', opacity: reviewing ? 0.7 : 1 }}>
           <input ref={inputRef} value={reply} onChange={e => setReply(e.target.value)} disabled={reviewing} lang="en" dir="ltr"
-            onKeyDown={e => { if (e.key === 'Enter' && reply.trim() && !reviewing) submit({ fromSuggestion: reply === modelAnswer }) }}
+            onKeyDown={e => { if (e.key === 'Enter' && reply.trim() && !reviewing) submit({ fromSuggestion: answerWasShown() }) }}
             placeholder={t('ep1TypeReply')} aria-label={t('sessionTurnInstruction')} className="chat-input flex-1 bg-transparent text-sm"
             style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
-          <button onClick={() => submit({ fromSuggestion: reply === modelAnswer })} disabled={!reply.trim() || reviewing}
+          <button onClick={() => submit({ fromSuggestion: answerWasShown() })} disabled={!reply.trim() || reviewing}
             className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-white transition-all active:scale-[0.98]"
             style={{ background: reply.trim() && !reviewing ? 'var(--blue)' : 'var(--border)' }}>{t('ep1Send')}</button>
         </div>

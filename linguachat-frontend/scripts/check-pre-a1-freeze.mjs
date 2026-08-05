@@ -20,7 +20,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { ARC, ARCS, getEpisode } from '../src/learning/episodes/index.js'
 import { PRE_A1_EXIT_CRITERIA, CAN_DO_INTENT, LEVEL, prerequisiteChain, intentsForEpisode } from '../src/learning/curriculum/preA1Map.js'
 import { capabilitiesWithStatus, CAPABILITY_MAP, FIRST_A1_CAPABILITY, LAST_PRE_A1_CAPABILITY } from '../src/learning/curriculum/preA1Audit.js'
-import { SEED_VOCAB } from '../src/data/vocabulary.js'
+import { SEED_VOCAB, SEED_VOCAB_BY_ID } from '../src/data/vocabulary.js'
 import { createLearnerModel } from '../src/learning/engine/learnerModel.js'
 import { buildSessionPlan, DURATION_ORDER } from '../src/learning/engine/session.js'
 import { derivePreA1Readiness } from '../src/learning/curriculum/readiness.js'
@@ -72,10 +72,22 @@ const FROZEN = [
 /* ---- 2) nothing has been added, and nothing is orphaned ---- */
 {
   // the language the level ships with, pinned so nothing new can slip in quietly
-  assert.equal(SEED_VOCAB.length, 74, `the level ships 74 items of language, found ${SEED_VOCAB.length}`)
+  assert.equal(SEED_VOCAB.length, 72, `the level ships 72 entries of language, found ${SEED_VOCAB.length}`)
   const byKind = SEED_VOCAB.reduce((acc, v) => ({ ...acc, [v.kind]: (acc[v.kind] || 0) + 1 }), {})
-  assert.deepEqual(byKind, { word: 32, pattern: 12, phrase: 30 },
+  assert.deepEqual(byKind, { word: 30, pattern: 12, phrase: 30 },
     `the mix of words, patterns and phrases is frozen too: ${JSON.stringify(byKind)}`)
+  /*
+   * One row per word. `like` and `need` were each in the catalogue twice — an old
+   * entry among the demo words and the one the third arc added when it began
+   * teaching them. `SEED_VOCAB_BY_ID` is last-wins, so the duplicates changed
+   * nothing except every count taken from the catalogue, which is how "74 items"
+   * came to be quoted for a level that has 72.
+   */
+  const ids = SEED_VOCAB.map(v => v.id)
+  const duplicated = ids.filter((id, i) => ids.indexOf(id) !== i)
+  assert.deepEqual(duplicated, [], `the catalogue must hold each item once: ${duplicated.join(', ')}`)
+  assert.equal(Object.keys(SEED_VOCAB_BY_ID).length, SEED_VOCAB.length,
+    'and the lookup must see every entry')
   assert.equal(LEVEL, 'pre_a1')
 
   // every capability the map talks about is taught by one of the seventeen

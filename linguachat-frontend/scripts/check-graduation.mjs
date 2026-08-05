@@ -95,19 +95,28 @@ const graduatedAtMs = catchUp.endedAt
 
 /* ---- 4) idempotent, and it pays for nothing ---- */
 {
-  const xpBefore = graduate.xp
-  const gardenBefore = Object.keys(graduate.languageItems).length
-  const runsBefore = Object.values(graduate.episodeRuns).flat().length
   const stamp = preA1Milestone(graduate).graduatedAt
+  /*
+   * Everything except the milestone, snapshotted. This used to compare
+   * `model.xp` before and after — and the learner model has no `xp` field, so it
+   * compared undefined with undefined and proved nothing. XP lives in
+   * localProgress, which the reconciler is never handed; what can be asserted
+   * here is stronger anyway: reconciling changes NOTHING but `levelMilestones`.
+   */
+  const withoutMilestones = (model) => {
+    const { levelMilestones, ...rest } = model
+    return JSON.stringify(rest)
+  }
+  const before = withoutMilestones(graduate)
 
   for (let i = 0; i < 10; i += 1) {
     reconcileLevelMilestones(graduate, { atMs: graduatedAtMs + i * DAY, source: 'daily_session' })
   }
   assert.equal(preA1Milestone(graduate).graduatedAt, stamp, 'the date must not move')
   assert.equal(Object.keys(graduate.levelMilestones).length, 1, 'and there must be exactly one milestone')
-  assert.equal(graduate.xp, xpBefore, 'graduating must not pay XP')
-  assert.equal(Object.keys(graduate.languageItems).length, gardenBefore, 'nor grow the Garden')
-  assert.equal(Object.values(graduate.episodeRuns).flat().length, runsBefore, 'nor file a run')
+  assert.equal(withoutMilestones(graduate), before,
+    'graduating must change nothing else: no XP, no Garden item, no run, no signal')
+  assert.equal('xp' in graduate, false, 'and XP is not the learner model’s to award — it lives in localProgress')
   ok()
 }
 

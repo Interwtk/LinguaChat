@@ -254,6 +254,26 @@ function migrate(parsed) {
     m.languageItems = upgradeLanguageItems(m.languageItems)
     return m
   }
+  /*
+   * Anything else. A version this build does not recognise is NOT the oldest
+   * one: it may have been written by a newer build, or its `version` field may
+   * have been lost or truncated on the way to storage. Such a payload is
+   * complete, and the v1 rebuild below would silently discard every episode
+   * state, every run, the learner's facts and their graduation — and clear the
+   * `awarded` flags, so the level could be paid for twice.
+   *
+   * So unknown data is carried forward and sanitised, which is the same
+   * treatment the current version gets. Only something that really looks like
+   * v1 — no episodes, no runs, no milestones — takes the path below.
+   */
+  const looksLikeV1 = parsed.version === 1
+    || (!parsed.episodes && !parsed.episodeRuns && !parsed.levelMilestones)
+  if (!looksLikeV1) {
+    const carried = carryForward(parsed, { keepPreferences: true, keepSignals: true, keepRuns: true })
+    carried.languageItems = upgradeLanguageItems(carried.languageItems)
+    return carried
+  }
+
   // v1 -> v2 (never lose existing progress)
   const m = emptyModel()
   for (const [id, c] of Object.entries(parsed.canDo || {})) {
