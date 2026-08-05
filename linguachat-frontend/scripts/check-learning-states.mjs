@@ -214,7 +214,10 @@ const ok = () => { n++ }
   }
   const m = loadLearnerModel()
   assert.equal(m.version, MODEL_VERSION)
-  assert.equal(MODEL_VERSION, 6)
+  assert.equal(MODEL_VERSION, 7, 'v7 added the level milestones')
+  // and a learner arriving from v5 has NOT graduated retroactively
+  assert.deepEqual(m.levelMilestones, {},
+    'finishing the curriculum long ago is not a graduation; the reconciler earns it from evidence')
   // everything that existed is still there
   assert.equal(m.canDo.introduce_self.status, 'can_do')
   assert.equal(m.canDo.introduce_self.independentSuccesses, 2)
@@ -326,8 +329,19 @@ const ok = () => { n++ }
 // 16) a grant enters the learner model, so the Garden and reviews agree
 {
   const ctx = readFileSync(new URL('../src/context/AppContext.jsx', import.meta.url), 'utf8')
-  assert.match(ctx, /recordItemSeen\(model, id\)/, 'granting an item must record that it was met')
+  /*
+   * The grant enters the learner model at `seen`, which is what the Garden reads
+   * and what a review schedule needs. The ids arrive already resolved against the
+   * vocabulary by the screen that played the episode — that screen has the
+   * catalogue loaded anyway, and the first chunk no longer carries it for this.
+   */
+  assert.match(ctx, /recordItemSeen\(model, grant\.vocabId\)/, 'granting an item must record that it was met')
   assert.equal(/mastery: 0\.5/.test(ctx), false, 'a fixed mastery number must not be written any more')
+
+  const shell = readFileSync(new URL('../src/components/episode/EpisodeShell.jsx', import.meta.url), 'utf8')
+  assert.match(shell, /gardenItems \|\| \[\]\)\s*\n\s*\.filter\(id => SEED_VOCAB_BY_ID\[id\]\)/,
+    'and unknown ids must still be dropped where the vocabulary is known')
+  assert.match(shell, /awardEpisode\(ep, \{ grants \}\)/, 'the episode hands over what it granted')
   ok()
 }
 

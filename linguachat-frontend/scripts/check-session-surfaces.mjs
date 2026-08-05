@@ -151,10 +151,18 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
    * understanding, never of production, so the evidence kind travels with the
    * attempt instead of being inferred from the support level.
    */
-  assert.match(runner, /recordItemAttempt\(modelRef\.current, itemId, \{ correct, independent: false, evidenceKind: kind \}\)/,
+  /*
+   * The assertion moved from one item to the block's items: a recall or a
+   * consolidation block names a can-do rather than an item, and recorded
+   * nothing at all until this sprint. What must stay true is that a closed
+   * activity is never independent, whatever it records against.
+   */
+  assert.match(runner, /recordItemAttempt\(modelRef\.current, id, \{ correct, independent: false, evidenceKind: evidence \}\)/,
     'a closed activity shows the answer, so it is assisted by definition')
-  assert.match(runner, /const kind = evidenceKindForStep\(/,
+  assert.match(runner, /const evidence = evidenceKindForStep\(/,
     'a closed activity must say what kind of evidence it produced')
+  assert.match(runner, /const practisedItems = useMemo\(/,
+    'a block must record the language it practised, not only an explicit item id')
   ok()
 }
 

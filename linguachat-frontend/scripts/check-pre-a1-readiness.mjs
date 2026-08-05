@@ -29,6 +29,7 @@ import {
 import {
   beginEpisodeRun, completeEpisodeRun, resolveRunMode, runEarnsReward, RUN_REPLAY,
 } from '../src/learning/engine/episodeRuns.js'
+import { playEpisode, STRONG } from './lib/journey.mjs'
 
 let n = 0
 const ok = () => { n++ }
@@ -74,7 +75,12 @@ function learner({
       model.languageItems[item] = {
         status: itemState === 'can_use' ? 'can_do' : 'learning',
         learningState: itemState,
-        correct: 3, incorrect: 0, independentCorrect: itemState === 'can_use' ? 3 : 0,
+        /*
+         * Unaided PRODUCTIONS, which is what readiness counts. The knob is
+         * named `independent` because that is what it models: a learner with
+         * one unaided use has one, not "one completed episode".
+         */
+        correct: 3, incorrect: 0, independentCorrect: itemState === 'can_use' ? Math.max(independent, 0) : 0,
         guidedCorrect: 1, recognisedCorrect: 0, streak: 2,
         nextReviewAt: left-- > 0 ? iso(-2) : iso(5),
         lastSeenAt: iso(-1),
@@ -145,6 +151,23 @@ const verdict = (opts) => derivePreA1Readiness(learner(opts), { atMs: AT })
   assert.equal(almost.ready, false, 'one unaided success is luck')
   assert.ok(almost.reasonCodes.includes(READINESS_REASONS.INSUFFICIENT_INDEPENDENT_EVIDENCE))
   assert.equal(PRE_A1_EXIT_CRITERIA.independentEvidencePerCanDo, 2)
+
+  /*
+   * And the count comes from PRODUCTIONS, not from completed episodes. This is
+   * the rule that made the whole level ungraduatable: `independentSuccesses` is
+   * incremented once per episode, twelve of the thirteen required capabilities
+   * are taught by exactly one episode, so no first pass could ever reach two.
+   */
+  const played = learner({ independent: 2 })
+  for (const canDoId of PRE_A1_EXIT_CRITERIA.requiredCanDos) {
+    played.canDo[canDoId] = { ...played.canDo[canDoId], independentSuccesses: 1 }
+  }
+  const oncePerEpisode = derivePreA1Readiness(played, { atMs: AT })
+  assert.equal(oncePerEpisode.ready, true,
+    'a capability taught by one episode must be provable by producing its language twice')
+  const evidence = skillEvidence(played, 'identify_things')
+  assert.equal(evidence.completions, 1, 'one episode finished unaided')
+  assert.ok(evidence.independent >= 2, 'and two unaided productions of its language')
   ok()
 }
 
@@ -220,20 +243,32 @@ const verdict = (opts) => derivePreA1Readiness(learner(opts), { atMs: AT })
    * episode gives the unaided evidence that was missing — and no XP.
    */
   const model = learner({ independent: 1, conversation: false })
-  assert.equal(derivePreA1Readiness(model, { atMs: AT }).ready, false)
+  const before = derivePreA1Readiness(model, { atMs: AT })
+  assert.equal(before.ready, false)
 
   const episodeId = integratedEpisodes().at(-1)
   assert.equal(resolveRunMode(model, episodeId), RUN_REPLAY)
   assert.equal(runEarnsReward(RUN_REPLAY), false, 'a replay must not award XP again')
-  beginEpisodeRun(model, episodeId, { source: 'practice', atMs: AT })
-  for (const canDoId of PRE_A1_EXIT_CRITERIA.requiredCanDos) {
-    recordCanDoAttempt(model, canDoId, { success: true, independent: true, context: episodeId })
-  }
-  completeEpisodeRun(model, { independentEvidence: true, rewarded: false, atMs: AT })
+
+  /*
+   * Actually replayed, through the same harness the journeys use: the learner
+   * answers every turn themselves and the model records what they produced.
+   * Writing can-do counters by hand would have proved nothing about the rule.
+   */
+  const record = playEpisode(model, episodeId, { profile: STRONG, atMs: AT })
+  assert.equal(record.mode, RUN_REPLAY)
+  assert.equal(record.rewarded, false, 'a replay pays no XP')
+  assert.equal(record.xp, 0)
 
   const after = derivePreA1Readiness(model, { atMs: AT })
-  assert.equal(after.ready, true, `a replay should have been enough: ${after.reasonCodes.join(', ')}`)
-  assert.ok(after.integratedConversationEvidence.episodeId === episodeId)
+  assert.ok(after.integratedConversationEvidence, 'the replayed conversation is evidence')
+  assert.equal(after.integratedConversationEvidence.episodeId, episodeId)
+  assert.ok(after.fragileSkills.length < before.fragileSkills.length + 1,
+    'a replay must not make things worse')
+  // the capability that episode teaches is the one that moved
+  const taught = getEpisode(episodeId).canDoId
+  assert.ok(skillEvidence(model, taught).independent > skillEvidence(learner({ independent: 1 }), taught).independent,
+    'replaying an episode adds unaided productions of its own language')
   const runs = model.episodeRuns[episodeId] || []
   assert.equal(runs.filter(r => r.rewarded).length, 0, 'and it paid nothing')
   ok()

@@ -55,8 +55,27 @@ const failSched = scheduleReview({ streak: 3 }, { correct: false, independent: f
 check('fail -> review same day (0 days)', new Date(failSched.nextReviewAt).getTime() - Date.now() < 60000)
 const helpedSched = scheduleReview({ streak: 0 }, { correct: true, independent: false })
 check('helped success -> ~1 day', Math.round((new Date(helpedSched.nextReviewAt) - Date.now()) / 86400000) === 1)
-const indepSched = scheduleReview({ streak: 2 }, { correct: true, independent: true })
-check('independent streak -> ~4 days', Math.round((new Date(indepSched.nextReviewAt) - Date.now()) / 86400000) === 4)
+const days = (sched) => Math.round((new Date(sched.nextReviewAt) - Date.now()) / 86400000)
+check('first independent success -> ~2 days', days(scheduleReview({ streak: 0 }, { correct: true, independent: true })) === 2)
+check('independent streak -> ~4 days', days(scheduleReview({ streak: 1 }, { correct: true, independent: true })) === 4)
+/*
+ * The gap has to keep widening. It used to stop at four days, which meant a
+ * phrase answered correctly ten times running came back every four days for
+ * ever — across a level that tracks scores of items, a queue no learner could
+ * empty however many reviews they did.
+ */
+check('a longer streak earns a longer gap (8)', days(scheduleReview({ streak: 2 }, { correct: true, independent: true })) === 8)
+check('and a longer one still (16)', days(scheduleReview({ streak: 3 }, { correct: true, independent: true })) === 16)
+check('the ladder caps at a month', days(scheduleReview({ streak: 9 }, { correct: true, independent: true })) === 30)
+/*
+ * Every activity a review is made of shows the answer somewhere, so "helped"
+ * cannot mean "shaky" for language the learner already owns — otherwise owned
+ * language could never earn any gap at all.
+ */
+const ownedSched = scheduleReview({ streak: 2, learningState: 'can_use', independentCorrect: 3 }, { correct: true, independent: false })
+check('confirming owned language earns the ladder', days(ownedSched) === 8)
+const freshSched = scheduleReview({ streak: 2, learningState: 'understood', independentCorrect: 0 }, { correct: true, independent: false })
+check('being helped through new language still means tomorrow', days(freshSched) === 1)
 
 /* ---- scaffolding ---- */
 check('two clean successes lower scaffold high->medium', getRecommendedScaffold('high', { cleanSuccessStreak: 2 }) === 'medium')
