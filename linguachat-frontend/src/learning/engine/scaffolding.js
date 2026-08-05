@@ -32,7 +32,14 @@
  *   the counters that justify it clear a threshold — so a single good or bad
  *   turn cannot flip the experience back and forth.
  */
-import { ARC, getEpisode } from '../episodes/index.js'
+/*
+ * Support is decided from what a step DOES — its type, its intent, the items it
+ * asks for — so the skeleton is everything this engine needs, and the level's
+ * prose can stay with the screens that show it.
+ */
+import { EPISODE_SKELETON as ARC, SKELETON_BY_ID } from '../curriculum/preA1Skeleton.generated.js'
+
+const getEpisode = (id) => SKELETON_BY_ID[id] || null
 import { CAN_DO_INTENT, intentsForEpisode, skillPrerequisitesOf, targetsOf } from '../curriculum/preA1Map.js'
 
 /*
@@ -68,6 +75,7 @@ export const REASONS = {
   TARGET_CAN_USE: 'target_can_use',
   RECENT_INDEPENDENT_SUCCESS: 'recent_independent_success',
   RECENT_ASSISTANCE: 'recent_assistance',
+  FADED_AFTER_HELPED_SUCCESS: 'faded_after_helped_success',
   RECENT_RETRIES: 'recent_retries',
   FRAGILE_SKILL: 'fragile_skill',
   REVIEW_DUE: 'review_due',
@@ -361,6 +369,7 @@ export function makeScaffoldState(level, reasonCodes = []) {
     independentStreak: 0,
     assistedStreak: 0,
     retryPressure: 0,
+    helpedSuccesses: 0,
   }
 }
 
@@ -381,6 +390,7 @@ export function reviveScaffoldState(stored) {
     independentStreak: num(stored.independentStreak),
     assistedStreak: num(stored.assistedStreak),
     retryPressure: num(stored.retryPressure),
+    helpedSuccesses: num(stored.helpedSuccesses),
   }
 }
 
@@ -393,6 +403,23 @@ export function reviveScaffoldState(stored) {
  */
 export const INDEPENDENT_TO_RELAX = 2
 export const RETRY_PRESSURE_TO_SUPPORT = 2
+
+/*
+ * How many helped successes in a row mean the help has finished its job.
+ *
+ * Without this the support system was a one-way ratchet. Only unaided open
+ * production could relax it, and at high support the model answer is on screen
+ * by design — so a learner who took the help that was offered produced guided
+ * evidence for ever, was never once asked to try alone, and stayed at maximum
+ * support forever however well they were doing. There was no route from being
+ * helped to being trusted.
+ *
+ * Four correct turns in a row with help, and nothing going wrong, is not a
+ * learner who needs the answer shown a fifth time. The support steps back one
+ * level and gives them the chance to show what they can do; a single wrong
+ * answer or retry hands it straight back.
+ */
+export const HELPED_SUCCESSES_TO_FADE = 4
 
 /*
  * One turn's worth of change.
@@ -410,14 +437,17 @@ export function updateScaffoldAfterTurn(state, {
 } = {}) {
   const s = reviveScaffoldState(state) || makeScaffoldState('high')
   let { currentLevel, independentStreak, assistedStreak, retryPressure } = s
+  let helpedSuccesses = Number(s.helpedSuccesses) || 0
   const reasons = new Set(s.reasonCodes)
 
   if (!correct) {
     independentStreak = 0
     retryPressure += 1
+    helpedSuccesses = 0
   } else if (assistanceUsed || switchedActivity) {
     independentStreak = 0
     assistedStreak += 1
+    if (!switchedActivity) helpedSuccesses += 1
   } else if (evidenceKind === EVIDENCE.OPEN) {
     independentStreak += 1
     assistedStreak = 0
@@ -425,7 +455,7 @@ export function updateScaffoldAfterTurn(state, {
     /* recognition and guided work: neither progress nor penalty */
     assistedStreak = 0
   }
-  if (retried) retryPressure += 1
+  if (retried) { retryPressure += 1; helpedSuccesses = 0 }
   /*
    * Asking to practise another way is the clearest signal there is, and it is
    * the learner's own. It counts for the whole threshold, so help arrives on
@@ -442,6 +472,22 @@ export function updateScaffoldAfterTurn(state, {
     }
     retryPressure = 0            // spent, so support cannot creep up every turn
     independentStreak = 0
+  } else if (helpedSuccesses >= HELPED_SUCCESSES_TO_FADE && retryPressure === 0) {
+    /*
+     * Help that keeps working is help the learner can be asked to do without.
+     * This is deliberately ahead of the rule below: two helped turns in a row
+     * say the support is being used, four clean ones in a row say it has done
+     * its job — and while the second rule fires every other turn it would
+     * short-circuit this one for ever, which is how a learner who was doing
+     * well ended up pinned at maximum support with no way down.
+     */
+    const next = lessHelp(currentLevel)
+    if (next !== currentLevel) {
+      currentLevel = next
+      reasons.add(REASONS.FADED_AFTER_HELPED_SUCCESS)
+    }
+    helpedSuccesses = 0
+    assistedStreak = 0
   } else if (assistedStreak >= 2) {
     const next = moreHelp(currentLevel)
     if (next !== currentLevel) {
@@ -459,12 +505,15 @@ export function updateScaffoldAfterTurn(state, {
     retryPressure = 0
   }
 
+  if (helpedSuccesses >= HELPED_SUCCESSES_TO_FADE) helpedSuccesses = 0
+
   return {
     ...s,
     currentLevel,
     independentStreak,
     assistedStreak,
     retryPressure,
+    helpedSuccesses,
     reasonCodes: [...reasons].slice(0, 12),
   }
 }

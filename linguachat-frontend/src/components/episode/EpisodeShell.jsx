@@ -92,6 +92,12 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
   const nativeLang = nativeLanguageInfo.base
   const meaningOf = (id) => getLocalizedMeaning(SEED_VOCAB_BY_ID[id]?.meaning, nativeLanguageInfo, interfaceLanguageInfo)
 
+  /*
+   * A run the planner opened to see whether the learner can hold the
+   * conversation on their own: the same episode, without the sentence written
+   * out in advance. Support still arrives the moment anything goes wrong.
+   */
+  const unaidedAttempt = Boolean(runOptions?.unaidedAttempt)
   const modelRef = useRef(loadLearnerModel())
   const awardedRef = useRef(false)
   const finishedRef = useRef(false)
@@ -514,7 +520,16 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
         }
         saveLearnerModel(modelRef.current)
       }
-      recordItems(itemIds, { correct: true, independent })
+      /*
+       * A reply can be right and still not be practice of the language this
+       * step teaches — "Eleven." answers "How many?" without using any of the
+       * ten words the level owns. The turn succeeds; the item is not credited.
+       */
+      if (result.targetEvidence === false) {
+        setLive(t(result.praiseKey || 'ep1FeedbackGood'))
+      } else {
+        recordItems(itemIds, { correct: true, independent })
+      }
       /*
        * The run remembers that it saw unaided open production, which is what
        * the can-do is credited from at the end. A component counter could not
@@ -564,7 +579,15 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
     const firstCompletion = !st.awarded && !awardedRef.current
     if (firstCompletion) {
       awardedRef.current = true
-      awardEpisode(ep)  // garden + XP, idempotent by awarded flag below
+      /*
+       * The Garden grants, resolved here: this screen already has the seed
+       * vocabulary loaded, so the app-wide context does not have to carry it.
+       * Unknown ids are dropped exactly as before.
+       */
+      const grants = (ep.gardenItems || [])
+        .filter(id => SEED_VOCAB_BY_ID[id])
+        .map(id => ({ vocabId: id, word: SEED_VOCAB_BY_ID[id].term, kind: SEED_VOCAB_BY_ID[id].kind }))
+      awardEpisode(ep, { grants })  // garden + XP, idempotent by awarded flag below
       setEpisodeState(m, ep.id, { status: 'completed', awarded: true, stepIndex: ep.steps.length - 1 })
     } else {
       setEpisodeState(m, ep.id, { status: 'completed', stepIndex: ep.steps.length - 1 })
@@ -800,7 +823,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
               </div>
             )}
 
-            {step.suggestionEn && (showsModelAnswer(scaffold) || retry) && !reviewing && (
+            {step.suggestionEn && ((showsModelAnswer(scaffold) && !unaidedAttempt) || retry) && !reviewing && (
               <button type="button" onClick={() => { setReply(resolve(step.suggestionEn, vars)); setUsedSuggestion(true); signal('assistance') }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]" style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}>
                 {t('ep1UseSuggestion')}: <En>{resolve(step.suggestionEn, vars)}</En>
               </button>

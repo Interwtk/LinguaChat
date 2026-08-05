@@ -22,9 +22,15 @@
  *   ready to not-ready; the thresholds are deliberately loose enough that
  *   readiness reflects a state of learning rather than the time of day.
  */
-import { ARC, getEpisode } from '../episodes/index.js'
+/*
+ * The shape of the curriculum, not its words: readiness asks which episodes are
+ * finished and what they teach, never what anybody says in them.
+ */
+import { EPISODE_SKELETON as ARC, SKELETON_BY_ID } from './preA1Skeleton.generated.js'
+
+const getEpisode = (id) => SKELETON_BY_ID[id] || null
 import {
-  PRE_A1_EXIT_CRITERIA, CAN_DO_INTENT, integratedEpisodes, productiveItemsOf,
+  PRE_A1_EXIT_CRITERIA, CAN_DO_INTENT, integratedEpisodes, productiveItemsOf, requiredLevelItems,
 } from './preA1Map.js'
 import { LEARNING_STATE_RANK, getEpisodeState } from '../engine/learnerModel.js'
 
@@ -96,42 +102,55 @@ export function isCurriculumComplete(model) {
 /*
  * What a required capability needs before it counts.
  *
- * Two unaided successes, because one is luck — and, for a capability that
- * covers more than one function, evidence that each function was actually
- * produced. Asking "What's this?" twice must not stand in for never having
- * identified anything, which is why the ITEMS are checked and not just the
- * can-do counter.
+ * Two unaided productions of its own language, because one is luck. The count
+ * is taken from the LANGUAGE ITEMS rather than from the can-do counter, and
+ * that distinction is the whole of it: `independentSuccesses` is incremented
+ * once per episode finished unaided, and twelve of the thirteen required
+ * capabilities are taught by a single episode — so a rule written against that
+ * counter could never be satisfied on a first pass however well someone did,
+ * while the model happily recorded that they had produced the sentence unaided
+ * six times.
+ *
+ * The maximum across the items is used, never the sum: three different nouns
+ * saying "book", "phone", "bag" once each are not two unaided uses of the frame
+ * that carries the capability.
+ *
+ * The can-do counter still has to show at least one unaided completion, so a
+ * capability whose evidence came entirely from isolated drills does not pass on
+ * item counters alone. And for a capability covering more than one function,
+ * every item must be at least `practicing` — asking "What's this?" twice cannot
+ * stand in for never having identified anything.
  */
 export function skillEvidence(model, canDoId) {
   const record = model?.canDo?.[canDoId] || null
-  const independent = Number(record?.independentSuccesses) || 0
+  const completions = Number(record?.independentSuccesses) || 0
   const attempts = Number(record?.attempts) || 0
   const taught = ARC.some(ep => ep.canDoId === canDoId)
 
   const items = productiveItemsOf(canDoId)
   const states = items.map(id => model?.languageItems?.[id]?.learningState || null)
+  const independent = items.length === 0
+    ? completions
+    : Math.max(0, ...items.map(id => Number(model?.languageItems?.[id]?.independentCorrect) || 0))
   const practised = items.length === 0
     ? true
     : states.every(state => state && LEARNING_STATE_RANK[state] >= LEARNING_STATE_RANK.practicing)
   const usable = items.length === 0
-    ? independent >= PRE_A1_EXIT_CRITERIA.independentEvidencePerCanDo
+    ? completions >= PRE_A1_EXIT_CRITERIA.independentEvidencePerCanDo
     : states.some(state => state === 'can_use')
 
-  return {
-    canDoId,
-    taught,
-    attempts,
-    independent,
-    items,
-    practised,
-    usable,
-    enough: taught && independent >= PRE_A1_EXIT_CRITERIA.independentEvidencePerCanDo && practised && usable,
-  }
+  const enough = taught
+    && independent >= PRE_A1_EXIT_CRITERIA.independentEvidencePerCanDo
+    && completions >= 1
+    && practised
+    && usable
+
+  return { canDoId, taught, attempts, completions, independent, items, practised, usable, enough }
 }
 
 /* Overdue reviews, counted only where they can hold a required skill back. */
 export function overdueRequiredReviews(model, atMs = Date.now()) {
-  const required = new Set(PRE_A1_EXIT_CRITERIA.requiredCanDos.flatMap(id => productiveItemsOf(id)))
+  const required = new Set(requiredLevelItems())
   const overdue = []
   for (const [id, item] of Object.entries(model?.languageItems || {})) {
     if (!required.has(id)) continue
@@ -183,7 +202,8 @@ export function derivePreA1Readiness(model, { atMs = Date.now() } = {}) {
     .filter(e => e.taught && e.attempts > 0 && (!e.practised || !e.usable))
     .map(e => e.canDoId)
   const thinEvidence = evidence
-    .filter(e => e.taught && e.attempts > 0 && e.practised && e.usable && e.independent < PRE_A1_EXIT_CRITERIA.independentEvidencePerCanDo)
+    .filter(e => e.taught && e.attempts > 0 && e.practised && e.usable
+      && (e.independent < PRE_A1_EXIT_CRITERIA.independentEvidencePerCanDo || e.completions < 1))
     .map(e => e.canDoId)
 
   const overdue = overdueRequiredReviews(model, atMs)

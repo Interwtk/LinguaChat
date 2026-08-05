@@ -15,6 +15,7 @@
  */
 import { getEpisodeState, sanitizeRun, RUNS_PER_EPISODE } from './learnerModel.js'
 import { dayKeyFor } from './session.js'
+import { reconcileLevelMilestones } from '../curriculum/graduation.js'
 
 export const RUN_FIRST = 'first_run'
 export const RUN_RESUME = 'resume'
@@ -122,6 +123,13 @@ export function completeEpisodeRun(model, { independentEvidence = false, branchI
   const list = (model.episodeRuns[active.episodeId] || []).filter(r => r.runId !== finished.runId)
   model.episodeRuns[active.episodeId] = [...list, finished].slice(-RUNS_PER_EPISODE)
   model.activeRun = null
+  /*
+   * A finished run is the moment the learner's evidence changed, which is the
+   * honest place to notice they have reached a milestone — not when a screen
+   * next renders. Idempotent and silent: it records nothing unless the bar was
+   * genuinely met, and never twice.
+   */
+  reconcileLevelMilestones(model, { atMs, source: 'episode_run' })
   return finished
 }
 

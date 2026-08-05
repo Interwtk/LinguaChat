@@ -8,7 +8,7 @@
  */
 const KEY = 'lc2-learner-model-v1' // key kept stable; internal `version` gates migration
 const DAY = 86400000
-export const MODEL_VERSION = 6
+export const MODEL_VERSION = 7
 
 // How many past runs of one episode we keep. Enough to see a pattern, small
 // enough that storage never grows without bound.
@@ -68,6 +68,20 @@ export function createLearnerModel() {
      * Kept apart from the interests chosen at onboarding: both may be true.
      */
     learnerFacts: [],
+    /*
+     * What the learner has reached, once, and keeps.
+     *
+     * Everything else in this model describes the CURRENT state of their
+     * learning and is free to move in both directions — an item can fall due,
+     * a skill can go quiet. A milestone is the opposite: it records that a
+     * threshold was genuinely met at a moment in time, and nothing that happens
+     * afterwards un-happens it. A review falling due tomorrow changes what to
+     * practise, not whether last month's graduation occurred.
+     *
+     * Metadata only: when, and under which set of criteria. No transcript, no
+     * score, no answers.
+     */
+    levelMilestones: {},
   }
 }
 const emptyModel = createLearnerModel
@@ -105,7 +119,61 @@ function carryForward(parsed, { keepPreferences, keepSignals, keepRuns }) {
     // A learner arriving from before structured facts still keeps what they
     // told Lingua: the loose `facts.likes` string becomes a proper fact.
     learnerFacts: keepRuns ? sanitizeLearnerFacts(parsed.learnerFacts) : factsFromLegacy(parsed.facts),
+    /*
+     * Milestones survive every migration and are NEVER back-dated. A learner
+     * arriving from v6 with seventeen completed episodes has not graduated —
+     * they have finished the course, which is a different sentence. The
+     * reconciler will look at their evidence the next time they practise and
+     * record it then, with an honest date.
+     */
+    levelMilestones: sanitizeLevelMilestones(parsed.levelMilestones),
   }
+}
+
+/* The levels a milestone may be recorded for. Pre-A1 is the only one that exists. */
+export const MILESTONE_LEVELS = ['pre_a1']
+
+/*
+ * Keep a milestone only if it is shaped like one. A corrupt or hand-edited
+ * entry is dropped rather than trusted: the reconciler can always earn it
+ * again from evidence, and a fabricated graduation cannot be un-earned.
+ */
+export function sanitizeLevelMilestones(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
+  const out = {}
+  for (const level of MILESTONE_LEVELS) {
+    const entry = raw[level]
+    if (!entry || typeof entry !== 'object') continue
+    const at = Date.parse(entry.graduatedAt || '')
+    if (!Number.isFinite(at)) continue
+    out[level] = {
+      graduatedAt: new Date(at).toISOString(),
+      evidenceVersion: typeof entry.evidenceVersion === 'string' ? entry.evidenceVersion.slice(0, 24) : 'unknown',
+      source: typeof entry.source === 'string' ? entry.source.slice(0, 32) : 'unknown',
+    }
+  }
+  return out
+}
+
+/*
+ * Two copies of the same learner, merged.
+ *
+ * The earliest legitimate graduation wins: it is the one that actually
+ * happened, and a later device noticing the same fact does not move the date.
+ * A milestone present on either side is never dropped.
+ */
+export function mergeLevelMilestones(mine, theirs) {
+  const a = sanitizeLevelMilestones(mine)
+  const b = sanitizeLevelMilestones(theirs)
+  const out = {}
+  for (const level of MILESTONE_LEVELS) {
+    const x = a[level]
+    const y = b[level]
+    if (!x && !y) continue
+    if (!x || !y) { out[level] = x || y; continue }
+    out[level] = Date.parse(x.graduatedAt) <= Date.parse(y.graduatedAt) ? x : y
+  }
+  return out
 }
 
 /*
@@ -147,7 +215,18 @@ function migrate(parsed) {
     return m
   }
   /*
-   * v5 -> v6: adds a learning state to every language item, derived from the
+   * v6 -> v7: adds `levelMilestones`, empty. Nothing else changes, and in
+   * particular no graduation is inferred from a finished curriculum: a v6
+   * learner who had met the criteria simply meets them again the next time the
+   * reconciler runs, and gets a date that is true.
+   */
+  if (parsed.version === 6) {
+    const m = carryForward(parsed, { keepPreferences: true, keepSignals: true, keepRuns: true })
+    m.languageItems = upgradeLanguageItems(m.languageItems)
+    return m
+  }
+  /*
+   * v5 -> v7: adds a learning state to every language item, derived from the
    * evidence v5 already stored. Everything else — XP, episodes, mastery,
    * can-dos, facts, interests, preferences, signal ids, runs, the active run
    * and its scaffold — is carried across untouched.
@@ -256,6 +335,7 @@ function mergeActivityEvidence(model) {
     learnerFacts: mergeLearnerFacts(model.learnerFacts, stored.learnerFacts),
     episodes: mergeEpisodeState(model.episodes, stored.episodes),
     languageItems: mergeLanguageItems(model.languageItems, stored.languageItems),
+    levelMilestones: mergeLevelMilestones(model.levelMilestones, stored.levelMilestones),
   }
 }
 
@@ -381,15 +461,55 @@ export function saveLearnerModel(model) {
 }
 
 // ---- review scheduling ----
-export function reviewDelayDays({ correct, independent, streak }) {
+
+/*
+ * How long a piece of language earns before it comes back.
+ *
+ * The interval used to stop growing at four days, so language the learner had
+ * said unaided ten times in a row still returned every four days, for ever.
+ * Across a level that tracks scores of items that is a queue nobody can drain:
+ * the day's session offers one review, and roughly fifteen things fall due. The
+ * effect was a learner who did every review the app offered and still carried a
+ * permanent backlog — and a readiness rule that looked reasonable and could not
+ * be reached by playing the product properly.
+ *
+ * Spacing means the gap widens as the memory holds. The first two steps are
+ * unchanged; beyond them each success roughly doubles the rest, up to a month,
+ * so nothing is ever dropped for good and mastered language stops competing for
+ * the day's single review slot with language that is genuinely slipping.
+ */
+export const REVIEW_STEPS_DAYS = [2, 4, 8, 16, 30]
+
+/*
+ * `owned` is the difference between help and confirmation.
+ *
+ * A helped success used to mean "tomorrow", always. But every activity a review
+ * is made of — choice, fill_blank, word_order — is by design a supported shape,
+ * so language the learner already owns could never earn a longer gap: an item
+ * answered correctly ten reviews in a row came back the next day, and the day
+ * after, for ever. Across a level that is a queue no learner can empty, however
+ * diligently they practise.
+ *
+ * Being helped through language that is still new is a real signal and still
+ * means tomorrow. Recognising language you have already produced unaided is
+ * confirmation, and confirmation earns the ladder.
+ */
+export function reviewDelayDays({ correct, independent, streak, owned = false }) {
   if (!correct) return 0
-  if (!independent) return 1
-  return streak >= 2 ? 4 : 2
+  if (!independent && !owned) return 1
+  const step = Math.min(Math.max(Number(streak) || 1, 1), REVIEW_STEPS_DAYS.length) - 1
+  return REVIEW_STEPS_DAYS[step]
 }
 
-export function scheduleReview(prev, { correct, independent }) {
+export function scheduleReview(prev, { correct, independent, atMs = Date.now(), owned = null }) {
   const streak = correct ? (prev?.streak || 0) + 1 : 0
-  return { nextReviewAt: new Date(Date.now() + reviewDelayDays({ correct, independent, streak }) * DAY).toISOString(), streak }
+  const isOwned = owned === null
+    ? (prev?.learningState === 'can_use' || (Number(prev?.independentCorrect) || 0) >= INDEPENDENT_USES_TO_CAN_USE)
+    : owned
+  return {
+    nextReviewAt: new Date(atMs + reviewDelayDays({ correct, independent, streak, owned: isOwned }) * DAY).toISOString(),
+    streak,
+  }
 }
 
 // ---- language items ----
@@ -449,25 +569,25 @@ function stateFromEvidence({ evidenceKind, correct, independent, independentCorr
  * or carried inside a phrase that is tracked as a whole. It enters the Garden
  * and the review schedule leaves it alone; nothing here claims it can be used.
  */
-export function recordItemSeen(model, itemId) {
+export function recordItemSeen(model, itemId, atMs = Date.now()) {
   if (!itemId) return model
   const prev = model.languageItems[itemId]
   if (prev) {
-    model.languageItems[itemId] = { ...prev, learningState: higherLearningState(prev.learningState || 'seen', 'seen'), lastSeenAt: nowIso() }
+    model.languageItems[itemId] = { ...prev, learningState: higherLearningState(prev.learningState || 'seen', 'seen'), lastSeenAt: new Date(atMs).toISOString() }
     return model
   }
-  model.languageItems[itemId] = { ...emptyItem(), learningState: 'seen', lastSeenAt: nowIso() }
+  model.languageItems[itemId] = { ...emptyItem(), learningState: 'seen', lastSeenAt: new Date(atMs).toISOString() }
   return model
 }
 
-export function recordItemAttempt(model, itemId, { correct, independent = false, evidenceKind = 'open' } = {}) {
+export function recordItemAttempt(model, itemId, { correct, independent = false, evidenceKind = 'open', atMs = Date.now() } = {}) {
   const prev = { ...emptyItem(), ...(model.languageItems[itemId] || {}) }
   const correctCount = prev.correct + (correct ? 1 : 0)
   const incorrectCount = prev.incorrect + (correct ? 0 : 1)
   const independentCorrect = prev.independentCorrect + (correct && independent && evidenceKind === 'open' ? 1 : 0)
   const guidedCorrect = prev.guidedCorrect + (correct && evidenceKind === 'guided' ? 1 : 0)
   const recognisedCorrect = prev.recognisedCorrect + (correct && evidenceKind === 'recognition' ? 1 : 0)
-  const review = scheduleReview(prev, { correct, independent })
+  const review = scheduleReview(prev, { correct, independent, atMs })
 
   // learning state only ever climbs
   const earned = stateFromEvidence({ evidenceKind, correct, independent, independentCorrect })
@@ -483,7 +603,7 @@ export function recordItemAttempt(model, itemId, { correct, independent = false,
   model.languageItems[itemId] = {
     status, learningState, correct: correctCount, incorrect: incorrectCount,
     independentCorrect, guidedCorrect, recognisedCorrect,
-    streak: review.streak, nextReviewAt: review.nextReviewAt, lastSeenAt: nowIso(),
+    streak: review.streak, nextReviewAt: review.nextReviewAt, lastSeenAt: new Date(atMs).toISOString(),
   }
   return model
 }
@@ -493,7 +613,7 @@ export const learningStateOf = (model, itemId) => model?.languageItems?.[itemId]
 export const canUseItem = (model, itemId) => learningStateOf(model, itemId) === 'can_use'
 
 // ---- can-do goals ----
-export function recordCanDoAttempt(model, canDoId, { success, independent = false, context = null }) {
+export function recordCanDoAttempt(model, canDoId, { success, independent = false, context = null, atMs = Date.now() }) {
   const prev = model.canDo[canDoId] || { status: 'new', attempts: 0, successes: 0, independentSuccesses: 0, contexts: [], lastPracticedAt: null }
   const attempts = prev.attempts + 1
   const successes = prev.successes + (success ? 1 : 0)
@@ -503,7 +623,7 @@ export function recordCanDoAttempt(model, canDoId, { success, independent = fals
   let status = 'learning'
   if (successes >= 2 && independentSuccesses >= 1) status = 'can_do'
   else if (attempts > 0) status = 'learning'
-  model.canDo[canDoId] = { status, attempts, successes, independentSuccesses, contexts, lastPracticedAt: nowIso() }
+  model.canDo[canDoId] = { status, attempts, successes, independentSuccesses, contexts, lastPracticedAt: new Date(atMs).toISOString() }
   return model
 }
 
@@ -801,10 +921,20 @@ export function noteInterestUsed(model, interestId) {
   return model
 }
 
+/*
+ * What is due, most overdue first.
+ *
+ * The order used to be whatever order the items happened to be stored in, and
+ * the daily session takes the front of the queue — so the first words the
+ * learner ever met were reviewed again and again while everything that came due
+ * later starved. A queue that never reaches its own tail is not a queue.
+ */
 export function getDueReviews(model, atMs = Date.now()) {
   const due = []
   for (const [id, it] of Object.entries(model.languageItems)) {
-    if (it.nextReviewAt && new Date(it.nextReviewAt).getTime() <= atMs && it.status !== 'new') due.push(id)
+    if (!it.nextReviewAt || it.status === 'new') continue
+    const at = new Date(it.nextReviewAt).getTime()
+    if (Number.isFinite(at) && at <= atMs) due.push([id, at])
   }
-  return due
+  return due.sort((a, b) => a[1] - b[1]).map(([id]) => id)
 }

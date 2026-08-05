@@ -880,14 +880,24 @@ const NUMBER_WORDS = {
   six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
   eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15,
   sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, twenty: 20,
+  thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90,
+  hundred: 100,
 }
+/* the ten this level owns: the first ten entries above, and only those */
 export const TAUGHT_NUMBERS = Object.keys(NUMBER_WORDS).slice(0, 10)
+const TENS_AND_UNIT = /\b(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)[\s-]+(one|two|three|four|five|six|seven|eight|nine)\b/
 const VAGUE_QUANTITY = /\b(many|a lot|lots|some|a few|several|much)\b/
 
 /* The number a reply names, as a word or a digit, or null. */
 export function numberIn(text) {
   const n = normalize(text)
   if (!n) return null
+  /*
+   * Compounds first: scanning the single words in order would find "one" inside
+   * "twenty-one" and answer 1, which is worse than not understanding at all.
+   */
+  const compound = n.match(TENS_AND_UNIT)
+  if (compound) return NUMBER_WORDS[compound[1]] + NUMBER_WORDS[compound[2]]
   for (const [word, value] of Object.entries(NUMBER_WORDS)) {
     if (new RegExp(`\\b${word}\\b`).test(n)) return value
   }
@@ -1024,7 +1034,13 @@ export function evaluateUseQuantity(text, { independent = false, quantityForm = 
     /*
      * A number outside one-to-ten is still a number and still answers the
      * question. The arc teaches ten of them; it does not own the rest.
+     *
+     * `targetEvidence` is how the two claims are kept apart: the turn succeeded
+     * (completedObjective) and the taught language was not what carried it, so
+     * nothing records practice of one-to-ten. Saying "Eleven." is not a mistake
+     * and is not evidence of the curriculum item either.
      */
+    r.targetEvidence = count >= 1 && count <= 10
     r.acceptedVariant = count > 10 || normalize(TARGET[form]) !== n
     r.praiseKey = r.masteryEvidence.independent ? 'ep17PraiseIndependent' : 'ep17PraiseCounted'
     return r

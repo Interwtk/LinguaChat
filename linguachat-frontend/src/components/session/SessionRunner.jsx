@@ -16,9 +16,11 @@ import { selectRepresentativeFormat } from '../../learning/engine/formatChoice.j
 import { evaluateLearningResponse } from '../../services/api'
 import { currentBlock, sessionProgress, dayKeyFor } from '../../learning/engine/session.js'
 import {
-  loadLearnerModel, saveLearnerModel, recordItemAttempt, markRecurringError, recordActivitySignalOnce,
+  loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, markRecurringError, recordActivitySignalOnce,
 } from '../../learning/engine/learnerModel.js'
 import { selectCompatibleContext, asSubjectValue } from '../../learning/engine/semanticContext.js'
+import { coreItemsOfIntent } from '../../learning/curriculum/preA1Map.js'
+import { SEED_VOCAB_BY_ID } from '../../data/vocabulary'
 import {
   deriveInitialScaffold, updateScaffoldAfterTurn, evidenceKindForStep,
   isIndependentEvidence, showsModelAnswer,
@@ -112,6 +114,9 @@ const PROMPT = {
  * second evaluation path — and formats that give the answer away are recorded
  * as assisted, so variety can never manufacture mastery.
  */
+/* Words only, for comparing a target phrase against the sentence on screen. */
+const plainText = (text) => String(text || '').toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, ' ').replace(/\s+/g, ' ').trim()
+
 function blankOf(sentence) {
   const words = sentence.replace(/([.?!])$/, ' $1').split(/\s+/).filter(Boolean)
   const idx = Math.max(0, words.findIndex((w, i) => i > 0 && /^[a-z']+$/i.test(w) && w.length > 2))
@@ -199,6 +204,30 @@ function PracticeTurn({ block, topic = null, onDone }) {
   const doneRef = useRef(false)
 
   const modelAnswer = (MODEL_ANSWER[kind] || MODEL_ANSWER.introduction)(vars)
+  /*
+   * What this block will record.
+   *
+   * A review names its own item. Everything else — a recall of a fragile
+   * capability, a targeted retry, a consolidation turn — names a can-do or an
+   * error, and used to record nothing at all: the learner produced the sentence
+   * and the model forgot. The intent's core language is what every practice of
+   * it produces, and where there is more than one candidate frame the sentence
+   * on screen decides which one was actually said.
+   */
+  const practisedItems = useMemo(() => {
+    /*
+     * The item under review, not the whole queue: `payload.itemIds` tells the
+     * planner which items this session is about, and crediting all four for
+     * one sentence would be four attempts the learner never made.
+     */
+    const explicit = block.payload?.itemId ? [block.payload.itemId] : (block.payload?.itemIds || null)
+    if (explicit) return explicit
+    const core = coreItemsOfIntent(kind)
+    if (core.length <= 1) return core
+    const shown = plainText(modelAnswer)
+    const matching = core.filter(id => shown.includes(plainText(SEED_VOCAB_BY_ID[id]?.term || '')))
+    return matching.length ? matching : core.slice(0, 1)
+  }, [block.payload?.itemId, block.payload?.itemIds, kind, modelAnswer])
   const linguaSaid = (PROMPT[kind] || PROMPT.introduction)(vars)
   const eventId = `${dayKeyFor()}:session:${block.id}`
 
@@ -277,19 +306,32 @@ function PracticeTurn({ block, topic = null, onDone }) {
     abortRef.current = null
     setReviewing(false)
 
-    const itemId = block.payload?.itemId
     if (result.completedObjective) {
-      if (itemId) recordItemAttempt(modelRef.current, itemId, { correct: true, independent, evidenceKind: evidenceKindForStep(stepShape) })
+      // the same distinction a step makes: a correct reply that used none of the
+      // taught language is not recorded as practice of it
+      for (const id of (result.targetEvidence === false ? [] : practisedItems)) {
+        recordItemAttempt(modelRef.current, id, { correct: true, independent, evidenceKind: evidenceKindForStep(stepShape) })
+      }
       saveLearnerModel(modelRef.current)
       setScaffoldState(prev => updateScaffoldAfterTurn(prev, {
         correct: true, assistanceUsed: fromSuggestion, evidenceKind: evidenceKindForStep(stepShape), retried: Boolean(retry),
       }))
+      /*
+       * A block that exists to consolidate a capability credits that capability,
+       * the way finishing an episode does. Without it the can-do counter never
+       * moves outside an episode and a consolidated skill still looks untouched.
+       */
+      const canDoId = block.payload?.canDoId
+      if (canDoId) recordCanDoAttempt(modelRef.current, canDoId, { success: true, independent, context: `session:${block.type}` })
+      saveLearnerModel(modelRef.current)
       if (retry) mark('retried')
       setPraise(result.praiseKey || 'ep1FeedbackGood')
       setLive(t(result.praiseKey || 'ep1FeedbackGood'))
       setTimeout(complete, 700)
     } else {
-      if (itemId) recordItemAttempt(modelRef.current, itemId, { correct: false, independent: false, evidenceKind: evidenceKindForStep(stepShape) })
+      for (const id of practisedItems) {
+        recordItemAttempt(modelRef.current, id, { correct: false, independent: false, evidenceKind: evidenceKindForStep(stepShape) })
+      }
       setScaffoldState(prev => updateScaffoldAfterTurn(prev, { correct: false, evidenceKind: evidenceKindForStep(stepShape) }))
       markRecurringError(modelRef.current, result.errorType)
       saveLearnerModel(modelRef.current)
@@ -305,9 +347,10 @@ function PracticeTurn({ block, topic = null, onDone }) {
    * recorded as assisted — never as independent evidence.
    */
   function settleClosed(correct) {
-    const itemId = block.payload?.itemId
-    const kind = evidenceKindForStep({ type: format === 'choice' ? 'choice' : 'word_order', format })
-    if (itemId) recordItemAttempt(modelRef.current, itemId, { correct, independent: false, evidenceKind: kind })
+    const evidence = evidenceKindForStep({ type: format === 'choice' ? 'choice' : 'word_order', format })
+    for (const id of practisedItems) {
+      recordItemAttempt(modelRef.current, id, { correct, independent: false, evidenceKind: evidence })
+    }
     saveLearnerModel(modelRef.current)
     if (correct) { setLive(t('ep1Correct')); setTimeout(complete, 600) }
     else {
@@ -363,7 +406,17 @@ function PracticeTurn({ block, topic = null, onDone }) {
         </div>
       )}
 
-      {!reviewing && isOpenFormat && (
+      {/*
+        * The suggestion used to be offered on every open block, whatever the
+        * block was for and however much support the learner had earned. Two
+        * things were wrong with that. The support level had no effect here at
+        * all, and — worse — a block the planner created precisely to obtain an
+        * unaided production arrived with the sentence already written out, so
+        * the one piece of evidence the learner needed could never be produced.
+        * Nobody is left stranded: the retry after a wrong answer still shows
+        * the model sentence, which is support arriving when it is needed.
+        */}
+      {!reviewing && isOpenFormat && showsModelAnswer(scaffold) && block.payload?.requiredPractice !== 'recall' && (
         <button type="button" onClick={() => { setReply(modelAnswer); mark('assistance') }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]"
           style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}>
           {t('ep1UseSuggestion')}: <En>{modelAnswer}</En>
@@ -569,7 +622,9 @@ export function SessionRunner() {
     if (!ep) { advanceSession(); return null }
     // The topic was pinned when the plan was made, so the episode talks about
     // exactly what Home promised — even if interests changed in between.
-    return <EpisodeShell episodeId={ep.id} interestId={dailySession.topic?.interestId || null} onComplete={() => advanceSession()} />
+    return <EpisodeShell episodeId={ep.id} interestId={dailySession.topic?.interestId || null}
+      runOptions={{ source: 'daily_session', unaidedAttempt: Boolean(block.payload?.unaidedAttempt) }}
+      onComplete={() => advanceSession()} />
   }
 
   return (

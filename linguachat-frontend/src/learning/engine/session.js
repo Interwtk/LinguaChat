@@ -14,8 +14,9 @@
  * it never interrupts an activity in progress.
  */
 import { getDueReviews, getEpisodeState } from './learnerModel.js'
-import { derivePreA1Readiness, readinessFocus } from '../curriculum/readiness.js'
-import { integratedEpisodes } from '../curriculum/preA1Map.js'
+import { derivePreA1Readiness, readinessFocus, skillEvidence } from '../curriculum/readiness.js'
+import { reconcileLevelMilestones } from '../curriculum/graduation.js'
+import { integratedEpisodes, requiredLevelItems } from '../curriculum/preA1Map.js'
 import { isEpisodeUnlocked } from './planner.js'
 import { selectEquivalentActivityFormat, BLOCK_CANDIDATES } from './formatChoice.js'
 import { getInterestContext, getLearnerInterests } from './interests.js'
@@ -201,17 +202,53 @@ function planningScaffold(model) {
   return levels.length ? 'low' : 'high'
 }
 
-function reviewBlock(model, atMs, ctx) {
-  const due = getDueReviews(model, atMs).filter(id => practiceKindForItem(id))
-  if (!due.length) return null
-  const itemId = due[0]
-  const objective = practiceKindForItem(itemId)
-  return {
-    id: `review:${itemId}`, type: 'review', source: 'due_review',
-    objective, estimatedMinutes: 1,
-    format: formatFor('review', { ...ctx, objective, seed: `${ctx.seed}:review:${itemId}` }),
-    payload: { itemId, itemIds: due.slice(0, 4) },
-  }
+/*
+ * The reviews that are due, stalest first — as many as the session has room for.
+ *
+ * A session used to offer exactly one review however far behind the learner was,
+ * so a day could only ever repair one piece of language while several fell due.
+ * A longer session earning more room should spend it on language that is
+ * slipping before it spends it on anything optional.
+ */
+function reviewBlocks(model, atMs, ctx, limit = 1) {
+  const allDue = getDueReviews(model, atMs).filter(id => practiceKindForItem(id))
+  /*
+   * Oldest-first is fair, and on its own it is not enough: a level tracks far
+   * more incidental vocabulary than core language, so the words the level is
+   * actually made of sat behind a long tail of scenery and a learner who did
+   * every review the app offered still watched their core language go stale.
+   * Core language is repaired first; everything else keeps its place in line.
+   */
+  const core = new Set(requiredLevelItems())
+  const due = [...allDue.filter(id => core.has(id)), ...allDue.filter(id => !core.has(id))]
+  return due.slice(0, Math.max(1, limit)).map((itemId) => {
+    const objective = practiceKindForItem(itemId)
+    /*
+     * A review of language the learner has already said unaided asks them to say
+     * it again. Every shape in the review pool shows the answer somewhere on the
+     * screen, which is right while the language is new and wrong once they have
+     * produced it themselves: recognising it again proves nothing they had not
+     * already proved, and it leaves them one unaided use short of owning it for
+     * ever.
+     *
+     * The condition is the item's own history, not the learner's average level of
+     * support: `practicing` means this particular phrase has already come out of
+     * their head unaided at least once, which is a better reason to ask again than
+     * how much help they need elsewhere. Gating this on the level-wide scaffold
+     * denied recall to exactly the learners whose queue was stuck — and the ask is
+     * gentle either way, since a wrong answer brings the sentence straight back.
+     */
+    const state = model?.languageItems?.[itemId]?.learningState
+    const recall = state === 'practicing'
+    return {
+      id: `review:${itemId}`, type: 'review', source: 'due_review',
+      objective, estimatedMinutes: 1,
+      format: formatFor(recall ? 'recall' : 'review', {
+        ...ctx, objective, seed: `${ctx.seed}:review:${itemId}`, requiredPractice: recall ? 'recall' : null,
+      }),
+      payload: { itemId, itemIds: due.slice(0, 4), requiredPractice: recall ? 'recall' : null },
+    }
+  })
 }
 
 /*
@@ -229,11 +266,23 @@ function consolidationBlock(model, arc, ctx) {
   if (!focus) return null
 
   if (focus.kind === 'strengthen_skill' && focus.intent) {
+    /*
+     * What is actually missing decides the shape. A capability the learner can
+     * recognise but has never said unaided is not helped by another activity
+     * that shows them the answer — however much they might prefer that format.
+     */
+    const gap = skillEvidence(model, focus.canDoId)
+    const needsOpenProduction = gap.practised && (!gap.usable || gap.independent < 2)
     return {
       id: `consolidate:${focus.canDoId}`, type: 'recall', source: 'readiness',
       objective: focus.intent, estimatedMinutes: 2,
-      format: formatFor('recall', { ...ctx, objective: focus.intent, seed: `${ctx.seed}:ready:${focus.canDoId}` }),
-      payload: { canDoId: focus.canDoId },
+      format: formatFor('recall', {
+        ...ctx,
+        objective: focus.intent,
+        seed: `${ctx.seed}:ready:${focus.canDoId}`,
+        requiredPractice: needsOpenProduction ? 'recall' : null,
+      }),
+      payload: { canDoId: focus.canDoId, needsOpenProduction, requiredPractice: needsOpenProduction ? 'recall' : null },
     }
   }
   if (focus.kind === 'have_a_conversation') {
@@ -244,7 +293,15 @@ function consolidationBlock(model, arc, ctx) {
     return {
       id: `conversation:${target}`, type: 'integrated_practice', source: 'readiness',
       objective: ep?.canDoId || null, estimatedMinutes: Math.max(3, (ep?.estimatedMinutes || 8) - 2),
-      payload: { episodeId: target },
+      /*
+       * This replay exists so the learner can show they hold the conversation
+       * themselves, so it is the one run where the model sentence is not offered
+       * up front. Handing it over would have made the last thing the level asks
+       * for impossible to demonstrate for exactly the learners who need to
+       * demonstrate it. The hint stays, and a wrong answer brings the sentence
+       * back immediately.
+       */
+      payload: { episodeId: target, unaidedAttempt: true },
     }
   }
   return null
@@ -341,7 +398,8 @@ export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs =
   const dayKey = dayKeyFor(atMs)
   const ctx = { model, scaffold: planningScaffold(model), durationMode: mode, seed: `${learnerKey}:${dayKey}`, atMs }
 
-  const review = reviewBlock(model, atMs, ctx)
+  const reviews = reviewBlocks(model, atMs, ctx, maxBlocks)
+  const review = reviews[0] || null
   const main = mainEpisodeBlock(model, arc) || consolidationBlock(model, arc, ctx)
   const retry = targetedRetryBlock(model, ctx)
   const fragile = fragileSkillBlock(model, ctx)
@@ -356,6 +414,11 @@ export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs =
   if (mode !== 'quick') {
     if (retry && room()) blocks.push(retry)
     if (mode === 'deep' && fragile && room()) blocks.push(fragile)
+    // Language that is actually due comes before anything optional.
+    for (const nextReview of reviews.slice(1)) {
+      if (!room()) break
+      blocks.push(nextReview)
+    }
     // Deep sessions have room for one extra turn shaped by preference.
     if (mode === 'deep' && !fragile && room()) {
       const extra = extraPracticeBlock(model, ctx)
@@ -495,7 +558,14 @@ export function advanceBlock(session) {
 
 // Idempotent: a session may only ever be awarded once, no matter how many times
 // completion is reached (double tap, Back, reload).
-export function completeSession(session) {
+export function completeSession(session, model = null, { atMs = Date.now() } = {}) {
+  /*
+   * A session is the other place evidence changes in bulk, so it reconciles
+   * too: a learner who consolidates the last missing capability in a daily
+   * session graduates there and then, without waiting to open an episode.
+   * The model argument is optional so every existing caller keeps working.
+   */
+  if (model) reconcileLevelMilestones(model, { atMs, source: 'daily_session' })
   if (!session) return { session, awarded: false }
   if (session.awarded) return { session: { ...session, status: 'completed' }, awarded: false }
   return { session: { ...session, status: 'completed', awarded: true }, awarded: true }
