@@ -1,0 +1,685 @@
+{
+  "blueprintVersion": "a1.blueprint.v1",
+  "level": "a1",
+  "status": "planned",
+  "designedAgainst": {
+    "repoHead": "1f4dc1f",
+    "preA1Status": "frozen",
+    "preA1Arcs": 6,
+    "preA1Episodes": 17,
+    "learnerModelVersion": 7,
+    "note": "Design only. No runtime module imports this file; nothing here is available to a learner."
+  },
+
+  "definition": {
+    "canDo": [
+      "talk about their own everyday life in the present: what they do, where they live, how their day goes and roughly when",
+      "say who the people around them are and what those people are, simply",
+      "find their way in a place: ask where something is and understand a short answer",
+      "handle a small purchase end to end: choose, ask the price, understand the number, pay",
+      "say what they can and cannot do, and ask the same of someone else",
+      "arrange to meet somebody at a day, a time and a place",
+      "keep a conversation alive when they meet unknown language, by asking what a word means or how to say something"
+    ],
+    "cannotYet": [
+      "talk about the past in any form",
+      "talk about the future beyond a present-tense arrangement with a time word",
+      "give or follow directions of more than one step",
+      "explain a reason with a subordinate clause",
+      "describe people or places in more than one attribute",
+      "use third-person -s productively (heard, not produced)",
+      "spell aloud, handle dates or months, or give personal contact details",
+      "sustain a conversation that changes topic more than once"
+    ],
+    "interactionCeiling": "one situation, one topic, 10–12 meaningful turns, with repair available and support fading as evidence allows"
+  },
+
+  "preA1Inheritance": {
+    "reuseFrequently": ["introduce_self", "ask_for_repair", "polite_request", "express_preferences", "identify_things"],
+    "reuseOccasionally": ["ask_name", "ask_wellbeing", "ask_origin", "express_needs", "close_an_encounter", "respond_anything_else"],
+    "supportOnly": ["full_greeting", "full_conversation", "cafe_order"],
+    "needsEarlyA1Reuse": ["use_small_numbers", "make_plan", "cafe_order", "full_conversation"],
+    "reuseEvidenceFromRepo": {
+      "introduce_self": 7,
+      "ask_for_repair": 4,
+      "ask_wellbeing": 3,
+      "express_preferences": 3,
+      "express_needs": 3,
+      "polite_request": 3,
+      "respond_anything_else": 3,
+      "ask_name": 2,
+      "full_greeting": 2,
+      "ask_origin": 2,
+      "close_an_encounter": 2,
+      "identify_things": 2,
+      "full_conversation": 1,
+      "make_plan": 1,
+      "cafe_order": 1,
+      "use_small_numbers": 1
+    }
+  },
+
+  "skillFamilies": [
+    { "id": "own_life", "label": "Your own life", "canDos": ["talk_about_work_or_study", "ask_about_work_or_study", "talk_about_daily_routine", "say_when_something_happens"] },
+    { "id": "people_around", "label": "The people around you", "canDos": ["introduce_someone_else"] },
+    { "id": "place_and_movement", "label": "Place and movement", "canDos": ["ask_where_something_is", "say_where_something_is", "ask_about_getting_somewhere"] },
+    { "id": "transactions", "label": "Small transactions", "canDos": ["use_bigger_numbers", "ask_the_price", "buy_something"] },
+    { "id": "ability", "label": "What you can do", "canDos": ["say_what_you_can_do", "ask_someone_about_ability"] },
+    { "id": "arrangements", "label": "Arranging something", "canDos": ["arrange_to_meet"] },
+    { "id": "conversation_management", "label": "Keeping the conversation alive", "canDos": ["ask_what_something_means", "ask_how_to_say_something"] }
+  ],
+
+  "canDos": [
+    {
+      "id": "talk_about_work_or_study",
+      "family": "own_life",
+      "scope": "required",
+      "why": "After a name and an origin, what somebody does is the next thing every first conversation reaches. It is also the first statement about the learner's own life that is not a preference.",
+      "prerequisites": ["introduce_self", "ask_origin"],
+      "patterns": ["i_do_life_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "ask_about_work_or_study",
+      "family": "own_life",
+      "scope": "required",
+      "why": "A learner who can only answer is still being interviewed. Asking is what makes the exchange mutual, and it is the level's first do-question.",
+      "prerequisites": ["talk_about_work_or_study", "ask_name"],
+      "patterns": ["do_you_question_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "talk_about_daily_routine",
+      "family": "own_life",
+      "scope": "required",
+      "why": "The single largest everyday topic, and the one that turns a handful of verbs into a description of a life. Deliberately a few actions, not a timetable.",
+      "prerequisites": ["talk_about_work_or_study"],
+      "patterns": ["i_do_life_pattern", "frequency_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "say_when_something_happens",
+      "family": "own_life",
+      "scope": "required",
+      "why": "A routine without time is a list. This is the level's time anchor — part of the day, and the hour — and it is what later lets an arrangement exist at all.",
+      "prerequisites": ["talk_about_daily_routine", "use_small_numbers"],
+      "patterns": ["time_at_pattern", "part_of_day_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "ask_what_something_means",
+      "family": "conversation_management",
+      "scope": "required",
+      "why": "The first repair that learns rather than pauses. Pre-A1 can stop a conversation it does not follow; this lets the learner take a word out of it and keep going, which is what makes more input survivable.",
+      "prerequisites": ["ask_for_repair"],
+      "patterns": ["what_does_mean_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "deterministic_local",
+      "intentReuse": "repair_request with a new repairKind subtype"
+    },
+    {
+      "id": "introduce_someone_else",
+      "family": "people_around",
+      "scope": "required",
+      "why": "Pre-A1 can introduce the learner. This turns a pair into a group, and it is the honest functional core of 'family' without a vocabulary list: this is X, X is Y.",
+      "prerequisites": ["introduce_self", "full_greeting"],
+      "patterns": ["this_is_pattern", "he_she_is_pattern", "possessive_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "ask_where_something_is",
+      "family": "place_and_movement",
+      "scope": "required",
+      "why": "The highest-value question a beginner can own in a real place. It converts every unknown building into something they can resolve without English fluency.",
+      "prerequisites": ["identify_things", "ask_name"],
+      "patterns": ["where_is_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "say_where_something_is",
+      "family": "place_and_movement",
+      "scope": "required",
+      "why": "Asking without being able to answer leaves the learner on one side of the exchange. Two or three relations are enough — here, there, next to, near — and they are what makes a short answer comprehensible when they hear it.",
+      "prerequisites": ["ask_where_something_is", "identify_things"],
+      "patterns": ["its_location_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "ask_about_getting_somewhere",
+      "family": "place_and_movement",
+      "scope": "should",
+      "why": "Extends asking-where into moving, which is where beginners actually get stuck. Kept as a should-have because it opens a context of its own and the core autonomy is already covered by the two required location skills.",
+      "prerequisites": ["ask_where_something_is", "polite_request"],
+      "patterns": ["where_is_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 1, "integrated": false },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "use_bigger_numbers",
+      "family": "transactions",
+      "scope": "required",
+      "why": "Ten is not enough for a price or a clock. The extension exists for those two uses and is introduced inside them, never as a counting lesson.",
+      "prerequisites": ["use_small_numbers"],
+      "patterns": ["numbers_11_100"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "deterministic_local",
+      "intentReuse": "use_quantity with a level-aware taught range"
+    },
+    {
+      "id": "ask_the_price",
+      "family": "transactions",
+      "scope": "required",
+      "why": "Pre-A1 can ask for a thing politely but not find out what it costs, which makes every purchase a leap of faith.",
+      "prerequisites": ["polite_request", "use_bigger_numbers"],
+      "patterns": ["how_much_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "buy_something",
+      "family": "transactions",
+      "scope": "required",
+      "why": "The integrated transaction: choose, quantify, ask the price, understand the answer, close. It reuses the café shape Pre-A1 already owns and adds the money the café never mentioned.",
+      "prerequisites": ["ask_the_price", "cafe_order", "use_small_numbers"],
+      "patterns": ["how_much_pattern", "price_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "say_what_you_can_do",
+      "family": "ability",
+      "scope": "required",
+      "why": "Ability is how a beginner explains themselves in one sentence — what they can join, what they need help with. It is also the level's cheapest new grammar: one modal, no conjugation.",
+      "prerequisites": ["express_preferences"],
+      "patterns": ["can_ability_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "deterministic_local",
+      "architecturalNote": "The evaluator must tell ability-can from request-can; Pre-A1 already produces 'Can you repeat, please?'"
+    },
+    {
+      "id": "ask_someone_about_ability",
+      "family": "ability",
+      "scope": "should",
+      "why": "Turns ability into an exchange and reuses the do-question shape in a second frame. Should rather than required: the level already has two required question forms.",
+      "prerequisites": ["say_what_you_can_do", "ask_about_work_or_study"],
+      "patterns": ["can_you_ability_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 1, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "ask_how_to_say_something",
+      "family": "conversation_management",
+      "scope": "should",
+      "why": "The other half of learning from a conversation: not only what a word means but how to produce one they lack. Cheap — one frame — and it multiplies every other capability.",
+      "prerequisites": ["ask_what_something_means"],
+      "patterns": ["how_do_you_say_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 1, "integrated": true },
+      "evaluation": "deterministic_local",
+      "intentReuse": "repair_request with a new repairKind subtype"
+    },
+    {
+      "id": "arrange_to_meet",
+      "family": "arrangements",
+      "scope": "required",
+      "why": "The last required capability of the level, and the one that proves the rest: a day, a time, a place and a polite close, held together in one exchange. Nothing new is needed to say it — which is the point.",
+      "prerequisites": ["say_when_something_happens", "make_plan", "say_where_something_is"],
+      "patterns": ["day_of_week_pattern", "arrange_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "integrated": true },
+      "evaluation": "hybrid"
+    }
+  ],
+
+  "deferredToA2": [
+    { "id": "talk_about_what_you_did", "why": "A second tense doubles every pattern the level owns. It is the first A2 capability precisely because it is the obvious next unlock.", "firstA2": true },
+    { "id": "talk_about_future_plans_with_going_to", "why": "A present tense with a time word already arranges things. `going to` adds a form without adding a function A1 needs." },
+    { "id": "explain_a_reason", "why": "`because` turns one clause into two. Choice and preference work without it at this level." },
+    { "id": "follow_multi_step_directions", "why": "Asking where something is and understanding a short answer is the autonomy; left/right/straight sequences are a comprehension load of their own." },
+    { "id": "describe_people_and_places", "why": "One attribute is enough for A1 (`She's a student`). Adjective order, plurals and `there is/are` belong together, later." },
+    { "id": "third_person_s_productive", "why": "Heard throughout A1, produced in A2. The morphology costs more than the capability it adds while `is` covers most needs." },
+    { "id": "dates_and_months", "why": "Days of the week serve arrangements. Dates need ordinals and a second number system." },
+    { "id": "spell_aloud", "why": "The alphabet is a system, not a phrase, and it pays off mainly with contact details this product does not collect." },
+    { "id": "accommodation_and_travel_booking", "why": "A new context with its own vocabulary, when the transactional muscle A1 builds is already exercised by a shop and a counter." },
+    { "id": "comparatives", "why": "Choosing works with `this one` at A1. Comparison is a structure with no A1 function." },
+    { "id": "frequency_full_set", "why": "Two adverbs make a routine truthful. Four make a grammar exercise." },
+    { "id": "give_personal_contact_details", "why": "Deliberate product decision: the curriculum never trains a learner to type real personal data." }
+  ],
+
+  "optionalOrNotTaken": [
+    { "id": "say_your_age", "scope": "optional", "why": "Cheap to say and rarely needed to act. Available as receptive input inside personal exchanges; not a required production." },
+    { "id": "describe_someone_simply", "scope": "optional", "why": "Trimmed from the required set in review: `He's a student` already carries the function, and adjectives invite a catalogue." },
+    { "id": "colours", "scope": "not_taken", "why": "A vocabulary set looking for a capability. If choosing ever needs it, `this one` is doing the work." },
+    { "id": "understand_simple_written_instructions", "scope": "not_taken", "why": "Mostly interface language, which the product already localises." }
+  ],
+
+  "patterns": [
+    { "id": "i_do_life_pattern", "form": "I + verb (+ place/object)", "enables": ["talk_about_work_or_study", "talk_about_daily_routine"], "prerequisite": null, "reaches": "independent", "firstArc": "work_and_study", "reuseArcs": ["daily_rhythm", "what_you_can_do", "making_arrangements"] },
+    { "id": "do_you_question_pattern", "form": "Do you + verb?", "enables": ["ask_about_work_or_study"], "prerequisite": "i_do_life_pattern", "reaches": "independent", "firstArc": "work_and_study", "reuseArcs": ["daily_rhythm", "what_you_can_do"] },
+    { "id": "frequency_pattern", "form": "usually / sometimes + verb", "enables": ["talk_about_daily_routine"], "prerequisite": "i_do_life_pattern", "reaches": "guided_production", "firstArc": "daily_rhythm", "reuseArcs": ["making_arrangements"] },
+    { "id": "part_of_day_pattern", "form": "in the morning / afternoon / evening", "enables": ["say_when_something_happens"], "prerequisite": null, "reaches": "independent", "firstArc": "daily_rhythm", "reuseArcs": ["making_arrangements"] },
+    { "id": "time_at_pattern", "form": "at + hour", "enables": ["say_when_something_happens", "arrange_to_meet"], "prerequisite": "numbers_1_10", "reaches": "independent", "firstArc": "daily_rhythm", "reuseArcs": ["making_arrangements", "paying_and_choosing"] },
+    { "id": "what_does_mean_pattern", "form": "What does ___ mean?", "enables": ["ask_what_something_means"], "prerequisite": "repair_pattern", "reaches": "independent", "firstArc": "daily_rhythm", "reuseArcs": ["people_around_you", "finding_your_way", "paying_and_choosing", "making_arrangements"] },
+    { "id": "this_is_pattern", "form": "This is + person", "enables": ["introduce_someone_else"], "prerequisite": "im_pattern", "reaches": "independent", "firstArc": "people_around_you", "reuseArcs": ["making_arrangements"] },
+    { "id": "he_she_is_pattern", "form": "He / She is + noun", "enables": ["introduce_someone_else"], "prerequisite": "im_pattern", "reaches": "independent", "firstArc": "people_around_you", "reuseArcs": ["what_you_can_do"] },
+    { "id": "possessive_pattern", "form": "my / your / his / her + noun", "enables": ["introduce_someone_else"], "prerequisite": null, "reaches": "guided_production", "firstArc": "people_around_you", "reuseArcs": ["finding_your_way", "paying_and_choosing"] },
+    { "id": "where_is_pattern", "form": "Where is / Where's + thing?", "enables": ["ask_where_something_is", "ask_about_getting_somewhere"], "prerequisite": "its_a_pattern", "reaches": "independent", "firstArc": "finding_your_way", "reuseArcs": ["paying_and_choosing", "making_arrangements"] },
+    { "id": "its_location_pattern", "form": "It's + here / there / next to / near + X", "enables": ["say_where_something_is"], "prerequisite": "its_a_pattern", "reaches": "independent", "firstArc": "finding_your_way", "reuseArcs": ["making_arrangements"] },
+    { "id": "numbers_11_100", "form": "eleven … one hundred", "enables": ["use_bigger_numbers", "ask_the_price", "say_when_something_happens"], "prerequisite": "numbers_1_10", "reaches": "independent", "firstArc": "paying_and_choosing", "reuseArcs": ["making_arrangements"] },
+    { "id": "how_much_pattern", "form": "How much is it / are they?", "enables": ["ask_the_price"], "prerequisite": "quantity_pattern", "reaches": "independent", "firstArc": "paying_and_choosing", "reuseArcs": ["making_arrangements"] },
+    { "id": "price_pattern", "form": "It's + number (+ neutral unit)", "enables": ["buy_something"], "prerequisite": "numbers_11_100", "reaches": "guided_production", "firstArc": "paying_and_choosing", "reuseArcs": [] },
+    { "id": "can_ability_pattern", "form": "I can / I can't + verb", "enables": ["say_what_you_can_do"], "prerequisite": null, "reaches": "independent", "firstArc": "what_you_can_do", "reuseArcs": ["making_arrangements"] },
+    { "id": "can_you_ability_pattern", "form": "Can you + verb?", "enables": ["ask_someone_about_ability"], "prerequisite": "can_ability_pattern", "reaches": "independent", "firstArc": "what_you_can_do", "reuseArcs": ["making_arrangements"] },
+    { "id": "how_do_you_say_pattern", "form": "How do you say ___?", "enables": ["ask_how_to_say_something"], "prerequisite": "what_does_mean_pattern", "reaches": "independent", "firstArc": "what_you_can_do", "reuseArcs": ["making_arrangements"] },
+    { "id": "day_of_week_pattern", "form": "on + day", "enables": ["arrange_to_meet"], "prerequisite": null, "reaches": "independent", "firstArc": "making_arrangements", "reuseArcs": [] },
+    { "id": "arrange_pattern", "form": "Let's meet at + time / See you + day", "enables": ["arrange_to_meet"], "prerequisite": "time_at_pattern", "reaches": "independent", "firstArc": "making_arrangements", "reuseArcs": [] }
+  ],
+
+  "semanticTypes": {
+    "existing": ["interest", "activity", "drink", "food", "consumable", "place", "feeling", "person", "generic_object"],
+    "proposed": [
+      { "id": "time_point", "requiredBy": ["say_when_something_happens", "arrange_to_meet"], "examples": ["seven", "half past eight"], "incompatibleWith": ["drink", "person"], "whyNotExisting": "An hour is neither a place nor an object; a slot that accepts it must reject 'Madrid' and 'water'." },
+      { "id": "day", "requiredBy": ["arrange_to_meet"], "examples": ["Monday", "Friday"], "incompatibleWith": ["time_point", "place"], "whyNotExisting": "`on Monday` and `at seven` are different slots with different prepositions; collapsing them would let the engine build 'on seven'." },
+      { "id": "relation", "requiredBy": ["introduce_someone_else"], "examples": ["sister", "friend", "colleague"], "incompatibleWith": ["person", "place"], "whyNotExisting": "`person` holds a name; a relation takes a possessive and cannot be substituted for one ('This is my Alex')." },
+      { "id": "transport_mode", "requiredBy": ["ask_about_getting_somewhere"], "examples": ["bus", "train"], "incompatibleWith": ["place"], "whyNotExisting": "Only needed if the should-have transport episode is built; drop the type with the episode.", "scope": "should" }
+    ],
+    "explicitlyNotNeeded": [
+      { "id": "job", "why": "A workplace is a `place`; naming professions is a vocabulary list the level refuses." },
+      { "id": "money", "why": "A price is a number with a neutral unit; the evaluator compares the number." },
+      { "id": "month", "why": "Dates are deferred to A2." },
+      { "id": "colour", "why": "No A1 capability needs it." }
+    ]
+  },
+
+  "intentStrategy": {
+    "rule": "One intent per communicative function. Variants travel as a subtype on the step payload, the way Pre-A1 already carries repairKind, quantityForm and thingId — not as a new intent.",
+    "newIntents": [
+      "state_life_fact", "ask_life_fact", "state_routine", "ask_routine",
+      "introduce_person", "state_person_fact",
+      "ask_location", "state_location", "ask_transport",
+      "ask_price", "state_price",
+      "state_ability", "ask_ability",
+      "arrange_meeting"
+    ],
+    "newSubtypesOnExistingIntents": [
+      { "intent": "repair_request", "newRepairKinds": ["ask_meaning", "ask_how_to_say"] },
+      { "intent": "use_quantity", "change": "level-aware taught range so 11–100 counts as target evidence in A1 while Pre-A1 keeps 1–10" }
+    ],
+    "counts": { "preA1Intents": 29, "newA1Intents": 14, "wouldBeUnderOnePerPhrase": 30 },
+    "explosionGuard": "If an arc's design needs more than three new intents, the arc is teaching phrases rather than a capability."
+  },
+
+  "evaluationStrategy": {
+    "deterministic_local": ["state_life_fact", "ask_life_fact", "state_routine", "ask_routine", "ask_location", "state_location", "ask_price", "state_price", "state_ability", "ask_ability", "arrange_meeting", "use_quantity"],
+    "hybrid": ["introduce_person", "state_person_fact", "ask_transport"],
+    "remoteLikely": [],
+    "rule": "The canonical frame is always judged locally. Escalation is for a reply that is inconclusive, exactly as Pre-A1 routes it. No capability is designed to depend on the provider being reachable."
+  },
+
+  "arcs": [
+    {
+      "id": "work_and_study",
+      "order": 1,
+      "titleConcept": "What you do",
+      "communicativeProblem": "A first conversation runs out after a name and an origin: the learner cannot say what fills their days, and cannot ask.",
+      "whyNow": "It is the smallest step from Pre-A1's personal exchange, and it introduces the statement frame every later arc reuses.",
+      "prerequisiteArcs": [],
+      "preA1Reuse": ["introduce_self", "ask_name", "ask_origin", "ask_for_repair"],
+      "a1Reuse": [],
+      "newCanDos": ["talk_about_work_or_study", "ask_about_work_or_study"],
+      "reinforcedCanDos": ["introduce_self", "ask_origin"],
+      "newPatterns": ["i_do_life_pattern", "do_you_question_pattern"],
+      "vocabularyBudget": { "newProductive": 6, "newReceptive": 6 },
+      "semanticNeeds": ["place"],
+      "factsCaptured": ["work_or_study"],
+      "likelyFormats": ["scene", "model", "comprehension", "word_order", "fill_blank", "guided_reply", "free_reply", "recall"],
+      "miniStory": { "use": false, "why": "The arc's value is a two-way exchange, which roleplay carries better than a hosted story." },
+      "conversationTarget": { "meaningfulTurns": 6, "learnerOpenTurns": 3, "learnerInitiatedQuestions": 1 },
+      "autonomyTarget": "inherits Pre-A1 support; the model answer is available while the frame is new and withheld on the arc's last recall",
+      "evidenceTarget": "two unaided statements and one unaided question per required can-do",
+      "risk": "The statement frame invites a profession list. The budget is spent on the frame and on two or three neutral workplaces, not on jobs.",
+      "episodes": [18, 19, 20]
+    },
+    {
+      "id": "daily_rhythm",
+      "order": 2,
+      "titleConcept": "How your day goes",
+      "communicativeProblem": "The learner can say what they do but not when or how often, so they cannot describe a day or understand somebody else's.",
+      "whyNow": "It extends the statement frame just learned, and it needs the level's time anchor, which everything later depends on.",
+      "prerequisiteArcs": ["work_and_study"],
+      "preA1Reuse": ["use_small_numbers", "express_preferences", "ask_for_repair"],
+      "a1Reuse": ["talk_about_work_or_study", "ask_about_work_or_study"],
+      "newCanDos": ["talk_about_daily_routine", "say_when_something_happens", "ask_what_something_means"],
+      "reinforcedCanDos": ["talk_about_work_or_study", "use_small_numbers"],
+      "newPatterns": ["frequency_pattern", "part_of_day_pattern", "time_at_pattern", "what_does_mean_pattern"],
+      "vocabularyBudget": { "newProductive": 8, "newReceptive": 6 },
+      "semanticNeeds": ["time_point", "activity"],
+      "factsCaptured": ["usual_time"],
+      "likelyFormats": ["scene", "model", "comprehension", "choice", "word_order", "fill_blank", "guided_reply", "free_reply", "recall"],
+      "miniStory": { "use": true, "why": "A day is a sequence; a hosted story lets the learner meet several actions in order and still answer in their own words." },
+      "conversationTarget": { "meaningfulTurns": 7, "learnerOpenTurns": 3, "learnerInitiatedQuestions": 1 },
+      "autonomyTarget": "support fades where the frame is reused; new time language keeps a hint",
+      "evidenceTarget": "two unaided routine statements including a time, and one unaided meaning question",
+      "risk": "Three new pattern groups in one arc is the level's densest moment. The verb budget is five actions and the frequency set is two adverbs.",
+      "episodes": [21, 22, 23]
+    },
+    {
+      "id": "people_around_you",
+      "order": 3,
+      "titleConcept": "Who this is",
+      "communicativeProblem": "The learner can introduce themselves but not anybody else, so a conversation with two other people is closed to them.",
+      "whyNow": "It reuses the introduction they own and adds the third person in its cheapest form, `is`.",
+      "prerequisiteArcs": ["work_and_study"],
+      "preA1Reuse": ["introduce_self", "full_greeting", "ask_name", "close_an_encounter"],
+      "a1Reuse": ["talk_about_work_or_study", "ask_what_something_means"],
+      "newCanDos": ["introduce_someone_else"],
+      "reinforcedCanDos": ["introduce_self", "full_greeting", "talk_about_work_or_study"],
+      "newPatterns": ["this_is_pattern", "he_she_is_pattern", "possessive_pattern"],
+      "vocabularyBudget": { "newProductive": 6, "newReceptive": 6 },
+      "semanticNeeds": ["relation", "person"],
+      "factsCaptured": [],
+      "likelyFormats": ["scene", "model", "comprehension", "word_order", "guided_reply", "free_reply", "roleplay", "recall"],
+      "miniStory": { "use": false, "why": "Three-way introductions are better felt as a roleplay with a named partner than as a narrated scene." },
+      "conversationTarget": { "meaningfulTurns": 8, "learnerOpenTurns": 3, "learnerInitiatedQuestions": 1 },
+      "autonomyTarget": "mid-level: the suggestion is withheld on the integrated episode",
+      "evidenceTarget": "two unaided introductions of a third person, one of them inside a greeting sequence",
+      "risk": "Family vocabulary and cultural assumptions. The budget is three neutral relations plus a fallback that needs none, and no episode assumes a family structure.",
+      "episodes": [24, 25, 26]
+    },
+    {
+      "id": "finding_your_way",
+      "order": 4,
+      "titleConcept": "Where things are",
+      "communicativeProblem": "In a real place the learner cannot ask where anything is, and cannot understand the short answer if somebody tells them.",
+      "whyNow": "It is independent of the life-and-people branch, and it converts Pre-A1's naming of things into acting in a place.",
+      "prerequisiteArcs": ["work_and_study"],
+      "preA1Reuse": ["identify_things", "polite_request", "ask_for_repair", "close_an_encounter"],
+      "a1Reuse": ["ask_what_something_means"],
+      "newCanDos": ["ask_where_something_is", "say_where_something_is", "ask_about_getting_somewhere"],
+      "reinforcedCanDos": ["identify_things", "ask_for_repair"],
+      "newPatterns": ["where_is_pattern", "its_location_pattern"],
+      "vocabularyBudget": { "newProductive": 8, "newReceptive": 8 },
+      "semanticNeeds": ["place", "generic_object", "transport_mode"],
+      "factsCaptured": [],
+      "likelyFormats": ["scene", "model", "comprehension", "choice", "word_order", "guided_reply", "free_reply", "roleplay", "recall"],
+      "miniStory": { "use": true, "why": "Being lost is a situation with a beginning and an end, and a branch — asking a passer-by or asking at a desk — that is genuinely two valid choices." },
+      "conversationTarget": { "meaningfulTurns": 8, "learnerOpenTurns": 4, "learnerInitiatedQuestions": 2 },
+      "autonomyTarget": "mid-level; repair is planted deliberately because the answers carry unknown words",
+      "evidenceTarget": "two unaided location questions, two unaided short answers, one repair used in context",
+      "risk": "Directions creep. The arc stops at where-and-near; sequences of turns are A2.",
+      "episodes": [27, 28, 29]
+    },
+    {
+      "id": "paying_and_choosing",
+      "order": 5,
+      "titleConcept": "What it costs",
+      "communicativeProblem": "The learner can ask for something politely but cannot find out what it costs, choose between two, or understand a number above ten.",
+      "whyNow": "It reuses the counter shape Pre-A1 finished on and adds the money that was missing, with the number extension in the only place it is needed.",
+      "prerequisiteArcs": ["finding_your_way"],
+      "preA1Reuse": ["polite_request", "cafe_order", "use_small_numbers", "respond_anything_else", "close_an_encounter"],
+      "a1Reuse": ["ask_where_something_is", "ask_what_something_means"],
+      "newCanDos": ["use_bigger_numbers", "ask_the_price", "buy_something"],
+      "reinforcedCanDos": ["polite_request", "use_small_numbers", "cafe_order"],
+      "newPatterns": ["numbers_11_100", "how_much_pattern", "price_pattern"],
+      "vocabularyBudget": { "newProductive": 10, "newReceptive": 8 },
+      "semanticNeeds": ["generic_object", "food", "time_point"],
+      "factsCaptured": [],
+      "likelyFormats": ["scene", "model", "comprehension", "choice", "word_order", "fill_blank", "guided_reply", "free_reply", "roleplay", "recall"],
+      "miniStory": { "use": true, "why": "A purchase is the level's clearest whole transaction, and a hosted story can carry the shopkeeper's turns while the learner keeps the decisions." },
+      "conversationTarget": { "meaningfulTurns": 10, "learnerOpenTurns": 4, "learnerInitiatedQuestions": 2 },
+      "autonomyTarget": "mid-to-late; the integrated purchase runs with the suggestion withheld",
+      "evidenceTarget": "two unaided price questions, one unaided number above ten, one whole purchase held unaided",
+      "risk": "The heaviest arc: a number system, a question form and a transaction. Four episodes, and the numbers arrive as prices rather than as counting.",
+      "episodes": [30, 31, 32, 33]
+    },
+    {
+      "id": "what_you_can_do",
+      "order": 6,
+      "titleConcept": "What you can and can't do",
+      "communicativeProblem": "The learner cannot say what they are able to do, so they cannot accept, decline or explain themselves when something is offered.",
+      "whyNow": "Late enough that the question forms are familiar, and it prepares the arrangement arc: an invitation needs an answer about ability.",
+      "prerequisiteArcs": ["daily_rhythm"],
+      "preA1Reuse": ["express_preferences", "express_needs", "ask_for_repair"],
+      "a1Reuse": ["ask_about_work_or_study", "ask_what_something_means", "talk_about_daily_routine"],
+      "newCanDos": ["say_what_you_can_do", "ask_someone_about_ability", "ask_how_to_say_something"],
+      "reinforcedCanDos": ["express_preferences", "ask_what_something_means"],
+      "newPatterns": ["can_ability_pattern", "can_you_ability_pattern", "how_do_you_say_pattern"],
+      "vocabularyBudget": { "newProductive": 6, "newReceptive": 6 },
+      "semanticNeeds": ["activity"],
+      "factsCaptured": ["can_do_activity"],
+      "likelyFormats": ["scene", "model", "comprehension", "choice", "guided_reply", "free_reply", "recall"],
+      "miniStory": { "use": false, "why": "Two episodes, and the value is in the learner's own answers rather than in a narrated situation." },
+      "conversationTarget": { "meaningfulTurns": 9, "learnerOpenTurns": 4, "learnerInitiatedQuestions": 2 },
+      "autonomyTarget": "late: model answers withheld by default, hints on request",
+      "evidenceTarget": "two unaided ability statements including a negative, and one unaided ability question",
+      "risk": "`Can you…?` already exists as a request in Pre-A1. The evaluator must judge the ability sense without breaking the repair sense — the level's one real architectural debt.",
+      "episodes": [34, 35]
+    },
+    {
+      "id": "making_arrangements",
+      "order": 7,
+      "titleConcept": "Let's meet",
+      "communicativeProblem": "The learner can agree that something sounds good but cannot fix when, where, or confirm it — so nothing they arrange actually happens.",
+      "whyNow": "Last, because it needs time, place, ability and politeness at once and introduces almost nothing of its own.",
+      "prerequisiteArcs": ["daily_rhythm", "finding_your_way", "what_you_can_do"],
+      "preA1Reuse": ["make_plan", "express_preferences", "polite_request", "close_an_encounter", "ask_for_repair"],
+      "a1Reuse": ["say_when_something_happens", "say_where_something_is", "say_what_you_can_do", "ask_someone_about_ability", "introduce_someone_else"],
+      "newCanDos": ["arrange_to_meet"],
+      "reinforcedCanDos": ["say_when_something_happens", "say_where_something_is", "make_plan", "close_an_encounter"],
+      "newPatterns": ["day_of_week_pattern", "arrange_pattern"],
+      "vocabularyBudget": { "newProductive": 6, "newReceptive": 6 },
+      "semanticNeeds": ["day", "time_point", "place", "activity"],
+      "factsCaptured": ["preferred_day"],
+      "likelyFormats": ["scene", "model", "comprehension", "guided_reply", "free_reply", "roleplay", "mini_story", "recall"],
+      "miniStory": { "use": true, "why": "The level's closing situation: a whole arrangement from invitation to confirmation, with a branch where accepting and postponing are both correct." },
+      "conversationTarget": { "meaningfulTurns": 12, "learnerOpenTurns": 5, "learnerInitiatedQuestions": 2 },
+      "autonomyTarget": "late: unaided by default; support only after a wrong answer",
+      "evidenceTarget": "one whole arrangement held unaided, plus two unaided productions naming a day and a time",
+      "risk": "It could become a review episode with a new label. It earns its place only if the learner leaves able to fix a meeting nobody scripted for them.",
+      "episodes": [36, 37, 38]
+    }
+  ],
+
+  "episodes": [
+    { "plannedNumber": 18, "arc": "work_and_study", "role": "primary", "canDo": "talk_about_work_or_study", "titleConcept": "I work, I study", "situation": "Lingua asks what the learner does; a first answer about their own life", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["im", "im_from", "hi"], "productionTarget": "guided then open statement", "receptiveTarget": "two other people's answers", "likelyFormats": ["scene", "model", "comprehension", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["introduce_self"], "prerequisites": [], "evidence": "one guided and one unaided statement" },
+    { "plannedNumber": 19, "arc": "work_and_study", "role": "primary", "canDo": "ask_about_work_or_study", "titleConcept": "And you?", "situation": "The learner turns the same question back and hears an answer they must understand", "novelty": "medium", "newLanguageBudget": 2, "newPatterns": 1, "reusedLanguage": ["whats_your_name", "what_about_you"], "productionTarget": "the question, unaided by the end", "receptiveTarget": "answers with unknown workplaces", "likelyFormats": ["scene", "model", "comprehension", "word_order", "fill_blank", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["ask_name", "talk_about_work_or_study"], "prerequisites": [18], "evidence": "one unaided question plus comprehension of the reply" },
+    { "plannedNumber": 20, "arc": "work_and_study", "role": "reinforcement", "canDo": "talk_about_work_or_study", "titleConcept": "Meeting someone new", "situation": "A whole short exchange: greet, name, origin, what you do, close", "novelty": "low", "newLanguageBudget": 1, "newPatterns": 0, "reusedLanguage": ["hi", "im", "whats_your_name", "im_from", "bye"], "productionTarget": "the exchange with no model on screen", "receptiveTarget": "a partner who volunteers an extra detail", "likelyFormats": ["scene", "roleplay", "free_reply", "recall"], "openProductions": 3, "integratedReuse": ["introduce_self", "ask_name", "ask_origin", "close_an_encounter"], "prerequisites": [19], "evidence": "integrated: the arc's capability inside a Pre-A1 conversation" },
+    { "plannedNumber": 21, "arc": "daily_rhythm", "role": "primary", "canDo": "talk_about_daily_routine", "titleConcept": "My day", "situation": "Lingua asks what the learner does every day; three or four actions", "novelty": "high", "newLanguageBudget": 5, "newPatterns": 1, "reusedLanguage": ["i_like", "i_want"], "productionTarget": "two actions, guided then open", "receptiveTarget": "a longer routine told back", "likelyFormats": ["scene", "model", "comprehension", "choice", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["talk_about_work_or_study"], "prerequisites": [20], "evidence": "two unaided action statements" },
+    { "plannedNumber": 22, "arc": "daily_rhythm", "role": "primary", "canDo": "say_when_something_happens", "titleConcept": "At seven, in the morning", "situation": "The same actions, now anchored in time", "novelty": "high", "newLanguageBudget": 4, "newPatterns": 2, "reusedLanguage": ["numbers_1_10"], "productionTarget": "action plus time, unaided once", "receptiveTarget": "times said back at speed", "likelyFormats": ["model", "comprehension", "fill_blank", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["use_small_numbers", "talk_about_daily_routine"], "prerequisites": [21], "evidence": "one unaided statement with a time, and a repair used when a time is misheard" },
+    { "plannedNumber": 23, "arc": "daily_rhythm", "role": "primary", "canDo": "ask_what_something_means", "titleConcept": "What does that mean?", "situation": "A hosted story about somebody's day, carrying two words the learner has not met", "novelty": "medium", "newLanguageBudget": 2, "newPatterns": 1, "reusedLanguage": ["i_dont_understand", "can_you_repeat"], "productionTarget": "the meaning question, then continue the conversation", "receptiveTarget": "a whole day narrated", "likelyFormats": ["scene", "mini_story", "comprehension", "guided_reply", "free_reply", "recall"], "openProductions": 3, "integratedReuse": ["ask_for_repair", "talk_about_daily_routine", "say_when_something_happens"], "prerequisites": [22], "evidence": "integrated: routine plus time plus a repair the learner chose to use" },
+    { "plannedNumber": 24, "arc": "people_around_you", "role": "primary", "canDo": "introduce_someone_else", "titleConcept": "This is…", "situation": "Two people meet through the learner", "novelty": "medium", "newLanguageBudget": 4, "newPatterns": 2, "reusedLanguage": ["im", "nice_to_meet"], "productionTarget": "the introduction, guided then open", "receptiveTarget": "both partners replying", "likelyFormats": ["scene", "model", "comprehension", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["introduce_self", "full_greeting"], "prerequisites": [20], "evidence": "one unaided introduction of a third person" },
+    { "plannedNumber": 25, "arc": "people_around_you", "role": "reinforcement", "canDo": "introduce_someone_else", "titleConcept": "She's a student", "situation": "Saying one true thing about the person just introduced", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["im", "i_work_or_study language from arc 1"], "productionTarget": "he/she is + noun, unaided once", "receptiveTarget": "third-person -s heard, never required", "likelyFormats": ["model", "comprehension", "choice", "fill_blank", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["talk_about_work_or_study"], "prerequisites": [24], "evidence": "two unaided third-person statements using `is`" },
+    { "plannedNumber": 26, "arc": "people_around_you", "role": "reinforcement", "canDo": "introduce_someone_else", "titleConcept": "Three of us", "situation": "A short group conversation: greet, introduce, one detail each, close", "novelty": "low", "newLanguageBudget": 1, "newPatterns": 0, "reusedLanguage": ["hi", "how_are_you", "bye", "see_you"], "productionTarget": "the whole sequence with no model on screen", "receptiveTarget": "two partners talking to each other", "likelyFormats": ["scene", "roleplay", "free_reply", "recall"], "openProductions": 3, "integratedReuse": ["full_greeting", "ask_wellbeing", "close_an_encounter", "talk_about_work_or_study"], "prerequisites": [25], "evidence": "integrated: a three-person exchange held unaided" },
+    { "plannedNumber": 27, "arc": "finding_your_way", "role": "primary", "canDo": "ask_where_something_is", "titleConcept": "Where is it?", "situation": "The learner needs something in a building and has to ask", "novelty": "medium", "newLanguageBudget": 4, "newPatterns": 1, "reusedLanguage": ["its_a_pattern", "whats_this", "please"], "productionTarget": "the question, unaided by the end", "receptiveTarget": "answers with unknown place words", "likelyFormats": ["scene", "model", "comprehension", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["identify_things", "polite_request"], "prerequisites": [20], "evidence": "two unaided location questions" },
+    { "plannedNumber": 28, "arc": "finding_your_way", "role": "primary", "canDo": "say_where_something_is", "titleConcept": "It's over there", "situation": "Somebody asks the learner, and they answer", "novelty": "medium", "newLanguageBudget": 4, "newPatterns": 1, "reusedLanguage": ["its_a_pattern", "book", "bag"], "productionTarget": "a short answer with a relation word", "receptiveTarget": "two answers with relations not taught", "likelyFormats": ["model", "comprehension", "choice", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["identify_things"], "prerequisites": [27], "evidence": "two unaided answers, one using `next to` or `near`" },
+    { "plannedNumber": 29, "arc": "finding_your_way", "role": "primary", "canDo": "ask_about_getting_somewhere", "titleConcept": "How do I get there?", "situation": "A hosted story in a street: asking a passer-by, or asking at a desk", "novelty": "medium", "newLanguageBudget": 4, "newPatterns": 0, "reusedLanguage": ["please", "thank_you", "can_i_have"], "productionTarget": "the transport question and a repair when the answer is too fast", "receptiveTarget": "a two-clause answer, deliberately beyond production", "likelyFormats": ["scene", "mini_story", "comprehension", "guided_reply", "free_reply", "recall"], "openProductions": 3, "integratedReuse": ["ask_where_something_is", "ask_for_repair", "polite_request", "close_an_encounter"], "prerequisites": [28], "evidence": "integrated: getting an answer the learner did not fully understand and surviving it" },
+    { "plannedNumber": 30, "arc": "paying_and_choosing", "role": "primary", "canDo": "use_bigger_numbers", "titleConcept": "More than ten", "situation": "Prices and times heard and said, in the situation that needs them", "novelty": "high", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["numbers_1_10", "quantity_pattern"], "productionTarget": "numbers above ten, said and understood", "receptiveTarget": "numbers said quickly, requiring repair", "likelyFormats": ["model", "comprehension", "choice", "fill_blank", "guided_reply", "recall"], "openProductions": 2, "integratedReuse": ["use_small_numbers", "ask_for_repair"], "prerequisites": [29], "evidence": "two unaided numbers above ten in context" },
+    { "plannedNumber": 31, "arc": "paying_and_choosing", "role": "primary", "canDo": "ask_the_price", "titleConcept": "How much is it?", "situation": "A shop: one thing, one question, one number to catch", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["can_i_have", "please", "numbers_11_100"], "productionTarget": "the price question, unaided", "receptiveTarget": "prices with a neutral unit", "likelyFormats": ["scene", "model", "comprehension", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["polite_request", "use_bigger_numbers"], "prerequisites": [30], "evidence": "two unaided price questions and one number understood correctly" },
+    { "plannedNumber": 32, "arc": "paying_and_choosing", "role": "reinforcement", "canDo": "ask_the_price", "titleConcept": "This one or that one", "situation": "Choosing between two things, with quantity and a price for each", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["quantity_pattern", "i_want", "i_like"], "productionTarget": "choose, quantify, ask", "receptiveTarget": "an offer of a third option", "likelyFormats": ["model", "comprehension", "choice", "fill_blank", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["use_small_numbers", "express_preferences"], "prerequisites": [31], "evidence": "one unaided choice with a quantity and a price question" },
+    { "plannedNumber": 33, "arc": "paying_and_choosing", "role": "primary", "canDo": "buy_something", "titleConcept": "Buying it", "situation": "A hosted story at a counter: the whole purchase, start to finish", "novelty": "low", "newLanguageBudget": 2, "newPatterns": 0, "reusedLanguage": ["can_i_have", "thats_all", "thank_you", "no_thank_you"], "productionTarget": "the transaction with the suggestion withheld", "receptiveTarget": "a shopkeeper who asks something unplanned", "likelyFormats": ["scene", "mini_story", "roleplay", "free_reply", "recall"], "openProductions": 4, "integratedReuse": ["cafe_order", "polite_request", "respond_anything_else", "use_small_numbers", "close_an_encounter"], "prerequisites": [32], "evidence": "integrated: a purchase held unaided from greeting to goodbye" },
+    { "plannedNumber": 34, "arc": "what_you_can_do", "role": "primary", "canDo": "say_what_you_can_do", "titleConcept": "I can, I can't", "situation": "An invitation the learner has to answer honestly", "novelty": "medium", "newLanguageBudget": 4, "newPatterns": 1, "reusedLanguage": ["i_like", "i_dont_like", "yes_please", "no_thank_you"], "productionTarget": "a positive and a negative ability statement", "receptiveTarget": "abilities named that the learner has not met", "likelyFormats": ["scene", "model", "comprehension", "choice", "guided_reply", "free_reply", "recall"], "openProductions": 3, "integratedReuse": ["express_preferences", "ask_what_something_means"], "prerequisites": [23], "evidence": "two unaided ability statements, one of them negative" },
+    { "plannedNumber": 35, "arc": "what_you_can_do", "role": "primary", "canDo": "ask_someone_about_ability", "titleConcept": "Can you?", "situation": "Finding out what somebody else can do, and asking for a word the learner lacks", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 2, "reusedLanguage": ["can_you_repeat", "do_you_question_pattern"], "productionTarget": "the ability question and the how-do-you-say question", "receptiveTarget": "an answer that offers a reason, heard only", "likelyFormats": ["model", "comprehension", "guided_reply", "free_reply", "roleplay", "recall"], "openProductions": 3, "integratedReuse": ["ask_about_work_or_study", "ask_for_repair", "say_what_you_can_do"], "prerequisites": [34], "evidence": "integrated: an exchange about ability with a word asked for mid-conversation" },
+    { "plannedNumber": 36, "arc": "making_arrangements", "role": "primary", "canDo": "arrange_to_meet", "titleConcept": "When are you free?", "situation": "Proposing a day and a time for something both people want", "novelty": "medium", "newLanguageBudget": 4, "newPatterns": 2, "reusedLanguage": ["time_at_pattern", "i_want", "i_like"], "productionTarget": "a proposal with a day and a time", "receptiveTarget": "a counter-proposal", "likelyFormats": ["scene", "model", "comprehension", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 3, "integratedReuse": ["make_plan", "say_when_something_happens", "say_what_you_can_do"], "prerequisites": [35], "evidence": "two unaided proposals naming a day and a time" },
+    { "plannedNumber": 37, "arc": "making_arrangements", "role": "reinforcement", "canDo": "arrange_to_meet", "titleConcept": "Where shall we meet?", "situation": "Fixing the place, and confirming what was agreed", "novelty": "low", "newLanguageBudget": 2, "newPatterns": 0, "reusedLanguage": ["its_location_pattern", "next_to", "see_you"], "productionTarget": "place plus confirmation", "receptiveTarget": "a change of plan the learner must follow", "likelyFormats": ["model", "comprehension", "choice", "guided_reply", "free_reply", "recall"], "openProductions": 3, "integratedReuse": ["say_where_something_is", "close_an_encounter"], "prerequisites": [36], "evidence": "one unaided confirmation repeating day, time and place" },
+    { "plannedNumber": 38, "arc": "making_arrangements", "role": "primary", "canDo": "arrange_to_meet", "titleConcept": "See you on Friday", "situation": "The level's closing story: an invitation, an arrangement, a change, a confirmation, a goodbye", "novelty": "low", "newLanguageBudget": 1, "newPatterns": 0, "reusedLanguage": ["hi", "how_are_you", "i_like", "can_i_have", "bye", "see_you"], "productionTarget": "the whole arrangement, unaided, with a branch", "receptiveTarget": "a partner who postpones once", "likelyFormats": ["scene", "mini_story", "roleplay", "free_reply", "recall"], "openProductions": 5, "integratedReuse": ["introduce_self", "ask_wellbeing", "express_preferences", "say_when_something_happens", "say_where_something_is", "say_what_you_can_do", "ask_for_repair", "close_an_encounter"], "prerequisites": [37], "evidence": "integrated: the level's exit conversation, held with support withheld" }
+  ],
+
+  "counts": {
+    "arcs": 7,
+    "episodes": 21,
+    "episodeRange": "20–24",
+    "canDosRequired": 13,
+    "canDosShould": 3,
+    "canDosOptional": 2,
+    "canDosDeferred": 12,
+    "newPatterns": 19,
+    "newIntents": 14,
+    "newSemanticTypesRequired": 3,
+    "newSemanticTypesShould": 1,
+    "newProductiveVocabularyBudget": 50,
+    "newReceptiveVocabularyBudget": 46,
+    "plannedEpisodeNumbers": [18, 38]
+  },
+
+  "reuseMatrix": {
+    "legend": { "I": "introduced", "R": "reused", "C": "consolidated in an integrated conversation" },
+    "arcOrder": ["work_and_study", "daily_rhythm", "people_around_you", "finding_your_way", "paying_and_choosing", "what_you_can_do", "making_arrangements"],
+    "rows": {
+      "introduce_self": ["R", "-", "R", "-", "-", "-", "C"],
+      "ask_name": ["R", "-", "R", "-", "-", "-", "-"],
+      "full_greeting": ["-", "-", "R", "-", "-", "-", "-"],
+      "ask_wellbeing": ["-", "-", "R", "-", "-", "-", "C"],
+      "ask_origin": ["R", "-", "-", "-", "-", "-", "-"],
+      "full_conversation": ["C", "-", "C", "-", "-", "-", "-"],
+      "express_preferences": ["-", "R", "-", "-", "R", "R", "C"],
+      "express_needs": ["-", "-", "-", "-", "R", "R", "-"],
+      "make_plan": ["-", "-", "-", "-", "-", "-", "C"],
+      "polite_request": ["-", "-", "-", "R", "R", "-", "R"],
+      "respond_anything_else": ["-", "-", "-", "-", "R", "-", "-"],
+      "cafe_order": ["-", "-", "-", "-", "C", "-", "-"],
+      "ask_for_repair": ["R", "R", "-", "R", "R", "R", "C"],
+      "close_an_encounter": ["R", "-", "R", "R", "R", "-", "C"],
+      "identify_things": ["-", "-", "-", "I-R", "R", "-", "-"],
+      "use_small_numbers": ["-", "R", "-", "-", "R", "-", "R"],
+      "talk_about_work_or_study": ["I", "R", "R", "-", "-", "-", "-"],
+      "ask_about_work_or_study": ["I", "R", "-", "-", "-", "R", "-"],
+      "talk_about_daily_routine": ["-", "I", "-", "-", "-", "R", "-"],
+      "say_when_something_happens": ["-", "I", "-", "-", "R", "-", "C"],
+      "ask_what_something_means": ["-", "I", "R", "R", "R", "R", "R"],
+      "introduce_someone_else": ["-", "-", "I", "-", "-", "-", "R"],
+      "ask_where_something_is": ["-", "-", "-", "I", "R", "-", "-"],
+      "say_where_something_is": ["-", "-", "-", "I", "-", "-", "C"],
+      "ask_about_getting_somewhere": ["-", "-", "-", "I", "-", "-", "-"],
+      "use_bigger_numbers": ["-", "-", "-", "-", "I", "-", "R"],
+      "ask_the_price": ["-", "-", "-", "-", "I", "-", "-"],
+      "buy_something": ["-", "-", "-", "-", "I/C", "-", "-"],
+      "say_what_you_can_do": ["-", "-", "-", "-", "-", "I", "C"],
+      "ask_someone_about_ability": ["-", "-", "-", "-", "-", "I", "R"],
+      "ask_how_to_say_something": ["-", "-", "-", "-", "-", "I", "R"],
+      "arrange_to_meet": ["-", "-", "-", "-", "-", "-", "I/C"]
+    },
+    "singleAppearanceRisks": ["ask_about_getting_somewhere", "ask_the_price", "buy_something"],
+    "mitigation": "The three thin rows are all in the transactions branch. `ask_the_price` and `buy_something` return in the closing arc only as receptive input, so the review scheduler carries them; `ask_about_getting_somewhere` is a should-have and is the first candidate to drop if the level needs trimming."
+  },
+
+  "autonomy": {
+    "early": { "arcs": ["work_and_study", "daily_rhythm"], "modelAnswer": "available while a frame is new, withheld on the arc's last recall", "openProductionsPerEpisode": "2–3", "learnerInitiatedQuestions": "1 per arc", "repair": "planted once per arc" },
+    "mid": { "arcs": ["people_around_you", "finding_your_way", "paying_and_choosing"], "modelAnswer": "withheld on the integrated episode of each arc", "openProductionsPerEpisode": "2–4", "learnerInitiatedQuestions": "1–2 per arc", "repair": "required by design in at least one episode per arc" },
+    "late": { "arcs": ["what_you_can_do", "making_arrangements"], "modelAnswer": "withheld by default; support returns after a wrong answer", "openProductionsPerEpisode": "3–5", "learnerInitiatedQuestions": "2 per arc", "repair": "learner-chosen rather than scripted" },
+    "principle": "Phase is a design expectation, not a rule the engine applies. The support engine keeps deciding from this learner's evidence, exactly as it does in Pre-A1."
+  },
+
+  "exitCriteria": {
+    "curriculumCompleteA1": "every one of the 21 planned episodes completed at least once",
+    "readinessDimensionsForA2": [
+      { "dimension": "required capabilities produced unaided", "appliesTo": "the 13 required A1 can-dos", "note": "the same shape as Pre-A1's independentEvidencePerCanDo; the number is chosen when there is evidence from real journeys, not now" },
+      { "dimension": "integrated conversations held unaided", "appliesTo": ["daily_rhythm", "paying_and_choosing", "making_arrangements"], "note": "at least the closing one" },
+      { "dimension": "review health", "appliesTo": "required-core items of A1 and of Pre-A1 together", "note": "Pre-A1's overdue-review rule extended to the union, not replaced" },
+      { "dimension": "no fragile required capability", "appliesTo": "the 13 required A1 can-dos" },
+      { "dimension": "breadth", "appliesTo": "the seven skill families", "note": "recent evidence from at least five of them, so a learner cannot leave the level on one branch" }
+    ],
+    "notCriteria": ["every language item at can_use", "any 0–100 score", "episode completion as mastery"],
+    "lastRequiredA1Capability": "arrange_to_meet",
+    "firstA2Capability": "talk_about_what_you_did"
+  },
+
+  "graduationArchitecture": {
+    "milestoneKeyForA1": "levelMilestones.a1",
+    "scales": true,
+    "changeNeeded": "MILESTONE_LEVELS in learnerModel.js currently lists only 'pre_a1'; adding 'a1' is a one-line extension and sanitizeLevelMilestones already loops over the list.",
+    "principle": "curriculumCompleteA1 ≠ currentReadinessA2 ≠ graduatedA1, exactly as Pre-A1 keeps the three apart. Historical, monotonic, idempotent, written where evidence changes.",
+    "notInThisSprint": "No A1 milestone, no A1 readiness function, no learner-model change."
+  },
+
+  "factsToCapture": [
+    { "id": "work_or_study", "semanticType": "place", "confidence": "medium", "source": "learner statement in arc 1", "reuseContexts": ["daily_rhythm", "what_you_can_do", "making_arrangements"], "privacy": "no employer names; a neutral category is enough", "store": true },
+    { "id": "usual_time", "semanticType": "time_point", "confidence": "low", "source": "learner statement in arc 2", "reuseContexts": ["making_arrangements"], "privacy": "harmless", "store": true },
+    { "id": "can_do_activity", "semanticType": "activity", "confidence": "medium", "source": "learner statement in arc 6", "reuseContexts": ["making_arrangements"], "privacy": "harmless", "store": true },
+    { "id": "preferred_day", "semanticType": "day", "confidence": "low", "source": "learner statement in arc 7", "reuseContexts": ["making_arrangements"], "privacy": "harmless", "store": true },
+    { "id": "relation_names", "semanticType": "relation", "store": false, "why": "Naming a learner's family is personal data with no reuse the curriculum needs; the arc works with a neutral partner." },
+    { "id": "home_address", "store": false, "why": "Never collected, never practised with real values." },
+    { "id": "phone_number", "store": false, "why": "Never collected." }
+  ],
+
+  "personalization": {
+    "safeSlots": ["name", "origin", "likes", "interests", "work_or_study", "usual_time", "can_do_activity", "preferred_day"],
+    "neutralFallbackRequired": true,
+    "rule": "Every personalised slot must have a neutral value that keeps the English correct, exactly as the semantic layer already enforces for Pre-A1. An arc that cannot run without a remembered fact is a broken arc."
+  },
+
+  "implementationPhases": [
+    { "phase": 0, "name": "A1 architecture readiness", "scope": "level-aware curriculum registry and readiness scoping, per-arc content loading path, authoring validation, MILESTONE_LEVELS left alone", "gate": "required before episode 18" },
+    { "phase": 1, "name": "Arc work_and_study", "episodes": [18, 19, 20] },
+    { "phase": 2, "name": "Arc daily_rhythm", "episodes": [21, 22, 23] },
+    { "phase": 3, "name": "Arc people_around_you", "episodes": [24, 25, 26] },
+    { "phase": 4, "name": "Arc finding_your_way", "episodes": [27, 28, 29] },
+    { "phase": 5, "name": "Arc paying_and_choosing", "episodes": [30, 31, 32, 33] },
+    { "phase": 6, "name": "Arc what_you_can_do", "episodes": [34, 35] },
+    { "phase": 7, "name": "Arc making_arrangements", "episodes": [36, 37, 38] },
+    { "phase": 8, "name": "A1 readiness, graduation and full-level regression", "scope": "deriveA1Readiness, levelMilestones.a1, two-learner journeys, full regression" }
+  ],
+
+  "technicalReadiness": [
+    { "area": "level registry", "state": "ARC and ARCS are one flat Pre-A1 list; episodesForLevel(level) already takes a level and answers only for pre_a1", "blocksEp18": true, "when": "phase 0", "risk": "low" },
+    { "area": "curriculum content loading", "state": "all seventeen episodes live in one module, imported only by lazy screens", "blocksEp18": true, "when": "phase 0", "risk": "medium — per-arc modules and a loader are needed before the level doubles" },
+    { "area": "readiness", "state": "curriculumComplete asks whether every episode in the skeleton is done", "blocksEp18": true, "when": "phase 0", "risk": "low — needs a level filter, not a rewrite" },
+    { "area": "Home", "state": "arcProgress runs over the whole skeleton; the Pre-A1 card reads preA1Status", "blocksEp18": true, "when": "phase 0", "risk": "low" },
+    { "area": "planner and session engine", "state": "planDay and buildSessionPlan already take the episode list as an argument", "blocksEp18": false, "when": "no change", "risk": "none" },
+    { "area": "session runner tables", "state": "PROMPT and MODEL_ANSWER are keyed by intent; a missing entry silently falls back to the greeting", "blocksEp18": true, "when": "phase 0 authoring check", "risk": "high if unguarded — this is the defect the closure audit found in the sixth arc" },
+    { "area": "learner model", "state": "v7, level-agnostic except MILESTONE_LEVELS", "blocksEp18": false, "when": "phase 8", "risk": "none" },
+    { "area": "milestones", "state": "MILESTONE_LEVELS = ['pre_a1']", "blocksEp18": false, "when": "phase 8", "risk": "none" },
+    { "area": "Memory Garden", "state": "no level awareness; shows what the learner has met", "blocksEp18": false, "when": "optional, mid-A1 if the list gets long", "risk": "low" },
+    { "area": "semanticContext", "state": "9 types, slot table per intent", "blocksEp18": false, "when": "with the arc that needs each type", "risk": "low" },
+    { "area": "evaluator", "state": "29 intents, deterministic first, hybrid escalation", "blocksEp18": false, "when": "with each arc", "risk": "medium — the ability/request sense of `can` needs a deliberate rule" },
+    { "area": "i18n", "state": "core UI plus per-locale chunks; every episode key exists in eight locales", "blocksEp18": false, "when": "with each arc", "risk": "medium — copy volume, not architecture" },
+    { "area": "bundle", "state": "entry 364.0 KiB with the curriculum in a lazy chunk of 159.6 KiB", "blocksEp18": false, "when": "phase 0 sets the per-arc pattern", "risk": "medium if A1 lands in one chunk" },
+    { "area": "checks", "state": "41 scripts; the freeze checks pin Pre-A1 at 6 arcs and 17 episodes on purpose", "blocksEp18": false, "when": "phase 0 adds level scoping to the loading checks, leaving the freeze pins alone", "risk": "low" }
+  ],
+
+  "beforeEp18Gate": [
+    "level-aware curriculum registry: episodes and arcs carry a level, and accessors answer per level",
+    "readiness and Home scoped to a level so Pre-A1 completion and graduation keep their meaning",
+    "a content loading path that keeps A1 out of the entry chunk, per arc",
+    "an authoring check that fails when an episode declares an intent the session runner cannot present"
+  ],
+
+  "decision": "SMALL ARCHITECTURE SPRINT NEEDED",
+
+  "authoringContract": {
+    "everyFutureEpisodeMustDeclare": [
+      "id", "level", "arc", "canDoId", "role (primary or reinforcement)",
+      "curriculumPrerequisites", "skillPrerequisites",
+      "titleKey", "goalKey", "canDoNameKey", "durationKey", "estimatedMinutes", "xp",
+      "steps", "each productive step's evalKind", "semantic slots where a step personalises",
+      "gardenItems", "receptive items declared as receptive", "reuse skills the episode exercises"
+    ],
+    "mustNotDeclare": ["fields no runtime reads", "targetItems, reviewItems or personalized — all three are derived", "a can-do that no step produces"],
+    "checksThatMustPassPerArc": [
+      "a new can-do that is actually produced in an open turn",
+      "declared reuse actually exercised by a step",
+      "every evalKind present in the session runner's prompt and model-answer tables",
+      "every semantic slot compatible with the intent",
+      "every Garden grant reachable and in the vocabulary catalogue",
+      "every locale key present in all eight locales",
+      "no prerequisite cycle",
+      "the arc's content absent from the entry chunk",
+      "two consecutive clean cycles"
+    ]
+  },
+
+  "risks": [
+    { "id": "textbook_drift", "risk": "The level slides into topic units — food, family, clothes.", "mitigation": "Every arc names a communicative problem before a topic, and no arc exists for a vocabulary set." },
+    { "id": "pattern_overload", "risk": "Time, numbers, questions and third person all arriving at once.", "mitigation": "One new pattern group per episode, two only on an integration episode; the number extension arrives as prices." },
+    { "id": "intent_explosion", "risk": "One intent per phrase would add thirty for twenty-one episodes.", "mitigation": "Fourteen intents plus subtypes on existing ones; repair grows by repairKind, quantity by range." },
+    { "id": "garden_explosion", "risk": "Every scene word becoming a tracked item.", "mitigation": "Days of the week and numbers 11–100 are one item each, as numbers_1_10 already is; receptive input is not granted." },
+    { "id": "can_ambiguity", "risk": "Ability `can` colliding with Pre-A1's request `can`.", "mitigation": "Documented as the level's one real evaluator debt; the ability arc must resolve it with a rule, not a second intent." },
+    { "id": "thin_transactions_branch", "risk": "Price and purchase appearing once each.", "mitigation": "Both return as receptive input in the closing arc and are carried by the review scheduler; the should-have transport episode is the trim candidate." },
+    { "id": "single_chunk_a1", "risk": "Twenty-one episodes in one lazy chunk.", "mitigation": "Phase 0 establishes per-arc chunks before the first episode is written." },
+    { "id": "copy_volume", "risk": "Twenty-one episodes times eight locales.", "mitigation": "Arc-sized sprints, each finishing with complete locales; the i18n check already fails on a missing key." }
+  ]
+}
