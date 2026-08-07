@@ -72,26 +72,33 @@ for (const [loc, probe] of LOCALE_PROBES) {
 ok()
 
 // 4) secondary screens and the practice surface are split out
-for (const name of ['ConversationRoom', 'MemoryGarden', 'ConversationArchive', 'LanguageIdentity', 'Pricing', 'AuthFlow', 'SetupFlow']) {
+for (const name of ['ConversationRoom', 'EpisodeShell', 'SessionRunner', 'MemoryGarden', 'ConversationArchive', 'LanguageIdentity', 'Pricing', 'AuthFlow', 'SetupFlow']) {
   assert.equal(find(new RegExp(`^${name}-.*\\.js$`)).length, 1, `${name} should be its own chunk`)
 }
 ok()
 
 /*
- * 5) The episode UI and the evaluators ride with the practice chunk.
+ * 5) The episode UI and the evaluators ride with the PLAYER, not with the list.
  *
  * The arc *metadata* (ids, prerequisites, titles) does stay in the entry on
  * purpose: Home describes today's session, so it has to know which episode is
  * next. What must not be there is the machinery — the response evaluators, the
  * hybrid router and the episode/session UI — which is the bulk of the weight.
+ *
+ * This used to look for it in the ConversationRoom chunk, when the practice
+ * screen and the player were the same chunk. They are not any more: a learner
+ * who opens the practice list and stays there loads neither the machinery nor the
+ * level's content. So the rule keeps its ban on the entry and adds the listing.
  */
-const practice = readFileSync(join(DIST, find(/^ConversationRoom-.*\.js$/)[0]), 'utf8')
+const player = readFileSync(join(DIST, find(/^EpisodeShell-.*\.js$/)[0]), 'utf8')
+const listing = readFileSync(join(DIST, find(/^ConversationRoom-.*\.js$/)[0]), 'utf8')
 for (const probe of ['acceptedVariant', 'masteryEvidence']) {
-  assert.ok(practice.includes(probe), `evaluator (${probe}) should ship with the practice chunk`)
+  assert.ok(player.includes(probe), `evaluator (${probe}) should ship with the episode player`)
   assert.ok(!entrySource.includes(probe), `evaluator (${probe}) must not ship in the entry chunk`)
+  assert.ok(!listing.includes(probe), `evaluator (${probe}) must not ship with the practice listing`)
 }
-// the interactive episode UI belongs to practice too
-assert.ok(practice.includes('aria-pressed'), 'episode UI should ship with the practice chunk')
+// the interactive episode UI belongs to the player too
+assert.ok(player.includes('aria-pressed'), 'episode UI should ship with the episode player')
 ok()
 
 // 6) no check script or test helper ever reaches the bundle

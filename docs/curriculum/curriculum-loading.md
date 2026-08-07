@@ -60,13 +60,30 @@ The A1 architecture readiness sprint added the registry and the content resolver
 
 | | before | after |
 |---|---|---|
-| entry chunk | 364.0 kB (107.8 gzip) | **365.6 kB** (108.3 gzip) |
+| entry chunk | 364.0 kB (107.8 gzip) | **365.5 kB** (108.3 gzip) |
 | episode content | inside `ConversationRoom`, 159.6 kB | its own chunk, `preA1Content`, 35.4 kB |
-| practice screen chunk | — | `ConversationRoom`, 124.3 kB |
-| chunks | 16 | **17** |
-| total JS | 1002.8 kB | **1004.6 kB** |
+| practice listing | — | `ConversationRoom`, 22.8 kB |
+| episode player | — | `EpisodeShell`, 81.9 kB · `SessionRunner`, 21.1 kB |
+| chunks | 16 | **19** |
+| total JS | 1002.8 kB | **1006.0 kB** |
 
-The entry grew by **1.6 kB** — the registry and the resolver, both of which the first screen genuinely uses. Opening practice costs 159.8 kB in two requests where it cost 159.6 kB in one: the same bytes, one more round trip, and each level's content now arrives separately, which is the point. Nothing moved into the entry: the leak probes still find no episode prose there.
+The entry grew by **1.5 kB** — the registry and the resolver, both of which the first screen genuinely uses. Nothing moved into the entry: the leak probes still find no episode prose there.
+
+### Size is not the same question as timing
+
+Splitting the content out of the entry was measured and declared done — and it was, for the entry. But the content was still a **static** import of the practice screen, so opening the practice list downloaded every episode's prose before the learner had asked to practise anything. A check that only asks "is it in the entry?" passes happily while that is true.
+
+The list and the player are now different chunks. What each path costs, on the served build, read from the browser's own resource timings:
+
+| path | chunks fetched |
+|---|---|
+| Home | entry + interface locale |
+| practice listing · replay list | + `ConversationRoom` (22.8 kB) |
+| session plan proposed on Home | nothing more |
+| start · resume · replay an episode | + `EpisodeShell`, `vocabulary`, `preA1Content` |
+| a session block that plays | + `SessionRunner` (and the above) |
+
+Total bytes for a learner who actually practises are the same as before; a learner who opens the list and stops pays 22.8 kB instead of 159.8 kB. The invariant is not the size, it is **when**: metadata to describe an episode, content only to run one.
 
 What is left in the entry is what the first screen genuinely needs: React (128.6 kB), the English base dictionary (56.9 kB, the fallback for every locale), the learner model, the planner, and the skeleton.
 
@@ -79,6 +96,8 @@ The Vite warning threshold is untouched at its default 500 kB. `check-curriculum
 - the registry's answers still come out right for all seventeen episodes
 - no episode-only sentence appears in the entry chunk, and neither does the vocabulary catalogue
 - the shape *is* in the entry — Home cannot plan the day without it
+- only the two surfaces that play an episode (`EpisodeShell`, `SessionRunner`) import the content in source, and only the resolver imports it dynamically; the chunk holding the practice listing depends on it neither way and contains no prose
+- the evaluators and the episode UI ship with the player, never with the entry and never with the listing
 - the content is in a chunk that some other chunk fetches by name, that `index.html` does not preload, and that is not named like the entry — the entry is identified by reading `index.html`, not by a filename pattern, after a content chunk built from `episodes/index.js` was briefly mistaken for it
 - the entry is under 400 kB with the warning limit at its default
 - a chunk that fails to arrive is caught, reported in the learner's language, and retryable — the boundary loads modules itself rather than through `React.lazy`, which would memoise the failure for the rest of the page's life, and a second attempt reloads once (guarded) to clear a cached failure after a stale deploy

@@ -3,15 +3,35 @@ import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MessageBubble, TypingIndicator } from '../chat/MessageBubble'
 import { ChattoMascot } from '../mascot/ChattoMascot'
-import { EpisodeShell } from '../episode/EpisodeShell'
 import { CompletedEpisodes } from '../episode/CompletedEpisodes'
-import { SessionRunner } from '../session/SessionRunner'
-import { ARC, getEpisode } from '../../learning/episodes/index.js'
+import { lazyScreen } from '../ui/LazyBoundary'
+import { PRE_A1, episodesOfLevel } from '../../learning/curriculum/levels.js'
+import { SKELETON_BY_ID } from '../../learning/curriculum/preA1Skeleton.generated.js'
 import { planDay } from '../../learning/engine/planner.js'
 import { loadLearnerModel, getEpisodeState } from '../../learning/engine/learnerModel.js'
 import { selectLearnerFact } from '../../learning/engine/learnerFacts.js'
 import { loadMemoryContext, dismissFact } from '../../learning/engine/memoryContext.js'
 import { asSubjectValue } from '../../learning/engine/semanticContext.js'
+
+/*
+ * The episodes this screen may talk about, as structure only.
+ *
+ * The practice screen used to import the episode definitions to name the
+ * suggested episode and to hand the planner a list — and, because the import was
+ * static, entering the practice list downloaded the whole level's prose before
+ * the learner had asked to practise anything. Everything the list shows (title,
+ * goal, duration, capability, arc, completion) is in the generated skeleton.
+ */
+const ARC = episodesOfLevel(PRE_A1)
+
+/*
+ * The two surfaces that genuinely need the content are loaded when they mount,
+ * through the same boundary every other screen uses: a learner who opens the
+ * practice list and stays there never fetches an episode, and one who starts,
+ * resumes or replays gets a loading state and a real retry if the chunk fails.
+ */
+const EpisodePlayer = lazyScreen(() => import('../episode/EpisodeShell'), m => m.EpisodeShell)
+const SessionPlayer = lazyScreen(() => import('../session/SessionRunner'), m => m.SessionRunner)
 
 export function ConversationRoom() {
   const {
@@ -108,10 +128,17 @@ export function ConversationRoom() {
 
   // An active daily session drives the practice area; it renders episodes through
   // the same EpisodeShell, so there is never a second episode instance.
+  // the labels the content boundary needs, in the learner's own language
+  const playerLabels = {
+    loadingLabel: t('screenLoading'),
+    errorLabel: t('screenLoadFailed'),
+    retryLabel: t('screenLoadRetry'),
+  }
+
   if (sessionActive && dailySession) {
     return (
       <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>
-        <SessionRunner />
+        <SessionPlayer {...playerLabels} />
       </div>
     )
   }
@@ -120,14 +147,14 @@ export function ConversationRoom() {
   if (episodeActiveId) {
     return (
       <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>
-        <EpisodeShell episodeId={episodeActiveId} runOptions={episodeRunOptions} />
+        <EpisodePlayer {...playerLabels} episodeId={episodeActiveId} runOptions={episodeRunOptions} />
       </div>
     )
   }
 
   // Deterministic planner picks what to offer (re-read on arc changes).
   const plan = planDay(loadLearnerModel(), ARC)
-  const suggestedEpisode = plan.episodeId ? getEpisode(plan.episodeId) : null
+  const suggestedEpisode = plan.episodeId ? SKELETON_BY_ID[plan.episodeId] || null : null
 
   return (
     <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>

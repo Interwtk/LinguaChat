@@ -242,6 +242,88 @@ if (!existsSync(DIST)) {
     assert.ok(/sessionStorage/.test(boundary), 'guarded so a permanently missing chunk cannot loop')
     ok()
   }
+
+  {
+    /*
+     * The listing is not the player.
+     *
+     * Home, the practice list, the replay list and session planning all describe
+     * episodes; only starting, resuming or replaying one needs its steps. The
+     * content used to be a static import of the practice screen, so opening the
+     * list downloaded the whole level's prose — invisible to a check that only
+     * asked whether the content was in the entry chunk.
+     */
+    const CONTENT_MODULE = /episodes\/(index|preA1Content)\.js/
+
+    /* in source: exactly two modules may reach the content, and only to play it */
+    const sourceFiles = [
+      'src/components/layout/ConversationRoom.jsx',
+      'src/components/today/TodayView.jsx',
+      'src/components/episode/CompletedEpisodes.jsx',
+      'src/components/episode/EpisodeShell.jsx',
+      'src/components/session/SessionRunner.jsx',
+      'src/context/AppContext.jsx',
+      'src/learning/curriculum/readiness.js',
+      'src/learning/curriculum/preA1Map.js',
+      'src/learning/curriculum/episodeContent.js',
+      'src/learning/engine/planner.js',
+      'src/learning/engine/session.js',
+    ]
+    const staticImporters = []
+    const dynamicImporters = []
+    for (const path of sourceFiles) {
+      const src = readFileSync(path, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+      for (const line of src.split('\n')) {
+        if (!CONTENT_MODULE.test(line)) continue
+        if (/^\s*import\s|^\s*export\s.*\sfrom\s/.test(line)) staticImporters.push(path)
+        else if (/import\s*\(/.test(line)) dynamicImporters.push(path)
+      }
+    }
+    assert.deepEqual([...new Set(staticImporters)].sort(),
+      ['src/components/episode/EpisodeShell.jsx', 'src/components/session/SessionRunner.jsx'],
+      `only the two surfaces that play an episode may import its content: ${staticImporters.join(', ')}`)
+    assert.deepEqual([...new Set(dynamicImporters)], ['src/learning/curriculum/episodeContent.js'],
+      'the resolver is the only module allowed to import content dynamically')
+
+    /* and the listing must be able to describe an episode without its content */
+    const room = readFileSync('src/components/layout/ConversationRoom.jsx', 'utf8')
+    assert.ok(/SKELETON_BY_ID/.test(room), 'the practice screen names the suggested episode from the skeleton')
+    assert.ok(/episodesOfLevel\(PRE_A1\)/.test(room), 'and plans within one level')
+    assert.ok(/lazyScreen\(/.test(room), 'and loads the player through the retryable boundary')
+
+    /*
+     * In the build: find the chunk that holds the practice listing by a string
+     * only that screen has, and prove it does not pull the content chunk.
+     */
+    const LISTING_MARKER = 'Correct my next sentence and give me one tiny challenge.'
+    const listing = files.find(f => readFileSync(join(DIST, f), 'utf8').includes(LISTING_MARKER))
+    assert.ok(listing, 'the practice listing must be in some chunk')
+    assert.notEqual(listing, entryName, 'and it must not be the entry')
+
+    const contentChunk = files.find(f => /^preA1Content-/.test(f))
+    assert.ok(contentChunk, 'the level content must have its own chunk')
+    const listingSrc = readFileSync(join(DIST, listing), 'utf8')
+    assert.ok(!listingSrc.includes(`from"./${contentChunk}"`) && !listingSrc.includes(`from "./${contentChunk}"`),
+      `${listing} statically imports ${contentChunk}: opening the practice list downloads the level`)
+    assert.ok(!listingSrc.includes(`import("./${contentChunk}")`),
+      `${listing} imports the content itself; the player should`)
+    assert.ok(!curriculumOnlyProse().some(text => listingSrc.includes(text)),
+      `${listing} contains episode prose`)
+
+    /* the players are where the static dependency belongs */
+    const staticChunks = files.filter(f => {
+      if (f === contentChunk) return false
+      const src = readFileSync(join(DIST, f), 'utf8')
+      return src.includes(`from"./${contentChunk}"`) || src.includes(`from "./${contentChunk}"`)
+    })
+    assert.ok(staticChunks.length > 0, 'something must actually load the content')
+    for (const chunk of staticChunks) {
+      assert.ok(/^(EpisodeShell|SessionRunner)-/.test(chunk),
+        `${chunk} depends on the level content without being a player surface`)
+    }
+    console.log(`  listing ${listing} carries no content; ${staticChunks.join(', ')} do`)
+    ok()
+  }
 }
 
 console.log(`\ncheck-curriculum-loading — OK  (${groups} loading groups verified)`)

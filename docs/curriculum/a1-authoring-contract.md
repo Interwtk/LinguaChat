@@ -86,6 +86,8 @@ Refusal reasons are distinct so a log says what happened: `unknown_level`, `leve
 
 Each level's content is imported through a module named after the level (`episodes/preA1Content.js`), so the build output names what a chunk carries instead of emitting a second `index-*.js`. The loading check enforces that a content chunk is distinguishable from the entry by name.
 
+**Describing an episode never loads it.** Home, the practice listing, the replay list and session planning read the skeleton; only `EpisodeShell` and `SessionRunner` import the content, and they are loaded when they mount, through the retryable boundary. `check:curriculum-loading` asserts the list of allowed importers, so an A1 arc that reaches for its content from a listing screen fails the check rather than quietly making the list heavy again.
+
 ## To implement episode 18, the author will
 
 The migration path, concretely — this is what the next sprint does, and nothing in it is a change to Pre-A1:
