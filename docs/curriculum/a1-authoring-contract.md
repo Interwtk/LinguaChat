@@ -88,6 +88,27 @@ Each level's content is imported through a module named after the level (`episod
 
 **Describing an episode never loads it.** Home, the practice listing, the replay list and session planning read the skeleton; only `EpisodeShell` and `SessionRunner` import the content, and they are loaded when they mount, through the retryable boundary. `check:curriculum-loading` asserts the list of allowed importers, so an A1 arc that reaches for its content from a listing screen fails the check rather than quietly making the list heavy again.
 
+## Interest personalization
+
+A future A1 episode may let a topic change what its story is *about*. Opting in is a declaration, and the declaration is small:
+
+| field | means |
+|---|---|
+| `personalizationMode` | `none` — the situation is the lesson; `light` — safe details may change; `themed` — the template declares a controlled variant per topic |
+| `slots` | slot name → slot type: `object` (a countable thing from `semanticContext.THINGS`), `activity`, `topic` (conversational, never graded), `subject` (the noun in "I like ___") |
+| `neutralFallback` | the value for each slot when the topic has none. Most interests have no countable object, so this is the normal path, not the error path |
+| `themes` | `themed` only: the variant per interest id |
+
+**The invariant, and it is the whole contract:**
+
+> Personalisation may change what the story is ABOUT. It may never change what the learner has to DO.
+
+`canDoId`, every step's `evalKind`, the expected patterns, the required evidence, the difficulty, the XP and which branch is correct are copied through untouched. A template that lists one of them as a slot is **refused**, not obeyed — a story that grades differently depending on the learner's hobbies is not personalisation, it is a broken assessment. `invariantDrift(storyA, storyB)` is how an author proves two personalisations still teach the same thing.
+
+A slot the topic cannot fill uses the template's own neutral value; a template with no neutral for it stays neutral entirely, rather than shipping a sentence with a hole in it. Unknown compatibility always ends at neutral: a correct neutral story beats a wrong personalised one.
+
+Nothing about this is retrofitted onto Pre-A1 — that level is frozen and its stories were not touched. The contract is proven with a synthetic template inside `check:interest-personalization`, which is never registered as an episode. The rest of the design (catalogue, selection, cooldown, provider boundary, privacy) is in [interests.md](../personalization/interests.md).
+
 ## To implement episode 18, the author will
 
 The migration path, concretely — this is what the next sprint does, and nothing in it is a change to Pre-A1:
