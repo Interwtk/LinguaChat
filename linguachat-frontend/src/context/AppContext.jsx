@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { sendChatMessage } from '../services/api'
 import {
   ensureLanguagePreferences,
@@ -55,7 +55,10 @@ import { episodeRequest } from '../learning/curriculum/episodeContent.js'
 const ARC = episodesOfLevel(PRE_A1)
 import { loadLearnerModel, saveLearnerModel, recordItemSeen } from '../learning/engine/learnerModel.js'
 import { markFactUsed, rotateFactUsage, selectLearnerFact } from '../learning/engine/learnerFacts.js'
-import { loadMemoryContext } from '../learning/engine/memoryContext.js'
+import {
+  loadMemoryContext, dismissTopic, recordTopicUse, recentTopicIds,
+} from '../learning/engine/memoryContext.js'
+import { selectTopic, providerTopicContext } from '../learning/engine/topicSelection.js'
 import { asSubjectValue } from '../learning/engine/semanticContext.js'
 import {
   loadSession, saveSession, clearSession, getOrCreateSession, startSession,
@@ -136,6 +139,12 @@ export function AppProvider({ children }) {
   const [activeMission, setActiveMission] = useState(loadActiveMission)
   const [completedMissions, setCompletedMissions] = useState(loadCompletedMissions)
   const [tutorPreferences, setTutorPreferencesState] = useState(loadTutorPreferences)
+  /*
+   * Which conversation this is, for the purpose of choosing a subject. Bumped
+   * when the learner asks for another topic, so the choice is re-derived without
+   * anything else about the conversation resetting.
+   */
+  const [topicRound, setTopicRound] = useState(0)
   const [activeCompanion, setActiveCompanionState] = useState(loadActiveCompanion)
   const [textSize, setTextSizeState] = useState(loadTextSize)
   const [showWelcome, setShowWelcome] = useState(false)
@@ -408,14 +417,52 @@ export function AppProvider({ children }) {
    * The plan is deterministic, so the preview always matches what `beginSession`
    * will actually store.
    */
+  /*
+   * What this conversation is about.
+   *
+   * Chosen from the interests the learner ticked, avoiding what they have heard
+   * about recently and whatever they waved away today. Seeded by the chat session
+   * and the round, so it survives a reload and a re-render and only moves when
+   * something real moves it. Never null: with no interests, or none that fit, it
+   * is the neutral everyday context.
+   */
+  const conversationTopic = useMemo(() => {
+    const memory = loadMemoryContext()
+    return selectTopic({
+      explicitInterests: tutorPreferences?.interests || [],
+      recentTopics: recentTopicIds(memory),
+      dismissedTopics: memory.dismissedTopicIds,
+      acceptedSemanticTypes: ['topic'],
+      seed: `${sessionId}:${topicRound}`,
+    })
+  }, [tutorPreferences, sessionId, topicRound])
+
+  /*
+   * "Let's talk about something else."
+   *
+   * Puts today's topic aside and re-derives the next one. The interest itself is
+   * untouched: it stays selected, it keeps its place in the catalogue, and
+   * tomorrow it can come back — declining a subject this afternoon says nothing
+   * about what somebody enjoys.
+   */
+  const useAnotherConversationTopic = useCallback(() => {
+    if (conversationTopic?.interestId) dismissTopic(conversationTopic.interestId)
+    setTopicRound(round => round + 1)
+  }, [conversationTopic])
+
   // What the planner needs to pin today's subject matter: the interests the
   // learner already chose, plus a stable key so the choice is reproducible.
-  const sessionContext = useCallback(() => ({
-    interests: tutorPreferences?.interests || [],
-    learnerKey: (profile.name || 'guest').trim() || 'guest',
-    // topics the learner waved away today are not used to build today's plan
-    dismissedFactIds: loadMemoryContext().dismissedFactIds,
-  }), [tutorPreferences, profile.name])
+  const sessionContext = useCallback(() => {
+    const memory = loadMemoryContext()
+    return {
+      interests: tutorPreferences?.interests || [],
+      learnerKey: (profile.name || 'guest').trim() || 'guest',
+      // topics the learner waved away today are not used to build today's plan
+      dismissedFactIds: memory.dismissedFactIds,
+      dismissedTopics: memory.dismissedTopicIds,
+      recentTopics: recentTopicIds(memory),
+    }
+  }, [tutorPreferences, profile.name])
 
   const previewSession = useCallback((durationMode) => {
     const mode = durationMode || preferredDuration
@@ -818,6 +865,15 @@ export function AppProvider({ children }) {
         text: m.text,
         correction: m.feedback?.correction || null,
       }))
+      /*
+       * Has the LEARNER said anything yet?
+       *
+       * Not "is the history empty": the screen opens with Lingua's welcome, so it
+       * never is, and checking length meant the subject was never offered at all.
+       * What matters is whether the conversation has a subject of the learner's —
+       * before their first message it does not, and after it, it does.
+       */
+      const learnerHasSpoken = messages.some(m => m.role === 'user')
       const response = await sendChatMessage({
         message: text.trim(),
         level: profile.level,
@@ -846,6 +902,13 @@ export function AppProvider({ children }) {
           accept: (f) => Boolean(asSubjectValue(f.value)),
           type: 'like', seed: sessionId, dismissedIds: loadMemoryContext().dismissedFactIds,
         })?.value || null,
+        /*
+         * The subject travels with the OPENING message and then stops. Once a
+         * conversation exists, whatever the learner made it about is what it is
+         * about: a suggestion that keeps arriving turn after turn is how a tutor
+         * ends up saying "anyway, back to technology".
+         */
+        topicContext: learnerHasSpoken ? null : providerTopicContext(conversationTopic),
       })
 
       setConnectionNotice(response.connectionMessage)
@@ -856,6 +919,11 @@ export function AppProvider({ children }) {
         userMessage: text.trim(),
         response,
       }))
+      /*
+       * Cooldown, not history: one id, so the next conversation prefers a
+       * different one. No message, no reply and no prompt is recorded anywhere.
+       */
+      if (!learnerHasSpoken && conversationTopic?.interestId) recordTopicUse(conversationTopic.interestId)
 
       const linguaMsg = {
         id: `l${Date.now()}`,
@@ -886,7 +954,7 @@ export function AppProvider({ children }) {
     } finally {
       setIsTyping(false)
     }
-  }, [activeCompanion, activeMission, interfaceLanguageInfo, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage, tutorPreferences])
+  }, [activeCompanion, activeMission, conversationTopic, interfaceLanguageInfo, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage, tutorPreferences])
 
   useEffect(() => {
     if (restoredMissionRef.current) return
@@ -956,6 +1024,7 @@ export function AppProvider({ children }) {
       onboardingCompleted, completeOnboarding,
       profile, updateProfile,
       tutorPreferences, updateTutorPreferences,
+      conversationTopic, useAnotherConversationTopic,
       activeCompanion, setActiveCompanion,
       textSize, setTextSize,
       view, navigateTo,

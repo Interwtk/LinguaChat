@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { ChattoMascot } from '../mascot/ChattoMascot'
-import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS } from '../../services/tutorPreferences'
+import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS, MAX_INTERESTS, toggleInterestId } from '../../services/tutorPreferences'
 
 function ChipRow({ label, value, options, onChange, t }) {
   return (
@@ -60,14 +60,16 @@ export function TutorPersonalizationStep() {
     react()
   }
 
+  /*
+   * Choosing nothing is an answer. It used to snap back to `travel`, which meant
+   * a learner who wanted plain everyday conversation could not say so.
+   */
   function toggleInterest(interest) {
-    const current = tutorPreferences.interests || []
-    const next = current.includes(interest)
-      ? current.filter(item => item !== interest)
-      : [...current, interest]
-    updateTutorPreferences({ interests: next.length ? next : ['travel'] })
+    updateTutorPreferences({ interests: toggleInterestId(tutorPreferences.interests, interest) })
     react()
   }
+
+  const selectedInterests = tutorPreferences.interests || []
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
@@ -134,10 +136,21 @@ export function TutorPersonalizationStep() {
 
                 {/* Interests (multi-select) */}
                 <div style={{ marginBottom: 18 }}>
-                  <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-muted)', marginBottom: 8 }}>{t('interests')}</p>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex items-baseline justify-between gap-3" style={{ marginBottom: 4 }}>
+                    <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-muted)' }}>{t('interests')}</p>
+                    {/* discreet, and only once something is chosen */}
+                    {selectedInterests.length > 0 && (
+                      <p aria-hidden="true" style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-muted)' }}>
+                        {selectedInterests.length}/{MAX_INTERESTS}
+                      </p>
+                    )}
+                  </div>
+                  <p style={{ fontSize: 12, color: 'var(--ink-muted)', lineHeight: 1.45, marginBottom: 10 }}>
+                    {t('interestsHelp')}
+                  </p>
+                  <div className="flex flex-wrap gap-2" role="group" aria-label={t('interests')}>
                     {INTEREST_OPTIONS.map(interest => {
-                      const selected = (tutorPreferences.interests || []).includes(interest)
+                      const selected = selectedInterests.includes(interest)
                       return (
                         <button
                           key={interest}

@@ -107,6 +107,30 @@ def _active_companion(profile: dict | None) -> str:
     return companion if companion in {"lingua", "lingo", "chatto"} else "lingua"
 
 
+def _topic_context(profile: dict | None) -> tuple[str | None, str | None]:
+    """The one topic this conversation may be about, if the client chose one."""
+    optional = (profile or {}).get("optional_context") or {}
+    return optional.get("topic"), optional.get("topic_facet")
+
+
+def _topic_opener(facet: str, level: LanguageLevel) -> str:
+    """An invitation to talk about the topic, at the learner's level.
+
+    Three templates, not three hundred hand-written questions. The topic can be as
+    complex as the learner likes — the ENGLISH stays at their level, which is the
+    whole point of separating the two: someone at A1 who loves AI gets a simple
+    question about it, not a sentence about attention mechanisms.
+
+    Lingua asks; it never claims to share the hobby. "I love that too" would be an
+    invented personal life, and this tutor does not have one.
+    """
+    if level in {LanguageLevel.A1, LanguageLevel.A2}:
+        return f"Let's talk about {facet}. What do you like about it?"
+    if level in {LanguageLevel.B1, LanguageLevel.B2}:
+        return f"Let's talk about {facet}. What do you think about it?"
+    return f"Let's talk about {facet}. What stands out to you about it?"
+
+
 def _tutor_preferences(profile: dict | None) -> dict:
     return (profile or {}).get("tutor_preferences") or {}
 
@@ -160,7 +184,12 @@ def _extract_translation_intent(text: str) -> dict | None:
     return None
 
 
-def _chat_reply(text: str, level: LanguageLevel, has_history: bool) -> str:
+def _chat_reply(
+    text: str,
+    level: LanguageLevel,
+    has_history: bool,
+    topic_facet: str | None = None,
+) -> str:
     normalized = normalize(text)
 
     if normalized in GREETINGS:
@@ -182,6 +211,14 @@ def _chat_reply(text: str, level: LanguageLevel, has_history: bool) -> str:
         return "Nice choice. Where would you like to go?"
     if "video game" in normalized or "gaming" in normalized:
         return "Cool. What game have you been playing lately?"
+
+    # Everything above this line is the LEARNER's subject: a greeting, a question
+    # they asked, a word they used. It wins, and the chosen topic is not consulted.
+    #
+    # Below it the engine had nothing to go on and was about to say "Tell me more".
+    # That is where a topic earns its place: an invitation, once, instead of filler.
+    if topic_facet and not has_history:
+        return _topic_opener(topic_facet, level)
 
     if level in {LanguageLevel.A1, LanguageLevel.A2}:
         return "Nice! Tell me one more thing."
@@ -477,13 +514,21 @@ def generate_local_response(
     if companion_response:
         return companion_response
 
+    _topic_id, topic_facet = _topic_context(profile)
+    reply = _chat_reply(message, level, bool(history), topic_facet)
+    # Only claim to be on the topic when the reply actually is. The learner had
+    # already brought their own subject in every other branch, and a focus line
+    # announcing "game worlds" over a conversation about travel is a small lie.
+    on_topic = bool(topic_facet) and reply == _topic_opener(topic_facet, level)
     return ChatResult(
-        reply=_chat_reply(message, level, bool(history)),
+        reply=reply,
         correction=None,
         explanation=None,
         suggestion=_chat_suggestion(level, message),
         mode=ChatMode.CHAT,
         learning_action=_learning_action_for(ChatMode.CHAT, message, level),
-        focus="Keep the conversation moving",
+        # naming the topic is honest and useful; naming why it was chosen is not,
+        # and the server was never told why anyway
+        focus=f"Talking about {topic_facet}" if on_topic else "Keep the conversation moving",
         word_to_use="because" if level in {LanguageLevel.A1, LanguageLevel.A2} else "although",
     )

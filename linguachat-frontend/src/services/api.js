@@ -322,8 +322,26 @@ export async function sendChatMessage({
   // At most one short thing the learner mentioned before ("music"). Never the
   // profile, never the history, never anything the model has inferred.
   rememberedLike = null,
+  /*
+   * The ONE topic this conversation is about, already chosen locally:
+   * { topic: 'gaming', topic_facet: 'game worlds' }. The provider is not asked
+   * which of the learner's interests to use, is not told how many there are, and
+   * is not told why this one won — the selection happened before the request.
+   */
+  topicContext = null,
 }) {
   try {
+    /*
+     * How the learner likes to be taught travels; WHAT they like to talk about
+     * does not. The interests used to ride along in full — twenty ids in every
+     * request, for a prompt that can only use one — so they are stripped here and
+     * replaced by the single chosen topic below.
+     */
+    const { interests: _droppedInterests, ...teachingPreferences } = tutorPreferences || {}
+    const optionalContext = {
+      ...(rememberedLike ? { remembered_like: rememberedLike } : {}),
+      ...(topicContext || {}),
+    }
     const res = await fetch(`${API_URL}/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -338,9 +356,9 @@ export async function sendChatMessage({
         interface_language: interfaceLanguage,
         target_language: targetLanguage,
         mission_context: missionContext,
-        tutor_preferences: tutorPreferences,
+        tutor_preferences: tutorPreferences ? teachingPreferences : null,
         active_companion: activeCompanion,
-        ...(rememberedLike ? { optional_context: { remembered_like: rememberedLike } } : {}),
+        ...(Object.keys(optionalContext).length ? { optional_context: optionalContext } : {}),
       }),
       signal: AbortSignal.timeout(8000),
     })

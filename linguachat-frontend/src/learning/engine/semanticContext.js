@@ -269,6 +269,14 @@ const KNOWN_VALUES = {
   books: 'interest', art: 'interest', technology: 'interest', food: 'interest',
   traveling: 'activity', 'my work': 'interest', 'my family': 'interest',
   good: 'feeling', fine: 'feeling', tired: 'feeling',
+  /*
+   * The interests added by the personalization sprint. Every catalogue noun has
+   * to be typed here or it cannot be used in "I like ___" — which is exactly the
+   * guard that stops a new interest from arriving with an ungrammatical noun.
+   */
+  history: 'interest', animals: 'interest', nature: 'interest', business: 'interest',
+  photography: 'interest', architecture: 'interest', cars: 'interest',
+  cooking: 'interest', science: 'interest',
 }
 
 /*

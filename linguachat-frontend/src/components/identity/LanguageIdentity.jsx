@@ -4,7 +4,7 @@ import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MOCK_STATS } from '../../data/mockData'
 import { getLanguageOption, languageFromInput, searchLanguages } from '../../services/language'
-import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS } from '../../services/tutorPreferences'
+import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS, MAX_INTERESTS, toggleInterestId } from '../../services/tutorPreferences'
 
 const MOOD_COLORS = [
   { id: 'violet', label: 'Calm', bg: 'linear-gradient(135deg, var(--violet), var(--blue))' },
@@ -174,12 +174,13 @@ export function LanguageIdentity() {
     window.setTimeout(() => setLanguageSaved(false), 1600)
   }
 
+  /*
+   * The same toggle onboarding uses. This copy capped the list at six, so a
+   * learner who chose twenty lost fourteen the first time they changed their
+   * mind about one — and, like onboarding, it refused to let the list be empty.
+   */
   function toggleInterest(interest) {
-    const current = tutorPreferences.interests || []
-    const next = current.includes(interest)
-      ? current.filter(item => item !== interest)
-      : [...current, interest].slice(0, 6)
-    updateTutorPreferences({ interests: next.length ? next : ['travel'] })
+    updateTutorPreferences({ interests: toggleInterestId(tutorPreferences.interests, interest) })
   }
 
   return (
@@ -522,24 +523,39 @@ export function LanguageIdentity() {
             ))}
 
             <div>
-              <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-muted)', marginBottom: 8 }}>
-                {t('interests')}
+              <div className="flex items-baseline justify-between gap-3" style={{ marginBottom: 4 }}>
+                <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-muted)' }}>
+                  {t('interests')}
+                </p>
+                {(tutorPreferences.interests || []).length > 0 && (
+                  <p aria-hidden="true" style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-muted)' }}>
+                    {(tutorPreferences.interests || []).length}/{MAX_INTERESTS}
+                  </p>
+                )}
+              </div>
+              <p style={{ fontSize: 12, color: 'var(--ink-muted)', lineHeight: 1.45, marginBottom: 10 }}>
+                {t('interestsHelp')}
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2" role="group" aria-label={t('interests')}>
                 {INTEREST_OPTIONS.map(interest => {
                   const selected = (tutorPreferences.interests || []).includes(interest)
                   return (
                     <button
                       key={interest}
                       type="button"
+                      aria-pressed={selected}
                       onClick={() => toggleInterest(interest)}
-                      className="rounded-full px-3 py-1.5 text-xs font-bold transition-all active:scale-[0.98]"
+                      className="rounded-full px-3.5 py-2 text-xs font-bold transition-all active:scale-[0.98] inline-flex items-center gap-1.5"
                       style={{
                         background: selected ? 'var(--green-soft)' : 'var(--bg-elevated)',
                         border: `1.5px solid ${selected ? 'var(--green)' : 'var(--border)'}`,
                         color: selected ? 'var(--green)' : 'var(--ink-muted)',
+                        /* the same comfortable target the rest of the product uses;
+                         * these chips were 30 px tall, which is a thumb-sized miss */
+                        minHeight: 44,
                       }}
                     >
+                      {selected && <span aria-hidden="true" style={{ fontSize: '0.85em' }}>✓</span>}
                       {t(`interest_${interest}`)}
                     </button>
                   )

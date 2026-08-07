@@ -20,6 +20,7 @@ import { integratedEpisodes, requiredLevelItems } from '../curriculum/preA1Map.j
 import { isEpisodeUnlocked } from './planner.js'
 import { selectEquivalentActivityFormat, BLOCK_CANDIDATES } from './formatChoice.js'
 import { getInterestContext, getLearnerInterests } from './interests.js'
+import { selectTopic } from './topicSelection.js'
 import { getFactContext } from './learnerFacts.js'
 
 export const SESSION_KEY = 'lc2-daily-session-v1'
@@ -392,7 +393,13 @@ const completionBlock = () => ({
  * every block — the duration decides how much fits, so a session ends feeling
  * finished rather than exhausting.
  */
-export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs = Date.now(), interests = [], learnerKey = 'guest', dismissedFactIds = [] } = {}) {
+export function buildSessionPlan(model, arc, {
+  durationMode = 'standard', atMs = Date.now(), interests = [], learnerKey = 'guest',
+  dismissedFactIds = [],
+  /* topics heard about recently, and topics declined today — both optional, both
+   * only ever narrow the choice, so an old caller keeps working unchanged */
+  recentTopics = [], dismissedTopics = [],
+} = {}) {
   const mode = isDurationMode(durationMode) ? durationMode : 'standard'
   const { minutes, maxBlocks } = DURATION_MODES[mode]
   const dayKey = dayKeyFor(atMs)
@@ -438,7 +445,24 @@ export function buildSessionPlan(model, arc, { durationMode = 'standard', atMs =
    */
   const mainEpisodeId = main?.payload?.episodeId || null
   const topicSeed = `${learnerKey}:${mainEpisodeId || dayKey}`
-  const topicCtx = getInterestContext(getLearnerInterests(interests), topicSeed)
+  /*
+   * Which of the learner's interests today is about.
+   *
+   * A session's subject is promised on Home and pinned into the plan, so it stays
+   * inside what the learner actually chose — no exploring here. What it does gain
+   * is the two things a promise needs: it avoids what they have heard about
+   * recently, and it never offers a topic they waved away today.
+   */
+  const chosenTopic = selectTopic({
+    explicitInterests: getLearnerInterests(interests),
+    recentTopics,
+    dismissedTopics,
+    strength: 'medium',
+    seed: topicSeed,
+  })
+  const topicCtx = chosenTopic.interestId
+    ? getInterestContext([chosenTopic.interestId], topicSeed)
+    : getInterestContext([], topicSeed)
   /*
    * Something the learner actually told Lingua beats a box they ticked at
    * onboarding — but only occasionally, and never when today is already about
@@ -523,7 +547,10 @@ export function clearSession() {
  * only built for a new day, or when the learner changes duration BEFORE
  * starting.
  */
-export function getOrCreateSession(model, arc, { durationMode = 'standard', atMs = Date.now(), stored = undefined, interests = [], learnerKey = 'guest', dismissedFactIds = [] } = {}) {
+export function getOrCreateSession(model, arc, {
+  durationMode = 'standard', atMs = Date.now(), stored = undefined, interests = [],
+  learnerKey = 'guest', dismissedFactIds = [], recentTopics = [], dismissedTopics = [],
+} = {}) {
   const existing = stored === undefined ? loadSession(arc) : normalizeSession(stored, arc)
   const today = dayKeyFor(atMs)
   if (existing && existing.dayKey === today) {
@@ -532,7 +559,7 @@ export function getOrCreateSession(model, arc, { durationMode = 'standard', atMs
     if (existing.status !== 'planned') return existing
     if (existing.durationMode === durationMode) return existing
   }
-  return buildSessionPlan(model, arc, { durationMode, atMs, interests, learnerKey, dismissedFactIds })
+  return buildSessionPlan(model, arc, { durationMode, atMs, interests, learnerKey, dismissedFactIds, recentTopics, dismissedTopics })
 }
 
 export function startSession(session) {

@@ -69,6 +69,18 @@ Rules:
   learner_style child means safe simple examples; older_adult means clear respectful explanations, never infantilize.
 - Always provide every response field, using null when it does not apply.
 
+Topic rules:
+- A chosen conversation topic is CONTEXT, not an instruction: use it to start or
+  continue a conversation, never to correct the learner's choice of subject.
+- If the learner writes about something else, follow the learner. Never steer back.
+- Keep the ENGLISH at the learner's level even when the topic is advanced: a
+  simple question about a complex subject, never a complex sentence about it.
+- You may occasionally add one short, widely known, general insight about the
+  topic. It is optional and English practice always comes first.
+- Do not invent numbers, dates, records, rankings, current events, or medical,
+  legal or financial advice. With nothing safe to add, just have the conversation.
+- Never claim personal experience, preferences or a life of your own.
+
 Mission rules:
 - If mission_context exists, evaluate the learner's answer for that mission step.
 - Do not require perfection. Accept communicatively correct answers.
@@ -113,6 +125,8 @@ class OpenAITutor:
 
         profile = user_profile or {}
         interests = profile.get("interests") or ["general conversation"]
+        topic_context = (profile.get("optional_context") or {}).get("topic_facet") \
+            or (profile.get("optional_context") or {}).get("topic")
         preferences = profile.get("preferences") or {}
         tutor_preferences = profile.get("tutor_preferences") or {}
         active_companion = profile.get("active_companion") or "lingua"
@@ -124,6 +138,7 @@ class OpenAITutor:
             f"Native language for explanations: {native_language}.\n"
             f"Target language to teach: {target_language}. This must remain English.\n"
             f"Learner interests/topics: {interests}.\n"
+            f"Conversation topic chosen for this turn: {topic_context or 'none'}.\n"
             f"Practice preferences: {preferences}.\n"
             f"Tutor personalization: {tutor_preferences}.\n"
             f"Active companion: {active_companion}.\n"

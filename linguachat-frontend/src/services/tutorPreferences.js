@@ -1,3 +1,5 @@
+import { KNOWN_INTERESTS, MAX_SELECTED_INTERESTS, normalizeInterests } from '../learning/engine/interests.js'
+
 const TUTOR_PREFERENCES_KEY = 'lc2-tutor-preferences'
 const ACTIVE_COMPANION_KEY = 'lc2-active-companion'
 const TEXT_SIZE_KEY = 'lc2-text-size'
@@ -86,7 +88,44 @@ export const TUTOR_OPTION_GROUPS = [
   },
 ]
 
-export const INTEREST_OPTIONS = ['travel', 'music', 'games', 'work', 'food', 'school', 'technology', 'family', 'sports', 'culture', 'movies']
+/*
+ * The interests a learner may choose, taken from the catalogue that gives them
+ * meaning rather than listed again here.
+ *
+ * There used to be two lists — these ids, and the contexts in
+ * learning/engine/interests.js — which had to agree and had no way of noticing
+ * when they did not. One list, one source of truth: an interest exists when the
+ * product knows what to do with it.
+ */
+export const INTEREST_OPTIONS = KNOWN_INTERESTS
+export const MAX_INTERESTS = MAX_SELECTED_INTERESTS
+
+/*
+ * Interests are read back through the catalogue on the way in AND on the way out.
+ *
+ * Storage is a text file a learner can edit, a profile can outlive an interest we
+ * removed, and a save can be racing another tab. So an id the catalogue does not
+ * know is dropped, duplicates collapse, and the list is capped — quietly, keeping
+ * every valid choice, because losing someone's other nineteen interests over one
+ * bad entry would be the worse bug.
+ */
+/*
+ * Add or remove one interest. Both surfaces that offer the choice call this.
+ *
+ * They used to each have their own version, and each had a bug the other did not:
+ * deselecting the last interest silently re-selected `travel`, so "I do not want
+ * this personalised" was not expressible; and the settings panel capped the list
+ * at six, so a learner who chose twenty at onboarding lost fourteen of them the
+ * moment they toggled anything. One function, one cap, and an empty list is a
+ * legitimate answer.
+ */
+export function toggleInterestId(interests, id) {
+  const current = normalizeInterests(interests)
+  if (current.includes(id)) return current.filter(item => item !== id)
+  if (!KNOWN_INTERESTS.includes(id)) return current
+  if (current.length >= MAX_SELECTED_INTERESTS) return current
+  return [...current, id]
+}
 
 export function loadTutorPreferences() {
   try {
@@ -95,12 +134,17 @@ export function loadTutorPreferences() {
     return {
       ...DEFAULT_TUTOR_PREFERENCES,
       ...parsed,
+      /*
+       * An absent list means "never chose": the defaults apply. An EMPTY list
+       * means "chose nothing", which is a real answer and must survive a reload —
+       * so the two cases are distinguished rather than both falling back.
+       */
       interests: Array.isArray(parsed.interests)
-        ? parsed.interests
-        : DEFAULT_TUTOR_PREFERENCES.interests,
+        ? normalizeInterests(parsed.interests)
+        : normalizeInterests(DEFAULT_TUTOR_PREFERENCES.interests),
     }
   } catch {
-    return DEFAULT_TUTOR_PREFERENCES
+    return { ...DEFAULT_TUTOR_PREFERENCES }
   }
 }
 
@@ -109,8 +153,8 @@ export function saveTutorPreferences(preferences) {
     ...DEFAULT_TUTOR_PREFERENCES,
     ...(preferences || {}),
     interests: Array.isArray(preferences?.interests)
-      ? preferences.interests
-      : DEFAULT_TUTOR_PREFERENCES.interests,
+      ? normalizeInterests(preferences.interests)
+      : normalizeInterests(DEFAULT_TUTOR_PREFERENCES.interests),
   }
   try { localStorage.setItem(TUTOR_PREFERENCES_KEY, JSON.stringify(next)) } catch {}
   return next

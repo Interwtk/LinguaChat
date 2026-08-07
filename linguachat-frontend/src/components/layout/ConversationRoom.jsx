@@ -55,6 +55,7 @@ export function ConversationRoom() {
     dailySession,
     beginSession,
     nativeLanguageInfo,
+    useAnotherConversationTopic,
   } = useApp()
   const [input, setInput] = useState('')
   const [sparkOpen, setSparkOpen] = useState(false)
@@ -75,9 +76,19 @@ export function ConversationRoom() {
     })),
     [episodeArcVersion, memoryContext],
   )
+  /*
+   * One button, both kinds of subject.
+   *
+   * "Another topic" used to mean only "not that thing you remembered about me".
+   * Now that a conversation also has a chosen interest, declining applies to both
+   * — otherwise the learner waves away the suggestion and Lingua opens with the
+   * same interest anyway. Neither the fact nor the interest is deleted: both are
+   * set aside for the day.
+   */
   const useAnotherTopic = useCallback(() => {
     setMemoryContext(dismissFact(rememberedFact))
-  }, [rememberedFact])
+    useAnotherConversationTopic()
+  }, [rememberedFact, useAnotherConversationTopic])
   const textareaRef = useRef(null)
   const bottomRef = useRef(null)
 

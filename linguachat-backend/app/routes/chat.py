@@ -1,3 +1,5 @@
+import re
+
 from fastapi import APIRouter, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
@@ -126,6 +128,34 @@ def _normalize_target_language(value) -> LanguageInfo:
 
 ALLOWED_OPTIONAL_CONTEXT = {"remembered_like"}
 
+# A topic is a catalogue id chosen by the client, never prose: one lowercase word,
+# optionally with underscores. A facet is the short phrase that describes it
+# ("game worlds"), so it may contain spaces — and nothing else.
+TOPIC_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]{0,31}$")
+TOPIC_FACET_PATTERN = re.compile(r"^[a-z][a-z ]{0,39}$")
+
+
+def _safe_topic(value) -> str | None:
+    """A topic we can pass on, or nothing at all.
+
+    Deliberately a SHAPE check rather than a copy of the catalogue: the server has
+    no business owning a product taxonomy, and an id it has never heard of is
+    harmless as conversational context. What it must refuse is anything that is
+    not an id — a sentence, an instruction, a URL, a name — because that is how a
+    hint becomes an injection.
+    """
+    if not isinstance(value, str):
+        return None
+    text = value.strip().lower()
+    return text if TOPIC_ID_PATTERN.match(text) else None
+
+
+def _safe_topic_facet(value) -> str | None:
+    if not isinstance(value, str):
+        return None
+    text = " ".join(value.strip().lower().split())
+    return text if TOPIC_FACET_PATTERN.match(text) else None
+
 
 def _safe_optional_context(value) -> dict:
     """Keep only the handful of short, harmless hints we actually understand.
@@ -142,6 +172,12 @@ def _safe_optional_context(value) -> dict:
             text = raw.strip()[:40]
             if text:
                 safe[key] = text
+    topic = _safe_topic(value.get("topic"))
+    if topic:
+        safe["topic"] = topic
+        facet = _safe_topic_facet(value.get("topic_facet"))
+        if facet:
+            safe["topic_facet"] = facet
     return safe
 
 
