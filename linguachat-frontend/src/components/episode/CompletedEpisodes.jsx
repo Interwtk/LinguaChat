@@ -1,5 +1,8 @@
 import { useApp } from '../../context/AppContext'
-import { EPISODE_SKELETON as ARC } from '../../learning/curriculum/preA1Skeleton.generated.js'
+import { PRE_A1, episodesOfLevel } from '../../learning/curriculum/levels.js'
+
+/* one level's episodes: a replay list must not offer another level's content */
+const ARC = episodesOfLevel(PRE_A1)
 import { getEpisodeState, loadLearnerModel } from '../../learning/engine/learnerModel.js'
 import { timesPractised, canTryOtherBranch } from '../../learning/engine/episodeRuns.js'
 

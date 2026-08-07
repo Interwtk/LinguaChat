@@ -37,6 +37,12 @@
  * asks for — so the skeleton is everything this engine needs, and the level's
  * prose can stay with the screens that show it.
  */
+/*
+ * The whole curriculum, on purpose and unlike every other consumer: this engine
+ * answers "how much help does this learner need for THIS capability", and the
+ * capability's home episode may belong to any level. Scoping it to one level
+ * would silently stop transferring autonomy the moment a second level exists.
+ */
 import { EPISODE_SKELETON as ARC, SKELETON_BY_ID } from '../curriculum/preA1Skeleton.generated.js'
 
 const getEpisode = (id) => SKELETON_BY_ID[id] || null

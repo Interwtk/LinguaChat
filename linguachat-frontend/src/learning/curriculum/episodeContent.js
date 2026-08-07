@@ -1,0 +1,150 @@
+/*
+ * episodeContent — the one place that decides whether an episode can be opened,
+ * and the one place that fetches its content.
+ *
+ * There are two questions and they need different answers at different moments.
+ *
+ *   episodeRequest()        may this be opened, right now? — synchronous, metadata
+ *                           only, safe to ask while rendering
+ *   loadEpisodeContent()    give me the definition — asynchronous, per level, and
+ *                           the seam A1's arcs plug into
+ *
+ * Both fail closed. Asking for a level nobody knows, a level that is designed but
+ * not built, or an episode that does not exist gets a named refusal — never a
+ * quiet substitution. That mattered enough to write down: `startEpisode` used to
+ * turn a missing id into episode one, so a wrong link opened the first greeting
+ * and looked like a feature.
+ *
+ * Pre-A1's content is one module today, and the screens that play an episode are
+ * already loaded on demand, so its loader is a single dynamic import that
+ * resolves from the chunk the caller is standing in. A1 is expected to arrive as
+ * one loader per arc, which is why the map is keyed by level and the signature
+ * carries an arc: adding a level means adding a loader entry, not editing a
+ * switch somewhere else.
+ */
+import {
+  PRE_A1, getLevel, isKnownLevel, isLevelAvailable, isLevelImplemented,
+  episodesOfLevel, levelIdOfEpisodeId, playableLevelId,
+} from './levels.js'
+
+/* Why a request was refused. Callers switch on these, so they are part of the contract. */
+export const REFUSED = {
+  UNKNOWN_LEVEL: 'unknown_level',
+  LEVEL_UNAVAILABLE: 'level_unavailable',
+  LEVEL_NOT_IMPLEMENTED: 'level_not_implemented',
+  UNKNOWN_EPISODE: 'unknown_episode',
+  WRONG_LEVEL: 'episode_not_in_level',
+  NO_CONTENT_LOADER: 'no_content_loader',
+}
+
+export class EpisodeContentError extends Error {
+  constructor(reason, detail) {
+    super(`episode content refused: ${reason}${detail ? ` (${detail})` : ''}`)
+    this.name = 'EpisodeContentError'
+    this.reason = reason
+  }
+}
+
+/*
+ * One loader per level. Pre-A1's whole curriculum is a single module; A1 will add
+ * an entry per arc as each arc is built, so a planned level simply has no loader
+ * and every path through here refuses it.
+ */
+const CONTENT_LOADERS = {
+  [PRE_A1]: {
+    /*
+     * Pre-A1 has one content module for all six arcs. The import goes through
+     * `preA1Content.js`, which exists only so the chunk is named after the level
+     * it carries; see the comment in that file.
+     */
+    default: () => import('../episodes/preA1Content.js'),
+  },
+}
+
+const loaderFor = (levelId, arcId) => {
+  const perArc = CONTENT_LOADERS[levelId]
+  if (!perArc) return null
+  return perArc[arcId] || perArc.default || null
+}
+
+/*
+ * May this episode be opened?
+ *
+ * Synchronous and cheap: it reads the level registry and the curriculum skeleton,
+ * never the content. `levelId` may be omitted, in which case the episode's own
+ * level is used — which is how a caller holding only an id (a replay button, a
+ * session block) can still be level-checked.
+ */
+export function episodeRequest({ levelId = null, episodeId } = {}) {
+  const resolvedLevel = levelId || levelIdOfEpisodeId(episodeId)
+
+  if (!episodeId) return { ok: false, reason: REFUSED.UNKNOWN_EPISODE }
+  if (!resolvedLevel) {
+    /*
+     * No level could be resolved: either the id belongs to nothing, or a caller
+     * passed a level this build does not know. Both are refusals, and neither
+     * falls back to the level that happens to be available.
+     */
+    return { ok: false, reason: levelId ? REFUSED.UNKNOWN_LEVEL : REFUSED.UNKNOWN_EPISODE }
+  }
+  if (!isKnownLevel(resolvedLevel)) return { ok: false, reason: REFUSED.UNKNOWN_LEVEL }
+  if (!isLevelImplemented(resolvedLevel)) {
+    return { ok: false, reason: REFUSED.LEVEL_NOT_IMPLEMENTED, levelId: resolvedLevel }
+  }
+  if (!isLevelAvailable(resolvedLevel)) {
+    return { ok: false, reason: REFUSED.LEVEL_UNAVAILABLE, levelId: resolvedLevel }
+  }
+
+  const episode = episodesOfLevel(resolvedLevel).find(ep => ep.id === episodeId)
+  if (!episode) {
+    /*
+     * The id exists somewhere but not in the level asked about, or nowhere at
+     * all. Telling those apart helps whoever reads the log.
+     */
+    const elsewhere = levelIdOfEpisodeId(episodeId)
+    return {
+      ok: false,
+      reason: elsewhere ? REFUSED.WRONG_LEVEL : REFUSED.UNKNOWN_EPISODE,
+      levelId: resolvedLevel,
+    }
+  }
+  if (!loaderFor(resolvedLevel, episode.arc)) {
+    return { ok: false, reason: REFUSED.NO_CONTENT_LOADER, levelId: resolvedLevel }
+  }
+  return { ok: true, levelId: resolvedLevel, arcId: episode.arc, episodeId }
+}
+
+/* Convenience for the screens: may this id be opened at all? */
+export const canOpenEpisode = (episodeId) => episodeRequest({ episodeId }).ok
+
+/*
+ * The episode definition, loaded on demand.
+ *
+ * Refuses before importing anything, so a request for a planned level costs
+ * nothing and cannot pull content into the caller's chunk. The import is dynamic
+ * on purpose: it is the boundary that keeps a level's prose out of the first
+ * chunk today and out of every other arc's chunk tomorrow.
+ */
+export async function loadEpisodeContent({ levelId = null, episodeId } = {}) {
+  const request = episodeRequest({ levelId, episodeId })
+  if (!request.ok) throw new EpisodeContentError(request.reason, episodeId)
+
+  const loader = loaderFor(request.levelId, request.arcId)
+  const module = await loader()
+  const episode = module.getEpisode ? module.getEpisode(episodeId) : null
+  if (!episode) throw new EpisodeContentError(REFUSED.UNKNOWN_EPISODE, episodeId)
+  return episode
+}
+
+/*
+ * What a level's content module is, without loading it. Tooling asks this to
+ * check that every runtime episode is reachable through a loader; nothing in the
+ * product needs it.
+ */
+export const hasContentLoader = (levelId, arcId = null) => Boolean(loaderFor(levelId, arcId))
+
+/* The level a screen should be working in when nobody said otherwise. */
+export const currentLevelId = () => playableLevelId()
+
+/* Re-exported so a caller needs one import to ask about a level and its content. */
+export { getLevel, episodesOfLevel, isLevelAvailable, isLevelImplemented }

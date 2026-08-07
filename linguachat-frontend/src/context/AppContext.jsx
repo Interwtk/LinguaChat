@@ -45,7 +45,14 @@ import {
   saveTutorPreferences,
 } from '../services/tutorPreferences'
 // the planner works from the shape of the level; the episode itself loads when it starts
-import { EPISODE_SKELETON as ARC } from '../learning/curriculum/preA1Skeleton.generated.js'
+import { PRE_A1, episodesOfLevel } from '../learning/curriculum/levels.js'
+import { episodeRequest } from '../learning/curriculum/episodeContent.js'
+
+/*
+ * The episodes a session may draw on. The planner itself is level-agnostic — it
+ * takes whatever list it is given — so the level lives here, at the call site.
+ */
+const ARC = episodesOfLevel(PRE_A1)
 import { loadLearnerModel, saveLearnerModel, recordItemSeen } from '../learning/engine/learnerModel.js'
 import { markFactUsed, rotateFactUsage, selectLearnerFact } from '../learning/engine/learnerFacts.js'
 import { loadMemoryContext } from '../learning/engine/memoryContext.js'
@@ -353,13 +360,27 @@ export function AppProvider({ children }) {
    * state, so nothing in the UI can accidentally claim a first completion.
    */
   const startEpisode = useCallback((episodeId, options = {}) => {
+    /*
+     * Refuse rather than substitute. A missing id used to become
+     * `first_greeting`, so a stale link or a wrong caller opened the first
+     * greeting and looked deliberate. With more than one level in the registry
+     * the same shrug would open the wrong level's episode, so the request is
+     * checked against the level registry and the curriculum, and a refusal
+     * leaves the learner where they were.
+     */
+    const request = episodeRequest({ episodeId })
+    if (!request.ok) {
+      if (import.meta.env?.DEV) console.warn('[startEpisode] refused', episodeId, request.reason)
+      return request
+    }
     setEpisodeRunOptions({
       source: options.source || 'practice',
       wantsOtherBranch: Boolean(options.wantsOtherBranch),
     })
-    setEpisodeActiveId(episodeId || 'first_greeting')
+    setEpisodeActiveId(request.episodeId)
     setView('practice')
     setMobileSheet(null)
+    return request
   }, [])
 
   const exitEpisode = useCallback(() => setEpisodeActiveId(null), [])

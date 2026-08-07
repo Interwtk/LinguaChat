@@ -6,7 +6,15 @@ import { getMissionForToday } from '../../services/missions'
 import { getLocalizedMeaning } from '../../services/localizedMeaning'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 // Home names episodes and shows their keys; it never renders their content
-import { EPISODE_SKELETON as ARC, SKELETON_BY_ID } from '../../learning/curriculum/preA1Skeleton.generated.js'
+import { SKELETON_BY_ID } from '../../learning/curriculum/preA1Skeleton.generated.js'
+import { PRE_A1, episodesOfLevel } from '../../learning/curriculum/levels.js'
+
+/*
+ * The level Home is about. Progress, the next episode and the completion card all
+ * describe one level: with A1 in the curriculum an unfiltered list would show a
+ * learner 17/38 and offer them an episode from a level they cannot open.
+ */
+const ARC = episodesOfLevel(PRE_A1)
 
 const getEpisode = (id) => SKELETON_BY_ID[id] || null
 import { planDay, arcProgress } from '../../learning/engine/planner.js'

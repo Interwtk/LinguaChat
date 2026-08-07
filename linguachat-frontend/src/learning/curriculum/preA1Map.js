@@ -23,17 +23,24 @@
  * opened anything. The skeleton is regenerated and compared by
  * `check-curriculum-loading`, so it cannot drift from the curriculum.
  */
-import { EPISODE_SKELETON, SKELETON_BY_ID } from './preA1Skeleton.generated.js'
+import { SKELETON_BY_ID } from './preA1Skeleton.generated.js'
+import { PRE_A1, episodesOfLevel } from './levels.js'
 
-const ARC = EPISODE_SKELETON
+/*
+ * Pre-A1's own episodes. This registry describes one level, so it filters by it:
+ * with A1 present in the skeleton, an unfiltered walk would report another
+ * level's capabilities as Pre-A1's coverage.
+ */
+const ARC = episodesOfLevel(PRE_A1)
+
+/* the capabilities the seventeen episodes teach, in curriculum order */
+export const ARC_CAN_DOS = [...new Set(ARC.map(ep => ep.canDoId).filter(Boolean))]
 const getEpisode = (id) => SKELETON_BY_ID[id] || null
 const ARCS = [...new Set(ARC.map(ep => ep.arc))]
 const episodesInArc = (arc) => ARC.filter(ep => ep.arc === arc)
 
 export const LEVEL = 'pre_a1'
 
-/* the capabilities the seventeen episodes teach, in curriculum order */
-export const ARC_CAN_DOS = [...new Set(EPISODE_SKELETON.map(ep => ep.canDoId).filter(Boolean))]
 
 /* ---------------------------------------------------------------- derived --*/
 

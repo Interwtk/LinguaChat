@@ -26,7 +26,16 @@
  * The shape of the curriculum, not its words: readiness asks which episodes are
  * finished and what they teach, never what anybody says in them.
  */
-import { EPISODE_SKELETON as ARC, SKELETON_BY_ID } from './preA1Skeleton.generated.js'
+import { SKELETON_BY_ID } from './preA1Skeleton.generated.js'
+import { PRE_A1, episodesOfLevel } from './levels.js'
+
+/*
+ * The episodes of THIS level, not of the whole curriculum. Everything below
+ * answers a question about Pre-A1 — is it finished, is this capability taught,
+ * which conversations count — and each of those answers would start including
+ * another level's episodes the moment one exists.
+ */
+const ARC = episodesOfLevel(PRE_A1)
 
 const getEpisode = (id) => SKELETON_BY_ID[id] || null
 import {
