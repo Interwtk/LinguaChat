@@ -28,6 +28,8 @@ The structure is extracted at build time into a **skeleton**: step types, evalua
 | `session.js` (via callers) | |
 | Home, the journey rail, completed episodes | |
 
+Most of the eager side now reads the skeleton **through the level registry** rather than whole — `episodesOfLevel(PRE_A1)`, so a second level cannot leak into an answer about the first. Which modules, and the two that deliberately stay global, are in [a1-authoring-contract.md](a1-authoring-contract.md).
+
 The episode definitions remain the single source of truth. The skeleton is generated from them and `check-curriculum-loading` regenerates it on every run and fails if the committed copy differs, so it cannot drift from the curriculum it describes.
 
 One derivation genuinely reads the English: which parts of the learner an episode personalises, taken from the `{name}`-style placeholders in its own text. The generator extracts the placeholder **names** and leaves the sentences behind, so the answer is still derived from the episodes.
@@ -52,6 +54,20 @@ Three moves got there, and one did not:
 - `getLocalizedMeaning`, a pure function that lived in the module owning the catalogue, so importing it from Home hoisted 22 kB of terms and translations into the entry (**−5 kB**)
 - the declared audit judgements (`CAPABILITY_MAP`, `PATTERN_COVERAGE`) moved to `preA1Audit.js`, read only by checks and docs (**0 kB** — tree-shaking already dropped them; the split is module hygiene, not a saving)
 
+### And after the level boundary was drawn
+
+The A1 architecture readiness sprint added the registry and the content resolver, and the resolver's dynamic import moved the episode definitions out of the practice screen's chunk into one of their own. Measured the same way, on the same machine, `HEAD` (`9003fc5`) built in a separate worktree against the working tree:
+
+| | before | after |
+|---|---|---|
+| entry chunk | 364.0 kB (107.8 gzip) | **365.6 kB** (108.3 gzip) |
+| episode content | inside `ConversationRoom`, 159.6 kB | its own chunk, `preA1Content`, 35.4 kB |
+| practice screen chunk | — | `ConversationRoom`, 124.3 kB |
+| chunks | 16 | **17** |
+| total JS | 1002.8 kB | **1004.6 kB** |
+
+The entry grew by **1.6 kB** — the registry and the resolver, both of which the first screen genuinely uses. Opening practice costs 159.8 kB in two requests where it cost 159.6 kB in one: the same bytes, one more round trip, and each level's content now arrives separately, which is the point. Nothing moved into the entry: the leak probes still find no episode prose there.
+
 What is left in the entry is what the first screen genuinely needs: React (128.6 kB), the English base dictionary (56.9 kB, the fallback for every locale), the learner model, the planner, and the skeleton.
 
 The Vite warning threshold is untouched at its default 500 kB. `check-curriculum-loading` fails if `chunkSizeWarningLimit` ever appears in `vite.config.js` — a budget met by silencing the warning is not met.
@@ -63,6 +79,6 @@ The Vite warning threshold is untouched at its default 500 kB. `check-curriculum
 - the registry's answers still come out right for all seventeen episodes
 - no episode-only sentence appears in the entry chunk, and neither does the vocabulary catalogue
 - the shape *is* in the entry — Home cannot plan the day without it
-- the content is in a chunk reachable as a dynamic import
+- the content is in a chunk that some other chunk fetches by name, that `index.html` does not preload, and that is not named like the entry — the entry is identified by reading `index.html`, not by a filename pattern, after a content chunk built from `episodes/index.js` was briefly mistaken for it
 - the entry is under 400 kB with the warning limit at its default
 - a chunk that fails to arrive is caught, reported in the learner's language, and retryable — the boundary loads modules itself rather than through `React.lazy`, which would memoise the failure for the rest of the page's life, and a second attempt reloads once (guarded) to clear a cached failure after a stale deploy

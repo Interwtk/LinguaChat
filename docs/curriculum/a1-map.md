@@ -20,7 +20,7 @@ That rules out arcs named Food, Family or Present Simple. Food is a context; fam
 
 ## 2. What Pre-A1 leaves us
 
-Derived from the repo, not from memory. Sixteen capabilities, twelve of them required to have left the level:
+Derived from the repo, not from memory. Sixteen capabilities, thirteen of them required to have left the level (`PRE_A1_EXIT_CRITERIA.requiredCanDos` — everything except `full_greeting`, `make_plan` and `respond_anything_else`):
 
 `introduce_self` · `ask_name` · `full_greeting` · `ask_wellbeing` · `ask_origin` · `full_conversation` · `express_preferences` · `express_needs` · `make_plan` · `polite_request` · `respond_anything_else` · `cafe_order` · `ask_for_repair` · `close_an_encounter` · `identify_things` · `use_small_numbers`
 

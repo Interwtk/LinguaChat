@@ -44,7 +44,7 @@ None of them is required to leave the level. They are visible on purpose: a stat
 - an assisted learner finishes the curriculum, is **not** ready on the evidence, and recovers through the planner's own recommendations in nine sessions without replaying the level
 - the support level moves with evidence and every high-support episode says why
 
-**Automated, the rest of the product:** 41 check scripts (the invocations listed in `check:all` in `package.json`), 323 backend tests (`pytest`). These cover the episode engine and replay, session planning and recovery, hybrid evaluation and its fallbacks, semantic compatibility, the Memory Garden and learning states, learner facts, activity preferences, i18n across eight languages, structural/visual invariants, edge cases including corrupt storage, and the bundle boundaries.
+**Automated, the rest of the product:** 41 check scripts at the freeze — the invocations listed in `check:all` in `package.json`, 43 as of the A1 architecture readiness sprint, which added `check:a1-blueprint` and `check:curriculum-authoring` — and 323 backend tests (`pytest`). These cover the episode engine and replay, session planning and recovery, hybrid evaluation and its fallbacks, semantic compatibility, the Memory Garden and learning states, learner facts, activity preferences, i18n across eight languages, structural/visual invariants, edge cases including corrupt storage, and the bundle boundaries.
 
 **Manually, in a real browser** — the closure audit, on the dev server and on the served production build:
 
