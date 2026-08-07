@@ -33,9 +33,14 @@ const find = (re) => files.filter(f => re.test(f))
 let n = 0
 const ok = () => { n++ }
 
-// 1) there is exactly one entry chunk and it is under budget
-const entries = find(/^index-.*\.js$/)
-assert.equal(entries.length, 1, `expected one entry chunk, found ${entries.length}`)
+// 1) the page loads one entry chunk and it is under budget
+//    Read from index.html: the `index-` prefix stopped identifying the entry
+//    when a content chunk built from `episodes/index.js` took the same shape.
+const html = readFileSync('dist/index.html', 'utf8')
+const scripts = [...html.matchAll(/<script[^>]+src="\/assets\/([^"]+\.js)"/g)].map(m => m[1])
+assert.equal(scripts.length, 1, `the page should load one entry chunk, it loads ${scripts.length}`)
+const entries = scripts
+assert.ok(files.includes(entries[0]), `index.html loads ${entries[0]}, which is not in the build`)
 const entryKb = sizeKb(entries[0])
 assert.ok(entryKb < ENTRY_BUDGET_KB,
   `entry chunk is ${entryKb.toFixed(1)} kB, over the ${ENTRY_BUDGET_KB} kB budget`)

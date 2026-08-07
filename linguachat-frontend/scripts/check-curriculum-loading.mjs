@@ -138,8 +138,15 @@ if (!existsSync(DIST)) {
   console.log('\ncheck-curriculum-loading — build assertions SKIPPED (no dist/, run `npm run build`)')
 } else {
   const files = readdirSync(DIST).filter(f => f.endsWith('.js'))
-  const entryName = files.find(f => /^index-.*\.js$/.test(f))
-  assert.ok(entryName, 'there should be an entry chunk')
+  /*
+   * The entry is the script the page loads, read from index.html. It used to be
+   * found by its `index-` prefix, until a second chunk built from
+   * `episodes/index.js` was named the same way and got mistaken for it.
+   */
+  const html = readFileSync('dist/index.html', 'utf8')
+  const entryName = (html.match(/<script[^>]+src="\/assets\/([^"]+\.js)"/) || [])[1]
+  assert.ok(entryName, 'index.html must load an entry chunk')
+  assert.ok(files.includes(entryName), `index.html loads ${entryName}, which is not in the build`)
   const entry = readFileSync(join(DIST, entryName), 'utf8')
 
   {
@@ -172,8 +179,25 @@ if (!existsSync(DIST)) {
     const carriers = files.filter(f => f !== entryName && readFileSync(join(DIST, f), 'utf8').includes(sample))
     assert.ok(carriers.length >= 1, 'the episode content must live in some chunk')
     for (const carrier of carriers) {
-      assert.ok(entry.includes(carrier.replace(/^/, '')) || entry.includes(carrier.split('-')[0]),
-        `${carrier} must be reachable from the entry as a dynamic import`)
+      /*
+       * Named in full, in the chunk that imports it. Matching on the name prefix
+       * (as this once did) is satisfied by any chunk sharing a first word, which
+       * is no evidence at all now that two chunks are called `index-`.
+       */
+      const referrers = files.filter(f => f !== carrier && readFileSync(join(DIST, f), 'utf8').includes(carrier))
+      assert.ok(referrers.length >= 1, `${carrier} is fetched by nothing: dead content, not lazy content`)
+
+      // and the page must not pull it before the learner asks for it
+      assert.ok(!html.includes(carrier), `${carrier} is preloaded by index.html, so it is not on demand`)
+
+      /*
+       * A content chunk must be distinguishable from the entry by name. This is
+       * the invariant whose absence made this very check read the content chunk
+       * as the entry, and it is what keeps the build output legible when each A1
+       * arc adds one.
+       */
+      assert.ok(carrier !== entryName && !/^index-/.test(carrier),
+        `${carrier} is named like the entry; give the level's content a named module`)
     }
     console.log(`\n  episode content: ${carriers.join(', ')}`)
     ok()

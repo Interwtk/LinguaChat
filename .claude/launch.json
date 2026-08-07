@@ -6,6 +6,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["--prefix", "linguachat-frontend", "run", "dev"],
       "port": 5173
+    },
+    {
+      "name": "linguachat-built",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "linguachat-frontend", "run", "preview"],
+      "port": 4173
     }
   ]
 }

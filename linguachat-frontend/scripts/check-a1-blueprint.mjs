@@ -321,9 +321,25 @@ const deferredIds = new Set(blueprint.deferredToA2.map(d => d.id))
   }
   walk('src')
 
-  /* nothing in the product may read the blueprint */
-  const importers = sources.filter(([, src]) => /a1-blueprint|a1-map|a1Blueprint/.test(src))
-  assert.deepEqual(importers.map(([p]) => p), [], `the blueprint must not be imported by the product: ${importers.map(([p]) => p).join(', ')}`)
+  /*
+   * Nothing in the product may READ the blueprint. Naming it in a comment is
+   * fine — a module that explains which design document it serves is doing the
+   * reader a favour — so the comments are stripped before looking, and what is
+   * forbidden is the mechanisms that would actually pull the file in.
+   */
+  const importers = sources.filter(([, src]) => {
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    return /(import|require|fetch|readFile\w*)\s*\(?[^\n]*a1-(blueprint|map)/.test(code)
+      || /from\s+['"][^'"]*a1-(blueprint|map)/.test(code)
+      || /a1Blueprint/.test(code)
+  })
+  assert.deepEqual(importers.map(([p]) => p), [],
+    `the blueprint must not be imported by the product: ${importers.map(([p]) => p).join(', ')}`)
+  /* and it must not reach the bundle through an asset import either */
+  for (const [path, src] of sources) {
+    assert.ok(!/docs\/curriculum/.test(src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')),
+      `${path} reaches into docs/, which is tooling and must never ship`)
+  }
 
   /* no A1 content, no eighteenth episode, no seventh arc */
   for (const [path, src] of sources) {
@@ -336,18 +352,38 @@ const deferredIds = new Set(blueprint.deferredToA2.map(d => d.id))
      * placement screen classifies a learner, and it teaches nothing. What must
      * stay impossible is an A1 episode or an A1 arc in the curriculum itself.
      */
-    if (/^src\/(learning|data\/vocabulary)/.test(path)) {
+    /*
+     * Episode definitions are where content lives, so that is where a declared A1
+     * level would mean A1 exists. The level registry is a different thing: it
+     * records what an A1 episode WOULD call itself, which is how the curriculum
+     * filter will recognise A1 content on the day there is any, and is what
+     * "known but unavailable" is made of.
+     */
+    if (/^src\/(learning\/episodes|data\/vocabulary)/.test(path)) {
       assert.ok(!/level:\s*['"]A1['"]/i.test(code), `${path} declares A1 curriculum content`)
+    }
+    if (/^src\/(learning|data)/.test(path)) {
       assert.ok(!/arc:\s*['"](work_and_study|daily_rhythm|people_around_you|finding_your_way|paying_and_choosing|what_you_can_do|making_arrangements)['"]/.test(code),
         `${path} declares a planned A1 arc as if it existed`)
     }
   }
-  /* the placement data is the only place allowed to name the level, and only there */
+  /*
+   * Exactly two places may name the level, and both are named here so a third
+   * cannot appear quietly: the placement questions, which classify a learner and
+   * predate A1's design, and the level registry, which maps the level id to the
+   * string an episode would declare.
+   */
   const levelDeclarers = sources
     .filter(([, src]) => /level:\s*['"]A1['"]/i.test(src))
     .map(([path]) => path)
-  assert.deepEqual(levelDeclarers, ['src/data/placementQuestions.js'],
-    `only the placement questions may name A1: ${levelDeclarers.join(', ')}`)
+    .sort()
+  assert.deepEqual(levelDeclarers,
+    ['src/data/placementQuestions.js', 'src/learning/curriculum/levels.js'],
+    `only the placement questions and the level registry may name A1: ${levelDeclarers.join(', ')}`)
+  /* and the registry must still hold A1 as unavailable */
+  const registry = sources.find(([p]) => p === 'src/learning/curriculum/levels.js')[1]
+  assert.ok(/id: A1, order: 2, implemented: false, available: false/.test(registry),
+    'the registry must keep A1 unimplemented and unavailable')
 
   /* and Pre-A1 is exactly as the freeze left it */
   assert.equal(ARC.length, 17, 'Pre-A1 must still be seventeen episodes')
