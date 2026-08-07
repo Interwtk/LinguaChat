@@ -222,11 +222,27 @@ const LATER = AT + FACT_COOLDOWN_MS + 1000
 {
   const api = readFileSync(resolvePath(here, '..', 'src/services/api.js'), 'utf8')
   const context = readFileSync(resolvePath(here, '..', 'src/context/AppContext.jsx'), 'utf8')
-  assert.match(api, /optional_context: \{ remembered_like: rememberedLike \}/,
-    'the only memory that travels is one remembered topic')
+  /*
+   * Exactly two small things may ride along: one thing the learner mentioned
+   * before, and the one topic this conversation is about. Both are short, both
+   * are chosen on this device, and the request is assembled from those two
+   * names — so anything else would have to be added here, in the open.
+   */
+  assert.match(api, /remembered_like: rememberedLike/, 'one remembered topic may travel')
+  assert.match(api, /\.\.\.\(topicContext \|\| \{\}\)/, 'and the one chosen conversation topic')
+  assert.match(api, /optional_context: optionalContext/, 'and nothing is smuggled past that object')
   assert.ok(!/learnerFacts|activityPreferences|episodeRuns|signalLog/.test(api),
     'the api layer must never serialise the learner model')
+  /*
+   * And the interests themselves stay home. The prompt can only use one topic,
+   * so sending twenty told the provider nothing and told it about the learner.
+   */
+  assert.match(api, /interests: _droppedInterests/, 'the interest list must be stripped before sending')
+  assert.match(api, /tutor_preferences: tutorPreferences \? teachingPreferences : null/,
+    'what travels is the teaching preferences with the interests removed')
   assert.match(context, /rememberedLike: selectLearnerFact\(/, 'and it goes through the same guarded selection')
+  assert.match(context, /topicContext: learnerHasSpoken \? null : providerTopicContext\(conversationTopic\)/,
+    'the topic is chosen locally and travels only before the learner has spoken')
   ok()
 }
 

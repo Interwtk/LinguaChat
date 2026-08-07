@@ -147,8 +147,17 @@ const MUSIC = { type: 'like', value: 'music' }
   assert.match(room, /dismissFact\(rememberedFact\)/, 'the choice must be persisted, not held in a mount')
   assert.ok(!/useState\(false\)[\s\S]{0,80}factDismissed/.test(room), 'the old mount-only flag must be gone')
   const context = read('src/context/AppContext.jsx')
-  assert.match(context, /dismissedFactIds: loadMemoryContext\(\)\.dismissedFactIds/,
+  /*
+   * What matters is that the plan is built from what was declined today, not
+   * the shape of the expression that reads it: the same context now also
+   * carries the declined TOPICS, so it reads the memory once into a local.
+   * Both are asserted, and the second one is new.
+   */
+  assert.match(context, /loadMemoryContext\(\)/, 'the plan must read the day\'s memory context')
+  assert.match(context, /dismissedFactIds: (loadMemoryContext\(\)|memory)\.dismissedFactIds/,
     'today\'s plan must respect what was declined today')
+  assert.match(context, /dismissedTopics: memory\.dismissedTopicIds/,
+    'and a topic declined today must not be the topic it promises')
   ok()
 }
 
