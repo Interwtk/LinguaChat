@@ -72,18 +72,21 @@ const WORK_01 = {
     { type: 'comprehension', instructionKey: 'ep18ComprehensionInstruction', target: 'What do you do?', itemId: 'what_do_you_do',
       options: [{ key: 'ep18CompOptCorrect', correct: true }, { key: 'ep18CompOptWrong1' }, { key: 'ep18CompOptWrong2' }] },
     /* Build: the frame, assembled before it has to be produced. */
-    { type: 'word_order', instructionKey: 'ep18OrderInstruction', target: 'I work at home.', itemId: 'i_do_pattern' },
-    /* Guided: the frame with one decision left in it. */
-    { type: 'fill_blank', instructionKey: 'ep18BlankInstruction', promptEn: 'I ____ at home.', answerEn: 'work',
-      alternatives: ['study'], itemId: 'i_do_pattern', hintKey: 'ep18BlankHint' },
+    { type: 'word_order', instructionKey: 'ep18OrderInstruction', hintKey: 'ep1BuildHint',
+      tokens: ['I', 'work', 'at', 'home', '.'], itemId: 'i_do_pattern' },
+    /*
+     * Guided: the frame with one decision left in it — and BOTH verbs are right,
+     * because the instruction asks for what is true for the learner.
+     */
+    { type: 'fill_blank', instructionKey: 'ep18BlankInstruction', before: 'I', after: ' at home.',
+      expects: 'work', alternatives: ['study'], itemId: 'i_do_pattern', hintKey: 'ep18BlankHint' },
     /*
      * Open production 1. The model answer is on offer because the frame is new —
      * the blueprint's autonomy target for this arc — and taking it is honest
      * practice that is not counted as independent.
      */
-    { type: 'free_reply', speaker: 'lingua', promptEn: 'So — what do you do?', instructionKey: 'ep18OpenInstruction',
-      evalKind: 'state_life_fact', suggestionEn: 'I work at home.', itemIds: ['work', 'study', 'i_do_pattern', 'at_home'],
-      personalizes: ['work_or_study'] },
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'So, {name} — what do you do?', instructionKey: 'ep18OpenInstruction',
+      evalKind: 'state_life_fact', suggestionEn: 'I work at home.', itemIds: ['work', 'study', 'i_do_pattern', 'at_home'] },
     /*
      * Receptive: two other people answer, one of them from a place the learner has
      * never been taught. Understanding an unknown workplace is the point.
@@ -96,8 +99,7 @@ const WORK_01 = {
      * which is what "integrated reuse" means.
      */
     { type: 'free_reply', speaker: 'lingua', promptEn: 'This is Ana. Ana: “Hi! I’m Ana. I work at the office.”', instructionKey: 'ep18IntegratedInstruction',
-      evalKind: 'state_life_fact', suggestionEn: 'Hi, I’m Sam. I study at home.', itemIds: ['im', 'work', 'study', 'i_do_pattern'],
-      personalizes: ['name', 'work_or_study'] },
+      evalKind: 'state_life_fact', suggestionEn: 'Hi, I’m {name}. I study at home.', itemIds: ['im', 'work', 'study', 'i_do_pattern'] },
     /* Remember: the same sentence, without a model on screen. */
     { type: 'recall', instructionKey: 'ep18FinalInstruction', evalKind: 'state_life_fact', itemIds: ['i_do_pattern', 'work', 'study'] },
     { type: 'completion', canDoNameKey: 'ep18CanDoName', titleKey: 'ep18CloseTitle', bodyKey: 'ep18CloseBody', ctaKey: 'ep1CloseCta' },
@@ -136,9 +138,11 @@ const WORK_02 = {
     /* Comprehend the REPLY, which is half of this episode's evidence. */
     { type: 'comprehension', instructionKey: 'ep19ComprehensionInstruction', target: 'I study at university.', itemId: 'at_university',
       options: [{ key: 'ep19CompOptCorrect', correct: true }, { key: 'ep19CompOptWrong1' }, { key: 'ep19CompOptWrong2' }] },
-    { type: 'word_order', instructionKey: 'ep19OrderInstruction', target: 'Do you work?', itemId: 'do_you_pattern' },
-    { type: 'fill_blank', instructionKey: 'ep19BlankInstruction', promptEn: '____ you study?', answerEn: 'Do',
-      itemId: 'do_you_pattern', hintKey: 'ep19BlankHint' },
+    { type: 'word_order', instructionKey: 'ep19OrderInstruction', hintKey: 'ep1BuildHint',
+      tokens: ['Do', 'you', 'work', '?'], itemId: 'do_you_pattern' },
+    /* The missing word is the auxiliary, which is the whole pattern. */
+    { type: 'fill_blank', instructionKey: 'ep19BlankInstruction', before: '', after: ' you study?',
+      expects: 'Do', itemId: 'do_you_pattern', hintKey: 'ep19BlankHint' },
     /* Open production 1: ask, with the model still available. */
     { type: 'free_reply', speaker: 'lingua', promptEn: 'I work at the office. Your turn — ask me something.', instructionKey: 'ep19OpenInstruction',
       evalKind: 'ask_life_fact', suggestionEn: 'Do you study?', itemIds: ['do_you_pattern', 'what_do_you_do'] },
@@ -209,7 +213,7 @@ const WORK_03 = {
      * integrated evidence rather than a lesson.
      */
     { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Oh, hi!', instructionKey: 'ep20GreetInstruction',
-      evalKind: 'introduction', itemIds: ['hi', 'im'], personalizes: ['name'] },
+      evalKind: 'introduction', itemIds: ['hi', 'im'] },
     /*
      * She has not said her name, so asking is the natural next turn — and it is the
      * `ask_name` reuse the blueprint asks this episode to integrate. Written the
@@ -221,7 +225,7 @@ const WORK_03 = {
     { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'I’m Maya.', instructionKey: 'ep20AskInstruction',
       evalKind: 'ask_origin', suggestionEn: 'Where are you from?', itemIds: ['where_from'] },
     { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'I’m from Lima. And I study at university. What do you do?', instructionKey: 'ep20LifeInstruction',
-      evalKind: 'state_life_fact', itemIds: ['i_do_pattern', 'work', 'study'], personalizes: ['work_or_study'] },
+      evalKind: 'state_life_fact', itemIds: ['i_do_pattern', 'work', 'study'] },
     { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Oh, nice. I also work at home on Fridays.', instructionKey: 'ep20AskBackInstruction',
       evalKind: 'ask_life_fact', itemIds: ['do_you_pattern'] },
     { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Yes, I do. It was good to meet you!', instructionKey: 'ep20CloseInstruction',

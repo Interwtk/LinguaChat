@@ -36,7 +36,7 @@ import {
 } from '../src/learning/curriculum/a1Map.js'
 import { episodeRequest, loadEpisodeContent, hasContentLoader, REFUSED } from '../src/learning/curriculum/episodeContent.js'
 import {
-  PRE_A1_EXIT_CRITERIA, requiredLevelItems, intentsForEpisode,
+  PRE_A1_EXIT_CRITERIA, requiredLevelItems, intentsForEpisode, personalisesOf,
   CAN_DO_INTENT as PRE_A1_CAN_DO_INTENT,
 } from '../src/learning/curriculum/preA1Map.js'
 import { derivePreA1Readiness } from '../src/learning/curriculum/readiness.js'
@@ -338,27 +338,48 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
   ok()
 }
 
-/* ---- 10) personalization: declared, safe, and never load-bearing ---- */
+/* ---- 10) personalization: derived from the prose, safe, never load-bearing ---- */
 {
-  /* the blueprint's safe slots are the only ones the arc personalises */
-  const personalised = new Set(A1_ARC1.flatMap(ep =>
-    (ep.steps || []).flatMap(step => step.personalizes || [])))
-  assert.ok(personalised.size > 0, 'the arc should personalise something')
-  for (const slot of personalised) {
-    assert.ok(BLUEPRINT.personalization.safeSlots.includes(slot),
-      `${slot} is not one of the blueprint's safe slots`)
-  }
   /*
-   * AND EVERY PERSONALISED STEP MUST WORK WITHOUT IT. The neutral value is in the
-   * step itself — a prompt and a model answer that are already correct English —
-   * so a learner with no facts and no interests plays the same episode.
+   * DERIVED, NOT DECLARED. `personalisesOf` reads the placeholders an episode's own
+   * sentences contain — preA1Map says it plainly: "never a boolean somebody
+   * remembered to set". Arc 1 first shipped with a hand-written `personalizes: []`
+   * on four steps and no placeholder anywhere, so it declared personalisation that
+   * nothing performed. The declaration is gone; this asserts the derivation.
    */
   for (const ep of A1_ARC1) {
     for (const step of ep.steps || []) {
-      if (!(step.personalizes || []).length) continue
-      assert.ok(step.promptEn && step.promptEn.length > 0,
-        `${ep.id}: a personalised step must read correctly with nothing remembered`)
-      assert.ok(!/\{\w+\}/.test(step.promptEn), `${ep.id}: an unfilled placeholder would reach the learner`)
+      for (const dead of ['personalizes', 'personalises']) {
+        assert.ok(!(dead in step),
+          `${ep.id}: personalisation is read from the prose, not declared in \`${dead}\``)
+      }
+    }
+  }
+  const personalised = new Set(A1_ARC1.flatMap(ep => personalisesOf(ep.id)))
+  assert.ok(personalised.size > 0, 'the arc should personalise something')
+  for (const slot of personalised) {
+    const slotName = slot.replace(/^fact:/, '')
+    assert.ok(BLUEPRINT.personalization.safeSlots.includes(slotName),
+      `${slot} is not one of the blueprint's safe slots`)
+  }
+  /*
+   * AND EVERY PLACEHOLDER MUST ALWAYS RESOLVE. The engine leaves an unfilled
+   * placeholder in place rather than printing "undefined", so `{something}` reaching
+   * a learner is a visible bug. `{name}` cannot: the shell falls back to a neutral
+   * name when the profile has none. Arc 1 uses that one and no other.
+   */
+  const shell = read('src/components/episode/EpisodeShell.jsx')
+  assert.ok(/const name = \(profile\.name \|\| ''\)\.trim\(\) \|\| '/.test(shell),
+    'the shell must guarantee a name, otherwise {name} could reach the learner unfilled')
+  const PROSE = ['promptEn', 'sceneEn', 'suggestionEn', 'target', 'response']
+  for (const ep of A1_ARC1) {
+    for (const step of ep.steps || []) {
+      const text = [...PROSE.map(f => step[f]), ...(step.tokens || []),
+        ...(step.options || []).map(o => o.textEn), step.before, step.after].filter(Boolean).join(' ')
+      for (const [, placeholder] of text.matchAll(/\{(\w+)\}/g)) {
+        assert.equal(placeholder, 'name',
+          `${ep.id}: {${placeholder}} has no guaranteed value, so it could reach the learner unfilled`)
+      }
     }
   }
   /* the objective is never what changes */
@@ -397,6 +418,56 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
   /* the language is learned, not merely seen */
   for (const id of A1_INTRODUCED_ITEMS.filter(i => !A1_RECEPTIVE_ITEMS.includes(i))) {
     assert.ok(model.languageItems[id], `${id} was taught and not recorded`)
+  }
+
+  /*
+   * `independent: 2` IS A LEVEL TARGET, NOT AN ARC-1 EXIT — and this asserts the
+   * exact numbers so nobody has to guess again.
+   *
+   * The blueprint carries two different evidence fields. On a can-do,
+   * `evidence.independent` is the capability's lifetime target, and exitCriteria
+   * names it as a READINESS dimension ("required capabilities produced unaided",
+   * applied to the 13 required can-dos, threshold deliberately unchosen). On an
+   * episode, `evidence` is a sentence about that episode — and for the asking
+   * episode it reads "one unaided question plus comprehension of the reply".
+   *
+   * The engine records a can-do once per episode RUN. So one pass of arc 1 gives
+   * `talk_about_work_or_study` two independent uses (episode 18 teaches it and
+   * episode 20 integrates it) and `ask_about_work_or_study` one (episode 19 is its
+   * only home in this arc). The second one arrives from a later run: a replay, a
+   * daily session, or the reuse the blueprint's own matrix schedules in arcs 2 and
+   * 6. Arc 1 supplying one is the design, not a shortfall.
+   */
+  const askEpisode = BLUEPRINT.episodes.find(e => e.plannedNumber === 19)
+  assert.match(askEpisode.evidence, /one unaided question/,
+    "the asking episode's own evidence target is one unaided question")
+  const readinessDimension = BLUEPRINT.exitCriteria.readinessDimensionsForA2
+    .find(d => d.dimension === 'required capabilities produced unaided')
+  assert.ok(readinessDimension, 'unaided production must be a readiness dimension, which is what the number scopes')
+  assert.match(readinessDimension.note, /the number is chosen when there is evidence from real journeys, not now/,
+    'the threshold is deliberately unchosen; a check must not invent one')
+  for (const canDo of A1_REQUIRED_CAN_DOS) {
+    assert.equal(BLUEPRINT.canDos.find(c => c.id === canDo).evidence.independent, 2,
+      `${canDo}'s lifetime target is two unaided uses`)
+  }
+  assert.equal(model.canDo.talk_about_work_or_study.independentSuccesses, 2,
+    'the arc gives its statement capability two unaided uses, from episodes 18 and 20')
+  assert.deepEqual(model.canDo.talk_about_work_or_study.contexts, ['what_you_do', 'meeting_someone_new'],
+    'and they come from two different episodes, not twice from one')
+  assert.equal(model.canDo.ask_about_work_or_study.independentSuccesses, 1,
+    'the arc gives its asking capability one unaided use — episode 19 is its only home here')
+  assert.deepEqual(model.canDo.ask_about_work_or_study.contexts, ['and_you'])
+  assert.equal(model.canDo.ask_about_work_or_study.status, 'learning',
+    'so it is still learning at the end of the arc, and that is correct')
+  {
+    /* and a second run of episode 19 is what completes it, wherever that run comes from */
+    const again = createLearnerModel()
+    playEpisode(again, 'what_you_do', { profile: STRONG, atMs: at })
+    playEpisode(again, 'and_you', { profile: STRONG, atMs: at + 1000 })
+    playEpisode(again, 'and_you', { profile: STRONG, atMs: at + 2000 })
+    assert.equal(again.canDo.ask_about_work_or_study.independentSuccesses, 2)
+    assert.equal(again.canDo.ask_about_work_or_study.status, 'can_do',
+      'a second unaided ask reaches the target — the level accumulates it, the arc does not have to')
   }
 
   /* replaying grants no second reward */
@@ -460,6 +531,71 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
   assert.equal(preA1Episodes.length, 17, 'Home progress is over Pre-A1 alone')
   assert.ok(!preA1Episodes.some(ep => completedA1.has(ep.id)), 'and no A1 episode is in that list')
   assert.deepEqual(a1ImplementationStatus().complete, false)
+  ok()
+}
+
+/* ---- 13) THE RENDER CONTRACT: every step gives its renderer what it reads ---- */
+{
+  /*
+   * WHY THIS EXISTS. Arc 1 passed twelve groups, played end to end in the journey
+   * harness and crashed on its fifth step the first time a browser rendered it:
+   * the `word_order` step carried `target: 'I work at home.'` and EpisodeShell reads
+   * `step.tokens.map(...)`. Its `fill_blank` carried `promptEn`/`answerEn`, which the
+   * renderer never looks at, so the gap drew an empty sentence and accepted anything.
+   *
+   * The journey harness evaluates answers; it does not render. Nothing in 44 checks
+   * asserted that a step supplies the fields its renderer dereferences — which is
+   * why authoring an episode against the wrong field names was silent. This closes
+   * that gap for every runtime episode, Pre-A1 included: the seventeen shipped ones
+   * define the contract, so if a rule here is wrong, they say so.
+   */
+  const REQUIRED = {
+    scene: ['titleKey', 'bodyKey'],
+    model: ['target'],
+    comprehension: ['instructionKey', 'target', 'options'],
+    choice: ['instructionKey', 'options'],
+    word_order: ['instructionKey', 'hintKey', 'tokens'],
+    fill_blank: ['instructionKey', 'before', 'after'],
+    free_reply: ['instructionKey', 'evalKind'],
+    recall: ['instructionKey', 'evalKind'],
+    mini_story: ['storyObjective'],
+    completion: ['titleKey', 'bodyKey', 'canDoNameKey'],
+  }
+  const ALL = [...ARC, ...A1_ARC1]
+  assert.equal(ALL.length, 20, 'the render contract must cover every runtime episode')
+  for (const ep of ALL) {
+    for (const [i, step] of (ep.steps || []).entries()) {
+      const where = `${ep.id} step ${i} (${step.type})`
+      const required = REQUIRED[step.type]
+      assert.ok(required, `${where}: unknown step type — EpisodeShell renders nothing for it`)
+      for (const field of required) {
+        assert.ok(step[field] !== undefined && step[field] !== null,
+          `${where}: EpisodeShell reads step.${field} and the step does not have it`)
+      }
+      /* the two fields the renderer calls .map() on, so undefined is a crash */
+      if (step.type === 'word_order') {
+        assert.ok(Array.isArray(step.tokens) && step.tokens.length >= 2,
+          `${where}: tokens must be a sentence to rebuild`)
+      }
+      if (step.type === 'comprehension' || step.type === 'choice') {
+        assert.ok(Array.isArray(step.options) && step.options.length >= 2, `${where}: needs options to choose between`)
+        /*
+         * At least one, not exactly one: Pre-A1's "How are you?" step accepts three
+         * different replies, because more than one answer really is fine. A step with
+         * none is the bug — nothing the learner taps would ever advance.
+         */
+        assert.ok(step.options.some(o => o.correct), `${where}: no option is correct, so the step cannot be passed`)
+        const label = step.type === 'comprehension' ? 'key' : 'textEn'
+        for (const opt of step.options) {
+          assert.ok(opt[label], `${where}: an option with no ${label} renders blank`)
+        }
+      }
+      /* a free turn needs something on screen to answer */
+      if (step.type === 'free_reply') {
+        assert.ok(step.promptEn || step.sceneEn, `${where}: a free turn needs a prompt or a scene`)
+      }
+    }
+  }
   ok()
 }
 

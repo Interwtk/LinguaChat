@@ -782,13 +782,20 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
                 if (step.captureFact === 'place') setPlace(value)
               }
               /*
-               * A gap with a single right answer is checked; a capture gap is
-               * not, because there is nothing to check it against.
+               * A gap with a right answer is checked; a capture gap is not,
+               * because there is nothing to check it against.
+               *
+               * `alternatives` exists because some frames have more than one true
+               * filler: "I ____ at home" is completed truthfully with either
+               * `work` or `study`, and marking one of them wrong would teach the
+               * learner that their own life is a mistake. `expects` stays the one
+               * shown in the hint and in the correction.
                */
               if (step.expects) {
                 const typed = fillValue.trim().toLowerCase().replace(/[^\w'’\s]/g, '')
                 const want = resolve(step.expects, vars).toLowerCase()
-                const correct = typed === want || typed === want.replace(/'/g, '’')
+                const accepted = [want, ...(step.alternatives || []).map(alt => resolve(alt, vars).toLowerCase())]
+                const correct = accepted.some(one => typed === one || typed === one.replace(/'/g, '’'))
                 recordItems([step.itemId].filter(Boolean), { correct, independent: false })
                 if (!correct) {
                   // its own wording: a gap has no word ORDER to get wrong

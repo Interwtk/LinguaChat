@@ -1761,6 +1761,9 @@ export const EPISODE_SKELETON = [
           "study",
           "i_do_pattern",
           "at_home"
+        ],
+        "placeholders": [
+          "name"
         ]
       },
       {
@@ -1775,6 +1778,9 @@ export const EPISODE_SKELETON = [
           "work",
           "study",
           "i_do_pattern"
+        ],
+        "placeholders": [
+          "name"
         ]
       },
       {

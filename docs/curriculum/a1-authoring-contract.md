@@ -137,6 +137,67 @@ compares it to the runtime: episode ids, order, roles, capabilities, prerequisit
 budgets, reuse actually exercised by a step, and both capabilities produced in an
 open turn with no model on screen.
 
+## `independent: 2` is a level target, not an arc exit
+
+The blueprint carries two evidence fields with the same name and different scopes,
+and confusing them makes a finished arc look broken.
+
+- `canDos[].evidence.independent` is the **capability's lifetime target**. Its scope
+  is set by `exitCriteria.readinessDimensionsForA2`, which lists "required
+  capabilities produced unaided" over "the 13 required A1 can-dos" and says of the
+  threshold: *the number is chosen when there is evidence from real journeys, not
+  now*. It is read at A1 readiness, which does not exist yet.
+- `episodes[].evidence` is a **sentence about one episode**. For episode 19 it reads
+  "one unaided question plus comprehension of the reply" — one, not two.
+
+The engine records a can-do once per episode **run**. So one pass of arc 1 gives
+`talk_about_work_or_study` two unaided uses (episode 18 teaches it, episode 20
+integrates it) and `ask_about_work_or_study` one, because episode 19 is its only
+home in this arc. The second arrives from a later run: a replay, a daily session, or
+the reuse `reuseMatrix` schedules in arcs 2 and 6, where the row reads `["I","R",
+"-","-","-","R","-"]`. Arc 1 supplying one is the design.
+
+`check:a1-arc1` now asserts all of it — both blueprint fields, both runtime numbers,
+the two contexts the statement capability comes from, and that a second run of
+episode 19 is what reaches the target. Nobody has to re-derive this from the number.
+
+## The render contract
+
+A step must supply the fields **EpisodeShell actually dereferences**, and until this
+closure nothing checked that. Arc 1 passed twelve groups and played end to end in
+the journey harness while carrying `target: 'I work at home.'` on a `word_order`
+step, which the renderer reads as `step.tokens.map(...)` — a crash on the fifth step
+the first time a browser rendered it — and `promptEn`/`answerEn` on a `fill_blank`,
+whose renderer reads `before`/`after`/`expects` and therefore drew an empty sentence
+that accepted anything. The journey harness evaluates answers; it does not render.
+
+`check:a1-arc1` group 13 now walks all twenty runtime episodes and asserts, per step
+type, the fields its renderer reads. Pre-A1's seventeen episodes define the rule: an
+early draft demanded exactly one correct option and `how_are_you` said otherwise,
+because three different replies to "How are you?" really are fine.
+
+One engine change came out of the same session: `fill_blank` gained `alternatives`,
+because "I ____ at home" is completed truthfully with either `work` or `study` and
+marking one of them wrong teaches a learner that their own life is a mistake.
+`expects` remains the answer shown in the hint and the correction.
+
+## Personalisation is derived, never declared
+
+`personalisesOf` reads the placeholders an episode's own sentences contain. Arc 1
+first shipped with a hand-written `personalizes: [...]` on four steps and no
+placeholder anywhere, so it declared personalisation that nothing performed — the
+exact "boolean somebody remembered to set" that `preA1Map` warns against. The
+declaration is gone; `{name}` is in the prose where addressing the learner is
+natural, and `check:a1-arc1` refuses both the dead field and any placeholder without
+a guaranteed value.
+
+Still outstanding, and named here so it is not mistaken for done: the blueprint's
+`factsToCapture` marks `work_or_study` as `store: true`, captured from a learner
+statement in arc 1. Arc 1 does not capture it. `captureFact` exists only on
+`fill_blank` and maps to the `place`/`like` fact types, so capturing it needs engine
+work rather than an authoring change, and arcs 2, 6 and 7 are where the reuse it
+feeds is scheduled.
+
 ## To implement episode 18, the author will
 
 The migration path, concretely — this is what the arc-1 sprint did, and nothing in it is a change to Pre-A1:
