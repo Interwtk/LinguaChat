@@ -143,6 +143,21 @@ export function selectEquivalentActivityFormat({
  * that would have to be invented for it.
  */
 const OBJECTIVE_FORMATS = {
+  /*
+   * A1. These five were missing, and the omission was not harmless: an unlisted
+   * objective is allowed EVERY format, so a practice block for one of them could be
+   * planned as a `mini_story` — and `getStory` answers an objective it does not know
+   * with the café scene. The learner would have been shown a conversation about
+   * music and graded on saying what they do.
+   *
+   * `mini_story` is therefore absent from all five, for the reason the file already
+   * gives twice: a story is only offered where a story exists, and arc 2's story is
+   * hosted by episode 23 rather than plannable on its own.
+   */
+  state_life_fact: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  ask_life_fact: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
+  state_routine: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+
   introduction: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'mini_story'],
   ask_name: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   nice_to_meet: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],

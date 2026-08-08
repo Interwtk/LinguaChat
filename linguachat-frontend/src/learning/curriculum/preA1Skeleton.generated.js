@@ -1632,7 +1632,8 @@ export const EPISODE_SKELETON = [
         ],
         "format": "roleplay",
         "thingId": "book",
-        "quantityForm": "bare"
+        "quantityForm": "bare",
+        "count": 2
       },
       {
         "type": "free_reply",
@@ -1643,7 +1644,8 @@ export const EPISODE_SKELETON = [
         ],
         "format": "roleplay",
         "thingId": "book",
-        "quantityForm": "with_object"
+        "quantityForm": "with_object",
+        "count": 3
       },
       {
         "type": "free_reply",
@@ -1663,7 +1665,8 @@ export const EPISODE_SKELETON = [
         ],
         "format": "roleplay",
         "thingId": "sandwich",
-        "quantityForm": "polite_request"
+        "quantityForm": "polite_request",
+        "count": 2
       },
       {
         "type": "free_reply",
@@ -1689,7 +1692,8 @@ export const EPISODE_SKELETON = [
           "quantity_pattern"
         ],
         "thingId": "book",
-        "quantityForm": "with_object"
+        "quantityForm": "with_object",
+        "count": 2
       },
       {
         "type": "completion"
@@ -1990,6 +1994,357 @@ export const EPISODE_SKELETON = [
         "itemIds": [
           "i_do_pattern"
         ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "my_day",
+    "level": "A1",
+    "arc": "daily_rhythm",
+    "titleKey": "ep21Title",
+    "goalKey": "ep21Goal",
+    "canDoId": "talk_about_daily_routine",
+    "canDoNameKey": "ep21CanDoName",
+    "durationKey": "ep21Duration",
+    "estimatedMinutes": 9,
+    "xp": 75,
+    "prerequisites": [
+      "meeting_someone_new"
+    ],
+    "gardenItems": [
+      "get_up",
+      "have_breakfast",
+      "usually",
+      "sometimes",
+      "frequency_pattern"
+    ],
+    "skillPrerequisites": [
+      "talk_about_work_or_study"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "talk_about_work_or_study",
+      "express_like"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "state_life_fact",
+        "itemIds": [
+          "i_do_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "get_up",
+          "have_breakfast"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "sometimes"
+      },
+      {
+        "type": "word_order",
+        "itemId": "frequency_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "frequency_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_routine",
+        "itemIds": [
+          "get_up",
+          "usually",
+          "frequency_pattern"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "express_like",
+        "itemIds": [
+          "i_like"
+        ],
+        "contextIntent": "express_like",
+        "placeholders": [
+          "noun"
+        ]
+      },
+      {
+        "type": "choice",
+        "itemId": "sometimes"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_routine",
+        "itemIds": [
+          "i_do_pattern",
+          "get_up",
+          "usually"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "state_routine",
+        "itemIds": [
+          "frequency_pattern",
+          "get_up",
+          "have_breakfast"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "at_seven",
+    "level": "A1",
+    "arc": "daily_rhythm",
+    "titleKey": "ep22Title",
+    "goalKey": "ep22Goal",
+    "canDoId": "say_when_something_happens",
+    "canDoNameKey": "ep22CanDoName",
+    "durationKey": "ep22Duration",
+    "estimatedMinutes": 9,
+    "xp": 75,
+    "prerequisites": [
+      "my_day"
+    ],
+    "gardenItems": [
+      "part_of_day_pattern",
+      "time_at_pattern"
+    ],
+    "skillPrerequisites": [
+      "talk_about_daily_routine",
+      "use_small_numbers"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "use_quantity",
+      "talk_about_daily_routine",
+      "ask_for_repair"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "state_routine",
+        "itemIds": [
+          "frequency_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "part_of_day_pattern",
+          "time_at_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "time_at_pattern"
+      },
+      {
+        "type": "word_order",
+        "itemId": "part_of_day_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "time_at_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "use_quantity",
+        "itemIds": [
+          "numbers_1_10"
+        ],
+        "quantityForm": "bare",
+        "count": 3
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_routine",
+        "itemIds": [
+          "part_of_day_pattern",
+          "usually"
+        ],
+        "timeForm": "part_of_day"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_request",
+        "itemIds": [
+          "can_you_repeat"
+        ],
+        "repairKind": "repeat"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_routine",
+        "itemIds": [
+          "time_at_pattern",
+          "get_up"
+        ],
+        "timeForm": "clock"
+      },
+      {
+        "type": "recall",
+        "evalKind": "state_routine",
+        "itemIds": [
+          "time_at_pattern"
+        ],
+        "timeForm": "clock"
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "what_does_it_mean",
+    "level": "A1",
+    "arc": "daily_rhythm",
+    "titleKey": "ep23Title",
+    "goalKey": "ep23Goal",
+    "canDoId": "ask_what_something_means",
+    "canDoNameKey": "ep23CanDoName",
+    "durationKey": "ep23Duration",
+    "estimatedMinutes": 10,
+    "xp": 85,
+    "prerequisites": [
+      "at_seven"
+    ],
+    "gardenItems": [
+      "what_does_mean_pattern"
+    ],
+    "skillPrerequisites": [
+      "ask_for_repair",
+      "talk_about_daily_routine",
+      "say_when_something_happens"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "ask_for_repair",
+      "ask_about_work_or_study",
+      "talk_about_daily_routine"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "state_routine",
+        "itemIds": [
+          "time_at_pattern"
+        ],
+        "review": true,
+        "timeForm": "clock"
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "what_does_mean_pattern",
+          "early"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "late"
+      },
+      {
+        "type": "mini_story",
+        "storyObjective": "state_routine",
+        "turns": [
+          {
+            "kind": "scene"
+          },
+          {
+            "kind": "choose"
+          },
+          {
+            "kind": "line"
+          },
+          {
+            "kind": "reply",
+            "evalKind": "state_routine",
+            "itemIds": [
+              "get_up",
+              "time_at_pattern"
+            ]
+          },
+          {
+            "kind": "line"
+          },
+          {
+            "kind": "reply",
+            "evalKind": "state_routine",
+            "itemIds": [
+              "part_of_day_pattern",
+              "usually"
+            ]
+          },
+          {
+            "kind": "close"
+          }
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_request",
+        "itemIds": [
+          "what_does_mean_pattern"
+        ],
+        "repairKind": "ask_meaning"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_request",
+        "itemIds": [
+          "can_you_repeat"
+        ],
+        "repairKind": "repeat"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_request",
+        "itemIds": [
+          "what_does_mean_pattern"
+        ],
+        "repairKind": "ask_meaning"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_life_fact",
+        "itemIds": [
+          "do_you_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "state_routine",
+        "itemIds": [
+          "time_at_pattern",
+          "frequency_pattern"
+        ],
+        "timeForm": "clock"
       },
       {
         "type": "completion"

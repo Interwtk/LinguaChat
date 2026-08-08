@@ -512,10 +512,15 @@ def _cafe_order(text: str, thing: str) -> dict:
 
 # ---- fifth arc: repair and closing (mirrors the frontend evaluator) ----
 #
-# One intent with three strategies, chosen by `repair_kind`, plus the close. The
+# One intent with four strategies, chosen by `repair_kind`, plus the close. The
 # frontend sends which strategy the turn asked for; without it the safest target
 # is the one the arc introduces first.
-_REPAIR_KINDS = ("signal_nonunderstanding", "repeat", "slow_down")
+#
+# `ask_meaning` arrives with A1 arc 2 and is the only one that names a word: the
+# frontend passes it as `meaning_word` so both sides describe the same turn. Parity
+# matters here because an inconclusive repair may escalate, and a strategy this side
+# does not know would be judged against the wrong sentence.
+_REPAIR_KINDS = ("signal_nonunderstanding", "repeat", "slow_down", "ask_meaning")
 _NOT_UNDERSTAND = re.compile(
     r"\b(i (really )?(don'?t|do not) understand|i (don'?t|do not) get (it|that)"
     r"|i'?m (not sure|lost)|i didn'?t (understand|catch|get) (that|it))\b")
@@ -529,6 +534,12 @@ _ASK_SLOW = re.compile(
     r"\b((can|could) you (please )?speak (more )?slowly|please speak (more )?slowly"
     r"|speak (more )?slowly|slowly,? please)\b")
 _ASK_SLOW_LOOSE = re.compile(r"\b(slow(ly)?|slow down)\b")
+# "What does ___ mean?", and "What is ___?" as the same question asked another way:
+# ONE word after the verb is what makes it a question about a word rather than about
+# a name. `normalize` has already removed the question mark.
+_ASK_MEANING = re.compile(r"\bwhat\s+(does|do)\s+.{1,30}?\s*mean\b")
+_ASK_MEANING_VARIANT = re.compile(r"\b(what\s+(is|are)|what'?s)\s+[^\s]+\s*$")
+_ASK_MEANING_LOOSE = re.compile(r"\b(mean|means|meaning)\b")
 _DONT_KNOW = re.compile(r"\b(i (don'?t|do not) know|no idea|dunno)\b")
 _BARE_CONFUSION = re.compile(r"^(what|sorry|huh|eh|again|pardon|excuse me)[?!.]*$")
 _SORRY = re.compile(r"\b(sorry|excuse me|pardon)\b")
@@ -539,12 +550,15 @@ _REPAIR_TARGET = {
     "signal_nonunderstanding": "I don’t understand.",
     "repeat": "Can you repeat, please?",
     "slow_down": "Please speak slowly.",
+    "ask_meaning": "What does “{word}” mean?",
 }
 
 
-def _repair_request(text: str, repair_kind: str) -> dict:
+def _repair_request(text: str, repair_kind: str, meaning_word: str = "") -> dict:
     kind = repair_kind if repair_kind in _REPAIR_KINDS else "signal_nonunderstanding"
     natural = _REPAIR_TARGET[kind]
+    if kind == "ask_meaning":
+        natural = natural.format(word=(meaning_word or "that").strip() or "that")
     n = normalize(text)
     if not n:
         return _base(understood=False, error_type="empty", retry_required=True, natural_version=natural, confidence=0.95)
@@ -552,13 +566,22 @@ def _repair_request(text: str, repair_kind: str) -> dict:
     signalled = bool(_NOT_UNDERSTAND.search(n))
     asked_repeat = bool(_ASK_REPEAT.search(n))
     asked_slow = bool(_ASK_SLOW.search(n))
-    done = signalled if kind == "signal_nonunderstanding" else asked_repeat if kind == "repeat" else asked_slow
+    asked_meaning = bool(_ASK_MEANING.search(n)) or bool(_ASK_MEANING_VARIANT.search(n))
+    done = (signalled if kind == "signal_nonunderstanding"
+            else asked_repeat if kind == "repeat"
+            else asked_slow if kind == "slow_down" else asked_meaning)
     if done:
         return _base(completed_objective=True, natural_version=natural,
                      accepted_variant=normalize(natural) != n, confidence=0.95)
 
+    # the reach for the meaning question that did not arrive needs the frame, not
+    # "that is not a repair"
+    if kind == "ask_meaning" and _ASK_MEANING_LOOSE.search(n):
+        return _base(error_type="incomplete_meaning_question", retry_required=True,
+                     natural_version=natural, confidence=0.85)
+
     # a different repair: the conversation was kept alive, which is the skill
-    if signalled or asked_repeat or asked_slow:
+    if signalled or asked_repeat or asked_slow or asked_meaning:
         return _base(error_type="other_repair", retry_required=True, natural_version=natural, confidence=0.9)
 
     # "I don't know." answers a question instead of reporting a breakdown
@@ -566,7 +589,8 @@ def _repair_request(text: str, repair_kind: str) -> dict:
         return _base(error_type="means_dont_know", retry_required=True, natural_version=natural, confidence=0.92)
 
     loose = (_NOT_UNDERSTAND_LOOSE if kind == "signal_nonunderstanding"
-             else _ASK_REPEAT_LOOSE if kind == "repeat" else _ASK_SLOW_LOOSE)
+             else _ASK_REPEAT_LOOSE if kind == "repeat"
+             else _ASK_SLOW_LOOSE if kind == "slow_down" else _ASK_MEANING_LOOSE)
     if loose.search(n):
         return _base(error_type="incomplete_repair", retry_required=True, natural_version=natural, confidence=0.88)
 
@@ -811,7 +835,8 @@ def evaluate_deterministic(payload: dict) -> dict:
     # absent value falls back to the strategy the arc teaches first rather than
     # guessing from the sentence.
     if kind == "repair_request":
-        return _repair_request(text, payload.get("repair_kind") or "")
+        return _repair_request(text, payload.get("repair_kind") or "",
+                               payload.get("meaning_word") or "")
     if kind == "close_encounter":
         return _close_encounter(text)
     # sixth arc — the thing and the shape of the quantity travel with the turn,

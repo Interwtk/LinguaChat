@@ -154,6 +154,51 @@ const STORIES = {
       { kind: 'close', textEn: 'See you!', noteKey: 'storyNoteClose' },
     ],
   },
+  /*
+   * A1 arc 2's story, and the blueprint asked for it by name: "A day is a
+   * sequence; a hosted story lets the learner meet several actions in order and
+   * still answer in their own words."
+   *
+   * The scene carries TWO words the learner has never met — `early` and `late` —
+   * because episode 23's capability is asking what a word means, and a question
+   * about nothing is a drill. The decision is which repair to reach for, which is
+   * the same axis as the Pre-A1 repair story: two strategies, neither better.
+   *
+   * `personalizationMode` is deliberately absent, so this story is neutral for
+   * everybody. The two unknown words ARE the lesson; letting a topic change them
+   * would change what the learner has to do, which the personalisation contract
+   * refuses.
+   */
+  state_routine: {
+    storyId: 'somebody_else_day',
+    objective: 'state_routine',
+    home: 'episode',
+    /* two ways to rescue the same sentence, and the learner picks one */
+    branches: ['ask_meaning', 'repeat'],
+    turns: [
+      { kind: 'scene', textEn: '{partner} talks about their day: “I get up early and I work late.”', noteKey: 'storyNoteScene' },
+      {
+        kind: 'choose',
+        promptKey: 'storyChooseRepair',
+        options: [
+          { branch: 'ask_meaning', textEn: 'What does “early” mean?' },
+          { branch: 'repeat', textEn: 'Can you repeat, please?' },
+        ],
+      },
+      {
+        kind: 'line',
+        speaker: 'partner',
+        byBranch: {
+          ask_meaning: '“Early” means before seven. And you?',
+          repeat: 'Of course — I get up early. And you?',
+        },
+      },
+      { kind: 'reply', evalKind: 'state_routine', instructionKey: 'storyReplyRoutine', suggestionEn: 'I get up at seven.', itemIds: ['get_up', 'time_at_pattern'] },
+      { kind: 'line', speaker: 'partner', textEn: 'Nice. I sometimes work in the evening.' },
+      { kind: 'reply', evalKind: 'state_routine', instructionKey: 'storyReplyDayPart', suggestionEn: 'I usually work in the morning.', itemIds: ['part_of_day_pattern', 'usually'] },
+      { kind: 'close', textEn: 'Have a good day!', noteKey: 'storyNoteClose' },
+    ],
+  },
   introduction: {
     storyId: 'first_day',
     objective: 'introduction',

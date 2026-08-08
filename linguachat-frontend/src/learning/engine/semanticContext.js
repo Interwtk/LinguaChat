@@ -27,6 +27,14 @@ export const SEMANTIC_TYPES = [
   'feeling',         // good, tired
   'person',          // Emma
   'generic_object',  // a thing you can ask for
+  /*
+   * A1 arc 2. An hour is neither a place nor an object, and the blueprint says
+   * why the type has to exist: a slot that accepts it must reject "Madrid" and
+   * "water". Only this one of the blueprint's four proposed A1 types is
+   * registered — `day`, `relation` and `transport_mode` belong to arcs that do
+   * not exist, and a type with no consumer makes coverage look real.
+   */
+  'time_point',      // seven, in the morning
 ]
 
 export const isSemanticType = (type) => SEMANTIC_TYPES.includes(type)
@@ -63,6 +71,14 @@ export const INTENT_SLOTS = {
    */
   state_life_fact: ['place'],
   ask_life_fact: [],
+
+  /*
+   * A1 arc 2. A routine statement takes a TIME and nothing else: "I usually work
+   * in the morning" is the frame, and the slot must refuse everything a time is
+   * not. A place would build "I usually work at home in at home"; a drink would
+   * build "I get up at water". The blueprint's reason for the type, enforced.
+   */
+  state_routine: ['time_point'],
 
   express_like: ['interest', 'activity', 'food', 'drink', 'generic_object'],
   express_dislike: ['interest', 'food', 'drink', 'generic_object'],
@@ -297,6 +313,18 @@ const KNOWN_VALUES = {
   home: 'place', 'at home': 'place',
   'the office': 'place', 'at the office': 'place',
   university: 'place', 'at university': 'place',
+  /*
+   * A1 arc 2's times. Two kinds, one type: the part of the day, and the hour.
+   *
+   * The hours stop at ten because the level's numbers do — `time_at_pattern`
+   * declares `numbers_1_10` as its prerequisite and eleven upwards arrives in
+   * arc 5. Writing "at eleven" here would let the engine build a sentence out of
+   * a number the learner has never met.
+   */
+  'in the morning': 'time_point', 'in the afternoon': 'time_point', 'in the evening': 'time_point',
+  morning: 'time_point', afternoon: 'time_point', evening: 'time_point',
+  one: 'time_point', two: 'time_point', three: 'time_point', four: 'time_point', five: 'time_point',
+  six: 'time_point', seven: 'time_point', eight: 'time_point', nine: 'time_point', ten: 'time_point',
 }
 
 /*
@@ -333,6 +361,31 @@ const TAUGHT_PLACES = Object.keys(KNOWN_VALUES)
  * yields nothing rather than a guess. Whole-word matching, so "homework" is not
  * a home.
  */
+/*
+ * The taught clock hour a learner named, as a word, or null.
+ *
+ * This is how the blueprint's `usual_time` fact gets a value: `semanticType:
+ * time_point`, and the level teaches `at + hour` over the numbers it owns. A part
+ * of the day is deliberately NOT accepted here — "in the morning" is when the
+ * routine happens broadly, and `making_arrangements` needs an hour to propose a
+ * meeting. Digits are read too, because a learner types "at 7".
+ */
+const TAUGHT_HOURS = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
+
+export function taughtHourIn(text) {
+  const clean = String(text || '').toLowerCase()
+  const digit = clean.match(/\bat\s+(\d{1,2})\b/)
+  if (digit) {
+    const n = Number(digit[1])
+    return n >= 1 && n <= TAUGHT_HOURS.length ? TAUGHT_HOURS[n - 1] : null
+  }
+  const word = clean.replace(/[^\p{L}\s]/gu, ' ')
+  for (const hour of TAUGHT_HOURS) {
+    if (new RegExp(`\\bat\\s+${hour}\\b`, 'u').test(word)) return hour
+  }
+  return null
+}
+
 export function taughtPlaceIn(text) {
   const clean = String(text || '').toLowerCase().replace(/[^\p{L}\s]/gu, ' ')
   for (const place of TAUGHT_PLACES) {

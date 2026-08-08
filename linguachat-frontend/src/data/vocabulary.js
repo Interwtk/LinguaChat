@@ -208,6 +208,40 @@ export const SEED_VOCAB = [
     meaning: { en: 'a place where people work', es: 'en la oficina', pt: 'no escritório', fr: 'au bureau', it: 'in ufficio', de: 'im Büro', ja: 'オフィスで', ar: 'في المكتب' } },
   { id: 'at_university', term: 'at university', kind: 'phrase', emoji: 'U', example: 'I study at university.',
     meaning: { en: 'a place where people study', es: 'en la universidad', pt: 'na universidade', fr: 'à l’université', it: 'all’università', de: 'an der Universität', ja: '大学で', ar: 'في الجامعة' } },
+
+  /*
+   * A1 arc 2 — "how your day goes". Eight productive entries, which is exactly the
+   * arc's budget, and four of them are patterns: the arc's density is its own
+   * declared risk ("three new pattern groups in one arc is the level's densest
+   * moment"), so the words are kept to two actions and two frequency adverbs and
+   * the routine is built from arc 1's `work` and `study` as well.
+   */
+  { id: 'get_up', term: 'get up', kind: 'phrase', emoji: 'U', example: 'I get up at seven.',
+    meaning: { en: 'leave your bed in the morning', es: 'levantarse', pt: 'levantar-se', fr: 'se lever', it: 'alzarsi', de: 'aufstehen', ja: '起きる', ar: 'يستيقظ' } },
+  { id: 'have_breakfast', term: 'have breakfast', kind: 'phrase', emoji: 'B', example: 'I have breakfast at eight.',
+    meaning: { en: 'eat the first meal of the day', es: 'desayunar', pt: 'tomar o café da manhã', fr: 'prendre le petit-déjeuner', it: 'fare colazione', de: 'frühstücken', ja: '朝食をとる', ar: 'يتناول الفطور' } },
+  { id: 'usually', term: 'usually', kind: 'word', emoji: '~', example: 'I usually work at home.',
+    meaning: { en: 'almost every day', es: 'normalmente', pt: 'normalmente', fr: 'd’habitude', it: 'di solito', de: 'normalerweise', ja: 'ふつうは', ar: 'عادةً' } },
+  { id: 'sometimes', term: 'sometimes', kind: 'word', emoji: '~', example: 'I sometimes study in the evening.',
+    meaning: { en: 'on some days, not all', es: 'a veces', pt: 'às vezes', fr: 'parfois', it: 'a volte', de: 'manchmal', ja: 'ときどき', ar: 'أحيانًا' } },
+  { id: 'frequency_pattern', term: 'usually / sometimes + verb', kind: 'pattern', emoji: '~', example: 'I usually get up at seven.',
+    meaning: { en: 'how often, before the action', es: 'con qué frecuencia, antes de la acción', pt: 'com que frequência, antes da ação', fr: 'à quelle fréquence, avant l’action', it: 'con quale frequenza, prima dell’azione', de: 'wie oft, vor der Handlung', ja: '頻度を動作の前に', ar: 'كم مرة، قبل الفعل' } },
+  { id: 'part_of_day_pattern', term: 'in the morning / afternoon / evening', kind: 'pattern', emoji: 'D', example: 'I work in the morning.',
+    meaning: { en: 'which part of the day', es: 'en qué parte del día', pt: 'em que parte do dia', fr: 'quelle partie de la journée', it: 'in quale parte del giorno', de: 'welcher Teil des Tages', ja: '一日のどの時間帯か', ar: 'أي جزء من اليوم' } },
+  { id: 'time_at_pattern', term: 'at + hour', kind: 'pattern', emoji: 'C', example: 'I get up at seven.',
+    meaning: { en: '“at” before the hour', es: '“at” antes de la hora', pt: '“at” antes da hora', fr: '« at » avant l’heure', it: '“at” prima dell’ora', de: '„at“ vor der Uhrzeit', ja: '時刻の前に “at”', ar: '“at” قبل الساعة' } },
+  { id: 'what_does_mean_pattern', term: 'What does ___ mean?', kind: 'pattern', emoji: '?', example: 'What does “early” mean?',
+    meaning: { en: 'asking for the meaning of one word', es: 'preguntar el significado de una palabra', pt: 'perguntar o significado de uma palavra', fr: 'demander le sens d’un mot', it: 'chiedere il significato di una parola', de: 'nach der Bedeutung eines Wortes fragen', ja: '単語の意味をたずねる', ar: 'السؤال عن معنى كلمة' } },
+
+  /*
+   * Receptive, and the reason they exist is the lesson: episode 23's story carries
+   * two words the learner has never met, so they have something real to ask about.
+   * They are never asked to produce them.
+   */
+  { id: 'early', term: 'early', kind: 'word', emoji: 'E', example: 'I get up early.',
+    meaning: { en: 'before the usual time', es: 'temprano', pt: 'cedo', fr: 'tôt', it: 'presto', de: 'früh', ja: '早く', ar: 'مبكرًا' } },
+  { id: 'late', term: 'late', kind: 'word', emoji: 'L', example: 'I work late.',
+    meaning: { en: 'after the usual time', es: 'tarde', pt: 'tarde', fr: 'tard', it: 'tardi', de: 'spät', ja: '遅く', ar: 'متأخرًا' } },
 ]
 
 export const SEED_VOCAB_BY_ID = Object.fromEntries(SEED_VOCAB.map(item => [item.id, item]))

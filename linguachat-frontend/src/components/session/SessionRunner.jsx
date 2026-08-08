@@ -19,6 +19,7 @@ import {
   loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, markRecurringError, recordActivitySignalOnce,
 } from '../../learning/engine/learnerModel.js'
 import { selectCompatibleContext, asSubjectValue, thingById } from '../../learning/engine/semanticContext.js'
+import { factsOfType } from '../../learning/engine/learnerFacts.js'
 import { coreItemsOfIntent } from '../../learning/curriculum/preA1Map.js'
 import { SEED_VOCAB_BY_ID } from '../../data/vocabulary'
 import {
@@ -37,6 +38,15 @@ const MODEL_ANSWER = {
    */
   state_life_fact: (v) => (v.workOrStudy ? `I work at ${v.workOrStudy}.` : 'I work at home.'),
   ask_life_fact: () => 'Do you work?',
+  /*
+   * A1 arc 2. The model answer follows the turn's own subtype, because "say when"
+   * and "say what you do every day" are the same intent asking for different
+   * detail — and it prefers the hour the learner already told us over an invented
+   * one, exactly as the life-fact answer prefers their workplace.
+   */
+  state_routine: (v) => (v.timeForm === 'part_of_day'
+    ? 'I usually work in the morning.'
+    : `I usually get up at ${v.usualTime || 'seven'}.`),
 
   introduction: (v) => `Hi, I'm ${v.name}.`,
   ask_name: () => "What's your name?",
@@ -75,7 +85,10 @@ const MODEL_ANSWER = {
   identify_thing: (v) => `It’s ${v.thingValue}.`,
   use_quantity: (v) => `${v.countWord[0].toUpperCase()}${v.countWord.slice(1)}.`,
   // fifth arc — the strategy the block practises decides the sentence
-  repair_request: (v) => REPAIR_TARGET[v.repairKind] || REPAIR_TARGET.signal_nonunderstanding,
+  repair_request: (v) => {
+    const target = REPAIR_TARGET[v.repairKind] || REPAIR_TARGET.signal_nonunderstanding
+    return typeof target === 'function' ? target(v) : target
+  },
   close_encounter: () => 'Bye.',
 }
 
@@ -84,16 +97,28 @@ const REPAIR_TARGET = {
   signal_nonunderstanding: 'I don’t understand.',
   repeat: 'Can you repeat, please?',
   slow_down: 'Please speak slowly.',
+  /* arc 2's: the repair that learns rather than pauses */
+  ask_meaning: (v) => `What does “${v.meaningWord || 'that'}” mean?`,
 }
 const REPAIR_PROMPT = {
   signal_nonunderstanding: (v) => `So, mmm… mmm… ${v.noun}?`,
   repeat: () => `And… mmm… where…`,
   slow_down: () => 'Sorry—whatdoyoulike?',
+  /*
+   * A sentence with one word in it the learner has not met, so there is something
+   * real to ask about. The word is named on the block so the target and the prompt
+   * cannot drift apart.
+   */
+  ask_meaning: (v) => `I usually finish ${v.meaningWord || 'late'}.`,
 }
 // What Lingua says to open the practice turn, so the reply has a real context.
 const PROMPT = {
   state_life_fact: (v) => `Hi again${v.name ? ', ' + v.name : ''}. What do you do?`,
   ask_life_fact: () => 'I work at the office. Your turn to ask me.',
+  /* arc 2: the question has to be about a day, and about the right kind of when */
+  state_routine: (v) => (v.timeForm === 'part_of_day'
+    ? 'When do you work or study — morning, afternoon or evening?'
+    : `Tell me about your day${v.name ? ', ' + v.name : ''}. What time do you get up?`),
 
   introduction: () => 'Hi there!',
   ask_name: () => "I'm ready when you are.",
@@ -202,6 +227,23 @@ function PracticeTurn({ block, topic = null, onDone }) {
     name, partner, repairKind,
     partnerPlace: placeFor(partner),
     place: modelRef.current.facts?.place || '',
+    /*
+     * A1's two remembered facts, so a practice turn about the learner's day uses
+     * their own hour and their own workplace instead of inventing either. Both are
+     * empty for anybody who has not said them, which is the ordinary path.
+     */
+    workOrStudy: factsOfType(modelRef.current, 'work_or_study')[0]?.value || '',
+    usualTime: factsOfType(modelRef.current, 'usual_time')[0]?.value || '',
+    /*
+     * Which subtype an arc-2 block practises. A due review knows its item, so the
+     * time form comes from the phrase that fell due; anything else practises the
+     * hour, which is the form later arcs need.
+     */
+    timeForm: kind === 'state_routine'
+      ? (block.payload?.itemId === 'part_of_day_pattern' ? 'part_of_day' : 'clock')
+      : null,
+    /* the one word an `ask_meaning` turn is about, named once for prompt and target */
+    meaningWord: 'late',
     // if today is built around something the learner told Lingua, practise
     // with their own words rather than a catalogue noun
     // the same gate as an episode: today's topic reaches the sentence only when

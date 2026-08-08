@@ -28,7 +28,9 @@ import { MiniStory } from '../session/MiniStory'
 import {
   beginEpisodeRun, completeEpisodeRun, updateActiveRun, runEarnsReward, otherBranch, RUN_BRANCH_REPLAY,
 } from '../../learning/engine/episodeRuns.js'
-import { recordLearnerFact, selectLearnerFact, factsOfType, captureStatedLifeFact } from '../../learning/engine/learnerFacts.js'
+import {
+  recordLearnerFact, selectLearnerFact, factsOfType, captureStatedLifeFact, captureStatedUsualTime,
+} from '../../learning/engine/learnerFacts.js'
 
 // Fill {name} / {partner} / {place} / {partnerPlace} in the English target text.
 // An unknown placeholder is left untouched rather than printed as "undefined".
@@ -191,6 +193,13 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
   // The place the learner said they are from, captured inside the activity (see
   // episode 5) — never required up front, never part of the global profile.
   const [place, setPlace] = useState(() => modelRef.current.facts?.place || '')
+  /*
+   * The hour the learner already told us they get up, if they have. It is only
+   * ever used to keep a model answer honest — "I usually get up at seven." should
+   * be their seven, not an invented one — and it is empty for everybody who has
+   * not said it yet, which is the normal path.
+   */
+  const usualTime = useMemo(() => factsOfType(modelRef.current, 'usual_time')[0]?.value || '', [])
 
   const guardRef = useRef(createSubmissionGuard())  // double-submit + late-response
   const abortRef = useRef(null)       // cancels the in-flight remote request
@@ -487,10 +496,18 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
    * mastery, and reinforcing an existing value means a replay cannot grow the list.
    */
   function captureLifeFact(evalKind, text) {
-    const stored = captureStatedLifeFact(modelRef.current, {
-      evalKind, reply: text, modelAnswer: resolve(step.suggestionEn || '', vars), sourceEpisodeId: ep.id,
-    })
-    if (stored) saveLearnerModel(modelRef.current)
+    const payload = { evalKind, reply: text, modelAnswer: resolve(step.suggestionEn || '', vars), sourceEpisodeId: ep.id }
+    /*
+     * One call site, one fact per arc: arc 1 remembers where the learner's days
+     * happen, arc 2 remembers when they start. Each rule decides for itself whether
+     * this turn is one it may learn from, so adding an arc adds a line here and
+     * nothing else.
+     */
+    const stored = [
+      captureStatedLifeFact(modelRef.current, payload),
+      captureStatedUsualTime(modelRef.current, payload),
+    ].filter(Boolean)
+    if (stored.length) saveLearnerModel(modelRef.current)
   }
 
   async function submitFree(evalKind, itemIds, { fromSuggestion } = {}) {
@@ -505,7 +522,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
     // targetNoun keeps the model answer in the learner's own subject matter
     // targetThing is only set where the step actually asked for a thing, so the
     // arcs that never mention one keep their own catalogue examples.
-    const evalCtx = { name, independent, turnContext, place, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(stepCount ? { targetCount: stepCount } : {}) }
+    const evalCtx = { name, independent, turnContext, place, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(step.timeForm ? { timeForm: step.timeForm } : {}), ...(usualTime ? { usualTime } : {}), ...(stepCount ? { targetCount: stepCount } : {}) }
     const preview = evaluateFree(evalKind, text, evalCtx)
     const willEscalate = shouldEscalate(preview)
 
@@ -519,6 +536,8 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
         episode: ep, step, learnerResponse: text, learnerName: name, place,
         targetNoun: subjectNoun, targetThing: (stepThing && stepThing.id) || requestedThing || undefined, activity: interestCtx.activity, interestId: interestCtx.interestId,
         repairKind: step.repairKind || undefined,
+        meaningWord: step.meaningWord || undefined,
+        timeForm: step.timeForm || undefined,
         quantityForm: step.quantityForm || undefined,
         targetCount: stepCount || undefined,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,

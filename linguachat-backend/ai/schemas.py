@@ -102,10 +102,14 @@ class EvaluateRequest(BaseModel):
     # also from the controlled catalogue. Used only to build a model answer.
     target_activity: str | None = Field(default=None, max_length=60)
     # Which repair strategy this turn asked for: signalling non-understanding,
-    # asking for a repetition, or asking for slower speech. Repair is one intent
-    # with three strategies, so a verdict without this is a verdict about a
-    # different question. Anything unexpected is treated as absent.
+    # asking for a repetition, asking for slower speech, or asking what a word
+    # means. Repair is one intent with four strategies, so a verdict without this
+    # is a verdict about a different question. Anything unexpected is treated as
+    # absent.
     repair_kind: str | None = Field(default=None, max_length=32)
+    # The one word an `ask_meaning` turn is about, so the model answer names the
+    # same word the learner was shown. Never a sentence: a short token only.
+    meaning_word: str | None = Field(default=None, max_length=40)
     # Which shape of quantity the turn asked for ("bare", "with_object",
     # "polite_request") and how many of the thing. Separate fields: "two" and
     # "sandwiches" are different pieces of information, and the one time this

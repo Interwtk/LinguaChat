@@ -108,6 +108,12 @@ function buildRemotePayload(params, kind) {
      */
     repair_kind: params.repairKind ?? '',
     /*
+     * And the one word an `ask_meaning` turn is about, for the same reason: asking
+     * Lingua to grade "What does 'late' mean?" without telling it which word was on
+     * screen is asking about a different question.
+     */
+    meaning_word: params.meaningWord ?? '',
+    /*
      * What shape of quantity the turn asked for, and how many of what. Separate
      * fields on purpose: "two" and "sandwiches" mean different things, and the
      * one time this project put two meanings in one string it produced "I need
@@ -127,7 +133,7 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', repairKind = '', quantityForm = '', targetCount = null, signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, signal, remote } = params
   const kind = step?.evalKind
   /*
    * Whether this counts as unaided production, used only to choose the wording
@@ -147,7 +153,16 @@ export async function evaluateEpisodeResponse(params) {
     ...(targetThing ? { targetThing } : {}),
     ...(activity ? { activity } : {}),
     ...(repairKind ? { repairKind } : {}),
+    /*
+     * A step's SUBTYPE has to travel with it. Arc 2's routine turn says which kind
+     * of "when" it wants and arc 2's repair says which word it is about; without
+     * them here the router previewed one question and graded another — a turn
+     * demanding an hour accepted a sentence with no time in it.
+     */
+    ...(meaningWord ? { meaningWord } : {}),
     ...(quantityForm ? { quantityForm } : {}),
+    ...(timeForm ? { timeForm } : {}),
+    ...(usualTime ? { usualTime } : {}),
     ...(Number.isInteger(targetCount) ? { targetCount } : {}),
   })
 

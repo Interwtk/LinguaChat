@@ -21,7 +21,7 @@ import {
   normalizeFactValue, sanitizeLearnerFacts, FACT_TYPES,
 } from './learnerModel.js'
 import { seedFrom } from './variation.js'
-import { asSubjectValue, taughtPlaceIn } from './semanticContext.js'
+import { asSubjectValue, taughtPlaceIn, taughtHourIn } from './semanticContext.js'
 
 // A fact needs this much confidence before it is allowed to shape anything.
 export const MIN_FACT_CONFIDENCE = 0.5
@@ -85,6 +85,37 @@ export function captureStatedLifeFact(model, { evalKind, reply, modelAnswer = ''
   const place = taughtPlaceIn(said)
   if (!place) return null
   return recordLearnerFact(model, { type: LIFE_FACT_TYPE, value: place, sourceEpisodeId, atMs })
+}
+
+/*
+ * A1 arc 2's fact, and the same three questions answered from the blueprint.
+ *
+ * `usual_time` is `store: true`, `semanticType: "time_point"`, source "learner
+ * statement in arc 2", privacy "harmless", reused by `making_arrangements` — which
+ * is the whole reason to keep it: proposing "shall we meet at seven?" needs to know
+ * that seven means something to this person.
+ *
+ *   WHAT   the hour, as the word the level teaches. `taughtHourIn` reads "at seven"
+ *          and "at 7" and refuses "at eleven", because eleven arrives in arc 5. A
+ *          part of the day is not stored: "in the morning" cannot become a meeting.
+ *   WHEN   only a `state_routine` turn the learner passed. A comprehension step
+ *          about somebody else's morning says nothing about theirs.
+ *   WHOSE  the same authorship rule arc 1 established: copying the model answer
+ *          stores nothing, typing your own sentence stores it even with help on
+ *          screen. A fact is not mastery, and the two are recorded separately.
+ */
+export const ROUTINE_FACT_INTENT = 'state_routine'
+export const ROUTINE_FACT_TYPE = 'usual_time'
+
+export function captureStatedUsualTime(model, { evalKind, reply, modelAnswer = '', sourceEpisodeId = null, atMs = Date.now() } = {}) {
+  if (evalKind !== ROUTINE_FACT_INTENT) return null
+  const said = String(reply || '').trim()
+  if (!said) return null
+  const shown = String(modelAnswer || '').trim()
+  if (shown && said.toLowerCase() === shown.toLowerCase()) return null
+  const hour = taughtHourIn(said)
+  if (!hour) return null
+  return recordLearnerFact(model, { type: ROUTINE_FACT_TYPE, value: hour, sourceEpisodeId, atMs })
 }
 
 export function factsOfType(model, type) {

@@ -9,16 +9,16 @@
  * simplest way to guarantee that is for A1's facts to live somewhere Pre-A1 does
  * not read.
  *
- * ONLY ARC 1 IS HERE. A1 is designed in full (seven arcs, twenty-one episodes, in
- * docs/curriculum/a1-blueprint.json) and implemented one arc at a time. Listing
+ * ARCS 1 AND 2 ARE HERE. A1 is designed in full (seven arcs, twenty-one episodes,
+ * in docs/curriculum/a1-blueprint.json) and implemented one arc at a time. Listing
  * capabilities nobody can practise yet would make coverage look real, so the
  * capabilities appear here as their arcs are built.
  */
 import { A1, episodesOfLevel } from './levels.js'
 import { SKELETON_BY_ID } from './preA1Skeleton.generated.js'
 
-/* The arcs of A1 with runtime content today. */
-export const A1_RUNTIME_ARCS = ['work_and_study']
+/* The arcs of A1 with runtime content today, in the blueprint's order. */
+export const A1_RUNTIME_ARCS = ['work_and_study', 'daily_rhythm']
 
 /*
  * The capability each A1 can-do is evidenced by, in the same shape Pre-A1 uses:
@@ -27,6 +27,20 @@ export const A1_RUNTIME_ARCS = ['work_and_study']
 export const A1_CAN_DO_INTENT = {
   talk_about_work_or_study: 'state_life_fact',
   ask_about_work_or_study: 'ask_life_fact',
+  /*
+   * Arc 2. Two capabilities share `state_routine` on purpose, and it is the
+   * blueprint's rule rather than a shortcut: "One intent per communicative
+   * function. Variants travel as a subtype on the step payload." Saying what you
+   * do every day and saying when you do it are the same function with more
+   * detail, so the difference lives in the step's `timeForm` and the capability is
+   * credited by the episode that teaches it.
+   *
+   * Asking what a word means reuses `repair_request`, which the can-do itself
+   * prescribes (`intentReuse`); the new `ask_meaning` kind is the subtype.
+   */
+  talk_about_daily_routine: 'state_routine',
+  say_when_something_happens: 'state_routine',
+  ask_what_something_means: 'repair_request',
 }
 
 /*
@@ -36,14 +50,24 @@ export const A1_CAN_DO_INTENT = {
  * because six of its arcs do not exist. It records scope, so a later arc cannot
  * quietly demote a capability to optional.
  */
-export const A1_REQUIRED_CAN_DOS = ['talk_about_work_or_study', 'ask_about_work_or_study']
+export const A1_REQUIRED_CAN_DOS = [
+  'talk_about_work_or_study', 'ask_about_work_or_study',
+  'talk_about_daily_routine', 'say_when_something_happens', 'ask_what_something_means',
+]
 
 /*
  * Understood, not produced. `at_the_office` and `at_university` are places other
  * people mention in the arc's listening turns; the learner is never asked to say
  * them, and nothing here counts them as production.
  */
-export const A1_RECEPTIVE_ITEMS = ['at_the_office', 'at_university']
+export const A1_RECEPTIVE_ITEMS = [
+  'at_the_office', 'at_university',
+  /*
+   * Arc 2's two: the words episode 23's story carries so the learner has
+   * something real to ask the meaning of. Understood, asked about, never produced.
+   */
+  'early', 'late',
+]
 
 /*
  * Nothing yet. The arc's budget is small enough that everything it shows is
@@ -117,9 +141,13 @@ export function a1ImplementationStatus() {
  * the shelf they both sit on grows.
  */
 export const A1_INTRODUCED_ITEMS = [
+  /* arc 1 — what you do */
   'study', 'at_home', 'what_do_you_do', 'i_do_pattern', 'do_you_pattern',
+  /* arc 2 — how your day goes: two actions, two adverbs, four pattern groups */
+  'get_up', 'have_breakfast', 'usually', 'sometimes',
+  'frequency_pattern', 'part_of_day_pattern', 'time_at_pattern', 'what_does_mean_pattern',
   /* receptive: heard, never asked for */
-  'at_the_office', 'at_university',
+  'at_the_office', 'at_university', 'early', 'late',
 ]
 
 /*

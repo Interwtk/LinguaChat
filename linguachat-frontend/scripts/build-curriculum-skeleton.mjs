@@ -30,6 +30,7 @@ import { ARC } from '../src/learning/episodes/index.js'
  * A1's, loading one level would download the other.
  */
 import { A1_ARC1 } from '../src/learning/episodes/a1Arc1.js'
+import { A1_ARC2 } from '../src/learning/episodes/a1Arc2.js'
 import { getStory, storyTurns } from '../src/learning/engine/miniStory.js'
 
 const OUT = 'src/learning/curriculum/preA1Skeleton.generated.js'
@@ -37,7 +38,8 @@ const OUT = 'src/learning/curriculum/preA1Skeleton.generated.js'
 /* The step fields every derivation reads — and only those. */
 const STEP_FIELDS = ['type', 'evalKind', 'itemId', 'itemIds', 'meaningItems', 'review', 'branchOn',
   'captureFact', 'contextIntent', 'storyObjective', 'variation', 'format', 'personalises',
-  'thingId', 'quantityForm', 'repairKind']
+  /* subtypes: the payload a step carries so one intent can cover several variants */
+  'thingId', 'quantityForm', 'repairKind', 'timeForm', 'count']
 
 /*
  * The one place where the English is an INPUT to a derivation rather than
@@ -91,7 +93,7 @@ const EPISODE_FIELDS = ['id', 'level', 'arc', 'titleKey', 'goalKey', 'canDoId', 
   'skillPrerequisites', 'role', 'reuseSkills']
 
 /* every level's episodes, in curriculum order: Pre-A1, then A1 arc by arc */
-const RUNTIME_EPISODES = [...ARC, ...A1_ARC1]
+const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2]
 
 const skeleton = RUNTIME_EPISODES.map(ep => ({
   ...pick(ep, EPISODE_FIELDS),

@@ -404,7 +404,14 @@ const namesAThing = (n) => /\p{L}/u.test(requestedThing(n))
  * The alternative was five intents for five sentences, which is how a flat
  * list of intents becomes three hundred.
  */
-export const REPAIR_KINDS = ['signal_nonunderstanding', 'repeat', 'slow_down']
+/*
+ * A1 arc 2 adds a fourth, and it is the blueprint's own instruction rather than a
+ * choice: `ask_what_something_means` declares `intentReuse: "repair_request with a
+ * new repairKind subtype"`. It is the first repair that LEARNS rather than pauses
+ * — Pre-A1 can stop a conversation it does not follow, and this takes one word out
+ * of it and keeps going.
+ */
+export const REPAIR_KINDS = ['signal_nonunderstanding', 'repeat', 'slow_down', 'ask_meaning']
 
 const NOT_UNDERSTAND = /\b(i (really )?(don'?t|do not) understand|i (don'?t|do not) get (it|that)|i'?m (not sure|lost)|i didn'?t (understand|catch|get) (that|it))\b/
 const NOT_UNDERSTAND_LOOSE = /\b((don'?t|do not|not) understand|no understand|understand not)\b/
@@ -418,6 +425,21 @@ const ASK_REPEAT_LOOSE = /\b(repeat|again)\b/
  */
 const ASK_SLOW = /\b((can|could) you (please )?speak (more )?slowly|please speak (more )?slowly|speak (more )?slowly|slowly,? please)\b/
 const ASK_SLOW_LOOSE = /\b(slow(ly)?|slow down)\b/
+/*
+ * "What does ___ mean?" — the arc-2 pattern. The word may be quoted or bare, and
+ * "What is ___?" is the same question asked another way, so it is understood as a
+ * variant rather than refused. `ASK_MEANING_LOOSE` catches the reach: a learner who
+ * writes "mean?" or "meaning?" has signalled the right kind of trouble.
+ */
+const ASK_MEANING = /\bwhat\s+(does|do)\s+.{1,30}?\s*mean\b/
+/*
+ * "What is late?" — the same question, asked another way. ONE word after the verb,
+ * because that is what makes it a question about a word: "What is your name?" has
+ * two and is a different intent entirely, and `normalize` has already removed the
+ * question mark, so the shape has to carry the meaning on its own.
+ */
+const ASK_MEANING_VARIANT = /\b(what\s+(is|are)|what'?s)\s+[\p{L}'’]+\s*$/u
+const ASK_MEANING_LOOSE = /\b(mean|means|meaning)\b/
 /* "I don't know" answers a question; it does not report a breakdown. */
 const DONT_KNOW = /\b(i (don'?t|do not) know|no idea|dunno)\b/
 const BARE_CONFUSION = /^(what|sorry|huh|eh|again|pardon|excuse me)[?!.]*$/
@@ -757,14 +779,16 @@ export function evaluateCafeOrderConversation(text, { independent = false, targe
  * for; a learner who repairs a different way is understood and told what the
  * turn was practising, never marked wrong for communicating.
  */
-export function evaluateRepairRequest(text, { independent = false, repairKind = 'signal_nonunderstanding' } = {}) {
+export function evaluateRepairRequest(text, { independent = false, repairKind = 'signal_nonunderstanding', meaningWord = '' } = {}) {
   const n = normalize(text)
   const kind = REPAIR_KINDS.includes(repairKind) ? repairKind : 'signal_nonunderstanding'
   const r = base(independent)
+  const word = String(meaningWord || '').trim() || 'that'
   const TARGET = {
     signal_nonunderstanding: 'I don’t understand.',
     repeat: 'Can you repeat, please?',
     slow_down: 'Please speak slowly.',
+    ask_meaning: `What does “${word}” mean?`,
   }
   r.naturalVersion = TARGET[kind]
   if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep13RetryPromptEmpty' }
@@ -772,9 +796,13 @@ export function evaluateRepairRequest(text, { independent = false, repairKind = 
   const signalled = NOT_UNDERSTAND.test(n)
   const askedRepeat = ASK_REPEAT.test(n)
   const askedSlow = ASK_SLOW.test(n)
+  const askedMeaning = ASK_MEANING.test(n) || ASK_MEANING_VARIANT.test(n)
 
   /* the requested strategy, done properly */
-  const done = kind === 'signal_nonunderstanding' ? signalled : kind === 'repeat' ? askedRepeat : askedSlow
+  const done = kind === 'signal_nonunderstanding' ? signalled
+    : kind === 'repeat' ? askedRepeat
+      : kind === 'slow_down' ? askedSlow
+        : askedMeaning
   if (done) {
     r.completedObjective = true
     r.confidence = 0.95
@@ -784,11 +812,20 @@ export function evaluateRepairRequest(text, { independent = false, repairKind = 
   }
 
   /*
+   * A reach for the meaning question that did not get there — "mean?", "early
+   * meaning?". The learner has the right idea and needs the frame, so this is its
+   * own correction rather than the generic "that is not a repair".
+   */
+  if (kind === 'ask_meaning' && ASK_MEANING_LOOSE.test(n)) {
+    return { ...r, errorType: 'incomplete_meaning_question', confidence: 0.85, priorityCorrection: 'ep23RetryExplainMeaning', explanation: 'ep23RetryExplainMeaning', retryRequired: true, retryPrompt: 'ep23RetryPromptMeaning' }
+  }
+
+  /*
    * A different repair. The learner kept the conversation alive, which is the
    * whole skill — so this is understood and praised, and the turn simply says
    * what it was practising.
    */
-  if (signalled || askedRepeat || askedSlow) {
+  if (signalled || askedRepeat || askedSlow || askedMeaning) {
     return { ...r, errorType: 'other_repair', confidence: 0.9, priorityCorrection: 'ep14RetryExplainOther', explanation: 'ep14RetryExplainOther', retryRequired: true, retryPrompt: `ep13RetryPrompt_${kind}` }
   }
 
@@ -1124,6 +1161,96 @@ export function evaluateStateLifeFact(text, { independent = false, workOrStudy =
   return { ...r, errorType: 'no_life_statement', conclusive: false, confidence: 0.5, priorityCorrection: 'ep18RetryExplainVerb', explanation: 'ep18RetryExplainVerb', retryRequired: true, retryPrompt: 'ep18RetryPromptVerb' }
 }
 
+/* ==========================================================================
+ * A1 ARC 2 — how your day goes.
+ *
+ * ONE intent, not two. The blueprint's rule is explicit: "One intent per
+ * communicative function. Variants travel as a subtype on the step payload, the
+ * way Pre-A1 already carries repairKind, quantityForm and thingId — not as a new
+ * intent." Saying what you do every day and saying WHEN you do it are the same
+ * function said with more detail, so `state_routine` carries a `timeForm`:
+ *
+ *   null          a routine statement; a time is welcome and not required
+ *   part_of_day   the statement must place the action in the morning / afternoon /
+ *                 evening
+ *   clock         the statement must name an hour the level has taught
+ *
+ * That is also why `say_when_something_happens` has no intent of its own. The
+ * capability is credited from the episode that teaches it, and the episode's
+ * steps demand a time through the subtype, so a routine with no hour cannot
+ * satisfy it.
+ *
+ * The frequency adverbs are DELIBERATELY not required. `frequency_pattern`
+ * "reaches: guided_production" in the blueprint — it is practised, not demanded,
+ * and a learner who says "I get up at seven" has said something true and complete.
+ * ==========================================================================*/
+
+/* the actions this arc owns, plus the two it inherits from arc 1 */
+const ROUTINE_VERB = /\b(get\s+up|wake\s+up|have\s+breakfast|eat\s+breakfast|work|study|go\s+home|start|finish)\b/
+const ROUTINE_FIRST_PERSON = /\bi\s+(usually\s+|sometimes\s+|always\s+|never\s+)?(get\s+up|wake\s+up|have\s+breakfast|eat\s+breakfast|work|study|go\s+home|start|finish)\b/
+const ROUTINE_WRONG_PERSON = /\b(he|she|they|we|you)\s+(usually\s+|sometimes\s+)?(gets?\s+up|wakes?\s+up|ha(s|ve)\s+breakfast|works?|study|studies|goes?\s+home)\b/
+const PART_OF_DAY = /\bin\s+the\s+(morning|afternoon|evening)\b/
+const AT_NIGHT = /\bat\s+night\b/
+/* "at seven" — the hours the level owns, as a word or a digit */
+const CLOCK_TIME = /\bat\s+(one|two|three|four|five|six|seven|eight|nine|ten|\d{1,2})\b/
+const FREQUENCY = /\b(usually|sometimes)\b/
+
+export function evaluateStateRoutine(text, { independent = false, timeForm = null, usualTime = '' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  const hour = String(usualTime || '').trim() || 'seven'
+  /*
+   * The model answer prefers what the learner already told us, exactly as the
+   * origin and life-fact answers do, so it never invents somebody's morning.
+   */
+  r.naturalVersion = timeForm === 'clock'
+    ? `I usually get up at ${hour}.`
+    : timeForm === 'part_of_day'
+      ? 'I usually work in the morning.'
+      : 'I usually get up early.'
+
+  if (!n) {
+    return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep21RetryPromptEmpty' }
+  }
+
+  const hasFrame = ROUTINE_FIRST_PERSON.test(n)
+  const hasClock = CLOCK_TIME.test(n)
+  const hasPartOfDay = PART_OF_DAY.test(n) || AT_NIGHT.test(n)
+
+  if (hasFrame) {
+    /*
+     * The frame is there. Whether the turn is SATISFIED depends on what it asked
+     * for — and a missing time is not a broken sentence, so the learner is told
+     * what is missing rather than that they were wrong.
+     */
+    if (timeForm === 'clock' && !hasClock) {
+      return { ...r, errorType: 'missing_time', confidence: 0.9, priorityCorrection: 'ep22RetryExplainClock', explanation: 'ep22RetryExplainClock', retryRequired: true, retryPrompt: 'ep22RetryPromptClock' }
+    }
+    if (timeForm === 'part_of_day' && !hasPartOfDay) {
+      return { ...r, errorType: 'missing_time', confidence: 0.9, priorityCorrection: 'ep22RetryExplainPartOfDay', explanation: 'ep22RetryExplainPartOfDay', retryRequired: true, retryPrompt: 'ep22RetryPromptPartOfDay' }
+    }
+    r.completedObjective = true
+    r.confidence = hasClock || hasPartOfDay ? 0.96 : 0.93
+    r.acceptedVariant = Boolean(timeForm) && !FREQUENCY.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'ep21PraiseIndependent' : 'ep21PraiseAnswered'
+    return r
+  }
+
+  /* the right action about the wrong person — understood, and not the objective */
+  if (ROUTINE_WRONG_PERSON.test(n)) {
+    return { ...r, errorType: 'wrong_person', confidence: 0.9, priorityCorrection: 'ep21RetryExplainI', explanation: 'ep21RetryExplainI', retryRequired: true, retryPrompt: 'ep21RetryPromptI' }
+  }
+  /* a bare action — "get up" — reaching for the frame without its subject */
+  if (ROUTINE_VERB.test(n) && wordCount(n) <= 3) {
+    return { ...r, errorType: 'missing_subject', confidence: 0.9, priorityCorrection: 'ep21RetryExplainI', explanation: 'ep21RetryExplainI', retryRequired: true, retryPrompt: 'ep21RetryPromptI' }
+  }
+  /* a time on its own answered when, not what */
+  if (hasClock || hasPartOfDay) {
+    return { ...r, errorType: 'missing_action', confidence: 0.88, priorityCorrection: 'ep21RetryExplainAction', explanation: 'ep21RetryExplainAction', retryRequired: true, retryPrompt: 'ep21RetryPromptAction' }
+  }
+  return { ...r, errorType: 'no_routine_statement', conclusive: false, confidence: 0.5, priorityCorrection: 'ep21RetryExplainAction', explanation: 'ep21RetryExplainAction', retryRequired: true, retryPrompt: 'ep21RetryPromptAction' }
+}
+
 /* "Do you work?" / "Do you study?" / "What do you do?" — and "And you?" is not it */
 const DO_YOU_QUESTION = /\bdo\s+you\s+(work|study)\b/
 const WHAT_DO_YOU_DO = /\bwhat\s+do\s+you\s+do\b/
@@ -1193,6 +1320,7 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'finish_order': return evaluateFinishOrder(text, ctx)
     case 'cafe_order_conversation': return evaluateCafeOrderConversation(text, ctx)
     case 'repair_request': return evaluateRepairRequest(text, ctx)
+    case 'state_routine': return evaluateStateRoutine(text, ctx)
     case 'close_encounter': return evaluateCloseEncounter(text, ctx)
     case 'ask_what_thing': return evaluateAskWhatThing(text, ctx)
     case 'identify_thing': return evaluateIdentifyThing(text, ctx)
