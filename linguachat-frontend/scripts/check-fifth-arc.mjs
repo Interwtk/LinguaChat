@@ -79,7 +79,20 @@ const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8')
       `${invented} is a strategy, not an intent — it belongs to repair_request`)
   }
   assert.ok(dispatched.includes('repair_request') && dispatched.includes('close_encounter'))
-  assert.deepEqual(REPAIR_KINDS, ['signal_nonunderstanding', 'repeat', 'slow_down'])
+  /*
+   * PRE-A1'S THREE STRATEGIES, STILL THREE AND STILL FIRST. This used to be an
+   * exact list, which made it a rule about every level rather than about this arc:
+   * A1 arc 2 adds `ask_meaning` — the blueprint prescribes it in the can-do itself
+   * (`intentReuse: "repair_request with a new repairKind subtype"`) — and the exact
+   * list called that a regression. What matters here is unchanged and now stated
+   * precisely: Pre-A1 taught these three, in this order, and repair is still ONE
+   * intent rather than a family of them.
+   */
+  const PRE_A1_REPAIRS = ['signal_nonunderstanding', 'repeat', 'slow_down']
+  assert.deepEqual(REPAIR_KINDS.slice(0, PRE_A1_REPAIRS.length), PRE_A1_REPAIRS,
+    'Pre-A1 taught three strategies and a level above must append rather than reorder')
+  assert.ok(REPAIR_KINDS.length <= 5,
+    `${REPAIR_KINDS.length} repair strategies is a phrase list; the guard is one intent per function`)
 
   // every repair step names its strategy; nothing else does
   for (const ep of ARC) {

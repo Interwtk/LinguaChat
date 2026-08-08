@@ -7,7 +7,12 @@
  *     capabilities and their prerequisites are read out of
  *     docs/curriculum/a1-blueprint.json and compared with what exists. Nothing is
  *     hardcoded twice: if the blueprint says three episodes, three must exist, and
- *     if it says seven arcs, six of them must still be missing.
+ *     every arc no sprint has authorised must still be missing.
+ *
+ *   THIS FILE IS ABOUT ARC 1. It is not a check for the level — `check:a1-arc2` owns
+ *     arc 2 and `check:a1-blueprint` owns "which arcs exist at all". Two assertions
+ *     here used to claim arc 1 was the ONLY arc, which turned the second arc's
+ *     arrival into a false regression report.
  *
  *   HAVING CONTENT AND BEING OPEN. A1 is partially built and closed. Every
  *     learner-facing path must refuse it, the arc's content must stay out of the
@@ -60,12 +65,29 @@ const localeKeyPresent = (key) => baseLocale.includes(`${key}:`) && LOCALES.ever
 let groups = 0
 const ok = () => { groups += 1 }
 
+/*
+ * ARC 1'S OWN REQUIRED CAPABILITIES. `A1_REQUIRED_CAN_DOS` is the LEVEL's list and
+ * grows with every arc, so using it here asked arc 1 to evidence arc 2's
+ * capabilities — which it cannot, and should not. Derived from the arc's episodes so
+ * it stays correct as the level grows.
+ */
+const ARC1_REQUIRED = [...new Set(A1_ARC1.map(ep => ep.canDoId))]
+  .filter(id => A1_REQUIRED_CAN_DOS.includes(id))
+
 /* ---- 1) the blueprint's arc 1, and the runtime's, are the same arc ---- */
 const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
 {
   assert.ok(arc1, 'the blueprint must describe an arc 1')
   assert.equal(arc1.id, A1_ARC1_ID, 'the runtime arc id must be the blueprint\'s')
-  assert.deepEqual(A1_RUNTIME_ARCS, [arc1.id], 'exactly one A1 arc is implemented')
+  /*
+   * ARC 1 IS THE FIRST RUNTIME ARC, not the only one. This asserted "exactly one A1
+   * arc is implemented", which made an arc-1 check a claim about the whole level —
+   * and arc 2 arriving read as arc 1 regressing. What belongs here is that arc 1 is
+   * still present and still first; how many arcs the level has is `check:a1-arc2`'s
+   * business and the blueprint check's.
+   */
+  assert.equal(A1_RUNTIME_ARCS[0], arc1.id, 'arc 1 must still be the first runtime arc')
+  assert.ok(A1_RUNTIME_ARCS.includes(arc1.id), 'arc 1 must still be implemented')
 
   /* the planned episode numbers become the runtime episodes, in order */
   const planned = BLUEPRINT.episodes
@@ -96,19 +118,30 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
   ok()
 }
 
-/* ---- 2) and nothing from any other arc exists ---- */
+/* ---- 2) and nothing from an UNBUILT arc exists ---- */
 {
-  const laterArcs = BLUEPRINT.arcs.filter(a => a.order > 1).map(a => a.id)
-  assert.equal(laterArcs.length, 6, 'six arcs remain planned')
+  /*
+   * "Later" is not the same as "unbuilt". The set that must stay impossible is the
+   * blueprint's arcs minus the ones a sprint has authorised, derived from
+   * `A1_RUNTIME_ARCS` so this cannot drift: each arc sprint moves exactly one id
+   * across, and the rest keep failing closed.
+   */
+  const plannedOnly = BLUEPRINT.arcs.map(a => a.id).filter(id => !A1_RUNTIME_ARCS.includes(id))
+  assert.equal(plannedOnly.length, BLUEPRINT.arcs.length - A1_RUNTIME_ARCS.length,
+    'every runtime arc must be one the blueprint designed')
   const runtimeArcs = new Set(episodesOfLevel(A1).map(ep => ep.arc))
-  for (const arcId of laterArcs) {
+  for (const arcId of plannedOnly) {
     assert.ok(!runtimeArcs.has(arcId), `${arcId} has runtime content and was not authorised`)
     assert.equal(hasContentLoader(A1, arcId), false, `${arcId} must have no content loader`)
   }
   /* the design totals still come from the design, never from what is built */
   assert.equal(BLUEPRINT.arcs.length, 7)
   assert.equal(BLUEPRINT.episodes.length, 21)
-  assert.equal(runtimeEpisodeCount(A1), A1_ARC1.length, 'the level holds only the implemented arc')
+  /* arc 1's own episodes are all still there, and still A1's */
+  for (const ep of A1_ARC1) {
+    assert.ok(runtimeArcs.has(ep.arc), `${ep.id} lost its arc`)
+    assert.equal(episodesOfLevel(A1).some(other => other.id === ep.id), true, `${ep.id} left the level`)
+  }
   ok()
 }
 
@@ -146,13 +179,21 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
 
 /* ---- 4) a future A1 episode fails closed ---- */
 {
-  /* ids from the blueprint's unbuilt arcs, derived rather than invented */
-  const futureCanDos = BLUEPRINT.episodes.filter(ep => ep.arc !== arc1.id).map(ep => ep.canDo)
+  /*
+   * Ids from the blueprint's UNBUILT arcs, derived rather than invented — and
+   * "unbuilt" is read from `A1_RUNTIME_ARCS`, not from "any arc after this one".
+   * Arc 2's capabilities are registered now because arc 2 exists; the five arcs
+   * after it must still be unregistered.
+   */
+  const futureCanDos = BLUEPRINT.episodes
+    .filter(ep => !A1_RUNTIME_ARCS.includes(ep.arc))
+    .map(ep => ep.canDo)
   assert.ok(futureCanDos.length >= 10, 'there should be plenty of unbuilt design')
   for (const canDo of new Set(futureCanDos)) {
     assert.ok(!A1_CAN_DO_INTENT[canDo], `${canDo} is registered before its arc exists`)
   }
-  for (const ghost of ['my_day', 'episode18', 'a1_arc2_first', 'talk_about_daily_routine']) {
+  /* an id from an unbuilt arc, and two that never existed at all */
+  for (const ghost of ['people_around_you_first', 'episode18', 'a1_arc3_first', 'introduce_someone_else']) {
     const result = episodeRequest({ levelId: A1, episodeId: ghost, forLearner: false })
     assert.equal(result.ok, false, `${ghost} must not resolve`)
     assert.equal(result.reason, REFUSED.UNKNOWN_EPISODE, `${ghost}: wrong reason`)
@@ -289,15 +330,30 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
   for (const id of granted) {
     assert.ok(SEED_VOCAB_BY_ID[id], `${id} is granted and is not in the vocabulary catalogue`)
   }
-  /* the blueprint's budget for the arc, respected */
-  const introduced = A1_INTRODUCED_ITEMS.filter(id => !A1_RECEPTIVE_ITEMS.includes(id))
+  /*
+   * The blueprint's budget FOR THIS ARC, respected — and measured from what this
+   * arc's own episodes grant. It used to read `A1_INTRODUCED_ITEMS`, which is the
+   * whole level's share, so arc 2's eight items were counted against arc 1's budget
+   * of six. A budget is per arc; the level's list is the sum of them.
+   */
+  const arc1Receptive = granted.filter(id => A1_RECEPTIVE_ITEMS.includes(id))
+  const introduced = granted.filter(id => !A1_RECEPTIVE_ITEMS.includes(id))
   assert.ok(introduced.length <= arc1.vocabularyBudget.newProductive,
     `the arc introduces ${introduced.length} productive items, budget ${arc1.vocabularyBudget.newProductive}`)
-  assert.ok(A1_RECEPTIVE_ITEMS.length <= arc1.vocabularyBudget.newReceptive,
+  assert.ok(arc1Receptive.length <= arc1.vocabularyBudget.newReceptive,
     'the receptive budget must be respected too')
+  /*
+   * Granted is not the same as introduced, and `work` is why: it was already in the
+   * shared catalogue, unreferenced, so arc 1 grants it without A1 owning it. The
+   * level's declared share must therefore hold everything the arc ADDED, and may
+   * legitimately not hold something it merely hands out.
+   */
+  for (const id of introduced.filter(item => item !== 'work')) {
+    assert.ok(A1_INTRODUCED_ITEMS.includes(id), `${id} is taught by arc 1 and not declared as A1's`)
+  }
 
   /* receptive items are never counted as production */
-  const produced = new Set(A1_REQUIRED_CAN_DOS.flatMap(id => a1ProductiveItemsOf(id)))
+  const produced = new Set(ARC1_REQUIRED.flatMap(id => a1ProductiveItemsOf(id)))
   for (const id of A1_RECEPTIVE_ITEMS) {
     assert.ok(!produced.has(id), `${id} is declared receptive and counted as produced`)
   }
@@ -411,15 +467,19 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
   assert.equal(xp, A1_ARC1.reduce((sum, ep) => sum + ep.xp, 0), 'the arc awards exactly its own XP')
 
   /* evidence, and the right kind of it */
-  for (const canDo of A1_REQUIRED_CAN_DOS) {
+  for (const canDo of ARC1_REQUIRED) {
     const record = model.canDo[canDo]
     assert.ok(record, `${canDo} has no evidence after playing the arc`)
     assert.ok(record.successes >= 1, `${canDo} was never achieved`)
     assert.ok(record.independentSuccesses >= 1,
       `${canDo} was only ever achieved with help — that is not evidence of the capability`)
   }
-  /* the language is learned, not merely seen */
-  for (const id of A1_INTRODUCED_ITEMS.filter(i => !A1_RECEPTIVE_ITEMS.includes(i))) {
+  /*
+   * The language is learned, not merely seen — THIS ARC'S language. Reading the
+   * level's declared share here asked a run of arc 1 to record arc 2's items.
+   */
+  const arc1Granted = A1_ARC1.flatMap(ep => ep.gardenItems || [])
+  for (const id of arc1Granted.filter(i => !A1_RECEPTIVE_ITEMS.includes(i))) {
     assert.ok(model.languageItems[id], `${id} was taught and not recorded`)
   }
 
@@ -449,7 +509,7 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
   assert.ok(readinessDimension, 'unaided production must be a readiness dimension, which is what the number scopes')
   assert.match(readinessDimension.note, /the number is chosen when there is evidence from real journeys, not now/,
     'the threshold is deliberately unchosen; a check must not invent one')
-  for (const canDo of A1_REQUIRED_CAN_DOS) {
+  for (const canDo of ARC1_REQUIRED) {
     assert.equal(BLUEPRINT.canDos.find(c => c.id === canDo).evidence.independent, 2,
       `${canDo}'s lifetime target is two unaided uses`)
   }
@@ -485,7 +545,7 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
     playEpisode(assisted, ep.id, { profile: ASSISTED, atMs: at + index * 1000 })
     assert.equal(assisted.episodes[ep.id].status, 'completed', `${ep.id} must be finishable with help`)
   })
-  for (const canDo of A1_REQUIRED_CAN_DOS) {
+  for (const canDo of ARC1_REQUIRED) {
     assert.ok(assisted.canDo[canDo], `${canDo} must still record something for an assisted learner`)
   }
   console.log(`  the arc plays: ${xp} XP, ${A1_ARC1.length} episodes, both capabilities evidenced`)
@@ -612,8 +672,7 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
    * declared `store: true` from the day the blueprint was written, and the runtime
    * quietly did not store it.
    */
-  const declared = A1_RUNTIME_ARCS.flatMap(arcId =>
-    (BLUEPRINT.arcs.find(a => a.id === arcId)?.factsCaptured || []))
+  const declared = arc1.factsCaptured || []
   assert.ok(declared.length > 0, 'arc 1 is designed to capture at least one fact')
 
   const at = new Date('2026-08-10T09:00:00Z').getTime()

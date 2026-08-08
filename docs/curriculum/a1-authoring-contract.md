@@ -259,6 +259,89 @@ check — which is the gap this closure existed to fill: `work_or_study` was mar
 `store: true` from the day the blueprint was written, and the runtime quietly did
 not store it.
 
+## Arc 2 is implemented — what it cost
+
+`daily_rhythm`, episodes 21–23, was built on the pipeline arc 1 left behind. What it
+needed was **one line in the loader map, one new content module, one new check** —
+no architecture sprint, which was the question this arc existed to answer.
+
+| | |
+|---|---|
+| 21 `my_day` | `talk_about_daily_routine` — actions, and how often |
+| 22 `at_seven` | `say_when_something_happens` — the same actions, in time |
+| 23 `what_does_it_mean` | `ask_what_something_means` — a word taken out, and the conversation kept |
+
+**Eight productive items, which is the arc's whole budget, and four of them are
+patterns.** The blueprint calls arc 2 "the level's densest moment" and answers its
+own risk — "the verb budget is five actions and the frequency set is two adverbs" —
+so the words are two actions (`get up`, `have breakfast`) and two adverbs
+(`usually`, `sometimes`), and the routine is built out of arc 1's `work` and `study`
+as well. Four actions inside a ceiling of five. Two receptive items, `early` and
+`late`, exist because episode 23's story has to carry words nobody taught.
+
+**One new intent, not three.** `state_routine` carries a `timeForm` subtype
+(`null | part_of_day | clock`), which is the blueprint's rule applied rather than
+worked around: *"One intent per communicative function. Variants travel as a subtype
+on the step payload, the way Pre-A1 already carries repairKind, quantityForm and
+thingId — not as a new intent."* That is also why `say_when_something_happens` has no
+intent of its own: two can-dos map to `state_routine`, the step demands a time
+through the subtype, and each capability is credited by the episode that teaches it.
+Asking what a word means is `repair_request` with a fourth `repairKind`,
+`ask_meaning` — prescribed by the can-do itself via `intentReuse`.
+
+**One new semantic type.** `time_point`, because the blueprint says why: *"An hour is
+neither a place nor an object; a slot that accepts it must reject 'Madrid' and
+'water'."* `day`, `relation` and `transport_mode` are proposed for arcs that do not
+exist and are deliberately unregistered — a type with no consumer makes coverage look
+real. The hours stop at ten, because `time_at_pattern` declares `numbers_1_10` as its
+prerequisite and eleven upwards arrives in arc 5.
+
+**Reuse is a turn, not a list.** The blueprint's reuse matrix marks five older
+capabilities `R` in this column, and `check:a1-arc2` reads that column and requires
+each one to be **evaluated** by a step: `use_small_numbers` (the hour is a number),
+`express_preferences` (what you like doing in the evening), `ask_for_repair` (a time
+said too fast), `talk_about_work_or_study` and `ask_about_work_or_study` (arc 1's
+frame is the routine's frame). There is no "review arc 1" unit; arc 1's language comes
+back inside a situation that needs it, and playing both arcs in order takes its
+statement capability past its evidence target for exactly that reason.
+
+**`usual_time` is captured, not deferred.** The lesson arc 1 taught the hard way. The
+blueprint marks it `store: true`, `semanticType: time_point`, privacy "harmless",
+reused by `making_arrangements`, and `captureStatedUsualTime` turns each clause into a
+condition: the value is the taught hour (`taughtHourIn` reads "at seven" and "at 7"
+and refuses "at eleven"), only from a `state_routine` turn the learner passed, only
+from their own words. A part of the day is not stored — "in the morning" cannot become
+a meeting.
+
+**Arc 2 does NOT consume the story personalisation contract, and that is a finding
+rather than an omission.** The blueprint declares no `personalizationMode` anywhere,
+and episode 23's story carries two words the learner must ask about: letting a topic
+change them would change what the learner has to DO, which the contract refuses. What
+arc 2 does personalise is what Pre-A1 already personalises — the `express_like` reuse
+turn takes its subject from the existing interest/fact context — and `{name}` in the
+prose. Both derived, never declared.
+
+### Two arc-1 assertions that were really level assertions
+
+Neither was relaxed; both were made precise. `check:a1-arc1` asserted
+`A1_RUNTIME_ARCS` deepEqual `['work_and_study']` and measured the vocabulary budget
+against `A1_INTRODUCED_ITEMS` — the *level's* share. Arc 2 arriving therefore read as
+arc 1 regressing. Arc 1's check now asserts arc 1 is the FIRST runtime arc and
+measures the budget on what arc 1's own episodes grant; "which arcs exist" belongs to
+`check:a1-blueprint`, and each arc sprint moves exactly one id across a list that is
+otherwise still closed.
+
+### One real bug the arc exposed
+
+A1's intents were never added to `OBJECTIVE_FORMATS`, and an **unlisted objective is
+allowed every format**. So a practice block for `state_life_fact` could be planned as
+a `mini_story`, and `getStory` answers an objective it does not know with the café
+scene: the learner would have been shown a conversation about music and graded on
+saying what they do. Arc 2's story made it visible, because a story hosted by an
+episode must never be plannable as a loose block and the check that says so finally
+had two of them to compare. All five A1 intents are now listed, with `mini_story`
+absent from every one.
+
 ## To implement episode 18, the author will
 
 The migration path, concretely — this is what the arc-1 sprint did, and nothing in it is a change to Pre-A1:

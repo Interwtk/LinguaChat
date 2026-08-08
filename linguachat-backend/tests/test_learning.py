@@ -886,7 +886,7 @@ def test_translation_and_meaning_still_work():
 
 
 # ---------- fifth arc: repair and closing ----------
-REPAIR_KINDS = ["signal_nonunderstanding", "repeat", "slow_down"]
+REPAIR_KINDS = ["signal_nonunderstanding", "repeat", "slow_down", "ask_meaning"]
 
 
 def _repair(text, kind="signal_nonunderstanding"):
@@ -955,6 +955,53 @@ def test_a_partial_slow_request_is_incomplete(text):
     r = _repair(text, "slow_down")
     assert r["completed_objective"] is False, text
     assert r["error_type"] == "incomplete_repair"
+
+
+# ---------- A1 arc 2: the repair that learns rather than pauses ----------
+def _meaning(text, word="late"):
+    return evaluate_deterministic(_payload(expected_intent="repair_request",
+                                          repair_kind="ask_meaning",
+                                          meaning_word=word, learner_response=text))
+
+
+@pytest.mark.parametrize("text", ['What does "late" mean?', "What does late mean?",
+                                  "Sorry, what does busy mean?", "What is late?", "What's busy?"])
+def test_asking_what_a_word_means_is_accepted(text):
+    assert _meaning(text)["completed_objective"] is True, text
+
+
+@pytest.mark.parametrize("text", ["Mean?", "Meaning?", "Late meaning?"])
+def test_a_half_built_meaning_question_gets_the_frame(text):
+    """The learner had the right idea; the correction is the frame, not a refusal."""
+    r = _meaning(text)
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "incomplete_meaning_question"
+    assert r["natural_version"]
+
+
+def test_the_meaning_question_names_the_word_it_was_shown():
+    assert "busy" in _meaning("Mean?", word="busy")["natural_version"]
+
+
+def test_a_repetition_request_is_a_different_repair_on_a_meaning_turn():
+    r = _meaning("Can you repeat, please?")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "other_repair"
+
+
+def test_a_meaning_question_is_a_different_repair_on_a_repetition_turn():
+    r = _repair('What does "late" mean?', "repeat")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "other_repair"
+
+
+def test_an_unknown_a1_objective_fails_closed():
+    """Arc 2's statement intent is judged on the client; the backend must not guess."""
+    r = evaluate_deterministic(_payload(expected_intent="state_routine",
+                                        learner_response="I usually get up at seven."))
+    assert r["completed_objective"] is False
+    assert r["retry_required"] is True
+    assert r["source"] == "deterministic"
 
 
 def test_the_strategy_asked_for_decides_the_verdict():

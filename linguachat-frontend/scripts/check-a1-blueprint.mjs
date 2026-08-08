@@ -371,22 +371,24 @@ const deferredIds = new Set(blueprint.deferredToA2.map(d => d.id))
      */
     /*
      * Episode definitions are where content lives, so a declared A1 level here
-     * means A1 content exists — which is now true, in exactly one file. Any OTHER
-     * episode file declaring A1 would be a second arc arriving unannounced.
+     * means A1 content exists — which is true in exactly one file PER IMPLEMENTED
+     * ARC. Any other episode file declaring A1 would be an arc arriving unannounced.
      */
     if (/^src\/(learning\/episodes|data\/vocabulary)/.test(path)) {
       const declaresA1 = /level:\s*['"]A1['"]/i.test(code)
-      const isArc1File = /^src\/learning\/episodes\/a1Arc1(Content)?\.js$/.test(path)
-      assert.ok(!declaresA1 || isArc1File,
-        `${path} declares A1 curriculum content outside the implemented arc`)
+      const isBuiltArcFile = /^src\/learning\/episodes\/a1Arc[12](Content)?\.js$/.test(path)
+      assert.ok(!declaresA1 || isBuiltArcFile,
+        `${path} declares A1 curriculum content outside the implemented arcs`)
     }
     /*
-     * A PLANNED arc must not appear in runtime data — except the one that is no
-     * longer planned. `work_and_study` is implemented, so it is named here as the
-     * single exception and the other six stay impossible until each is authorised.
+     * A PLANNED arc must not appear in runtime data — except the ones that are no
+     * longer planned. `work_and_study` and `daily_rhythm` are implemented, so they
+     * are the named exceptions and the other FIVE stay impossible until each is
+     * authorised. This list shrinks by exactly one per arc sprint, which is how a
+     * third arc cannot arrive without somebody editing this line on purpose.
      */
     if (/^src\/(learning|data)/.test(path)) {
-      assert.ok(!/arc:\s*['"](daily_rhythm|people_around_you|finding_your_way|paying_and_choosing|what_you_can_do|making_arrangements)['"]/.test(code),
+      assert.ok(!/arc:\s*['"](people_around_you|finding_your_way|paying_and_choosing|what_you_can_do|making_arrangements)['"]/.test(code),
         `${path} declares a planned A1 arc as if it existed`)
     }
   }
@@ -407,8 +409,9 @@ const deferredIds = new Set(blueprint.deferredToA2.map(d => d.id))
    * A fourth would be a second arc, or a leak.
    */
   assert.deepEqual(levelDeclarers,
-    ['src/data/placementQuestions.js', 'src/learning/curriculum/levels.js', 'src/learning/episodes/a1Arc1.js'],
-    `only placement, the registry and arc 1 may name A1: ${levelDeclarers.join(', ')}`)
+    ['src/data/placementQuestions.js', 'src/learning/curriculum/levels.js',
+      'src/learning/episodes/a1Arc1.js', 'src/learning/episodes/a1Arc2.js'],
+    `only placement, the registry and the built arcs may name A1: ${levelDeclarers.join(', ')}`)
   /* and the registry must still hold A1 as unavailable */
   const registry = sources.find(([p]) => p === 'src/learning/curriculum/levels.js')[1]
   /*

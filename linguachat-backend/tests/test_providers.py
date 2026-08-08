@@ -91,6 +91,11 @@ def test_the_provider_only_receives_linguistic_context():
         # same class as expected_intent. Without it a provider grading a repair is
         # answering a different question than the one the learner was asked.
         "repair_kind",
+        # the one word an `ask_meaning` turn is about. A property of the TASK in
+        # exactly the same class: it is content the episode showed the learner, and a
+        # provider grading "What does ___ mean?" without it is grading a different
+        # question. It is never something the learner told us about themselves.
+        "meaning_word",
         # and the same for a quantity: which shape was asked for, of what, and how
         # many. All three describe the task; none describes the learner.
         "quantity_form", "target_thing", "target_count",

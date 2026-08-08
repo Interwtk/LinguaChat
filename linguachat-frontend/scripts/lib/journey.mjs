@@ -25,13 +25,14 @@
  */
 import { ARC, getEpisode as getPreA1Episode } from '../../src/learning/episodes/index.js'
 import { getA1Arc1Episode } from '../../src/learning/episodes/a1Arc1.js'
+import { getA1Arc2Episode } from '../../src/learning/episodes/a1Arc2.js'
 
 /*
  * The harness plays any runtime episode, whatever level it belongs to. Content is
  * still one module per arc — this only means the harness can hold more than one at
  * a time, which is exactly the difference between tooling and the product.
  */
-const getEpisode = (id) => getPreA1Episode(id) || getA1Arc1Episode(id)
+const getEpisode = (id) => getPreA1Episode(id) || getA1Arc1Episode(id) || getA1Arc2Episode(id)
 import { evaluateFree } from '../../src/learning/engine/responseEvaluation.js'
 import { getStory, storyTurns, storyBranches, turnText } from '../../src/learning/engine/miniStory.js'
 import {
@@ -44,7 +45,9 @@ import {
   deriveInitialScaffold, updateScaffoldAfterTurn, evidenceKindForStep,
   isIndependentEvidence, showsModelAnswer,
 } from '../../src/learning/engine/scaffolding.js'
-import { recordLearnerFact, captureStatedLifeFact } from '../../src/learning/engine/learnerFacts.js'
+import {
+  recordLearnerFact, captureStatedLifeFact, captureStatedUsualTime,
+} from '../../src/learning/engine/learnerFacts.js'
 import { SEED_VOCAB_BY_ID } from '../../src/data/vocabulary.js'
 import { buildSessionPlan, repairKindForItem } from '../../src/learning/engine/session.js'
 import { coreItemsOfIntent } from '../../src/learning/curriculum/preA1Map.js'
@@ -68,6 +71,8 @@ const ANSWERS = {
   /* A1 arc 1: the frame the arc teaches, and the question it teaches back */
   state_life_fact: 'I work at home.',
   ask_life_fact: 'Do you work?',
+  /* A1 arc 2: the routine frame. A time is added by `answerFor` when the step asks. */
+  state_routine: 'I usually get up.',
 
   express_like: 'I like music.',
   express_dislike: "I don't like coffee.",
@@ -91,6 +96,8 @@ const REPAIR = {
   signal_nonunderstanding: "I don't understand.",
   repeat: 'Can you repeat, please?',
   slow_down: 'Please speak slowly.',
+  /* arc 2's fourth strategy: take one word out and keep going */
+  ask_meaning: 'What does “late” mean?',
 }
 const QUANTITY = {
   bare: (step) => `${step.count === 3 ? 'Three' : 'Two'}.`,
@@ -100,6 +107,16 @@ const QUANTITY = {
 
 export function answerFor(step) {
   if (step.evalKind === 'repair_request') return REPAIR[step.repairKind] || REPAIR.signal_nonunderstanding
+  /*
+   * A1 arc 2's subtype. The step says which kind of "when" it wants, so the
+   * canonical answer carries it — a routine turn asking for an hour must be
+   * answered with an hour, exactly as the product demands.
+   */
+  if (step.evalKind === 'state_routine') {
+    if (step.timeForm === 'clock') return 'I usually get up at seven.'
+    if (step.timeForm === 'part_of_day') return 'I usually work in the morning.'
+    return ANSWERS.state_routine
+  }
   if (step.evalKind === 'use_quantity') return (QUANTITY[step.quantityForm] || QUANTITY.bare)(step)
   if (step.evalKind === 'identify_thing') return `It's a ${step.thingId || 'book'}.`
   const answer = ANSWERS[step.evalKind]
@@ -191,10 +208,12 @@ export function playEpisode(model, episodeId, {
      * capture is captured here too. Without this the capture rule would live only
      * inside a React component and no headless check could reach it.
      */
-    captureStatedLifeFact(model, {
+    const capturePayload = {
       evalKind: step.evalKind, reply, modelAnswer: usesSuggestion ? (step.suggestionEn || '') : '',
       sourceEpisodeId: ep.id, atMs,
-    })
+    }
+    captureStatedLifeFact(model, capturePayload)
+    captureStatedUsualTime(model, capturePayload)
     for (const id of step.itemIds || []) {
       recordItemAttempt(model, id, { correct: true, independent, evidenceKind, atMs })
     }
@@ -317,6 +336,8 @@ function ctxFor(step, model, independent) {
     targetNoun: 'music',
     ...(step.thingId ? { targetThing: step.thingId } : {}),
     ...(step.repairKind ? { repairKind: step.repairKind } : {}),
+    ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}),
+    ...(step.timeForm ? { timeForm: step.timeForm } : {}),
     ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}),
     ...(Number.isInteger(step.count) ? { targetCount: step.count } : {}),
     turnContext: { linguaSaid: step.promptEn || step.sceneEn || '' },

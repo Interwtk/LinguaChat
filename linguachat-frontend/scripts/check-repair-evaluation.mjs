@@ -38,6 +38,15 @@ const close = (text) => evaluateCloseEncounter(text, {})
       'Please speak slowly.', 'Speak slowly, please.', 'Can you speak slowly, please?',
       'Could you speak more slowly?', 'Slowly, please.',
     ],
+    /*
+     * A1 arc 2's fourth strategy. The word may be quoted or bare, and "What is
+     * ___?" is the same question asked another way — a learner who gets the meaning
+     * across has the capability, whichever wording they reached for.
+     */
+    ask_meaning: [
+      'What does “late” mean?', 'What does late mean?', 'What does "busy" mean?',
+      'Sorry, what does late mean?', 'What is late?', 'What’s busy?',
+    ],
   }
   for (const kind of REPAIR_KINDS) {
     assert.ok(accepted[kind], `${kind} has no accepted list`)
@@ -57,12 +66,19 @@ const close = (text) => evaluateCloseEncounter(text, {})
     signal_nonunderstanding: ["Don't understand.", 'I not understand.', 'No understand.'],
     repeat: ['Repeat please.', 'Repeat.', 'Again?'],
     slow_down: ['Speak slow.', 'Slow, please.', 'Slow down.'],
+    /* the reach for the meaning question that did not arrive */
+    ask_meaning: ['Mean?', 'Meaning?', 'Late meaning?'],
   }
+  /*
+   * The error name differs for arc 2's strategy, and deliberately: the correction a
+   * half-built meaning question needs is the frame, not "that is not a repair".
+   */
+  const PARTIAL_ERROR = { ask_meaning: 'incomplete_meaning_question' }
   for (const kind of REPAIR_KINDS) {
     for (const text of partial[kind]) {
       const r = repair(text, kind)
       assert.equal(r.completedObjective, false, `${kind} accepted the partial "${text}"`)
-      assert.equal(r.errorType, 'incomplete_repair', `${kind} "${text}" → ${r.errorType}`)
+      assert.equal(r.errorType, PARTIAL_ERROR[kind] || 'incomplete_repair', `${kind} "${text}" → ${r.errorType}`)
       assert.ok(r.understood, `"${text}" communicates; it must not be treated as noise`)
       assert.ok(r.naturalVersion, `"${text}" must be shown the full sentence`)
     }

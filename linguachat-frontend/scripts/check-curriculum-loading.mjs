@@ -25,6 +25,10 @@ import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 
 import { A1_ARC1 } from '../src/learning/episodes/a1Arc1.js'
+import { A1_ARC2 } from '../src/learning/episodes/a1Arc2.js'
+
+/* A1's runtime episodes, arc by arc — the same order the generator uses. */
+const A1_EPISODES = [...A1_ARC1, ...A1_ARC2]
 import { ARC } from '../src/learning/episodes/index.js'
 import { EPISODE_SKELETON, SKELETON_BY_ID } from '../src/learning/curriculum/preA1Skeleton.generated.js'
 import { intentsForEpisode, productiveItemsOf, itemsOf, personalisesOf } from '../src/learning/curriculum/preA1Map.js'
@@ -80,9 +84,9 @@ const curriculumOnlyProse = (minLength = 14) => {
    * against Pre-A1's list alone, so A1 arc 1 looked like an undescribed extra
    * rather than the second level the skeleton exists to hold.
    */
-  assert.equal(EPISODE_SKELETON.length, ARC.length + A1_ARC1.length, 'every episode must be described')
+  assert.equal(EPISODE_SKELETON.length, ARC.length + A1_EPISODES.length, 'every episode must be described')
   assert.equal(EPISODE_SKELETON.filter(ep => ep.level === 'Pre-A1').length, ARC.length)
-  assert.equal(EPISODE_SKELETON.filter(ep => ep.level === 'A1').length, A1_ARC1.length)
+  assert.equal(EPISODE_SKELETON.filter(ep => ep.level === 'A1').length, A1_EPISODES.length)
   for (const ep of ARC) {
     const skeleton = SKELETON_BY_ID[ep.id]
     assert.ok(skeleton, `${ep.id} is missing from the skeleton`)
@@ -345,9 +349,18 @@ if (!existsSync(DIST)) {
      * through a dynamic import, and that import must sit in the chunk the resolver
      * lives in.
      */
-    const a1Chunk = files.find(f => /^a1Arc1Content-/.test(f))
-    assert.ok(a1Chunk, "A1 arc 1's content must have its own chunk")
-    for (const chunk of [contentChunk, a1Chunk]) {
+    /*
+     * ONE CHUNK PER A1 ARC. Both must exist separately: a learner authorised to run
+     * arc 2 must not download arc 1's prose to do it, which is the whole reason the
+     * loader map is keyed by arc.
+     */
+    const arcChunks = ['a1Arc1Content', 'a1Arc2Content'].map((name) => {
+      const chunk = files.find(f => f.startsWith(`${name}-`))
+      assert.ok(chunk, `${name} must have its own chunk`)
+      return chunk
+    })
+    assert.equal(new Set(arcChunks).size, arcChunks.length, 'the two A1 arcs must not share a chunk')
+    for (const chunk of [contentChunk, ...arcChunks]) {
       const dependents = files.filter(f => {
         if (f === chunk) return false
         const src = readFileSync(join(DIST, f), 'utf8')
@@ -359,7 +372,14 @@ if (!existsSync(DIST)) {
       assert.deepEqual(loaders, [entryName],
         `${chunk} must be loaded by the resolver in the entry chunk, found: ${loaders.join(', ') || 'nobody'}`)
     }
-    console.log(`  listing ${listing} carries no content; the resolver loads ${contentChunk} and ${a1Chunk} on demand`)
+    /* and neither arc chunk imports the other */
+    const [arc1Chunk, arc2Chunk] = arcChunks
+    const arc2Src = readFileSync(join(DIST, arc2Chunk), 'utf8')
+    assert.ok(!arc2Src.includes(arc1Chunk), `${arc2Chunk} pulls in ${arc1Chunk}`)
+    const arc1Src = readFileSync(join(DIST, arc1Chunk), 'utf8')
+    assert.ok(!arc1Src.includes(arc2Chunk), `${arc1Chunk} pulls in ${arc2Chunk}`)
+    console.log(`  listing ${listing} carries no content; the resolver loads`
+      + ` ${[contentChunk, ...arcChunks].join(', ')} on demand`)
     ok()
   }
 }
