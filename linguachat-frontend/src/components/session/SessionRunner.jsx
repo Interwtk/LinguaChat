@@ -5,7 +5,7 @@ import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { EpisodeShell, scrambleTokens } from '../episode/EpisodeShell'
 import { FormatFeedback } from '../episode/FormatFeedback'
 import { MiniStory } from './MiniStory'
-import { getEpisode } from '../../learning/episodes/index.js'
+import { episodeRequest } from '../../learning/curriculum/episodeContent.js'
 import { evaluateEpisodeResponse } from '../../learning/engine/hybridEvaluation.js'
 import { evaluateFree, shouldEscalate, TAUGHT_NUMBERS } from '../../learning/engine/responseEvaluation.js'
 import { repairKindForItem } from '../../learning/engine/session.js'
@@ -692,11 +692,17 @@ export function SessionRunner() {
   // Episode blocks reuse the existing shell untouched; the session only decides
   // what happens when the episode finishes.
   if (block.type === 'continue_episode' || block.type === 'start_episode' || block.type === 'integrated_practice') {
-    const ep = getEpisode(block.payload.episodeId)
-    if (!ep) { advanceSession(); return null }
+    /*
+     * Asked of the resolver, not of a level's content module: a session block only
+     * needs to know the id may be opened, and EpisodeShell fetches the definition
+     * itself. A block naming something this learner cannot open is skipped rather
+     * than played — the same answer as before, from the one registry.
+     */
+    const request = episodeRequest({ episodeId: block.payload.episodeId })
+    if (!request.ok) { advanceSession(); return null }
     // The topic was pinned when the plan was made, so the episode talks about
     // exactly what Home promised — even if interests changed in between.
-    return <EpisodeShell episodeId={ep.id} interestId={dailySession.topic?.interestId || null}
+    return <EpisodeShell episodeId={request.episodeId} interestId={dailySession.topic?.interestId || null}
       runOptions={{ source: 'daily_session', unaidedAttempt: Boolean(block.payload?.unaidedAttempt) }}
       onComplete={() => advanceSession()} />
   }

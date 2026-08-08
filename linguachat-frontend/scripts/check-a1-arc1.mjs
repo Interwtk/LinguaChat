@@ -43,7 +43,10 @@ import { derivePreA1Readiness } from '../src/learning/curriculum/readiness.js'
 import { evaluateFree } from '../src/learning/engine/responseEvaluation.js'
 import { INTENT_SLOTS, slotsFor, SEMANTIC_TYPES, classifyValue, isContextCompatible } from '../src/learning/engine/semanticContext.js'
 import { SEED_VOCAB_BY_ID } from '../src/data/vocabulary.js'
-import { createLearnerModel, MODEL_VERSION, MILESTONE_LEVELS } from '../src/learning/engine/learnerModel.js'
+import {
+  createLearnerModel, MODEL_VERSION, MILESTONE_LEVELS, FACT_TYPES, sanitizeLearnerFacts,
+} from '../src/learning/engine/learnerModel.js'
+import { captureStatedLifeFact, factsOfType } from '../src/learning/engine/learnerFacts.js'
 import { hasGraduatedPreA1 } from '../src/learning/curriculum/graduation.js'
 import { playEpisode, STRONG, ASSISTED } from './lib/journey.mjs'
 
@@ -596,6 +599,98 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
       }
     }
   }
+  ok()
+}
+
+/* ---- 14) a fact the blueprint says to store must have a runtime capture path ---- */
+{
+  /*
+   * DERIVED FROM THE ARC, NOT FROM ONE ID. `arcs[].factsCaptured` says which facts
+   * an arc is responsible for, and `factsToCapture` says what each one is. A future
+   * arc declaring a fact with no way to capture it fails here without anybody
+   * editing this block — which is the whole reason it exists: `work_or_study` was
+   * declared `store: true` from the day the blueprint was written, and the runtime
+   * quietly did not store it.
+   */
+  const declared = A1_RUNTIME_ARCS.flatMap(arcId =>
+    (BLUEPRINT.arcs.find(a => a.id === arcId)?.factsCaptured || []))
+  assert.ok(declared.length > 0, 'arc 1 is designed to capture at least one fact')
+
+  const at = new Date('2026-08-10T09:00:00Z').getTime()
+  const played = createLearnerModel()
+  A1_ARC1.forEach((ep, i) => playEpisode(played, ep.id, { profile: STRONG, atMs: at + i * 1000 }))
+
+  for (const factId of declared) {
+    const spec = BLUEPRINT.factsToCapture.find(f => f.id === factId)
+    assert.ok(spec, `${factId} is captured by an arc but not described in factsToCapture`)
+    assert.equal(spec.store, true, `${factId} is declared by the arc but marked not to store`)
+    assert.ok(FACT_TYPES.includes(factId),
+      `${factId} is marked store:true and the learner model cannot hold it`)
+    assert.ok(BLUEPRINT.personalization.safeSlots.includes(factId),
+      `${factId} is stored but is not one of the blueprint's safe slots`)
+
+    /* PLAYING THE ARC MUST PRODUCE IT. This is the assertion that was missing. */
+    const stored = factsOfType(played, factId)
+    assert.equal(stored.length, 1, `playing the arc stored ${stored.length} ${factId} facts, expected one`)
+    assert.equal(stored[0].sourceEpisodeId, A1_ARC1[0].id, `${factId} should come from the arc's first episode`)
+
+    /*
+     * AND THE VALUE MUST BE WHAT THE DESIGN ASKED FOR. `semanticType: place` plus
+     * "no employer names; a neutral category is enough" means one of the places
+     * this level teaches — not a sentence, not a verb, not an employer.
+     */
+    assert.equal(spec.semanticType, 'place', 'the value this check validates is a place')
+    const value = stored[0].value
+    assert.equal(classifyValue(value)?.semanticType, 'place', `${value} is not a typed place`)
+    assert.ok(A1_INTRODUCED_ITEMS.some(id => id.replace(/^at_/, '').replace(/_/g, ' ') === value),
+      `${value} is not one of the workplaces the arc teaches`)
+    assert.ok(value.split(' ').length <= 4 && !/[.?!]/.test(value), 'a fact is a value, not a sentence')
+  }
+
+  /* the privacy rule, enforced rather than trusted */
+  const probe = createLearnerModel()
+  for (const employer of ['I work at Contoso.', 'I study at Hogwarts', 'I work at the Ministry of Silly Walks']) {
+    assert.equal(captureStatedLifeFact(probe, { evalKind: 'state_life_fact', reply: employer, sourceEpisodeId: 'x' }), null,
+      `${employer} would have stored an employer name`)
+  }
+  /* and the conditions: wrong intent, empty, a bare verb, and a copied model answer */
+  assert.equal(captureStatedLifeFact(probe, { evalKind: 'ask_life_fact', reply: 'I work at home.', sourceEpisodeId: 'x' }), null,
+    'asking a question says nothing about the learner')
+  assert.equal(captureStatedLifeFact(probe, { evalKind: 'state_life_fact', reply: '', sourceEpisodeId: 'x' }), null)
+  assert.equal(captureStatedLifeFact(probe, { evalKind: 'state_life_fact', reply: 'I study.', sourceEpisodeId: 'x' }), null,
+    'no place named, so there is nothing to remember')
+  assert.equal(captureStatedLifeFact(probe, {
+    evalKind: 'state_life_fact', reply: 'I work at home.', modelAnswer: 'I work at home.', sourceEpisodeId: 'x',
+  }), null, "copying Lingua's sentence is not the learner stating a fact")
+  assert.deepEqual(probe.learnerFacts, [], 'and none of those left anything behind')
+  /* the learner's own words DO count, even with help on screen */
+  const volunteered = captureStatedLifeFact(probe, {
+    evalKind: 'state_life_fact', reply: 'I study at university.', modelAnswer: 'I work at home.', sourceEpisodeId: 'x',
+  })
+  assert.equal(volunteered?.value, 'university')
+
+  /* A FACT IS NOT MASTERY, and it is not an interest either */
+  const capturedOnly = createLearnerModel()
+  captureStatedLifeFact(capturedOnly, { evalKind: 'state_life_fact', reply: 'I work at the office.', sourceEpisodeId: 'what_you_do' })
+  assert.deepEqual(capturedOnly.canDo, {}, 'storing a fact must not credit a capability')
+  assert.deepEqual(capturedOnly.languageItems, {}, 'nor an item')
+  assert.deepEqual(capturedOnly.episodes, {}, 'nor progress')
+  assert.equal(capturedOnly.version, MODEL_VERSION, 'and it needs no new model version')
+  assert.ok(!('interests' in capturedOnly), 'a workplace is not an interest')
+  assert.ok(!factsOfType(capturedOnly, 'place').length,
+    'and it must not land in `place`, which is where the learner is FROM')
+
+  /* replay reinforces one fact rather than growing a list */
+  const replayed = createLearnerModel()
+  const DAY = 24 * 60 * 60 * 1000
+  for (const n of [0, 1, 2]) playEpisode(replayed, A1_ARC1[0].id, { profile: STRONG, atMs: at + n * DAY })
+  assert.equal(factsOfType(replayed, declared[0]).length, 1, 'a replay must not duplicate the fact')
+  assert.ok(factsOfType(replayed, declared[0])[0].confidence >= 0.6, 'saying it again is believed a little more')
+
+  /* it survives a reload: the store round-trips through storage untouched */
+  const revived = sanitizeLearnerFacts(JSON.parse(JSON.stringify(played.learnerFacts)))
+  assert.deepEqual(revived, played.learnerFacts, 'the fact must survive being written and read back')
+  console.log(`  ${declared.join(', ')} captured: ${factsOfType(played, declared[0])[0].value}`)
   ok()
 }
 

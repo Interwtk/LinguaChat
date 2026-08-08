@@ -21,7 +21,7 @@ import {
   normalizeFactValue, sanitizeLearnerFacts, FACT_TYPES,
 } from './learnerModel.js'
 import { seedFrom } from './variation.js'
-import { asSubjectValue } from './semanticContext.js'
+import { asSubjectValue, taughtPlaceIn } from './semanticContext.js'
 
 // A fact needs this much confidence before it is allowed to shape anything.
 export const MIN_FACT_CONFIDENCE = 0.5
@@ -50,6 +50,41 @@ export function recordLearnerFact(model, { type, value, sourceEpisodeId = null, 
   }
   model.learnerFacts = sanitizeLearnerFacts(facts)
   return model.learnerFacts.find(f => f.type === type && f.value.toLowerCase() === clean.toLowerCase()) || null
+}
+
+/*
+ * The fact A1 arc 1 is designed to remember, captured from a statement the
+ * learner passed. Lives here rather than in the player so the engine, the player
+ * and the checks all apply ONE rule — the capture used to be describable only by
+ * reading a component, which no headless test could reach.
+ *
+ * The blueprint marks `work_or_study` as `store: true`, `semanticType: "place"`,
+ * source "learner statement in arc 1", privacy "no employer names; a neutral
+ * category is enough". Each of those becomes a condition:
+ *
+ *   WHAT   the taught place, never the sentence and never the verb. An employer
+ *          name matches nothing and is dropped, so the privacy rule is enforced
+ *          rather than trusted.
+ *   WHEN   only a `state_life_fact` turn. Recognising the frame in a closed step
+ *          proves nothing about the learner's life.
+ *   WHOSE  the model answer is authored content, identical for every learner, so
+ *          copying it stores nothing. Typing your own sentence stores it, even
+ *          with help on screen: the existing rule for a captured fact is "what the
+ *          learner volunteered, never a corrected mistake", and volunteering is
+ *          about authorship, not about scoring. A fact is not mastery.
+ */
+export const LIFE_FACT_INTENT = 'state_life_fact'
+export const LIFE_FACT_TYPE = 'work_or_study'
+
+export function captureStatedLifeFact(model, { evalKind, reply, modelAnswer = '', sourceEpisodeId = null, atMs = Date.now() } = {}) {
+  if (evalKind !== LIFE_FACT_INTENT) return null
+  const said = String(reply || '').trim()
+  if (!said) return null
+  const shown = String(modelAnswer || '').trim()
+  if (shown && said.toLowerCase() === shown.toLowerCase()) return null
+  const place = taughtPlaceIn(said)
+  if (!place) return null
+  return recordLearnerFact(model, { type: LIFE_FACT_TYPE, value: place, sourceEpisodeId, atMs })
 }
 
 export function factsOfType(model, type) {

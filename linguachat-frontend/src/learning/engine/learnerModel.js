@@ -768,7 +768,16 @@ export function sanitizeEpisodeRuns(raw) {
   return out
 }
 
-export const FACT_TYPES = ['like', 'dislike', 'place']
+/*
+ * `place` is where the learner is FROM; `work_or_study` is where their days
+ * happen. Two types rather than one, because a consumer asking "where are you
+ * from" must never be handed an office — the blueprint keeps them apart too, and
+ * lists `work_or_study` under the slots an episode may safely personalise.
+ *
+ * Adding a type needs no migration: an older model simply has no facts of it, and
+ * `sanitizeLearnerFacts` has always dropped types it does not know.
+ */
+export const FACT_TYPES = ['like', 'dislike', 'place', 'work_or_study']
 export const FACT_MAX_LENGTH = 40
 
 // A fact is only worth keeping if it is short, printable and not a sentence.

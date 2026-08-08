@@ -881,6 +881,7 @@ export default {
   screenLoading: "Chargement…",
   screenLoadFailed: "Cette partie n’a pas pu se charger. Ta progression est intacte.",
   screenLoadRetry: "Réessayer",
+  episodeUnavailable: "Cet épisode ne peut pas encore être ouvert.",
   ctxSceneMusic: "Quelqu’un se met à parler de musique.",
   ctxSceneGames: "Quelqu’un se met à parler de jeux.",
   ctxSceneMovies: "Quelqu’un se met à parler de films.",

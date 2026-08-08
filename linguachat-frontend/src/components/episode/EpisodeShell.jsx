@@ -4,7 +4,8 @@ import { ChattoMascot } from '../mascot/ChattoMascot'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { SEED_VOCAB_BY_ID } from '../../data/vocabulary'
 import { getLocalizedMeaning } from '../../services/learningContent'
-import { getEpisode } from '../../learning/episodes/index.js'
+import { loadEpisodeContent, EpisodeContentError } from '../../learning/curriculum/episodeContent.js'
+import { ScreenFallback, ScreenError, useLazyContent } from '../ui/LazyBoundary'
 import { evaluateFree, shouldEscalate, isDeclineReply } from '../../learning/engine/responseEvaluation.js'
 import { selectCompatibleContext, otherNeutral, asSubjectValue, thingById, withArticle, countedThing } from '../../learning/engine/semanticContext.js'
 import { evaluateEpisodeResponse } from '../../learning/engine/hybridEvaluation.js'
@@ -27,7 +28,7 @@ import { MiniStory } from '../session/MiniStory'
 import {
   beginEpisodeRun, completeEpisodeRun, updateActiveRun, runEarnsReward, otherBranch, RUN_BRANCH_REPLAY,
 } from '../../learning/engine/episodeRuns.js'
-import { recordLearnerFact, selectLearnerFact, factsOfType } from '../../learning/engine/learnerFacts.js'
+import { recordLearnerFact, selectLearnerFact, factsOfType, captureStatedLifeFact } from '../../learning/engine/learnerFacts.js'
 
 // Fill {name} / {partner} / {place} / {partnerPlace} in the English target text.
 // An unknown placeholder is left untouched rather than printed as "undefined".
@@ -81,11 +82,20 @@ function LinguaLine({ children }) {
   )
 }
 
-// `onComplete` lets a daily session take over what happens after the episode:
-// inside a session the next block follows, standalone it returns to Home.
-export function EpisodeShell({ episodeId, onComplete = null, interestId = null, runOptions = null }) {
+/*
+ * The player, once its episode has been resolved.
+ *
+ * It receives a definition rather than fetching one, because "which episode may
+ * this learner open, and where does its content live" is the content resolver's
+ * question — see EpisodeShell below. Everything from here down is the same
+ * component that has always run Pre-A1.
+ *
+ * `onComplete` lets a daily session take over what happens after the episode:
+ * inside a session the next block follows, standalone it returns to Home.
+ */
+function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = null, runOptions = null }) {
   const { t, profile, tutorPreferences, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode } = useApp()
-  const ep = getEpisode(episodeId)
+  const ep = episode
   const name = (profile.name || '').trim() || 'Alex'
   // deterministic roleplay partner — stable per learner, reproducible on reload
   const partner = useMemo(() => partnerFor(profile.name || 'guest'), [profile.name])
@@ -467,6 +477,22 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
   }
 
   /* ---------- free reply (roleplay / recall) — hybrid evaluation ---------- */
+  /*
+   * The one fact A1 arc 1 is designed to remember. The rule itself lives in the
+   * engine (`captureStatedLifeFact`) so the player, the session harness and the
+   * checks cannot drift apart; this only supplies what is on screen — the model
+   * answer as the learner actually saw it, resolved.
+   *
+   * It runs BESIDE `recordItems`, never instead of it: a stored fact is not
+   * mastery, and reinforcing an existing value means a replay cannot grow the list.
+   */
+  function captureLifeFact(evalKind, text) {
+    const stored = captureStatedLifeFact(modelRef.current, {
+      evalKind, reply: text, modelAnswer: resolve(step.suggestionEn || '', vars), sourceEpisodeId: ep.id,
+    })
+    if (stored) saveLearnerModel(modelRef.current)
+  }
+
   async function submitFree(evalKind, itemIds, { fromSuggestion } = {}) {
     const text = reply
     if (!text.trim()) return
@@ -545,6 +571,7 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
        * on whether the learner refreshed the page.
        */
       if (independent) runRef.current = updateActiveRun(modelRef.current, { independentEvidence: true }) || runRef.current
+      captureLifeFact(evalKind, text)
       if (attemptsRef.current > 0) signal('retried')
       adaptScaffold({ correct: true, usedHelp: fromSuggestion, evidenceKind: evidenceKindForStep(step), retried: attemptsRef.current > 0 })
       setPraise(result.praiseKey || 'ep1FeedbackGood')
@@ -921,6 +948,61 @@ export function EpisodeShell({ episodeId, onComplete = null, interestId = null, 
       </div>
     </div>
   )
+}
+
+/*
+ * EpisodeShell — the one production path from an episode id to a playing episode.
+ *
+ * Before this existed, the player read its episode from `episodes/index.js`, a
+ * synchronous registry that knows Pre-A1 and nothing else. A1 arc 1 could be
+ * rendered only by substituting that module, which proved the component works and
+ * proved the product could not reach it. There were two registries: the resolver,
+ * which knew about levels and arcs and had no consumer, and the static import,
+ * which had the consumer and knew about one level.
+ *
+ * Now there is one. `loadEpisodeContent` answers both halves in order:
+ *
+ *   gating          may this be opened? — synchronous, metadata only. A learner
+ *                   asking for a closed level is refused before any import.
+ *   content         the arc's own chunk, imported on demand. Home and the practice
+ *                   listing never reach this line, so they never fetch it.
+ *
+ * GATING AND CONTENT RESOLUTION ARE DIFFERENT RESPONSIBILITIES. `forLearner`
+ * defaults to true, so every product call site is gated; tooling and QA pass
+ * false to run an episode of a level that is built but not open. That argument is
+ * the only door, and a check asserts no product file passes it.
+ *
+ * Four states, and none of them is a blank screen: loading, a load that failed
+ * (retryable, because a chunk can fail on a flaky network), a refusal (not
+ * retryable, because it is a decision), and playing.
+ */
+export function EpisodeShell({ episodeId, forLearner = true, ...runnerProps }) {
+  const { t } = useApp()
+  const content = useLazyContent(
+    () => loadEpisodeContent({ episodeId, forLearner }),
+    [episodeId, forLearner],
+    // a named refusal is the resolver's answer, not a transport problem
+    (error) => (error instanceof EpisodeContentError ? error.reason : null),
+  )
+
+  if (content.status === 'loading') return <ScreenFallback label={t('screenLoading')} />
+  if (content.status === 'failed') {
+    return <ScreenError errorLabel={t('screenLoadFailed')} retryLabel={t('screenLoadRetry')} onRetry={content.retry} />
+  }
+  if (content.status === 'refused') {
+    /*
+     * Unavailable or unknown. The learner is told the episode cannot be opened —
+     * never which ids exist behind a closed level, which is why the reason is not
+     * printed. `episodeUnavailable` is the same message for both, on purpose.
+     */
+    return (
+      <div role="alert" className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-10 text-center"
+        style={{ background: 'var(--bg-main)', minHeight: 180 }}>
+        <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)' }}>{t('episodeUnavailable')}</p>
+      </div>
+    )
+  }
+  return <EpisodeRunner episode={content.value} episodeId={episodeId} {...runnerProps} />
 }
 
 export default EpisodeShell

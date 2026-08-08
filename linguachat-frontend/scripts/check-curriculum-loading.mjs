@@ -261,9 +261,18 @@ if (!existsSync(DIST)) {
      * list downloaded the whole level's prose — invisible to a check that only
      * asked whether the content was in the entry chunk.
      */
-    const CONTENT_MODULE = /episodes\/(index|preA1Content)\.js/
+    const CONTENT_MODULE = /episodes\/(index|preA1Content|a1Arc1Content)\.js/
 
-    /* in source: exactly two modules may reach the content, and only to play it */
+    /*
+     * In source: NOBODY reaches a level's content directly any more.
+     *
+     * This used to allow two static importers — the player and the session runner
+     * both read `getEpisode` out of Pre-A1's content module. That was a second,
+     * parallel registry: it knew one level, and the resolver that knew about levels
+     * and arcs had no consumer at all, which is why A1 arc 1 could not reach the
+     * player without substituting the module. Both now ask the resolver, so the
+     * only import of content anywhere is the resolver's dynamic one.
+     */
     const sourceFiles = [
       'src/components/layout/ConversationRoom.jsx',
       'src/components/today/TodayView.jsx',
@@ -287,11 +296,21 @@ if (!existsSync(DIST)) {
         else if (/import\s*\(/.test(line)) dynamicImporters.push(path)
       }
     }
-    assert.deepEqual([...new Set(staticImporters)].sort(),
-      ['src/components/episode/EpisodeShell.jsx', 'src/components/session/SessionRunner.jsx'],
-      `only the two surfaces that play an episode may import its content: ${staticImporters.join(', ')}`)
+    assert.deepEqual([...new Set(staticImporters)].sort(), [],
+      `no module may import a level's content directly; ask the resolver: ${staticImporters.join(', ')}`)
     assert.deepEqual([...new Set(dynamicImporters)], ['src/learning/curriculum/episodeContent.js'],
-      'the resolver is the only module allowed to import content dynamically')
+      'the resolver is the only module allowed to import content, and only dynamically')
+
+    /*
+     * AND THE PLAYER MUST GO THROUGH IT. Without this, deleting the static import
+     * and forgetting to add the async one would satisfy the rule above with a
+     * player that can no longer resolve anything.
+     */
+    const shell = readFileSync('src/components/episode/EpisodeShell.jsx', 'utf8')
+    assert.ok(/loadEpisodeContent\(/.test(shell), 'the player resolves its episode through the content resolver')
+    assert.ok(/forLearner/.test(shell), 'and passes the authorization the resolver gates on')
+    const runner = readFileSync('src/components/session/SessionRunner.jsx', 'utf8')
+    assert.ok(/episodeRequest\(/.test(runner), 'a session block is gated by the resolver too')
 
     /* and the listing must be able to describe an episode without its content */
     const room = readFileSync('src/components/layout/ConversationRoom.jsx', 'utf8')
@@ -318,18 +337,29 @@ if (!existsSync(DIST)) {
     assert.ok(!curriculumOnlyProse().some(text => listingSrc.includes(text)),
       `${listing} contains episode prose`)
 
-    /* the players are where the static dependency belongs */
-    const staticChunks = files.filter(f => {
-      if (f === contentChunk) return false
-      const src = readFileSync(join(DIST, f), 'utf8')
-      return src.includes(`from"./${contentChunk}"`) || src.includes(`from "./${contentChunk}"`)
-    })
-    assert.ok(staticChunks.length > 0, 'something must actually load the content')
-    for (const chunk of staticChunks) {
-      assert.ok(/^(EpisodeShell|SessionRunner)-/.test(chunk),
-        `${chunk} depends on the level content without being a player surface`)
+    /*
+     * NOTHING depends on a level's content statically — not even the player. It
+     * used to: the player imported Pre-A1's module directly, which is why the two
+     * levels needed two different mechanisms. Every level's content is now fetched
+     * the same way, by the resolver, so each content chunk must be reachable ONLY
+     * through a dynamic import, and that import must sit in the chunk the resolver
+     * lives in.
+     */
+    const a1Chunk = files.find(f => /^a1Arc1Content-/.test(f))
+    assert.ok(a1Chunk, "A1 arc 1's content must have its own chunk")
+    for (const chunk of [contentChunk, a1Chunk]) {
+      const dependents = files.filter(f => {
+        if (f === chunk) return false
+        const src = readFileSync(join(DIST, f), 'utf8')
+        return src.includes(`from"./${chunk}"`) || src.includes(`from "./${chunk}"`)
+      })
+      assert.deepEqual(dependents, [],
+        `${dependents.join(', ')} depends on ${chunk} statically; content is fetched on demand`)
+      const loaders = files.filter(f => readFileSync(join(DIST, f), 'utf8').includes(`import("./${chunk}")`))
+      assert.deepEqual(loaders, [entryName],
+        `${chunk} must be loaded by the resolver in the entry chunk, found: ${loaders.join(', ') || 'nobody'}`)
     }
-    console.log(`  listing ${listing} carries no content; ${staticChunks.join(', ')} do`)
+    console.log(`  listing ${listing} carries no content; the resolver loads ${contentChunk} and ${a1Chunk} on demand`)
     ok()
   }
 }

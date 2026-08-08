@@ -165,6 +165,7 @@ const base = {
   screenLoading: "Loading…",
   screenLoadFailed: "This part could not load. Your progress is safe.",
   screenLoadRetry: "Try again",
+  episodeUnavailable: "This episode cannot be opened yet.",
   ctxSceneMusic: "Someone starts talking about music.",
   ctxSceneGames: "Someone starts talking about games.",
   ctxSceneMovies: "Someone starts talking about movies.",

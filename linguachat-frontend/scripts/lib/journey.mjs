@@ -44,7 +44,7 @@ import {
   deriveInitialScaffold, updateScaffoldAfterTurn, evidenceKindForStep,
   isIndependentEvidence, showsModelAnswer,
 } from '../../src/learning/engine/scaffolding.js'
-import { recordLearnerFact } from '../../src/learning/engine/learnerFacts.js'
+import { recordLearnerFact, captureStatedLifeFact } from '../../src/learning/engine/learnerFacts.js'
 import { SEED_VOCAB_BY_ID } from '../../src/data/vocabulary.js'
 import { buildSessionPlan, repairKindForItem } from '../../src/learning/engine/session.js'
 import { coreItemsOfIntent } from '../../src/learning/curriculum/preA1Map.js'
@@ -181,10 +181,20 @@ export function playEpisode(model, episodeId, {
     }
 
     const independent = isIndependentEvidence({ step, assistanceUsed: usesSuggestion, correct: true })
-    const result = evaluateFree(step.evalKind, answerFor(step), ctxFor(step, model, independent))
+    const reply = answerFor(step)
+    const result = evaluateFree(step.evalKind, reply, ctxFor(step, model, independent))
     if (!result.completedObjective) {
       throw new Error(`journey: ${ep.id}/${step.evalKind} rejected its own answer → ${result.errorType}`)
     }
+    /*
+     * The same call the player makes, so a fact the blueprint asks an arc to
+     * capture is captured here too. Without this the capture rule would live only
+     * inside a React component and no headless check could reach it.
+     */
+    captureStatedLifeFact(model, {
+      evalKind: step.evalKind, reply, modelAnswer: usesSuggestion ? (step.suggestionEn || '') : '',
+      sourceEpisodeId: ep.id, atMs,
+    })
     for (const id of step.itemIds || []) {
       recordItemAttempt(model, id, { correct: true, independent, evidenceKind, atMs })
     }

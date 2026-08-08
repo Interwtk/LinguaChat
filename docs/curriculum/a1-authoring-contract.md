@@ -191,12 +191,73 @@ declaration is gone; `{name}` is in the prose where addressing the learner is
 natural, and `check:a1-arc1` refuses both the dead field and any placeholder without
 a guaranteed value.
 
-Still outstanding, and named here so it is not mistaken for done: the blueprint's
-`factsToCapture` marks `work_or_study` as `store: true`, captured from a learner
-statement in arc 1. Arc 1 does not capture it. `captureFact` exists only on
-`fill_blank` and maps to the `place`/`like` fact types, so capturing it needs engine
-work rather than an authoring change, and arcs 2, 6 and 7 are where the reuse it
-feeds is scheduled.
+## One registry, and the player goes through it
+
+For three sprints there were two registries. The resolver knew about levels, arcs
+and lazy content and **had no consumer**; `EpisodeShell` and `SessionRunner` read
+`getEpisode` straight out of `episodes/index.js`, which knows Pre-A1 and nothing
+else. That is why A1 arc 1 could be rendered only by substituting that module: the
+component was correct, and the product had no way to hand it an A1 episode.
+
+The player now resolves through `loadEpisodeContent`, which answers in order:
+
+    episodeRequest      may this be opened? — synchronous, metadata only, and a
+                        learner asking for a closed level is refused before any
+                        import happens
+    CONTENT_LOADERS     the arc's own chunk, imported on demand
+
+`SessionRunner` asks `episodeRequest` for the same gate and lets the player fetch
+the definition. Nothing in `src/` imports a content module any more — the only
+import of content anywhere is the resolver's dynamic one, and `check:curriculum-
+loading` asserts exactly that, in the source and again in the built chunks.
+
+**Gating and content resolution are different responsibilities.** `forLearner`
+defaults to true, so every product call site is gated; tooling passes false to run
+an episode of a level that is built but not open. A1 stays `contentStatus: partial`,
+`available: false`, and a learner reaching `what_you_do` gets "This episode cannot
+be opened yet." — with no content fetched at all, because the gate runs first.
+
+Measured on a fresh production build, Pre-A1 pays for the unification: the content
+used to arrive in parallel with the player chunk, and now follows it. Click to
+render, on localhost: `EpisodeShell` +4→18 ms, then `preA1Content` +24→31 ms. One
+extra round trip, ~13 ms, covered by the boundary's loading state — in exchange for
+one path instead of two and a level that can be added without touching the player.
+
+## `work_or_study`, the fact arc 1 stores
+
+`factsToCapture` marks it `store: true`, `semanticType: "place"`, source "learner
+statement in arc 1", privacy "no employer names; a neutral category is enough", and
+`personalization.safeSlots` lists it. Every one of those became a condition in
+`captureStatedLifeFact`:
+
+- **the value is the taught place** — `home`, `the office`, `university` — never the
+  sentence and never the verb. "I work at Contoso" stores nothing, so the privacy
+  note is enforced rather than trusted; "I study at University of Lima" stores
+  `university`, which is the neutral category the note asks for;
+- **only a `state_life_fact` turn the learner passed.** Recognising the frame in a
+  closed step says nothing about their life;
+- **only the learner's own words.** The model answer is authored content, identical
+  for every learner, so copying it stores nothing — verified in the browser. Typing
+  your own sentence stores it even with help on screen: the existing rule is "what
+  the learner volunteered, never a corrected mistake", and volunteering is about
+  authorship, not about scoring. A learner who used help still told us something
+  true about themselves.
+
+It is its own fact type, beside `place`, because `place` is where the learner is
+FROM and handing a consumer an office when it asked for a hometown would be worse
+than remembering nothing. No migration and no new model version: an older model
+simply has no facts of the type.
+
+**A fact is not mastery and not an interest.** Capturing one touches no can-do, no
+item, no episode progress and never `tutorPreferences.interests`. Update policy is
+the store's existing one, unchanged: the same value said again is believed a little
+more, a different value is added beside it, and a replay cannot grow the list.
+
+`check:a1-arc1` group 14 reads `arcs[].factsCaptured` rather than the id, so a future
+arc that declares a fact with no capture path fails without anybody editing the
+check — which is the gap this closure existed to fill: `work_or_study` was marked
+`store: true` from the day the blueprint was written, and the runtime quietly did
+not store it.
 
 ## To implement episode 18, the author will
 

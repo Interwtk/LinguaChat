@@ -881,6 +881,7 @@ export default {
   screenLoading: "読み込み中…",
   screenLoadFailed: "この部分を読み込めませんでした。学習の記録は保存されています。",
   screenLoadRetry: "もう一度試す",
+  episodeUnavailable: "このエピソードはまだ開けません。",
   ctxSceneMusic: "誰かが音楽の話を始めます。",
   ctxSceneGames: "誰かがゲームの話を始めます。",
   ctxSceneMovies: "誰かが映画の話を始めます。",

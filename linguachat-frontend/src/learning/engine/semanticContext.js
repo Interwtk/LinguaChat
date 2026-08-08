@@ -314,6 +314,34 @@ export function classifyValue(value, { assumeType = null } = {}) {
 }
 
 /*
+ * The taught places, longest first, so "the office" wins over a bare "office"
+ * would-be match and "at home" normalises to "home".
+ */
+const TAUGHT_PLACES = Object.keys(KNOWN_VALUES)
+  .filter(key => KNOWN_VALUES[key] === 'place')
+  .map(key => key.replace(/^at\s+/, ''))
+  .filter((place, i, all) => all.indexOf(place) === i)
+  .sort((a, b) => b.length - a.length)
+
+/*
+ * The place a learner named inside their own sentence, or null.
+ *
+ * This is how the blueprint's `work_or_study` fact gets a value: it is typed
+ * `place`, and its privacy note says "no employer names; a neutral category is
+ * enough". So only the places this level actually teaches are recognised —
+ * "I work at Contoso" yields nothing rather than an employer, and "I study"
+ * yields nothing rather than a guess. Whole-word matching, so "homework" is not
+ * a home.
+ */
+export function taughtPlaceIn(text) {
+  const clean = String(text || '').toLowerCase().replace(/[^\p{L}\s]/gu, ' ')
+  for (const place of TAUGHT_PLACES) {
+    if (new RegExp(`(?:^|\\s)${place}(?:\\s|$)`, 'u').test(clean)) return place
+  }
+  return null
+}
+
+/*
  * Choose the value an activity should talk about.
  *
  * Order: something the learner told us (if it FITS this slot), then the

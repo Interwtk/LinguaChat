@@ -32,7 +32,7 @@ export function ScreenFallback({ label }) {
   )
 }
 
-function ScreenError({ errorLabel, retryLabel, onRetry }) {
+export function ScreenError({ errorLabel, retryLabel, onRetry }) {
   return (
     <div
       role="alert"
@@ -64,6 +64,61 @@ function ScreenError({ errorLabel, retryLabel, onRetry }) {
 // specifier returns the same rejection. Reloading rebuilds the module map — but
 // only ever once, guarded here so a permanently missing chunk cannot loop.
 const RELOAD_GUARD = 'lc2-chunk-reload'
+
+/*
+ * The same boundary, for DATA rather than for a component.
+ *
+ * An episode's definition is fetched exactly like a screen — a dynamic import
+ * that can fail — but it is data, so `lazyScreen` cannot carry it. This hook
+ * keeps the two behaviours that were worth getting right in one place: the
+ * per-effect `cancelled` flag (a component-lifetime ref breaks under StrictMode,
+ * see above) and a retry that really re-runs the import.
+ *
+ * A REFUSAL IS NOT A FAILURE. The content resolver refuses a closed level or an
+ * unknown id by design; retrying that forever would be dishonest. `classify`
+ * decides, and a refusal is returned as `refused` with no retry offered.
+ */
+export function useLazyContent(load, deps, classify = () => null) {
+  const [state, setState] = useState({ status: 'loading' })
+  const [attempt, setAttempt] = useState(0)
+  const key = JSON.stringify(deps)
+
+  useEffect(() => {
+    let cancelled = false
+    setState({ status: 'loading' })
+    Promise.resolve()
+      .then(() => load())
+      .then((value) => {
+        if (cancelled) return
+        try { sessionStorage.removeItem(RELOAD_GUARD) } catch { /* private mode */ }
+        setState({ status: 'ready', value })
+      })
+      .catch((error) => {
+        if (cancelled) return
+        const refusal = classify(error)
+        if (refusal) { setState({ status: 'refused', reason: refusal }); return }
+        if (import.meta.env?.DEV) console.error('[useLazyContent] load failed', error)
+        setState({ status: 'failed' })
+      })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key, attempt])
+
+  const retry = useCallback(() => {
+    if (attempt >= 1) {
+      try {
+        if (!sessionStorage.getItem(RELOAD_GUARD)) {
+          sessionStorage.setItem(RELOAD_GUARD, '1')
+          window.location.reload()
+          return
+        }
+      } catch { /* storage unavailable: fall through to a plain retry */ }
+    }
+    setAttempt(a => a + 1)
+  }, [attempt])
+
+  return { ...state, retry }
+}
 
 export function lazyScreen(factory, pick = (m) => m.default) {
   return function LazyScreen({ loadingLabel, errorLabel, retryLabel, ...props }) {

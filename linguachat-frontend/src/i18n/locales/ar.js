@@ -881,6 +881,7 @@ export default {
   screenLoading: "جارٍ التحميل…",
   screenLoadFailed: "تعذّر تحميل هذا الجزء. تقدّمك محفوظ.",
   screenLoadRetry: "حاول مرة أخرى",
+  episodeUnavailable: "لا يمكن فتح هذه الحلقة بعد.",
   ctxSceneMusic: "يبدأ أحدهم الحديث عن الموسيقى.",
   ctxSceneGames: "يبدأ أحدهم الحديث عن الألعاب.",
   ctxSceneMovies: "يبدأ أحدهم الحديث عن الأفلام.",

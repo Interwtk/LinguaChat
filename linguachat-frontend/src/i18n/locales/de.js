@@ -881,6 +881,7 @@ export default {
   screenLoading: "Wird geladen…",
   screenLoadFailed: "Dieser Teil konnte nicht geladen werden. Dein Fortschritt ist sicher.",
   screenLoadRetry: "Erneut versuchen",
+  episodeUnavailable: "Diese Einheit kann noch nicht geöffnet werden.",
   ctxSceneMusic: "Jemand fängt an, über Musik zu sprechen.",
   ctxSceneGames: "Jemand fängt an, über Spiele zu sprechen.",
   ctxSceneMovies: "Jemand fängt an, über Filme zu sprechen.",

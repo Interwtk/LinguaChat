@@ -881,6 +881,7 @@ export default {
   screenLoading: "Cargando…",
   screenLoadFailed: "Esta parte no se pudo cargar. Tu progreso está a salvo.",
   screenLoadRetry: "Intentar de nuevo",
+  episodeUnavailable: "Este episodio todavía no se puede abrir.",
   ctxSceneMusic: "Alguien empieza a hablar de música.",
   ctxSceneGames: "Alguien empieza a hablar de juegos.",
   ctxSceneMovies: "Alguien empieza a hablar de películas.",
