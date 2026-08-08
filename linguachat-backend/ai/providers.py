@@ -13,8 +13,10 @@ Two implementations live here:
   the whole path (frontend → HTTP → backend → evaluator → provider → verdict)
   can be exercised without ever calling OpenAI.
 
-The fake is only ever selected when ``LINGUACHAT_FAKE_PROVIDER`` is set, so a
-normal deployment cannot accidentally run on mocks.
+Which one answers is decided in ``ai/provider_policy.py`` and nowhere else. The
+fake is only ever selected when it is asked for, so a deployment cannot run on
+mocks by accident — and the real one is only selected when IT is asked for, so
+local QA cannot reach the network by accident either.
 """
 from __future__ import annotations
 
@@ -24,6 +26,9 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from ai.openai_tutor import openai_tutor
+from ai.provider_policy import (
+    fake_provider_selected, fake_scenario, real_provider_allowed, provider_mode,
+)
 from ai.schemas import EvaluationResult
 
 
@@ -197,6 +202,31 @@ class FakeProvider:
         }
 
 
+class LocalOnlyProvider:
+    """No remote verdict is available, and that is a decision rather than a fault.
+
+    The evaluator treats an unconfigured provider as "use the conservative
+    deterministic path", which is exactly right for local development. This exists
+    so the reason appears in the logs as ``local`` instead of looking like a
+    broken OpenAI configuration.
+    """
+
+    name = "local"
+
+    @property
+    def configured(self) -> bool:
+        return False
+
+    @property
+    def timeout_seconds(self) -> float:
+        return float(_configured_timeout(openai_tutor.timeout_seconds))
+
+    def evaluate(self, context: EvaluationContext) -> dict:
+        raise RuntimeError(
+            "no remote provider is enabled; set LINGUACHAT_PROVIDER=openai or =fake"
+        )
+
+
 def _natural_for(context: EvaluationContext) -> str:
     name = (context.learner_name or "Alex").strip() or "Alex"
     if context.expected_intent == "introduction":
@@ -236,20 +266,23 @@ def _configured_timeout(default: float) -> float:
 
 
 def get_provider() -> EvaluationProvider:
-    """The provider for this process.
+    """The provider for this process, per the one policy.
 
-    A fake is used ONLY when explicitly requested by environment variable, so
-    mocks can never be reached by a normal deployment.
+    Three outcomes and no fourth: the scripted fake when a scenario was asked
+    for, the real model when it was explicitly enabled and a key exists, and
+    otherwise a local provider that declines to produce a remote verdict at all.
+    A readable API key is not one of the inputs.
     """
-    scenario = (os.environ.get(FAKE_PROVIDER_ENV) or "").strip().lower()
-    if scenario:
+    if fake_provider_selected():
         delay = os.environ.get("LINGUACHAT_FAKE_DELAY")
         try:
             delay_seconds = float(delay) if delay else 0.0
         except (TypeError, ValueError):
             delay_seconds = 0.0
-        return FakeProvider(scenario=scenario, delay_seconds=delay_seconds)
-    return OpenAIProvider()
+        return FakeProvider(scenario=fake_scenario() or SCENARIO_SUCCESS, delay_seconds=delay_seconds)
+    if real_provider_allowed():
+        return OpenAIProvider()
+    return LocalOnlyProvider()
 
 
 __all__ = [
@@ -257,6 +290,7 @@ __all__ = [
     "EvaluationProvider",
     "OpenAIProvider",
     "FakeProvider",
+    "LocalOnlyProvider",
     "get_provider",
     "FAKE_PROVIDER_ENV",
     "EVAL_TIMEOUT_ENV",
