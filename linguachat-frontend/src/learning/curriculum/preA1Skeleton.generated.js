@@ -1,7 +1,7 @@
 /*
  * GENERATED FILE — do not edit by hand.
  *
- * The shape of Pre-A1 without its words: what each episode teaches, which
+ * The shape of the curriculum without its words: what each episode teaches, which
  * intents its steps evaluate, which language items they produce, what unlocks
  * what. Written by `scripts/build-curriculum-skeleton.mjs` from the episode
  * definitions, which remain the single source of truth, and re-derived and
@@ -1690,6 +1690,300 @@ export const EPISODE_SKELETON = [
         ],
         "thingId": "book",
         "quantityForm": "with_object"
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "what_you_do",
+    "level": "A1",
+    "arc": "work_and_study",
+    "titleKey": "ep18Title",
+    "goalKey": "ep18Goal",
+    "canDoId": "talk_about_work_or_study",
+    "canDoNameKey": "ep18CanDoName",
+    "durationKey": "ep18Duration",
+    "estimatedMinutes": 8,
+    "xp": 70,
+    "gardenItems": [
+      "work",
+      "study",
+      "i_do_pattern",
+      "at_home"
+    ],
+    "skillPrerequisites": [
+      "introduce_self",
+      "ask_origin"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "introduce_self"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "introduction",
+        "itemIds": [
+          "im"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "work",
+          "study"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "what_do_you_do"
+      },
+      {
+        "type": "word_order",
+        "itemId": "i_do_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "i_do_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_life_fact",
+        "itemIds": [
+          "work",
+          "study",
+          "i_do_pattern",
+          "at_home"
+        ]
+      },
+      {
+        "type": "choice",
+        "itemId": "at_the_office"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_life_fact",
+        "itemIds": [
+          "im",
+          "work",
+          "study",
+          "i_do_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "state_life_fact",
+        "itemIds": [
+          "i_do_pattern",
+          "work",
+          "study"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "and_you",
+    "level": "A1",
+    "arc": "work_and_study",
+    "titleKey": "ep19Title",
+    "goalKey": "ep19Goal",
+    "canDoId": "ask_about_work_or_study",
+    "canDoNameKey": "ep19CanDoName",
+    "durationKey": "ep19Duration",
+    "estimatedMinutes": 8,
+    "xp": 70,
+    "prerequisites": [
+      "what_you_do"
+    ],
+    "gardenItems": [
+      "what_do_you_do",
+      "do_you_pattern",
+      "at_the_office",
+      "at_university"
+    ],
+    "skillPrerequisites": [
+      "talk_about_work_or_study",
+      "ask_name"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "ask_name",
+      "talk_about_work_or_study",
+      "ask_for_repair"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "state_life_fact",
+        "itemIds": [
+          "i_do_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "do_you_pattern",
+          "what_do_you_do"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "at_university"
+      },
+      {
+        "type": "word_order",
+        "itemId": "do_you_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "do_you_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_life_fact",
+        "itemIds": [
+          "do_you_pattern",
+          "what_do_you_do"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_name",
+        "itemIds": [
+          "whats_your_name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_request",
+        "itemIds": [
+          "can_you_repeat"
+        ],
+        "repairKind": "repeat"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_life_fact",
+        "itemIds": [
+          "do_you_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "ask_life_fact",
+        "itemIds": [
+          "do_you_pattern",
+          "what_do_you_do"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "meeting_someone_new",
+    "level": "A1",
+    "arc": "work_and_study",
+    "titleKey": "ep20Title",
+    "goalKey": "ep20Goal",
+    "canDoId": "talk_about_work_or_study",
+    "canDoNameKey": "ep20CanDoName",
+    "durationKey": "ep20Duration",
+    "estimatedMinutes": 10,
+    "xp": 80,
+    "prerequisites": [
+      "and_you"
+    ],
+    "reinforces": true,
+    "skillPrerequisites": [
+      "introduce_self",
+      "ask_name",
+      "ask_origin",
+      "close_an_encounter"
+    ],
+    "role": "reinforcement",
+    "reuseSkills": [
+      "introduce_self",
+      "ask_name",
+      "ask_origin",
+      "close_an_encounter"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "introduction",
+        "itemIds": [
+          "hi",
+          "im"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_name",
+        "itemIds": [
+          "whats_your_name"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_origin",
+        "itemIds": [
+          "where_from"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_life_fact",
+        "itemIds": [
+          "i_do_pattern",
+          "work",
+          "study"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_life_fact",
+        "itemIds": [
+          "do_you_pattern"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "close_encounter",
+        "itemIds": [
+          "bye"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "recall",
+        "evalKind": "state_life_fact",
+        "itemIds": [
+          "i_do_pattern"
+        ]
       },
       {
         "type": "completion"

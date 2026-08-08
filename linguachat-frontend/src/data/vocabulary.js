@@ -178,6 +178,36 @@ export const SEED_VOCAB = [
     meaning: { en: '“Can you” + an action + “please”', es: '“Can you” + una acción + “please”', pt: '“Can you” + uma ação + “please”', fr: '« Can you » + une action + « please »', it: '“Can you” + un’azione + “please”', de: '‚Can you‘ + eine Handlung + ‚please‘', ja: '“Can you” + 動作 + “please”', ar: '“Can you” + فعل + “please”' } },
   { id: 'i_want_pattern', term: 'I want + noun', kind: 'pattern', emoji: '->', example: 'I want coffee.',
     meaning: { en: '“I want” followed by a thing', es: '“I want” + una cosa', pt: '“I want” + uma coisa', fr: '« I want » + une chose', it: '“I want” + una cosa', de: '„I want“ + eine Sache', ja: '“I want” + もの', ar: '“I want” + شيء' } },
+
+  /* ---- first A1 arc: what you do, and asking back ----
+   *
+   * Six productive items and two receptive ones, which is the budget the
+   * blueprint set for this arc. Deliberately absent: professions. "I'm a nurse"
+   * is a vocabulary list pretending to be a capability, and the frame — I + verb
+   * (+ place) — is what every later arc reuses.
+   */
+  /*
+   * `work` is NOT here: the catalogue already had it ("a job or to do a job"),
+   * unreferenced by any Pre-A1 episode, and this arc is the first thing that
+   * teaches it. Adding a second row was a duplicate — the exact bug the freeze's
+   * uniqueness guard exists for — so the arc grants the entry that was already
+   * there and spends five of its six new productive slots below.
+   */
+  { id: 'study', term: 'study', kind: 'word', emoji: 'S', example: 'I study.',
+    meaning: { en: 'to be a student', es: 'estudiar', pt: 'estudar', fr: 'étudier', it: 'studiare', de: 'studieren', ja: '勉強する', ar: 'يدرس' } },
+  { id: 'at_home', term: 'at home', kind: 'phrase', emoji: 'H', example: 'I work at home.',
+    meaning: { en: 'where you live', es: 'en casa', pt: 'em casa', fr: 'à la maison', it: 'a casa', de: 'zu Hause', ja: '家で', ar: 'في البيت' } },
+  { id: 'what_do_you_do', term: 'What do you do?', kind: 'phrase', emoji: '?', example: 'What do you do?',
+    meaning: { en: 'asking about work or study', es: '¿A qué te dedicas?', pt: 'O que fazes?', fr: 'Que fais-tu ?', it: 'Che lavoro fai?', de: 'Was machst du?', ja: 'お仕事は何ですか？', ar: 'ماذا تعمل؟' } },
+  { id: 'i_do_pattern', term: 'I + work / study', kind: 'pattern', emoji: 'I', example: 'I study at home.',
+    meaning: { en: '“I” followed by what you do', es: '“I” + lo que haces', pt: '“I” + o que fazes', fr: '« I » + ce que tu fais', it: '“I” + quello che fai', de: '„I“ + was du machst', ja: '“I” + すること', ar: '“I” + ما تفعله' } },
+  { id: 'do_you_pattern', term: 'Do you + verb?', kind: 'pattern', emoji: '?', example: 'Do you work?',
+    meaning: { en: '“Do you” + an action, to ask', es: '“Do you” + una acción, para preguntar', pt: '“Do you” + uma ação, para perguntar', fr: '« Do you » + une action, pour demander', it: '“Do you” + un’azione, per chiedere', de: '„Do you“ + eine Handlung, um zu fragen', ja: '“Do you” + 動作（質問）', ar: '“Do you” + فعل، للسؤال' } },
+  /* receptive: other people say these; the learner only has to understand them */
+  { id: 'at_the_office', term: 'at the office', kind: 'phrase', emoji: 'O', example: 'I work at the office.',
+    meaning: { en: 'a place where people work', es: 'en la oficina', pt: 'no escritório', fr: 'au bureau', it: 'in ufficio', de: 'im Büro', ja: 'オフィスで', ar: 'في المكتب' } },
+  { id: 'at_university', term: 'at university', kind: 'phrase', emoji: 'U', example: 'I study at university.',
+    meaning: { en: 'a place where people study', es: 'en la universidad', pt: 'na universidade', fr: 'à l’université', it: 'all’università', de: 'an der Universität', ja: '大学で', ar: 'في الجامعة' } },
 ]
 
 export const SEED_VOCAB_BY_ID = Object.fromEntries(SEED_VOCAB.map(item => [item.id, item]))

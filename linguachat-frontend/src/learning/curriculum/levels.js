@@ -11,11 +11,20 @@
  * So the level becomes explicit BEFORE any A1 content exists, and the registry
  * stays deliberately thin: two flags with real consumers and no decoration.
  *
- *   implemented   there is runtime content for this level in this build
- *   available     a learner may open it
+ *   contentStatus  none | partial | complete — how much of the level exists
+ *   available      a learner may open it
  *
- * The two are separate on purpose. A level can be known and unavailable — which
- * is exactly A1's state today — and nothing may treat "known" as "playable".
+ * `contentStatus` replaced a boolean `implemented` the day A1's first arc landed,
+ * and the reason is worth keeping: with a boolean, "the level has content" and
+ * "the level is finished" were the same answer. A1 now has one arc of three
+ * episodes out of seven arcs and twenty-one planned, and the resolver needs to
+ * know that content exists while every product decision needs to know that the
+ * level does not. Two questions, so two functions — `hasRuntimeContent` and
+ * `isLevelComplete` — over one honest field.
+ *
+ * The three states are separate from availability on purpose. A level can be
+ * known, partially built and unavailable — which is exactly A1's state today —
+ * and nothing may treat "known" or "has content" as "playable".
  * There is no label here: while a level is unavailable it has no user-facing
  * name to translate, and inventing one is how an unbuilt level leaks into the
  * interface.
@@ -34,9 +43,16 @@ export const A1 = 'a1'
  * metadata (`level: 'Pre-A1'`). Mapping it here is what lets the curriculum be
  * filtered by level without every caller knowing the spelling.
  */
+export const CONTENT_STATUSES = ['none', 'partial', 'complete']
+
 export const LEVELS = [
-  { id: PRE_A1, order: 1, implemented: true, available: true, episodeLevel: 'Pre-A1' },
-  { id: A1, order: 2, implemented: false, available: false, episodeLevel: 'A1' },
+  { id: PRE_A1, order: 1, contentStatus: 'complete', available: true, episodeLevel: 'Pre-A1' },
+  /*
+   * A1: arc 1 of seven is implemented, so there IS content — and the level is not
+   * finished and not open. `available: false` is what keeps it out of Home, out of
+   * Practice and out of the planner; opening it is a later, deliberate decision.
+   */
+  { id: A1, order: 2, contentStatus: 'partial', available: false, episodeLevel: 'A1' },
 ]
 
 export const LEVEL_IDS = LEVELS.map(l => l.id)
@@ -45,7 +61,21 @@ export const LEVEL_IDS = LEVELS.map(l => l.id)
 export const getLevel = (levelId) => LEVELS.find(l => l.id === levelId) || null
 
 export const isKnownLevel = (levelId) => Boolean(getLevel(levelId))
-export const isLevelImplemented = (levelId) => Boolean(getLevel(levelId)?.implemented)
+export const contentStatusOf = (levelId) => getLevel(levelId)?.contentStatus || 'none'
+
+/*
+ * Is there anything to load? This is the resolver's question, and a partially
+ * built level answers yes — episode 18 exists and must resolve.
+ */
+export const hasRuntimeContent = (levelId) => contentStatusOf(levelId) !== 'none'
+
+/*
+ * Is the level finished? Nothing may infer this from the episodes that happen to
+ * exist: "every runtime A1 episode is complete" is true after three of
+ * twenty-one, and would be a lie about the level.
+ */
+export const isLevelComplete = (levelId) => contentStatusOf(levelId) === 'complete'
+
 export const isLevelAvailable = (levelId) => Boolean(getLevel(levelId)?.available)
 
 export const availableLevelIds = () => LEVELS.filter(l => l.available).map(l => l.id)

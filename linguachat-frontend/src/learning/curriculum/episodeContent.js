@@ -23,7 +23,7 @@
  * switch somewhere else.
  */
 import {
-  PRE_A1, getLevel, isKnownLevel, isLevelAvailable, isLevelImplemented,
+  PRE_A1, A1, getLevel, isKnownLevel, isLevelAvailable, hasRuntimeContent,
   episodesOfLevel, levelIdOfEpisodeId, playableLevelId,
 } from './levels.js'
 
@@ -59,6 +59,15 @@ const CONTENT_LOADERS = {
      */
     default: () => import('../episodes/preA1Content.js'),
   },
+  [A1]: {
+    /*
+     * A1 is loaded ARC BY ARC, and there is no `default` here on purpose: a
+     * partially built level must refuse the arcs it does not have rather than
+     * hand back the one it does. Arc 2 will add one line beside this one, and
+     * until it does, an arc-2 episode cannot resolve.
+     */
+    work_and_study: () => import('../episodes/a1Arc1Content.js'),
+  },
 }
 
 const loaderFor = (levelId, arcId) => {
@@ -75,7 +84,7 @@ const loaderFor = (levelId, arcId) => {
  * level is used — which is how a caller holding only an id (a replay button, a
  * session block) can still be level-checked.
  */
-export function episodeRequest({ levelId = null, episodeId } = {}) {
+export function episodeRequest({ levelId = null, episodeId, forLearner = true } = {}) {
   const resolvedLevel = levelId || levelIdOfEpisodeId(episodeId)
 
   if (!episodeId) return { ok: false, reason: REFUSED.UNKNOWN_EPISODE }
@@ -88,10 +97,19 @@ export function episodeRequest({ levelId = null, episodeId } = {}) {
     return { ok: false, reason: levelId ? REFUSED.UNKNOWN_LEVEL : REFUSED.UNKNOWN_EPISODE }
   }
   if (!isKnownLevel(resolvedLevel)) return { ok: false, reason: REFUSED.UNKNOWN_LEVEL }
-  if (!isLevelImplemented(resolvedLevel)) {
+  if (!hasRuntimeContent(resolvedLevel)) {
     return { ok: false, reason: REFUSED.LEVEL_NOT_IMPLEMENTED, levelId: resolvedLevel }
   }
-  if (!isLevelAvailable(resolvedLevel)) {
+  /*
+   * AVAILABILITY IS THE PRODUCT GATE, and it is the only check a caller may opt
+   * out of. A1 arc 1 exists and must be testable — by the checks, by an internal
+   * harness, by QA — while remaining closed to learners, and those are genuinely
+   * different questions. So the opt-out is one named argument that every product
+   * call site leaves at its default, rather than a flag in storage, a dev route or
+   * a weaker gate: `forLearner: false` appears in tooling and nowhere else, and a
+   * check asserts exactly that.
+   */
+  if (forLearner && !isLevelAvailable(resolvedLevel)) {
     return { ok: false, reason: REFUSED.LEVEL_UNAVAILABLE, levelId: resolvedLevel }
   }
 
@@ -125,8 +143,8 @@ export const canOpenEpisode = (episodeId) => episodeRequest({ episodeId }).ok
  * on purpose: it is the boundary that keeps a level's prose out of the first
  * chunk today and out of every other arc's chunk tomorrow.
  */
-export async function loadEpisodeContent({ levelId = null, episodeId } = {}) {
-  const request = episodeRequest({ levelId, episodeId })
+export async function loadEpisodeContent({ levelId = null, episodeId, forLearner = true } = {}) {
+  const request = episodeRequest({ levelId, episodeId, forLearner })
   if (!request.ok) throw new EpisodeContentError(request.reason, episodeId)
 
   const loader = loaderFor(request.levelId, request.arcId)
@@ -147,4 +165,4 @@ export const hasContentLoader = (levelId, arcId = null) => Boolean(loaderFor(lev
 export const currentLevelId = () => playableLevelId()
 
 /* Re-exported so a caller needs one import to ask about a level and its content. */
-export { getLevel, episodesOfLevel, isLevelAvailable, isLevelImplemented }
+export { getLevel, episodesOfLevel, isLevelAvailable, hasRuntimeContent }

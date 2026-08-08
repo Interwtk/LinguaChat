@@ -1055,9 +1055,119 @@ export function evaluateUseQuantity(text, { independent = false, quantityForm = 
   return { ...r, errorType: 'missing_request_frame', confidence: 0.88, priorityCorrection: 'ep17RetryExplainRequest', explanation: 'ep17RetryExplainRequest', retryRequired: true, retryPrompt: 'ep17RetryPrompt_polite_request' }
 }
 
+/* ==========================================================================
+ * A1 ARC 1 — what you do, and asking back.
+ *
+ * Two intents, both deterministic per the blueprint, and both about the same
+ * frame from opposite sides: saying "I work / I study (+ where)" and asking
+ * "Do you work?" / "What do you do?".
+ *
+ * What these deliberately do NOT do is check a profession. "I'm a nurse" is a
+ * fine sentence and a vocabulary list is not a capability, so the objective is
+ * the FRAME: a first-person verb the learner can extend with a place, and a
+ * do-question they can ask anybody. A learner who says "I'm a student" has
+ * communicated exactly what was asked, so it counts — as an accepted variant,
+ * because the taught frame is the other one.
+ * ==========================================================================*/
+
+/* the two verbs the arc teaches, and the natural third answer nobody taught */
+const LIFE_VERB = /\b(work|works|working|study|studies|studying)\b/
+const LIFE_FIRST_PERSON = /\bi\s+(work|study)\b/
+const STUDENT_VARIANT = /\b(i'?m|i am)\s+(a\s+)?(student|teacher)\b/
+/* where it happens: at home / at the office / at university / at school */
+const LIFE_PLACE = /\bat\s+(home|the\s+office|an?\s+office|university|school|the\s+university|the\s+school)\b/
+const LIFE_WRONG_PERSON = /\b(he|she|they|we|you)\s+(work|works|study|studies)\b/
+
+export function evaluateStateLifeFact(text, { independent = false, workOrStudy = '' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  /*
+   * The model answer prefers what the learner just said, then what they told us
+   * earlier in the arc, and only then a neutral example — the same ladder the
+   * origin answer uses, for the same reason: never hand back an invented life.
+   */
+  const known = String(workOrStudy || '').trim()
+  r.naturalVersion = LIFE_FIRST_PERSON.test(n)
+    ? `${String(text).trim().replace(/[.!?]*$/, '')}.`
+    : (known ? `I work at ${known}.` : 'I work at home.')
+
+  if (!n) {
+    return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep18RetryPromptEmpty' }
+  }
+  if (LIFE_FIRST_PERSON.test(n)) {
+    r.completedObjective = true
+    r.confidence = LIFE_PLACE.test(n) ? 0.96 : 0.93
+    /* the frame alone is the objective; a place is a bonus, not a requirement */
+    r.acceptedVariant = false
+    r.praiseKey = r.masteryEvidence.independent ? 'ep18PraiseIndependent' : 'ep18PraiseAnswered'
+    return r
+  }
+  if (STUDENT_VARIANT.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.acceptedVariant = true
+    r.praiseKey = r.masteryEvidence.independent ? 'ep18PraiseIndependent' : 'ep18PraiseAnswered'
+    return r
+  }
+  /* the right verb about the wrong person: understood, and not the objective */
+  if (LIFE_WRONG_PERSON.test(n)) {
+    return { ...r, errorType: 'wrong_person', confidence: 0.9, priorityCorrection: 'ep18RetryExplainI', explanation: 'ep18RetryExplainI', retryRequired: true, retryPrompt: 'ep18RetryPromptI' }
+  }
+  /* a bare verb — "work" — is a reach for the frame, missing its subject */
+  if (LIFE_VERB.test(n) && wordCount(n) <= 3) {
+    return { ...r, errorType: 'missing_subject', confidence: 0.9, priorityCorrection: 'ep18RetryExplainI', explanation: 'ep18RetryExplainI', retryRequired: true, retryPrompt: 'ep18RetryPromptI' }
+  }
+  /* a place with no verb — "at home" — answered where, not what */
+  if (LIFE_PLACE.test(n)) {
+    return { ...r, errorType: 'missing_verb', confidence: 0.88, priorityCorrection: 'ep18RetryExplainVerb', explanation: 'ep18RetryExplainVerb', retryRequired: true, retryPrompt: 'ep18RetryPromptVerb' }
+  }
+  return { ...r, errorType: 'no_life_statement', conclusive: false, confidence: 0.5, priorityCorrection: 'ep18RetryExplainVerb', explanation: 'ep18RetryExplainVerb', retryRequired: true, retryPrompt: 'ep18RetryPromptVerb' }
+}
+
+/* "Do you work?" / "Do you study?" / "What do you do?" — and "And you?" is not it */
+const DO_YOU_QUESTION = /\bdo\s+you\s+(work|study)\b/
+const WHAT_DO_YOU_DO = /\bwhat\s+do\s+you\s+do\b/
+const BARE_RETURN = /^(and|what about)\s+you\s*\??$/
+
+export function evaluateAskLifeFact(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'Do you work?'
+
+  if (!n) {
+    return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep19RetryPromptEmpty' }
+  }
+  if (DO_YOU_QUESTION.test(n) || WHAT_DO_YOU_DO.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.96
+    r.acceptedVariant = WHAT_DO_YOU_DO.test(n) && !DO_YOU_QUESTION.test(n)
+    r.naturalVersion = `${String(text).trim().replace(/[.!?]*$/, '')}?`
+    r.praiseKey = r.masteryEvidence.independent ? 'ep19PraiseIndependent' : 'ep19PraiseAsked'
+    return r
+  }
+  /*
+   * "And you?" returns the turn without asking the question, which is a Pre-A1
+   * capability doing a job A1 asked for. Understood, not the objective.
+   */
+  if (BARE_RETURN.test(n)) {
+    return { ...r, errorType: 'returns_without_asking', confidence: 0.92, priorityCorrection: 'ep19RetryExplainDo', explanation: 'ep19RetryExplainDo', retryRequired: true, retryPrompt: 'ep19RetryPromptDo' }
+  }
+  /* the words with no question — "you work" — is the frame without the auxiliary */
+  if (/\byou\s+(work|study)\b/.test(n)) {
+    return { ...r, errorType: 'missing_auxiliary', confidence: 0.9, priorityCorrection: 'ep19RetryExplainDo', explanation: 'ep19RetryExplainDo', retryRequired: true, retryPrompt: 'ep19RetryPromptDo' }
+  }
+  /* a statement about themselves answers the question instead of asking it */
+  if (LIFE_FIRST_PERSON.test(n)) {
+    return { ...r, errorType: 'answered_instead_of_asking', confidence: 0.9, priorityCorrection: 'ep19RetryExplainAsk', explanation: 'ep19RetryExplainAsk', retryRequired: true, retryPrompt: 'ep19RetryPromptAsk' }
+  }
+  return { ...r, errorType: 'no_question', conclusive: false, confidence: 0.5, priorityCorrection: 'ep19RetryExplainDo', explanation: 'ep19RetryExplainDo', retryRequired: true, retryPrompt: 'ep19RetryPromptDo' }
+}
+
 // Dispatcher used by the engine for free_reply / roleplay steps.
 export function evaluateFree(kind, text, ctx = {}) {
   switch (kind) {
+    case 'state_life_fact': return evaluateStateLifeFact(text, ctx)
+    case 'ask_life_fact': return evaluateAskLifeFact(text, ctx)
     case 'introduction': return evaluateIntroduction(text, ctx)
     case 'ask_name': return evaluateAskName(text, ctx)
     case 'nice_to_meet': return evaluateNiceToMeet(text, ctx)

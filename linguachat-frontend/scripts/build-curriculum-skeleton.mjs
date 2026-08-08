@@ -23,6 +23,13 @@
 import { writeFileSync, readFileSync, existsSync } from 'node:fs'
 
 import { ARC } from '../src/learning/episodes/index.js'
+/*
+ * A1's arcs are imported SEPARATELY, one per arc, and that separation is the
+ * point: the metadata of every level belongs in one skeleton, while the content
+ * of each arc must stay in its own chunk. If Pre-A1's content module imported
+ * A1's, loading one level would download the other.
+ */
+import { A1_ARC1 } from '../src/learning/episodes/a1Arc1.js'
 import { getStory, storyTurns } from '../src/learning/engine/miniStory.js'
 
 const OUT = 'src/learning/curriculum/preA1Skeleton.generated.js'
@@ -81,9 +88,12 @@ const skeletonStep = (step) => {
 
 const EPISODE_FIELDS = ['id', 'level', 'arc', 'titleKey', 'goalKey', 'canDoId', 'canDoNameKey',
   'durationKey', 'estimatedMinutes', 'xp', 'prerequisites', 'gardenItems', 'reinforces',
-  'skillPrerequisites']
+  'skillPrerequisites', 'role', 'reuseSkills']
 
-const skeleton = ARC.map(ep => ({
+/* every level's episodes, in curriculum order: Pre-A1, then A1 arc by arc */
+const RUNTIME_EPISODES = [...ARC, ...A1_ARC1]
+
+const skeleton = RUNTIME_EPISODES.map(ep => ({
   ...pick(ep, EPISODE_FIELDS),
   prerequisites: ep.prerequisites || [],
   steps: (ep.steps || []).map(skeletonStep),
@@ -92,7 +102,7 @@ const skeleton = ARC.map(ep => ({
 const body = `/*
  * GENERATED FILE — do not edit by hand.
  *
- * The shape of Pre-A1 without its words: what each episode teaches, which
+ * The shape of the curriculum without its words: what each episode teaches, which
  * intents its steps evaluate, which language items they produce, what unlocks
  * what. Written by \`scripts/build-curriculum-skeleton.mjs\` from the episode
  * definitions, which remain the single source of truth, and re-derived and

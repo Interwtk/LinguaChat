@@ -30,6 +30,14 @@ const En = ({ children, style }) => <span lang="en" dir="ltr" style={style}>{chi
 
 // The English model answer for a short practice block, by intent.
 const MODEL_ANSWER = {
+  /*
+   * A1 arc 1. A short practice turn for these has to ask the arc's question, not
+   * a greeting: the sixth Pre-A1 arc shipped with these entries missing and the
+   * session showed an introduction prompt while grading an identification.
+   */
+  state_life_fact: (v) => (v.workOrStudy ? `I work at ${v.workOrStudy}.` : 'I work at home.'),
+  ask_life_fact: () => 'Do you work?',
+
   introduction: (v) => `Hi, I'm ${v.name}.`,
   ask_name: () => "What's your name?",
   nice_to_meet: () => 'Nice to meet you.',
@@ -84,6 +92,9 @@ const REPAIR_PROMPT = {
 }
 // What Lingua says to open the practice turn, so the reply has a real context.
 const PROMPT = {
+  state_life_fact: (v) => `Hi again${v.name ? ', ' + v.name : ''}. What do you do?`,
+  ask_life_fact: () => 'I work at the office. Your turn to ask me.',
+
   introduction: () => 'Hi there!',
   ask_name: () => "I'm ready when you are.",
   nice_to_meet: () => 'Nice to meet you!',

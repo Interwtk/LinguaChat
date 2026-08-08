@@ -55,6 +55,15 @@ export const INTENT_SLOTS = {
   accept_offer: [],
   decline_offer: [],
 
+  /*
+   * A1 arc 1. Saying what you do takes a PLACE and nothing else: "I work at
+   * home" is the frame, and the slot must refuse everything a workplace is not —
+   * a drink, a feeling, an interest. Asking takes no personalised value at all,
+   * because the question is the same question whoever is being asked.
+   */
+  state_life_fact: ['place'],
+  ask_life_fact: [],
+
   express_like: ['interest', 'activity', 'food', 'drink', 'generic_object'],
   express_dislike: ['interest', 'food', 'drink', 'generic_object'],
   ask_preference: ['interest', 'activity'],
@@ -277,6 +286,17 @@ const KNOWN_VALUES = {
   history: 'interest', animals: 'interest', nature: 'interest', business: 'interest',
   photography: 'interest', architecture: 'interest', cars: 'interest',
   cooking: 'interest', science: 'interest',
+  /*
+   * A1 arc 1's workplaces. Typed as places because that is what they are, and
+   * typed at all because an untyped value cannot be used: without these,
+   * "I work at home" could not be built and the slot would fall back to neutral.
+   *
+   * Three, and no employer names ever. The learner's own answer is stored as a
+   * `work_or_study` fact with the same type, so it fits the same slot.
+   */
+  home: 'place', 'at home': 'place',
+  'the office': 'place', 'at the office': 'place',
+  university: 'place', 'at university': 'place',
 }
 
 /*
