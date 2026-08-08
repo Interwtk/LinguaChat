@@ -23,7 +23,15 @@
  * between them instead of the rule — which is exactly the bug that cost an
  * afternoon in the previous sprint.
  */
-import { ARC, getEpisode } from '../../src/learning/episodes/index.js'
+import { ARC, getEpisode as getPreA1Episode } from '../../src/learning/episodes/index.js'
+import { getA1Arc1Episode } from '../../src/learning/episodes/a1Arc1.js'
+
+/*
+ * The harness plays any runtime episode, whatever level it belongs to. Content is
+ * still one module per arc — this only means the harness can hold more than one at
+ * a time, which is exactly the difference between tooling and the product.
+ */
+const getEpisode = (id) => getPreA1Episode(id) || getA1Arc1Episode(id)
 import { evaluateFree } from '../../src/learning/engine/responseEvaluation.js'
 import { getStory, storyTurns, storyBranches, turnText } from '../../src/learning/engine/miniStory.js'
 import {
@@ -57,6 +65,10 @@ const ANSWERS = {
   ask_origin: 'Where are you from?',
   answer_origin: `I'm from ${PLACE}.`,
   full_intro_conversation: `Hi, I'm ${NAME}. How are you?`,
+  /* A1 arc 1: the frame the arc teaches, and the question it teaches back */
+  state_life_fact: 'I work at home.',
+  ask_life_fact: 'Do you work?',
+
   express_like: 'I like music.',
   express_dislike: "I don't like coffee.",
   ask_preference: 'What do you like?',

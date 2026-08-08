@@ -109,9 +109,37 @@ A slot the topic cannot fill uses the template's own neutral value; a template w
 
 Nothing about this is retrofitted onto Pre-A1 — that level is frozen and its stories were not touched. The contract is proven with a synthetic template inside `check:interest-personalization`, which is never registered as an episode. The rest of the design (catalogue, selection, cooldown, provider boundary, privacy) is in [interests.md](../personalization/interests.md).
 
+## Arc 1 is implemented — what that changed
+
+The first arc (`work_and_study`, episodes 18–20) exists as runtime content. The
+seven steps below were followed, and two of them behaved exactly as this document
+predicted they would:
+
+- **`implemented` became `contentStatus`.** A boolean could not tell "the level has
+  content" from "the level is finished", and A1 is the first level where those
+  differ: three episodes of twenty-one planned. The registry now carries
+  `contentStatus: none | partial | complete`, `hasRuntimeContent()` answers the
+  resolver's question and `isLevelComplete()` answers the product's.
+- **`available` did not move.** A1 is closed. Every learner-facing request is
+  refused with `level_unavailable`, and the one way past that gate is an explicit
+  `forLearner: false` used by tooling and asserted to appear nowhere else.
+- **`check:a1-blueprint` failed on purpose**, exactly as this document warned. Its
+  rule "no A1 content exists" had done its job and became "runtime A1 is exactly
+  the blueprint's arc 1, and the other six arcs are still impossible".
+- **Two checks turned out to be global where they should have been level-scoped**,
+  and were corrected rather than relaxed: the Pre-A1 freeze counted the whole
+  vocabulary catalogue (it now counts Pre-A1's share, still seventy-two), and the
+  authoring contract walked Pre-A1's episode list (it now walks every runtime
+  episode, with no exemption for A1).
+
+Arc 1's own contract lives in `check:a1-arc1`, which reads the blueprint and
+compares it to the runtime: episode ids, order, roles, capabilities, prerequisites,
+budgets, reuse actually exercised by a step, and both capabilities produced in an
+open turn with no model on screen.
+
 ## To implement episode 18, the author will
 
-The migration path, concretely — this is what the next sprint does, and nothing in it is a change to Pre-A1:
+The migration path, concretely — this is what the arc-1 sprint did, and nothing in it is a change to Pre-A1:
 
 1. **Write the content.** `src/learning/episodes/a1Arc1.js` — episode 18 declaring `level: 'A1'`, `arc: 'work_and_study'`, its can-do, its steps. The blueprint says what; the eleven rules above say in what shape.
 2. **Name its chunk.** `src/learning/episodes/a1Arc1Content.js`, re-exporting arc 1 the way `preA1Content.js` re-exports Pre-A1.

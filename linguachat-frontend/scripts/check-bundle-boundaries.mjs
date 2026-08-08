@@ -24,7 +24,15 @@ if (!existsSync(DIST)) {
 // Budgets in kB. The entry sat at 645 kB before splitting; 500 kB is Vite's own
 // warning threshold and the number we must stay under.
 const ENTRY_BUDGET_KB = 500
-const LOCALE_MAX_KB = 60
+/*
+ * A locale's own chunk. Sixty was calibrated when the product had one level's
+ * worth of strings; A1 arc 1 added seventy-five keys in eight languages and the
+ * byte-heavy ones (Japanese, Arabic) went past it. Translation volume growing with
+ * the curriculum is the system working, so the number moves — and the guard below
+ * gains the assertion that actually matters: a locale chunk carries its own
+ * interface text, never another locale's, and never a step's prose.
+ */
+const LOCALE_MAX_KB = 80
 
 const files = readdirSync(DIST).filter(f => f.endsWith('.js'))
 const sizeKb = (f) => statSync(join(DIST, f)).size / 1024
@@ -68,6 +76,16 @@ for (const [loc, probe] of LOCALE_PROBES) {
   assert.ok(!entrySource.includes(probe), `entry chunk contains ${loc} strings (${probe})`)
   const chunk = find(new RegExp(`^${loc}-.*\\.js$`))[0]
   assert.ok(readFileSync(join(DIST, chunk), 'utf8').includes(probe), `${loc} chunk is missing its own strings`)
+  /*
+   * AND A LOCALE CHUNK IS NOT A PLACE FOR EPISODE PROSE. A hint may legitimately
+   * quote a short target sentence ("try: I work at home"), which is why the probes
+   * are step PROMPTS: if one of those appeared here, the curriculum would have
+   * leaked into all eight language chunks.
+   */
+  const localeSource = readFileSync(join(DIST, chunk), 'utf8')
+  for (const prose of ['So — what do you do?', 'Ana says:', 'I have some books for you']) {
+    assert.ok(!localeSource.includes(prose), `the ${loc} chunk carries episode prose (${prose})`)
+  }
 }
 ok()
 

@@ -341,11 +341,21 @@ const deferredIds = new Set(blueprint.deferredToA2.map(d => d.id))
       `${path} reaches into docs/, which is tooling and must never ship`)
   }
 
-  /* no A1 content, no eighteenth episode, no seventh arc */
+  /*
+   * A1 CONTENT IS ALLOWED NOW — arc 1 only.
+   *
+   * This block used to assert that no A1 content existed anywhere, and that was
+   * right until the architecture was ready and the first arc was authorised. What
+   * replaces it is the invariant that matters from here: the level may hold arc 1
+   * and nothing else, and it stays closed to learners either way. The blueprint's
+   * DESIGN totals are still read from the blueprint and never inferred from what
+   * happens to be built.
+   */
   for (const [path, src] of sources) {
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
-    assert.ok(!/episode18|ep18\b|arc7\b/i.test(code), `${path} references an A1 episode or a seventh arc`)
+    assert.ok(!/arc7\b/i.test(code), `${path} references a seventh arc`)
     assert.ok(!/levelMilestones\.a1/.test(code), `${path} prepares an A1 milestone`)
+    assert.ok(!/deriveA1Readiness|a1Readiness/.test(code), `${path} prepares A1 readiness`)
     /*
      * A declared level belongs to curriculum data. The placement questions have
      * carried `level: 'A1'` since long before A1 was designed — that is how the
@@ -359,11 +369,24 @@ const deferredIds = new Set(blueprint.deferredToA2.map(d => d.id))
      * filter will recognise A1 content on the day there is any, and is what
      * "known but unavailable" is made of.
      */
+    /*
+     * Episode definitions are where content lives, so a declared A1 level here
+     * means A1 content exists — which is now true, in exactly one file. Any OTHER
+     * episode file declaring A1 would be a second arc arriving unannounced.
+     */
     if (/^src\/(learning\/episodes|data\/vocabulary)/.test(path)) {
-      assert.ok(!/level:\s*['"]A1['"]/i.test(code), `${path} declares A1 curriculum content`)
+      const declaresA1 = /level:\s*['"]A1['"]/i.test(code)
+      const isArc1File = /^src\/learning\/episodes\/a1Arc1(Content)?\.js$/.test(path)
+      assert.ok(!declaresA1 || isArc1File,
+        `${path} declares A1 curriculum content outside the implemented arc`)
     }
+    /*
+     * A PLANNED arc must not appear in runtime data — except the one that is no
+     * longer planned. `work_and_study` is implemented, so it is named here as the
+     * single exception and the other six stay impossible until each is authorised.
+     */
     if (/^src\/(learning|data)/.test(path)) {
-      assert.ok(!/arc:\s*['"](work_and_study|daily_rhythm|people_around_you|finding_your_way|paying_and_choosing|what_you_can_do|making_arrangements)['"]/.test(code),
+      assert.ok(!/arc:\s*['"](daily_rhythm|people_around_you|finding_your_way|paying_and_choosing|what_you_can_do|making_arrangements)['"]/.test(code),
         `${path} declares a planned A1 arc as if it existed`)
     }
   }
@@ -377,13 +400,24 @@ const deferredIds = new Set(blueprint.deferredToA2.map(d => d.id))
     .filter(([, src]) => /level:\s*['"]A1['"]/i.test(src))
     .map(([path]) => path)
     .sort()
+  /*
+   * Three files, and each for a different reason: the placement questions classify
+   * a learner and predate A1's design, the registry maps the level id to the
+   * string an episode declares, and arc 1's content is the level's first episodes.
+   * A fourth would be a second arc, or a leak.
+   */
   assert.deepEqual(levelDeclarers,
-    ['src/data/placementQuestions.js', 'src/learning/curriculum/levels.js'],
-    `only the placement questions and the level registry may name A1: ${levelDeclarers.join(', ')}`)
+    ['src/data/placementQuestions.js', 'src/learning/curriculum/levels.js', 'src/learning/episodes/a1Arc1.js'],
+    `only placement, the registry and arc 1 may name A1: ${levelDeclarers.join(', ')}`)
   /* and the registry must still hold A1 as unavailable */
   const registry = sources.find(([p]) => p === 'src/learning/curriculum/levels.js')[1]
-  assert.ok(/id: A1, order: 2, implemented: false, available: false/.test(registry),
-    'the registry must keep A1 unimplemented and unavailable')
+  /*
+   * The registry stopped saying `implemented: false` the day arc 1 landed, because
+   * a boolean could not tell "has content" from "is finished". What must hold now
+   * is that A1 is PARTIAL and still closed.
+   */
+  assert.ok(/id: A1, order: 2, contentStatus: 'partial', available: false/.test(registry),
+    'the registry must keep A1 partial and unavailable')
 
   /* and Pre-A1 is exactly as the freeze left it */
   assert.equal(ARC.length, 17, 'Pre-A1 must still be seventeen episodes')

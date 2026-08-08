@@ -18,9 +18,10 @@ import assert from 'node:assert/strict'
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 
 import { ARC, ARCS, getEpisode } from '../src/learning/episodes/index.js'
-import { PRE_A1_EXIT_CRITERIA, CAN_DO_INTENT, LEVEL, prerequisiteChain, intentsForEpisode } from '../src/learning/curriculum/preA1Map.js'
+import { PRE_A1_EXIT_CRITERIA, CAN_DO_INTENT, LEVEL, prerequisiteChain, intentsForEpisode, RECEPTIVE_ITEMS, INCIDENTAL_ITEMS } from '../src/learning/curriculum/preA1Map.js'
 import { capabilitiesWithStatus, CAPABILITY_MAP, FIRST_A1_CAPABILITY, LAST_PRE_A1_CAPABILITY } from '../src/learning/curriculum/preA1Audit.js'
 import { SEED_VOCAB, SEED_VOCAB_BY_ID } from '../src/data/vocabulary.js'
+import { a1ItemIds } from '../src/learning/curriculum/a1Map.js'
 import { createLearnerModel } from '../src/learning/engine/learnerModel.js'
 import { buildSessionPlan, DURATION_ORDER } from '../src/learning/engine/session.js'
 import { derivePreA1Readiness } from '../src/learning/curriculum/readiness.js'
@@ -71,9 +72,41 @@ const FROZEN = [
 
 /* ---- 2) nothing has been added, and nothing is orphaned ---- */
 {
-  // the language the level ships with, pinned so nothing new can slip in quietly
-  assert.equal(SEED_VOCAB.length, 72, `the level ships 72 entries of language, found ${SEED_VOCAB.length}`)
-  const byKind = SEED_VOCAB.reduce((acc, v) => ({ ...acc, [v.kind]: (acc[v.kind] || 0) + 1 }), {})
+  /*
+   * THE LANGUAGE THIS LEVEL SHIPS WITH, pinned so nothing new can slip in quietly.
+   *
+   * This used to assert `SEED_VOCAB.length === 72`. The number was right and the
+   * subject was wrong: the catalogue holds every level's language, so A1's first
+   * eight items broke a Pre-A1 freeze without touching one Pre-A1 episode. What is
+   * frozen is Pre-A1's share of it, so that is what is counted — everything its
+   * own episodes refer to, plus the receptive and incidental items it declares.
+   *
+   * Adding a seventy-third Pre-A1 item still fails here. Adding an A1 item does
+   * not, and must not.
+   */
+  const preA1Referenced = new Set([
+    ...ARC.flatMap(ep => [
+      ...(ep.gardenItems || []),
+      ...(ep.steps || []).flatMap(step => [
+        ...(step.itemIds || []),
+        ...(step.itemId ? [step.itemId] : []),
+        ...(step.meaningItems || []),
+        ...(step.turns || []).flatMap(turn => [...(turn.itemIds || []), ...(turn.itemId ? [turn.itemId] : [])]),
+      ]),
+    ]),
+    ...RECEPTIVE_ITEMS,
+    ...INCIDENTAL_ITEMS,
+  ])
+  /*
+   * Thirteen of the seventy-two are seed entries the Garden shows and no episode
+   * references — see pre-a1-map.md. So Pre-A1's share is the catalogue minus the
+   * levels above it, and an A1 item that were not declared in a1Map would be
+   * counted here and fail, which is the failure we want.
+   */
+  const a1Own = new Set([...a1ItemIds()].filter(id => !preA1Referenced.has(id)))
+  const preA1Vocab = SEED_VOCAB.filter(v => !a1Own.has(v.id))
+  assert.equal(preA1Vocab.length, 72, `the level ships 72 entries of language, found ${preA1Vocab.length}`)
+  const byKind = preA1Vocab.reduce((acc, v) => ({ ...acc, [v.kind]: (acc[v.kind] || 0) + 1 }), {})
   assert.deepEqual(byKind, { word: 30, pattern: 12, phrase: 30 },
     `the mix of words, patterns and phrases is frozen too: ${JSON.stringify(byKind)}`)
   /*
@@ -161,10 +194,17 @@ const FROZEN = [
     assert.ok(taughtCanDos.has(canDo), `${capability.id} claims to cover ${canDo}, which no episode teaches`)
   }
 
-  const files = readdirSync('src/learning/episodes')
+  /*
+   * NO EPISODE MAY BE SMUGGLED INTO PRE-A1'S OWN CONTENT.
+   *
+   * This walked the whole `episodes/` directory, which was the same thing as
+   * "Pre-A1's content" until A1 arc 1 put its own file there. It now walks the
+   * files Pre-A1's content module is built from, so the freeze still catches an
+   * eighteenth Pre-A1 episode and stops calling A1's episodes intruders.
+   */
+  const PRE_A1_CONTENT_FILES = ['index.js', 'preA1Content.js']
   const ids = new Set(ARC.map(e => e.id))
-  for (const file of files) {
-    if (file === 'index.js') continue
+  for (const file of PRE_A1_CONTENT_FILES) {
     const src = readFileSync(`src/learning/episodes/${file}`, 'utf8')
     for (const [, id] of src.matchAll(/^\s*id:\s*'([a-z0-9_]+)'/gm)) {
       assert.ok(ids.has(id), `${file} defines episode "${id}", which is not part of the frozen level`)

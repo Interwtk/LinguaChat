@@ -553,15 +553,25 @@ const TOMORROW = TODAY + DAY
   ok()
 }
 
-/* ---- 16) no A1 content arrived with any of this ---- */
+/* ---- 16) the personalization layer still creates no curriculum ---- */
 {
-  const { runtimeEpisodeCount, getLevel } = await import('../src/learning/curriculum/levels.js')
-  assert.equal(runtimeEpisodeCount('a1'), 0, 'A1 must still have no runtime episodes')
-  assert.equal(getLevel('a1').implemented, false)
-  assert.equal(getLevel('a1').available, false)
-  assert.equal(runtimeEpisodeCount('pre_a1'), 17, 'and Pre-A1 must be untouched')
-  for (const path of ['src/learning/engine/interests.js', 'src/learning/engine/storyPersonalization.js']) {
-    assert.ok(!/episode18|a1Arc1/.test(read(path)), `${path} must not create A1 content`)
+  /*
+   * This group asserted "A1 has zero runtime episodes", which was the right thing
+   * to protect while the interest engine was being built and content was not
+   * authorised. A1 arc 1 exists now, so what remains worth asserting is the
+   * original intent: NOTHING in the personalization layer creates or opens
+   * curriculum, whatever the levels happen to contain.
+   */
+  const { getLevel } = await import('../src/learning/curriculum/levels.js')
+  assert.equal(getLevel('a1').available, false, 'personalization must not open a level')
+  for (const path of [
+    'src/learning/engine/interests.js',
+    'src/learning/engine/topicSelection.js',
+    'src/learning/engine/storyPersonalization.js',
+  ]) {
+    const src = read(path)
+    assert.ok(!/level:\s*['"]A1['"]|a1Arc1|EPISODE_SKELETON/.test(src),
+      `${path} must not define or enumerate curriculum`)
   }
   ok()
 }

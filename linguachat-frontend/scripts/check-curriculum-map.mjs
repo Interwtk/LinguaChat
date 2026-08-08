@@ -16,6 +16,7 @@
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { EPISODE_SKELETON } from '../src/learning/curriculum/preA1Skeleton.generated.js'
 import { ARC, ARCS, getEpisode, episodesInArc } from '../src/learning/episodes/index.js'
 import { createLearnerModel, setEpisodeState, recordCanDoAttempt } from '../src/learning/engine/learnerModel.js'
 import { derivePreA1Readiness } from '../src/learning/curriculum/readiness.js'
@@ -306,7 +307,14 @@ const ok = () => { n++ }
 {
   const src = readFileSync(new URL('../src/learning/engine/responseEvaluation.js', import.meta.url), 'utf8')
   const dispatched = [...src.matchAll(/case '([a-z_]+)': return evaluate/g)].map(m => m[1])
-  const used = new Set(ARC.flatMap(e => intentsForEpisode(e.id)))
+  /*
+   * EVERY runtime episode, not just Pre-A1's. This read `ARC` — the Pre-A1 list —
+   * and called the result "used", which was true while one level existed and
+   * turned A1's first two evaluators into "dead code" the moment they were
+   * written. The skeleton is the level-agnostic metadata, so it is what answers
+   * "is this intent used anywhere in the product".
+   */
+  const used = new Set(EPISODE_SKELETON.flatMap(e => intentsForEpisode(e.id)))
 
   for (const intent of used) {
     assert.ok(dispatched.includes(intent), `${intent} is used by an episode but has no evaluator`)

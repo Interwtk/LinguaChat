@@ -24,6 +24,7 @@ import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 
+import { A1_ARC1 } from '../src/learning/episodes/a1Arc1.js'
 import { ARC } from '../src/learning/episodes/index.js'
 import { EPISODE_SKELETON, SKELETON_BY_ID } from '../src/learning/curriculum/preA1Skeleton.generated.js'
 import { intentsForEpisode, productiveItemsOf, itemsOf, personalisesOf } from '../src/learning/curriculum/preA1Map.js'
@@ -74,7 +75,14 @@ const curriculumOnlyProse = (minLength = 14) => {
   assert.equal(regenerated, committed,
     'the committed skeleton differs from the episodes — run `npm run build:skeleton` and commit the result')
 
-  assert.equal(EPISODE_SKELETON.length, ARC.length, 'every episode must be described')
+  /*
+   * EVERY level's episodes, which is what the skeleton is for. This compared
+   * against Pre-A1's list alone, so A1 arc 1 looked like an undescribed extra
+   * rather than the second level the skeleton exists to hold.
+   */
+  assert.equal(EPISODE_SKELETON.length, ARC.length + A1_ARC1.length, 'every episode must be described')
+  assert.equal(EPISODE_SKELETON.filter(ep => ep.level === 'Pre-A1').length, ARC.length)
+  assert.equal(EPISODE_SKELETON.filter(ep => ep.level === 'A1').length, A1_ARC1.length)
   for (const ep of ARC) {
     const skeleton = SKELETON_BY_ID[ep.id]
     assert.ok(skeleton, `${ep.id} is missing from the skeleton`)
