@@ -31,20 +31,44 @@ python -m uvicorn main:app --reload
 La API queda disponible en `http://127.0.0.1:8000` y su documentacion en
 `http://127.0.0.1:8000/docs`.
 
-### OpenAI
+### Que proveedor usa el backend
 
-Copia `linguachat-backend/.env.example` a `linguachat-backend/.env` y configura:
+Una sola variable lo decide, `LINGUACHAT_PROVIDER`:
 
-```env
-OPENAI_ENABLED=true
-OPENAI_API_KEY=sk-your-key-here
-OPENAI_MODEL=gpt-5.5
-OPENAI_TIMEOUT_SECONDS=20
+| modo | que hace |
+|---|---|
+| `local` (por defecto) | motor local determinista. Conversacion real, sin red, sin coste. |
+| `fake` | escenarios guionizados de evaluacion (ver mas abajo). Sin red. |
+| `openai` | el modelo real. Necesita `OPENAI_API_KEY`. |
+
+**Tener una API key NO activa el proveedor real.** Una key es una capacidad;
+usarla es una decision, y la decision es esa linea. Esto es deliberado: antes
+bastaba con que la key fuera legible, asi que un `.env` de desarrollo con key
+mandaba peticiones reales en cuanto alguien escribia en el chat local.
+
+Desarrollo y QA normal (nada que recordar, nada que borrar):
+
+```powershell
+cd linguachat-backend
+python -m uvicorn main:app --reload
 ```
 
-Para probar sin OpenAI, elimina `OPENAI_API_KEY` o usa
-`OPENAI_ENABLED=false`. FastAPI seguira respondiendo con el motor local y el
-header `X-LinguaChat-Provider: local`.
+Probar el modelo real, a proposito:
+
+```powershell
+$env:LINGUACHAT_PROVIDER = "openai"     # y OPENAI_API_KEY configurada en .env
+python -m uvicorn main:app --reload
+```
+
+Si pides `openai` sin key, el servidor **no arranca** y dice por que: servir
+respuestas locales a quien cree estar probando OpenAI es peor que un error claro.
+Un modo mal escrito (`banana`) tampoco activa nada: se queda en `local` con un
+warning. `OPENAI_ENABLED=false` sigue siendo un interruptor sobre las peticiones
+reales, y no desactiva el fake, que no hace ninguna.
+
+Al arrancar, el backend registra una linea con el modo elegido y nunca con la
+key. El header `X-LinguaChat-Provider` sigue diciendo quien respondio cada turno
+(`local` u `openai`).
 
 ### Provider simulado (solo desarrollo y pruebas)
 
@@ -61,9 +85,18 @@ $env:LINGUACHAT_FAKE_PROVIDER = "error"         # el proveedor lanza una excepci
 $env:LINGUACHAT_FAKE_PROVIDER = "disabled"      # no hay proveedor remoto
 ```
 
-Solo se activa cuando esa variable existe: sin ella nunca se elige, asi que un
-despliegue normal no puede terminar sobre mocks. Nunca llama a OpenAI real y no
+Solo se activa cuando se pide (`LINGUACHAT_PROVIDER=fake`, o la propia
+`LINGUACHAT_FAKE_PROVIDER`, que ademas nombra el escenario), asi que un
+despliegue normal no puede terminar sobre mocks. Y el fake gana sobre `openai`:
+quien pidio un escenario guionizado esta haciendo una prueba controlada, y
+convertirla en una llamada real la invalidaria. Nunca llama a OpenAI real y no
 debe usarse en produccion; es para desarrollo y para las pruebas automaticas.
+
+Las pruebas automaticas no pueden llegar a OpenAI por dos razones independientes:
+`tests/conftest.py` fuerza modo `local` y quita la key del entorno, y ademas
+construir un cliente real de OpenAI hace fallar el test que lo intente. Los tests
+que ejercitan la ruta del proveedor real piden el modo explicitamente y sustituyen
+el cliente, asi que tampoco salen a la red.
 Cualquiera que sea la respuesta, sigue pasando por la validacion estricta antes
 de que se confie en ella.
 

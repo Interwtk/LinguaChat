@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from ai.evaluator import evaluate_episode_response
 from ai.providers import (
-    EvaluationContext, FakeProvider, OpenAIProvider, get_provider,
+    EvaluationContext, FakeProvider, LocalOnlyProvider, OpenAIProvider, get_provider,
     FAKE_PROVIDER_ENV, EVAL_TIMEOUT_ENV,
     SCENARIO_SUCCESS, SCENARIO_TIMEOUT, SCENARIO_INVALID,
     SCENARIO_CONTRADICTORY, SCENARIO_ERROR, SCENARIO_DISABLED,
@@ -47,8 +47,18 @@ def _payload(**kw):
 
 
 # ---------- selection ----------
-def test_a_normal_deployment_never_gets_a_fake_provider():
-    assert isinstance(get_provider(), OpenAIProvider)
+def test_an_unconfigured_process_gets_neither_the_mock_nor_the_network():
+    """The default has to be safe in both directions.
+
+    This used to assert the real provider, because a key was the switch. It now
+    asserts what the default should always have been: no mocks in a deployment,
+    and no network in local development. Both are opt-in.
+    """
+    provider = get_provider()
+    assert isinstance(provider, LocalOnlyProvider)
+    assert not isinstance(provider, (FakeProvider, OpenAIProvider))
+    assert provider.name == "local"
+    assert provider.configured is False
 
 
 def test_the_fake_is_only_reachable_by_explicit_opt_in(monkeypatch):
@@ -191,6 +201,7 @@ def test_the_endpoint_never_500s_on_a_bad_verdict(monkeypatch, scenario):
 def test_a_configurable_timeout_is_bounded(monkeypatch):
     monkeypatch.setenv(FAKE_PROVIDER_ENV, SCENARIO_SUCCESS)
     monkeypatch.setenv(EVAL_TIMEOUT_ENV, "2")
+    # any provider reads the same configured timeout, including the local one
     assert get_provider().timeout_seconds == 2
     for bad in ("0", "-3", "999", "abc"):
         monkeypatch.setenv(EVAL_TIMEOUT_ENV, bad)

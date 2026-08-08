@@ -97,8 +97,16 @@ def test_validate_remote_clamps_bad_confidence_and_error():
 
 # ---------- OpenAI path (mocked, never real) ----------
 def _enable_openai(monkeypatch):
+    """Ask for the real provider, the way a developer now has to.
+
+    A key on its own used to be enough, which is exactly why local QA reached the
+    network by accident. These tests want the real-provider PATH — with the client
+    stubbed out below, so nothing leaves the machine — and therefore have to opt
+    in explicitly, like anybody else.
+    """
     monkeypatch.setenv("OPENAI_ENABLED", "true")
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("LINGUACHAT_PROVIDER", "openai")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-not-a-secret")
 
 
 def test_remote_accept_overrides_local_reject(monkeypatch):
