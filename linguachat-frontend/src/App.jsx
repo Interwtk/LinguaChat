@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
 import { useIsDesktop } from './services/viewport'
 import { JourneyRail } from './components/layout/JourneyRail'
@@ -9,6 +9,7 @@ import { lazyScreen } from './components/ui/LazyBoundary'
 import { WelcomeMascotCard } from './components/onboarding/WelcomeMascotCard'
 import { ChattoTutorial } from './components/onboarding/ChattoTutorial'
 import { ChattoMascot } from './components/mascot/ChattoMascot'
+import { StreakFlame } from './components/ui/StreakFlame'
 
 /*
  * Code splitting.
@@ -38,52 +39,67 @@ function useScreenLabels() {
   }
 }
 
+/*
+ * ONE set of destinations for both layouts.
+ *
+ * The mobile bar and the desktop rail render the same four places, in the same
+ * order, from this list — a phone and a laptop are the same product seen at two
+ * widths, not two navigations that have to be kept in sync by hand. The panels
+ * that used to be tabs of their own (the path, Lingua's notes) are reached from
+ * the surface they belong to; they are still sheets on mobile.
+ */
+const DESTINATIONS = [
+  {
+    id: 'today', labelKey: 'today',
+    icon: <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9.5 12 3l9 6.5V20a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 20z"/></svg>,
+  },
+  {
+    id: 'practice', labelKey: 'practice',
+    icon: <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M21 14.5a2 2 0 0 1-2 2H8l-4 3.5V5a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/></svg>,
+  },
+  {
+    id: 'memory-garden', labelKey: 'yourWordsNav',
+    icon: <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>,
+  },
+  {
+    id: 'identity', labelKey: 'youNav',
+    icon: <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4.5 21a7.5 7.5 0 0 1 15 0"/></svg>,
+  },
+]
+
 /* ─── Mobile bottom navigation ─── */
 function MobileNav() {
-  const { view, navigateTo, setMobileSheet, t } = useApp()
-
-  const items = [
-    {
-      id: 'today', label: t('today'), sheet: false,
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-    },
-    {
-      id: 'practice', label: t('practice'), sheet: false,
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-    },
-    {
-      id: 'journey', label: t('journey'), sheet: true,
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>,
-    },
-    {
-      id: 'notes', label: t('notes'), sheet: true,
-      icon: <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
-    },
-  ]
+  const { view, navigateTo, t } = useApp()
 
   return (
-    <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around px-2 py-2"
+    <nav
+      aria-label={t('mainNavigation')}
+      className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch justify-around px-1 pt-1.5"
       style={{
-        background: 'var(--bg-paper)',
+        background: 'var(--surface)',
         borderTop: '1px solid var(--border)',
-        backdropFilter: 'blur(12px)',
-        WebkitBackdropFilter: 'blur(12px)',
-      }}>
-      {items.map(item => {
-        const isActive = !item.sheet && view === item.id
+        paddingBottom: 'max(0.375rem, env(safe-area-inset-bottom))',
+      }}
+    >
+      {DESTINATIONS.map(item => {
+        const isActive = view === item.id
         return (
           <button
             key={item.id}
-            onClick={() => item.sheet ? setMobileSheet(item.id) : navigateTo(item.id)}
-            className="flex flex-col items-center gap-1 px-3 py-1.5 rounded-xl transition-all"
+            type="button"
+            onClick={() => navigateTo(item.id)}
+            aria-current={isActive ? 'page' : undefined}
+            className="flex flex-col items-center justify-center gap-1 rounded-2xl px-3"
             style={{
-              color: isActive ? 'var(--violet)' : 'var(--ink-muted)',
+              color: isActive ? 'var(--accent)' : 'var(--muted)',
               background: 'none', border: 'none', cursor: 'pointer',
-              minWidth: 56,
+              minWidth: 62, minHeight: 52,
             }}
           >
-            <span style={{ opacity: isActive ? 1 : 0.6 }}>{item.icon}</span>
-            <span style={{ fontSize: 10, fontWeight: isActive ? 700 : 500 }}>{item.label}</span>
+            {item.icon}
+            <span style={{ fontSize: 10.5, fontWeight: isActive ? 700 : 600, letterSpacing: '0.01em' }}>
+              {t(item.labelKey)}
+            </span>
           </button>
         )
       })}
@@ -91,21 +107,21 @@ function MobileNav() {
   )
 }
 
-/* ─── Mobile sheet overlay ─── */
-function MobileSheet({ id, onClose, children }) {
+/* ─── Mobile sheet overlay (the path) ─── */
+function MobileSheet({ onClose, children }) {
   return (
-    <div className="lg:hidden fixed inset-0 z-50" style={{ display: 'flex' }}>
+    <div className="fixed inset-0 z-50" style={{ display: 'flex' }}>
       <div
         className="absolute inset-0"
-        style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)' }}
+        style={{ background: 'rgba(28,35,51,0.38)' }}
         onClick={onClose}
       />
       <div
         className="relative animate-slide-in-left"
         style={{
-          width: 'min(320px, 88vw)', height: '100%',
-          background: 'var(--bg-paper)',
-          borderRight: '1px solid var(--border)',
+          width: 'min(330px, 90vw)', height: '100%',
+          background: 'var(--surface)',
+          borderInlineEnd: '1px solid var(--border)',
           overflowY: 'auto',
           zIndex: 1,
         }}
@@ -117,19 +133,20 @@ function MobileSheet({ id, onClose, children }) {
 }
 
 function MobileNotesSheet({ onClose }) {
+  const { t } = useApp()
   return (
-    <div className="lg:hidden fixed inset-0 z-50 flex flex-col justify-end">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end">
       <div
         className="absolute inset-0"
-        style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(2px)' }}
+        style={{ background: 'rgba(28,35,51,0.38)' }}
         onClick={onClose}
       />
       <div
         className="relative animate-sheet-up"
         style={{
-          height: '70vh',
-          background: 'var(--bg-paper)',
-          borderRadius: '20px 20px 0 0',
+          height: '72vh',
+          background: 'var(--surface)',
+          borderRadius: '22px 22px 0 0',
           borderTop: '1px solid var(--border)',
           overflow: 'hidden',
           zIndex: 1,
@@ -137,8 +154,13 @@ function MobileNotesSheet({ onClose }) {
       >
         <div className="flex items-center justify-between px-5 pt-4 pb-3"
           style={{ borderBottom: '1px solid var(--border)' }}>
-          <p style={{ fontWeight: 700, color: 'var(--ink)' }}><MobileNotesTitle /></p>
-          <button onClick={onClose} style={{ color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+          <p className="font-display" style={{ fontWeight: 700, color: 'var(--ink)' }}>{t('tutorNotes')}</p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t('close')}
+            style={{ color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer', padding: 6 }}
+          >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
@@ -152,57 +174,138 @@ function MobileNotesSheet({ onClose }) {
   )
 }
 
-function MobileNotesTitle() {
-  const { t } = useApp()
-  return t('tutorNotes')
-}
-
 const AUTH_STEPS = ['entry', 'login', 'signup', 'forgot']
 const SETUP_STEPS = ['placement', 'level-reveal', 'setup-choice', 'tutor-personality', 'learning-prefs', 'personalize']
 const NOTES_COLLAPSED_KEY = 'lc2-notes-panel-collapsed'
+const FOCUS_MODE_KEY = 'lc2-focus-mode'
 
-function DesktopTopNav({ notesCollapsed, onShowNotes }) {
-  const { view, navigateTo, t } = useApp()
-  const items = [
-    { id: 'today', label: t('today') },
-    { id: 'practice', label: t('practice') },
-  ]
+/*
+ * FOCUS MODE.
+ *
+ * One switch, one job: decide which SURFACES are on screen. On a laptop it puts
+ * the path and the notes away and leaves the conversation; on a phone it puts the
+ * bottom bar away. It changes nothing else — not the route, not the learner
+ * model, not the episode state, not what is available.
+ *
+ * It is remembered locally so a long session does not lose it on reload, and the
+ * way out is always drawn: a mode you cannot leave is a trap, not a mode.
+ */
+function useFocusMode() {
+  const [focusMode, setFocusMode] = useState(() => {
+    try { return localStorage.getItem(FOCUS_MODE_KEY) === 'true' } catch { return false }
+  })
+  useEffect(() => {
+    try { localStorage.setItem(FOCUS_MODE_KEY, String(focusMode)) } catch {}
+  }, [focusMode])
+  const toggle = useCallback(() => setFocusMode(value => !value), [])
+  return { focusMode, setFocusMode, toggleFocusMode: toggle }
+}
+
+/* The way out of focus mode, drawn wherever focus mode is on. */
+function FocusExitButton({ onExit }) {
+  const { t } = useApp()
+  return (
+    <button
+      type="button"
+      onClick={onExit}
+      className="tool-chip"
+      style={{ background: 'var(--accent-soft)', color: 'var(--accent-strong)', borderColor: 'var(--accent-tint)' }}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M9 3H5a2 2 0 0 0-2 2v4M15 3h4a2 2 0 0 1 2 2v4M9 21H5a2 2 0 0 1-2-2v-4M15 21h4a2 2 0 0 0 2-2v-4"/>
+      </svg>
+      {t('exitFocusMode')}
+    </button>
+  )
+}
+
+/*
+ * Desktop rail header: who is here, and how the streak is going. The flame is the
+ * only moving thing in the chrome, and the number beside it is what a screen
+ * reader reads, so the fire stays decorative.
+ */
+function DesktopIdentityStrip() {
+  const { profile, localProgress, t } = useApp()
+  const streak = localProgress?.streak ?? 0
+  const name = (profile?.name || '').trim()
 
   return (
-    <div className="hidden lg:flex items-center justify-between px-5 py-3"
-      style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-paper)', flexShrink: 0 }}>
-      <div className="flex items-center gap-1.5">
-        {items.map(item => {
-          const isActive = view === item.id
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => navigateTo(item.id)}
-              className="rounded-full px-3.5 py-1.5 text-sm font-bold transition-all active:scale-[0.98]"
-              style={{
-                background: isActive ? 'var(--violet-soft)' : 'transparent',
-                border: `1px solid ${isActive ? 'var(--violet)' : 'transparent'}`,
-                color: isActive ? 'var(--violet)' : 'var(--ink-muted)',
-              }}
-            >
-              {item.label}
-            </button>
-          )
-        })}
+    <div className="flex items-center gap-3 px-1 pb-3 mb-3" style={{ borderBottom: '1px solid var(--border)' }}>
+      <span
+        className="grid place-items-center rounded-full flex-shrink-0"
+        style={{ width: 36, height: 36, background: 'var(--accent)', color: '#FFF8F4', fontWeight: 700 }}
+        aria-hidden="true"
+      >
+        {(name || 'L').slice(0, 1).toUpperCase()}
+      </span>
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {name || t('you')}
+        </p>
+        <p style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+          {streak > 0 ? t('streakDaysShort', { count: streak }) : t('streakStartToday')}
+        </p>
       </div>
-      {notesCollapsed ? (
-        <button
-          type="button"
-          onClick={onShowNotes}
-          className="rounded-full px-3.5 py-1.5 text-sm font-bold transition-all active:scale-[0.98]"
-          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}
-        >
-          {t('showNotes')}
-        </button>
-      ) : (
-        <span aria-hidden="true" style={{ width: 1 }} />
-      )}
+      {streak > 0 && <StreakFlame days={streak} size={26} />}
+    </div>
+  )
+}
+
+/* ─── Desktop navigation rail (the four destinations + the path underneath) ─── */
+function DesktopSidebar({ onOpenNotes, notesCollapsed }) {
+  const { view, navigateTo, t } = useApp()
+
+  return (
+    <div className="flex flex-col h-full" style={{ background: 'var(--surface-sunk)' }}>
+      <div className="px-3.5 pt-5">
+        <div className="flex items-center gap-2 px-1 pb-4">
+          <ChattoMascot mood="happy" size={26} decorative={true} animated={false} />
+          <span className="font-display" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)' }}>LinguaChat</span>
+        </div>
+        <DesktopIdentityStrip />
+        <nav aria-label={t('mainNavigation')} className="flex flex-col gap-1">
+          {DESTINATIONS.map(item => {
+            const isActive = view === item.id
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => navigateTo(item.id)}
+                aria-current={isActive ? 'page' : undefined}
+                className="flex items-center gap-2.5 rounded-2xl px-3 text-start"
+                style={{
+                  minHeight: 44,
+                  background: isActive ? 'var(--surface)' : 'transparent',
+                  border: `1px solid ${isActive ? 'var(--border)' : 'transparent'}`,
+                  color: isActive ? 'var(--accent-strong)' : 'var(--muted)',
+                  fontWeight: isActive ? 700 : 600,
+                  fontSize: '0.875rem',
+                  boxShadow: isActive ? 'var(--shadow-sm)' : 'none',
+                }}
+              >
+                {item.icon}
+                {t(item.labelKey)}
+              </button>
+            )
+          })}
+          {notesCollapsed && (
+            <button
+              type="button"
+              onClick={onOpenNotes}
+              className="flex items-center gap-2.5 rounded-2xl px-3 text-start"
+              style={{ minHeight: 44, background: 'transparent', border: '1px solid transparent', color: 'var(--muted)', fontWeight: 600, fontSize: '0.875rem' }}
+            >
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+              {t('showNotes')}
+            </button>
+          )}
+        </nav>
+      </div>
+
+      {/* The path lives under the navigation: it is context, not a destination. */}
+      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', marginTop: 12 }}>
+        <JourneyRail />
+      </div>
     </div>
   )
 }
@@ -213,13 +316,27 @@ function AppShell() {
   const [notesCollapsed, setNotesCollapsed] = useState(() => {
     try { return localStorage.getItem(NOTES_COLLAPSED_KEY) === 'true' } catch { return false }
   })
+  const { focusMode, setFocusMode, toggleFocusMode } = useFocusMode()
   // Exactly one shell is mounted. Rendering both and hiding one with CSS keeps a
   // second, stale copy of every stateful view alive (see services/viewport.js).
   const isDesktop = useIsDesktop()
   const screenLabels = useScreenLabels()
-  const mainMaxWidth = view === 'practice'
-    ? (notesCollapsed ? 1360 : 1180)
-    : (notesCollapsed ? 1120 : 960)
+
+  /*
+   * Focus mode is about practising. Landing anywhere else means it has no panels
+   * left to hide, so it lets itself go rather than following the learner around.
+   */
+  useEffect(() => {
+    if (focusMode && view !== 'practice') setFocusMode(false)
+  }, [focusMode, view, setFocusMode])
+
+  const showRail = !focusMode
+  const showNotes = !focusMode && !notesCollapsed
+  const mainMaxWidth = focusMode
+    ? 980
+    : view === 'practice'
+      ? (notesCollapsed ? 1360 : 1180)
+      : (notesCollapsed ? 1120 : 980)
 
   useEffect(() => {
     try { localStorage.setItem(NOTES_COLLAPSED_KEY, String(notesCollapsed)) } catch {}
@@ -227,6 +344,17 @@ function AppShell() {
 
   if (authStep && AUTH_STEPS.includes(authStep)) return <AuthFlowScreen {...screenLabels} />
   if (authStep && SETUP_STEPS.includes(authStep)) return <SetupFlowScreen {...screenLabels} />
+
+  const screens = (
+    <>
+      {view === 'today'          && <TodayView onOpenPath={() => setMobileSheet('journey')} onOpenNotes={() => setMobileSheet('notes')} />}
+      {view === 'practice'       && <ConversationRoomScreen {...screenLabels} focusMode={focusMode} onToggleFocusMode={toggleFocusMode} onOpenNotes={() => setMobileSheet('notes')} />}
+      {view === 'memory-garden'  && <MemoryGardenScreen {...screenLabels} />}
+      {view === 'archive'        && <ConversationArchiveScreen {...screenLabels} />}
+      {view === 'identity'       && <LanguageIdentityScreen {...screenLabels} onOpenPath={() => setMobileSheet('journey')} />}
+      {view === 'pricing'        && <PricingScreen {...screenLabels} />}
+    </>
+  )
 
   return (
     <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
@@ -237,23 +365,31 @@ function AppShell() {
       {/* Chatto guided tour — once, after the welcome, only on Home */}
       {showTutorial && !showWelcome && view === 'today' && <ChattoTutorial />}
 
-      {/* Desktop 3-column cockpit layout — mounted only above the lg breakpoint.
-          Mounting is the ONLY authority here: keeping `hidden lg:*` as a second
-          source of truth would blank the screen if the two ever disagreed. */}
+      {/* Desktop: rail · content · context panel — mounted only above the lg
+          breakpoint. Mounting is the ONLY authority here: keeping `hidden lg:*`
+          as a second source of truth would blank the screen if they disagreed. */}
       {isDesktop && (
       <div className="flex" style={{ height: '100dvh', overflow: 'hidden' }}>
 
-        {/* LEFT: Journey Rail */}
-        <aside style={{ width: 288, flexShrink: 0, borderRight: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-          <JourneyRail />
-        </aside>
+        {/* LEFT: navigation and the path */}
+        {showRail && (
+          <aside style={{ width: 248, flexShrink: 0, borderInlineEnd: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <DesktopSidebar notesCollapsed={notesCollapsed} onOpenNotes={() => setNotesCollapsed(false)} />
+          </aside>
+        )}
 
-        {/* CENTER: Main content */}
-        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          <DesktopTopNav
-            notesCollapsed={notesCollapsed}
-            onShowNotes={() => setNotesCollapsed(false)}
-          />
+        {/* CENTER: the work */}
+        <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg)' }}>
+          <div className="flex items-center justify-between px-5 py-2.5"
+            style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)', flexShrink: 0 }}>
+            <p className="font-display" style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)' }}>
+              {t(DESTINATIONS.find(d => d.id === view)?.labelKey || 'today')}
+            </p>
+            <div className="flex items-center gap-2">
+              {focusMode && <FocusExitButton onExit={() => setFocusMode(false)} />}
+              <ThemeToggle compact />
+            </div>
+          </div>
           <div
             style={{
               flex: 1,
@@ -265,25 +401,20 @@ function AppShell() {
               margin: '0 auto',
             }}
           >
-            {view === 'today'          && <TodayView />}
-            {view === 'practice'       && <ConversationRoomScreen {...screenLabels} />}
-            {view === 'memory-garden'  && <MemoryGardenScreen {...screenLabels} />}
-            {view === 'archive'        && <ConversationArchiveScreen {...screenLabels} />}
-            {view === 'identity'       && <LanguageIdentityScreen {...screenLabels} />}
-            {view === 'pricing'        && <PricingScreen {...screenLabels} />}
+            {screens}
           </div>
         </main>
 
-        {/* RIGHT: Tutor Notes */}
-        {!notesCollapsed && (
-          <aside style={{ width: 296, flexShrink: 0, borderLeft: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        {/* RIGHT: the contextual panel — Lingua's notes while you work */}
+        {showNotes && (
+          <aside style={{ width: 320, flexShrink: 0, borderInlineStart: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--surface)' }}>
             <div className="flex items-center justify-between px-4 py-3" style={{ borderBottom: '1px solid var(--border)' }}>
-              <p style={{ fontSize: 12, fontWeight: 800, color: 'var(--ink-muted)' }}>{t('tutorNotes')}</p>
+              <p className="eyebrow">{t('tutorNotes')}</p>
               <button
                 type="button"
                 onClick={() => setNotesCollapsed(true)}
                 className="rounded-full px-2.5 py-1 text-xs font-bold"
-                style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}
+                style={{ background: 'var(--surface-sunk)', border: '1px solid var(--border)', color: 'var(--muted)' }}
               >
                 {t('hideNotes')}
               </button>
@@ -296,35 +427,34 @@ function AppShell() {
       </div>
       )}
 
-      {/* Mobile layout: single column — mounted only below the lg breakpoint */}
+      {/* Mobile: single column — mounted only below the lg breakpoint */}
       {!isDesktop && (
       <div className="flex flex-col" style={{ minHeight: '100dvh' }}>
         {/* Mobile top bar */}
-        <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
-          style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-paper)' }}>
+        <div className="flex items-center justify-between px-4 py-2.5 flex-shrink-0"
+          style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
           <div className="flex items-center gap-2">
-            <ChattoMascot mood="happy" size={30} decorative={true} animated={false} />
-            <span style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--ink)' }}>LinguaChat</span>
+            <ChattoMascot mood="happy" size={26} decorative={true} animated={false} />
+            <span className="font-display" style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>LinguaChat</span>
           </div>
-          <ThemeToggle compact />
+          <div className="flex items-center gap-2">
+            {focusMode && <FocusExitButton onExit={() => setFocusMode(false)} />}
+            <ThemeToggle compact />
+          </div>
         </div>
 
-        {/* Mobile content */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingBottom: 72 }}>
-          {view === 'today'         && <TodayView />}
-          {view === 'practice'      && <ConversationRoomScreen {...screenLabels} />}
-          {view === 'memory-garden' && <MemoryGardenScreen {...screenLabels} />}
-          {view === 'archive'       && <ConversationArchiveScreen {...screenLabels} />}
-          {view === 'identity'      && <LanguageIdentityScreen {...screenLabels} />}
-          {view === 'pricing'       && <PricingScreen {...screenLabels} />}
+        {/* Mobile content — the bar is out of the way in focus mode, so the
+            padding that reserves room for it goes with it. */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', paddingBottom: focusMode ? 0 : 74 }}>
+          {screens}
         </div>
 
         {/* Mobile bottom nav */}
-        <MobileNav />
+        {!focusMode && <MobileNav />}
 
         {/* Mobile sheets */}
         {mobileSheet === 'journey' && (
-          <MobileSheet id="journey" onClose={() => setMobileSheet(null)}>
+          <MobileSheet onClose={() => setMobileSheet(null)}>
             <JourneyRail onClose={() => setMobileSheet(null)} />
           </MobileSheet>
         )}
