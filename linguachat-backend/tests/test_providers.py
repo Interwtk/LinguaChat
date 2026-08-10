@@ -99,6 +99,11 @@ def test_the_provider_only_receives_linguistic_context():
         # and the same for a quantity: which shape was asked for, of what, and how
         # many. All three describe the task; none describes the learner.
         "quantity_form", "target_thing", "target_count",
+        # WHO the turn is about, in the same class again: arc 3's introductions name a
+        # roleplay partner the EPISODE invented, so a provider grading "This is ___."
+        # without it is grading a different question. It is never a real person from
+        # the learner's life — those are refused by the design, not sent.
+        "partner_name",
     }
     # the support level and the attempt count were in the payload above and are
     # still not here; a new linguistic field must not smuggle them in

@@ -26,6 +26,7 @@
 import { ARC, getEpisode as getPreA1Episode } from '../../src/learning/episodes/index.js'
 import { getA1Arc1Episode } from '../../src/learning/episodes/a1Arc1.js'
 import { getA1Arc2Episode } from '../../src/learning/episodes/a1Arc2.js'
+import { getA1Arc3Episode } from '../../src/learning/episodes/a1Arc3.js'
 
 /*
  * The harness plays any runtime episode, whatever level it belongs to. Content is
@@ -33,6 +34,7 @@ import { getA1Arc2Episode } from '../../src/learning/episodes/a1Arc2.js'
  * a time, which is exactly the difference between tooling and the product.
  */
 const getEpisode = (id) => getPreA1Episode(id) || getA1Arc1Episode(id) || getA1Arc2Episode(id)
+  || getA1Arc3Episode(id)
 import { evaluateFree } from '../../src/learning/engine/responseEvaluation.js'
 import { getStory, storyTurns, storyBranches, turnText } from '../../src/learning/engine/miniStory.js'
 import {
@@ -55,6 +57,8 @@ import { derivePreA1Readiness, readinessFocus } from '../../src/learning/curricu
 import { reconcileLevelMilestones } from '../../src/learning/curriculum/graduation.js'
 
 export const NAME = 'Sebastian'
+/* the person arc 3 introduces; a name so the frame has somebody in it */
+const PARTNER_IN_ARC3 = 'Ana'
 export const PLACE = 'Bogotá'
 
 /* The English a learner types, per objective. Canonical, never a paraphrase. */
@@ -73,6 +77,9 @@ const ANSWERS = {
   ask_life_fact: 'Do you work?',
   /* A1 arc 2: the routine frame. A time is added by `answerFor` when the step asks. */
   state_routine: 'I usually get up.',
+  /* A1 arc 3: presenting a person, and saying one thing about them */
+  introduce_person: `This is my friend ${PARTNER_IN_ARC3}.`,
+  state_person_fact: 'She is a student.',
 
   express_like: 'I like music.',
   express_dislike: "I don't like coffee.",
@@ -338,6 +345,8 @@ function ctxFor(step, model, independent) {
     ...(step.repairKind ? { repairKind: step.repairKind } : {}),
     ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}),
     ...(step.timeForm ? { timeForm: step.timeForm } : {}),
+    /* arc 3's turns are about a third person, so the evaluator needs to know who */
+    partner: PARTNER_IN_ARC3,
     ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}),
     ...(Number.isInteger(step.count) ? { targetCount: step.count } : {}),
     turnContext: { linguaSaid: step.promptEn || step.sceneEn || '' },

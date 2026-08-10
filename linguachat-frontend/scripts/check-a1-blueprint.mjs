@@ -376,19 +376,19 @@ const deferredIds = new Set(blueprint.deferredToA2.map(d => d.id))
      */
     if (/^src\/(learning\/episodes|data\/vocabulary)/.test(path)) {
       const declaresA1 = /level:\s*['"]A1['"]/i.test(code)
-      const isBuiltArcFile = /^src\/learning\/episodes\/a1Arc[12](Content)?\.js$/.test(path)
+      const isBuiltArcFile = /^src\/learning\/episodes\/a1Arc[123](Content)?\.js$/.test(path)
       assert.ok(!declaresA1 || isBuiltArcFile,
         `${path} declares A1 curriculum content outside the implemented arcs`)
     }
     /*
      * A PLANNED arc must not appear in runtime data — except the ones that are no
-     * longer planned. `work_and_study` and `daily_rhythm` are implemented, so they
-     * are the named exceptions and the other FIVE stay impossible until each is
-     * authorised. This list shrinks by exactly one per arc sprint, which is how a
-     * third arc cannot arrive without somebody editing this line on purpose.
+     * longer planned. Three arcs are implemented, so the other FOUR stay impossible
+     * until each is authorised. This list shrinks by exactly one per arc sprint,
+     * which is how a fourth arc cannot arrive without somebody editing this line on
+     * purpose.
      */
     if (/^src\/(learning|data)/.test(path)) {
-      assert.ok(!/arc:\s*['"](people_around_you|finding_your_way|paying_and_choosing|what_you_can_do|making_arrangements)['"]/.test(code),
+      assert.ok(!/arc:\s*['"](finding_your_way|paying_and_choosing|what_you_can_do|making_arrangements)['"]/.test(code),
         `${path} declares a planned A1 arc as if it existed`)
     }
   }
@@ -410,7 +410,8 @@ const deferredIds = new Set(blueprint.deferredToA2.map(d => d.id))
    */
   assert.deepEqual(levelDeclarers,
     ['src/data/placementQuestions.js', 'src/learning/curriculum/levels.js',
-      'src/learning/episodes/a1Arc1.js', 'src/learning/episodes/a1Arc2.js'],
+      'src/learning/episodes/a1Arc1.js', 'src/learning/episodes/a1Arc2.js',
+      'src/learning/episodes/a1Arc3.js'],
     `only placement, the registry and the built arcs may name A1: ${levelDeclarers.join(', ')}`)
   /* and the registry must still hold A1 as unavailable */
   const registry = sources.find(([p]) => p === 'src/learning/curriculum/levels.js')[1]

@@ -342,6 +342,117 @@ episode must never be plannable as a loose block and the check that says so fina
 had two of them to compare. All five A1 intents are now listed, with `mini_story`
 absent from every one.
 
+## Arc 3 is implemented — one capability, three episodes
+
+`people_around_you`, episodes 24–26, built on the same pipeline for the third time:
+**one line in the loader map, one content module, one check.** What made this arc
+different is not the plumbing, it is the shape of the thing being taught.
+
+| | |
+|---|---|
+| 24 `this_is` | `introduce_someone_else` — the frame, with or without a relation |
+| 25 `shes_a_student` | the same capability, said about them: `he/she is` |
+| 26 `three_of_us` | the same capability, held inside a whole conversation |
+
+**One capability across three episodes, so the evidence target is reached INSIDE the
+arc.** This is the exact inverse of arcs 1 and 2, and it settles the `independent: 2`
+question from the other side. A can-do is credited once per episode RUN. Arcs 1 and 2
+taught three capabilities in three episodes, so one pass gave each of them one unaided
+use and the second had to come from a later run. Arc 3 teaches ONE capability in three
+episodes, so a single pass produces three unaided uses and `introduce_someone_else`
+reaches `can_do` before the arc ends — which is exactly what its evidence target
+describes: *"two unaided introductions of a third person, one of them inside a greeting
+sequence"*. Reaching a can-do target is still not readiness, graduation or a milestone;
+A1's threshold stays deliberately unchosen.
+
+**One capability, TWO intents.** Presenting somebody (`introduce_person`) and saying
+something about them (`state_person_fact`) are different sentences, and both are this
+capability's evidence. `A1_CAN_DO_INTENT` still maps one can-do to one intent, because
+coverage, the planner and the authoring contract all read it that way; the second
+intent lives in `A1_CAN_DO_EXTRA_INTENTS` and `a1IntentsOf(canDoId)` returns both.
+Nothing that asked "which intent evidences this capability" silently started receiving
+a list.
+
+**The first `hybrid` capability in A1, in the blueprint's sense of the word.** Hybrid
+does not mean "ask a provider": the canonical frames — `This is Ana.`, `This is my
+friend Ana.`, `Ana, this is Ben.`, `She is a student.`, `He's a teacher.` — are judged
+locally and settled. What escalates is the band the local evaluator does not claim to
+know, returned as `conclusive: false`; with no provider reachable the conservative
+local verdict stands and the learner keeps a hint and a retry. `Meet Ana.` and `She
+works at the office.` pass as variants — the second is MORE than the turn asked for,
+and the arc hears the third-person `-s` without ever requiring it.
+
+**One new semantic type, and it refuses more than it accepts.** `relation`, because the
+blueprint declares it `requiredBy: introduce_someone_else`. Three neutral values —
+`friend`, `colleague`, `classmate` — and the slot refuses a place, an object, a feeling
+and a name, so "This is my the office." cannot be built. The arc's risk note is a rule
+here, not a caveat: no family vocabulary, no assumed family structure, and `This is
+Ana.` with no relation at all is a complete introduction.
+
+**Arc 3 captures NO fact, and hosts NO story.** Both are the design's decisions, and
+both are asserted rather than omitted. `factsCaptured: []` — the person in this arc is
+one the EPISODE named, not somebody in the learner's life, and the fact it could have
+stored is named and refused by the blueprint itself: `relation_names`, `store: false`,
+*"Naming a learner's family is personal data with no reuse the curriculum needs; the
+arc works with a neutral partner."* `FACT_TYPES` cannot hold it. And `miniStory.use:
+false` — *"Three-way introductions are better felt as a roleplay with a named partner
+than as a narrated scene"* — so arc 3 does not become the first consumer of the story
+personalisation contract either. What "no fact" means precisely is **no new fact**:
+capture is an engine rule, so a learner who states what they do during arc 3's reused
+`state_life_fact` turn still stores arc 1's fact, from arc 3's episode.
+
+**Eight capabilities return, one of them consolidated.** The reuse matrix marks seven
+`R` and one `C` in this column, and the legend distinguishes them: `R` is a promise
+about the arc, `C` — "consolidated in an integrated conversation" — is a promise about
+one episode. So episode 26 holds the whole exchange in a single roleplay chain:
+greeting → introduce the third person → ask how somebody is → ask what a word means →
+say what you do → say what they do → say goodbye, with the suggestion withheld, and a
+recall turn afterwards as a coda.
+
+### The systemic bug this arc had to fix first
+
+Arc 2 exposed it and patched the symptom; arc 3 could not be built on top of it. An
+objective the format table did not list was allowed **every** format, and `getStory`
+answered an objective it did not know with the café scene. So a block for an unknown
+objective could be planned as a `mini_story`, and the learner would be shown a
+conversation about music and graded on something else. Fixing it by adding arc 3's
+intents to `OBJECTIVE_FORMATS` would have protected the two new cases and kept the bug.
+The fix is general and fails closed: an unlisted objective may take any format EXCEPT
+the ones that need authored content, `getStory` returns `null` rather than somebody
+else's story, and `MiniStory` skips the block instead of rendering a scene that belongs
+to another objective. `check:memory-and-story` holds it permanently against a list of
+strangers, including an empty string and `null`.
+
+### The subtype that had to travel
+
+`partner_name` — WHO the turn is about. It is a property of the TASK: the episode chose
+the name, the shell derives it deterministically per learner, and it is never a person
+from the learner's life. It now travels step → runner → router → local evaluator →
+provider payload, because without it the model answer said "This is Ana." to a learner
+whose partner on screen was somebody else. The provider allow-list in
+`test_the_provider_only_receives_linguistic_context` was extended deliberately, with
+that reason written next to it.
+
+### One arc-2 assertion that was really a level assertion
+
+The third instance of the same pattern, and again made precise rather than relaxed.
+`check:a1-arc2` hardcoded "five arcs remain planned after this one" and required the
+level to hold exactly two arcs, so arc 3 arriving read as arc 2 regressing. Both are
+now derived from `A1_RUNTIME_ARCS`, and arc 2's check asserts what belongs to arc 2:
+its own episodes are still in the level, and every capability THESE arcs teach has
+evidence. Its premature-semantic-type list is derived from the blueprint's `requiredBy`
+too — `relation` stopped being premature the moment its consumer existed.
+
+### The entry-chunk budget, restated
+
+`check:curriculum-loading` capped the entry chunk at 400 kB. Arc 3 crossed it without
+one word of episode prose entering the entry: what grows is the generated skeleton and
+the base dictionary, both curriculum DATA the entry legitimately carries and both
+growing a few kB per authored arc by design. A single number conflated that with the
+app's own code, so the budget now measures them separately — the app's share capped
+hard, the data's share capped per episode — and a content leak, being an order of
+magnitude denser, still lands in the app's share and trips the same wire.
+
 ## To implement episode 18, the author will
 
 The migration path, concretely — this is what the arc-1 sprint did, and nothing in it is a change to Pre-A1:

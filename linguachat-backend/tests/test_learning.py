@@ -1361,3 +1361,131 @@ def test_a_malformed_identification_verdict_is_discarded(monkeypatch):
     assert r.source == "fallback"
     assert r.completed_objective is True
     assert not (r.completed_objective and r.retry_required)
+
+
+# ---------- A1 arc 3: who this is ----------
+#
+# The deterministic mirror of the two hybrid intents. The frontend judges the same
+# frames locally and only escalates an inconclusive reply, so these tests exist to
+# keep the two verdicts from drifting apart: a provider path that disagreed with the
+# local one would praise a learner for a sentence the episode just corrected.
+def _introduce(text, partner="Ana"):
+    return evaluate_deterministic(_payload(expected_intent="introduce_person",
+                                           partner_name=partner, learner_response=text))
+
+
+def _person_fact(text, partner="Ana"):
+    return evaluate_deterministic(_payload(expected_intent="state_person_fact",
+                                           partner_name=partner, learner_response=text))
+
+
+@pytest.mark.parametrize("text", [
+    "This is Ana.", "This is my friend Ana.", "Ana, this is Ben.",
+    "This is my colleague Ana.", "this is ana",
+])
+def test_introducing_a_third_person_is_accepted(text):
+    r = _introduce(text)
+    assert r["completed_objective"] is True, text
+    assert r["retry_required"] is False
+
+
+@pytest.mark.parametrize("text", ["Meet Ana.", "Here is Ana."])
+def test_an_untaught_introduction_is_accepted_as_a_variant(text):
+    r = _introduce(text)
+    assert r["completed_objective"] is True, text
+    assert r["accepted_variant"] is True
+
+
+def test_a_bare_name_is_missing_the_frame():
+    r = _introduce("Ana.")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "missing_frame"
+    assert r["retry_required"] is True
+
+
+def test_introducing_yourself_is_the_wrong_person():
+    r = _introduce("Hi, I'm Sam.")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "introduced_self"
+
+
+def test_an_introduction_names_the_partner_the_turn_gave_it():
+    """The name is the TASK's. A verdict that hardcodes one contradicts the screen."""
+    assert _introduce("Ana.", partner="Mia")["natural_version"] == "This is Mia."
+    assert _person_fact("zz", partner="Mia")["natural_version"] == "Mia is a student."
+
+
+def test_an_introduction_with_no_partner_still_reads_as_a_sentence():
+    for r in [_introduce("Ana.", partner=""), _person_fact("zz", partner=None)]:
+        assert r["natural_version"]
+        assert "None" not in r["natural_version"] and "{" not in r["natural_version"]
+
+
+@pytest.mark.parametrize("text", ["She is a student.", "He's a teacher.", "she is my friend"])
+def test_a_third_person_statement_is_accepted(text):
+    r = _person_fact(text)
+    assert r["completed_objective"] is True, text
+
+
+def test_the_third_person_s_is_accepted_as_more_than_was_asked():
+    r = _person_fact("She works at the office.")
+    assert r["completed_objective"] is True
+    assert r["accepted_variant"] is True
+
+
+@pytest.mark.parametrize("text", ["They are students.", "I am a student.", "I work at the office."])
+def test_talking_about_the_wrong_person_is_named_as_such(text):
+    r = _person_fact(text)
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "wrong_person"
+
+
+@pytest.mark.parametrize("text", ["hmm what", "zzz qqq"])
+def test_an_unrecognised_introduction_is_inconclusive_rather_than_wrong(text):
+    """
+    The hybrid band: not a pass, not a confident rejection, always a retry.
+
+    The two sides express "inconclusive" differently and deliberately: the client
+    carries a `conclusive` flag because it is the side that decides whether to
+    escalate, while this side has already been asked and reports low confidence. What
+    must match is the behaviour — an unrecognised reply never becomes a pass, and the
+    learner always keeps a retry.
+    """
+    for r in [_introduce(text), _person_fact(text)]:
+        assert r["completed_objective"] is False, text
+        assert r["retry_required"] is True, text
+        assert r["confidence"] <= 0.5, text
+    assert _introduce(text)["error_type"] == "no_introduction"
+    assert _person_fact(text)["error_type"] == "no_person_statement"
+
+
+@pytest.mark.parametrize("text,intent", [
+    ("This is Ana.", "introduce_person"),
+    ("Ana.", "introduce_person"),
+    ("She is a student.", "state_person_fact"),
+    ("They are students.", "state_person_fact"),
+])
+def test_a_confident_arc_3_verdict_is_confident_on_both_sides(text, intent):
+    """Parity where it is load-bearing: the canonical frames and the named errors."""
+    r = evaluate_deterministic(_payload(expected_intent=intent, partner_name="Ana",
+                                        learner_response=text))
+    assert r["confidence"] > 0.5, text
+    assert r["source"] == "deterministic"
+
+
+@pytest.mark.parametrize("intent", ["introduce_person", "state_person_fact"])
+def test_arc_3_empty_replies_are_safe(intent):
+    r = evaluate_deterministic(_payload(expected_intent=intent, partner_name="Ana",
+                                        learner_response=""))
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "empty"
+    assert r["natural_version"]
+
+
+def test_a_partner_name_that_is_too_long_is_refused_by_the_contract():
+    """The field is a first name for a roleplay, not free text to smuggle prose in."""
+    response = client.post("/learning/evaluate", json={
+        **_payload(expected_intent="introduce_person", learner_response="This is Ana."),
+        "partner_name": "A" * 200,
+    })
+    assert response.status_code == 422

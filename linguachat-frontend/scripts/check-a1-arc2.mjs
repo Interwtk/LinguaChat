@@ -115,8 +115,15 @@ const AT = new Date('2026-08-12T09:00:00Z').getTime()
 
 /* ---- 2) and nothing from an unbuilt arc exists ---- */
 {
+  /*
+   * The set that must stay impossible is derived, not counted: every blueprint arc
+   * minus the ones a sprint has authorised. Hardcoding "five" made this an assertion
+   * about the whole level's progress, so arc 3 arriving read as arc 2 regressing.
+   */
   const plannedOnly = BLUEPRINT.arcs.map(a => a.id).filter(id => !A1_RUNTIME_ARCS.includes(id))
-  assert.equal(plannedOnly.length, 5, 'five arcs remain planned after this one')
+  assert.equal(plannedOnly.length, BLUEPRINT.arcs.length - A1_RUNTIME_ARCS.length,
+    'every runtime arc must be one the blueprint designed')
+  assert.ok(plannedOnly.length >= 1, 'A1 is not finished, so something must still be planned')
   const runtimeArcs = new Set(episodesOfLevel(A1).map(ep => ep.arc))
   for (const arcId of plannedOnly) {
     assert.ok(!runtimeArcs.has(arcId), `${arcId} has runtime content and was not authorised`)
@@ -125,8 +132,11 @@ const AT = new Date('2026-08-12T09:00:00Z').getTime()
   /* the design totals still come from the design, never from what is built */
   assert.equal(BLUEPRINT.arcs.length, 7)
   assert.equal(BLUEPRINT.episodes.length, 21, 'twenty-one planned stays twenty-one')
-  assert.equal(episodesOfLevel(A1).length, A1_ARC1.length + A1_ARC2.length,
-    'the level holds exactly the two implemented arcs')
+  /* arc 2's own episodes are all still in the level, whatever else joins them */
+  for (const ep of A1_ARC2) {
+    assert.ok(episodesOfLevel(A1).some(other => other.id === ep.id), `${ep.id} left the level`)
+    assert.ok(runtimeArcs.has(ep.arc), `${ep.id} lost its arc`)
+  }
   ok()
 }
 
@@ -322,8 +332,21 @@ const AT = new Date('2026-08-12T09:00:00Z').getTime()
    * with no consumer makes coverage look real.
    */
   assert.ok(SEMANTIC_TYPES.includes('time_point'), 'the arc needs a time type')
-  for (const premature of ['day', 'relation', 'transport_mode']) {
-    assert.ok(!SEMANTIC_TYPES.includes(premature), `${premature} belongs to an arc that does not exist`)
+  /*
+   * A type is premature only while the arc that needs it is unbuilt. `relation`
+   * belonged in this list until arc 3 was authorised — the rule is "no type without
+   * a consumer", not a fixed list — so the set is derived from what the blueprint
+   * says each proposed type is required by.
+   */
+  const canDosOfBuiltArcs = new Set(BLUEPRINT.arcs
+    .filter(a => A1_RUNTIME_ARCS.includes(a.id))
+    .flatMap(a => a.newCanDos))
+  const premature = BLUEPRINT.semanticTypes.proposed
+    .filter(t => !(t.requiredBy || []).some(canDo => canDosOfBuiltArcs.has(canDo)))
+    .map(t => t.id)
+  assert.ok(premature.length >= 1, 'A1 still has types it does not need yet')
+  for (const type of premature) {
+    assert.ok(!SEMANTIC_TYPES.includes(type), `${type} belongs to an arc that does not exist`)
   }
   const proposed = BLUEPRINT.semanticTypes.proposed.find(t => t.id === 'time_point')
   assert.ok(proposed, 'time_point must be the blueprint\'s type, not an invention')
@@ -665,8 +688,13 @@ const AT = new Date('2026-08-12T09:00:00Z').getTime()
   })
   assert.equal(xp, order.reduce((sum, ep) => sum + ep.xp, 0), 'both arcs award exactly their own XP')
 
-  /* every capability of both arcs has evidence, and arc 1's is not overwritten */
-  for (const canDo of A1_REQUIRED_CAN_DOS) {
+  /*
+   * Every capability THESE TWO ARCS teach has evidence, and arc 1's is not
+   * overwritten. Iterating the level's required list instead would have asked arc 2
+   * to produce evidence for capabilities only a later arc teaches.
+   */
+  const taughtHere = [...new Set(order.map(ep => ep.canDoId))]
+  for (const canDo of taughtHere) {
     assert.ok(model.canDo[canDo], `${canDo} has no evidence after playing both arcs`)
     assert.ok(model.canDo[canDo].independentSuccesses >= 1, `${canDo} has no unaided use`)
   }
