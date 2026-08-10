@@ -5,33 +5,55 @@ export default {
   theme: {
     extend: {
       colors: {
+        /*
+         * Semantic names only. `lc-*` is what the components ask for, and every
+         * entry resolves to a CSS variable, so light and night are one set of
+         * classes. The legacy aliases (coral/blue/green/violet) are kept because
+         * surfaces still reference them and index.css remaps them onto this
+         * palette — there is no purple left to point at.
+         */
         lc: {
-          bg:       'var(--bg-main)',
-          paper:    'var(--bg-paper)',
-          elevated: 'var(--bg-elevated)',
-          ink:      'var(--ink)',
-          muted:    'var(--ink-muted)',
-          border:   'var(--border)',
-          green:    'var(--green)',
-          blue:     'var(--blue)',
-          coral:    'var(--coral)',
-          yellow:   'var(--yellow)',
-          violet:   'var(--violet)',
+          bg:        'var(--bg)',
+          paper:     'var(--surface)',
+          elevated:  'var(--surface)',
+          soft:      'var(--surface-soft)',
+          sunk:      'var(--surface-sunk)',
+          ink:       'var(--ink)',
+          text:      'var(--text)',
+          muted:     'var(--muted)',
+          'muted-soft': 'var(--muted-soft)',
+          border:    'var(--border)',
+          'border-strong': 'var(--border-strong)',
+          accent:    'var(--accent)',
+          'accent-strong': 'var(--accent-strong)',
+          'accent-soft': 'var(--accent-soft)',
+          'accent-tint': 'var(--accent-tint)',
+          positive:  'var(--positive)',
+          'positive-deep': 'var(--positive-deep)',
+          'positive-soft': 'var(--positive-soft)',
+          info:      'var(--info)',
+          'info-soft': 'var(--info-soft)',
+          green:     'var(--positive)',
+          blue:      'var(--info)',
+          coral:     'var(--accent)',
+          yellow:    'var(--accent-tint)',
+          violet:    'var(--accent)',
         },
       },
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        sans: ['Figtree', 'system-ui', 'sans-serif'],
+        display: ["'Bricolage Grotesque'", 'Figtree', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         '4xl': '2rem',
         '5xl': '2.5rem',
       },
       boxShadow: {
-        warm:       '0 2px 16px -4px rgba(31,41,51,0.08), 0 1px 4px -2px rgba(31,41,51,0.04)',
-        'warm-lg':  '0 8px 40px -8px rgba(31,41,51,0.12), 0 2px 8px -4px rgba(31,41,51,0.06)',
-        mission:    '0 0 0 1.5px var(--coral), 0 8px 32px -8px rgba(249,115,91,0.18)',
-        'blue-soft':'0 4px 24px -4px rgba(59,130,196,0.18)',
-        'violet-soft':'0 4px 24px -4px rgba(124,92,255,0.18)',
+        warm:       'var(--shadow-sm)',
+        'warm-lg':  'var(--shadow-lg)',
+        mission:    'var(--shadow-md)',
+        'blue-soft':'var(--shadow-sm)',
+        'violet-soft':'var(--shadow-sm)',
         'inner-hi': 'inset 0 1px 0 rgba(255,255,255,0.12)',
       },
       animation: {
@@ -85,8 +107,8 @@ export default {
           to:   { opacity: '1', transform: 'scale(1) rotate(-0.5deg)' },
         },
         nodePulse: {
-          '0%,100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 rgba(59,130,196,0.4)' },
-          '50%':     { transform: 'scale(1.06)', boxShadow: '0 0 0 8px rgba(59,130,196,0)' },
+          '0%,100%': { transform: 'scale(1)', boxShadow: '0 0 0 0 var(--accent-soft)' },
+          '50%':     { transform: 'scale(1.04)', boxShadow: '0 0 0 7px transparent' },
         },
         dotBounce: {
           '0%,80%,100%': { transform: 'scale(0.75)', opacity: '0.35' },
