@@ -6,8 +6,8 @@ export function LinguaAvatar({ size = 36, online = true, className = '' }) {
       <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <linearGradient id={`${id}-grad`} x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-            <stop offset="0%" stopColor="var(--violet)" />
-            <stop offset="100%" stopColor="var(--blue)" />
+            <stop offset="0%" stopColor="var(--accent)" />
+            <stop offset="100%" stopColor="var(--info)" />
           </linearGradient>
           <radialGradient id={`${id}-shine`} cx="35%" cy="28%" r="55%">
             <stop offset="0%" stopColor="rgba(255,255,255,0.28)" />
@@ -45,8 +45,8 @@ export function LinguaAvatar({ size = 36, online = true, className = '' }) {
           style={{
             width: size * 0.28,
             height: size * 0.28,
-            background: 'var(--green)',
-            borderColor: 'var(--bg-main)',
+            background: 'var(--positive)',
+            borderColor: 'var(--bg)',
           }}
         />
       )}

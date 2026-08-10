@@ -8,14 +8,6 @@ import { asSubjectValue } from '../../learning/engine/semanticContext.js'
 
 // Demo garden: stable vocab ids + demo mastery. The visible meaning (`trans`)
 // is resolved to the learner's native language, never hardcoded Spanish.
-const DEMO_GARDEN = [
-  { id: 'happy', mastery: 0.92, days: 12 }, { id: 'because', mastery: 0.78, days: 11 },
-  { id: 'question', mastery: 0.85, days: 10 }, { id: 'travel', mastery: 0.70, days: 9 },
-  { id: 'water', mastery: 0.60, days: 8 }, { id: 'morning', mastery: 0.42, days: 7 },
-  { id: 'yesterday', mastery: 0.50, days: 6 }, { id: 'work', mastery: 0.65, days: 5 },
-  { id: 'like', mastery: 0.72, days: 4 }, { id: 'need', mastery: 0.48, days: 3 },
-  { id: 'easy', mastery: 0.38, days: 2 }, { id: 'today', mastery: 0.72, days: 1 },
-]
 
 const FILTERS = ['All', 'CanUse', 'Practicing', 'Seen']
 
@@ -44,18 +36,13 @@ function groupForState(state) {
 const GROUP_LABEL_KEY = { Seen: 'gardenStateSeen', Practicing: 'gardenStatePracticing', CanUse: 'gardenStateCanUse' }
 
 function groupColor(group) {
-  if (group === GROUPS.CanUse) return { bg: 'var(--green-soft)', border: 'var(--green)', text: 'var(--green)' }
-  if (group === GROUPS.Practicing) return { bg: 'var(--yellow-soft)', border: 'var(--yellow)', text: 'var(--yellow)' }
-  return { bg: 'var(--blue-soft)', border: 'var(--blue)', text: 'var(--blue)' }
+  if (group === GROUPS.CanUse) return { bg: 'var(--positive-soft)', border: 'var(--positive)', text: 'var(--positive)' }
+  if (group === GROUPS.Practicing) return { bg: 'var(--accent-soft)', border: 'var(--accent-tint)', text: 'var(--accent-tint)' }
+  return { bg: 'var(--info-soft)', border: 'var(--info)', text: 'var(--info)' }
 }
 
 /* How full the little progress bar looks, from the state rather than a number. */
 const groupProgress = (group) => (group === GROUPS.CanUse ? 1 : group === GROUPS.Practicing ? 0.6 : 0.25)
-
-function wordRotation(word) {
-  const code = word.charCodeAt(0) + word.charCodeAt(word.length - 1)
-  return ((code % 5) - 2) * 0.8
-}
 
 export function MemoryGarden() {
   const { localProgress, t, nativeLanguageInfo, interfaceLanguageInfo } = useApp()
@@ -80,15 +67,12 @@ export function MemoryGarden() {
           days: Math.max(0, Math.floor((Date.now() - (item.lastSeenAt || Date.now())) / 86400000)),
         }
       })
-    : DEMO_GARDEN.map(d => {
-        const vocab = SEED_VOCAB_BY_ID[d.id]
-        return {
-          word: vocab.term, emoji: vocab.emoji, example: vocab.example,
-          trans: meaningOf(vocab),
-          group: d.mastery >= 0.75 ? GROUPS.CanUse : d.mastery >= 0.45 ? GROUPS.Practicing : GROUPS.Seen,
-          days: d.days,
-        }
-      })
+    /*
+     * NO BORROWED WORDS. This used to fall back to a demo garden, so a learner
+     * with nothing saved yet was shown twelve words as if they were theirs. An
+     * empty garden is a real state and says so below.
+     */
+    : []
 
   const filtered = gardenWords.filter(w => (filter === 'All' ? true : w.group === filter))
   const usable = gardenWords.filter(w => w.group === GROUPS.CanUse).length
@@ -108,42 +92,40 @@ export function MemoryGarden() {
   const personalExampleFor = (word) => PERSONAL_EXAMPLE[String(word || '').toLowerCase()] || null
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8" style={{ background: 'var(--bg-main)' }}>
+    <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8" style={{ background: 'var(--bg)' }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        <div className="mb-6 animate-fade-up">
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--ink-muted)', marginBottom: 6 }}>
-            {t('wordsToday')}
+        <div className="mb-5 animate-fade-up">
+          <h1 className="font-display" style={{ fontWeight: 700, fontSize: 'clamp(1.5rem, 5vw, 1.95rem)', color: 'var(--ink)', lineHeight: 1.1 }}>
+            {t('yourWordsTitle')}
+          </h1>
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginTop: 5 }}>
+            {t('yourWordsSubtitle', { count: gardenWords.length })}
           </p>
-          <div className="flex items-end justify-between">
-            <h1 style={{ fontWeight: 800, fontSize: 'clamp(1.5rem, 4vw, 1.875rem)', color: 'var(--ink)', lineHeight: 1.1 }}>
-              {t('memoryGarden')}
-            </h1>
-            <div className="flex items-center gap-3 text-right">
-              <div>
-                <p style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--green)' }}>{usable}</p>
-                <p style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{t('gardenStateCanUse')}</p>
-              </div>
-              <div>
-                <p style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--ink)' }}>{gardenWords.length}</p>
-                <p style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{t('totalWords')}</p>
-              </div>
-            </div>
-          </div>
+          {gardenWords.length > 0 && (
+            <p style={{ fontSize: '0.8125rem', color: 'var(--positive-deep)', fontWeight: 600, marginTop: 4 }}>
+              {usable} · {t('gardenStateCanUse')}
+            </p>
+          )}
         </div>
 
         <div className="flex gap-2 mb-6 animate-fade-up" style={{ animationDelay: '0.04s' }}>
           {FILTERS.map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className="px-4 py-2 rounded-2xl text-sm font-semibold transition-all"
-              style={{
-                background: filter === f ? 'var(--ink)' : 'var(--bg-paper)',
-                color: filter === f ? 'var(--bg-main)' : 'var(--ink-muted)',
-                border: `1.5px solid ${filter === f ? 'var(--ink)' : 'var(--border)'}`,
-              }}>
+              className="tool-chip"
+              aria-pressed={filter === f}
+              style={filter === f
+                ? { background: 'var(--accent-soft)', color: 'var(--accent-strong)', borderColor: 'var(--accent-tint)' }
+                : undefined}>
               {f === 'All' ? t('all') : t(GROUP_LABEL_KEY[f])}
             </button>
           ))}
         </div>
+
+        {gardenWords.length === 0 && (
+          <div className="mini-window animate-fade-up" style={{ animationDelay: '0.08s' }}>
+            <p style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.5 }}>{t('noWordsYet')}</p>
+          </div>
+        )}
 
         <div className="animate-fade-up" style={{
           animationDelay: '0.08s',
@@ -153,7 +135,6 @@ export function MemoryGarden() {
         }}>
           {filtered.map(w => {
             const colors = groupColor(w.group)
-            const rot = wordRotation(w.word)
             const isExpanded = expanded === w.word
             const isLarge = w.group === GROUPS.CanUse
 
@@ -163,12 +144,16 @@ export function MemoryGarden() {
                 type="button"
                 onClick={() => setExpanded(isExpanded ? null : w.word)}
                 className="rounded-2xl cursor-pointer transition-all text-left"
+                /*
+                 * A word is a card, not a sticker. The tiles used to be rotated by a
+                 * hash of the word, which looked playful at 12 and unreadable at 60;
+                 * the state is carried by fill and border instead.
+                 */
                 style={{
-                  padding: isLarge ? '16px 14px' : '12px 12px',
+                  padding: isLarge ? '15px 14px' : '12px 12px',
                   background: colors.bg,
-                  border: `1.5px solid ${isExpanded ? colors.border : colors.border + '88'}`,
-                  transform: isExpanded ? 'scale(1.02) rotate(0deg)' : `rotate(${rot}deg)`,
-                  boxShadow: isExpanded ? `0 8px 24px ${colors.border}33` : 'none',
+                  border: `1px solid ${isExpanded ? colors.border : 'var(--border)'}`,
+                  boxShadow: isExpanded ? 'var(--shadow-sm)' : 'none',
                   userSelect: 'none',
                 }}
               >
@@ -179,7 +164,7 @@ export function MemoryGarden() {
                 <p lang="en" dir="ltr" style={{ fontWeight: 800, fontSize: isLarge ? '1rem' : '0.9375rem', color: 'var(--ink)', lineHeight: 1.2, marginBottom: 3 }}>
                   {w.word}
                 </p>
-                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', fontWeight: 500 }}>
+                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 500 }}>
                   {w.trans}
                 </p>
 
@@ -191,7 +176,7 @@ export function MemoryGarden() {
                     {/* A second example in the learner's own subject matter,
                         beside the real one — never instead of it. */}
                     {personalExampleFor(w.word) && (
-                      <p lang="en" dir="ltr" style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', lineHeight: 1.5, marginBottom: 6 }}>
+                      <p lang="en" dir="ltr" style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 6 }}>
                         {personalExampleFor(w.word)}
                       </p>
                     )}
@@ -199,7 +184,7 @@ export function MemoryGarden() {
                       <span style={{ fontSize: 10, fontWeight: 700, color: colors.text, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
                         {t(GROUP_LABEL_KEY[w.group])}
                       </span>
-                      <span style={{ fontSize: 10, color: 'var(--ink-muted)' }}>
+                      <span style={{ fontSize: 10, color: 'var(--muted)' }}>
                         {w.days}d
                       </span>
                     </div>
@@ -216,19 +201,19 @@ export function MemoryGarden() {
         {filtered.length === 0 && (
           <div className="text-center py-16">
             <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', marginBottom: 6 }}>{t('noWords')}</p>
-            <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)' }}>{t('practiceToFillGarden')}</p>
+            <p style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>{t('practiceToFillGarden')}</p>
           </div>
         )}
 
         <div className="grid grid-cols-3 gap-3 mt-8 animate-fade-up" style={{ animationDelay: '0.12s' }}>
           {[
-            { label: t('addedThisWeek'), value: hasRealItems ? gardenWords.filter(item => item.days <= 7).length : 4, color: 'var(--violet)' },
-            { label: t('gardenStateCanUse'), value: usable, color: 'var(--green)' },
-            { label: t('gardenStatePracticing'), value: gardenWords.filter(w => w.group === GROUPS.Practicing).length, color: 'var(--yellow)' },
+            { label: t('addedThisWeek'), value: hasRealItems ? gardenWords.filter(item => item.days <= 7).length : 4, color: 'var(--accent)' },
+            { label: t('gardenStateCanUse'), value: usable, color: 'var(--positive)' },
+            { label: t('gardenStatePracticing'), value: gardenWords.filter(w => w.group === GROUPS.Practicing).length, color: 'var(--accent-tint)' },
           ].map(s => (
-            <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+            <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <p style={{ fontWeight: 800, fontSize: '1.375rem', color: s.color }}>{s.value}</p>
-              <p style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{s.label}</p>
+              <p style={{ fontSize: 11, color: 'var(--muted)' }}>{s.label}</p>
             </div>
           ))}
         </div>

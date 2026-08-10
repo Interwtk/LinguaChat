@@ -77,12 +77,12 @@ const MOCK_ARCHIVE = [
 ]
 
 function ConfidenceBadge({ value }) {
-  const color = value >= 8 ? 'var(--green)' : value >= 6 ? 'var(--blue)' : 'var(--yellow)'
+  const color = value >= 8 ? 'var(--positive)' : value >= 6 ? 'var(--info)' : 'var(--accent-tint)'
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 4,
       padding: '2px 8px', borderRadius: 999,
-      background: value >= 8 ? 'var(--green-soft)' : value >= 6 ? 'var(--blue-soft)' : 'var(--yellow-soft)',
+      background: value >= 8 ? 'var(--positive-soft)' : value >= 6 ? 'var(--info-soft)' : 'var(--accent-soft)',
       border: `1px solid ${color}`,
     }}>
       <span style={{ fontSize: 10, fontWeight: 700, color }}>+{value}</span>
@@ -104,12 +104,12 @@ export function ConversationArchive() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8" style={{ background: 'var(--bg-main)' }}>
+    <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8" style={{ background: 'var(--bg)' }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
 
         {/* Header */}
         <div className="mb-8 animate-fade-up">
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--ink-muted)', marginBottom: 6 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: 6 }}>
             {t('everySessionSaved')}
           </p>
           <div className="flex items-end justify-between">
@@ -117,8 +117,8 @@ export function ConversationArchive() {
               {t('conversationArchive')}
             </h1>
             <div className="text-right">
-              <p style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--violet)' }}>{conversations.length}</p>
-              <p style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{t('sessions')}</p>
+              <p style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--accent)' }}>{conversations.length}</p>
+              <p style={{ fontSize: 11, color: 'var(--muted)' }}>{t('sessions')}</p>
             </div>
           </div>
         </div>
@@ -137,9 +137,9 @@ export function ConversationArchive() {
                   <div className="hidden md:flex flex-col items-center" style={{ flexShrink: 0 }}>
                     <div style={{
                       width: 10, height: 10, borderRadius: '50%', marginTop: 20,
-                      background: 'var(--bg-paper)',
-                      border: `2px solid ${i === 0 ? 'var(--violet)' : 'var(--border)'}`,
-                      boxShadow: i === 0 ? '0 0 0 3px var(--violet-soft)' : 'none',
+                      background: 'var(--surface)',
+                      border: `2px solid ${i === 0 ? 'var(--accent)' : 'var(--border)'}`,
+                      boxShadow: i === 0 ? '0 0 0 3px var(--accent-soft)' : 'none',
                       transition: 'all 0.2s',
                       flexShrink: 0,
                     }} />
@@ -149,9 +149,9 @@ export function ConversationArchive() {
                   <div
                     className="flex-1 rounded-2xl overflow-hidden cursor-pointer transition-all"
                     style={{
-                      background: 'var(--bg-paper)',
-                      border: `1.5px solid ${isOpen ? 'var(--violet)' : 'var(--border)'}`,
-                      boxShadow: isOpen ? '0 4px 20px rgba(124,92,255,0.12)' : 'none',
+                      background: 'var(--surface)',
+                      border: `1px solid ${isOpen ? 'var(--accent)' : 'var(--border)'}`,
+                      boxShadow: isOpen ? 'var(--shadow-sm)' : 'none',
                     }}
                     onClick={() => setExpanded(isOpen ? null : convo.id)}
                   >
@@ -163,7 +163,7 @@ export function ConversationArchive() {
                           <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)', marginBottom: 3 }}>
                             {convo.topic}
                           </p>
-                          <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
+                          <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>
                             {formatDate(convo.date)} &middot; {convo.messages} messages
                           </p>
                         </div>
@@ -173,7 +173,7 @@ export function ConversationArchive() {
                         <div style={{
                           width: 24, height: 24, borderRadius: 8,
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                          background: 'var(--surface-soft)', border: '1px solid var(--border)',
                           transition: 'transform 0.2s',
                           transform: isOpen ? 'rotate(180deg)' : 'none',
                         }}>
@@ -186,7 +186,7 @@ export function ConversationArchive() {
 
                     {/* Preview text */}
                     <div style={{ paddingLeft: 16, paddingRight: 16, paddingBottom: isOpen ? 0 : 14 }}>
-                      <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55 }}>
+                      <p style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.55 }}>
                         {convo.preview}
                       </p>
                     </div>
@@ -196,7 +196,7 @@ export function ConversationArchive() {
                       {convo.tags.map(tag => (
                         <span key={tag} style={{
                           fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999,
-                          background: 'var(--bg-elevated)', color: 'var(--ink-muted)', border: '1px solid var(--border)',
+                          background: 'var(--surface-soft)', color: 'var(--muted)', border: '1px solid var(--border)',
                         }}>
                           {tag}
                         </span>
@@ -207,7 +207,7 @@ export function ConversationArchive() {
                     {isOpen && (
                       <div style={{ borderTop: '1px solid var(--border)', margin: '0 16px' }}>
                         <div className="py-4">
-                          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 10 }}>
+                          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 10 }}>
                             {t('sessionDetails')}
                           </p>
                           <div className="grid grid-cols-3 gap-2 mb-4">
@@ -216,9 +216,9 @@ export function ConversationArchive() {
                               { label: t('messages'), value: convo.messages },
                               { label: t('confidence'), value: `+${convo.confidence} pts` },
                             ].map(d => (
-                              <div key={d.label} className="rounded-xl p-3 text-center" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+                              <div key={d.label} className="rounded-xl p-3 text-center" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>
                                 <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)', marginBottom: 2 }}>{d.value}</p>
-                                <p style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{d.label}</p>
+                                <p style={{ fontSize: 11, color: 'var(--muted)' }}>{d.label}</p>
                               </div>
                             ))}
                           </div>
@@ -227,7 +227,7 @@ export function ConversationArchive() {
                             <div className="stamp-correction mb-3" style={{ width: '100%' }}>
                               <span style={{
                                 fontSize: 10, fontWeight: 800, textTransform: 'uppercase',
-                                letterSpacing: '0.1em', background: 'var(--yellow)', padding: '1px 6px',
+                                letterSpacing: '0.1em', background: 'var(--accent-tint)', padding: '1px 6px',
                                 borderRadius: 4, color: '#fff',
                               }}>
                                 {t('keyFix')}
@@ -239,7 +239,7 @@ export function ConversationArchive() {
                           <button
                             onClick={e => { e.stopPropagation(); navigateTo('practice') }}
                             className="w-full py-2.5 rounded-xl font-bold text-sm transition-all hover:opacity-90 active:scale-[0.98]"
-                            style={{ background: 'var(--violet)', color: '#fff', border: 'none', cursor: 'pointer' }}
+                            style={{ background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer' }}
                           >
                             {t('practiceAgain')}
                           </button>
@@ -255,19 +255,19 @@ export function ConversationArchive() {
 
         {/* Summary footer */}
         <div className="grid grid-cols-2 gap-3 mt-8 animate-fade-up">
-          <div className="rounded-2xl p-4" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 8 }}>
+          <div className="rounded-2xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 8 }}>
               {t('bestTopic')}
             </p>
             <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>{bestTopic}</p>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--green)', fontWeight: 600, marginTop: 2 }}>+{hasRealSessions ? Math.max(1, Math.round((localProgress.confidence - 45) / 5)) : 9} confidence pts</p>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--positive)', fontWeight: 600, marginTop: 2 }}>+{hasRealSessions ? Math.max(1, Math.round((localProgress.confidence - 45) / 5)) : 9} confidence pts</p>
           </div>
-          <div className="rounded-2xl p-4" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 8 }}>
+          <div className="rounded-2xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 8 }}>
               {t('mostPracticed')}
             </p>
             <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>{hasRealSessions ? localProgress.topics[1] || bestTopic : 'Past tense'}</p>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--blue)', fontWeight: 600, marginTop: 2 }}>{conversations.length} {t('sessions')}</p>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--info)', fontWeight: 600, marginTop: 2 }}>{conversations.length} {t('sessions')}</p>
           </div>
         </div>
 

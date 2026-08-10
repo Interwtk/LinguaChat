@@ -2,15 +2,19 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
-import { MOCK_STATS } from '../../data/mockData'
 import { getLanguageOption, languageFromInput, searchLanguages } from '../../services/language'
 import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS, MAX_INTERESTS, toggleInterestId } from '../../services/tutorPreferences'
 
 const MOOD_COLORS = [
-  { id: 'violet', label: 'Calm', bg: 'linear-gradient(135deg, var(--violet), var(--blue))' },
-  { id: 'coral', label: 'Energetic', bg: 'linear-gradient(135deg, var(--coral), var(--yellow))' },
-  { id: 'green', label: 'Grounded', bg: 'linear-gradient(135deg, var(--green), var(--blue))' },
-  { id: 'yellow', label: 'Playful', bg: 'linear-gradient(135deg, var(--yellow), var(--coral))' },
+  /*
+   * `id` is a STORED value on the profile, so the ids stay as they are — a
+   * rename here would silently reset the choice of every learner who already
+   * picked one. What each id paints is a palette token, and none is purple.
+   */
+  { id: 'violet', label: 'Calm', bg: 'var(--accent)' },
+  { id: 'coral', label: 'Energetic', bg: 'var(--accent)' },
+  { id: 'green', label: 'Grounded', bg: 'var(--positive)' },
+  { id: 'yellow', label: 'Playful', bg: 'var(--accent)' },
 ]
 
 const RELATIONSHIP_STAGES = [
@@ -24,7 +28,7 @@ const RELATIONSHIP_STAGES = [
 function PreferenceButtons({ label, value, options, onChange, t }) {
   return (
     <div>
-      <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-muted)', marginBottom: 8 }}>
+      <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', marginBottom: 8 }}>
         {label}
       </p>
       <div className="flex flex-wrap gap-2">
@@ -37,9 +41,9 @@ function PreferenceButtons({ label, value, options, onChange, t }) {
               onClick={() => onChange(option.id)}
               className="rounded-xl px-3 py-2 text-xs font-bold transition-all active:scale-[0.98]"
               style={{
-                background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
-                border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
-                color: selected ? 'var(--violet)' : 'var(--ink-muted)',
+                background: selected ? 'var(--accent-soft)' : 'var(--surface-soft)',
+                border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
+                color: selected ? 'var(--accent)' : 'var(--muted)',
               }}
             >
               {t(option.labelKey)}
@@ -139,8 +143,8 @@ export function LanguageIdentity() {
   }, [languageOpen])
 
   const hasLocalProgress = localProgress.messagesSent > 0
-  const confidence = hasLocalProgress ? localProgress.confidence : MOCK_STATS.confidence
-  const streak = hasLocalProgress ? localProgress.streak : MOCK_STATS.streak
+  const confidence = localProgress.confidence || 0
+  const streak = localProgress.streak || 0
   const progressData = [45, 54, 62, Math.max(45, confidence - 5), confidence]
     .map((score, index) => ({ week: index === 4 ? 'Now' : `W${index + 1}`, score }))
   const practicedTopics = hasLocalProgress && localProgress.topics.length
@@ -187,13 +191,13 @@ export function LanguageIdentity() {
     <div
       className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8"
       dir={interfaceLanguageInfo.base === 'ar' ? 'rtl' : 'ltr'}
-      style={{ background: 'var(--bg-main)' }}
+      style={{ background: 'var(--bg)' }}
     >
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
 
         {/* Header */}
         <div className="mb-8 animate-fade-up">
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--ink-muted)', marginBottom: 6 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: 6 }}>
             {t('languageIdentityEyebrow')}
           </p>
           <h1 style={{ fontWeight: 800, fontSize: 'clamp(1.5rem, 4vw, 1.875rem)', color: 'var(--ink)', lineHeight: 1.1 }}>
@@ -202,14 +206,19 @@ export function LanguageIdentity() {
         </div>
 
         {/* Avatar + identity card */}
-        <div className="rounded-3xl p-6 mb-5 animate-fade-up" style={{ animationDelay: '0.04s', background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+        <div className="rounded-3xl p-6 mb-5 animate-fade-up" style={{ animationDelay: '0.04s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-start gap-5">
             {/* Abstract avatar */}
             <div style={{
               width: 80, height: 80, borderRadius: 24, flexShrink: 0,
               background: currentMood.bg,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: `0 8px 24px ${moodColor === 'violet' ? 'rgba(124,92,255,0.25)' : moodColor === 'coral' ? 'rgba(249,115,91,0.25)' : moodColor === 'green' ? 'rgba(63,174,117,0.25)' : 'rgba(246,196,83,0.25)'}`,
+              /*
+               * One soft shadow from the palette, whichever mood is chosen. This
+               * line used to carry four hardcoded rgba values, one of them the
+               * purple the product no longer uses.
+               */
+              boxShadow: 'var(--shadow-md)',
             }}>
               <span style={{ fontSize: 32, fontWeight: 900, color: '#fff', letterSpacing: '-0.03em' }}>
                 {(profile.name || 'L').charAt(0).toUpperCase()}
@@ -225,11 +234,11 @@ export function LanguageIdentity() {
                     onKeyDown={e => e.key === 'Enter' && saveName()}
                     autoFocus
                     className="rounded-xl px-3 py-1.5 text-sm outline-none"
-                    style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--violet)', color: 'var(--ink)', fontFamily: 'inherit', fontWeight: 700, flex: 1 }}
+                    style={{ background: 'var(--surface-soft)', border: '1px solid var(--accent)', color: 'var(--ink)', fontFamily: 'inherit', fontWeight: 700, flex: 1 }}
                   />
                   <button onClick={saveName}
                     className="px-3 py-1.5 rounded-xl text-sm font-bold text-white"
-                    style={{ background: 'var(--violet)', border: 'none', cursor: 'pointer' }}>
+                    style={{ background: 'var(--accent)', border: 'none', cursor: 'pointer' }}>
                     {t('save')}
                   </button>
                 </div>
@@ -237,7 +246,7 @@ export function LanguageIdentity() {
                 <div className="flex items-center gap-2 mb-1">
                   <h2 style={{ fontWeight: 800, fontSize: '1.375rem', color: 'var(--ink)' }}>{profile.name || t('learner')}</h2>
                   <button onClick={() => setEditingName(true)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ink-muted)', display: 'flex' }}>
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex' }}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                     </svg>
@@ -247,17 +256,17 @@ export function LanguageIdentity() {
 
               <div className="flex items-center gap-2 flex-wrap">
                 <span style={{
-                  fontSize: 10, fontWeight: 700, background: 'var(--violet)',
+                  fontSize: 10, fontWeight: 700, background: 'var(--accent)',
                   color: '#fff', padding: '2px 9px', borderRadius: 999,
                 }}>
                   {profile.level || 'B1'}
                 </span>
-                <span style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
+                <span style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>
                   {profile.email || 'linguachat.user'}
                 </span>
               </div>
 
-              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginTop: 8 }}>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 8 }}>
                 {profile.tutorPersonality || 'Gentle Guide'} style
               </p>
             </div>
@@ -265,7 +274,7 @@ export function LanguageIdentity() {
 
           {/* Mood color picker */}
           <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 10 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 10 }}>
               {t('moodColor')}
             </p>
             <div className="flex gap-2">
@@ -276,10 +285,10 @@ export function LanguageIdentity() {
                   <div style={{
                     width: 36, height: 36, borderRadius: 12,
                     background: m.bg,
-                    boxShadow: moodColor === m.id ? `0 0 0 3px var(--bg-paper), 0 0 0 5px ${m.id === 'violet' ? 'var(--violet)' : m.id === 'coral' ? 'var(--coral)' : m.id === 'green' ? 'var(--green)' : 'var(--yellow)'}` : 'none',
+                    boxShadow: moodColor === m.id ? `0 0 0 3px var(--surface), 0 0 0 5px ${m.id === 'violet' ? 'var(--accent)' : m.id === 'coral' ? 'var(--accent)' : m.id === 'green' ? 'var(--positive)' : 'var(--accent-tint)'}` : 'none',
                     transition: 'all 0.2s',
                   }} />
-                  <span style={{ fontSize: 10, color: moodColor === m.id ? 'var(--ink)' : 'var(--ink-muted)', fontWeight: moodColor === m.id ? 700 : 500 }}>
+                  <span style={{ fontSize: 10, color: moodColor === m.id ? 'var(--ink)' : 'var(--muted)', fontWeight: moodColor === m.id ? 700 : 500 }}>
                     {m.label}
                   </span>
                 </button>
@@ -288,33 +297,33 @@ export function LanguageIdentity() {
           </div>
         </div>
 
-        <div className="rounded-2xl p-5 mb-5 animate-fade-up" style={{ animationDelay: '0.06s', background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+        <div className="rounded-2xl p-5 mb-5 animate-fade-up" style={{ animationDelay: '0.06s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-start justify-between gap-3 mb-4">
             <div>
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 6 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 6 }}>
                 {t('nativeLanguageLabel')}
               </p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>
                 {t('nativeLanguageDescription')}
               </p>
             </div>
             {languageSaved && (
-              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--green)', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--positive)', whiteSpace: 'nowrap' }}>
                 {t('saved')}
               </span>
             )}
           </div>
           <div ref={languagePickerRef} style={{ position: 'relative' }}>
             <div className="flex items-center justify-between gap-3 rounded-2xl px-4 py-3"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+              style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>
               <div style={{ minWidth: 0 }}>
                 <p style={{ fontSize: '1rem', color: 'var(--ink)', fontWeight: 800 }}>
                   {currentLanguage.nativeName}
                 </p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 2 }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 2 }}>
                   {currentLanguage.englishName} · {currentLanguage.code}
                 </p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 2 }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 2 }}>
                   {t('learningEnglish')}
                 </p>
               </div>
@@ -325,7 +334,7 @@ export function LanguageIdentity() {
                   setLanguageOpen(value => !value)
                 }}
                 className="px-4 py-2 rounded-xl text-sm font-bold transition-all active:scale-[0.98]"
-                style={{ background: 'var(--violet-soft)', border: '1.5px solid var(--violet)', color: 'var(--violet)', whiteSpace: 'nowrap' }}
+                style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)', color: 'var(--accent)', whiteSpace: 'nowrap' }}
               >
                 {t('changeLanguage')}
               </button>
@@ -343,7 +352,7 @@ export function LanguageIdentity() {
                   width: dropdownPosition.width,
                   maxHeight: 'min(420px, calc(100dvh - 24px))',
                   overflow: 'hidden',
-                  background: 'var(--bg-paper)',
+                  background: 'var(--surface)',
                   border: '1px solid var(--border)',
                   boxShadow: '0 20px 60px rgba(15, 23, 42, 0.18)',
                 }}
@@ -357,7 +366,7 @@ export function LanguageIdentity() {
                   autoFocus
                   placeholder={t('searchLanguage')}
                   className="rounded-xl px-3 py-2 text-sm outline-none mb-2"
-                  style={{ width: '100%', background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}
+                  style={{ width: '100%', background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--ink)' }}
                 />
                 <div style={{ maxHeight: 282, overflowY: 'auto', paddingInlineEnd: 4 }}>
                   {languageResults.map(option => {
@@ -369,8 +378,8 @@ export function LanguageIdentity() {
                         onClick={() => setSelectedLanguage(option)}
                         className="w-full rounded-xl px-3 py-2 text-left transition-all"
                         style={{
-                          background: active ? 'var(--violet-soft)' : 'transparent',
-                          border: `1px solid ${active ? 'var(--violet)' : 'transparent'}`,
+                          background: active ? 'var(--accent-soft)' : 'transparent',
+                          border: `1px solid ${active ? 'var(--accent)' : 'transparent'}`,
                           color: 'var(--ink)',
                           cursor: 'pointer',
                         }}
@@ -378,7 +387,7 @@ export function LanguageIdentity() {
                         <span style={{ display: 'block', fontSize: 14, fontWeight: 800 }}>
                           {option.nativeName}
                         </span>
-                        <span style={{ display: 'block', fontSize: 12, color: 'var(--ink-muted)', marginTop: 2 }}>
+                        <span style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
                           {option.englishName} · {option.code}
                         </span>
                       </button>
@@ -394,7 +403,7 @@ export function LanguageIdentity() {
                       setSelectedLanguage(currentLanguage)
                     }}
                     className="px-3 py-2 rounded-xl text-sm font-bold"
-                    style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}
+                    style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--muted)' }}
                   >
                     {t('cancel')}
                   </button>
@@ -402,7 +411,7 @@ export function LanguageIdentity() {
                     type="button"
                     onClick={saveLanguage}
                     className="px-4 py-2 rounded-xl text-sm font-bold text-white transition-all active:scale-[0.98]"
-                    style={{ background: 'var(--violet)', border: 'none' }}
+                    style={{ background: 'var(--accent)', border: 'none' }}
                   >
                     {t('save')}
                   </button>
@@ -414,28 +423,27 @@ export function LanguageIdentity() {
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5 animate-fade-up" style={{ animationDelay: '0.08s' }}>
-          {(hasLocalProgress ? [
-            { label: 'Day streak', value: streak, emoji: '🔥', color: 'var(--coral)' },
-            { label: 'Messages', value: localProgress.messagesSent, emoji: '💬', color: 'var(--blue)' },
-            { label: t('corrections'), value: localProgress.correctionsReceived, emoji: 'OK', color: 'var(--yellow)' },
-            { label: t('words'), value: localProgress.learnedItems.length, emoji: '📚', color: 'var(--green)' },
-          ] : [
-            { label: 'Day streak', value: MOCK_STATS.streak, emoji: '🔥', color: 'var(--coral)' },
-            { label: 'Words known', value: MOCK_STATS.wordsLearned, emoji: '📚', color: 'var(--green)' },
-            { label: 'Sessions', value: MOCK_STATS.sessionsTotal, emoji: '💬', color: 'var(--blue)' },
-            { label: 'Confidence', value: `${MOCK_STATS.confidence}%`, emoji: '📈', color: 'var(--violet)' },
-          ]).map(s => (
-            <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-              <p style={{ fontSize: 20, marginBottom: 4 }}>{s.emoji}</p>
-              <p style={{ fontWeight: 800, fontSize: '1.375rem', color: s.color }}>{s.value}</p>
-              <p style={{ fontSize: 11, color: 'var(--ink-muted)', fontWeight: 500 }}>{s.label}</p>
+          {/*
+            * FOUR REAL NUMBERS, in the interface language. There used to be two
+            * lists here — the learner's, and a set of example figures shown before
+            * they had done anything — with English labels hardcoded in both.
+            */}
+          {[
+            { label: t('dayStreak'), value: streak },
+            { label: t('messages'), value: localProgress.messagesSent || 0 },
+            { label: t('corrections'), value: localProgress.correctionsReceived || 0 },
+            { label: t('words'), value: (localProgress.learnedItems || []).length },
+          ].map(s => (
+            <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <p className="font-display" style={{ fontWeight: 700, fontSize: '1.375rem', color: 'var(--ink)' }}>{s.value}</p>
+              <p style={{ fontSize: 11.5, color: 'var(--muted)', fontWeight: 500, marginTop: 2 }}>{s.label}</p>
             </div>
           ))}
         </div>
 
         {/* Confidence evolution */}
-        <div className="rounded-2xl p-5 mb-5 animate-fade-up" style={{ animationDelay: '0.12s', background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 16 }}>
+        <div className="rounded-2xl p-5 mb-5 animate-fade-up" style={{ animationDelay: '0.12s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 16 }}>
             {t('confidenceEvolution')}
           </p>
           <div className="flex items-end gap-2" style={{ height: 80 }}>
@@ -445,68 +453,68 @@ export function LanguageIdentity() {
                   width: '100%', borderRadius: '6px 6px 0 0',
                   height: `${(d.score / 100) * 72}px`,
                   background: i === progressData.length - 1
-                    ? 'linear-gradient(180deg, var(--violet), var(--blue))'
+                    ? 'var(--accent)'
                     : 'var(--border)',
                   transition: 'height 0.8s',
                   minHeight: 4,
                 }} />
-                <span style={{ fontSize: 10, color: 'var(--ink-muted)', fontWeight: i === progressData.length - 1 ? 700 : 400 }}>{d.week}</span>
+                <span style={{ fontSize: 10, color: 'var(--muted)', fontWeight: i === progressData.length - 1 ? 700 : 400 }}>{d.week}</span>
               </div>
             ))}
           </div>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginTop: 12 }}>
-            Confidence: <span style={{ fontWeight: 700, color: 'var(--violet)' }}>{confidence}%</span> (+{confidence - 45}% since you started)
+          <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 12 }}>
+            Confidence: <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{confidence}%</span> (+{confidence - 45}% since you started)
           </p>
         </div>
 
         {/* Lingua relationship */}
-        <div className="rounded-2xl p-5 mb-5 animate-fade-up" style={{ animationDelay: '0.16s', background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+        <div className="rounded-2xl p-5 mb-5 animate-fade-up" style={{ animationDelay: '0.16s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-center gap-4">
             <LinguaAvatar size={52} online />
             <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 4 }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 4 }}>
                 {t('withLingua')}
               </p>
               <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)' }}>{relationship}</p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginTop: 2 }}>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 2 }}>
                 {streak} days practicing together
               </p>
             </div>
             <div style={{
               padding: '6px 14px', borderRadius: 999, flexShrink: 0,
-              background: 'var(--green-soft)', border: '1px solid var(--green)',
+              background: 'var(--positive-soft)', border: '1px solid var(--positive)',
             }}>
-              <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--green)' }}>{t('active')}</span>
+              <span style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--positive)' }}>{t('active')}</span>
             </div>
           </div>
         </div>
 
         {/* Topics + preferences */}
-        <div className="rounded-2xl p-5 mb-6 animate-fade-up" style={{ animationDelay: '0.20s', background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 12 }}>
+        <div className="rounded-2xl p-5 mb-6 animate-fade-up" style={{ animationDelay: '0.20s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 12 }}>
             {t('practiceIdentity')}
           </p>
           <div className="flex flex-wrap gap-2 mb-4">
             {practicedTopics.map(g => (
-              <span key={g} style={{ fontSize: '0.8125rem', fontWeight: 600, padding: '4px 12px', borderRadius: 999, background: 'var(--violet-soft)', color: 'var(--violet)', border: '1px solid var(--violet)' }}>
+              <span key={g} style={{ fontSize: '0.8125rem', fontWeight: 600, padding: '4px 12px', borderRadius: 999, background: 'var(--accent-soft)', color: 'var(--accent)', border: '1px solid var(--accent)' }}>
                 {g}
               </span>
             ))}
-            <span style={{ fontSize: '0.8125rem', fontWeight: 600, padding: '4px 12px', borderRadius: 999, background: 'var(--blue-soft)', color: 'var(--blue)', border: '1px solid var(--blue)' }}>
+            <span style={{ fontSize: '0.8125rem', fontWeight: 600, padding: '4px 12px', borderRadius: 999, background: 'var(--info-soft)', color: 'var(--info)', border: '1px solid var(--info)' }}>
               {profile.preferences?.dailyGoal || profile.dailyGoal || 10} min/day
             </span>
           </div>
-          <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.6 }}>
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.6 }}>
             {t('correctionStyleLabel')}: <strong style={{ color: 'var(--ink)' }}>{profile.preferences?.correctionIntensity || 'Balanced'}</strong>.
             {t('practiceVibeLabel')}: <strong style={{ color: 'var(--ink)' }}>{profile.preferences?.practiceVibe || 'Motivational'}</strong>.
           </p>
         </div>
 
-        <div className="rounded-2xl p-5 mb-6 animate-fade-up" style={{ animationDelay: '0.21s', background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 6 }}>
+        <div className="rounded-2xl p-5 mb-6 animate-fade-up" style={{ animationDelay: '0.21s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 6 }}>
             {t('personalizeTutor')}
           </p>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5, marginBottom: 16 }}>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 16 }}>
             {t('personalizeTutorDescription')}
           </p>
 
@@ -524,16 +532,16 @@ export function LanguageIdentity() {
 
             <div>
               <div className="flex items-baseline justify-between gap-3" style={{ marginBottom: 4 }}>
-                <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink-muted)' }}>
+                <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)' }}>
                   {t('interests')}
                 </p>
                 {(tutorPreferences.interests || []).length > 0 && (
-                  <p aria-hidden="true" style={{ fontSize: 11, fontWeight: 700, color: 'var(--ink-muted)' }}>
+                  <p aria-hidden="true" style={{ fontSize: 11, fontWeight: 700, color: 'var(--muted)' }}>
                     {(tutorPreferences.interests || []).length}/{MAX_INTERESTS}
                   </p>
                 )}
               </div>
-              <p style={{ fontSize: 12, color: 'var(--ink-muted)', lineHeight: 1.45, marginBottom: 10 }}>
+              <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.45, marginBottom: 10 }}>
                 {t('interestsHelp')}
               </p>
               <div className="flex flex-wrap gap-2" role="group" aria-label={t('interests')}>
@@ -547,9 +555,9 @@ export function LanguageIdentity() {
                       onClick={() => toggleInterest(interest)}
                       className="rounded-full px-3.5 py-2 text-xs font-bold transition-all active:scale-[0.98] inline-flex items-center gap-1.5"
                       style={{
-                        background: selected ? 'var(--green-soft)' : 'var(--bg-elevated)',
-                        border: `1.5px solid ${selected ? 'var(--green)' : 'var(--border)'}`,
-                        color: selected ? 'var(--green)' : 'var(--ink-muted)',
+                        background: selected ? 'var(--positive-soft)' : 'var(--surface-soft)',
+                        border: `1px solid ${selected ? 'var(--positive)' : 'var(--border)'}`,
+                        color: selected ? 'var(--positive)' : 'var(--muted)',
                         /* the same comfortable target the rest of the product uses;
                          * these chips were 30 px tall, which is a thumb-sized miss */
                         minHeight: 44,
@@ -565,14 +573,14 @@ export function LanguageIdentity() {
           </div>
         </div>
 
-        <div className="rounded-2xl p-5 mb-6 animate-fade-up" style={{ animationDelay: '0.22s', background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 12 }}>
+        <div className="rounded-2xl p-5 mb-6 animate-fade-up" style={{ animationDelay: '0.22s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 12 }}>
             {t('appSettings')}
           </p>
           <div className="flex items-center justify-between gap-3 mb-4">
             <div>
               <p style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)' }}>{t('theme')}</p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginTop: 2 }}>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 2 }}>
                 {darkMode ? t('dark') : t('light')}
               </p>
             </div>
@@ -589,9 +597,9 @@ export function LanguageIdentity() {
                     onClick={() => setThemeDark(option.value)}
                     className="rounded-xl px-3 py-2 text-sm font-bold transition-all active:scale-[0.98]"
                     style={{
-                      background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
-                      border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
-                      color: selected ? 'var(--violet)' : 'var(--ink-muted)',
+                      background: selected ? 'var(--accent-soft)' : 'var(--surface-soft)',
+                      border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
+                      color: selected ? 'var(--accent)' : 'var(--muted)',
                     }}
                   >
                     {option.label}
@@ -603,7 +611,7 @@ export function LanguageIdentity() {
           <div className="flex items-center justify-between gap-3" style={{ paddingTop: 14, borderTop: '1px solid var(--border)' }}>
             <div>
               <p style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)' }}>{t('textSize')}</p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginTop: 2 }}>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 2 }}>
                 {textSize === 'large' ? t('large') : t('normal')}
               </p>
             </div>
@@ -620,9 +628,9 @@ export function LanguageIdentity() {
                     onClick={() => setTextSize(option.id)}
                     className="rounded-xl px-3 py-2 text-sm font-bold transition-all active:scale-[0.98]"
                     style={{
-                      background: selected ? 'var(--violet-soft)' : 'var(--bg-elevated)',
-                      border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
-                      color: selected ? 'var(--violet)' : 'var(--ink-muted)',
+                      background: selected ? 'var(--accent-soft)' : 'var(--surface-soft)',
+                      border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
+                      color: selected ? 'var(--accent)' : 'var(--muted)',
                     }}
                   >
                     {option.label}
@@ -638,21 +646,21 @@ export function LanguageIdentity() {
           <button
             onClick={() => navigateTo('today')}
             className="flex-1 py-3 rounded-2xl font-bold text-sm transition-all hover:opacity-80 active:scale-[0.98]"
-            style={{ background: 'var(--bg-paper)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)' }}
           >
             {t('backToToday')}
           </button>
           <button
             onClick={resetLocalProgress}
             className="px-5 py-3 rounded-2xl font-semibold text-sm transition-all hover:opacity-80 active:scale-[0.98]"
-            style={{ background: 'var(--yellow-soft)', border: '1.5px solid var(--yellow)', color: 'var(--ink)', cursor: 'pointer' }}
+            style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-tint)', color: 'var(--ink)', cursor: 'pointer' }}
           >
             {t('resetProgress')}
           </button>
           <button
             onClick={logoutMock}
             className="px-5 py-3 rounded-2xl font-semibold text-sm transition-all hover:opacity-80 active:scale-[0.98]"
-            style={{ background: 'none', border: '1.5px solid var(--coral)', color: 'var(--coral)', cursor: 'pointer' }}
+            style={{ background: 'none', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: 'pointer' }}
           >
             {t('signOut')}
           </button>

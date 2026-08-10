@@ -42,8 +42,8 @@ function OptionCard({ selected, onClick, children }) {
       onClick={onClick}
       className={`option-card text-left w-full rounded-2xl p-4 transition-all ${selected ? 'selected' : ''}`}
       style={{
-        background: selected ? 'var(--violet-soft)' : 'var(--bg-paper)',
-        border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
+        background: selected ? 'var(--accent-soft)' : 'var(--surface)',
+        border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
         cursor: 'pointer',
       }}
     >
@@ -58,9 +58,9 @@ function LinguaSays({ text }) {
     <div className="flex items-start gap-3 mb-8">
       <LinguaAvatar size={44} online />
       <div>
-        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', marginBottom: 4 }}>Lingua</p>
+        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', marginBottom: 4 }}>Lingua</p>
         <div className="rounded-2xl rounded-tl-sm px-5 py-3.5"
-          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', maxWidth: 380 }}>
+          style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', maxWidth: 380 }}>
           <p style={{ fontSize: '0.9375rem', color: 'var(--ink)', lineHeight: 1.55 }}>{text}</p>
         </div>
       </div>
@@ -77,7 +77,7 @@ function StepDots({ total, current }) {
           width: i === current ? 20 : 6,
           height: 6,
           borderRadius: 999,
-          background: i === current ? 'var(--violet)' : i < current ? 'var(--blue)' : 'var(--border)',
+          background: i === current ? 'var(--accent)' : i < current ? 'var(--info)' : 'var(--border)',
           transition: 'all 0.35s cubic-bezier(0.32,0.72,0,1)',
         }} />
       ))}
@@ -106,7 +106,7 @@ export function OnboardingFlow() {
 
   return (
     <div className="min-h-[100dvh] flex flex-col items-center justify-center px-4 py-8"
-      style={{ background: 'var(--bg-main)' }}>
+      style={{ background: 'var(--bg)' }}>
 
       {/* Logo */}
       <div className="flex items-center gap-2.5 mb-10">
@@ -130,17 +130,17 @@ export function OnboardingFlow() {
                 autoFocus
                 className="w-full px-5 py-4 rounded-2xl text-base font-medium transition-all"
                 style={{
-                  background: 'var(--bg-paper)', border: '1.5px solid var(--border)',
+                  background: 'var(--surface)', border: '1px solid var(--border)',
                   color: 'var(--ink)', outline: 'none', fontFamily: 'inherit',
                 }}
-                onFocus={e => e.target.style.borderColor = 'var(--violet)'}
+                onFocus={e => e.target.style.borderColor = 'var(--accent)'}
                 onBlur={e => e.target.style.borderColor = 'var(--border)'}
               />
             </div>
             <button
               onClick={next}
               className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98]"
-              style={{ background: 'linear-gradient(135deg, var(--violet) 0%, var(--blue) 100%)' }}
+              style={{ background: 'var(--accent)' }}
             >
               {name ? `Nice to meet you, ${name}!` : 'Continue'}
             </button>
@@ -152,7 +152,7 @@ export function OnboardingFlow() {
           <div className="animate-fade-up">
             <div className="flex items-center justify-between mb-6">
               <StepDots total={TOTAL} current={0} />
-              <button onClick={back} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Back</button>
+              <button onClick={back} style={{ fontSize: '0.8125rem', color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Back</button>
             </div>
             <LinguaSays text={`${name || 'Friend'}, what brings you to LinguaChat?`} />
             <div className="grid grid-cols-1 gap-2.5 mb-6">
@@ -162,7 +162,7 @@ export function OnboardingFlow() {
                     <span style={{ fontSize: 22 }}>{g.emoji}</span>
                     <div>
                       <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>{g.label}</p>
-                      <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>{g.desc}</p>
+                      <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>{g.desc}</p>
                     </div>
                   </div>
                 </OptionCard>
@@ -172,7 +172,7 @@ export function OnboardingFlow() {
               onClick={next}
               disabled={!goal}
               className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, var(--violet) 0%, var(--blue) 100%)', cursor: goal ? 'pointer' : 'not-allowed' }}
+              style={{ background: 'var(--accent)', cursor: goal ? 'pointer' : 'not-allowed' }}
             >
               That's my goal
             </button>
@@ -184,7 +184,7 @@ export function OnboardingFlow() {
           <div className="animate-fade-up">
             <div className="flex items-center justify-between mb-6">
               <StepDots total={TOTAL} current={1} />
-              <button onClick={back} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Back</button>
+              <button onClick={back} style={{ fontSize: '0.8125rem', color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Back</button>
             </div>
             <LinguaSays text="How would you like me to give you feedback?" />
             <div className="grid grid-cols-1 gap-2.5 mb-6">
@@ -194,7 +194,7 @@ export function OnboardingFlow() {
                     <span style={{ fontSize: 22 }}>{s.emoji}</span>
                     <div>
                       <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>{s.label}</p>
-                      <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>{s.desc}</p>
+                      <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>{s.desc}</p>
                     </div>
                   </div>
                 </OptionCard>
@@ -204,7 +204,7 @@ export function OnboardingFlow() {
               onClick={next}
               disabled={!style}
               className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, var(--violet) 0%, var(--blue) 100%)', cursor: style ? 'pointer' : 'not-allowed' }}
+              style={{ background: 'var(--accent)', cursor: style ? 'pointer' : 'not-allowed' }}
             >
               This is my style
             </button>
@@ -216,7 +216,7 @@ export function OnboardingFlow() {
           <div className="animate-fade-up">
             <div className="flex items-center justify-between mb-6">
               <StepDots total={TOTAL} current={2} />
-              <button onClick={back} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Back</button>
+              <button onClick={back} style={{ fontSize: '0.8125rem', color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Back</button>
             </div>
             <LinguaSays text="Where are you starting from? No wrong answer!" />
 
@@ -228,25 +228,25 @@ export function OnboardingFlow() {
                   onClick={() => setLevel(l.id)}
                   className="flex items-center gap-3 rounded-2xl px-4 py-3 text-left transition-all hover:-translate-y-px"
                   style={{
-                    background: level === l.id ? 'var(--violet-soft)' : 'var(--bg-paper)',
-                    border: `1.5px solid ${level === l.id ? 'var(--violet)' : 'var(--border)'}`,
+                    background: level === l.id ? 'var(--accent-soft)' : 'var(--surface)',
+                    border: `1px solid ${level === l.id ? 'var(--accent)' : 'var(--border)'}`,
                     marginLeft: `${i * 8}px`,
                     cursor: 'pointer',
                   }}
                 >
                   <span style={{
                     width: 38, height: 38, borderRadius: 12, flexShrink: 0,
-                    background: level === l.id ? 'var(--violet)' : 'var(--bg-elevated)',
-                    border: `1.5px solid ${level === l.id ? 'var(--violet)' : 'var(--border)'}`,
+                    background: level === l.id ? 'var(--accent)' : 'var(--surface-soft)',
+                    border: `1px solid ${level === l.id ? 'var(--accent)' : 'var(--border)'}`,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontWeight: 800, fontSize: '0.875rem',
-                    color: level === l.id ? '#fff' : 'var(--ink-muted)',
+                    color: level === l.id ? '#fff' : 'var(--muted)',
                   }}>
                     {l.label}
                   </span>
                   <div>
                     <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--ink)' }}>{l.sub}</p>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>{l.desc}</p>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>{l.desc}</p>
                   </div>
                 </button>
               ))}
@@ -255,7 +255,7 @@ export function OnboardingFlow() {
               onClick={next}
               disabled={!level}
               className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98] disabled:opacity-40"
-              style={{ background: 'linear-gradient(135deg, var(--violet) 0%, var(--blue) 100%)', cursor: level ? 'pointer' : 'not-allowed' }}
+              style={{ background: 'var(--accent)', cursor: level ? 'pointer' : 'not-allowed' }}
             >
               That's my level
             </button>
@@ -267,7 +267,7 @@ export function OnboardingFlow() {
           <div className="animate-fade-up">
             <div className="flex items-center justify-between mb-6">
               <StepDots total={TOTAL} current={3} />
-              <button onClick={back} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Back</button>
+              <button onClick={back} style={{ fontSize: '0.8125rem', color: 'var(--muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Back</button>
             </div>
             <LinguaSays text="How much time can you practice each day? Even 5 minutes counts." />
             <div className="grid grid-cols-2 gap-3 mb-8">
@@ -275,14 +275,14 @@ export function OnboardingFlow() {
                 <OptionCard key={d.id} selected={dailyGoal === d.id} onClick={() => setDailyGoal(d.id)}>
                   <p style={{ fontSize: 24, marginBottom: 6 }}>{d.emoji}</p>
                   <p style={{ fontWeight: 800, fontSize: '1.125rem', color: 'var(--ink)' }}>{d.label}</p>
-                  <p style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>{d.sub}</p>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 4 }}>{d.desc}</p>
+                  <p style={{ fontWeight: 600, fontSize: '0.8125rem', color: 'var(--muted)' }}>{d.sub}</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 4 }}>{d.desc}</p>
                 </OptionCard>
               ))}
             </div>
 
             {/* Summary */}
-            <div className="rounded-2xl p-4 mb-4" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+            <div className="rounded-2xl p-4 mb-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)', marginBottom: 8 }}>
                 Your practice room is ready
                 {name ? `, ${name}` : ''}!
@@ -295,8 +295,8 @@ export function OnboardingFlow() {
                   { label: `${dailyGoal} min / day` },
                 ].map(t => (
                   <span key={t.label} style={{
-                    fontSize: 11, fontWeight: 600, background: 'var(--violet-soft)',
-                    color: 'var(--violet)', border: '1px solid var(--violet)',
+                    fontSize: 11, fontWeight: 600, background: 'var(--accent-soft)',
+                    color: 'var(--accent)', border: '1px solid var(--accent)',
                     padding: '2px 10px', borderRadius: 999,
                   }}>
                     {t.label}
@@ -309,13 +309,13 @@ export function OnboardingFlow() {
               onClick={finish}
               className="w-full py-4 rounded-2xl font-bold text-white text-base transition-all hover:opacity-90 hover:-translate-y-0.5 active:scale-[0.98]"
               style={{
-                background: 'linear-gradient(135deg, var(--violet) 0%, var(--blue) 100%)',
-                boxShadow: '0 8px 32px -8px rgba(124,92,255,0.35)',
+                background: 'var(--accent)',
+                boxShadow: 'var(--shadow-md)',
               }}
             >
               Enter LinguaChat
             </button>
-            <p style={{ fontSize: 11, color: 'var(--ink-muted)', textAlign: 'center', marginTop: 10 }}>
+            <p style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginTop: 10 }}>
               Practice English without fear.
             </p>
           </div>

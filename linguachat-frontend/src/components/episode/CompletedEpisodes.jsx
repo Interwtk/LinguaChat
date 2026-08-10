@@ -26,7 +26,7 @@ export function CompletedEpisodes() {
   return (
     <section className="mb-5 animate-fade-up" aria-labelledby="completed-episodes-title" key={episodeArcVersion}>
       <p id="completed-episodes-title" lang={nativeLang}
-        style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 8 }}>
+        style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 8 }}>
         {t('replaySectionTitle')}
       </p>
       <ul className="flex flex-col gap-2" style={{ listStyle: 'none', margin: 0, padding: 0 }}>
@@ -35,13 +35,13 @@ export function CompletedEpisodes() {
           const otherOption = canTryOtherBranch(model, ep)
           return (
             <li key={ep.id} className="rounded-2xl p-3.5"
-              style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <p lang={nativeLang} style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25 }}>
                     {t(ep.canDoNameKey)}
                   </p>
-                  <p lang={nativeLang} style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 2 }}>
+                  <p lang={nativeLang} style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 2 }}>
                     {t('replayCompletedTag')} · {t(ep.durationKey)}
                     {played > 0 ? ` · ${t('replayTimesPractised', { count: played })}` : ''}
                   </p>
@@ -49,13 +49,13 @@ export function CompletedEpisodes() {
                 <div className="flex gap-2 flex-wrap">
                   <button type="button" onClick={() => startEpisode(ep.id, { source: 'practice' })}
                     className="rounded-full px-3.5 py-2 text-xs font-bold transition-all active:scale-[0.98]"
-                    style={{ background: 'var(--violet-soft)', border: '1.5px solid var(--violet)', color: 'var(--violet)', minHeight: 40 }}>
+                    style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)', color: 'var(--accent)', minHeight: 40 }}>
                     <span lang={nativeLang}>{t('replayPractiseAgain')}</span>
                   </button>
                   {otherOption && (
                     <button type="button" onClick={() => startEpisode(ep.id, { source: 'practice', wantsOtherBranch: true })}
                       className="rounded-full px-3.5 py-2 text-xs font-bold transition-all active:scale-[0.98]"
-                      style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)', minHeight: 40 }}>
+                      style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--ink)', minHeight: 40 }}>
                       <span lang={nativeLang}>{t('replayTryOtherOption')}</span>
                     </button>
                   )}

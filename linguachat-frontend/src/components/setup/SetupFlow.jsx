@@ -15,7 +15,7 @@ import {
 
 function SetupShell({ children, step, totalSteps }) {
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--bg-main)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
         <div className="flex items-center gap-2">
           <ChattoMascot mood="happy" size={30} decorative={true} animated={false} />
@@ -26,7 +26,7 @@ function SetupShell({ children, step, totalSteps }) {
             {Array.from({ length: totalSteps }).map((_, i) => (
               <div key={i} style={{
                 width: i === step ? 18 : 6, height: 6, borderRadius: 999,
-                background: i <= step ? 'var(--violet)' : 'var(--border)',
+                background: i <= step ? 'var(--accent)' : 'var(--border)',
                 transition: 'all 0.3s',
               }} />
             ))}
@@ -75,20 +75,20 @@ function PlacementTest() {
         <div className="flex-1 flex flex-col items-center justify-center px-5 py-10 text-center animate-fade-up">
           <ChattoMascot mood="thinking" size={80} variant="blue" intensity="guide" />
           <div style={{ marginTop: 24, marginBottom: 8 }}>
-            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--violet)' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--accent)' }}>
               LinguaChat
             </p>
           </div>
           <h2 style={{ fontWeight: 800, fontSize: '1.625rem', color: 'var(--ink)', marginBottom: 12, lineHeight: 1.2 }}>
             {t('placementAdaptiveTitle')}
           </h2>
-          <p style={{ fontSize: '0.9375rem', color: 'var(--ink-muted)', lineHeight: 1.65, maxWidth: 360, marginBottom: 32 }}>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', lineHeight: 1.65, maxWidth: 360, marginBottom: 32 }}>
             {t('placementAdaptiveText')}
           </p>
           <div className="grid gap-2 mb-7" style={{ maxWidth: 380, width: '100%' }}>
             {[t('placementAdaptiveBullet1'), t('placementAdaptiveBullet2'), t('placementAdaptiveBullet3'), t('placementAdaptiveBullet4')].map(item => (
               <div key={item} className="rounded-2xl px-4 py-3 text-left"
-                style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
                 <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.45 }}>{item}</p>
               </div>
             ))}
@@ -96,7 +96,7 @@ function PlacementTest() {
           <button
             onClick={start}
             className="px-8 py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 hover:-translate-y-px active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))' }}
+            style={{ background: 'var(--accent)' }}
           >
             {t('placementAdaptiveStart')}
           </button>
@@ -110,14 +110,14 @@ function PlacementTest() {
       <div className="flex-1 overflow-y-auto px-5 py-8" style={{ maxWidth: 640, width: '100%', margin: '0 auto' }}>
         <div className="animate-fade-up">
           <div className="flex items-center justify-between mb-5">
-            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--violet)' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--accent)' }}>
               {t('questionOf')} {placementState.answers.length + 1} {t('of')} {placementState.maxQuestions}
             </p>
             <span style={{
               fontSize: 11,
               fontWeight: 700,
-              color: 'var(--ink-muted)',
-              background: 'var(--bg-paper)',
+              color: 'var(--muted)',
+              background: 'var(--surface)',
               border: '1px solid var(--border)',
               padding: '3px 9px',
               borderRadius: 999,
@@ -126,14 +126,14 @@ function PlacementTest() {
             </span>
           </div>
 
-          <div className="rounded-3xl p-5 md:p-6 mb-5" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', fontWeight: 600, marginBottom: 8 }}>
+          <div className="rounded-3xl p-5 md:p-6 mb-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', fontWeight: 600, marginBottom: 8 }}>
               {question.instruction}
             </p>
             <h2 style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--ink)', lineHeight: 1.25 }}>
               {question.prompt}
             </h2>
-            <p style={{ fontSize: 11, color: 'var(--ink-muted)', lineHeight: 1.45, marginTop: 10 }}>
+            <p style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.45, marginTop: 10 }}>
               {t('placementExamplesNote')}
             </p>
           </div>
@@ -151,16 +151,16 @@ function PlacementTest() {
                   className="w-full rounded-2xl px-4 py-4 text-left transition-all hover:-translate-y-px active:scale-[0.99]"
                   style={{
                     background: showResult && isCorrect
-                      ? 'var(--green-soft)'
+                      ? 'var(--positive-soft)'
                       : isSelected
-                        ? 'var(--yellow-soft)'
-                        : 'var(--bg-paper)',
-                    border: `1.5px solid ${showResult && isCorrect ? 'var(--green)' : isSelected ? 'var(--yellow)' : 'var(--border)'}`,
+                        ? 'var(--accent-soft)'
+                        : 'var(--surface)',
+                    border: `1px solid ${showResult && isCorrect ? 'var(--positive)' : isSelected ? 'var(--accent-tint)' : 'var(--border)'}`,
                     color: 'var(--ink)',
                     cursor: selectedOption ? 'default' : 'pointer',
                   }}
                 >
-                  <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--violet)', marginRight: 10 }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)', marginRight: 10 }}>
                     {String.fromCharCode(65 + index)}
                   </span>
                   <span style={{ fontSize: '0.9375rem', fontWeight: 650 }}>{option.text}</span>
@@ -172,13 +172,13 @@ function PlacementTest() {
           {feedback && (
             <div className="rounded-2xl p-4 mt-5 animate-fade-up"
               style={{
-                background: feedback.isCorrect ? 'var(--green-soft)' : 'var(--blue-soft)',
-                border: `1px solid ${feedback.isCorrect ? 'var(--green)' : 'var(--blue)'}`,
+                background: feedback.isCorrect ? 'var(--positive-soft)' : 'var(--info-soft)',
+                border: `1px solid ${feedback.isCorrect ? 'var(--positive)' : 'var(--info)'}`,
               }}>
               <p style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--ink)', marginBottom: 4 }}>
                 {feedback.isCorrect ? t('placementCorrect') : t('placementIncorrect')}
               </p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>
                 {feedback.explanation}
               </p>
             </div>
@@ -203,17 +203,17 @@ function LevelReveal() {
         <div className="animate-fade-up">
           {/* Chatto Moti Moment — celebrates finishing the placement */}
           <div className="animate-scale-in rounded-3xl p-5 mb-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left"
-            style={{ background: 'var(--bg-paper)', border: '1px solid var(--violet)', boxShadow: '0 0 0 4px var(--violet-soft), 0 12px 32px -16px rgba(124,92,255,0.4)' }}>
+            style={{ background: 'var(--surface)', border: '1px solid var(--accent)', boxShadow: '0 0 0 3px var(--accent-soft), var(--shadow-md)' }}>
             <ChattoMascot mood={moti.mood} size={84} variant={moti.variant} />
             <div>
               <p style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--ink)', marginBottom: 4 }}>{t(moti.titleKey)}</p>
-              <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>{t(moti.messageKey)}</p>
+              <p style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.5 }}>{t(moti.messageKey)}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-3 mb-8">
             <LinguaAvatar size={52} online />
-            <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+            <div className="rounded-2xl px-4 py-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
               <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.5 }}>
                 {t('resultBubble')}
               </p>
@@ -221,47 +221,47 @@ function LevelReveal() {
           </div>
 
           {/* Level badge */}
-          <div className="rounded-3xl p-6 mb-6 text-center" style={{ background: 'var(--bg-paper)', border: '2px solid var(--violet)' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--violet)', marginBottom: 10 }}>
+          <div className="rounded-3xl p-6 mb-6 text-center" style={{ background: 'var(--surface)', border: '1.5px solid var(--accent)' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--accent)', marginBottom: 10 }}>
               {t('detectedLevel')}
             </p>
             <div style={{
               display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
               width: 80, height: 80, borderRadius: '50%', marginBottom: 12,
-              background: 'linear-gradient(135deg, var(--violet), var(--blue))',
+              background: 'var(--accent)',
             }}>
               <span style={{ fontSize: '1.75rem', fontWeight: 900, color: '#fff' }}>{result.level}</span>
             </div>
-            <p style={{ fontSize: '0.9375rem', color: 'var(--ink-muted)', lineHeight: 1.6, maxWidth: 320, margin: '0 auto' }}>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', lineHeight: 1.6, maxWidth: 320, margin: '0 auto' }}>
               {t('placementPoint')} {result.level}.
             </p>
           </div>
 
           <div className="grid gap-3 mb-6">
-            <div className="rounded-2xl p-4" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--green)', marginBottom: 8 }}>
+            <div className="rounded-2xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--positive)', marginBottom: 8 }}>
                 {t('alreadyDoWell')}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.6 }}>{strengths.join(' ')}</p>
             </div>
-            <div className="rounded-2xl p-4" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--blue)', marginBottom: 8 }}>
+            <div className="rounded-2xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--info)', marginBottom: 8 }}>
                 {t('practiceNext')}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.6 }}>
                 {focusAreas.join(', ')}.
               </p>
             </div>
-            <div className="rounded-2xl p-4" style={{ background: 'var(--green-soft)', border: '1px solid var(--green)' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--green)', marginBottom: 8 }}>
+            <div className="rounded-2xl p-4" style={{ background: 'var(--positive-soft)', border: '1px solid var(--positive)' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--positive)', marginBottom: 8 }}>
                 {t('nextGoal')}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.6 }}>
                 {result.practiceRecommendation || 'Lingua will start with short replies and one active mini goal per turn.'}
               </p>
             </div>
-            <div className="rounded-2xl p-4" style={{ background: 'var(--violet-soft)', border: '1px solid var(--violet)' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)', marginBottom: 8 }}>
+            <div className="rounded-2xl p-4" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--accent)', marginBottom: 8 }}>
                 {t('howLinguaCorrects')}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.6 }}>
@@ -271,14 +271,14 @@ function LevelReveal() {
           </div>
 
           {/* Confidence bars */}
-          <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 14 }}>
+          <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 14 }}>
             {t('confidenceScore')}
             </p>
             {[
-              { label: t('vocabulary'), value: result.vocab, color: 'var(--green)' },
-              { label: t('grammar'), value: result.grammar, color: 'var(--blue)' },
-              { label: t('conversation'), value: result.conversation, color: 'var(--violet)' },
+              { label: t('vocabulary'), value: result.vocab, color: 'var(--positive)' },
+              { label: t('grammar'), value: result.grammar, color: 'var(--info)' },
+              { label: t('conversation'), value: result.conversation, color: 'var(--accent)' },
             ].map(bar => (
               <div key={bar.label} style={{ marginBottom: 14 }}>
                 <div className="flex justify-between mb-1.5">
@@ -293,11 +293,11 @@ function LevelReveal() {
           </div>
 
           {/* Next milestone */}
-          <div className="rounded-2xl p-4 mb-6 flex items-center gap-3" style={{ background: 'var(--yellow-soft)', border: '1px solid var(--yellow)' }}>
+          <div className="rounded-2xl p-4 mb-6 flex items-center gap-3" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent-tint)' }}>
             <span style={{ fontSize: 20 }}>🎯</span>
             <div>
               <p style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--ink)' }}>{t('nextMilestone')}</p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>
                 {t('reachNextLevel')}
               </p>
             </div>
@@ -306,7 +306,7 @@ function LevelReveal() {
           <button
             onClick={() => setAuthStep('setup-choice')}
             className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 hover:-translate-y-px active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))' }}
+            style={{ background: 'var(--accent)' }}
           >
             {t('enterPractice')}
           </button>
@@ -326,14 +326,14 @@ function SetupChoice() {
         <div className="animate-fade-up">
           {/* Chatto guides the choice — it never decides for you */}
           <div className="flex flex-col items-center text-center mb-8">
-            <ChattoMascot mood="supportive" size="medium" variant="violet" intensity="guide" />
-            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--violet)', marginTop: 16, marginBottom: 8 }}>
+            <ChattoMascot mood="supportive" size="medium" variant="accent" intensity="guide" />
+            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--accent)', marginTop: 16, marginBottom: 8 }}>
               {t('setupChoiceEyebrow')}
             </p>
             <h2 style={{ fontWeight: 800, fontSize: 'clamp(1.4rem, 4vw, 1.75rem)', color: 'var(--ink)', lineHeight: 1.2, marginBottom: 10 }}>
               {t('setupChoiceTitle')}
             </h2>
-            <p style={{ fontSize: '0.9375rem', color: 'var(--ink-muted)', lineHeight: 1.6, maxWidth: 420 }}>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', lineHeight: 1.6, maxWidth: 420 }}>
               {t('setupChoiceBody')}
             </p>
           </div>
@@ -344,17 +344,17 @@ function SetupChoice() {
               type="button"
               onClick={applyRecommendedSetup}
               className="card-lift group text-left rounded-3xl p-5 transition-all active:scale-[0.99]"
-              style={{ background: 'var(--violet-soft)', border: '1.5px solid var(--violet)', boxShadow: '0 0 0 3px var(--violet-soft)' }}
+              style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)', boxShadow: '0 0 0 3px var(--accent-soft)' }}
             >
               <div className="flex items-center justify-between gap-3 mb-1.5">
                 <span style={{ fontWeight: 800, fontSize: '1.0625rem', color: 'var(--ink)' }}>{t('setupRecommendedTitle')}</span>
-                <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#fff', background: 'var(--violet)', padding: '3px 9px', borderRadius: 999, flexShrink: 0 }}>
+                <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#fff', background: 'var(--accent)', padding: '3px 9px', borderRadius: 999, flexShrink: 0 }}>
                   {t('recommended')}
                 </span>
               </div>
-              <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55, marginBottom: 14 }}>{t('setupRecommendedDesc')}</p>
+              <p style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.55, marginBottom: 14 }}>{t('setupRecommendedDesc')}</p>
               <span className="inline-flex items-center gap-2 rounded-2xl px-4 py-2.5 font-bold text-white text-sm"
-                style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))' }}>
+                style={{ background: 'var(--accent)' }}>
                 {t('setupRecommendedCta')}
                 <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">→</span>
               </span>
@@ -365,18 +365,18 @@ function SetupChoice() {
               type="button"
               onClick={() => setAuthStep('tutor-personality')}
               className="card-lift group text-left rounded-3xl p-5 transition-all active:scale-[0.99]"
-              style={{ background: 'var(--bg-paper)', border: '1.5px solid var(--border)' }}
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}
             >
               <span style={{ display: 'block', fontWeight: 800, fontSize: '1.0625rem', color: 'var(--ink)', marginBottom: 6 }}>{t('setupPersonalizeTitle')}</span>
-              <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55, marginBottom: 12 }}>{t('setupPersonalizeDesc')}</p>
-              <span className="inline-flex items-center gap-1.5 font-bold text-sm" style={{ color: 'var(--violet)' }}>
+              <p style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.55, marginBottom: 12 }}>{t('setupPersonalizeDesc')}</p>
+              <span className="inline-flex items-center gap-1.5 font-bold text-sm" style={{ color: 'var(--accent)' }}>
                 {t('setupPersonalizeCta')}
                 <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">→</span>
               </span>
             </button>
           </div>
 
-          <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', textAlign: 'center', marginTop: 18, lineHeight: 1.5 }}>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', textAlign: 'center', marginTop: 18, lineHeight: 1.5 }}>
             {t('setupChoiceChatto')}
           </p>
         </div>
@@ -389,10 +389,10 @@ function SetupChoice() {
 // `id` is the stored value (also used by the backend/profile) and stays English.
 // The visible name/desc/sample are localized via i18n keys.
 const PERSONALITIES = [
-  { id: 'Gentle Guide',    emoji: '🌿', nameKey: 'persGentleName', descKey: 'persGentleDesc', sampleKey: 'persGentleSample', aura: 'var(--green)',  soft: 'var(--green-soft)' },
-  { id: 'Casual Friend',   emoji: '😊', nameKey: 'persCasualName', descKey: 'persCasualDesc', sampleKey: 'persCasualSample', aura: 'var(--coral)',  soft: 'var(--coral-soft)' },
-  { id: 'Strict Coach',    emoji: '📐', nameKey: 'persStrictName', descKey: 'persStrictDesc', sampleKey: 'persStrictSample', aura: 'var(--blue)',   soft: 'var(--blue-soft)' },
-  { id: 'Interview Mentor',emoji: '🎯', nameKey: 'persMentorName', descKey: 'persMentorDesc', sampleKey: 'persMentorSample', aura: 'var(--violet)', soft: 'var(--violet-soft)' },
+  { id: 'Gentle Guide',    emoji: '🌿', nameKey: 'persGentleName', descKey: 'persGentleDesc', sampleKey: 'persGentleSample', aura: 'var(--positive)',  soft: 'var(--positive-soft)' },
+  { id: 'Casual Friend',   emoji: '😊', nameKey: 'persCasualName', descKey: 'persCasualDesc', sampleKey: 'persCasualSample', aura: 'var(--accent)',  soft: 'var(--accent-soft)' },
+  { id: 'Strict Coach',    emoji: '📐', nameKey: 'persStrictName', descKey: 'persStrictDesc', sampleKey: 'persStrictSample', aura: 'var(--info)',   soft: 'var(--info-soft)' },
+  { id: 'Interview Mentor',emoji: '🎯', nameKey: 'persMentorName', descKey: 'persMentorDesc', sampleKey: 'persMentorSample', aura: 'var(--accent)', soft: 'var(--accent-soft)' },
 ]
 const personalityName = (id) => PERSONALITIES.find(p => p.id === id)?.nameKey
 
@@ -404,13 +404,13 @@ function TutorPersonality() {
     <SetupShell step={1} totalSteps={3}>
       <div className="flex-1 overflow-y-auto px-5 py-8" style={{ maxWidth: 600, margin: '0 auto', width: '100%' }}>
         <div className="animate-fade-up">
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--violet)', marginBottom: 10 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--accent)', marginBottom: 10 }}>
             {t('chooseEnergyEyebrow')}
           </p>
           <h2 style={{ fontWeight: 800, fontSize: '1.625rem', color: 'var(--ink)', marginBottom: 8, lineHeight: 1.2 }}>
             {t('chooseEnergyTitle')}
           </h2>
-          <p style={{ fontSize: '0.9375rem', color: 'var(--ink-muted)', lineHeight: 1.6, marginBottom: 28 }}>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: 28 }}>
             {t('chooseEnergyText')}
           </p>
 
@@ -423,7 +423,7 @@ function TutorPersonality() {
                   onClick={() => setSelected(p.id)}
                   className="rounded-2xl p-5 cursor-pointer transition-all"
                   style={{
-                    background: isSelected ? p.soft : 'var(--bg-paper)',
+                    background: isSelected ? p.soft : 'var(--surface)',
                     border: `2px solid ${isSelected ? p.aura : 'var(--border)'}`,
                     boxShadow: isSelected ? `0 0 0 4px ${p.aura}22` : 'none',
                     transform: isSelected ? 'translateY(-1px)' : 'none',
@@ -433,7 +433,7 @@ function TutorPersonality() {
                     <span style={{ fontSize: 24 }}>{p.emoji}</span>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', marginBottom: 4 }}>{t(p.nameKey)}</p>
-                      <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>{t(p.descKey)}</p>
+                      <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>{t(p.descKey)}</p>
                     </div>
                     {isSelected && (
                       <div style={{ width: 20, height: 20, borderRadius: '50%', background: p.aura, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -441,8 +441,8 @@ function TutorPersonality() {
                       </div>
                     )}
                   </div>
-                  <div className="rounded-xl px-3 py-2" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
-                    <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', fontStyle: 'italic', lineHeight: 1.5 }}>
+                  <div className="rounded-xl px-3 py-2" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>
+                    <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', fontStyle: 'italic', lineHeight: 1.5 }}>
                       "{t(p.sampleKey)}"
                     </p>
                   </div>
@@ -455,7 +455,7 @@ function TutorPersonality() {
             onClick={() => selected && completeTutorPersonality(selected)}
             disabled={!selected}
             className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))', opacity: selected ? 1 : 0.5, cursor: selected ? 'pointer' : 'not-allowed' }}
+            style={{ background: 'var(--accent)', opacity: selected ? 1 : 0.5, cursor: selected ? 'pointer' : 'not-allowed' }}
           >
             {selected ? `${t('choose')} · ${t(personalityName(selected))}` : t('selectEnergy')}
           </button>
@@ -501,13 +501,13 @@ function LearningPreferences() {
     <SetupShell step={2} totalSteps={3}>
       <div className="flex-1 overflow-y-auto px-5 py-8" style={{ maxWidth: 560, margin: '0 auto', width: '100%' }}>
         <div className="animate-fade-up">
-          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--violet)', marginBottom: 10 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--accent)', marginBottom: 10 }}>
             {t('prefsEyebrow')}
           </p>
           <h2 style={{ fontWeight: 800, fontSize: '1.625rem', color: 'var(--ink)', marginBottom: 6, lineHeight: 1.2 }}>
             {t('prefsTitle')}
           </h2>
-          <p style={{ fontSize: '0.9375rem', color: 'var(--ink-muted)', marginBottom: 28 }}>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', marginBottom: 28 }}>
             {t('prefsText')}
           </p>
 
@@ -518,9 +518,9 @@ function LearningPreferences() {
                 <button key={o.id} onClick={() => toggleGoal(o.id)}
                   className="px-4 py-2 rounded-2xl text-sm font-semibold transition-all"
                   style={{
-                    background: goals.includes(o.id) ? 'var(--violet)' : 'var(--bg-paper)',
+                    background: goals.includes(o.id) ? 'var(--accent)' : 'var(--surface)',
                     color: goals.includes(o.id) ? '#fff' : 'var(--ink)',
-                    border: `1.5px solid ${goals.includes(o.id) ? 'var(--violet)' : 'var(--border)'}`,
+                    border: `1px solid ${goals.includes(o.id) ? 'var(--accent)' : 'var(--border)'}`,
                   }}>
                   {t(o.key)}
                 </button>
@@ -535,9 +535,9 @@ function LearningPreferences() {
                 <button key={d} onClick={() => setDaily(d)}
                   className="py-3 rounded-xl font-bold text-sm transition-all"
                   style={{
-                    background: daily === d ? 'var(--violet)' : 'var(--bg-paper)',
+                    background: daily === d ? 'var(--accent)' : 'var(--surface)',
                     color: daily === d ? '#fff' : 'var(--ink)',
-                    border: `1.5px solid ${daily === d ? 'var(--violet)' : 'var(--border)'}`,
+                    border: `1px solid ${daily === d ? 'var(--accent)' : 'var(--border)'}`,
                   }}>
                   {d}m
                 </button>
@@ -552,9 +552,9 @@ function LearningPreferences() {
                 <button key={o.id} onClick={() => setCorrection(o.id)}
                   className="px-4 py-2.5 rounded-xl text-sm font-semibold text-left transition-all"
                   style={{
-                    background: correction === o.id ? 'var(--blue-soft)' : 'var(--bg-paper)',
+                    background: correction === o.id ? 'var(--info-soft)' : 'var(--surface)',
                     color: 'var(--ink)',
-                    border: `1.5px solid ${correction === o.id ? 'var(--blue)' : 'var(--border)'}`,
+                    border: `1px solid ${correction === o.id ? 'var(--info)' : 'var(--border)'}`,
                   }}>
                   {t(o.key)}
                 </button>
@@ -569,9 +569,9 @@ function LearningPreferences() {
                 <button key={o.id} onClick={() => setVibe(o.id)}
                   className="py-2.5 rounded-xl font-semibold text-sm transition-all"
                   style={{
-                    background: vibe === o.id ? 'var(--coral-soft)' : 'var(--bg-paper)',
+                    background: vibe === o.id ? 'var(--accent-soft)' : 'var(--surface)',
                     color: 'var(--ink)',
-                    border: `1.5px solid ${vibe === o.id ? 'var(--coral)' : 'var(--border)'}`,
+                    border: `1px solid ${vibe === o.id ? 'var(--accent)' : 'var(--border)'}`,
                   }}>
                   {t(o.key)}
                 </button>
@@ -581,8 +581,8 @@ function LearningPreferences() {
 
           {/* Summary */}
           {goals.length > 0 && (
-            <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 8 }}>
+            <div className="rounded-2xl p-5 mb-6" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 8 }}>
                 {t('yourSetup')}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.65 }}>
@@ -600,7 +600,7 @@ function LearningPreferences() {
             onClick={finish}
             disabled={goals.length === 0}
             className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 hover:-translate-y-px active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, var(--coral), var(--violet))', opacity: goals.length > 0 ? 1 : 0.5 }}
+            style={{ background: 'var(--accent)', opacity: goals.length > 0 ? 1 : 0.5 }}
           >
             {t('enterLinguaChat')}
           </button>

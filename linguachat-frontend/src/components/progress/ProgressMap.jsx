@@ -1,4 +1,4 @@
-import { JOURNEY_NODES, LEVEL_TO_NODE, MOCK_STATS } from '../../data/mockData'
+import { JOURNEY_NODES, LEVEL_TO_NODE } from '../../data/mockData'
 import { useApp } from '../../context/AppContext'
 
 const NODE_LABEL_KEYS = {
@@ -33,7 +33,7 @@ export function ProgressMap({ level = 'B1' }) {
                   top: 36,
                   width: 2,
                   height: 28,
-                  background: done ? 'var(--green)' : current ? 'var(--blue)' : 'var(--border)',
+                  background: done ? 'var(--positive)' : current ? 'var(--info)' : 'var(--border)',
                   borderRadius: 2,
                   transition: 'background 0.4s ease',
                 }}
@@ -50,12 +50,12 @@ export function ProgressMap({ level = 'B1' }) {
                 height: 36,
                 fontSize: done ? 14 : 18,
                 background: done
-                  ? 'var(--green)'
+                  ? 'var(--positive)'
                   : current
-                  ? 'var(--blue)'
-                  : 'var(--bg-elevated)',
+                  ? 'var(--info)'
+                  : 'var(--surface-soft)',
                 border: ahead ? '2px solid var(--border)' : 'none',
-                color: done || current ? '#fff' : 'var(--ink-muted)',
+                color: done || current ? '#fff' : 'var(--muted)',
                 boxShadow: current
                   ? '0 0 0 4px rgba(59,130,196,0.15), 0 2px 8px rgba(59,130,196,0.2)'
                   : done
@@ -78,19 +78,19 @@ export function ProgressMap({ level = 'B1' }) {
               <p style={{
                 fontSize: '0.8125rem',
                 fontWeight: current ? 700 : done ? 600 : 500,
-                color: current ? 'var(--ink)' : done ? 'var(--green)' : 'var(--ink-muted)',
+                color: current ? 'var(--ink)' : done ? 'var(--positive)' : 'var(--muted)',
                 lineHeight: 1.3,
               }}>
                 {NODE_LABEL_KEYS[node.id] ? t(NODE_LABEL_KEYS[node.id]) : node.label}
               </p>
               {node.levels && (
-                <p style={{ fontSize: 11, color: 'var(--ink-muted)', opacity: 0.7 }}>{node.levels}</p>
+                <p style={{ fontSize: 11, color: 'var(--muted)', opacity: 0.7 }}>{node.levels}</p>
               )}
               {current && (
                 <span style={{
                   display: 'inline-block', marginTop: 3,
                   fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em',
-                  color: 'var(--blue)', background: 'rgba(59,130,196,0.1)',
+                  color: 'var(--info)', background: 'rgba(59,130,196,0.1)',
                   padding: '1px 6px', borderRadius: 999,
                 }}>
                   {t('youAreHere')}

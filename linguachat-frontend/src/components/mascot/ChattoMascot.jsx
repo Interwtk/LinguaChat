@@ -11,7 +11,9 @@
  * Props (backwards compatible):
  *   mood        'happy' | 'calm' | 'cheering' | 'thinking' | 'supportive' | 'celebrating' | 'welcoming'
  *   size        'small' | 'medium' | 'large' | number (px) — default 'medium' (96)
- *   variant     accent for halo/glow: 'violet' (default) | 'coral' | 'green' | 'blue'
+ *   variant     halo tint: 'accent' (default) | 'positive' | 'info'.
+ *               'violet'/'coral'/'green'/'blue' are kept as legacy aliases so
+ *               older call sites keep working; none of them is purple any more.
  *   intensity   motion preset: 'static' | 'ambient' | 'enter' | 'guide' | 'celebrate' | 'support'
  *               (defaults derived from mood; `animated={false}` forces 'static')
  *   animated    boolean — legacy switch; false => intensity 'static'
@@ -53,10 +55,14 @@ const MOODS = {
 }
 
 const ACCENT_VAR = {
-  violet: 'var(--violet)',
-  coral: 'var(--coral)',
-  green: 'var(--green)',
-  blue: 'var(--blue)',
+  accent: 'var(--accent)',
+  positive: 'var(--positive)',
+  info: 'var(--info)',
+  /* legacy aliases */
+  violet: 'var(--accent)',
+  coral: 'var(--accent)',
+  green: 'var(--positive)',
+  blue: 'var(--info)',
 }
 
 // Motion preset chosen when the caller doesn't pass `intensity`.
@@ -75,7 +81,7 @@ function defaultIntensity(mood, animated) {
 export function ChattoMascot({
   mood = 'happy',
   size = 'medium',
-  variant = 'violet',
+  variant = 'accent',
   intensity,
   animated = true,
   message = null,
@@ -89,7 +95,7 @@ export function ChattoMascot({
   const base = `chatto-${config.asset}-${bucket}`
   const webp = WEBP[base]
   const png = PNG[base]
-  const accent = ACCENT_VAR[variant] || ACCENT_VAR.violet
+  const accent = ACCENT_VAR[variant] || ACCENT_VAR.accent
 
   const level = intensity || defaultIntensity(mood, animated)
   const motionClass = level === 'static' ? '' : `chatto-fig-${level}`
@@ -138,7 +144,7 @@ export function ChattoMascot({
       {message && (
         <div
           className="chatto-bubble rounded-2xl px-4 py-2.5 mt-3 text-center"
-          style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)', maxWidth: 280 }}
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', maxWidth: 280 }}
         >
           <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.45 }}>{message}</p>
         </div>

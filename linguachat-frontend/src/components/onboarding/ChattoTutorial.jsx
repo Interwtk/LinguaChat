@@ -10,11 +10,11 @@ import { ChattoMascot } from '../mascot/ChattoMascot'
  * anchoring that would break on mobile.
  */
 const STEPS = [
-  { mood: 'welcoming',  variant: 'violet', titleKey: 'tutorialHomeTitle',        bodyKey: 'tutorialHomeBody' },
-  { mood: 'happy',      variant: 'violet', titleKey: 'tutorialPracticeTitle',    bodyKey: 'tutorialPracticeBody' },
+  { mood: 'welcoming',  variant: 'accent', titleKey: 'tutorialHomeTitle',        bodyKey: 'tutorialHomeBody' },
+  { mood: 'happy',      variant: 'accent', titleKey: 'tutorialPracticeTitle',    bodyKey: 'tutorialPracticeBody' },
   { mood: 'cheering',   variant: 'green',  titleKey: 'tutorialPathTitle',        bodyKey: 'tutorialPathBody' },
-  { mood: 'supportive', variant: 'violet', titleKey: 'tutorialPersonalizeTitle', bodyKey: 'tutorialPersonalizeBody' },
-  { mood: 'calm',       variant: 'violet', titleKey: 'tutorialNotesTitle',       bodyKey: 'tutorialNotesBody' },
+  { mood: 'supportive', variant: 'accent', titleKey: 'tutorialPersonalizeTitle', bodyKey: 'tutorialPersonalizeBody' },
+  { mood: 'calm',       variant: 'accent', titleKey: 'tutorialNotesTitle',       bodyKey: 'tutorialNotesBody' },
 ]
 
 export function ChattoTutorial() {
@@ -26,7 +26,7 @@ export function ChattoTutorial() {
   return (
     <div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 animate-fade-in"
-      style={{ background: 'rgba(0,0,0,0.32)', backdropFilter: 'blur(2px)' }}
+      style={{ background: 'rgba(28,35,51,0.38)' }}
       role="dialog"
       aria-modal="true"
       aria-label={t('tutorialAria')}
@@ -37,7 +37,7 @@ export function ChattoTutorial() {
         style={{ maxWidth: 400 }}
         onClick={event => event.stopPropagation()}
       >
-        <div className="rounded-3xl p-6 text-center" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)', boxShadow: '0 24px 64px rgba(15,23,42,0.22)' }}>
+        <div className="rounded-3xl p-6 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 24px 64px rgba(15,23,42,0.22)' }}>
           <div className="flex justify-center">
             {/* key forces a soft re-entry animation as Chatto changes mood */}
             <ChattoMascot key={index} mood={step.mood} size="medium" variant={step.variant} />
@@ -45,7 +45,7 @@ export function ChattoTutorial() {
           <h2 style={{ fontWeight: 800, fontSize: '1.1875rem', color: 'var(--ink)', lineHeight: 1.25, marginTop: 16, marginBottom: 8 }}>
             {t(step.titleKey)}
           </h2>
-          <p style={{ fontSize: '0.9375rem', color: 'var(--ink-muted)', lineHeight: 1.55, marginBottom: 18 }}>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', lineHeight: 1.55, marginBottom: 18 }}>
             {t(step.bodyKey)}
           </p>
 
@@ -54,7 +54,7 @@ export function ChattoTutorial() {
             {STEPS.map((_, idx) => (
               <span key={idx} style={{
                 width: idx === index ? 18 : 6, height: 6, borderRadius: 999,
-                background: idx <= index ? 'var(--violet)' : 'var(--border)',
+                background: idx <= index ? 'var(--accent)' : 'var(--border)',
                 transition: 'all 0.3s',
               }} />
             ))}
@@ -64,14 +64,14 @@ export function ChattoTutorial() {
             <button
               onClick={dismissTutorial}
               className="flex-shrink-0 px-4 py-3 rounded-2xl font-semibold text-sm transition-all hover:opacity-80 active:scale-[0.98]"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}
+              style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--muted)' }}
             >
               {t('skipTutorial')}
             </button>
             <button
               onClick={() => (isLast ? dismissTutorial() : setIndex(value => value + 1))}
               className="flex-1 py-3 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-95 hover:-translate-y-px active:scale-[0.98]"
-              style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))' }}
+              style={{ background: 'var(--accent)' }}
             >
               {isLast ? t('tutorialFinish') : t('tutorialNext')}
             </button>

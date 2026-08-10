@@ -49,18 +49,18 @@ export function DurationPicker({ disabled = false, onPick = null }) {
               flex: '1 1 30%',
               minWidth: 116,
               minHeight: 60,
-              background: selected ? 'var(--violet-soft)' : 'var(--bg-paper)',
-              border: `1.5px solid ${selected ? 'var(--violet)' : 'var(--border)'}`,
+              background: selected ? 'var(--accent-soft)' : 'var(--surface)',
+              border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
               color: 'var(--ink)',
               opacity: disabled ? 0.55 : 1,
               cursor: disabled ? 'not-allowed' : 'pointer',
             }}
           >
             <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 800 }}>{t(`sessionDuration_${mode}`)}</span>
-            <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--violet)' }}>
+            <span style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent)' }}>
               {t('sessionMinutes', { minutes: DURATION_MODES[mode].minutes })}
             </span>
-            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--ink-muted)', lineHeight: 1.35, marginTop: 2 }}>
+            <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.35, marginTop: 2 }}>
               {t(`sessionDurationHint_${mode}`)}
             </span>
           </button>

@@ -25,9 +25,9 @@ export function ScreenFallback({ label }) {
       aria-live="polite"
       aria-busy="true"
       className="flex-1 flex items-center justify-center px-6 py-10"
-      style={{ background: 'var(--bg-main)', minHeight: 180 }}
+      style={{ background: 'var(--bg)', minHeight: 180 }}
     >
-      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--ink-muted)' }}>{label}</span>
+      <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--muted)' }}>{label}</span>
     </div>
   )
 }
@@ -37,14 +37,14 @@ export function ScreenError({ errorLabel, retryLabel, onRetry }) {
     <div
       role="alert"
       className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-10 text-center"
-      style={{ background: 'var(--bg-main)', minHeight: 180 }}
+      style={{ background: 'var(--bg)', minHeight: 180 }}
     >
       <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)' }}>{errorLabel}</p>
       <button
         type="button"
         onClick={onRetry}
         className="rounded-2xl px-4 py-2.5 text-sm font-bold text-white transition-all active:scale-[0.98]"
-        style={{ background: 'var(--violet)', minHeight: 44 }}
+        style={{ background: 'var(--accent)', minHeight: 44 }}
       >
         {retryLabel}
       </button>

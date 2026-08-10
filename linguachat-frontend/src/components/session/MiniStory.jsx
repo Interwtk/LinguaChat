@@ -213,7 +213,7 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
       <div className="flex items-center gap-2 mb-3">
         <ChattoMascot mood="welcoming" size={38} intensity="enter" decorative />
         <div>
-          <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'var(--violet)' }}>{t('storyBadge')}</p>
+          <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: 'var(--accent)' }}>{t('storyBadge')}</p>
           <p lang={nativeLang} style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)' }}>{t('storyTitle')}</p>
         </div>
       </div>
@@ -231,7 +231,7 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
               <LinguaAvatar size={30} online className="mt-0.5" />
               <div style={{ maxWidth: '88%' }}>
                 <div className="bubble-lingua"><En style={{ fontWeight: 700 }}>{text}</En></div>
-                {tn.noteKey && <p lang={nativeLang} style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 4 }}>{t(tn.noteKey)}</p>}
+                {tn.noteKey && <p lang={nativeLang} style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: 4 }}>{t(tn.noteKey)}</p>}
               </div>
             </div>
           )
@@ -241,14 +241,14 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
       {/* the single decision — a real radio group, both options valid English */}
       {turn?.kind === 'choose' && (
         <div role="radiogroup" aria-label={t(turn.promptKey)} className="flex flex-col gap-2">
-          <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginBottom: 2 }}>{t(turn.promptKey)}</p>
+          <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginBottom: 2 }}>{t(turn.promptKey)}</p>
           {turn.options.map((opt, i) => {
             const chosen = state.branchId === opt.branch && state.currentTurn > turns.indexOf(turn)
             return (
               <button key={i} type="button" role="radio" aria-checked={chosen} onClick={() => choose(opt)}
                 className="rounded-2xl px-4 py-3 text-start transition-all active:scale-[0.99] flex items-center gap-2"
-                style={{ background: 'var(--bg-paper)', border: '1.5px solid var(--border)', minHeight: 48 }}>
-                <span aria-hidden="true" style={{ fontSize: 13, width: 14, color: 'var(--violet)' }}>{chosen ? '●' : '○'}</span>
+                style={{ background: 'var(--surface)', border: '1px solid var(--border)', minHeight: 48 }}>
+                <span aria-hidden="true" style={{ fontSize: 13, width: 14, color: 'var(--accent)' }}>{chosen ? '●' : '○'}</span>
                 <En style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--ink)' }}>{resolve(opt.textEn, vars)}</En>
               </button>
             )
@@ -259,12 +259,12 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
       {/* the one turn the learner produces themselves */}
       {turn?.kind === 'reply' && (
         <div>
-          <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginBottom: 8 }}>{t(turn.instructionKey)}</p>
+          <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginBottom: 8 }}>{t(turn.instructionKey)}</p>
 
           {retry && (
-            <div role="status" className="rounded-2xl p-4 mb-3 animate-scale-in" style={{ background: 'var(--coral-soft)', border: '1px solid var(--coral)' }}>
+            <div role="status" className="rounded-2xl p-4 mb-3 animate-scale-in" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}>
               <p style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--ink)', marginBottom: 4 }}>{t('ep1RetryTitle')}</p>
-              {retry.explainKey && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5, marginBottom: 6 }}>{t(retry.explainKey)}</p>}
+              {retry.explainKey && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 6 }}>{t(retry.explainKey)}</p>}
               {retry.natural && <En style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)' }}>{retry.natural}</En>}
             </div>
           )}
@@ -272,7 +272,7 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
           {suggestion && !reviewing && (
             <button type="button" onClick={() => { setReply(suggestion); mark('assistance') }}
               className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]"
-              style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}>
+              style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--ink)' }}>
               {t('ep1UseSuggestion')}: <En>{suggestion}</En>
             </button>
           )}
@@ -280,19 +280,19 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
           {reviewing && (
             <div role="status" aria-live="polite" className="flex items-center gap-2 mb-3 animate-fade-up">
               <LinguaAvatar size={26} online />
-              <span lang={nativeLang} style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--violet)' }}>{t('epEvaluating')}</span>
+              <span lang={nativeLang} style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--accent)' }}>{t('epEvaluating')}</span>
             </div>
           )}
 
           <div className="flex items-end gap-2 rounded-2xl p-2.5" aria-busy={reviewing}
-            style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', opacity: reviewing ? 0.7 : 1 }}>
+            style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', opacity: reviewing ? 0.7 : 1 }}>
             <input ref={inputRef} value={reply} onChange={e => setReply(e.target.value)} disabled={reviewing} lang="en" dir="ltr"
               onKeyDown={e => { if (e.key === 'Enter' && reply.trim() && !reviewing) submit({ fromSuggestion: reply === suggestion }) }}
               placeholder={t('ep1TypeReply')} aria-label={t(turn.instructionKey)} className="chat-input flex-1 bg-transparent text-sm"
               style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
             <button onClick={() => submit({ fromSuggestion: reply === suggestion })} disabled={!reply.trim() || reviewing}
               className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-white transition-all active:scale-[0.98]"
-              style={{ background: reply.trim() && !reviewing ? 'var(--blue)' : 'var(--border)' }}>{t('ep1Send')}</button>
+              style={{ background: reply.trim() && !reviewing ? 'var(--info)' : 'var(--border)' }}>{t('ep1Send')}</button>
           </div>
         </div>
       )}
@@ -300,7 +300,7 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
       {/* scene / line / close simply move on */}
       {turn && turn.kind !== 'choose' && turn.kind !== 'reply' && (
         <button onClick={next} className="w-full py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]"
-          style={{ background: 'var(--violet)' }}>
+          style={{ background: 'var(--accent)' }}>
           {isStoryFinished(state, story) ? t('storyFinish') : t('ep1Continue')}
         </button>
       )}
