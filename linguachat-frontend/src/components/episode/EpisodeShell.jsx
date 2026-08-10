@@ -77,7 +77,7 @@ function LinguaLine({ children }) {
     <div className="flex gap-3 mb-3 animate-message-in">
       <LinguaAvatar size={34} online className="mt-0.5" />
       <div className="flex flex-col gap-0.5" style={{ maxWidth: '88%' }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', letterSpacing: '0.04em' }}>Lingua</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', letterSpacing: '0.04em' }}>Lingua</span>
         <div className="bubble-lingua">{children}</div>
       </div>
     </div>
@@ -661,22 +661,22 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
   }
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6" style={{ background: 'var(--bg-main)' }}>
+    <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6" style={{ background: 'var(--bg)' }}>
       <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
         {/* header */}
-        <div className="rounded-2xl px-4 py-3 mb-5 flex items-center justify-between gap-3" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+        <div className="rounded-2xl px-4 py-3 mb-5 flex items-center justify-between gap-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>{t('ep1EpisodeBadge')}</p>
+            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--accent)' }}>{t('ep1EpisodeBadge')}</p>
             <p style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t(ep.titleKey)}</p>
           </div>
           <button type="button" onClick={exitEpisode} className="flex-shrink-0 rounded-full px-3 py-1.5 text-xs font-bold transition-all active:scale-[0.98]"
-            style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}>{t('ep1FreeChatCta')}</button>
+            style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--muted)' }}>{t('ep1FreeChatCta')}</button>
         </div>
 
         {/* progress dots */}
         <div className="flex items-center justify-center gap-1.5 mb-4" aria-hidden="true">
           {ep.steps.map((_, i) => (
-            <span key={i} style={{ width: i === stepIndex ? 16 : 5, height: 5, borderRadius: 999, background: i <= stepIndex ? 'var(--violet)' : 'var(--border)', transition: 'all 0.3s' }} />
+            <span key={i} style={{ width: i === stepIndex ? 16 : 5, height: 5, borderRadius: 999, background: i <= stepIndex ? 'var(--accent)' : 'var(--border)', transition: 'all 0.3s' }} />
           ))}
         </div>
 
@@ -684,13 +684,13 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
 
         {/* ---------------- SCENE ---------------- */}
         {step.type === 'scene' && (
-          <div className="animate-scale-in rounded-3xl p-6 text-center" style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+          <div className="animate-scale-in rounded-3xl p-6 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <div className="flex justify-center"><ChattoMascot mood={step.mood || 'welcoming'} size="medium" intensity="enter" /></div>
             <h2 style={{ fontWeight: 800, fontSize: '1.1875rem', color: 'var(--ink)', marginTop: 14, marginBottom: 8 }}>{t(step.titleKey)}</h2>
-            <p style={{ fontSize: '0.9375rem', color: 'var(--ink-muted)', lineHeight: 1.55, marginBottom: 8 }}>{t(step.bodyKey)}</p>
-            {step.showGoal && <p style={{ fontSize: '0.8125rem', color: 'var(--violet)', fontWeight: 700, marginBottom: 18 }}>{t(ep.goalKey)}</p>}
-            <button onClick={advance} className="cta-glow w-full py-3 rounded-2xl font-bold text-white text-sm transition-all hover:-translate-y-px active:scale-[0.98]"
-              style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))', '--cta-ring': 'rgba(124,92,255,0.18)' }}>{t(step.ctaKey || 'ep1Continue')}</button>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', lineHeight: 1.55, marginBottom: 8 }}>{t(step.bodyKey)}</p>
+            {step.showGoal && <p style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 700, marginBottom: 18 }}>{t(ep.goalKey)}</p>}
+            <button onClick={advance} className="w-full py-3 rounded-2xl font-bold text-white text-sm transition-all hover:-translate-y-px active:scale-[0.98]"
+              style={{ background: 'var(--accent)' }}>{t(step.ctaKey || 'ep1Continue')}</button>
           </div>
         )}
 
@@ -699,14 +699,14 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
           <div>
             <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.target, vars)}</En>{step.response && <> <En style={{ opacity: 0.85 }}>{resolve(step.response, vars)}</En></>}</LinguaLine>
             {(showHelp || showsHintByDefault(scaffold)) && (
-              <div className="rounded-2xl p-4 mb-3 animate-fade-up" style={{ background: 'var(--violet-soft)', border: '1px solid var(--violet)' }}>
+              <div className="rounded-2xl p-4 mb-3 animate-fade-up" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}>
                 <p lang={nativeLang} style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{(step.meaningItems || []).map(meaningOf).join(' · ')}</p>
-                {step.explainKey && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>{t(step.explainKey)}</p>}
+                {step.explainKey && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>{t(step.explainKey)}</p>}
               </div>
             )}
             <div className="flex gap-2">
-              <button onClick={() => setShowHelp(h => !h)} className="px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-[0.98]" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}>{showHelp ? t('ep1HideHelp') : t('ep1ShowHelp')}</button>
-              <button onClick={advance} className="flex-1 py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]" style={{ background: 'var(--violet)' }}>{t('ep1Continue')}</button>
+              <button onClick={() => setShowHelp(h => !h)} className="px-4 py-2.5 rounded-2xl text-sm font-semibold transition-all active:scale-[0.98]" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--muted)' }}>{showHelp ? t('ep1HideHelp') : t('ep1ShowHelp')}</button>
+              <button onClick={advance} className="flex-1 py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]" style={{ background: 'var(--accent)' }}>{t('ep1Continue')}</button>
             </div>
           </div>
         )}
@@ -715,7 +715,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
         {step.type === 'comprehension' && (
           <div className="animate-fade-up">
             <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{t(step.instructionKey)}</p>
-            <div className="rounded-2xl p-3 mb-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}><En style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--ink)' }}>{resolve(step.target, vars)}</En></div>
+            <div className="rounded-2xl p-3 mb-4" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)' }}><En style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--ink)' }}>{resolve(step.target, vars)}</En></div>
             <div className="flex flex-col gap-2">
               {step.options.map((opt, i) => {
                 const chosen = choice === i
@@ -729,7 +729,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
                       setTimeout(advance, 850)
                     }}
                     className="rounded-2xl px-4 py-3 text-left text-sm font-semibold transition-all active:scale-[0.99]"
-                    style={{ background: done && opt.correct ? 'var(--green-soft)' : chosen ? 'var(--yellow-soft)' : 'var(--bg-paper)', border: `1.5px solid ${done && opt.correct ? 'var(--green)' : chosen ? 'var(--yellow)' : 'var(--border)'}`, color: 'var(--ink)' }}>
+                    style={{ background: done && opt.correct ? 'var(--positive-soft)' : chosen ? 'var(--accent-soft)' : 'var(--surface)', border: `1px solid ${done && opt.correct ? 'var(--positive)' : chosen ? 'var(--accent-tint)' : 'var(--border)'}`, color: 'var(--ink)' }}>
                     {t(opt.key)}
                   </button>
                 )
@@ -756,7 +756,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
                       else { setLive(t('ep1KeepGoing')); setTimeout(() => setChoice(null), 800) }
                     }}
                     className="rounded-2xl px-4 py-3 text-left transition-all active:scale-[0.99]"
-                    style={{ background: done && opt.correct ? 'var(--green-soft)' : chosen && !opt.correct ? 'var(--coral-soft)' : 'var(--bg-paper)', border: `1.5px solid ${done && opt.correct ? 'var(--green)' : chosen && !opt.correct ? 'var(--coral)' : 'var(--border)'}` }}>
+                    style={{ background: done && opt.correct ? 'var(--positive-soft)' : chosen && !opt.correct ? 'var(--accent-soft)' : 'var(--surface)', border: `1px solid ${done && opt.correct ? 'var(--positive)' : chosen && !opt.correct ? 'var(--accent)' : 'var(--border)'}` }}>
                     <En style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--ink)' }}>{resolve(opt.textEn, vars)}</En>
                   </button>
                 )
@@ -774,10 +774,10 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
           return (
             <div className="animate-fade-up">
               <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>{t(step.instructionKey)}</p>
-              <div className="rounded-2xl p-3 mb-3 flex items-center flex-wrap gap-2" style={{ minHeight: 52, background: 'var(--bg-elevated)', border: '1.5px solid var(--violet)' }}>
-                {buildOrder.length === 0 && <span lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)' }}>{t(step.hintKey)}</span>}
+              <div className="rounded-2xl p-3 mb-3 flex items-center flex-wrap gap-2" style={{ minHeight: 52, background: 'var(--surface-soft)', border: '1px solid var(--accent)' }}>
+                {buildOrder.length === 0 && <span lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>{t(step.hintKey)}</span>}
                 {buildOrder.map((tok, i) => (
-                  <button key={i} onClick={() => setBuildOrder(o => o.filter((_, idx) => idx !== i))} className="rounded-xl px-3 py-1.5 text-sm font-bold" style={{ background: 'var(--violet-soft)', border: '1px solid var(--violet)', color: 'var(--violet)' }} aria-label={`remove ${tok}`}><En>{tok}</En></button>
+                  <button key={i} onClick={() => setBuildOrder(o => o.filter((_, idx) => idx !== i))} className="rounded-xl px-3 py-1.5 text-sm font-bold" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)', color: 'var(--accent)' }} aria-label={`remove ${tok}`}><En>{tok}</En></button>
                 ))}
               </div>
               <div className="flex flex-wrap gap-2 mb-4">
@@ -786,21 +786,21 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
                   const totalCount = tokens.filter(x => x === tok).length
                   const spent = usedCount >= totalCount
                   return (
-                    <button key={i} disabled={spent} onClick={() => setBuildOrder(o => [...o, tok])} className="rounded-xl px-3.5 py-2 text-sm font-bold transition-all active:scale-[0.98]" style={{ background: 'var(--bg-paper)', border: '1.5px solid var(--border)', color: 'var(--ink)', opacity: spent ? 0.4 : 1 }}><En>{tok}</En></button>
+                    <button key={i} disabled={spent} onClick={() => setBuildOrder(o => [...o, tok])} className="rounded-xl px-3.5 py-2 text-sm font-bold transition-all active:scale-[0.98]" style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)', opacity: spent ? 0.4 : 1 }}><En>{tok}</En></button>
                   )
                 })}
               </div>
               <div className="flex gap-2">
-                <button onClick={() => setBuildOrder([])} className="px-4 py-2.5 rounded-2xl text-sm font-semibold" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}>{t('ep1Reset')}</button>
+                <button onClick={() => setBuildOrder([])} className="px-4 py-2.5 rounded-2xl text-sm font-semibold" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--muted)' }}>{t('ep1Reset')}</button>
                 <button disabled={buildOrder.length < tokens.length} onClick={() => {
                   const correct = buildOrder.join(' ') === tokens.join(' ')
                   // An alternative offered after a struggle is support, so a
                   // success here is never counted as independent evidence.
                   recordItems([step.itemId].filter(Boolean), { correct, independent: false })
                   if (correct) { setLive(t('ep1Correct')); advance() } else { setRetry({ explainKey: 'ep1BuildRetry', natural: tokens.join(' ') }); setBuildOrder([]); setLive(t('ep1RetryTitle')) }
-                }} className="flex-1 py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]" style={{ background: 'var(--violet)', opacity: buildOrder.length < tokens.length ? 0.5 : 1 }}>{t('ep1Check')}</button>
+                }} className="flex-1 py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]" style={{ background: 'var(--accent)', opacity: buildOrder.length < tokens.length ? 0.5 : 1 }}>{t('ep1Check')}</button>
               </div>
-              {retry && <p lang={nativeLang} className="mt-3" style={{ fontSize: '0.8125rem', color: 'var(--coral)', fontWeight: 600 }}>{t(retry.explainKey)} <En style={{ fontWeight: 700 }}>{retry.natural}</En></p>}
+              {retry && <p lang={nativeLang} className="mt-3" style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 600 }}>{t(retry.explainKey)} <En style={{ fontWeight: 700 }}>{retry.natural}</En></p>}
             </div>
           )
         })()}
@@ -809,14 +809,14 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
         {step.type === 'fill_blank' && (
           <div className="animate-fade-up">
             <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>{t(step.instructionKey)}</p>
-            <div className="flex items-center gap-2 flex-wrap rounded-2xl p-3 mb-4" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center gap-2 flex-wrap rounded-2xl p-3 mb-4" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>
               <En style={{ fontSize: '1rem', fontWeight: 700 }}>{step.before}</En>
-              <input value={fillValue} onChange={e => setFillValue(e.target.value)} lang="en" dir="ltr" placeholder={t(step.placeholderKey || 'ep1TypeName')} aria-label={t(step.instructionKey)} className="chat-input rounded-xl px-3 py-2 text-sm" style={{ flex: 1, minWidth: 120, background: 'var(--bg-paper)', border: '1.5px solid var(--border)', color: 'var(--ink)' }} />
+              <input value={fillValue} onChange={e => setFillValue(e.target.value)} lang="en" dir="ltr" placeholder={t(step.placeholderKey || 'ep1TypeName')} aria-label={t(step.instructionKey)} className="chat-input rounded-xl px-3 py-2 text-sm" style={{ flex: 1, minWidth: 120, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)' }} />
               <En style={{ fontSize: '1rem', fontWeight: 700 }}>{step.after}</En>
             </div>
             {/* The example must match what is being asked for: a place for the
                 place step, something the learner enjoys for the likes step. */}
-            {showsHintByDefault(scaffold) && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginBottom: 12 }}>{t(step.hintKey)} <En style={{ fontWeight: 700 }}>{resolve(`${step.before} ${fillExample(step)}${step.after}`, vars)}</En></p>}
+            {showsHintByDefault(scaffold) && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginBottom: 12 }}>{t(step.hintKey)} <En style={{ fontWeight: 700 }}>{resolve(`${step.before} ${fillExample(step)}${step.after}`, vars)}</En></p>}
             <button disabled={!fillValue.trim()} onClick={() => {
               // A capture step stores what the learner typed (e.g. their place)
               // so later steps and model answers can use it. Never validated.
@@ -863,8 +863,8 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
                 recordItems([step.itemId].filter(Boolean), { correct: true, independent: false })
               }
               setLive(t('ep1Correct')); advance()
-            }} className="w-full py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]" style={{ background: 'var(--violet)', opacity: fillValue.trim() ? 1 : 0.5 }}>{t('ep1Check')}</button>
-            {retry && <p lang={nativeLang} className="mt-3" style={{ fontSize: '0.8125rem', color: 'var(--coral)', fontWeight: 600 }}>{t(retry.explainKey)} <En style={{ fontWeight: 700 }}>{retry.natural}</En></p>}
+            }} className="w-full py-2.5 rounded-2xl font-bold text-white text-sm transition-all active:scale-[0.98]" style={{ background: 'var(--accent)', opacity: fillValue.trim() ? 1 : 0.5 }}>{t('ep1Check')}</button>
+            {retry && <p lang={nativeLang} className="mt-3" style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 600 }}>{t(retry.explainKey)} <En style={{ fontWeight: 700 }}>{retry.natural}</En></p>}
           </div>
         )}
 
@@ -881,19 +881,25 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
                     <p lang={nativeLang} style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)' }}>{t(step.instructionKey)}</p>
                   </div>
                 )}
-            {(step.promptEn || step.sceneEn) && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginBottom: 10 }}>{t(step.instructionKey)}</p>}
+            {(step.promptEn || step.sceneEn) && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginBottom: 10 }}>{t(step.instructionKey)}</p>}
 
+            {/*
+              * Being corrected looks the same everywhere in the product: the way it
+              * is usually said, one calm line about why, and an invitation to try
+              * again. Same `.correction-card` as the conversation uses — not a
+              * warning panel, and not a different design for the same event.
+              */}
             {retry && (
-              <div role="status" className="rounded-2xl p-4 mb-3 animate-scale-in" style={{ background: 'var(--coral-soft)', border: '1px solid var(--coral)' }}>
-                <p style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--ink)', marginBottom: 4 }}>{t('ep1RetryTitle')}</p>
-                {retry.explainKey && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5, marginBottom: 6 }}>{t(retry.explainKey)}</p>}
-                {retry.natural && <En style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)' }}>{retry.natural}</En>}
-                {retry.promptKey && <p lang={nativeLang} style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', marginTop: 6 }}>{t(retry.promptKey)}</p>}
+              <div role="status" className="correction-card mb-3">
+                <p style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--accent-strong)', marginBottom: 3 }}>{t('ep1RetryTitle')}</p>
+                {retry.explainKey && <p lang={nativeLang} className="correction-why" style={{ marginBottom: 5 }}>{t(retry.explainKey)}</p>}
+                {retry.natural && <En className="correction-natural" style={{ fontSize: '0.9375rem' }}>{retry.natural}</En>}
+                {retry.promptKey && <p lang={nativeLang} className="correction-why" style={{ marginTop: 6 }}>{t(retry.promptKey)}</p>}
               </div>
             )}
 
             {step.suggestionEn && ((showsModelAnswer(scaffold) && !unaidedAttempt) || retry) && !reviewing && (
-              <button type="button" onClick={() => { setReply(resolve(step.suggestionEn, vars)); setUsedSuggestion(true); signal('assistance') }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]" style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', color: 'var(--ink)' }}>
+              <button type="button" onClick={() => { setReply(resolve(step.suggestionEn, vars)); setUsedSuggestion(true); signal('assistance') }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--ink)' }}>
                 {t('ep1UseSuggestion')}: <En>{resolve(step.suggestionEn, vars)}</En>
               </button>
             )}
@@ -903,7 +909,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
                 whether it is practised. */}
             {step.suggestionEn && attemptsRef.current >= 2 && !reviewing && (
               <button type="button" onClick={switchActivity} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 ms-2 transition-all active:scale-[0.98]"
-                style={{ background: 'var(--violet-soft)', border: '1.5px solid var(--violet)', color: 'var(--violet)' }}>
+                style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)', color: 'var(--accent)' }}>
                 {t('altPractiseAnotherWay')}
               </button>
             )}
@@ -912,15 +918,15 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
             {reviewing && (
               <div role="status" aria-live="polite" className="flex items-center gap-2 mb-3 animate-fade-up">
                 <LinguaAvatar size={28} online />
-                <span lang={nativeLang} style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--violet)' }}>{t('epEvaluating')}</span>
+                <span lang={nativeLang} style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--accent)' }}>{t('epEvaluating')}</span>
               </div>
             )}
 
-            <div className="flex items-end gap-2 rounded-2xl p-2.5" aria-busy={reviewing} style={{ background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', opacity: reviewing ? 0.7 : 1 }}>
+            <div className="flex items-end gap-2 rounded-2xl p-2.5" aria-busy={reviewing} style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', opacity: reviewing ? 0.7 : 1 }}>
               <input ref={replyInputRef} value={reply} onChange={e => setReply(e.target.value)} disabled={reviewing} lang="en" dir="ltr" onKeyDown={e => { if (e.key === 'Enter' && reply.trim() && !reviewing) submitFree(step.evalKind, step.itemIds, { fromSuggestion: answerWasShown() }) }} placeholder={t('ep1TypeReply')} aria-label={t(step.instructionKey)} className="chat-input flex-1 bg-transparent text-sm" style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
-              <button onClick={() => submitFree(step.evalKind, step.itemIds, { fromSuggestion: answerWasShown() })} disabled={!reply.trim() || reviewing} className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-white transition-all active:scale-[0.98]" style={{ background: reply.trim() && !reviewing ? 'var(--blue)' : 'var(--border)' }}>{t('ep1Send')}</button>
+              <button onClick={() => submitFree(step.evalKind, step.itemIds, { fromSuggestion: answerWasShown() })} disabled={!reply.trim() || reviewing} className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-white transition-all active:scale-[0.98]" style={{ background: reply.trim() && !reviewing ? 'var(--info)' : 'var(--border)' }}>{t('ep1Send')}</button>
             </div>
-            {praise && <p role="status" lang={nativeLang} className="mt-2" style={{ fontSize: '0.8125rem', color: 'var(--green)', fontWeight: 700 }}>{t(praise)}</p>}
+            {praise && <p role="status" lang={nativeLang} className="mt-2" style={{ fontSize: '0.8125rem', color: 'var(--positive)', fontWeight: 700 }}>{t(praise)}</p>}
           </div>
         )}
 
@@ -956,12 +962,12 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
         )}
 
         {step.type === 'completion' && (
-          <div className="animate-scale-in rounded-3xl p-6 text-center" style={{ background: 'var(--bg-paper)', border: '1px solid var(--green)', boxShadow: '0 0 0 3px var(--green-soft)' }}>
+          <div className="animate-scale-in rounded-3xl p-6 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--positive)', boxShadow: '0 0 0 3px var(--positive-soft)' }}>
             <div className="flex justify-center"><ChattoMascot mood="celebrating" size="medium" variant="green" intensity="celebrate" /></div>
-            <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--green)', marginTop: 12 }}>{t('ep1CanDoBadge')}</p>
+            <p style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--positive)', marginTop: 12 }}>{t('ep1CanDoBadge')}</p>
             <h2 style={{ fontWeight: 800, fontSize: '1.1875rem', color: 'var(--ink)', margin: '6px 0 8px' }}>{t(step.titleKey)}</h2>
-            <p style={{ fontSize: '0.9375rem', color: 'var(--ink-muted)', lineHeight: 1.55, marginBottom: 16 }}>{t(step.bodyKey)}</p>
-            <div className="rounded-2xl px-4 py-3 mb-5 inline-flex items-center gap-2" style={{ background: 'var(--green-soft)', border: '1px solid var(--green)' }}>
+            <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', lineHeight: 1.55, marginBottom: 16 }}>{t(step.bodyKey)}</p>
+            <div className="rounded-2xl px-4 py-3 mb-5 inline-flex items-center gap-2" style={{ background: 'var(--positive-soft)', border: '1px solid var(--positive)' }}>
               <span style={{ fontSize: 16 }}>✓</span>
               {/* Practice is worth doing and worth nothing extra. Announcing
                   "+55 XP" at the end of a replay was simply untrue. */}
@@ -969,7 +975,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
             </div>
             {/* Only after a long conversational episode, never after every card. */}
             {longRoleplay && <FormatFeedback format="roleplay" momentId={ep.id} />}
-            <button onClick={finish} className="cta-glow w-full py-3 rounded-2xl font-bold text-white text-sm transition-all hover:-translate-y-px active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, var(--green), var(--blue))', '--cta-ring': 'rgba(63,174,117,0.2)' }}>{t(step.ctaKey || 'ep1CloseCta')}</button>
+            <button onClick={finish} className="w-full py-3 rounded-2xl font-bold text-white text-sm transition-all hover:-translate-y-px active:scale-[0.98]" style={{ background: 'var(--positive)' }}>{t(step.ctaKey || 'ep1CloseCta')}</button>
           </div>
         )}
       </div>
@@ -1024,7 +1030,7 @@ export function EpisodeShell({ episodeId, forLearner = true, ...runnerProps }) {
      */
     return (
       <div role="alert" className="flex-1 flex flex-col items-center justify-center gap-3 px-6 py-10 text-center"
-        style={{ background: 'var(--bg-main)', minHeight: 180 }}>
+        style={{ background: 'var(--bg)', minHeight: 180 }}>
         <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)' }}>{t('episodeUnavailable')}</p>
       </div>
     )

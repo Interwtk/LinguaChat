@@ -19,8 +19,8 @@ export function LearningAction({ action }) {
     <div
       className="mt-2.5 rounded-2xl p-3 animate-fade-up"
       style={{
-        background: 'linear-gradient(135deg, var(--blue-soft), var(--violet-soft))',
-        border: '1.5px solid var(--blue)',
+        background: 'var(--accent-soft)',
+        border: '1px solid var(--info)',
         boxShadow: '0 8px 22px rgba(91,141,239,0.12)',
       }}
     >
@@ -32,15 +32,15 @@ export function LearningAction({ action }) {
               fontWeight: 900,
               textTransform: 'uppercase',
               letterSpacing: '0.1em',
-              color: 'var(--blue)',
+              color: 'var(--info)',
             }}>
               {t('learningAction')}
             </span>
             <span style={{
               fontSize: 10,
               fontWeight: 800,
-              color: 'var(--violet)',
-              background: 'var(--bg-paper)',
+              color: 'var(--accent)',
+              background: 'var(--surface)',
               border: '1px solid var(--border)',
               borderRadius: 999,
               padding: '1px 7px',
@@ -55,7 +55,7 @@ export function LearningAction({ action }) {
         <button
           type="button"
           className="rounded-xl px-3 py-2 text-xs font-bold transition-all hover:-translate-y-px active:scale-[0.98]"
-          style={{ background: 'var(--blue)', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
+          style={{ background: 'var(--info)', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
         >
           {t('tryIt')}
         </button>
@@ -68,7 +68,7 @@ export function LearningAction({ action }) {
               fontSize: 11,
               fontWeight: 650,
               color: 'var(--ink)',
-              background: 'var(--bg-paper)',
+              background: 'var(--surface)',
               border: '1px solid var(--border)',
               borderRadius: 999,
               padding: '3px 9px',

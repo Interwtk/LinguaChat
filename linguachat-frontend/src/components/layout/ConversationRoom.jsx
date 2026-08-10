@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MessageBubble, TypingIndicator } from '../chat/MessageBubble'
+import { PracticeToolbar } from '../chat/PracticeToolbar'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { CompletedEpisodes } from '../episode/CompletedEpisodes'
 import { lazyScreen } from '../ui/LazyBoundary'
@@ -33,7 +34,12 @@ const ARC = episodesOfLevel(PRE_A1)
 const EpisodePlayer = lazyScreen(() => import('../episode/EpisodeShell'), m => m.EpisodeShell)
 const SessionPlayer = lazyScreen(() => import('../session/SessionRunner'), m => m.SessionRunner)
 
-export function ConversationRoom() {
+/*
+ * `focusMode` / `onToggleFocusMode` come from the shell, which owns which panels
+ * exist; this screen only offers the switch and draws the way out. `onOpenNotes`
+ * is the phone's route to Lingua's notes, which on a laptop are already a panel.
+ */
+export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenNotes }) {
   const {
     messages,
     sendMessage,
@@ -148,7 +154,7 @@ export function ConversationRoom() {
 
   if (sessionActive && dailySession) {
     return (
-      <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>
+      <div className="flex flex-col h-full" style={{ background: 'var(--bg)' }}>
         <SessionPlayer {...playerLabels} />
       </div>
     )
@@ -157,7 +163,7 @@ export function ConversationRoom() {
   // Guided LinguaLoop episode takes over the practice area; free chat is preserved.
   if (episodeActiveId) {
     return (
-      <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>
+      <div className="flex flex-col h-full" style={{ background: 'var(--bg)' }}>
         <EpisodePlayer {...playerLabels} episodeId={episodeActiveId} runOptions={episodeRunOptions} />
       </div>
     )
@@ -168,14 +174,17 @@ export function ConversationRoom() {
   const suggestedEpisode = plan.episodeId ? SKELETON_BY_ID[plan.episodeId] || null : null
 
   return (
-    <div className="flex flex-col h-full" style={{ background: 'var(--bg-main)' }}>
-      <div className="flex items-center justify-between px-4 md:px-6 py-3.5 flex-shrink-0"
-        style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-paper)' }}>
+    <div className="flex flex-col h-full" style={{ background: 'var(--bg)' }}>
+      {/* The conversation header: who you are talking to, and how to get out. */}
+      <div className="flex items-center justify-between px-4 md:px-6 py-3 flex-shrink-0"
+        style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
         <div className="flex items-center justify-between" style={practiceInnerStyle}>
         <div className="flex items-center gap-3">
           <button
+            type="button"
+            aria-label={t('openPath')}
             className="lg:hidden flex items-center justify-center rounded-xl transition-colors"
-            style={{ width: 34, height: 34, background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}
+            style={{ width: 38, height: 38, background: 'var(--surface-sunk)', border: '1px solid var(--border)', color: 'var(--muted)' }}
             onClick={() => setMobileSheet('journey')}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -189,30 +198,47 @@ export function ConversationRoom() {
               type="button"
               onClick={() => navigateTo('today')}
               className="hidden lg:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-all active:scale-[0.98]"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)', marginBottom: 5 }}
+              style={{ background: 'var(--surface-sunk)', border: '1px solid var(--border)', color: 'var(--muted)', marginBottom: 5 }}
             >
               <span aria-hidden="true">←</span> {t('backToToday')}
             </button>
-            <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
-              {t('practiceRoom')}
+            <p className="font-display" style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>
+              {t('conversationWithLingua')}
             </p>
             <div className="flex items-center gap-1.5">
-              <span className="inline-block rounded-full animate-glow-breathe"
-                style={{ width: 6, height: 6, background: 'var(--green)' }} />
-              <p style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>
+              <span className="inline-block rounded-full"
+                style={{ width: 6, height: 6, background: 'var(--positive)' }} aria-hidden="true" />
+              <p style={{ fontSize: 11.5, color: 'var(--positive-deep)', fontWeight: 600 }}>
                 {isTyping ? t('writing') : t('listening')}
               </p>
             </div>
           </div>
         </div>
 
+        {/*
+          * The tools that belong to a conversation: put the room away to
+          * concentrate, or open the notes. Both are labelled; neither is an
+          * ambiguous icon on its own.
+          */}
         <div className="flex items-center gap-2">
-          <span style={{
-            fontSize: 10, fontWeight: 700, background: 'var(--violet-soft)', color: 'var(--violet)',
-            border: '1px solid var(--violet)', padding: '2px 8px', borderRadius: 999,
-          }}>
-            {profile.level}
-          </span>
+          {onOpenNotes && (
+            <button type="button" className="tool-chip lg:hidden" onClick={onOpenNotes}>
+              {t('notes')}
+            </button>
+          )}
+          {onToggleFocusMode && (
+            <button
+              type="button"
+              className="tool-chip"
+              onClick={onToggleFocusMode}
+              aria-pressed={focusMode}
+              style={focusMode
+                ? { background: 'var(--accent-soft)', color: 'var(--accent-strong)', borderColor: 'var(--accent-tint)' }
+                : undefined}
+            >
+              {focusMode ? t('exitFocusMode') : t('focusMode')}
+            </button>
+          )}
           <LinguaAvatar size={34} online />
         </div>
         </div>
@@ -223,9 +249,9 @@ export function ConversationRoom() {
           role="status"
           style={{
             ...practicePanelStyle,
-            background: 'var(--yellow-soft)',
-            border: '1px solid var(--yellow)',
-            color: 'var(--ink)',
+            background: 'var(--accent-soft)',
+            border: '1px solid var(--accent-tint)',
+            color: 'var(--text)',
             fontSize: '0.8125rem',
             lineHeight: 1.45,
           }}>
@@ -238,9 +264,9 @@ export function ConversationRoom() {
           role="status"
           style={{
             ...practicePanelStyle,
-            background: 'var(--green-soft)',
-            border: '1px solid var(--green)',
-            color: 'var(--ink)',
+            background: 'var(--positive-soft)',
+            border: '1px solid var(--positive)',
+            color: 'var(--text)',
             fontSize: '0.8125rem',
             lineHeight: 1.45,
           }}>
@@ -250,12 +276,10 @@ export function ConversationRoom() {
 
       {activeMissionDetails && (
         <div className="mt-3 rounded-2xl px-3.5 py-3 animate-fade-up"
-          style={{ ...practicePanelStyle, background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
+          style={{ ...practicePanelStyle, background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div className="flex items-center justify-between gap-3">
             <div style={{ minWidth: 0, flex: 1 }}>
-              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
-                {t('activeMission')}
-              </p>
+              <p className="eyebrow">{t('activeMission')}</p>
               <p style={{ fontSize: '0.8125rem', fontWeight: 800, color: 'var(--ink)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {activeMissionDetails.mission.titleKey ? t(activeMissionDetails.mission.titleKey) : activeMissionDetails.mission.title} · {t('missionStep')} {activeMissionDetails.currentStepNumber} {t('of')} {activeMissionDetails.totalSteps}
               </p>
@@ -263,25 +287,24 @@ export function ConversationRoom() {
             <button
               type="button"
               onClick={abandonMission}
-              className="rounded-full px-3 py-1.5 text-xs font-bold transition-all active:scale-[0.98]"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}
+              className="tool-chip"
             >
               {t('exitMission')}
             </button>
           </div>
           <div style={{ height: 5, background: 'var(--border)', borderRadius: 999, overflow: 'hidden', marginTop: 9 }}>
-            <div style={{ width: `${activeMissionDetails.progressPercent}%`, height: '100%', background: 'linear-gradient(90deg, var(--violet), var(--blue))' }} />
+            <div className="xp-bar-fill" style={{ width: `${activeMissionDetails.progressPercent}%`, height: '100%', background: 'var(--accent)' }} />
           </div>
         </div>
       )}
 
       {missionCelebration && !activeMissionDetails && (
         <div className="mt-3 rounded-2xl px-3.5 py-3 animate-scale-in flex items-center gap-3"
-          style={{ ...practicePanelStyle, background: 'var(--green-soft)', border: '1px solid var(--green)', boxShadow: '0 12px 30px -16px rgba(63,174,117,0.5)' }}>
+          style={{ ...practicePanelStyle, background: 'var(--positive-soft)', border: '1px solid var(--positive)' }}>
           <ChattoMascot mood="celebrating" size={54} variant="green" />
           <div style={{ minWidth: 0 }}>
             <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--ink)' }}>{t('missionComplete')}</p>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>
               {missionCelebration.message} +{missionCelebration.xp} XP.
             </p>
           </div>
@@ -291,19 +314,18 @@ export function ConversationRoom() {
       <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6">
         <div style={practiceInnerStyle}>
           {!activeMissionDetails && suggestedEpisode && (
-            <div className="card-lift rounded-2xl p-4 mb-5 flex items-center gap-3 animate-fade-up"
-              style={{ background: 'var(--bg-paper)', border: '1.5px solid var(--violet)', boxShadow: '0 0 0 3px var(--violet-soft)' }}>
-              <ChattoMascot mood="happy" size={44} decorative intensity="ambient" />
+            <div className="rounded-2xl p-4 mb-5 flex items-center gap-3 animate-fade-up"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+              <ChattoMascot mood="happy" size={42} decorative intensity="ambient" />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
+                <p className="eyebrow">
                   {t('ep1EpisodeBadge')}{plan.hasReview ? ` · ${t('planReviewTag')}` : ''}
                 </p>
-                <p style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25 }}>{t(suggestedEpisode.titleKey)}</p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', lineHeight: 1.4, marginTop: 2 }}>{t(suggestedEpisode.goalKey)}</p>
+                <p className="font-display" style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.25, marginTop: 2 }}>{t(suggestedEpisode.titleKey)}</p>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.4, marginTop: 2 }}>{t(suggestedEpisode.goalKey)}</p>
               </div>
-              <button type="button" onClick={() => startEpisode(suggestedEpisode.id)}
-                className="flex-shrink-0 rounded-2xl px-4 py-2.5 text-sm font-bold text-white transition-all hover:-translate-y-px active:scale-[0.98]"
-                style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))' }}>
+              <button type="button" onClick={() => startEpisode(suggestedEpisode.id)} className="btn-primary flex-shrink-0"
+                style={{ minHeight: 42, padding: '10px 16px', fontSize: '0.875rem' }}>
                 {plan.type === 'continue_episode' ? t('ep1ContinuePrefix') : t('ep1StartCta')}
               </button>
             </div>
@@ -316,7 +338,7 @@ export function ConversationRoom() {
             */}
           {!activeMissionDetails && rememberedFact && (
             <div className="rounded-2xl p-3.5 mb-5 flex items-start gap-3 animate-fade-up"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}>
+              style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>
               <LinguaAvatar size={30} online className="mt-0.5" />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink)', lineHeight: 1.5 }}>
@@ -324,13 +346,11 @@ export function ConversationRoom() {
                 </p>
                 <div className="flex gap-2 mt-2 flex-wrap">
                   <button type="button" onClick={() => usePrompt(`Let's talk about ${rememberedFact.value}.`)}
-                    className="rounded-full px-3 py-1.5 text-xs font-bold transition-all active:scale-[0.98]"
-                    style={{ background: 'var(--violet-soft)', border: '1.5px solid var(--violet)', color: 'var(--violet)', minHeight: 36 }}>
+                    className="tool-chip"
+                    style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent-tint)', color: 'var(--accent-strong)' }}>
                     <span lang={nativeLanguageInfo.base}>{t('memoryUseTopic')}</span>
                   </button>
-                  <button type="button" onClick={useAnotherTopic}
-                    className="rounded-full px-3 py-1.5 text-xs font-semibold transition-all active:scale-[0.98]"
-                    style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)', color: 'var(--ink-muted)', minHeight: 36 }}>
+                  <button type="button" onClick={useAnotherTopic} className="tool-chip">
                     <span lang={nativeLanguageInfo.base}>{t('memoryUseAnotherTopic')}</span>
                   </button>
                 </div>
@@ -338,8 +358,13 @@ export function ConversationRoom() {
             </div>
           )}
           {!activeMissionDetails && <CompletedEpisodes />}
-          {messages.map(msg => (
-            <MessageBubble key={msg.id} message={msg} />
+          {messages.map((msg, index) => (
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              /* the learner's own line, so a correction can quote it */
+              previousUserText={messages.slice(0, index).reverse().find(m => m.role === 'user')?.text || null}
+            />
           ))}
           {isTyping && <TypingIndicator />}
           <div ref={bottomRef} />
@@ -349,21 +374,10 @@ export function ConversationRoom() {
       {sparkOpen && (
         <div className="px-4 md:px-6 pb-2 animate-fade-up">
           <div className="rounded-2xl p-3 flex flex-wrap gap-2"
-            style={{ ...practiceInnerStyle, background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-            <p style={{ width: '100%', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ink-muted)', marginBottom: 4 }}>
-              {t('quickPrompts')}
-            </p>
+            style={{ ...practiceInnerStyle, background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <p className="eyebrow" style={{ width: '100%', marginBottom: 4 }}>{t('quickPrompts')}</p>
             {quickPrompts.map(p => (
-              <button
-                key={p.label}
-                onClick={() => usePrompt(p.text)}
-                className="transition-all hover:scale-[1.02] active:scale-[0.98]"
-                style={{
-                  fontSize: '0.8125rem', fontWeight: 600,
-                  background: 'var(--bg-elevated)', border: '1.5px solid var(--border)',
-                  color: 'var(--ink)', padding: '5px 12px', borderRadius: 999, cursor: 'pointer',
-                }}
-              >
+              <button key={p.label} type="button" className="tool-chip" onClick={() => usePrompt(p.text)}>
                 {p.label}
               </button>
             ))}
@@ -371,78 +385,83 @@ export function ConversationRoom() {
         </div>
       )}
 
-      <div className="px-4 md:px-6 py-4 flex-shrink-0"
-        style={{ borderTop: '1px solid var(--border)', background: 'var(--bg-paper)' }}>
-        <div className="flex items-end gap-2.5 rounded-2xl p-2.5"
-          style={{ ...practiceInnerStyle, background: 'var(--bg-elevated)', border: '1.5px solid var(--border)', transition: 'border-color 0.2s' }}>
-          <button
-            onClick={() => setSparkOpen(o => !o)}
-            title={t('quickPrompts')}
-            className="flex-shrink-0 flex items-center justify-center rounded-xl transition-all hover:scale-105 active:scale-95"
-            style={{
-              width: 36, height: 36,
-              background: sparkOpen ? 'var(--yellow)' : 'var(--bg-main)',
-              border: '1.5px solid var(--border)',
-              color: sparkOpen ? '#fff' : 'var(--ink-muted)',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill={sparkOpen ? '#fff' : 'none'}
-              stroke={sparkOpen ? '#fff' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-            </svg>
-          </button>
+      {/*
+        * THE COMPOSER. Four labelled tools sit above the input where the learner is
+        * already looking, and the input itself is one plain field with one send
+        * button. The microphone that used to live here was permanently disabled
+        * with an English-only tooltip — an affordance for a feature that does not
+        * exist — so it is gone until voice actually is one.
+        */}
+      <div className="px-4 md:px-6 pt-2.5 pb-3 flex-shrink-0"
+        style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
+        <div style={practiceInnerStyle}>
+          <div className="flex items-center gap-2 mb-2">
+            <PracticeToolbar t={t} onUsePrompt={usePrompt} />
+            <button
+              type="button"
+              onClick={() => setSparkOpen(o => !o)}
+              aria-expanded={sparkOpen}
+              aria-label={t('quickPrompts')}
+              className="flex-shrink-0 flex items-center justify-center rounded-full"
+              style={{
+                width: 34, height: 34,
+                background: sparkOpen ? 'var(--accent-soft)' : 'var(--surface-sunk)',
+                border: `1px solid ${sparkOpen ? 'var(--accent-tint)' : 'var(--border)'}`,
+                color: sparkOpen ? 'var(--accent-strong)' : 'var(--muted)',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+            </button>
+          </div>
 
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={handleKey}
-            placeholder={activeMissionDetails ? t('missionInputPlaceholder') : t('inputPlaceholder')}
-            rows={1}
-            className="chat-input flex-1 resize-none bg-transparent text-sm"
-            style={{
-              color: 'var(--ink)', lineHeight: 1.5, maxHeight: 120,
-              border: 'none', outline: 'none', padding: '7px 0',
-              fontFamily: 'inherit',
-            }}
-          />
+          <div className="flex items-end gap-2.5 rounded-2xl p-2.5"
+            style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={handleKey}
+              placeholder={activeMissionDetails ? t('missionInputPlaceholder') : t('inputPlaceholder')}
+              rows={1}
+              /* the learner writes English here, whatever direction the app runs in */
+              lang="en"
+              dir="ltr"
+              aria-label={t('inputPlaceholder')}
+              className="chat-input flex-1 resize-none bg-transparent text-sm"
+              style={{
+                color: 'var(--text)', lineHeight: 1.5, maxHeight: 120,
+                border: 'none', outline: 'none', padding: '8px 4px',
+                fontFamily: 'inherit',
+              }}
+            />
 
-          <button
-            disabled
-            title="Voice input - coming soon"
-            className="flex-shrink-0 flex items-center justify-center rounded-xl"
-            style={{ width: 36, height: 36, background: 'var(--bg-main)', border: '1.5px solid var(--border)', color: 'var(--border)', cursor: 'not-allowed', opacity: 0.5 }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-              <line x1="12" y1="19" x2="12" y2="23" />
-              <line x1="8" y1="23" x2="16" y2="23" />
-            </svg>
-          </button>
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={!canSend}
+              aria-label={t('send')}
+              className="flex-shrink-0 flex items-center justify-center rounded-xl transition-colors"
+              style={{
+                width: 40, height: 40,
+                background: canSend ? 'var(--accent)' : 'var(--surface-sunk)',
+                color: canSend ? '#FFF8F4' : 'var(--muted)',
+                cursor: canSend ? 'pointer' : 'not-allowed',
+                border: canSend ? 'none' : '1px solid var(--border)',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="22" y1="2" x2="11" y2="13" />
+                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+              </svg>
+            </button>
+          </div>
 
-          <button
-            onClick={handleSend}
-            disabled={!canSend}
-            className="flex-shrink-0 flex items-center justify-center rounded-xl transition-all duration-200"
-            style={{
-              width: 36, height: 36,
-              background: canSend ? 'var(--blue)' : 'var(--border)',
-              color: '#fff', cursor: canSend ? 'pointer' : 'not-allowed',
-              border: 'none',
-              transform: canSend ? 'scale(1)' : 'scale(0.96)',
-            }}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13" />
-              <polygon points="22 2 15 22 11 13 2 9 22 2" />
-            </svg>
-          </button>
+          <p style={{ fontSize: 11.5, color: 'var(--muted)', textAlign: 'center', marginTop: 7 }}>
+            {activeMissionDetails ? t('missionInputHint') : t('inputHint')}
+          </p>
         </div>
-
-        <p style={{ fontSize: 11, color: 'var(--ink-muted)', textAlign: 'center', marginTop: 8 }}>
-          {activeMissionDetails ? t('missionInputHint') : t('inputHint')}
-        </p>
       </div>
     </div>
   )

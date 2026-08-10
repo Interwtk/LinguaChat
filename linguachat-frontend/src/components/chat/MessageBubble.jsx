@@ -7,7 +7,12 @@ function formatTime(ts) {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
-export function MessageBubble({ message }) {
+/*
+ * `previousUserText` is the learner's own line, threaded down so a correction can
+ * quote what they wrote instead of inventing a strikethrough from the corrected
+ * sentence — which is what it used to do.
+ */
+export function MessageBubble({ message, previousUserText = null }) {
   const { selectedMessage, selectMessage, submitMissionOption, isTyping, activeMissionDetails } = useApp()
   const isUser = message.role === 'user'
   const isSelected = selectedMessage?.id === message.id
@@ -25,7 +30,7 @@ export function MessageBubble({ message }) {
       <div className="flex justify-end mb-4 animate-message-in">
         <div className="flex flex-col items-end gap-1">
           <div className="bubble-user">{message.text}</div>
-          <span style={{ fontSize: 11, color: 'var(--ink-muted)' }}>{formatTime(message.ts)}</span>
+          <span style={{ fontSize: 11, color: 'var(--muted)' }}>{formatTime(message.ts)}</span>
         </div>
       </div>
     )
@@ -35,21 +40,21 @@ export function MessageBubble({ message }) {
     <div className="flex gap-3 mb-5 animate-message-in">
       <LinguaAvatar size={34} online className="mt-0.5" />
       <div className="flex flex-col gap-0.5" style={{ maxWidth: '85%' }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', letterSpacing: '0.04em', marginBottom: 2 }}>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--muted)', letterSpacing: '0.02em', marginBottom: 2 }}>
           Lingua
         </span>
         <div
           className={`bubble-lingua cursor-pointer transition-all duration-200 ${
             isSelected ? 'ring-2' : 'hover:ring-1'
           }`}
-          style={{ '--tw-ring-color': 'var(--blue)', '--tw-ring-offset-shadow': 'none' }}
+          style={{ '--tw-ring-color': 'var(--accent-tint)', '--tw-ring-offset-shadow': 'none' }}
           onClick={() => hasFeedback && selectMessage(message)}
           title={hasFeedback ? 'Click to see notes' : ''}
         >
           {message.text}
         </div>
 
-        {hasFeedback && <TutorFeedback feedback={message.feedback} />}
+        {hasFeedback && <TutorFeedback feedback={message.feedback} original={previousUserText} />}
         <LearningAction action={message.feedback?.learningAction} />
 
         {Array.isArray(message.missionOptions) && message.missionOptions.length > 0 && (
@@ -60,11 +65,10 @@ export function MessageBubble({ message }) {
                 type="button"
                 disabled={isTyping || !isCurrentMissionStep}
                 onClick={() => submitMissionOption(option)}
-                className="rounded-full px-3 py-1.5 text-xs font-bold transition-all hover:-translate-y-px active:scale-[0.98]"
+                className="tool-chip"
                 style={{
-                  background: 'var(--bg-elevated)',
-                  border: '1.5px solid var(--border)',
-                  color: 'var(--ink)',
+                  background: 'var(--surface)',
+                  color: 'var(--text)',
                   opacity: isTyping || !isCurrentMissionStep ? 0.55 : 1,
                 }}
               >
@@ -74,7 +78,7 @@ export function MessageBubble({ message }) {
           </div>
         )}
 
-        <span style={{ fontSize: 11, color: 'var(--ink-muted)', marginTop: 2 }}>{formatTime(message.ts)}</span>
+        <span style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{formatTime(message.ts)}</span>
       </div>
     </div>
   )
@@ -85,7 +89,7 @@ export function TypingIndicator() {
     <div className="flex gap-3 mb-4 animate-message-in">
       <LinguaAvatar size={34} online />
       <div className="flex flex-col gap-1">
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)' }}>Lingua</span>
+        <span style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--muted)' }}>Lingua</span>
         <div className="bubble-lingua flex items-center gap-1.5 py-3">
           <span className="typing-dot" />
           <span className="typing-dot" />
