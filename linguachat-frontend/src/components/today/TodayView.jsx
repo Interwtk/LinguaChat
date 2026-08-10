@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
-import { getTodayPhrase, MOCK_STATS, LAST_MISTAKES } from '../../data/mockData'
+import { getTodayPhrase } from '../../data/mockData'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { getMissionForToday } from '../../services/missions'
 import { getLocalizedMeaning } from '../../services/localizedMeaning'
 import { ChattoMascot } from '../mascot/ChattoMascot'
+import { StreakFlame } from '../ui/StreakFlame'
+import { QuickActionWindows } from './QuickActionWindows'
 // Home names episodes and shows their keys; it never renders their content
 import { SKELETON_BY_ID } from '../../learning/curriculum/preA1Skeleton.generated.js'
 import { PRE_A1, episodesOfLevel } from '../../learning/curriculum/levels.js'
@@ -32,19 +34,48 @@ import { DurationPicker } from '../session/DurationPicker'
 import { sessionHasReview, sessionHeadline, sessionProgress } from '../../learning/engine/session.js'
 import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 
-function StatPill({ label, value, color }) {
+/*
+ * HOME ANSWERS FOUR QUESTIONS, IN THIS ORDER: what do I do today, what was I
+ * doing, how am I going, and what can I open right now. Everything below is one
+ * of those four; nothing on this screen is a widget for its own sake.
+ *
+ * Every number comes from real state — the streak from local progress, the words
+ * from the learner model, the episodes from the planner. The mockup's "12 days"
+ * and "76 words" were example data and are treated as such.
+ */
+
+/* One number and its name. Three of them, on one line, and no percentages. */
+function StatCell({ value, unit, label }) {
   return (
-    <div className="card-lift flex flex-col items-center justify-center py-3 px-4 rounded-2xl"
-      style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-      <p style={{ fontWeight: 800, fontSize: '1.25rem', color }}>{value}</p>
-      <p style={{ fontSize: 11, color: 'var(--ink-muted)', fontWeight: 500 }}>{label}</p>
+    <div className="flex flex-col items-center justify-center py-3 px-2 text-center">
+      <p className="font-display" style={{ fontWeight: 700, fontSize: '1.3rem', color: 'var(--ink)', lineHeight: 1.1 }}>
+        {value}
+        {unit && <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--muted)' }}> {unit}</span>}
+      </p>
+      <p style={{ fontSize: 11.5, color: 'var(--muted)', fontWeight: 500, marginTop: 2 }}>{label}</p>
     </div>
   )
 }
 
-export function TodayView() {
+/* A small window for a secondary thing: today's challenge, the phrase, a note. */
+function SmallWindow({ eyebrow, children, tone = 'paper', className = '', style }) {
+  const background = tone === 'accent' ? 'var(--accent-soft)'
+    : tone === 'positive' ? 'var(--positive-soft)'
+      : 'var(--surface)'
+  return (
+    <section
+      className={`rounded-2xl p-4 ${className}`}
+      style={{ background, border: '1px solid var(--border)', ...style }}
+    >
+      {eyebrow && <p className="eyebrow" style={{ marginBottom: 6 }}>{eyebrow}</p>}
+      {children}
+    </section>
+  )
+}
+
+export function TodayView({ onOpenPath, onOpenNotes }) {
   const { navigateTo, profile, t, nativeLanguageInfo, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions, episodeArcVersion, startEpisode,
-    dailySession, previewSession, beginSession } = useApp()
+    dailySession, previewSession, beginSession, localProgress, messages } = useApp()
   const plan = planDay(loadLearnerModel(), ARC)
   const planEpisode = plan.episodeId ? getEpisode(plan.episodeId) : null
   /*
@@ -98,8 +129,6 @@ export function TodayView() {
   const headline = sessionHeadline(session)
   const sessionEpisode = headline?.episodeId ? getEpisode(headline.episodeId) : null
   const sessionStarted = session.status === 'active'
-  // A localized topic name, or nothing at all when the session has no subject
-  // matter to promise. Learners never see the interest id itself.
   /*
    * Today's promise, in one of three voices: something the learner told Lingua,
    * something they chose at onboarding, or simply an everyday situation. Never
@@ -118,97 +147,167 @@ export function TodayView() {
   const hour = new Date().getHours()
   const greeting = hour < 12 ? t('goodMorning') : hour < 18 ? t('goodAfternoon') : t('goodEvening')
 
-  return (
-    <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8" style={{ background: 'var(--bg-main)' }}>
-      <div style={{ maxWidth: 680, margin: '0 auto' }}>
+  /*
+   * REAL PROGRESS, NOT EXAMPLE DATA. The streak is what local progress recorded,
+   * the words are what the learner model holds, the episodes are what the planner
+   * counts. The mockup's numbers were illustrations.
+   */
+  const streak = localProgress?.streak ?? 0
+  const wordCount = useMemo(() => Object.keys(loadLearnerModel().languageItems || {}).length, [episodeArcVersion])
+  /*
+   * The most recent thing Lingua helped fix, taken from the conversation itself:
+   * what the learner wrote, and the version Lingua offered back. An internal
+   * error id would be neither translated nor meaningful to a learner, so if no
+   * correction has happened yet this block simply is not there.
+   */
+  const lastFix = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i -= 1) {
+      const message = messages[i]
+      const corrected = message?.feedback?.correction
+      if (!corrected) continue
+      // the learner's own line is the closest preceding user message
+      const original = messages.slice(0, i).reverse().find(m => m.role === 'user')?.text || null
+      return { original, corrected, why: message.feedback.why || null }
+    }
+    return null
+  }, [messages])
 
-        {/* Greeting */}
-        <div className="flex items-start justify-between mb-8 animate-fade-up">
-          <div>
-            <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--ink-muted)', marginBottom: 6 }}>
+  return (
+    <div className="flex-1 overflow-y-auto px-4 md:px-7 py-5 md:py-7" style={{ background: 'var(--bg)' }}>
+      <div style={{ maxWidth: 720, margin: '0 auto' }}>
+
+        {/* ─── 1. Where the learner is: the day, their name, the fire ─── */}
+        <header className="flex items-start justify-between gap-4 mb-5 animate-fade-up">
+          <div style={{ minWidth: 0 }}>
+            <p className="eyebrow" style={{ marginBottom: 5 }}>
               {new Date().toLocaleDateString(interfaceLanguageInfo.code || 'en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
-            <h1 style={{ fontWeight: 800, fontSize: 'clamp(1.5rem, 4vw, 2rem)', color: 'var(--ink)', lineHeight: 1.1 }}>
-              {greeting},<br />
-              <span className="gradient-text">{profile.name || 'friend'}</span>
+            <h1 className="font-display" style={{ fontWeight: 700, fontSize: 'clamp(1.5rem, 5vw, 2.05rem)', color: 'var(--ink)', lineHeight: 1.08 }}>
+              {greeting}{profile.name ? `, ${profile.name}` : ''}
             </h1>
-            <p style={{ fontSize: '0.9375rem', color: 'var(--ink-muted)', marginTop: 8, lineHeight: 1.5 }}>
-              {MOCK_STATS.streak} {t('dayStreak')}. {t('keepGoing')}
-            </p>
+            {/* What the learner said they came for, in their own words. */}
+            {profile.goal && (
+              <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginTop: 6, lineHeight: 1.45 }}>
+                {t('yourGoalIs', { goal: profile.goal })}
+              </p>
+            )}
           </div>
-          <div className="card-lift flex items-center gap-2 px-3 py-2 rounded-2xl"
-            style={{ background: 'var(--bg-paper)', border: '1px solid var(--border)' }}>
-            <span className="animate-glow-breathe" style={{ fontSize: 20, display: 'inline-block' }}>🔥</span>
-            <span style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--coral)' }}>{MOCK_STATS.streak}</span>
+          {/* The streak: the flame carries the number, the number carries the meaning. */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            {streak > 0 ? (
+              <>
+                <StreakFlame days={streak} size={34} />
+                <div>
+                  <p className="font-display" style={{ fontWeight: 700, fontSize: '1.35rem', color: 'var(--ink)', lineHeight: 1 }}>{streak}</p>
+                  <p style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>{t('dayStreak')}</p>
+                </div>
+              </>
+            ) : (
+              <p style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 600, maxWidth: 108, textAlign: 'end' }}>
+                {t('streakStartToday')}
+              </p>
+            )}
           </div>
+        </header>
+
+        {/* ─── 2. Lingua, present rather than hidden behind a button ─── */}
+        <section className="rounded-2xl p-4 mb-4 animate-fade-up"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}>
+          <div className="flex items-center gap-3">
+            <LinguaAvatar size={44} online />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>{t('linguaReady')}</p>
+              <p style={{ fontSize: 12, color: 'var(--positive-deep)', fontWeight: 600 }}>{t('linguaOnline')}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => navigateTo('practice')}
+              className="btn-quiet flex-shrink-0"
+              style={{ minHeight: 40, padding: '9px 14px' }}
+            >
+              {t('linguaWriteTo')}
+            </button>
+          </div>
+          <p style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.5, marginTop: 10 }}>
+            “{t('linguaReadyQuote')}”
+          </p>
+        </section>
+
+        {/* ─── 3. At hand: four things worth opening now, all of them real ─── */}
+        <div className="mb-4 animate-fade-up" style={{ animationDelay: '0.02s' }}>
+          <QuickActionWindows sessionStarted={sessionStarted} onOpenNotes={onOpenNotes} />
         </div>
 
-        {/* Today's adaptive session — the main promise of the day */}
-        <div className="rounded-3xl p-5 mb-6 animate-fade-up" style={{ background: 'linear-gradient(135deg, var(--violet-soft), var(--blue-soft))', border: '1.5px solid var(--violet)' }}>
-          <div className="flex items-center gap-4">
-            <ChattoMascot mood="welcoming" size={52} decorative intensity="ambient" />
+        {/* ─── 4. Today's session: the main promise, and the main action ─── */}
+        <section className="mission-card p-5 mb-4 animate-fade-up" style={{ animationDelay: '0.04s' }}>
+          <div className="flex items-start gap-3.5">
+            <ChattoMascot mood="welcoming" size={46} decorative intensity="ambient" />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
-                {t('sessionBadge')} · {arc.completed}/{arc.total}{sessionHasReview(session) ? ` · ${t('planReviewTag')}` : ''}
+              <p className="eyebrow">
+                {t('sessionTodayEyebrow')} · {arc.completed}/{arc.total}{sessionHasReview(session) ? ` · ${t('planReviewTag')}` : ''}
               </p>
-              <p lang={nativeLanguageInfo.base} style={{ fontSize: '1.0625rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25, marginTop: 2 }}>
+              <h2 className="font-display" lang={nativeLanguageInfo.base}
+                style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.25, marginTop: 3 }}>
                 {sessionEpisode ? t(sessionEpisode.titleKey) : t('sessionFreeChatTitle')}
-              </p>
-              <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45, marginTop: 3 }}>
+              </h2>
+              <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.5, marginTop: 4 }}>
                 {sessionEpisode ? t(sessionEpisode.goalKey) : t('sessionFreeChatBody')}
               </p>
               {/* Today's subject matter, in plain words. Never an id, never a
                   score, never the reason it was chosen. It comes from the
                   stored plan, so it cannot drift while the session is running. */}
               {topicLine && (
-                <p lang={interfaceLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink)', fontWeight: 700, marginTop: 5 }}>
+                <p lang={interfaceLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--accent-strong)', fontWeight: 700, marginTop: 6 }}>
                   {topicLine}
                 </p>
               )}
-              <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', color: 'var(--violet)', fontWeight: 700, marginTop: 6 }}>
-                {t(`sessionDuration_${session.durationMode}`)} · {t('sessionMinutes', { minutes: session.estimatedMinutes })}
-              </p>
+              <div className="flex flex-wrap items-center gap-1.5 mt-3">
+                <span className="tool-chip" style={{ minHeight: 30, padding: '5px 11px', fontSize: 12 }}>
+                  {t('sessionMinutes', { minutes: session.estimatedMinutes })}
+                </span>
+                <span className="tool-chip" style={{ minHeight: 30, padding: '5px 11px', fontSize: 12 }}>
+                  {t(`sessionDuration_${session.durationMode}`)}
+                </span>
+                {sessionStarted && (
+                  <span className="tool-chip" style={{ minHeight: 30, padding: '5px 11px', fontSize: 12, background: 'var(--accent-soft)', color: 'var(--accent-strong)' }}>
+                    {t('sessionStepOf', { done: Math.min(sessionDone + 1, sessionTotal), total: sessionTotal })}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
-          {sessionStarted && (
-            <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', color: 'var(--ink-muted)', fontWeight: 700, marginTop: 12 }}>
-              {t('sessionStepOf', { done: Math.min(sessionDone + 1, sessionTotal), total: sessionTotal })}
-            </p>
-          )}
-
-          <button type="button" onClick={beginSession}
-            className="cta-glow w-full mt-4 py-3 rounded-2xl font-bold text-white text-sm transition-all hover:-translate-y-px active:scale-[0.98]"
-            style={{ background: 'linear-gradient(135deg, var(--violet), var(--blue))', '--cta-ring': 'rgba(124,92,255,0.18)' }}>
+          <button type="button" onClick={beginSession} className="btn-primary w-full mt-4">
             {sessionStarted ? t('sessionContinueCta') : t('sessionStartCta')}
           </button>
 
           <div className="mt-3">
-            <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--ink-muted)', marginBottom: 6 }}>
+            <p lang={nativeLanguageInfo.base} className="eyebrow" style={{ marginBottom: 6 }}>
               {sessionStarted ? t('sessionDurationLockedHint') : t('sessionDurationLabel')}
             </p>
             <DurationPicker disabled={sessionStarted} />
           </div>
-        </div>
+        </section>
 
         {/* The road is finished: say so, and say what is still worth doing */}
         {!planEpisode && readiness.curriculumComplete && (
-          <div className="card-lift w-full rounded-3xl p-5 mb-6 flex items-center gap-4 animate-fade-up"
-            style={{ animationDelay: '0.02s', background: 'linear-gradient(135deg, var(--violet-soft), var(--blue-soft))', border: '1.5px solid var(--violet)' }}>
-            <ChattoMascot mood={graduated || readiness.ready ? 'celebrate' : 'welcoming'} size={56}
+          <section className="rounded-2xl p-5 mb-4 flex items-start gap-4 animate-fade-up"
+            style={{ animationDelay: '0.05s', background: 'var(--positive-soft)', border: '1px solid var(--positive)' }}>
+            <ChattoMascot mood={graduated || readiness.ready ? 'celebrate' : 'welcoming'} size={50}
               decorative intensity={celebrating ? 'lively' : 'ambient'} />
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
+              <p className="eyebrow" style={{ color: 'var(--positive-deep)' }}>
                 {t('preA1LevelBadge')} · {arc.completed}/{arc.total}
               </p>
-              <p lang={nativeLanguageInfo.base} style={{ fontSize: '1.0625rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25, marginTop: 2 }}>
+              <h2 className="font-display" lang={nativeLanguageInfo.base}
+                style={{ fontSize: '1.0625rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.25, marginTop: 3 }}>
                 {graduated ? t('preA1GraduatedTitle') : readiness.ready ? t('preA1ReadyTitle') : t('preA1DoneTitle')}
-              </p>
-              <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45, marginTop: 3 }}>
+              </h2>
+              <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.5, marginTop: 4 }}>
                 {graduated ? t('preA1GraduatedBody') : readiness.ready ? t('preA1ReadyBody') : t('preA1DoneBody')}
               </p>
               {graduated && graduatedOn && (
-                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--violet)', marginTop: 5 }}>
+                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--positive-deep)', marginTop: 5 }}>
                   {t('preA1GraduatedOn').replace('{date}', graduatedOn)}
                 </p>
               )}
@@ -217,181 +316,104 @@ export function TodayView() {
                 * practice. A graduate is never told they have become un-ready.
                 */}
               {graduated && readiness.overdueReviews > 0 && (
-                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', marginTop: 5 }}>
+                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 5 }}>
                   {t('preA1GraduatedReviewsDue')}
                 </p>
               )}
               {graduated && celebrating && (
                 <p role="status" lang={nativeLanguageInfo.base}
-                  style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--violet)', marginTop: 6 }}>
+                  style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--positive-deep)', marginTop: 6 }}>
                   {t('preA1CelebrationNote')}
                 </p>
               )}
               {!graduated && !readiness.ready && focusLine && (
-                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--violet)', marginTop: 6 }}>{focusLine}</p>
+                <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--positive-deep)', marginTop: 6 }}>{focusLine}</p>
               )}
             </div>
-          </div>
+          </section>
         )}
 
         {/* Direct access to the planned episode is still available */}
         {planEpisode && (
           <button type="button" onClick={() => startEpisode(planEpisode.id)}
-            className="card-lift w-full text-left rounded-3xl p-5 mb-6 flex items-center gap-4 animate-fade-up transition-all active:scale-[0.99]"
-            style={{ animationDelay: '0.02s', background: 'linear-gradient(135deg, var(--violet-soft), var(--blue-soft))', border: '1.5px solid var(--violet)' }}>
-            <ChattoMascot mood="welcoming" size={56} decorative intensity="ambient" />
+            className="card-lift w-full text-start rounded-2xl p-4 mb-4 flex items-center gap-3.5 animate-fade-up"
+            style={{ animationDelay: '0.05s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <span className="grid place-items-center rounded-xl flex-shrink-0"
+              style={{ width: 38, height: 38, background: 'var(--accent-soft)', color: 'var(--accent-strong)' }} aria-hidden="true">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M8 5.5v13l10-6.5z"/></svg>
+            </span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--violet)' }}>
-                {t('planTodayBadge')} · {arc.completed}/{arc.total}{plan.hasReview ? ` · ${t('planReviewTag')}` : ''}
+              <p className="eyebrow">
+                {t('planTodayBadge')}{plan.hasReview ? ` · ${t('planReviewTag')}` : ''}
               </p>
-              <p style={{ fontSize: '1.0625rem', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.25, marginTop: 2 }}>
+              <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.3, marginTop: 2 }}>
                 {plan.type === 'continue_episode' ? `${t('ep1ContinuePrefix')}: ${t(planEpisode.titleKey)}` : t(planEpisode.titleKey)}
               </p>
-              <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.45, marginTop: 3 }}>{t(planEpisode.goalKey)}</p>
-              <div className="flex items-center gap-2 mt-2">
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', background: 'var(--bg-paper)', border: '1px solid var(--violet)', borderRadius: 999, padding: '2px 8px' }}>{planEpisode.level}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', background: 'var(--bg-paper)', border: '1px solid var(--blue)', borderRadius: 999, padding: '2px 8px' }}>{t(planEpisode.durationKey)}</span>
-              </div>
+              <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.45, marginTop: 2 }}>{t(planEpisode.goalKey)}</p>
             </div>
-            <span aria-hidden="true" style={{ fontSize: '1.3rem', color: 'var(--violet)', flexShrink: 0 }}>→</span>
           </button>
         )}
 
-        {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3 mb-6 animate-fade-up" style={{ animationDelay: '0.04s' }}>
-          <StatPill label={t('today')} value={`${MOCK_STATS.minutesToday}m`} color="var(--blue)" />
-          <StatPill label={t('words')} value={MOCK_STATS.wordsLearned} color="var(--green)" />
-          <StatPill label={t('confidence')} value={`${MOCK_STATS.confidence}%`} color="var(--violet)" />
-        </div>
-
-        {/* Today's Mission */}
-        <div className="mission-card card-lift p-5 mb-6 animate-fade-up" style={{ animationDelay: '0.08s' }}>
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <div>
-              <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--coral)' }}>
-                {t('todaysMission')}
-              </span>
-              <h2 style={{ fontWeight: 800, fontSize: '1.125rem', color: 'var(--ink)', marginTop: 4, lineHeight: 1.3 }}>
-                {mission.titleKey ? t(mission.titleKey) : mission.title}
-              </h2>
-            </div>
-            <span style={{
-              fontSize: 11, fontWeight: 700, background: 'var(--coral)', color: '#fff',
-              padding: '3px 10px', borderRadius: 999, flexShrink: 0,
-            }}>
-              +{mission.rewardXp} XP
-            </span>
-          </div>
-          <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55, marginBottom: 16 }}>
-            {mission.descKey ? t(mission.descKey) : mission.description}
-          </p>
-          <div className="flex flex-wrap gap-1.5 mb-3">
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--violet)', background: 'var(--violet-soft)', border: '1px solid var(--violet)', borderRadius: 999, padding: '2px 8px' }}>
-              {mission.levelRange.join('-')}
-            </span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', background: 'var(--blue-soft)', border: '1px solid var(--blue)', borderRadius: 999, padding: '2px 8px' }}>
-              {mission.estimatedTime}
-            </span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--green)', background: 'var(--green-soft)', border: '1px solid var(--green)', borderRadius: 999, padding: '2px 8px' }}>
-              {mission.skillKey ? t(mission.skillKey) : mission.targetSkill}
-            </span>
-          </div>
-          <button
-            onClick={() => activeMissionDetails ? navigateTo('practice') : startPracticeMission(mission)}
-            className="cta-glow group w-full py-3 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-95 hover:-translate-y-px active:scale-[0.98] flex items-center justify-center gap-2"
-            style={{ background: 'linear-gradient(135deg, var(--coral) 0%, var(--yellow) 100%)', '--cta-ring': 'rgba(249,115,91,0.20)' }}
-          >
-            <span>{activeMissionDetails ? t('continueMission') : t('startTodaysPractice')}</span>
-            <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" style={{ fontSize: '1.05em' }}>→</span>
-          </button>
-        </div>
-
-        {/* Phrase of the day */}
-        <div className="card-lift rounded-2xl p-5 mb-6 animate-fade-up" style={{
-          animationDelay: '0.12s',
-          background: 'var(--bg-paper)',
-          border: '1px solid var(--border)',
-        }}>
-          <div className="flex items-center gap-2 mb-3">
-            <span style={{ fontSize: 16 }}>💡</span>
-            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--yellow)' }}>
-              {t('phraseOfDay')}
-            </span>
-          </div>
-          <p lang="en" dir="ltr" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', fontStyle: 'italic', marginBottom: 6 }}>
-            "{phrase.phrase}"
-          </p>
-          <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', lineHeight: 1.5 }}>
-            {getLocalizedMeaning(phrase.meaning, nativeLanguageInfo, interfaceLanguageInfo)}
-          </p>
-        </div>
-
-        {/* Lingua intro + continue */}
-        <div className="card-lift rounded-2xl p-5 mb-6 animate-fade-up" style={{
-          animationDelay: '0.16s',
-          background: 'var(--bg-paper)',
-          border: '1px solid var(--border)',
-        }}>
-          <div className="flex items-center gap-3 mb-3">
-            <LinguaAvatar size={42} online />
-            <div>
-              <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>{t('linguaReady')}</p>
-              <p style={{ fontSize: 11, color: 'var(--green)', fontWeight: 500 }}>{t('onlineNow')}</p>
-            </div>
-          </div>
-          <p style={{ fontSize: '0.875rem', color: 'var(--ink-muted)', lineHeight: 1.55, marginBottom: 14 }}>
-            "{t('linguaReadyQuote')}"
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => navigateTo('practice')}
-              className="flex-1 py-2.5 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90 active:scale-[0.98]"
-              style={{ background: 'var(--violet)' }}
-            >
-              {t('openPracticeRoom')}
-            </button>
-            <button
-              onClick={() => navigateTo('practice')}
-              className="px-4 py-2.5 rounded-xl font-semibold text-sm transition-all hover:opacity-80 active:scale-[0.98]"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--ink-muted)' }}
-            >
-              {t('reviewMistakes')}
-            </button>
-          </div>
-          {completedMissions.length > 0 && (
-            <p style={{ fontSize: 11, color: 'var(--green)', fontWeight: 700, marginTop: 10 }}>
-              {completedMissions.length} {t('completedMissions').toLowerCase()}
+        {/* ─── 5. Today's challenge and, on a laptop, the phrase beside it ─── */}
+        <div className="grid gap-3 mb-4 animate-fade-up md:grid-cols-2" style={{ animationDelay: '0.06s' }}>
+          <SmallWindow eyebrow={t('todaysMission')} tone="accent">
+            <h3 className="font-display" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', lineHeight: 1.3 }}>
+              {mission.titleKey ? t(mission.titleKey) : mission.title}
+            </h3>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5, marginTop: 4 }}>
+              {mission.descKey ? t(mission.descKey) : mission.description}
             </p>
-          )}
+            <button
+              type="button"
+              onClick={() => activeMissionDetails ? navigateTo('practice') : startPracticeMission(mission)}
+              className="btn-quiet mt-3"
+              style={{ background: 'var(--surface)', minHeight: 40 }}
+            >
+              {activeMissionDetails ? t('continueMission') : t('startTodaysPractice')}
+            </button>
+          </SmallWindow>
+
+          <SmallWindow eyebrow={t('phraseOfDay')}>
+            <p lang="en" dir="ltr" className="font-display"
+              style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', lineHeight: 1.35 }}>
+              “{phrase.phrase}”
+            </p>
+            <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5, marginTop: 6 }}>
+              {getLocalizedMeaning(phrase.meaning, nativeLanguageInfo, interfaceLanguageInfo)}
+            </p>
+          </SmallWindow>
         </div>
 
-        {/* Last mistake */}
-        {LAST_MISTAKES[0] && (
-          <div className="card-lift rounded-2xl p-5 animate-fade-up" style={{
-            animationDelay: '0.20s',
-            background: 'var(--bg-paper)', border: '1px solid var(--border)',
-          }}>
-            <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--ink-muted)', display: 'block', marginBottom: 10 }}>
-              {t('lastMistakeFixed')}
-            </span>
-            <div className="flex items-center gap-3">
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: '0.8125rem', color: 'var(--ink-muted)', textDecoration: 'line-through', marginBottom: 2 }}>
-                  "{LAST_MISTAKES[0].original}"
-                </p>
-                <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--green)' }}>
-                  "{LAST_MISTAKES[0].fixed}"
-                </p>
-              </div>
-              <span style={{
-                fontSize: 11, fontWeight: 600, background: 'var(--green-soft)',
-                color: 'var(--green)', border: '1px solid var(--green)',
-                padding: '3px 10px', borderRadius: 999,
-              }}>
-                {LAST_MISTAKES[0].topicKey ? t(LAST_MISTAKES[0].topicKey) : LAST_MISTAKES[0].topic}
-              </span>
-            </div>
+        {/* ─── 6. How it is going: three numbers, all of them real ─── */}
+        <section className="rounded-2xl mb-4 grid grid-cols-3 animate-fade-up"
+          style={{ animationDelay: '0.08s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+          <StatCell value={arc.completed} unit={`/${arc.total}`} label={t('episodesLabel')} />
+          <div style={{ borderInlineStart: '1px solid var(--border)', borderInlineEnd: '1px solid var(--border)' }}>
+            <StatCell value={wordCount} label={t('yourWordsNav')} />
           </div>
+          <StatCell value={completedMissions.length} label={t('completedMissions')} />
+        </section>
+
+        {/* ─── 7. Secondary: the last thing Lingua helped fix, and the path ─── */}
+        {lastFix && (
+          <SmallWindow eyebrow={t('lastFixed')} className="mb-3 animate-fade-up" style={{ animationDelay: '0.1s' }}>
+            {lastFix.original && (
+              <p lang="en" dir="ltr" className="correction-quote" style={{ fontSize: '0.8125rem' }}>
+                {lastFix.original}
+              </p>
+            )}
+            <p lang="en" dir="ltr" className="correction-natural" style={{ fontSize: '0.9375rem', marginTop: 3 }}>
+              {lastFix.corrected}
+            </p>
+          </SmallWindow>
+        )}
+
+        {/* On a phone the path is a sheet; on a laptop it is already in the rail. */}
+        {onOpenPath && (
+          <button type="button" onClick={onOpenPath} className="btn-quiet w-full animate-fade-up"
+            style={{ animationDelay: '0.12s' }}>
+            {t('openPath')}
+          </button>
         )}
       </div>
     </div>
