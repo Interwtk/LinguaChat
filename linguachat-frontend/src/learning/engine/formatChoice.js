@@ -157,6 +157,13 @@ const OBJECTIVE_FORMATS = {
   state_life_fact: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
   ask_life_fact: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   state_routine: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  /*
+   * Arc 3. `roleplay` is the format these belong in — the blueprint chose it over a
+   * hosted story ("three-way introductions are better felt as a roleplay with a
+   * named partner") — and `mini_story` is absent because no story exists for either.
+   */
+  introduce_person: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  state_person_fact: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
 
   introduction: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'mini_story'],
   ask_name: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
@@ -202,9 +209,31 @@ const OBJECTIVE_FORMATS = {
   use_quantity: ['guided_reply', 'choice', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
 }
 
+/*
+ * Formats that need CONTENT AUTHORED FOR THIS OBJECTIVE, not just a sentence to
+ * produce. A story has a scene, a decision and two endings written for one
+ * objective; there is no way to generate one, so an objective nobody wrote a
+ * story for cannot have this format — whatever else is true about it.
+ */
+const NEEDS_AUTHORED_CONTENT = ['mini_story']
+
+/*
+ * FAIL CLOSED ON AN UNKNOWN OBJECTIVE.
+ *
+ * This used to `return true` for anything not in the table — "never block a
+ * format" — and that default was a real defect rather than a lenient default. A1
+ * arc 1 shipped two intents that were not listed, so a practice block for one of
+ * them could be planned as a `mini_story`, and the story lookup answered an
+ * objective it did not know with the café scene. The learner would have been shown
+ * a conversation about music and graded on saying what they do.
+ *
+ * So an unknown objective now gets the SAFE set: every format that only needs a
+ * sentence, and none that needs authored content. A listed objective still gets
+ * exactly what it declares, which is the stricter answer and unchanged.
+ */
 export function formatSupportsObjective(format, objective) {
   const allowed = OBJECTIVE_FORMATS[objective]
-  if (!allowed) return true          // unknown objective → never block a format
+  if (!allowed) return !NEEDS_AUTHORED_CONTENT.includes(format)
   return allowed.includes(format)
 }
 

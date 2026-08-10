@@ -332,6 +332,41 @@ const MUSIC = { type: 'like', value: 'music' }
     assert.equal(formatSupportsObjective('mini_story', objective), false,
       `${objective} has no story of its own and must not be handed someone else's`)
   }
+
+  /*
+   * AND AN OBJECTIVE NOBODY HAS HEARD OF FAILS CLOSED, which is the systemic half
+   * of the same defect and the reason the three names above kept having to be
+   * listed by hand.
+   *
+   * `formatSupportsObjective` used to `return true` for anything absent from its
+   * table — "never block a format" — and `getStory` used to answer an unknown
+   * objective with `STORIES.express_like`. Together: any objective an arc had not
+   * registered could be planned as a story and rendered as the café scene about
+   * music, then graded on a completely different sentence. A1 arcs 1 and 2 both
+   * shipped intents in exactly that state.
+   *
+   * The invariant is now general rather than a list: a format that needs content
+   * written for the objective is refused when the objective is unknown, and a
+   * missing story is `null`.
+   */
+  const { hasStory } = await import('../src/learning/engine/miniStory.js')
+  const STRANGERS = ['totally_made_up_objective', 'ask_location', 'state_price',
+    'arrange_meeting', 'introduce_person', '', null, undefined]
+  for (const stranger of STRANGERS) {
+    assert.equal(formatSupportsObjective('mini_story', stranger), false,
+      `${String(stranger)} is not a known objective and must not be given a story`)
+    assert.equal(getStory(stranger), null,
+      `${String(stranger)} must resolve to no story rather than to somebody else's`)
+    assert.equal(hasStory(stranger), false)
+    /* but it is not blocked from formats that only need a sentence */
+    assert.equal(formatSupportsObjective('free_reply', stranger), true,
+      `${String(stranger)} must still be practisable as a plain reply`)
+    assert.equal(formatSupportsObjective('guided_reply', stranger), true)
+  }
+  /* the café story is still reachable — by its own objective, and only by it */
+  assert.equal(getStory('express_like').storyId, 'cafe_music')
+  const cafeOwners = STORY_OBJECTIVES.filter(o => getStory(o).storyId === 'cafe_music')
+  assert.deepEqual(cafeOwners, ['express_like'], 'one objective owns the café scene')
   ok()
 }
 

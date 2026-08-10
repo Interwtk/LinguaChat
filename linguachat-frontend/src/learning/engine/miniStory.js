@@ -229,10 +229,24 @@ const STORIES = {
 
 export const STORY_OBJECTIVES = Object.keys(STORIES)
 
-// The story for an objective, or the closest honest fallback.
+/*
+ * The story for an objective, or NOTHING.
+ *
+ * This used to fall back to `STORIES.express_like`, which was not an honest
+ * fallback but a silent substitution: any objective without a story of its own got
+ * the café scene about music. Combined with an unknown objective being allowed
+ * every format, a block practising "say what you do" could be rendered as a
+ * conversation about liking songs and then graded on the wrong sentence.
+ *
+ * A story cannot be generated, so there is no correct answer for an objective
+ * nobody wrote one for. `null` is that answer, and every caller must handle it —
+ * `hasStory` is the cheap question to ask first.
+ */
 export function getStory(objective) {
-  return STORIES[objective] || STORIES.express_like
+  return STORIES[objective] || null
 }
+
+export const hasStory = (objective) => Boolean(STORIES[objective])
 
 export const storyTurns = (story) => (story?.turns || [])
 export const storyLength = (story) => storyTurns(story).length

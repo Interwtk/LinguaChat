@@ -82,6 +82,21 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
   const turns = storyTurns(story)
   const turn = turns[state.currentTurn]
 
+  /*
+   * NO STORY FOR THIS OBJECTIVE. `getStory` returns null rather than substituting
+   * somebody else's scene, so a block that should never have been planned as a story
+   * is skipped instead of rendering a conversation about the wrong thing. The host
+   * decides what happens next, exactly as it does when a story finishes.
+   */
+  useEffect(() => {
+    if (story) return
+    if (import.meta.env?.DEV) console.error('[MiniStory] no story for objective', block.objective)
+    if (doneRef.current) return
+    doneRef.current = true
+    onDone?.(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [story])
+
   // Persist where the story is, so a reload resumes instead of restarting.
   useEffect(() => {
     try { localStorage.setItem(STORY_STORAGE_KEY, JSON.stringify(state)) } catch { /* noop */ }
