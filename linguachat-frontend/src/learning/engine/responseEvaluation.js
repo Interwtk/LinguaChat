@@ -1251,6 +1251,129 @@ export function evaluateStateRoutine(text, { independent = false, timeForm = nul
   return { ...r, errorType: 'no_routine_statement', conclusive: false, confidence: 0.5, priorityCorrection: 'ep21RetryExplainAction', explanation: 'ep21RetryExplainAction', retryRequired: true, retryPrompt: 'ep21RetryPromptAction' }
 }
 
+/* ==========================================================================
+ * A1 ARC 3 — who this is.
+ *
+ * Two intents, and the FIRST TWO IN A1 THE BLUEPRINT MARKS `hybrid`. That word has
+ * a precise meaning here, and it is not "ask a provider": the rule says "The
+ * canonical frame is always judged locally. Escalation is for a reply that is
+ * inconclusive, exactly as Pre-A1 routes it. No capability is designed to depend on
+ * the provider being reachable."
+ *
+ * So both evaluators below judge the taught frames themselves and, where a reply is
+ * plausibly a correct introduction they were not written to recognise, return
+ * `conclusive: false` — which is the flag `shouldEscalate` reads. With no provider
+ * the conservative local verdict stands and the learner keeps a hint and a retry.
+ * That is a wider inconclusive band than arc 1 or arc 2 needed, which is exactly
+ * what "hybrid" buys: introducing a person has more good wordings than saying what
+ * you do.
+ *
+ * WHAT THESE DO NOT DO is check a relationship. The arc's risk note is explicit —
+ * "Family vocabulary and cultural assumptions… no episode assumes a family
+ * structure" — so `This is Ana.` is a complete, correct introduction, and naming a
+ * relation is a bonus rather than a requirement.
+ * ==========================================================================*/
+
+/* "This is Ana." / "This is my friend Ana." / "Ana, this is Ben." */
+const THIS_IS = /\bthis\s+is\b/
+const HERE_IS = /\b(here\s+is|meet)\b/
+const POSSESSIVE_RELATION = /\b(my|his|her|your)\s+(friend|colleague|classmate|teacher|neighbour|neighbor)\b/
+/* the learner introducing THEMSELVES when the turn asked for somebody else */
+const SELF_INTRO = /\b(i'?m|i am|my name is)\b/
+const NAMED_PERSON = /\b[A-Z][a-z]{1,15}\b/
+
+export function evaluateIntroducePerson(text, { independent = false, partner = '' } = {}) {
+  const raw = String(text || '').trim()
+  const n = normalize(raw)
+  const r = base(independent)
+  const who = String(partner || '').trim() || 'Ana'
+  r.naturalVersion = `This is ${who}.`
+
+  if (!n) {
+    return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep24RetryPromptEmpty' }
+  }
+
+  /* the frame, with or without a relation — both are complete introductions */
+  if (THIS_IS.test(n)) {
+    r.completedObjective = true
+    r.confidence = POSSESSIVE_RELATION.test(n) ? 0.96 : 0.93
+    r.acceptedVariant = false
+    r.praiseKey = r.masteryEvidence.independent ? 'ep24PraiseIndependent' : 'ep24PraiseIntroduced'
+    return r
+  }
+  /* "Meet Ana." / "Here is Ana." — communicates exactly this, in words nobody taught */
+  if (HERE_IS.test(n) && NAMED_PERSON.test(raw)) {
+    r.completedObjective = true
+    r.confidence = 0.88
+    r.acceptedVariant = true
+    r.praiseKey = r.masteryEvidence.independent ? 'ep24PraiseIndependent' : 'ep24PraiseIntroduced'
+    return r
+  }
+  /* introducing yourself when the turn asked for the third person */
+  if (SELF_INTRO.test(n)) {
+    return { ...r, errorType: 'introduced_self', confidence: 0.9, priorityCorrection: 'ep24RetryExplainThird', explanation: 'ep24RetryExplainThird', retryRequired: true, retryPrompt: 'ep24RetryPromptThird' }
+  }
+  /* a bare name is the reach: the person is right, the frame is missing */
+  if (NAMED_PERSON.test(raw) && wordCount(n) <= 2) {
+    return { ...r, errorType: 'missing_frame', confidence: 0.88, priorityCorrection: 'ep24RetryExplainFrame', explanation: 'ep24RetryExplainFrame', retryRequired: true, retryPrompt: 'ep24RetryPromptFrame' }
+  }
+  /*
+   * Anything else: this is the hybrid band. There are more ways to introduce
+   * somebody than a local pattern list should pretend to know, so the verdict is
+   * inconclusive and escalates when Lingua is reachable.
+   */
+  return { ...r, errorType: 'no_introduction', conclusive: false, confidence: 0.5, priorityCorrection: 'ep24RetryExplainFrame', explanation: 'ep24RetryExplainFrame', retryRequired: true, retryPrompt: 'ep24RetryPromptFrame' }
+}
+
+/* "She is a student." / "He works at the office." — the third person, said with `is` */
+const HE_SHE_IS = /\b(he|she)('?s|\s+is)\b/
+const THEY_ARE = /\bthey('?re|\s+are)\b/
+/* third-person -s: heard in the arc, never required of the learner */
+const THIRD_PERSON_S = /\b(he|she)\s+(works|studies|lives|likes)\b/
+const FIRST_PERSON_FACT = /\bi\s+(work|study|am|'m)\b/
+
+export function evaluateStatePersonFact(text, { independent = false, partner = '' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  const who = String(partner || '').trim() || 'Ana'
+  r.naturalVersion = `${who} is a student.`
+
+  if (!n) {
+    return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep25RetryPromptEmpty' }
+  }
+
+  /* the taught frame: he/she + is + something */
+  if (HE_SHE_IS.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.acceptedVariant = false
+    r.praiseKey = r.masteryEvidence.independent ? 'ep25PraiseIndependent' : 'ep25PraiseSaid'
+    return r
+  }
+  /*
+   * The -s form. The blueprint hears it and never asks for it, so a learner who
+   * produces it has done MORE than the turn required and is accepted as a variant
+   * rather than corrected towards the easier sentence.
+   */
+  if (THIRD_PERSON_S.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.acceptedVariant = true
+    r.praiseKey = r.masteryEvidence.independent ? 'ep25PraiseIndependent' : 'ep25PraiseSaid'
+    return r
+  }
+  /* "They are…" is a real sentence about the wrong number of people */
+  if (THEY_ARE.test(n)) {
+    return { ...r, errorType: 'wrong_person', confidence: 0.88, priorityCorrection: 'ep25RetryExplainHeShe', explanation: 'ep25RetryExplainHeShe', retryRequired: true, retryPrompt: 'ep25RetryPromptHeShe' }
+  }
+  /* talking about yourself when the turn asked about them */
+  if (FIRST_PERSON_FACT.test(n)) {
+    return { ...r, errorType: 'wrong_person', confidence: 0.9, priorityCorrection: 'ep25RetryExplainHeShe', explanation: 'ep25RetryExplainHeShe', retryRequired: true, retryPrompt: 'ep25RetryPromptHeShe' }
+  }
+  /* the hybrid band again: understood as an attempt, judged inconclusively */
+  return { ...r, errorType: 'no_person_statement', conclusive: false, confidence: 0.5, priorityCorrection: 'ep25RetryExplainHeShe', explanation: 'ep25RetryExplainHeShe', retryRequired: true, retryPrompt: 'ep25RetryPromptHeShe' }
+}
+
 /* "Do you work?" / "Do you study?" / "What do you do?" — and "And you?" is not it */
 const DO_YOU_QUESTION = /\bdo\s+you\s+(work|study)\b/
 const WHAT_DO_YOU_DO = /\bwhat\s+do\s+you\s+do\b/
@@ -1321,6 +1444,8 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'cafe_order_conversation': return evaluateCafeOrderConversation(text, ctx)
     case 'repair_request': return evaluateRepairRequest(text, ctx)
     case 'state_routine': return evaluateStateRoutine(text, ctx)
+    case 'introduce_person': return evaluateIntroducePerson(text, ctx)
+    case 'state_person_fact': return evaluateStatePersonFact(text, ctx)
     case 'close_encounter': return evaluateCloseEncounter(text, ctx)
     case 'ask_what_thing': return evaluateAskWhatThing(text, ctx)
     case 'identify_thing': return evaluateIdentifyThing(text, ctx)

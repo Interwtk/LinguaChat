@@ -110,6 +110,11 @@ class EvaluateRequest(BaseModel):
     # The one word an `ask_meaning` turn is about, so the model answer names the
     # same word the learner was shown. Never a sentence: a short token only.
     meaning_word: str | None = Field(default=None, max_length=40)
+    # Who the turn is about, when the turn is about a third person. A property of the
+    # TASK: the episode chose the partner and put them on screen, so a verdict on
+    # "This is ___" without it would name somebody the learner never saw. Never a
+    # real person from the learner's life — the arc introduces its own characters.
+    partner_name: str | None = Field(default=None, max_length=40)
     # Which shape of quantity the turn asked for ("bare", "with_object",
     # "polite_request") and how many of the thing. Separate fields: "two" and
     # "sandwiches" are different pieces of information, and the one time this

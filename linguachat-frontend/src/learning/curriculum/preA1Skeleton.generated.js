@@ -2350,6 +2350,327 @@ export const EPISODE_SKELETON = [
         "type": "completion"
       }
     ]
+  },
+  {
+    "id": "this_is",
+    "level": "A1",
+    "arc": "people_around_you",
+    "titleKey": "ep24Title",
+    "goalKey": "ep24Goal",
+    "canDoId": "introduce_someone_else",
+    "canDoNameKey": "ep24CanDoName",
+    "durationKey": "ep24Duration",
+    "estimatedMinutes": 9,
+    "xp": 75,
+    "prerequisites": [
+      "meeting_someone_new"
+    ],
+    "gardenItems": [
+      "this_is_pattern",
+      "possessive_pattern",
+      "friend",
+      "colleague"
+    ],
+    "skillPrerequisites": [
+      "introduce_self",
+      "full_greeting"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "introduction",
+      "nice_to_meet"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "introduction",
+        "itemIds": [
+          "im"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "this_is_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "this_is_pattern"
+      },
+      {
+        "type": "word_order",
+        "itemId": "this_is_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "possessive_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "introduce_person",
+        "itemIds": [
+          "this_is_pattern",
+          "friend"
+        ],
+        "placeholders": [
+          "partner"
+        ]
+      },
+      {
+        "type": "choice",
+        "itemId": "nice_to_meet",
+        "placeholders": [
+          "partner"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "nice_to_meet",
+        "itemIds": [
+          "nice_to_meet"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "introduce_person",
+        "itemIds": [
+          "im",
+          "this_is_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "introduce_person",
+        "itemIds": [
+          "this_is_pattern",
+          "possessive_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "shes_a_student",
+    "level": "A1",
+    "arc": "people_around_you",
+    "titleKey": "ep25Title",
+    "goalKey": "ep25Goal",
+    "canDoId": "introduce_someone_else",
+    "canDoNameKey": "ep25CanDoName",
+    "durationKey": "ep25Duration",
+    "estimatedMinutes": 9,
+    "xp": 75,
+    "prerequisites": [
+      "this_is"
+    ],
+    "gardenItems": [
+      "he_she_is_pattern",
+      "classmate"
+    ],
+    "reinforces": true,
+    "skillPrerequisites": [
+      "introduce_someone_else",
+      "talk_about_work_or_study"
+    ],
+    "role": "reinforcement",
+    "reuseSkills": [
+      "state_life_fact",
+      "ask_name"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "introduce_person",
+        "itemIds": [
+          "this_is_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "he_she_is_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "works_third"
+      },
+      {
+        "type": "choice",
+        "itemId": "he_she_is_pattern"
+      },
+      {
+        "type": "word_order",
+        "itemId": "he_she_is_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "he_she_is_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_person_fact",
+        "itemIds": [
+          "he_she_is_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_life_fact",
+        "itemIds": [
+          "i_do_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_name",
+        "itemIds": [
+          "whats_your_name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_person_fact",
+        "itemIds": [
+          "he_she_is_pattern",
+          "classmate"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "state_person_fact",
+        "itemIds": [
+          "he_she_is_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "three_of_us",
+    "level": "A1",
+    "arc": "people_around_you",
+    "titleKey": "ep26Title",
+    "goalKey": "ep26Goal",
+    "canDoId": "introduce_someone_else",
+    "canDoNameKey": "ep26CanDoName",
+    "durationKey": "ep26Duration",
+    "estimatedMinutes": 10,
+    "xp": 85,
+    "prerequisites": [
+      "shes_a_student"
+    ],
+    "reinforces": true,
+    "skillPrerequisites": [
+      "introduce_someone_else",
+      "full_greeting",
+      "ask_wellbeing",
+      "close_an_encounter"
+    ],
+    "role": "reinforcement",
+    "reuseSkills": [
+      "nice_to_meet",
+      "ask_wellbeing",
+      "close_encounter",
+      "state_life_fact",
+      "repair_request"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "nice_to_meet",
+        "itemIds": [
+          "nice_to_meet"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "introduce_person",
+        "itemIds": [
+          "this_is_pattern",
+          "possessive_pattern"
+        ],
+        "format": "roleplay",
+        "placeholders": [
+          "partner"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_wellbeing",
+        "itemIds": [
+          "how_are_you"
+        ],
+        "format": "roleplay",
+        "placeholders": [
+          "partner"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_request",
+        "itemIds": [
+          "what_does_mean_pattern"
+        ],
+        "format": "roleplay",
+        "repairKind": "ask_meaning"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_life_fact",
+        "itemIds": [
+          "i_do_pattern"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_person_fact",
+        "itemIds": [
+          "he_she_is_pattern"
+        ],
+        "format": "roleplay",
+        "placeholders": [
+          "partner"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "close_encounter",
+        "itemIds": [
+          "bye",
+          "see_you"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "recall",
+        "evalKind": "introduce_person",
+        "itemIds": [
+          "this_is_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
   }
 ]
 

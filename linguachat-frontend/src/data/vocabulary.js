@@ -242,6 +242,40 @@ export const SEED_VOCAB = [
     meaning: { en: 'before the usual time', es: 'temprano', pt: 'cedo', fr: 'tôt', it: 'presto', de: 'früh', ja: '早く', ar: 'مبكرًا' } },
   { id: 'late', term: 'late', kind: 'word', emoji: 'L', example: 'I work late.',
     meaning: { en: 'after the usual time', es: 'tarde', pt: 'tarde', fr: 'tard', it: 'tardi', de: 'spät', ja: '遅く', ar: 'متأخرًا' } },
+
+  /*
+   * A1 arc 3 — "who this is". Six productive entries, exactly the arc's budget, and
+   * three of them are patterns. The other three are THE ONLY RELATIONS THIS LEVEL
+   * TEACHES, and the arc's own risk note is why there are so few: "Family
+   * vocabulary and cultural assumptions. The budget is three neutral relations plus
+   * a fallback that needs none, and no episode assumes a family structure."
+   *
+   * So: friend, colleague, classmate. No sister, no wife, no son — and the fallback
+   * the note promises is real, because "This is Ana." is a complete introduction
+   * that names no relationship at all.
+   */
+  { id: 'friend', term: 'friend', kind: 'word', emoji: 'F', example: 'This is my friend Ana.',
+    meaning: { en: 'somebody you like and see often', es: 'amigo / amiga', pt: 'amigo / amiga', fr: 'ami / amie', it: 'amico / amica', de: 'Freund / Freundin', ja: '友だち', ar: 'صديق / صديقة' } },
+  { id: 'colleague', term: 'colleague', kind: 'word', emoji: 'C', example: 'This is my colleague Ben.',
+    meaning: { en: 'somebody you work with', es: 'compañero de trabajo', pt: 'colega de trabalho', fr: 'collègue', it: 'collega', de: 'Kollege / Kollegin', ja: '同僚', ar: 'زميل في العمل' } },
+  { id: 'classmate', term: 'classmate', kind: 'word', emoji: 'S', example: 'This is my classmate Mia.',
+    meaning: { en: 'somebody you study with', es: 'compañero de clase', pt: 'colega de turma', fr: 'camarade de classe', it: 'compagno di classe', de: 'Mitschüler / Mitschülerin', ja: 'クラスメイト', ar: 'زميل في الصف' } },
+  { id: 'this_is_pattern', term: 'This is + person', kind: 'pattern', emoji: '>', example: 'This is Ana.',
+    meaning: { en: 'presenting somebody to somebody else', es: 'presentar a alguien', pt: 'apresentar alguém', fr: 'présenter quelqu’un', it: 'presentare qualcuno', de: 'jemanden vorstellen', ja: '人を紹介する', ar: 'تقديم شخص لآخر' } },
+  { id: 'he_she_is_pattern', term: 'He / She is + noun', kind: 'pattern', emoji: '3', example: 'She is a student.',
+    meaning: { en: 'saying one thing about another person', es: 'decir algo de otra persona', pt: 'dizer algo sobre outra pessoa', fr: 'dire une chose sur quelqu’un', it: 'dire una cosa su un’altra persona', de: 'etwas über eine andere Person sagen', ja: '他の人について言う', ar: 'قول شيء عن شخص آخر' } },
+  { id: 'possessive_pattern', term: 'my / your / his / her + noun', kind: 'pattern', emoji: 'P', example: 'This is my colleague.',
+    meaning: { en: 'whose it is, before the noun', es: 'de quién es, antes del sustantivo', pt: 'de quem é, antes do substantivo', fr: 'à qui c’est, avant le nom', it: 'di chi è, prima del nome', de: 'wessen, vor dem Nomen', ja: '所有を名詞の前に', ar: 'لِمَن، قبل الاسم' } },
+
+  /*
+   * Receptive: the third-person -s the arc HEARS and never asks for. The blueprint
+   * says it plainly — "third-person -s heard, never required" — so the learner meets
+   * "she works" in somebody else's sentence and answers with "she is".
+   */
+  { id: 'works_third', term: 'works', kind: 'word', emoji: 'w', example: 'She works at the office.',
+    meaning: { en: '“work” when talking about he or she', es: '“work” al hablar de él o ella', pt: '“work” ao falar de ele ou ela', fr: '« work » quand on parle de lui ou elle', it: '“work” quando si parla di lui o lei', de: '„work“, wenn man über er/sie spricht', ja: '「he/she」のときの work', ar: '«work» عند الحديث عن هو أو هي' } },
+  { id: 'studies_third', term: 'studies', kind: 'word', emoji: 's', example: 'He studies at university.',
+    meaning: { en: '“study” when talking about he or she', es: '“study” al hablar de él o ella', pt: '“study” ao falar de ele ou ela', fr: '« study » quand on parle de lui ou elle', it: '“study” quando si parla di lui o lei', de: '„study“, wenn man über er/sie spricht', ja: '「he/she」のときの study', ar: '«study» عند الحديث عن هو أو هي' } },
 ]
 
 export const SEED_VOCAB_BY_ID = Object.fromEntries(SEED_VOCAB.map(item => [item.id, item]))

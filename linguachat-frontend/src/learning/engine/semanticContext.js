@@ -35,6 +35,16 @@ export const SEMANTIC_TYPES = [
    * not exist, and a type with no consumer makes coverage look real.
    */
   'time_point',      // seven, in the morning
+  /*
+   * A1 arc 3. The blueprint's reason for it is precise: "`person` holds a name; a
+   * relation takes a possessive and cannot be substituted for one ('This is my
+   * Alex')." So the slot in "This is my ___" accepts a relation and refuses a name,
+   * which is a distinction no existing type could make.
+   *
+   * Registered now because arc 3 uses it. `day` and `transport_mode` are still
+   * proposed for arcs that do not exist and stay unregistered.
+   */
+  'relation',        // friend, colleague, classmate
 ]
 
 export const isSemanticType = (type) => SEMANTIC_TYPES.includes(type)
@@ -79,6 +89,18 @@ export const INTENT_SLOTS = {
    * build "I get up at water". The blueprint's reason for the type, enforced.
    */
   state_routine: ['time_point'],
+
+  /*
+   * A1 arc 3. Introducing somebody takes a RELATION and nothing else: "This is my
+   * friend Ana" is the frame, and the slot exists precisely to refuse a name —
+   * "This is my Ana" is the sentence the blueprint names as the reason the type had
+   * to be invented. A place or a drink would be worse.
+   *
+   * Saying something about that person takes NO personalised value at all: nothing
+   * the learner told us about themselves may be asserted about somebody else.
+   */
+  introduce_person: ['relation'],
+  state_person_fact: [],
 
   express_like: ['interest', 'activity', 'food', 'drink', 'generic_object'],
   express_dislike: ['interest', 'food', 'drink', 'generic_object'],
@@ -325,6 +347,14 @@ const KNOWN_VALUES = {
   morning: 'time_point', afternoon: 'time_point', evening: 'time_point',
   one: 'time_point', two: 'time_point', three: 'time_point', four: 'time_point', five: 'time_point',
   six: 'time_point', seven: 'time_point', eight: 'time_point', nine: 'time_point', ten: 'time_point',
+  /*
+   * A1 arc 3's relations. Three, and neutral, which is the arc's own risk note
+   * enforced: "Family vocabulary and cultural assumptions. The budget is three
+   * neutral relations plus a fallback that needs none, and no episode assumes a
+   * family structure." So no `sister`, no `wife`, no `son` — the fallback is
+   * introducing somebody by name alone, which needs no relation at all.
+   */
+  friend: 'relation', colleague: 'relation', classmate: 'relation',
 }
 
 /*

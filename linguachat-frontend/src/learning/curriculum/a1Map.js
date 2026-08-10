@@ -9,16 +9,16 @@
  * simplest way to guarantee that is for A1's facts to live somewhere Pre-A1 does
  * not read.
  *
- * ARCS 1 AND 2 ARE HERE. A1 is designed in full (seven arcs, twenty-one episodes,
- * in docs/curriculum/a1-blueprint.json) and implemented one arc at a time. Listing
- * capabilities nobody can practise yet would make coverage look real, so the
+ * ARCS 1, 2 AND 3 ARE HERE. A1 is designed in full (seven arcs, twenty-one
+ * episodes, in docs/curriculum/a1-blueprint.json) and implemented one arc at a time.
+ * Listing capabilities nobody can practise yet would make coverage look real, so the
  * capabilities appear here as their arcs are built.
  */
 import { A1, episodesOfLevel } from './levels.js'
 import { SKELETON_BY_ID } from './preA1Skeleton.generated.js'
 
 /* The arcs of A1 with runtime content today, in the blueprint's order. */
-export const A1_RUNTIME_ARCS = ['work_and_study', 'daily_rhythm']
+export const A1_RUNTIME_ARCS = ['work_and_study', 'daily_rhythm', 'people_around_you']
 
 /*
  * The capability each A1 can-do is evidenced by, in the same shape Pre-A1 uses:
@@ -41,7 +41,34 @@ export const A1_CAN_DO_INTENT = {
   talk_about_daily_routine: 'state_routine',
   say_when_something_happens: 'state_routine',
   ask_what_something_means: 'repair_request',
+  /*
+   * Arc 3. The DEFINING intent, which is what coverage and the planner read: a
+   * capability has one headline function. Introducing somebody is that function.
+   */
+  introduce_someone_else: 'introduce_person',
 }
+
+/*
+ * A capability may be evidenced by more than one intent, and arc 3 is the first case:
+ * the blueprint gives `introduce_someone_else` three patterns — `this_is_pattern`,
+ * `he_she_is_pattern`, `possessive_pattern` — and the middle one is a different
+ * communicative function ("she is a student") from presenting a person ("this is
+ * Ana"). Both are the same capability.
+ *
+ * Kept as a SEPARATE map rather than by turning `A1_CAN_DO_INTENT` into lists,
+ * because every reader of that map — coverage, the planner, the authoring contract —
+ * asks it "which one intent headlines this capability" and would have to learn a new
+ * shape for one arc's sake.
+ */
+export const A1_CAN_DO_EXTRA_INTENTS = {
+  introduce_someone_else: ['state_person_fact'],
+}
+
+/* Every intent a capability may be evidenced by, headline first. */
+export const a1IntentsOf = (canDoId) => [
+  A1_CAN_DO_INTENT[canDoId],
+  ...(A1_CAN_DO_EXTRA_INTENTS[canDoId] || []),
+].filter(Boolean)
 
 /*
  * Which of them a learner must own to be considered done with the LEVEL. Both of
@@ -53,6 +80,7 @@ export const A1_CAN_DO_INTENT = {
 export const A1_REQUIRED_CAN_DOS = [
   'talk_about_work_or_study', 'ask_about_work_or_study',
   'talk_about_daily_routine', 'say_when_something_happens', 'ask_what_something_means',
+  'introduce_someone_else',
 ]
 
 /*
@@ -67,6 +95,12 @@ export const A1_RECEPTIVE_ITEMS = [
    * something real to ask the meaning of. Understood, asked about, never produced.
    */
   'early', 'late',
+  /*
+   * Arc 3's two: the third-person -s. The blueprint is explicit — "third-person -s
+   * heard, never required" — so the learner meets "she works" in somebody else's
+   * sentence and answers with "she is".
+   */
+  'works_third', 'studies_third',
 ]
 
 /*
@@ -91,13 +125,13 @@ export function a1EpisodesForCanDo(canDoId) {
  * shows an item does not count.
  */
 export function a1ProductiveItemsOf(canDoId) {
-  const intent = A1_CAN_DO_INTENT[canDoId]
-  if (!intent) return []
+  const intents = a1IntentsOf(canDoId)
+  if (!intents.length) return []
   const out = new Set()
   for (const ep of a1Episodes()) {
     for (const step of ep.steps || []) {
-      const producedHere = step.evalKind === intent
-        || (step.turns || []).some(turn => turn.evalKind === intent)
+      const producedHere = intents.includes(step.evalKind)
+        || (step.turns || []).some(turn => intents.includes(turn.evalKind))
       if (!producedHere) continue
       ;(step.itemIds || []).forEach(id => out.add(id))
       for (const turn of step.turns || []) (turn.itemIds || []).forEach(id => out.add(id))
@@ -146,8 +180,11 @@ export const A1_INTRODUCED_ITEMS = [
   /* arc 2 — how your day goes: two actions, two adverbs, four pattern groups */
   'get_up', 'have_breakfast', 'usually', 'sometimes',
   'frequency_pattern', 'part_of_day_pattern', 'time_at_pattern', 'what_does_mean_pattern',
+  /* arc 3 — who this is: three neutral relations, three pattern groups */
+  'friend', 'colleague', 'classmate',
+  'this_is_pattern', 'he_she_is_pattern', 'possessive_pattern',
   /* receptive: heard, never asked for */
-  'at_the_office', 'at_university', 'early', 'late',
+  'at_the_office', 'at_university', 'early', 'late', 'works_third', 'studies_third',
 ]
 
 /*

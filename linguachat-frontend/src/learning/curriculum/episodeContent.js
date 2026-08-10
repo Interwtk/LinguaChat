@@ -63,12 +63,13 @@ const CONTENT_LOADERS = {
     /*
      * A1 is loaded ARC BY ARC, and there is no `default` here on purpose: a
      * partially built level must refuse the arcs it does not have rather than
-     * hand back the one it does. Arc 2 added one line beside arc 1's and nothing
-     * else had to change, which was the point of building it this way; the five
-     * arcs still missing cannot resolve to either of them.
+     * hand back one it does. Each arc sprint has added exactly one line here and
+     * nothing else had to change, which was the point of building it this way; the
+     * four arcs still missing cannot resolve to any of these three.
      */
     work_and_study: () => import('../episodes/a1Arc1Content.js'),
     daily_rhythm: () => import('../episodes/a1Arc2Content.js'),
+    people_around_you: () => import('../episodes/a1Arc3Content.js'),
   },
 }
 

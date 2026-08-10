@@ -602,6 +602,75 @@ def _repair_request(text: str, repair_kind: str, meaning_word: str = "") -> dict
                  confidence=0.85 if len(n.split()) < 4 else 0.5)
 
 
+# ---- A1 arc 3: who this is (mirrors the frontend evaluator) ----
+#
+# The first two A1 intents the blueprint marks `hybrid`, and parity matters MORE for
+# these than for anything before them: a hybrid intent is one whose inconclusive
+# replies escalate, so this side is where an escalated introduction actually gets
+# judged. A verdict of "unclear" here would silently turn the design's escalation path
+# into a dead end.
+#
+# What these deliberately do not check is a relationship. The arc's risk note refuses
+# a family vocabulary list, so "This is Ana." is complete and a relation is a bonus.
+_THIS_IS = re.compile(r"\bthis\s+is\b")
+_HERE_IS = re.compile(r"\b(here\s+is|meet)\b")
+_POSSESSIVE_RELATION = re.compile(
+    r"\b(my|his|her|your)\s+(friend|colleague|classmate|teacher|neighbour|neighbor)\b")
+_SELF_INTRO = re.compile(r"\b(i'?m|i am|my name is)\b")
+_NAMED_PERSON = re.compile(r"\b[A-Z][a-z]{1,15}\b")
+_HE_SHE_IS = re.compile(r"\b(he|she)('?s|\s+is)\b")
+_THEY_ARE = re.compile(r"\bthey('?re|\s+are)\b")
+_THIRD_PERSON_S = re.compile(r"\b(he|she)\s+(works|studies|lives|likes)\b")
+_FIRST_PERSON_FACT = re.compile(r"\bi\s+(work|study|am|'m)\b")
+
+
+def _introduce_person(text: str, partner: str = "") -> dict:
+    who = (partner or "").strip() or "Ana"
+    natural = f"This is {who}."
+    raw = (text or "").strip()
+    n = normalize(raw)
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True,
+                     natural_version=natural, confidence=0.95)
+    if _THIS_IS.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=False,
+                     confidence=0.96 if _POSSESSIVE_RELATION.search(n) else 0.93)
+    if _HERE_IS.search(n) and _NAMED_PERSON.search(raw):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=True, confidence=0.88)
+    if _SELF_INTRO.search(n):
+        return _base(error_type="introduced_self", retry_required=True,
+                     natural_version=natural, confidence=0.9)
+    if _NAMED_PERSON.search(raw) and len(n.split()) <= 2:
+        return _base(error_type="missing_frame", retry_required=True,
+                     natural_version=natural, confidence=0.88)
+    return _base(error_type="no_introduction", retry_required=True,
+                 natural_version=natural, confidence=0.5)
+
+
+def _state_person_fact(text: str, partner: str = "") -> dict:
+    who = (partner or "").strip() or "Ana"
+    natural = f"{who} is a student."
+    n = normalize(text)
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True,
+                     natural_version=natural, confidence=0.95)
+    if _HE_SHE_IS.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=False, confidence=0.95)
+    # the -s form is heard in the arc and never required, so producing it is MORE
+    # than the turn asked for
+    if _THIRD_PERSON_S.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=True, confidence=0.9)
+    if _THEY_ARE.search(n) or _FIRST_PERSON_FACT.search(n):
+        return _base(error_type="wrong_person", retry_required=True,
+                     natural_version=natural, confidence=0.88)
+    return _base(error_type="no_person_statement", retry_required=True,
+                 natural_version=natural, confidence=0.5)
+
+
 def _close_encounter(text: str) -> dict:
     natural = "Bye."
     n = normalize(text)
@@ -839,6 +908,12 @@ def evaluate_deterministic(payload: dict) -> dict:
                                payload.get("meaning_word") or "")
     if kind == "close_encounter":
         return _close_encounter(text)
+    # A1 arc 3 — the partner's name travels with the request so the model answer names
+    # somebody who was actually on screen.
+    if kind == "introduce_person":
+        return _introduce_person(text, payload.get("partner_name") or "")
+    if kind == "state_person_fact":
+        return _state_person_fact(text, payload.get("partner_name") or "")
     # sixth arc — the thing and the shape of the quantity travel with the turn,
     # for the same reason the repair strategy does: without them the verdict is
     # about a different question.

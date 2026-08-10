@@ -70,6 +70,7 @@ class EvaluationContext:
     # another. Linguistic information about the task, not support state.
     repair_kind: str = ""
     meaning_word: str = ""
+    partner_name: str = ""
     # The shape of quantity asked for, and of what. Linguistic properties of the
     # TASK, in the same class as expected_intent — never anything about the
     # learner's progress, readiness or support.
@@ -102,6 +103,7 @@ class EvaluationContext:
             turn_context=turn,
             repair_kind=str(payload.get("repair_kind") or ""),
             meaning_word=str(payload.get("meaning_word") or ""),
+            partner_name=str(payload.get("partner_name") or ""),
             quantity_form=str(payload.get("quantity_form") or ""),
             target_thing=str(payload.get("target_thing") or ""),
             target_count=payload.get("target_count") if isinstance(payload.get("target_count"), int) else None,
@@ -247,6 +249,7 @@ def _context_to_payload(context: EvaluationContext) -> dict:
         "learner_name": context.learner_name,
         "repair_kind": context.repair_kind,
         "meaning_word": context.meaning_word,
+        "partner_name": context.partner_name,
         "quantity_form": context.quantity_form,
         "target_thing": context.target_thing,
         "target_count": context.target_count,

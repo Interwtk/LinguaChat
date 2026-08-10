@@ -47,6 +47,14 @@ const MODEL_ANSWER = {
   state_routine: (v) => (v.timeForm === 'part_of_day'
     ? 'I usually work in the morning.'
     : `I usually get up at ${v.usualTime || 'seven'}.`),
+  /*
+   * A1 arc 3. The person being introduced is the session's own partner, so the model
+   * answer names somebody who is actually on screen rather than inventing a third
+   * party — and the third-person statement stays with `is`, which is the form the
+   * arc teaches.
+   */
+  introduce_person: (v) => `This is my friend ${v.partner}.`,
+  state_person_fact: (v) => `${v.partner} is a student.`,
 
   introduction: (v) => `Hi, I'm ${v.name}.`,
   ask_name: () => "What's your name?",
@@ -119,6 +127,9 @@ const PROMPT = {
   state_routine: (v) => (v.timeForm === 'part_of_day'
     ? 'When do you work or study — morning, afternoon or evening?'
     : `Tell me about your day${v.name ? ', ' + v.name : ''}. What time do you get up?`),
+  /* arc 3: somebody has to be there to introduce, and somebody to introduce them to */
+  introduce_person: (v) => `${v.partner} is here and we have not met.`,
+  state_person_fact: (v) => `Tell me one thing about ${v.partner}.`,
 
   introduction: () => 'Hi there!',
   ask_name: () => "I'm ready when you are.",
@@ -395,7 +406,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
     const thingContext = kind === 'use_quantity' || kind === 'identify_thing'
       ? { targetThing: vars.thingId, targetCount: vars.count, quantityForm: 'bare' }
       : { targetThing: vars.item }
-    const evalCtx = { name, independent, turnContext, place: vars.place, targetNoun: vars.noun, ...thingContext, ...(repairKind ? { repairKind } : {}) }
+    const evalCtx = { name, independent, turnContext, place: vars.place, targetNoun: vars.noun, partner: vars.partner, ...thingContext, ...(repairKind ? { repairKind } : {}) }
     const preview = evaluateFree(kind, text, evalCtx)
     const controller = new AbortController()
     abortRef.current = controller
@@ -406,7 +417,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
       result = await evaluateEpisodeResponse({
         episode: null, step: { evalKind: kind, itemIds: block.payload?.itemId ? [block.payload.itemId] : [] },
         learnerResponse: text, learnerName: name, place: vars.place,
-        targetNoun: vars.noun, ...thingContext,
+        targetNoun: vars.noun, ...thingContext, partner: vars.partner,
         // the strategy travels to Lingua too, or the remote grades another question
         ...(repairKind ? { repairKind } : {}),
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,

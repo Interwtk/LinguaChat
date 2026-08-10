@@ -522,7 +522,14 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
     // targetNoun keeps the model answer in the learner's own subject matter
     // targetThing is only set where the step actually asked for a thing, so the
     // arcs that never mention one keep their own catalogue examples.
-    const evalCtx = { name, independent, turnContext, place, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(step.timeForm ? { timeForm: step.timeForm } : {}), ...(usualTime ? { usualTime } : {}), ...(stepCount ? { targetCount: stepCount } : {}) }
+    /*
+     * WHO this turn is about. The roleplay partner by default; a step may name
+     * somebody else with `personName` — arc 3 has turns about a person the episode
+     * introduces, and a verdict built from the derived partner named the wrong one in
+     * the sentence it offered as correct.
+     */
+    const aboutPerson = step.personName || partner
+    const evalCtx = { name, independent, turnContext, place, partner: aboutPerson, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(step.timeForm ? { timeForm: step.timeForm } : {}), ...(usualTime ? { usualTime } : {}), ...(stepCount ? { targetCount: stepCount } : {}) }
     const preview = evaluateFree(evalKind, text, evalCtx)
     const willEscalate = shouldEscalate(preview)
 
@@ -535,6 +542,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
       result = await evaluateEpisodeResponse({
         episode: ep, step, learnerResponse: text, learnerName: name, place,
         targetNoun: subjectNoun, targetThing: (stepThing && stepThing.id) || requestedThing || undefined, activity: interestCtx.activity, interestId: interestCtx.interestId,
+        partner: aboutPerson,
         repairKind: step.repairKind || undefined,
         meaningWord: step.meaningWord || undefined,
         timeForm: step.timeForm || undefined,

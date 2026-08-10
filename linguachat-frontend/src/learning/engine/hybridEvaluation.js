@@ -121,6 +121,13 @@ function buildRemotePayload(params, kind) {
      */
     quantity_form: params.quantityForm ?? '',
     target_count: Number.isInteger(params.targetCount) ? params.targetCount : null,
+    /*
+     * WHO the turn is about. Arc 3's introductions name a roleplay partner, so a
+     * verdict formed without this field says "This is Ana." to a learner whose
+     * partner on screen is somebody else. It is a property of the TASK — the
+     * episode chose the name — never a person from the learner's own life.
+     */
+    partner_name: params.partner ?? '',
     interest_id: params.interestId ?? null,
     native_language: params.nativeLanguage ?? 'en',
     interface_language: params.interfaceLanguage ?? 'en',
@@ -133,7 +140,7 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, signal, remote } = params
   const kind = step?.evalKind
   /*
    * Whether this counts as unaided production, used only to choose the wording
@@ -153,6 +160,7 @@ export async function evaluateEpisodeResponse(params) {
     ...(targetThing ? { targetThing } : {}),
     ...(activity ? { activity } : {}),
     ...(repairKind ? { repairKind } : {}),
+    ...(partner ? { partner } : {}),
     /*
      * A step's SUBTYPE has to travel with it. Arc 2's routine turn says which kind
      * of "when" it wants and arc 2's repair says which word it is about; without
