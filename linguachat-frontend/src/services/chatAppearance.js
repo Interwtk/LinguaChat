@@ -88,12 +88,12 @@ export function chatAppearanceStyle(appearance, { chattoUrl } = {}) {
     style.backgroundImage = 'radial-gradient(var(--border-strong) 1px, transparent 1px)'
     style.backgroundSize = '18px 18px'
   } else if (clean.background === 'chatto' && chattoUrl) {
-    style.backgroundImage = `url(${chattoUrl})`
-    style.backgroundSize = '108px'
-    style.backgroundRepeat = 'repeat'
-    /* the wallpaper is barely there; the conversation stays the protagonist */
-    style.backgroundBlendMode = 'luminosity'
-    style.opacity = 1
+    /*
+     * The URL goes to the PSEUDO ELEMENT only, through a custom property. Setting
+     * `background-image` on the element as well made the artwork paint twice — once
+     * at full strength — and Chatto ended up shouting over the conversation.
+     */
+    style['--chat-wallpaper'] = `url(${chattoUrl})`
     style['--chat-wallpaper-ink'] = '0.06'
   }
 

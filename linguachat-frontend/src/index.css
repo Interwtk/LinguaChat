@@ -312,12 +312,13 @@ h1, h2, h3, .font-display {
   content: '';
   position: absolute;
   inset: 0;
-  z-index: -1;
+  z-index: 0;
   pointer-events: none;
-  background-image: inherit;
-  background-size: inherit;
-  background-repeat: inherit;
-  opacity: var(--chat-wallpaper-ink, 1);
+  /* only this layer ever draws the wallpaper, and only at the design's low ink */
+  background-image: var(--chat-wallpaper, none);
+  background-size: 76px;
+  background-repeat: repeat;
+  opacity: var(--chat-wallpaper-ink, 0);
 }
 
 .chat-canvas-inner { position: relative; z-index: 1; }
@@ -421,15 +422,29 @@ h1, h2, h3, .font-display {
 .streak-flame-layer {
   will-change: transform, border-radius, filter;
   backface-visibility: hidden;
-  mix-blend-mode: screen;
   opacity: 0.96;
 }
 
 .streak-flame-ember {
   will-change: transform, opacity, filter;
-  mix-blend-mode: screen;
   opacity: 0.72;
 }
+
+/*
+ * BLENDING IS THE ONE THING THAT HAD TO BECOME THEME-AWARE.
+ *
+ * The reference blends every layer with `screen`, which is what fuses them into
+ * one body of fire — on a DARK surface. Over the cream page, screen lightens what
+ * is beneath it, the terracotta disappears and all that survives is the white
+ * gradient tip: the flame reads as a pale water droplet. Rendering the reference's
+ * own markup beside ours on cream produced the same droplet, which is how this was
+ * traced to the blend mode rather than to the port.
+ *
+ * Night therefore keeps the reference exactly; day stacks the layers so the colour
+ * is visible. Nothing else about the flame changes.
+ */
+.dark .streak-flame-layer,
+.dark .streak-flame-ember { mix-blend-mode: screen; }
 
 @keyframes flameA {
   0%, 100% { transform: translate3d(0,0,0) rotate(-45deg) skewX(-1deg) scale(1,1); border-radius: 52% 4% 54% 46%; filter: blur(.32px) brightness(1) saturate(1); }

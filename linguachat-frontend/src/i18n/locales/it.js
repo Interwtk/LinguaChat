@@ -1570,4 +1570,5 @@ export default {
   stepType_recall: "Ricordalo",
   stepType_mini_story: "Una storia breve",
   stepType_completion: "Cosa sai fare adesso",
+  typingShort: "Sta scrivendo…",
 }

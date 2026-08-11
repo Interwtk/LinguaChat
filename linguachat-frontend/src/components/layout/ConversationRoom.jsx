@@ -185,7 +185,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
       <div className="flex items-center justify-between px-4 md:px-6 py-3 flex-shrink-0"
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
         <div className="flex items-center justify-between" style={practiceInnerStyle}>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5" style={{ minWidth: 0, flex: 1 }}>
           {/*
             * BACK, as any chat has. On a phone this is the way out of the thread;
             * on a laptop the chat list is beside it, so the same control simply
@@ -213,17 +213,24 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
             type="button"
             onClick={() => setAppearanceOpen(true)}
             className="text-start"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, minWidth: 0, flex: 1 }}
             aria-haspopup="dialog"
           >
-            <p className="font-display" style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>
-              {t('linguaReady')}
+            {/* the contact's NAME, on one line — not a sentence about her */}
+            <p className="font-display" style={{
+              fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            }}>
+              Lingua
             </p>
             <div className="flex items-center gap-1.5">
-              <span className="inline-block rounded-full"
+              <span className="inline-block rounded-full flex-shrink-0"
                 style={{ width: 6, height: 6, background: 'var(--positive)' }} aria-hidden="true" />
-              <p style={{ fontSize: 11.5, color: 'var(--positive-deep)', fontWeight: 600 }}>
-                {isTyping ? t('writing') : t('listening')}
+              <p style={{
+                fontSize: 11.5, color: 'var(--positive-deep)', fontWeight: 600,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {isTyping ? t('typingShort') : t('onlineNow')}
               </p>
             </div>
           </button>
@@ -268,7 +275,8 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
           {onToggleFocusMode && (
             <button
               type="button"
-              className="tool-chip"
+              /* a phone has no side panels to hide, so the chip lives on desktop */
+              className="tool-chip hidden lg:inline-flex"
               onClick={onToggleFocusMode}
               aria-pressed={focusMode}
               style={focusMode

@@ -1570,4 +1570,5 @@ export default {
   stepType_recall: "思い出す",
   stepType_mini_story: "短いお話",
   stepType_completion: "できるようになったこと",
+  typingShort: "入力中…",
 }

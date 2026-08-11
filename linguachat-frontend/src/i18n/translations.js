@@ -1610,6 +1610,7 @@ const base = {
   stepType_recall: "Remember it",
   stepType_mini_story: "A short story",
   stepType_completion: "What you can do now",
+  typingShort: "Typing…",
 }
 
 
