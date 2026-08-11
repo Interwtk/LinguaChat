@@ -4,7 +4,16 @@ import { getMissionForToday } from '../../services/missions'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { StreakFlame } from '../ui/StreakFlame'
 
-export function JourneyRail({ onClose }) {
+/**
+ * The path and the progress that goes with it.
+ *
+ * @param onClose   present when this is the mobile sheet
+ * @param embedded  present when it is a section of the "You" screen. It stops being
+ *                  a rail: no header, no navigation list, no scroll container — the
+ *                  screen owns those. This is what stopped it being the app's
+ *                  primary navigation.
+ */
+export function JourneyRail({ onClose, embedded = false }) {
   const { profile, navigateTo, view, localProgress, t, startPracticeMission, activeMissionDetails, completedMissions } = useApp()
   const isMobileSheet = Boolean(onClose)
   const mission = activeMissionDetails?.mission || getMissionForToday(profile.level, profile.goal)
@@ -73,7 +82,7 @@ export function JourneyRail({ onClose }) {
               background: 'var(--accent-soft)', border: '1px solid var(--border)',
               borderRadius: 999, padding: '3px 10px 3px 6px',
             }}>
-              <StreakFlame days={streak} size={20} />
+              <StreakFlame days={streak} scale={0.5} />
               <span style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--accent-strong)' }}>
                 {streak}
               </span>
@@ -157,70 +166,15 @@ export function JourneyRail({ onClose }) {
           <ProgressMap level={profile.level} />
         </div>
 
-        {/* Explore navigation */}
-        <div>
-          <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: 8 }}>
-            {t('explore')}
-          </p>
-          <div className="flex flex-col gap-1.5">
-            {[
-              {
-                id: 'memory-garden', label: t('memoryGarden'),
-                desc: `${wordsLearned} ${t('phrasesSaved')}`,
-                color: 'var(--positive)', soft: 'var(--positive-soft)',
-                icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22V12M12 12C12 8 8 4 4 4s0 8 8 8zM12 12c0-4 4-8 8-8s0 8-8 8z"/></svg>,
-              },
-              {
-                id: 'archive', label: t('conversationArchive'),
-                desc: `${sessionsTotal} ${t('sessionsRecorded')}`,
-                color: 'var(--info)', soft: 'var(--info-soft)',
-                icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-              },
-              {
-                id: 'identity', label: t('languageIdentity'),
-                desc: t('learnerProfile'),
-                color: 'var(--accent)', soft: 'var(--accent-soft)',
-                icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
-              },
-              {
-                id: 'pricing', label: t('plansTitle'),
-                desc: t('plansDesc'),
-                color: 'var(--accent)', soft: 'var(--accent-soft)',
-                icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l2.4 5 5.6.8-4 3.9 1 5.6L12 14.7 6 17.3l1-5.6-4-3.9 5.6-.8z"/></svg>,
-              },
-            ].map(item => {
-              const isActive = view === item.id
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => navigateTo(item.id)}
-                  className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-left w-full transition-all"
-                  style={{
-                    background: isActive ? item.soft : 'transparent',
-                    border: `1px solid ${isActive ? item.color : 'transparent'}`,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div style={{
-                    width: 30, height: 30, borderRadius: 9, flexShrink: 0,
-                    background: isActive ? item.soft : 'var(--surface-soft)',
-                    border: `1px solid ${isActive ? item.color : 'var(--border)'}`,
-                    color: isActive ? item.color : 'var(--muted)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    {item.icon}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: '0.8125rem', fontWeight: isActive ? 700 : 600, color: isActive ? item.color : 'var(--ink)', lineHeight: 1.2 }}>
-                      {item.label}
-                    </p>
-                    <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 1 }}>{item.desc}</p>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        {/*
+          * THE "EXPLORE" LIST IS GONE.
+          *
+          * It listed the Memory Garden, the archive, the language identity and the
+          * plans as a permanent menu — the old interface's main navigation, left
+          * standing beside the new one. Every one of those is still reachable: words
+          * and You are primary destinations, the archive is a row in Chats, and the
+          * plan is one click from the user block in the sidebar and from You.
+          */}
       </div>
 
       {/* Bottom stats */}

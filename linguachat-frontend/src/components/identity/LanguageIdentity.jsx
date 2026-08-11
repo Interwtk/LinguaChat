@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../../context/AppContext'
+import { JourneyRail } from '../layout/JourneyRail'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { getLanguageOption, languageFromInput, searchLanguages } from '../../services/language'
 import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS, MAX_INTERESTS, toggleInterestId } from '../../services/tutorPreferences'
@@ -420,6 +421,39 @@ export function LanguageIdentity() {
             , document.body)}
           </div>
         </div>
+
+        {/*
+          * YOUR PLAN — the frame's last settings row, and the second way into the
+          * plans page (the desktop user block is the first). Neither of them is the
+          * old "Explore" menu.
+          */}
+        <button
+          type="button"
+          onClick={() => navigateTo('pricing')}
+          className="flex items-center justify-between w-full rounded-2xl px-4 mb-5 animate-fade-up text-start"
+          style={{
+            minHeight: 56, background: 'var(--surface)', border: '1px solid var(--border)',
+            animationDelay: '0.05s',
+          }}
+        >
+          <span style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--text)' }}>{t('plansTitle')}</span>
+          <span className="flex items-center gap-2">
+            <span style={{ fontSize: '0.875rem', color: 'var(--muted)' }}>{t('planFree')}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </span>
+        </button>
+
+        {/*
+          * YOUR PATH — moved here from the global sidebar. The frames put identity,
+          * the path, the settings and the plan on one screen; a permanent progress
+          * rail beside every other screen was the old interface's navigation.
+          */}
+        <section className="rounded-2xl overflow-hidden mb-5 animate-fade-up"
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', animationDelay: '0.06s' }}>
+          <JourneyRail embedded />
+        </section>
 
         {/* Stats grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5 animate-fade-up" style={{ animationDelay: '0.08s' }}>
