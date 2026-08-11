@@ -95,46 +95,106 @@ const html = read('index.html')
   has('Plus Jakarta Sans is no longer loaded', !/Plus\+Jakarta|Plus Jakarta/.test(html + tailwind + css))
 }
 
-/* ---- 4) one responsive app, not two ---- */
+/* ---- 4) one responsive app, and the design's four destinations ---- */
 {
-  /*
-   * The mobile and desktop layouts render the SAME destinations from ONE list.
-   * Two hand-maintained navigations is how a phone and a laptop drift into
-   * different products.
-   */
   const app = read('src/App.jsx')
   has('destinations are declared once', /const DESTINATIONS = \[/.test(app))
   has('the mobile bar maps over them', /DESTINATIONS\.map/.test(app))
-  has('the desktop rail maps over them too',
-    (app.match(/DESTINATIONS\.map/g) || []).length >= 2)
-  has('there is no second app for mobile',
-    !ALL.some(f => /MobileApp|DesktopApp/.test(f.path)))
-  /* still exactly one mounted shell — the behaviour check owns the detail */
+  has('the desktop rail maps over them too', (app.match(/DESTINATIONS\.map/g) || []).length >= 2)
+  has('there is no second app for mobile', !ALL.some(f => /MobileApp|DesktopApp/.test(f.path)))
   has('shells are still conditionally mounted', /\{isDesktop && \(/.test(app) && /\{!isDesktop && \(/.test(app))
+
+  /*
+   * THE FOUR ARE THE DESIGN'S FOUR: today, chats, words, you.
+   *
+   * SUPERSEDES a weaker assertion that only counted the destinations. The previous
+   * shell had four of them too — but one was "practice", which took the place of
+   * Chats and left the product without an inbox, and the design is explicit that
+   * practice is where a conversation happens rather than a place in the bar.
+   */
+  const ids = [...app.matchAll(/id: '([a-z-]+)', labelKey/g)].map(m => m[1])
+  assert.deepEqual(ids, ['today', 'chats', 'memory-garden', 'identity'],
+    `primary navigation is ${ids.join(', ')}`)
+  n++
+  has('practice is NOT a primary destination', !ids.includes('practice'))
+  has('pricing is NOT a primary destination', !ids.includes('pricing'))
+  has('notes are NOT a primary destination', !ids.includes('notes'))
+  /* a route reached from inside a destination still highlights that destination */
+  has('routes map onto destinations', /const DESTINATION_OF = \{/.test(app))
+  has('practice belongs to chats', /practice: 'chats'/.test(app))
+  has('pricing belongs to you', /pricing: 'identity'/.test(app))
+
+  /*
+   * AND THE LEGACY RAIL IS GONE FROM THE SHELL. `JourneyRail` still exists and
+   * still owns the path, but the shell must not render it as the app's navigation
+   * — that is the mixture this sprint removed.
+   */
+  has('the shell does not import the progress rail', !/from '\.\/components\/layout\/JourneyRail'/.test(app))
+  const rail = read('src/components/layout/JourneyRail.jsx')
+  has('the rail no longer carries an explore menu', !/t\('explore'\)/.test(rail))
+  has('the rail can be embedded in a screen instead', /embedded = false/.test(rail))
+  has('and the path lives on the You screen',
+    /JourneyRail/.test(read('src/components/identity/LanguageIdentity.jsx')))
 }
 
-/* ---- 5) the streak is the flame, and the flame is slow ---- */
+/* ---- 5) the streak flame is the PORTED one, not a redrawn one ---- */
 {
   const flame = read('src/components/ui/StreakFlame.jsx')
-  has('the flame has the designed tiers', /FLAME_TIERS/.test(flame) && /candle/.test(flame) && /oxyacetylene/.test(flame))
-  has('a longer streak reads as a different fire', /min: 365/.test(flame) && /min: 7/.test(flame))
+
+  /*
+   * SUPERSEDES an earlier group that checked a hand-written flame (three layers,
+   * durations of 4.6 / 3.8 / 5.8 s, a `.streak-flame-outer` class tree). That
+   * flame was drawn from a description and read as a tilted droplet. These
+   * assertions describe the design's OWN implementation, which is now copied:
+   * geometry per tier, the two-part gradient, the ember, and the three cadences.
+   */
+  has('the tiers are the design\'s eight', /FLAME_TIERS/.test(flame)
+    && ['candle', 'campfire', 'alcohol', 'natural_gas', 'propane', 'propane_o2', 'acetylene', 'oxyacetylene']
+      .every(id => flame.includes(`'${id}'`)))
   has('the tiers are ordered hottest-first so the first match wins',
     flame.indexOf('min: 365') < flame.indexOf('min: 0'))
-  has('the number carries the meaning, the fire is decorative by default',
-    /aria-hidden=\{label \? undefined : 'true'\}/.test(flame))
 
-  /* motion: slow, layered, and stoppable */
-  const durations = [...css.matchAll(/animation:\s*flame\w+\s+([\d.]+)s/g)].map(m => Number(m[1]))
-  has('every flame layer animates', durations.length >= 3)
-  has('no flame layer is faster than three seconds', durations.every(d => d >= 3))
-  has('the layers run on different rhythms so they blend rather than stack',
-    new Set(durations).size >= 3)
+  /* the reference's container sizes, per tier */
+  for (const size of ['[41, 42]', '[47, 50]', '[51, 56]', '[56, 62]', '[61, 68]', '[65, 74]', '[70, 80]', '[76, 88]']) {
+    has(`the ${size} container comes from the reference`, flame.includes(size))
+  }
+  /* the reference's silhouette: one sharp corner, turned up, pivoting low */
+  has('the silhouette is the reference\'s radius', flame.includes("'50% 0 50% 50%'"))
+  has('rotated -45 degrees', flame.includes("'rotate(-45deg)'"))
+  has('about a low origin', flame.includes("'50% 62%'"))
+  /* the reference's own gradient stops and inset highlight */
+  has('the white-hot stop is kept', flame.includes('rgba(255,255,255,.96) 100%'))
+  has('the sheen is the reference\'s radial gradient', /circle at 56% 30%/.test(flame))
+  has('the inset highlight is kept', /inset 0 0 6px rgba\(255,255,255,\.18\)/.test(flame))
+  /* the ember, which is what makes it read as fire rather than as an icon */
+  has('there is an ember halo', /streak-flame-ember/.test(flame) && /blur\(\$\{px\(7\)\}\)/.test(flame))
+
+  /* the three cadences, exactly as the reference declares them */
+  has('flameA runs at 2.85s', flame.includes("flameA: '2.85s'"))
+  has('flameB runs at 2.15s', flame.includes("flameB: '2.15s'"))
+  has('flameC runs at 1.62s', flame.includes("flameC: '1.62s'"))
+  has('with the reference\'s easing', flame.includes("cubic-bezier(.45,0,.55,1)"))
+  has('and the ember at 4.95s', /ember 4\.95s ease-in-out infinite/.test(flame))
+
+  /* the hotter families gain a third flame layer, as the reference does */
+  has('the hot tiers have three flame layers', (flame.match(/flameC/g) || []).length >= 4)
+
+  /* the keyframes are the reference's, in the stylesheet */
+  for (const name of ['flameA', 'flameB', 'flameC', 'ember']) {
+    has(`@keyframes ${name} exists`, new RegExp(`@keyframes ${name} \\{`).test(css))
+  }
+  has('the layers blend rather than stack', /\.streak-flame-layer[\s\S]*mix-blend-mode: screen/.test(css))
   has('the flame stops for prefers-reduced-motion',
-    /prefers-reduced-motion[\s\S]*\.streak-flame i/.test(css))
-  /* and the emoji it replaced is gone from the surfaces that show a streak */
-  const emoji = ALL.filter(f => /components\/(layout|today)\//.test(f.path) && f.text.includes('🔥'))
+    /prefers-reduced-motion[\s\S]*\.streak-flame-layer, \.streak-flame-ember/.test(css))
+
+  /* the number carries the meaning; the fire is decorative by default */
+  has('the flame is decorative unless labelled',
+    /aria-hidden=\{label \? undefined : 'true'\}/.test(flame))
+  /* and nothing has gone back to an emoji or an icon font */
+  const emoji = ALL.filter(f => /components\/(layout|today|chats)\//.test(f.path) && f.text.includes('\u{1F525}'))
   assert.deepEqual(emoji.map(f => f.path), [], 'a fire emoji is standing in for the flame again')
   n++
+  has('the flame is not an svg icon', !/<svg[^>]*>[^]*?flame/i.test(flame))
 }
 
 /* ---- 6) being corrected looks the same everywhere, and never like a warning ---- */
@@ -180,13 +240,23 @@ const html = read('index.html')
   const app = read('src/App.jsx')
   has('focus mode is one piece of local state', /const FOCUS_MODE_KEY = 'lc2-focus-mode'/.test(app))
   has('it survives a reload', /localStorage\.setItem\(FOCUS_MODE_KEY/.test(app))
-  has('it decides which panels are mounted', /const showRail = !focusMode/.test(app) && /const showNotes = !focusMode/.test(app))
+  /*
+   * It decides which SURFACES are mounted, and in the restored shell that is all
+   * three of them: the navigation (or the chat list), the context panel, and the
+   * mobile bar. The earlier version of this assertion named `showRail`/`showNotes`,
+   * which belonged to the shell this sprint replaced.
+   */
+  has('focus mode removes the left column', /\{!focusMode && !isCall && \(/.test(app))
+  has('focus mode removes the context panel', /const panelKind = focusMode \? null :/.test(app))
+  has('focus mode removes the mobile bar', /\{!focusMode && !isCall && <MobileNav \/>\}/.test(app))
   has('the way out is always drawn', /function FocusExitButton/.test(app) && /focusMode && <FocusExitButton/.test(app))
+  /* and nothing of the old shell can survive it, because it is no longer rendered */
+  has('there is no legacy rail left to leak into focus mode', !/JourneyRail/.test(app))
   /*
    * It changes what is on screen and NOTHING else: no route, no learner state, no
    * availability, no episode progress.
    */
-  const focusBlock = app.slice(app.indexOf('function useFocusMode'), app.indexOf('/* The way out of focus mode'))
+  const focusBlock = app.slice(app.indexOf('function useFocusMode'), app.indexOf('function FocusExitButton'))
   for (const word of ['navigateTo', 'startEpisode', 'loadLearnerModel', 'beginSession']) {
     has(`focus mode does not touch ${word}`, !focusBlock.includes(word))
   }
@@ -251,6 +321,129 @@ const html = read('index.html')
   const app = read('src/App.jsx')
   has('navigation marks the current destination', (app.match(/aria-current=/g) || []).length >= 2)
   has('both navigations are named', (app.match(/aria-label=\{t\('mainNavigation'\)\}/g) || []).length >= 2)
+}
+
+
+/* ---- 13) Chats is a real destination, built from real state ---- */
+{
+  const chats = read('src/components/chats/ChatsView.jsx')
+  has('the inbox exists', /export function ChatsView/.test(chats))
+  has('it has the design\'s title and search', /chatsTitle/.test(chats) && /chatsSearchPlaceholder/.test(chats))
+  /* the four kinds of row the design puts in the inbox */
+  for (const row of ['lingua', 'chatto', 'notes', 'archive']) {
+    has(`the ${row} row exists`, new RegExp(`id: '${row}'`).test(chats) || new RegExp(`'${row}'`).test(chats))
+  }
+  has('an episode in progress appears as a thread', /episodeInProgress/.test(chats))
+  has('the Lingua row opens the real conversation', /navigateTo\('practice'\)/.test(chats))
+  /*
+   * NOTHING IS INVENTED. Timestamps come from message timestamps, the unread count
+   * is counted, the archive row appears only when there is an archive.
+   */
+  has('timestamps come from real messages', /lastMessage\?\.ts/.test(chats))
+  has('unread is counted, not invented', /unreadFromLingua/.test(chats))
+  has('the archive row is conditional', /archiveCount > 0 &&/.test(chats))
+  /*
+   * CHATTO IS NOT A TUTOR. Its row may lead to what it is talking about, never to a
+   * free conversation with Chatto.
+   */
+  has('Chatto\'s row does not open a chat with Chatto', !/onOpenThread\('chatto'\)/.test(chats))
+}
+
+/* ---- 14) the desktop conversation: chat list instead of navigation ---- */
+{
+  const app = read('src/App.jsx')
+  has('a conversation swaps the left column', /const inConversation = view === 'practice'/.test(app))
+  has('the chat list becomes that column', /inConversation \? \(/.test(app) && /<ChatsView compact/.test(app))
+  has('there is a way back to Home from it', /backToToday/.test(app))
+  /* and never both at once */
+  const desktopBlock = app.slice(app.indexOf('{isDesktop && ('), app.indexOf('{/* Mobile'))
+  has('the sidebar and the list are alternatives, not a stack',
+    /inConversation \? \([\s\S]*?\) : \([\s\S]*?<DesktopSidebar/.test(desktopBlock))
+}
+
+/* ---- 15) the context panel is per route, and pricing has none ---- */
+{
+  const panel = read('src/components/layout/ContextPanel.jsx')
+  has('panels are declared per route', /export const CONTEXT_PANELS/.test(panel))
+  has('there is a resolver', /export function contextPanelFor/.test(panel))
+  /*
+   * SUPERSEDES nothing — this is new, and it is the invariant the screenshots
+   * asked for: the notes panel used to be global, including on the plans page.
+   */
+  has('Home has Lingua\'s context', /today: 'home'/.test(panel))
+  has('a conversation has the episode\'s context', /practice: 'conversation'/.test(panel))
+  has('words has the path', /'memory-garden': 'path'/.test(panel))
+  has('pricing has NO context panel', /pricing: null/.test(panel))
+  has('the profile has none either', /identity: null/.test(panel))
+  has('and neither does a call', /call: null/.test(panel) && /video: null/.test(panel))
+  /* the tutor notes are one panel among several, not the panel */
+  has('the notes are only part of the conversation panel',
+    /kind === 'conversation'/.test(panel) && /<TutorNotes \/>/.test(panel))
+}
+
+/* ---- 16) call and video: visible, real surfaces, honest about the media ---- */
+{
+  const room = read('src/components/layout/ConversationRoom.jsx')
+  has('the call button is in the thread header', /aria-label=\{t\('voiceCall'\)\}/.test(room))
+  has('the video button is too', /aria-label=\{t\('videoCall'\)\}/.test(room))
+  has('they open real surfaces', /navigateTo\('call'\)/.test(room) && /navigateTo\('video'\)/.test(room))
+
+  const call = read('src/components/call/CallSurface.jsx')
+  has('the surface exists for both modes', /mode = 'voice'/.test(call) && /const isVideo = mode === 'video'/.test(call))
+  has('it has a subtitle area, as the frame does', /liveSubtitles/.test(call))
+  has('and a placeholder rather than a fake feed', /videoPlaceholder/.test(call))
+  has('the way out is always drawn', (call.match(/backToChat/g) || []).length >= 2)
+  /*
+   * HONESTY. Every control that would need media is disabled AND says so in its
+   * accessible name, and the surface states plainly that calling is not available.
+   */
+  has('controls are disabled', /disabled\s*\n\s*aria-disabled="true"/.test(call))
+  has('the upcoming state is announced, not only shown', /aria-label=\{`\$\{label\} — \$\{t\('upcoming'\)\}`\}/.test(call))
+  has('the surface says the feature is not ready', /callUpcomingBody/.test(call) && /videoUpcomingBody/.test(call))
+  /* and no media API was smuggled in anywhere */
+  const media = ALL.filter(f => /getUserMedia|RTCPeerConnection|SpeechRecognition|speechSynthesis|MediaRecorder/.test(f.text))
+  assert.deepEqual(media.map(f => f.path), [], 'a media API appeared in a UI-only sprint')
+  n++
+}
+
+/* ---- 17) chat appearance: real, persisted, and pedagogically inert ---- */
+{
+  const store = read('src/services/chatAppearance.js')
+  const sheet = read('src/components/chat/ChatAppearanceSheet.jsx')
+  has('appearance has its own store', /lc2-chat-appearance-v1/.test(store))
+  has('it is sanitised on the way in and out', /export function sanitizeChatAppearance/.test(store))
+  /* the design's four controls */
+  has('backgrounds are the design\'s', /CHAT_BACKGROUNDS = \['paper', 'dots', 'chatto'\]/.test(store))
+  has('bubble colours are the identity\'s', /CHAT_BUBBLES = \['terracotta', 'sage', 'ink'\]/.test(store))
+  has('there are three text sizes', /CHAT_TEXT_SIZES = \['normal', 'large', 'huge'\]/.test(store))
+  has('there is no arbitrary colour picker', !/type="color"/.test(sheet))
+  /* it reaches the conversation through one pair of custom properties */
+  has('the bubble reads the chosen colour', /background: var\(--chat-bubble, var\(--accent\)\)/.test(css))
+  has('the text size reaches the bubbles', /font-size: var\(--chat-font-size/.test(css))
+  /* the wallpaper stays under the design's ink ceiling and is never mirrored */
+  has('the Chatto wallpaper is barely there', store.includes("'--chat-wallpaper-ink'] = '0.06'")
+    || /chat-wallpaper-ink.{0,20}0\.06/.test(store))
+  has('and never mirrored in RTL', /\[dir="rtl"\] \.chat-canvas::before/.test(css))
+  /* the sheet is a real dialog with real radio groups */
+  has('the sheet is a dialog', /role="dialog"/.test(sheet) && /aria-modal="true"/.test(sheet))
+  has('the controls are radio groups', /role="radiogroup"/.test(sheet) && /role="radio"/.test(sheet))
+  has('the switches are switches', /role="switch"/.test(sheet))
+  has('it previews before saving', /previewStyle/.test(sheet))
+  has('it opens from Lingua\'s name', /aria-haspopup="dialog"/.test(read('src/components/layout/ConversationRoom.jsx')))
+  /*
+   * AND IT IS NOT PEDAGOGY. Appearance must not be able to touch the learner
+   * model, the captured facts or the interests.
+   */
+  /*
+   * Comments are stripped first: both files EXPLAIN that they must not touch the
+   * learner model, the facts or the interests, and the point is that the CODE does
+   * not — not that the words never appear.
+   */
+  const strip = (text) => text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+  const appearanceCode = strip(store) + strip(sheet)
+  for (const forbidden of ['learnerModel', 'learnerFacts', 'interests', 'MODEL_VERSION', 'recordItem', 'canDo']) {
+    has(`appearance does not touch ${forbidden}`, !appearanceCode.includes(forbidden))
+  }
 }
 
 console.log(`check-visual-identity — OK  (${n} identity invariants verified)`)

@@ -196,7 +196,7 @@ export function TodayView({ onOpenPath, onOpenNotes }) {
           <div className="flex items-center gap-2 flex-shrink-0">
             {streak > 0 ? (
               <>
-                <StreakFlame days={streak} size={34} />
+                <StreakFlame days={streak} />
                 <div>
                   <p className="font-display" style={{ fontWeight: 700, fontSize: '1.35rem', color: 'var(--ink)', lineHeight: 1 }}>{streak}</p>
                   <p style={{ fontSize: 11, color: 'var(--muted)', fontWeight: 600 }}>{t('dayStreak')}</p>
