@@ -18,6 +18,7 @@ import {
   saveStoredMessages,
 } from '../services/localProgress'
 import { translate, loadLocale, isLocaleReady } from '../i18n/translations'
+import { loadChatAppearance, saveChatAppearance } from '../services/chatAppearance'
 import {
   advanceMission,
   completeMission,
@@ -123,6 +124,15 @@ export function AppProvider({ children }) {
   const [darkMode, setDarkMode] = useState(() => {
     try { return localStorage.getItem('lc2-dark') === 'true' } catch { return false }
   })
+  /*
+   * HOW THE CHAT LOOKS. Its own store, on purpose: this is appearance, not
+   * pedagogy, so it can never reach the learner model, the captured facts or the
+   * interests. Sanitised on load, sanitised on save.
+   */
+  const [chatAppearance, setChatAppearanceState] = useState(loadChatAppearance)
+  const setChatAppearance = useCallback((next) => {
+    setChatAppearanceState(saveChatAppearance(next))
+  }, [])
   const [onboardingCompleted, setOnboardingCompleted] = useState(() => {
     try { return localStorage.getItem('lc2-onboarded') === 'true' } catch { return false }
   })
@@ -1033,6 +1043,7 @@ export function AppProvider({ children }) {
       startPracticeMission, submitMissionStep, submitMissionOption, abandonMission,
       messages, sendMessage, clearMessages, isTyping,
       sessionId, localProgress, resetLocalProgress,
+      chatAppearance, setChatAppearance,
       connectionNotice, memoryNotice,
       selectedMessage, selectMessage,
       mobileSheet, setMobileSheet,

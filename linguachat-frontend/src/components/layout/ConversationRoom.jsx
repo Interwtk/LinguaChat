@@ -3,6 +3,9 @@ import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MessageBubble, TypingIndicator } from '../chat/MessageBubble'
 import { PracticeToolbar } from '../chat/PracticeToolbar'
+import { ChatAppearanceSheet } from '../chat/ChatAppearanceSheet'
+import { chatAppearanceStyle } from '../../services/chatAppearance'
+import chattoWallpaper from '../../assets/chatto/gen/chatto-official-128.webp'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { CompletedEpisodes } from '../episode/CompletedEpisodes'
 import { lazyScreen } from '../ui/LazyBoundary'
@@ -62,8 +65,11 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
     beginSession,
     nativeLanguageInfo,
     useAnotherConversationTopic,
+    chatAppearance,
   } = useApp()
   const [input, setInput] = useState('')
+  /* the personalization sheet — frames 2l / 2m, opened from Lingua's name */
+  const [appearanceOpen, setAppearanceOpen] = useState(false)
   const [sparkOpen, setSparkOpen] = useState(false)
   /*
    * "Use another topic" is remembered for the day, not for the mount: walking
@@ -180,30 +186,38 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
         style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
         <div className="flex items-center justify-between" style={practiceInnerStyle}>
         <div className="flex items-center gap-3">
+          {/*
+            * BACK, as any chat has. On a phone this is the way out of the thread;
+            * on a laptop the chat list is beside it, so the same control simply
+            * returns to Chats.
+            */}
           <button
             type="button"
-            aria-label={t('openPath')}
-            className="lg:hidden flex items-center justify-center rounded-xl transition-colors"
+            aria-label={t('backToChats')}
+            className="flex items-center justify-center rounded-full transition-colors"
             style={{ width: 38, height: 38, background: 'var(--surface-sunk)', border: '1px solid var(--border)', color: 'var(--muted)' }}
-            onClick={() => setMobileSheet('journey')}
+            onClick={() => navigateTo('chats')}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="15" y2="18" />
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
 
-          <div>
-            <button
-              type="button"
-              onClick={() => navigateTo('today')}
-              className="hidden lg:inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold transition-all active:scale-[0.98]"
-              style={{ background: 'var(--surface-sunk)', border: '1px solid var(--border)', color: 'var(--muted)', marginBottom: 5 }}
-            >
-              <span aria-hidden="true">←</span> {t('backToToday')}
-            </button>
+          <LinguaAvatar size={38} online />
+
+          {/*
+            * Lingua's name is the way into "personalizar el chat", which is where
+            * the design puts it. It is a button, so it is reachable and announced.
+            */}
+          <button
+            type="button"
+            onClick={() => setAppearanceOpen(true)}
+            className="text-start"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+            aria-haspopup="dialog"
+          >
             <p className="font-display" style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>
-              {t('conversationWithLingua')}
+              {t('linguaReady')}
             </p>
             <div className="flex items-center gap-1.5">
               <span className="inline-block rounded-full"
@@ -212,7 +226,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
                 {isTyping ? t('writing') : t('listening')}
               </p>
             </div>
-          </div>
+          </button>
         </div>
 
         {/*
@@ -220,12 +234,37 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
           * concentrate, or open the notes. Both are labelled; neither is an
           * ambiguous icon on its own.
           */}
-        <div className="flex items-center gap-2">
-          {onOpenNotes && (
-            <button type="button" className="tool-chip lg:hidden" onClick={onOpenNotes}>
-              {t('notes')}
-            </button>
-          )}
+        {/*
+          * CALL AND VIDEO, where every chat keeps them. They are visible because
+          * they are part of the product, and they open real surfaces — which say
+          * plainly that the audio and video part is still coming rather than
+          * pretending to connect. Hiding them would hide the product's shape.
+          */}
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => navigateTo('call')}
+            aria-label={t('voiceCall')}
+            title={t('voiceCall')}
+            className="flex items-center justify-center rounded-full"
+            style={{ width: 38, height: 38, background: 'var(--accent-soft)', border: '1px solid var(--border)', color: 'var(--accent-strong)' }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 3h3l2 5-2.5 1.5a11 11 0 0 0 5 5L14 12l5 2v3a2 2 0 0 1-2 2A15 15 0 0 1 3 5a2 2 0 0 1 2-2z" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateTo('video')}
+            aria-label={t('videoCall')}
+            title={t('videoCall')}
+            className="flex items-center justify-center rounded-full"
+            style={{ width: 38, height: 38, background: 'var(--accent-soft)', border: '1px solid var(--border)', color: 'var(--accent-strong)' }}
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M15 8.5V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1.5l6 3.5v-14z" />
+            </svg>
+          </button>
           {onToggleFocusMode && (
             <button
               type="button"
@@ -239,7 +278,6 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
               {focusMode ? t('exitFocusMode') : t('focusMode')}
             </button>
           )}
-          <LinguaAvatar size={34} online />
         </div>
         </div>
       </div>
@@ -311,7 +349,15 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6">
+      {/*
+        * The chosen appearance is applied here, as custom properties, so the
+        * bubbles and the composer both read one source. The background is the
+        * learner's choice; the wallpaper option stays under 8 % ink.
+        */}
+      <div
+        className="chat-canvas flex-1 overflow-y-auto px-4 md:px-6 py-6"
+        style={chatAppearanceStyle(chatAppearance, { chattoUrl: chattoWallpaper })}
+      >
         <div style={practiceInnerStyle}>
           {!activeMissionDetails && suggestedEpisode && (
             <div className="rounded-2xl p-4 mb-5 flex items-center gap-3 animate-fade-up"
@@ -463,6 +509,8 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
           </p>
         </div>
       </div>
+
+      {appearanceOpen && <ChatAppearanceSheet onClose={() => setAppearanceOpen(false)} />}
     </div>
   )
 }
