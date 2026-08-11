@@ -137,16 +137,25 @@ const html = read('index.html')
     /JourneyRail/.test(read('src/components/identity/LanguageIdentity.jsx')))
 }
 
-/* ---- 5) the streak flame is the PORTED one, not a redrawn one ---- */
+/* ---- 5) the streak flame reads as FIRE, and keeps the design's motion ---- */
 {
   const flame = read('src/components/ui/StreakFlame.jsx')
 
   /*
-   * SUPERSEDES an earlier group that checked a hand-written flame (three layers,
-   * durations of 4.6 / 3.8 / 5.8 s, a `.streak-flame-outer` class tree). That
-   * flame was drawn from a description and read as a tilted droplet. These
-   * assertions describe the design's OWN implementation, which is now copied:
-   * geometry per tier, the two-part gradient, the ember, and the three cadences.
+   * THIS GROUP HAS BEEN RESTATED ONCE, DELIBERATELY.
+   *
+   * It used to assert that the silhouette was the design's own: a square with
+   * `border-radius: 50% 0 50% 50%` held at -45°. Rendered screenshots settled
+   * that argument — that construction is the canonical way to draw a WATER DROP,
+   * and beside the reference's own markup it produced the same droplet, so the
+   * fault was the geometry, not the port. The intent of the asset is fire, and
+   * the intent wins: the shape is now a flame outline standing upright.
+   *
+   * So these assertions guard two different things. The design's system — tiers,
+   * sizes, palettes, layer counts, gradients, ember, cadences, easing, reduced
+   * motion — is checked because it must not drift. The silhouette is checked
+   * because it must not go back: no rest rotation near -45°, no square layers,
+   * and a tip that leans instead of sitting on the centre line.
    */
   has('the tiers are the design\'s eight', /FLAME_TIERS/.test(flame)
     && ['candle', 'campfire', 'alcohol', 'natural_gas', 'propane', 'propane_o2', 'acetylene', 'oxyacetylene']
@@ -158,10 +167,28 @@ const html = read('index.html')
   for (const size of ['[41, 42]', '[47, 50]', '[51, 56]', '[56, 62]', '[61, 68]', '[65, 74]', '[70, 80]', '[76, 88]']) {
     has(`the ${size} container comes from the reference`, flame.includes(size))
   }
-  /* the reference's silhouette: one sharp corner, turned up, pivoting low */
-  has('the silhouette is the reference\'s radius', flame.includes("'50% 0 50% 50%'"))
-  has('rotated -45 degrees', flame.includes("'rotate(-45deg)'"))
-  has('about a low origin', flame.includes("'50% 62%'"))
+  /* THE SILHOUETTE: a flame outline, upright, leaning, never a droplet again */
+  has('the silhouette is a flame outline', /clipPath: FLAME_SHAPE\[layer\.anim\]/.test(flame)
+    && /const FLAME_SHAPE = \{/.test(flame))
+  for (const layer of ['flameA', 'flameB', 'flameC']) {
+    has(`${layer} has its own outline`, new RegExp(`${layer}: 'polygon\\(`).test(flame))
+  }
+  /* the droplet construction is gone: no radius shape, no -45° rest angle */
+  has('no layer is a rounded square any more', !flame.includes("'50% 0 50% 50%'"))
+  has('nothing rests at -45 degrees', !/rotate\(-4[0-9]deg\)/.test(flame) && !/rotate\(-4[0-9]deg\)/.test(css))
+  has('the flame pivots at its base', flame.includes("transformOrigin: '50% 100%'"))
+  /* upright and taller than wide — a square layer is what made it read as a bulb */
+  has('the layers are taller than they are wide',
+    /HEIGHT_RATIO = \{ flameA: 1\.34, flameB: 1\.28, flameC: 1\.22 \}/.test(flame)
+    && /height: px\(layer\.w \* HEIGHT_RATIO\[layer\.anim\]\)/.test(flame))
+  /* the tip leans, and the inner layers step off the centre line */
+  const tips = ['flameA', 'flameB', 'flameC'].map(name => {
+    const path = new RegExp(`${name}: 'polygon\\((\\d+)% 0%`).exec(flame)
+    return path ? Number(path[1]) : 50
+  })
+  has('every tip is off the centre line', tips.every(x => x !== 50))
+  has('the tips do not all lean the same way', new Set(tips.map(x => x > 50)).size > 1)
+  has('the inner layers are nudged off axis', /NUDGE = \{ flameA: 0, flameB: -1\.4, flameC: 1 \}/.test(flame))
   /* the reference's own gradient stops and inset highlight */
   has('the white-hot stop is kept', flame.includes('rgba(255,255,255,.96) 100%'))
   has('the sheen is the reference\'s radial gradient', /circle at 56% 30%/.test(flame))
@@ -183,7 +210,23 @@ const html = read('index.html')
   for (const name of ['flameA', 'flameB', 'flameC', 'ember']) {
     has(`@keyframes ${name} exists`, new RegExp(`@keyframes ${name} \\{`).test(css))
   }
-  has('the layers blend rather than stack', /\.streak-flame-layer[\s\S]*mix-blend-mode: screen/.test(css))
+  /* the keyframes moved from morphing corners to swaying an outline */
+  const frames = /@keyframes flameA \{[\s\S]*?\n\}/.exec(css)?.[0] || ''
+  has('the keyframes no longer morph a border radius', !/border-radius/.test(frames))
+  has('the flame sways from rest by a couple of degrees, not ten',
+    [...frames.matchAll(/rotate\((-?[\d.]+)deg\)/g)].every(m => Math.abs(Number(m[1])) < 4))
+  /*
+   * HOW THE LAYERS BECOME ONE FLAME. The design screens them together, which is
+   * right on a dark surface and erases the colour on a cream one — that is what
+   * turned the streak into a pale droplet. Night keeps the design's blending;
+   * day stacks the layers at graded opacity so the terracotta survives.
+   */
+  has('the layers integrate rather than sit on each other',
+    /LAYER_OPACITY = \{ flameA: 0\.94, flameB: 0\.82, flameC: 0\.72 \}/.test(flame))
+  has('night keeps the design\'s screen blending',
+    /\.dark \.streak-flame-layer,\s*\n\.dark \.streak-flame-ember \{ mix-blend-mode: screen; \}/.test(css))
+  has('a light page does not screen the colour away',
+    !/\.streak-flame-layer \{[^}]*mix-blend-mode/.test(css))
   has('the flame stops for prefers-reduced-motion',
     /prefers-reduced-motion[\s\S]*\.streak-flame-layer, \.streak-flame-ember/.test(css))
 
@@ -211,13 +254,30 @@ const html = read('index.html')
   has('the learner\'s own line is threaded into the correction', /previousUserText/.test(bubble))
 }
 
-/* ---- 7) quick actions and tools are real, labelled, and reachable ---- */
+/* ---- 7) Home has no extra action box, and the tools are real ---- */
 {
-  const quick = read('src/components/today/QuickActionWindows.jsx')
-  has('quick actions call real product functions',
-    /beginSession/.test(quick) && /navigateTo\('memory-garden'\)/.test(quick))
-  has('no quick action is a dead tile', !/onClick=\{\(\) => \{\}\}/.test(quick))
-  has('every quick action carries a visible label', /<strong>\{action\.label\}<\/strong>/.test(quick))
+  /*
+   * "AT HAND" IS GONE. A four-tile grid of secondary actions sat between Lingua
+   * and today's session; the design's Home (frame 2a) has no such block, and it
+   * pushed the one action the screen exists for below the fold. It is not enough
+   * to delete it — every route it offered has to still exist somewhere, so that
+   * is what is asserted here.
+   */
+  const today = read('src/components/today/TodayView.jsx')
+  has('Home has no separate quick-access box',
+    !/QuickActionWindows/.test(today) && !/quickAccess/.test(today))
+  has('the quick-access component is gone for good',
+    !ALL.some(f => f.path.includes('QuickActionWindows')))
+  has('and its styling left with it', !/\.quick-window|\.quick-action/.test(css))
+  /* where the four actions went */
+  has('the session is still one filled action on Home',
+    /onClick=\{beginSession\} className="btn-primary/.test(today))
+  has('free practice is still one tap from Home', /navigateTo\('practice'\)/.test(today))
+  const chats = read('src/components/chats/ChatsView.jsx')
+  has('the notes are still a row in Chats', /id: 'notes'/.test(chats))
+  has('the archive is still a row in Chats', /navigateTo\('archive'\)/.test(chats))
+  const app = read('src/App.jsx')
+  has('the words are still a destination', /'memory-garden'/.test(app))
 
   const toolbar = read('src/components/chat/PracticeToolbar.jsx')
   has('the practice tools prefill the existing conversation flow', /onUsePrompt\(action\.prompt\)/.test(toolbar))

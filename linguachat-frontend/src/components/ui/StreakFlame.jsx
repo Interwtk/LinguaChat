@@ -1,28 +1,69 @@
 /*
- * StreakFlame — the reference implementation, ported rather than reinterpreted.
+ * StreakFlame — the design's fire, with a silhouette that actually reads as fire.
  *
- * Every number in this file was read out of the design's own markup
- * (`2.dc.html` / `3.dc.html`): container sizes, layer sizes, `bottom` offsets,
- * the `50% 0 50% 50%` radius, the -45° rotation with a `50% 62%` origin, both
- * gradients, the inset highlight, the ember halo, the layer count per tier, and
- * the three durations with their easing. The keyframes live in index.css under
- * the same names (flameA / flameB / flameC / ember) with the same steps.
+ * WHY THIS FILE STOPPED BEING A VERBATIM PORT.
  *
- * An earlier attempt redrew this from a description and produced a tilted
- * droplet: same rotation, wrong shape, wrong stack, wrong blend. The difference
- * is not decoration — `mix-blend-mode: screen`, the white-hot gradient stop and
- * the blurred ember are what make it read as fire instead of as an icon. So this
- * file copies; it does not improve.
+ * Everything here came out of the design's own markup: the eight tiers, their
+ * container sizes, the per-layer widths and `bottom` offsets, both gradients, the
+ * inset highlight, the ember halo, the layer count per tier, the three durations
+ * and their easing. One thing did not survive contact with a rendered screenshot:
+ * the SHAPE. The reference drew each layer as a square with `border-radius:
+ * 50% 0 50% 50%` turned -45°, which is three rounded corners and one sharp one,
+ * pointing up — a perfectly symmetrical bulb with a cone on top. That is the
+ * canonical way to draw a WATER DROP, and at 47×50 on a cream page that is
+ * exactly what it read as. Rendering the reference's own markup beside ours
+ * produced the same droplet, so this was the geometry's doing, not the port's.
  *
- * The tiers are the design's: how long the streak is decides which family of fire
- * burns, from a candle to an oxy-acetylene torch. It is a visual reward only —
- * the learner model owns the count, this draws it.
+ * The intent behind the asset is fire. So the silhouette is now a flame outline —
+ * a `clip-path` with a leaning tip, one concave flank, a narrower waist and a wide
+ * rounded base — and the layers stand upright instead of resting at -45°.
+ *
+ * EVERYTHING ELSE IS THE DESIGN'S, UNCHANGED: the layer system (ember → A → B →
+ * C), the per-tier palettes, the two-part gradient with its white-hot stop, the
+ * blurred ember, the three cadences (2.85 / 2.15 / 1.62 s, ember 4.95 s), the
+ * easing, the soft blur that fuses the layers, the reduced-motion stop, and the
+ * evolution from a candle to an oxy-acetylene torch as the streak grows.
+ *
+ * It is a visual reward only — the learner model owns the count, this draws it.
  */
 
 /*
+ * THE SILHOUETTE, in three related outlines.
+ *
+ * Percentages, so one path serves every tier and every scale. Read clockwise from
+ * the tip. Three things make each of them fire rather than a droplet or a leaf:
+ * the tip sits off-centre and leans, the right flank dips inward before it swells
+ * (the small "s" a real flame has), and the base is much wider than the waist.
+ * Nothing is mirror-symmetrical.
+ */
+const FLAME_SHAPE = {
+  /* the body */
+  flameA: 'polygon(64% 0%, 66% 7%, 66% 15%, 67% 24%, 69% 33%, 72% 42%, 77% 52%, 81% 62%, 82% 72%, 79% 82%, 73% 91%, 63% 98%, 52% 100%, 41% 99%, 31% 93%, 23% 85%, 18% 74%, 17% 63%, 20% 52%, 25% 43%, 31% 35%, 38% 26%, 46% 17%, 55% 8%)',
+  /* the inner flame: leans less, sits lower, and never lines up with the body */
+  flameB: 'polygon(56% 0%, 60% 9%, 61% 19%, 63% 29%, 67% 40%, 70% 52%, 71% 65%, 67% 78%, 58% 92%, 48% 98%, 38% 92%, 30% 80%, 27% 66%, 29% 53%, 34% 42%, 40% 31%, 47% 19%)',
+  /* the core: a slim tongue leaning the other way, only on the hot tiers */
+  flameC: 'polygon(46% 0%, 52% 12%, 56% 28%, 60% 45%, 61% 62%, 56% 80%, 48% 96%, 40% 82%, 36% 64%, 37% 46%, 40% 28%, 42% 13%)',
+}
+
+/*
+ * A flame is taller than it is wide — the reference's squares were part of why it
+ * looked like a bulb. The widths stay exactly as the design sets them per tier;
+ * the height is derived, and the inner layers are proportionally shorter so the
+ * body shows above them, the way the cones of a real flame sit low.
+ */
+const HEIGHT_RATIO = { flameA: 1.34, flameB: 1.28, flameC: 1.22 }
+
+/* Nothing is centred on the same axis: the inner layers step off it, in px at scale 1. */
+const NUDGE = { flameA: 0, flameB: -1.4, flameC: 1 }
+
+/* The layers are stacked, not screened, on a light page — so the inner ones let
+ * the body through instead of sitting on it like three separate stickers. */
+const LAYER_OPACITY = { flameA: 0.94, flameB: 0.82, flameC: 0.72 }
+
+/*
  * One entry per tier, hottest first so the first match wins. `size` is the
- * container; `layers` are ember → A → B → (C), each with the width and `bottom`
- * the reference uses at that tier. Heights equal widths for the flame layers.
+ * container; `ember` is the halo; `body` is A → B → (C) with the width and
+ * `bottom` the design uses at that tier, and its two gradient colours.
  */
 export const FLAME_TIERS = [
   {
@@ -95,11 +136,15 @@ export const FLAME_TIERS = [
   },
 ]
 
-/* The reference's three cadences, verbatim. */
+/* The design's three cadences, verbatim. */
 const DURATION = { flameA: '2.85s', flameB: '2.15s', flameC: '1.62s' }
 const EASING = 'cubic-bezier(.45,0,.55,1)'
 
-/* The highlight is the same on every layer of every tier. */
+/*
+ * The design's highlight and inset glow, kept. The gradient runs down the flame,
+ * so the white-hot stop lands at the BASE and the colour at the tip — which is
+ * where the heat is in real fire, and which the -45° rotation used to scramble.
+ */
 const SHEEN = 'radial-gradient(circle at 56% 30%, rgba(255,255,255,.52) 0%, rgba(255,255,255,.18) 18%, rgba(255,255,255,0) 42%)'
 const GLOW = '0 0 1px rgba(255,255,255,.32), 0 0 10px rgba(255,255,255,.1), inset 0 0 6px rgba(255,255,255,.18)'
 
@@ -161,12 +206,14 @@ export function StreakFlame({ days = 0, scale = 1, label, className = '' }) {
           style={{
             position: 'absolute',
             bottom: px(layer.bottom),
+            marginInlineStart: px(NUDGE[layer.anim] || 0),
             width: px(layer.w),
-            height: px(layer.w),
-            /* the silhouette: a rounded body with one sharp corner, turned up */
-            borderRadius: '50% 0 50% 50%',
-            transform: 'rotate(-45deg)',
-            transformOrigin: '50% 62%',
+            height: px(layer.w * HEIGHT_RATIO[layer.anim]),
+            /* the silhouette: a leaning flame outline, standing up */
+            clipPath: FLAME_SHAPE[layer.anim],
+            opacity: LAYER_OPACITY[layer.anim],
+            /* it sways from where it is anchored — the bottom, like real fire */
+            transformOrigin: '50% 100%',
             background: `${SHEEN}, linear-gradient(165deg, ${layer.from} 0%, ${layer.to} 68%, rgba(255,255,255,.96) 100%)`,
             boxShadow: GLOW,
             animation: `${layer.anim} ${DURATION[layer.anim]} ${EASING} infinite`,

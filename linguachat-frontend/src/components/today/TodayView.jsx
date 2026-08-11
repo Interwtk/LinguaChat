@@ -6,7 +6,6 @@ import { getMissionForToday } from '../../services/missions'
 import { getLocalizedMeaning } from '../../services/localizedMeaning'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { StreakFlame } from '../ui/StreakFlame'
-import { QuickActionWindows } from './QuickActionWindows'
 // Home names episodes and shows their keys; it never renders their content
 import { SKELETON_BY_ID } from '../../learning/curriculum/preA1Skeleton.generated.js'
 import { PRE_A1, episodesOfLevel } from '../../learning/curriculum/levels.js'
@@ -35,9 +34,9 @@ import { sessionHasReview, sessionHeadline, sessionProgress } from '../../learni
 import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 
 /*
- * HOME ANSWERS FOUR QUESTIONS, IN THIS ORDER: what do I do today, what was I
- * doing, how am I going, and what can I open right now. Everything below is one
- * of those four; nothing on this screen is a widget for its own sake.
+ * HOME ANSWERS THREE QUESTIONS, IN THIS ORDER: what do I do today, how is it
+ * going, and what did Lingua last help me with. Everything below is one of those
+ * three; nothing on this screen is a widget for its own sake.
  *
  * Every number comes from real state — the streak from local progress, the words
  * from the learner model, the episodes from the planner. The mockup's "12 days"
@@ -73,7 +72,7 @@ function SmallWindow({ eyebrow, children, tone = 'paper', className = '', style 
   )
 }
 
-export function TodayView({ onOpenPath, onOpenNotes }) {
+export function TodayView({ onOpenPath }) {
   const { navigateTo, profile, t, nativeLanguageInfo, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions, episodeArcVersion, startEpisode,
     dailySession, previewSession, beginSession, localProgress, messages } = useApp()
   const plan = planDay(loadLearnerModel(), ARC)
@@ -233,12 +232,22 @@ export function TodayView({ onOpenPath, onOpenNotes }) {
           </p>
         </section>
 
-        {/* ─── 3. At hand: four things worth opening now, all of them real ─── */}
-        <div className="mb-4 animate-fade-up" style={{ animationDelay: '0.02s' }}>
-          <QuickActionWindows sessionStarted={sessionStarted} onOpenNotes={onOpenNotes} />
-        </div>
+        {/*
+          * THERE IS NO "AT HAND" BOX HERE ANY MORE.
+          *
+          * A four-tile grid sat between Lingua and today's session. The design's own
+          * Home (frame 2a) has no such block, and the screenshot audit showed what it
+          * cost: it pushed the session — the one thing the screen is for — below the
+          * fold and gave four secondary actions the same weight as the main CTA.
+          *
+          * Nothing it offered was lost, because none of it was only there:
+          *   · continue / start the session → the filled CTA in the session card below
+          *   · free practice               → Lingua's own card above, and the Chats tab
+          *   · the words                   → the Palabras destination
+          *   · the notes and the archive   → rows in Chats
+          */}
 
-        {/* ─── 4. Today's session: the main promise, and the main action ─── */}
+        {/* ─── 3. Today's session: the main promise, and the main action ─── */}
         <section className="mission-card p-5 mb-4 animate-fade-up" style={{ animationDelay: '0.04s' }}>
           <div className="flex items-start gap-3.5">
             <ChattoMascot mood="welcoming" size={46} decorative intensity="ambient" />
@@ -354,7 +363,7 @@ export function TodayView({ onOpenPath, onOpenNotes }) {
           </button>
         )}
 
-        {/* ─── 5. Today's challenge and, on a laptop, the phrase beside it ─── */}
+        {/* ─── 4. Today's challenge and, on a laptop, the phrase beside it ─── */}
         <div className="grid gap-3 mb-4 animate-fade-up md:grid-cols-2" style={{ animationDelay: '0.06s' }}>
           <SmallWindow eyebrow={t('todaysMission')} tone="accent">
             <h3 className="font-display" style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)', lineHeight: 1.3 }}>
@@ -384,7 +393,7 @@ export function TodayView({ onOpenPath, onOpenNotes }) {
           </SmallWindow>
         </div>
 
-        {/* ─── 6. How it is going: three numbers, all of them real ─── */}
+        {/* ─── 5. How it is going: three numbers, all of them real ─── */}
         <section className="rounded-2xl mb-4 grid grid-cols-3 animate-fade-up"
           style={{ animationDelay: '0.08s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <StatCell value={arc.completed} unit={`/${arc.total}`} label={t('episodesLabel')} />
@@ -394,7 +403,7 @@ export function TodayView({ onOpenPath, onOpenNotes }) {
           <StatCell value={completedMissions.length} label={t('completedMissions')} />
         </section>
 
-        {/* ─── 7. Secondary: the last thing Lingua helped fix, and the path ─── */}
+        {/* ─── 6. Secondary: the last thing Lingua helped fix, and the path ─── */}
         {lastFix && (
           <SmallWindow eyebrow={t('lastFixed')} className="mb-3 animate-fade-up" style={{ animationDelay: '0.1s' }}>
             {lastFix.original && (

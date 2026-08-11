@@ -5,6 +5,7 @@ import { MessageBubble, TypingIndicator } from '../chat/MessageBubble'
 import { PracticeToolbar } from '../chat/PracticeToolbar'
 import { ChatAppearanceSheet } from '../chat/ChatAppearanceSheet'
 import { chatAppearanceStyle } from '../../services/chatAppearance'
+import { useIsDesktop } from '../../services/viewport'
 import chattoWallpaper from '../../assets/chatto/gen/chatto-official-128.webp'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { CompletedEpisodes } from '../episode/CompletedEpisodes'
@@ -43,6 +44,8 @@ const SessionPlayer = lazyScreen(() => import('../session/SessionRunner'), m => 
  * is the phone's route to Lingua's notes, which on a laptop are already a panel.
  */
 export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenNotes }) {
+  /* which shell is live — the header's controls differ between the two */
+  const isDesktop = useIsDesktop()
   const {
     messages,
     sendMessage,
@@ -272,11 +275,19 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
               <path d="M15 8.5V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-1.5l6 3.5v-14z" />
             </svg>
           </button>
-          {onToggleFocusMode && (
+          {/*
+            * FOCUS MODE IS A DESKTOP CONTROL, and this is a mount decision rather
+            * than a CSS one. `class="tool-chip hidden lg:inline-flex"` did not work:
+            * a media query adds no specificity, so `.tool-chip`'s own
+            * `display: inline-flex` beat `.hidden` and the chip stayed on the phone —
+            * where it ate the width the status needed and produced "En línea ah…".
+            * Forcing `.hidden` in CSS would then have hidden it on desktop too.
+            * A phone has no side panels to hide, so it simply is not rendered there.
+            */}
+          {onToggleFocusMode && isDesktop && (
             <button
               type="button"
-              /* a phone has no side panels to hide, so the chip lives on desktop */
-              className="tool-chip hidden lg:inline-flex"
+              className="tool-chip"
               onClick={onToggleFocusMode}
               aria-pressed={focusMode}
               style={focusMode
