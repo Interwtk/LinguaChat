@@ -6,6 +6,7 @@
  * Memory Garden dedup — all with the real engine modules. Exits 1 on failure.
  */
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { createSubmissionGuard } from '../src/learning/engine/submitGuard.js'
 import { ARC, getEpisode } from '../src/learning/episodes/index.js'
 import {
@@ -114,6 +115,39 @@ const ok = () => { n++ }
     'whats_this', 'its_a_pattern', 'book', 'phone', 'bag',
     'numbers_1_10', 'how_many', 'quantity_pattern',
   ].sort())
+  ok()
+}
+
+/*
+ * A CHUNK THAT NEVER ARRIVED NEEDS A DIFFERENT RETRY FROM CODE THAT THREW.
+ *
+ * Measured in a real browser against a real build with `a1Arc3Content-<hash>.js`
+ * deleted: pressing Retry re-ran the same `import()` and produced ZERO network
+ * requests, because a browser records a module whose fetch failed and answers
+ * from its module map for ever after. Only a fresh document clears that entry, so
+ * a missing module must escalate on the FIRST press instead of redrawing the same
+ * screen. The reload stays guarded, so a chunk that is genuinely gone lands back
+ * on the error instead of reloading in a loop.
+ */
+{
+  const boundary = readFileSync(new URL('../src/components/ui/LazyBoundary.jsx', import.meta.url), 'utf8')
+  assert.match(boundary, /const isModuleLoadFailure = \(error\) =>/,
+    'the boundary no longer tells a missing module apart from a thrown one')
+  for (const wording of ['dynamically imported module', 'Importing a module script failed']) {
+    assert.ok(boundary.includes(wording), `a browser's wording for a failed module import is not recognised: ${wording}`)
+  }
+  assert.match(boundary, /setState\(\{ status: 'failed', moduleMissing: isModuleLoadFailure\(error\) \}\)/,
+    'the failure state does not carry whether the module itself was missing')
+  assert.match(boundary, /if \(state\.moduleMissing \|\| attempt >= 1\)/,
+    'a missing chunk must escalate on the first Retry, not on the second')
+  /* and the escalation is still bounded */
+  assert.ok(boundary.includes("const RELOAD_GUARD = 'lc2-chunk-reload'")
+    && /if \(!sessionStorage\.getItem\(RELOAD_GUARD\)\)/.test(boundary)
+    && /sessionStorage\.setItem\(RELOAD_GUARD, '1'\)/.test(boundary),
+    'the one-reload guard is gone — a permanently missing chunk could loop')
+  /* a refusal is a decision, and must never be retried as if it were transport */
+  assert.match(boundary, /A REFUSAL IS NOT A FAILURE/,
+    'the refusal/failure distinction has been lost')
   ok()
 }
 

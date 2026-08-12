@@ -66,6 +66,27 @@ export function ScreenError({ errorLabel, retryLabel, onRetry }) {
 const RELOAD_GUARD = 'lc2-chunk-reload'
 
 /*
+ * Was this a MODULE that failed to arrive, rather than the code inside it
+ * throwing?
+ *
+ * It matters because the two need opposite retries. A module whose fetch failed
+ * is recorded as failed in the browser's module map, so calling the same
+ * `import()` again resolves to the same rejection WITHOUT touching the network:
+ * measured against a real build with the arc's chunk deleted, the first press of
+ * Retry produced zero requests and redrew the same error. Only a fresh document
+ * can clear that entry. Anything else — a transient throw while resolving, a
+ * module that loaded but was unhappy — is worth simply running again.
+ *
+ * Chrome, Firefox and Safari word this differently, hence the three shapes.
+ */
+const isModuleLoadFailure = (error) => {
+  const message = String(error?.message || error || '')
+  return /dynamically imported module/i.test(message)   // Chrome, Safari
+    || /error loading dynamically imported module/i.test(message)
+    || /Importing a module script failed/i.test(message) // Firefox
+}
+
+/*
  * The same boundary, for DATA rather than for a component.
  *
  * An episode's definition is fetched exactly like a screen — a dynamic import
@@ -98,14 +119,27 @@ export function useLazyContent(load, deps, classify = () => null) {
         const refusal = classify(error)
         if (refusal) { setState({ status: 'refused', reason: refusal }); return }
         if (import.meta.env?.DEV) console.error('[useLazyContent] load failed', error)
-        setState({ status: 'failed' })
+        setState({ status: 'failed', moduleMissing: isModuleLoadFailure(error) })
       })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, attempt])
 
+  /*
+   * RETRY HAS TO MATCH THE FAILURE, or it is a button that does nothing.
+   *
+   * When the CHUNK itself never arrived, running the same import again cannot
+   * work — the browser has already recorded that module as failed and answers
+   * from the module map without a request. So that case goes straight for the
+   * only thing that can help: one fresh document. Every other failure gets a
+   * plain re-run first, and the reload is held in reserve for the second press.
+   *
+   * The guard is what keeps this honest: the reload happens AT MOST ONCE per
+   * session, so a chunk that is genuinely gone lands back on the same error
+   * screen instead of reloading for ever.
+   */
   const retry = useCallback(() => {
-    if (attempt >= 1) {
+    if (state.moduleMissing || attempt >= 1) {
       try {
         if (!sessionStorage.getItem(RELOAD_GUARD)) {
           sessionStorage.setItem(RELOAD_GUARD, '1')
@@ -115,7 +149,7 @@ export function useLazyContent(load, deps, classify = () => null) {
       } catch { /* storage unavailable: fall through to a plain retry */ }
     }
     setAttempt(a => a + 1)
-  }, [attempt])
+  }, [attempt, state.moduleMissing])
 
   return { ...state, retry }
 }
