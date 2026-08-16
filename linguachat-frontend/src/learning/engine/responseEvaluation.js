@@ -1450,8 +1450,190 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'ask_what_thing': return evaluateAskWhatThing(text, ctx)
     case 'identify_thing': return evaluateIdentifyThing(text, ctx)
     case 'use_quantity': return evaluateUseQuantity(text, ctx)
+    case 'ask_location': return evaluateAskLocation(text, ctx)
+    case 'state_location': return evaluateStateLocation(text, ctx)
+    case 'ask_transport': return evaluateAskTransport(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
+}
+
+/*
+ * --- A1 arc 4 - "Where things are" -------------------------------------------
+ *
+ * Three intents, and two of them are `deterministic_local` in the blueprint because
+ * the frame is genuinely checkable: a location question is `where` plus a thing, and
+ * a location answer is `it's` plus one of four relations. The third,
+ * `ask_transport`, is `hybrid` - there are more good ways to ask how to reach a place
+ * than a pattern list should claim to know, so an unrecognised attempt is
+ * INCONCLUSIVE rather than wrong, and escalates when Lingua is reachable.
+ *
+ * NO DIRECTIONS ARE EVER ACCEPTED AS EVIDENCE. The arc's risk note is "directions
+ * creep", so a learner who produces "go left and take the second street" has not
+ * demonstrated an A1 capability - they have produced A2 - and the evaluator says so
+ * rather than rewarding it.
+ */
+
+/* "Where is the toilet?" / "Where's the station?" - the question */
+const WHERE_IS = /\bwhere('?s|\s+is|\s+are)\b/
+/* "How do I get to the station?" / "How can I get there?" - the transport question */
+const HOW_GET_TO = /\bhow\s+(do|can)\s+i\s+(get|go)\s+(to|there)\b/
+/* "Which bus goes to X?" / "Is there a bus to X?" - the same function, said another way */
+const WHICH_TRANSPORT = /\b(which|what)\s+(bus|train)\b|\bis\s+there\s+a\s+(bus|train)\b/
+/* the four relations the arc teaches */
+const TAUGHT_RELATION = /\b(here|there|next\s+to|near)\b/
+/* "It's ..." - the frame a location answer is built on */
+const ITS_FRAME = /\bit('?s|\s+is)\b/
+/* left / right / straight on: A2, refused as evidence rather than praised */
+const DIRECTIONS = /\b(left|right|straight\s+on|straight\s+ahead|first\s+street|second\s+street|turn)\b/
+/* a polite opener is welcome and never required */
+const EXCUSE_ME = /\bexcuse\s+me\b|\bsorry\b/
+/* "the toilet, please?" - it works in a real building, and it is not the pattern */
+const BARE_PLEASE = /\bplease\b/
+
+/*
+ * ask_location - "Where is the toilet?"
+ *
+ * `placeName` is the thing the step asked about. It sharpens the praise and is NEVER
+ * required: a learner who asks where something else is has still asked a location
+ * question, and the step's own copy is what says which one was wanted.
+ */
+export function evaluateAskLocation(text, { independent = false, placeName = '' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  const what = String(placeName || '').trim() || 'the toilet'
+  r.naturalVersion = 'Where is ' + what + '?'
+
+  if (!n) {
+    return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep27RetryPromptEmpty' }
+  }
+  /* the frame, and it needs a noun after it - "where is?" is not a question yet */
+  if (WHERE_IS.test(n) && wordCount(n) >= 3) {
+    r.completedObjective = true
+    r.confidence = EXCUSE_ME.test(n) ? 0.97 : 0.95
+    r.praiseKey = r.masteryEvidence.independent ? 'ep27PraiseIndependent' : 'ep27PraiseAsked'
+    return r
+  }
+  /* the noun and a please: understood, and one word short of the capability */
+  if (BARE_PLEASE.test(n) && wordCount(n) <= 4) {
+    return { ...r, errorType: 'missing_where', confidence: 0.85,
+      priorityCorrection: 'ep27RetryExplainFrame', explanation: 'ep27RetryExplainFrame', retryRequired: true, retryPrompt: 'ep27RetryPromptFrame' }
+  }
+  /* a statement where a question was asked: the commonest first attempt */
+  if (ITS_FRAME.test(n)) {
+    return { ...r, errorType: 'answered_instead', confidence: 0.9,
+      priorityCorrection: 'ep27RetryExplainQuestion', explanation: 'ep27RetryExplainQuestion', retryRequired: true, retryPrompt: 'ep27RetryPromptFrame' }
+  }
+  /* the word is there and the verb is not: "where the toilet" */
+  if (/\bwhere\b/.test(n)) {
+    return { ...r, errorType: 'missing_verb', confidence: 0.88,
+      priorityCorrection: 'ep27RetryExplainVerb', explanation: 'ep27RetryExplainVerb', retryRequired: true, retryPrompt: 'ep27RetryPromptFrame' }
+  }
+  return { ...r, errorType: 'no_question', confidence: 0.86,
+    priorityCorrection: 'ep27RetryExplainFrame', explanation: 'ep27RetryExplainFrame', retryRequired: true, retryPrompt: 'ep27RetryPromptFrame' }
+}
+
+/*
+ * state_location - "It's next to the bag."
+ *
+ * `relationHint` is the relation the step's situation implies. ANY taught relation is
+ * accepted, because the arc teaches four interchangeable ways to place a thing and the
+ * learner is describing something they were told; the hint only sharpens the model.
+ */
+export function evaluateStateLocation(text, { independent = false, relationHint = '' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  const hint = String(relationHint || '').replace(/_/g, ' ').trim() || 'here'
+  const tail = (hint === 'next to' || hint === 'near') ? hint + ' the bag' : hint
+  r.naturalVersion = "It's " + tail + '.'
+
+  if (!n) {
+    return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep28RetryPromptEmpty' }
+  }
+  /*
+   * DIRECTIONS ARE NOT THIS CAPABILITY, and this is checked FIRST so that "it's left"
+   * is not accepted merely because it starts correctly.
+   */
+  if (DIRECTIONS.test(n)) {
+    return { ...r, errorType: 'directions_not_taught', confidence: 0.9,
+      priorityCorrection: 'ep28RetryExplainRelation', explanation: 'ep28RetryExplainRelation', retryRequired: true, retryPrompt: 'ep28RetryPromptRelation' }
+  }
+  /* the taught answer: the frame and one of the four relations */
+  if (ITS_FRAME.test(n) && TAUGHT_RELATION.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.96
+    r.praiseKey = r.masteryEvidence.independent ? 'ep28PraiseIndependent' : 'ep28PraiseAnswered'
+    return r
+  }
+  /* the relation alone - "next to the bag" - communicates it without the frame */
+  if (TAUGHT_RELATION.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.88
+    r.acceptedVariant = true
+    r.praiseKey = r.masteryEvidence.independent ? 'ep28PraiseIndependent' : 'ep28PraiseAnswered'
+    return r
+  }
+  /* "next the bag" - the missing `to`, which is the episode's one real decision */
+  if (/\bnext\b/.test(n) && !/\bnext\s+to\b/.test(n)) {
+    return { ...r, errorType: 'missing_to', confidence: 0.92,
+      priorityCorrection: 'ep28RetryExplainNextTo', explanation: 'ep28RetryExplainNextTo', retryRequired: true, retryPrompt: 'ep28RetryPromptRelation' }
+  }
+  /* a question where an answer was asked for */
+  if (WHERE_IS.test(n)) {
+    return { ...r, errorType: 'asked_instead', confidence: 0.9,
+      priorityCorrection: 'ep28RetryExplainAnswer', explanation: 'ep28RetryExplainAnswer', retryRequired: true, retryPrompt: 'ep28RetryPromptRelation' }
+  }
+  /* the frame with no relation: "it's the bag" says something else entirely */
+  if (ITS_FRAME.test(n)) {
+    return { ...r, errorType: 'missing_relation', confidence: 0.9,
+      priorityCorrection: 'ep28RetryExplainRelation', explanation: 'ep28RetryExplainRelation', retryRequired: true, retryPrompt: 'ep28RetryPromptRelation' }
+  }
+  return { ...r, errorType: 'no_location', confidence: 0.86,
+    priorityCorrection: 'ep28RetryExplainRelation', explanation: 'ep28RetryExplainRelation', retryRequired: true, retryPrompt: 'ep28RetryPromptRelation' }
+}
+
+/*
+ * ask_transport - "How do I get to the station?"
+ *
+ * HYBRID, per the blueprint. The canonical frame and two real alternatives are judged
+ * here; anything else is inconclusive and escalates, because this is the one A1
+ * question with many idiomatic shapes ("is there a bus?", "which train?") and a local
+ * pattern list that guessed would be wrong in both directions.
+ */
+export function evaluateAskTransport(text, { independent = false, placeName = '' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  const where = String(placeName || '').trim() || 'the station'
+  r.naturalVersion = 'How do I get to ' + where + '?'
+
+  if (!n) {
+    return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep29RetryPromptEmpty' }
+  }
+  /* the canonical question */
+  if (HOW_GET_TO.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.praiseKey = r.masteryEvidence.independent ? 'ep29PraiseIndependent' : 'ep29PraiseAsked'
+    return r
+  }
+  /* naming the transport instead - the same function, and how many people ask */
+  if (WHICH_TRANSPORT.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.acceptedVariant = true
+    r.praiseKey = r.masteryEvidence.independent ? 'ep29PraiseIndependent' : 'ep29PraiseAsked'
+    return r
+  }
+  /*
+   * Asking where it IS when the turn asked how to GET there. Close, taught in this
+   * very arc, and a different question - so it is named rather than accepted.
+   */
+  if (WHERE_IS.test(n)) {
+    return { ...r, errorType: 'asked_location_instead', confidence: 0.88,
+      priorityCorrection: 'ep29RetryExplainGet', explanation: 'ep29RetryExplainGet', retryRequired: true, retryPrompt: 'ep29RetryPromptGet' }
+  }
+  /* the hybrid band: not recognised locally, not therefore wrong */
+  return { ...r, errorType: 'no_transport_question', conclusive: false, confidence: 0.5,
+    priorityCorrection: 'ep29RetryExplainGet', explanation: 'ep29RetryExplainGet', retryRequired: true, retryPrompt: 'ep29RetryPromptGet' }
 }
 
 // Whether the hybrid router should consider escalating this verdict to Lingua.

@@ -128,6 +128,16 @@ function buildRemotePayload(params, kind) {
      * episode chose the name — never a person from the learner's own life.
      */
     partner_name: params.partner ?? '',
+    /*
+     * WHICH PLACE, and WHICH RELATION. Arc 4's turns are about a public place the
+     * episode named — a toilet, an exit, a station — and its answers imply one of
+     * four relations. Both are properties of the TASK, like `partner_name`, and both
+     * travel for the same reason: a verdict on "Where is ___?" formed without the
+     * place models a question the learner was not asked. Nothing here is ever a
+     * place from the learner's own life; the arc stores none.
+     */
+    place_name: params.placeName ?? '',
+    relation_hint: params.relationHint ?? '',
     interest_id: params.interestId ?? null,
     native_language: params.nativeLanguage ?? 'en',
     interface_language: params.interfaceLanguage ?? 'en',

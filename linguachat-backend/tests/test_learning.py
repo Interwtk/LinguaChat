@@ -1459,6 +1459,129 @@ def test_an_unrecognised_introduction_is_inconclusive_rather_than_wrong(text):
     assert _person_fact(text)["error_type"] == "no_person_statement"
 
 
+# ---------- A1 arc 4: where things are ----------
+#
+# Parity with the frontend's three local evaluators. Two of the arc's capabilities
+# are `deterministic_local` in the blueprint and one is `hybrid`, and the fake/local
+# provider has to agree with the local verdict in all three cases: a provider that
+# praised a sentence the episode had just corrected would teach the learner that the
+# correction was wrong.
+#
+# The load-bearing one is DIRECTIONS. The arc's risk note is "directions creep", so
+# "go left and turn right" must be refused here exactly as it is refused locally -
+# a backend that accepted it would be the crack the A2 capability creeps through.
+def _ask_location(text, place="the toilet"):
+    return evaluate_deterministic(_payload(expected_intent="ask_location",
+                                           place_name=place, learner_response=text))
+
+
+def _state_location(text, relation="next_to"):
+    return evaluate_deterministic(_payload(expected_intent="state_location",
+                                           relation_hint=relation, learner_response=text))
+
+
+def _ask_transport(text, place="the station"):
+    return evaluate_deterministic(_payload(expected_intent="ask_transport",
+                                           place_name=place, learner_response=text))
+
+
+@pytest.mark.parametrize("text", [
+    "Where is the toilet?", "Where's the station?", "Excuse me, where is the exit?",
+    "where is the toilet", "Where are the toilets?",
+])
+def test_a_location_question_is_accepted(text):
+    r = _ask_location(text)
+    assert r["completed_objective"] is True, text
+    assert r["retry_required"] is False
+
+
+def test_the_place_the_turn_asked_about_travels_into_the_model_answer():
+    """The field arc 2 lost as `timeForm` and arc 3 lost as `partner`."""
+    assert _ask_location("hmm", place="the station")["natural_version"] == "Where is the station?"
+    assert _ask_transport("hmm", place="the museum")["natural_version"] == "How do I get to the museum?"
+
+
+def test_answering_when_the_turn_asked_for_a_question():
+    r = _ask_location("It's a toilet.")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "answered_instead"
+
+
+@pytest.mark.parametrize("text", [
+    "It's here.", "It is next to the bag.", "It's near the station.", "It's there.",
+])
+def test_a_location_answer_is_accepted(text):
+    r = _state_location(text)
+    assert r["completed_objective"] is True, text
+
+
+def test_a_bare_relation_is_accepted_as_a_variant():
+    r = _state_location("Near the station.")
+    assert r["completed_objective"] is True
+    assert r["accepted_variant"] is True
+
+
+@pytest.mark.parametrize("text", [
+    "Go left.", "It's on the right.", "Turn left and go straight on.",
+])
+def test_directions_are_refused_because_they_are_a2(text):
+    r = _state_location(text)
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "directions_not_taught", text
+
+
+def test_next_without_to_is_named_precisely():
+    r = _state_location("It's next the bag.")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "missing_to"
+
+
+@pytest.mark.parametrize("text", [
+    "How do I get to the station?", "How can I get there?", "Which bus goes to the station?",
+    "Is there a bus to the station?",
+])
+def test_a_transport_question_is_accepted(text):
+    r = _ask_transport(text)
+    assert r["completed_objective"] is True, text
+
+
+def test_asking_where_it_is_is_not_asking_how_to_get_there():
+    r = _ask_transport("Where is the station?")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "asked_location_instead"
+
+
+@pytest.mark.parametrize("text", ["banana purple", "asdfgh", "12345"])
+def test_arc_4_refuses_nonsense_for_every_intent(text):
+    for verdict in (_ask_location(text), _state_location(text), _ask_transport(text)):
+        assert verdict["completed_objective"] is False, text
+        assert verdict["retry_required"] is True, text
+
+
+@pytest.mark.parametrize("intent", ["ask_location", "state_location", "ask_transport"])
+def test_arc_4_empty_replies_are_safe(intent):
+    r = evaluate_deterministic(_payload(expected_intent=intent, learner_response=""))
+    assert r["completed_objective"] is False
+    assert r["understood"] is False
+    assert r["error_type"] == "empty"
+
+
+@pytest.mark.parametrize("intent", ["ask_location", "state_location", "ask_transport"])
+def test_arc_4_verdicts_are_deterministic_in_source(intent):
+    r = evaluate_deterministic(_payload(expected_intent=intent, learner_response="Where is the toilet?"))
+    assert r["source"] == "deterministic"
+
+
+def test_the_transport_question_is_the_hybrid_one():
+    """An unrecognised shape stays low-confidence so the frontend can escalate it."""
+    r = _ask_transport("The station, is it possible by bicycle?")
+    assert r["completed_objective"] is False
+    assert r["confidence"] <= 0.5
+    # while the two deterministic ones are confident even when they refuse
+    assert _ask_location("banana purple")["confidence"] > 0.5
+    assert _state_location("banana purple")["confidence"] > 0.5
+
+
 @pytest.mark.parametrize("text,intent", [
     ("This is Ana.", "introduce_person"),
     ("Ana.", "introduce_person"),

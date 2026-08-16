@@ -225,6 +225,60 @@ const STORIES = {
       { kind: 'close', textEn: 'Nice to meet you!', noteKey: 'storyNoteClose' },
     ],
   },
+  /*
+   * A1 arc 4. The blueprint asks for this story by name and hands it its branch:
+   * "Being lost is a situation with a beginning and an end, and a branch - asking a
+   * passer-by or asking at a desk - that is genuinely two valid choices."
+   *
+   * Both branches answer, and BOTH answers are two clauses, because the episode's
+   * receptive target is an answer "deliberately beyond production". The repair in the
+   * middle is the arc's planted one: the reply contains a word nobody taught, and the
+   * way through is a capability the learner already owns.
+   *
+   * NO DIRECTIONS. `follow_multi_step_directions` is deferred to A2, so neither branch
+   * ever says left, right or straight on - they say which transport, and where it is
+   * relative to something.
+   */
+  ask_transport: {
+    storyId: 'lost_in_the_street',
+    objective: 'ask_transport',
+    home: 'episode',
+    /* the blueprint's two valid choices, and they are the branch ids */
+    branches: ['passer_by', 'desk'],
+    turns: [
+      { kind: 'scene', textEn: 'A street with {partner}. You want the station. Nobody knows the way.', noteKey: 'storyNoteScene' },
+      {
+        kind: 'choose',
+        promptKey: 'storyChooseWhoToAsk',
+        options: [
+          { branch: 'passer_by', textEn: 'Ask the person waiting.' },
+          { branch: 'desk', textEn: 'Ask at the hotel desk.' },
+        ],
+      },
+      /* the learner asks - open production, and the story's own capability */
+      { kind: 'reply', evalKind: 'ask_transport', instructionKey: 'storyReplyTransport', suggestionEn: 'How do I get to the station?', itemIds: ['where_is_pattern', 'station'] },
+      /* the answer, two clauses, with a word the arc never taught */
+      {
+        kind: 'line',
+        speaker: 'partner',
+        byBranch: {
+          passer_by: 'Take the bus. The stop is opposite the platform.',
+          desk: 'The train is faster. The station is behind the hotel.',
+        },
+      },
+      /* the planted repair: the answer went past them, and they say so */
+      { kind: 'reply', evalKind: 'repair_request', repairKind: 'repeat', instructionKey: 'storyReplyRepair', suggestionEn: 'Sorry, can you repeat, please?', itemIds: ['can_you_repeat'] },
+      {
+        kind: 'line',
+        speaker: 'partner',
+        byBranch: {
+          passer_by: 'Of course. The bus. It is opposite, there.',
+          desk: 'Of course. The station is near. It is behind the hotel.',
+        },
+      },
+      { kind: 'close', textEn: 'Good luck!', noteKey: 'storyNoteClose' },
+    ],
+  },
 }
 
 export const STORY_OBJECTIVES = Object.keys(STORIES)

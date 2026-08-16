@@ -115,6 +115,14 @@ class EvaluateRequest(BaseModel):
     # "This is ___" without it would name somebody the learner never saw. Never a
     # real person from the learner's life — the arc introduces its own characters.
     partner_name: str | None = Field(default=None, max_length=40)
+    # A1 arc 4. Which PUBLIC place the turn asked about ("the toilet", "the station"),
+    # and which relation its situation implies ("next_to", "near"). Both are
+    # properties of the TASK, like `partner_name`: a verdict on "Where is ___?"
+    # without the place would model a different question, which is exactly how arc 2
+    # lost `timeForm` and arc 3 lost `partner`. Never a place from the learner's own
+    # life — the episode names its own, and the arc stores nothing.
+    place_name: str | None = Field(default=None, max_length=40)
+    relation_hint: str | None = Field(default=None, max_length=24)
     # Which shape of quantity the turn asked for ("bare", "with_object",
     # "polite_request") and how many of the thing. Separate fields: "two" and
     # "sandwiches" are different pieces of information, and the one time this

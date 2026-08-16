@@ -529,7 +529,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
      * the sentence it offered as correct.
      */
     const aboutPerson = step.personName || partner
-    const evalCtx = { name, independent, turnContext, place, partner: aboutPerson, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(step.timeForm ? { timeForm: step.timeForm } : {}), ...(usualTime ? { usualTime } : {}), ...(stepCount ? { targetCount: stepCount } : {}) }
+    const evalCtx = { name, independent, turnContext, place, partner: aboutPerson, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(step.timeForm ? { timeForm: step.timeForm } : {}), ...(usualTime ? { usualTime } : {}), ...(stepCount ? { targetCount: stepCount } : {}), /* arc 4: which public place the turn asks about, and which relation its situation implies */ ...(step.placeName ? { placeName: step.placeName } : {}), ...(step.relationHint ? { relationHint: step.relationHint } : {}) }
     const preview = evaluateFree(evalKind, text, evalCtx)
     const willEscalate = shouldEscalate(preview)
 
@@ -546,6 +546,8 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
         repairKind: step.repairKind || undefined,
         meaningWord: step.meaningWord || undefined,
         timeForm: step.timeForm || undefined,
+        placeName: step.placeName || undefined,
+        relationHint: step.relationHint || undefined,
         quantityForm: step.quantityForm || undefined,
         targetCount: stepCount || undefined,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,

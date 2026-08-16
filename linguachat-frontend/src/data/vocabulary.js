@@ -276,6 +276,55 @@ export const SEED_VOCAB = [
     meaning: { en: '“work” when talking about he or she', es: '“work” al hablar de él o ella', pt: '“work” ao falar de ele ou ela', fr: '« work » quand on parle de lui ou elle', it: '“work” quando si parla di lui o lei', de: '„work“, wenn man über er/sie spricht', ja: '「he/she」のときの work', ar: '«work» عند الحديث عن هو أو هي' } },
   { id: 'studies_third', term: 'studies', kind: 'word', emoji: 's', example: 'He studies at university.',
     meaning: { en: '“study” when talking about he or she', es: '“study” al hablar de él o ella', pt: '“study” ao falar de ele ou ela', fr: '« study » quand on parle de lui ou elle', it: '“study” quando si parla di lui o lei', de: '„study“, wenn man über er/sie spricht', ja: '「he/she」のときの study', ar: '«study» عند الحديث عن هو أو هي' } },
+
+  /*
+   * ─── A1 arc 4 — "Where things are" (`finding_your_way`, episodes 27–29) ───
+   *
+   * The blueprint's budget for the arc is eight productive items and eight
+   * receptive ones, and this is exactly that: two patterns, two places, four
+   * relation words on the productive side; the words the answers carry on the
+   * receptive side, because the arc's whole design is that the ANSWER is harder
+   * than the question. "Directions creep" is the named risk, so there is no
+   * left/right/straight anywhere here — the arc stops at where-and-near.
+   */
+  { id: 'where_is_pattern', term: 'Where is / Where’s + thing?', kind: 'pattern', emoji: '?', example: 'Where is the toilet?',
+    meaning: { en: 'asking where something is', es: 'preguntar dónde está algo', pt: 'perguntar onde está algo', fr: 'demander où est quelque chose', it: 'chiedere dov’è una cosa', de: 'fragen, wo etwas ist', ja: '物の場所をたずねる', ar: 'السؤال عن مكان شيء' } },
+  { id: 'its_location_pattern', term: 'It’s + here / there / next to / near + X', kind: 'pattern', emoji: 'L', example: 'It’s next to the bag.',
+    meaning: { en: 'saying where something is', es: 'decir dónde está algo', pt: 'dizer onde está algo', fr: 'dire où est quelque chose', it: 'dire dov’è una cosa', de: 'sagen, wo etwas ist', ja: '物の場所を言う', ar: 'قول مكان شيء' } },
+  { id: 'here', term: 'here', kind: 'word', emoji: 'h', example: 'It’s here.',
+    meaning: { en: 'in this place', es: 'aquí', pt: 'aqui', fr: 'ici', it: 'qui', de: 'hier', ja: 'ここ', ar: 'هنا' } },
+  { id: 'there', term: 'there', kind: 'word', emoji: 't', example: 'It’s there.',
+    meaning: { en: 'in that place, not this one', es: 'allí', pt: 'ali', fr: 'là', it: 'lì', de: 'dort', ja: 'あそこ', ar: 'هناك' } },
+  { id: 'next_to', term: 'next to', kind: 'word', emoji: 'n', example: 'It’s next to the bag.',
+    meaning: { en: 'at the side of something', es: 'al lado de', pt: 'ao lado de', fr: 'à côté de', it: 'accanto a', de: 'neben', ja: '〜のとなり', ar: 'بجانب' } },
+  { id: 'near', term: 'near', kind: 'word', emoji: 'r', example: 'It’s near the station.',
+    meaning: { en: 'close to something, not far', es: 'cerca de', pt: 'perto de', fr: 'près de', it: 'vicino a', de: 'in der Nähe von', ja: '〜の近く', ar: 'قريب من' } },
+  { id: 'toilet', term: 'toilet', kind: 'word', emoji: 'W', example: 'Where is the toilet?',
+    meaning: { en: 'the room you ask for first in any building', es: 'el baño', pt: 'o banheiro', fr: 'les toilettes', it: 'il bagno', de: 'die Toilette', ja: 'トイレ', ar: 'المرحاض / الحمام' } },
+  { id: 'station', term: 'station', kind: 'word', emoji: 'S', example: 'How do I get to the station?',
+    meaning: { en: 'where buses or trains stop', es: 'la estación', pt: 'a estação', fr: 'la gare', it: 'la stazione', de: 'der Bahnhof', ja: '駅', ar: 'المحطة' } },
+
+  /*
+   * Receptive: what the ANSWER carries. The learner is never asked to produce any
+   * of these — the arc plants repair deliberately because the answers contain
+   * words nobody taught, which is the situation the capability exists for.
+   */
+  { id: 'bus', term: 'bus', kind: 'word', emoji: 'B', example: 'Take the bus.',
+    meaning: { en: 'a big road vehicle many people ride', es: 'el autobús', pt: 'o ônibus', fr: 'le bus', it: 'l’autobus', de: 'der Bus', ja: 'バス', ar: 'الحافلة / الباص' } },
+  { id: 'train', term: 'train', kind: 'word', emoji: 'T', example: 'The train is faster.',
+    meaning: { en: 'it runs on rails between stations', es: 'el tren', pt: 'o trem', fr: 'le train', it: 'il treno', de: 'der Zug', ja: '電車', ar: 'القطار' } },
+  { id: 'upstairs', term: 'upstairs', kind: 'word', emoji: 'u', example: 'It’s upstairs.',
+    meaning: { en: 'on a higher floor', es: 'arriba', pt: 'lá em cima', fr: 'à l’étage', it: 'al piano di sopra', de: 'oben', ja: '上の階', ar: 'في الطابق الأعلى' } },
+  { id: 'downstairs', term: 'downstairs', kind: 'word', emoji: 'd', example: 'It’s downstairs.',
+    meaning: { en: 'on a lower floor', es: 'abajo', pt: 'lá embaixo', fr: 'en bas', it: 'al piano di sotto', de: 'unten', ja: '下の階', ar: 'في الطابق الأسفل' } },
+  { id: 'opposite', term: 'opposite', kind: 'word', emoji: 'o', example: 'It’s opposite the exit.',
+    meaning: { en: 'on the other side, facing it', es: 'enfrente de', pt: 'em frente de', fr: 'en face de', it: 'di fronte a', de: 'gegenüber', ja: '〜の向かい', ar: 'مقابل' } },
+  { id: 'behind', term: 'behind', kind: 'word', emoji: 'b', example: 'It’s behind you.',
+    meaning: { en: 'at the back of something', es: 'detrás de', pt: 'atrás de', fr: 'derrière', it: 'dietro', de: 'hinter', ja: '〜のうしろ', ar: 'خلف' } },
+  { id: 'exit', term: 'exit', kind: 'word', emoji: 'E', example: 'The exit is there.',
+    meaning: { en: 'the way out', es: 'la salida', pt: 'a saída', fr: 'la sortie', it: 'l’uscita', de: 'der Ausgang', ja: '出口', ar: 'المخرج' } },
+  { id: 'platform', term: 'platform', kind: 'word', emoji: 'p', example: 'Platform two.',
+    meaning: { en: 'where you wait for the train', es: 'el andén', pt: 'a plataforma', fr: 'le quai', it: 'il binario', de: 'das Gleis', ja: 'ホーム', ar: 'الرصيف' } },
 ]
 
 export const SEED_VOCAB_BY_ID = Object.fromEntries(SEED_VOCAB.map(item => [item.id, item]))

@@ -165,6 +165,24 @@ const OBJECTIVE_FORMATS = {
   introduce_person: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
   state_person_fact: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
 
+  /*
+   * Arc 4. Guided-to-open like any pattern, and NONE of the three lists
+   * `mini_story` - for two different reasons that both matter.
+   *
+   * `ask_location` and `state_location` have no authored story at all, and the rule
+   * this codebase learned the hard way is that an objective without one must never be
+   * planned into a story format (`getStory` would return null, or worse, used to
+   * return somebody else's scene).
+   *
+   * `ask_transport` HAS a story, and still must not list it: that story is hosted by
+   * episode 29 (`home: 'episode'`), and a story with an episode for a home must never
+   * also be offered as a loose block in the daily session. The episode reaches it
+   * through its own `mini_story` step; the planner never does.
+   */
+  ask_location: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  state_location: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  ask_transport: ['guided_reply', 'free_reply', 'recall', 'roleplay'],
+
   introduction: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'mini_story'],
   ask_name: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   nice_to_meet: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],

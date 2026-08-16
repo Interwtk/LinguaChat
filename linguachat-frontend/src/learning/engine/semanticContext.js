@@ -45,6 +45,16 @@ export const SEMANTIC_TYPES = [
    * proposed for arcs that do not exist and stay unregistered.
    */
   'relation',        // friend, colleague, classmate
+  /*
+   * A1 arc 4. The blueprint's reason, and its own caveat: "Only needed if the
+   * should-have transport episode is built; drop the type with the episode." The
+   * episode is built, so the type is registered — and it is incompatible with
+   * `place` on purpose, because a slot that accepted both would build "How do I get
+   * to the bus?" out of a place and "Take the station" out of a transport mode.
+   *
+   * `day` remains the one proposed type with no consumer, and stays unregistered.
+   */
+  'transport_mode',  // bus, train
 ]
 
 export const isSemanticType = (type) => SEMANTIC_TYPES.includes(type)
@@ -154,6 +164,21 @@ export const INTENT_SLOTS = {
   ask_what_thing: [],
   identify_thing: ['generic_object', 'food'],
   use_quantity: ['generic_object', 'food'],
+  /*
+   * ARC 4. What each of the three location intents will accept in its slot, and the
+   * exclusions are the point:
+   *
+   *   ask_location    a public place the episode names, or a thing you can look for.
+   *                   NOT a `person` — "Where is Ana?" is a different question with
+   *                   different politeness, and NOT a drink or a feeling.
+   *   state_location  the same, because the answer is about the same noun.
+   *   ask_transport   a place to go to and, separately, the mode. `place` and
+   *                   `transport_mode` are declared incompatible in the blueprint,
+   *                   and the slot list is where that stops being a comment.
+   */
+  ask_location: ['place', 'generic_object'],
+  state_location: ['place', 'generic_object'],
+  ask_transport: ['place', 'transport_mode'],
 }
 
 export const slotsFor = (intent) => INTENT_SLOTS[intent] || []
@@ -193,6 +218,12 @@ export const NEUTRAL_CATALOG = {
   place: [],       // a place is the learner's own; never invent one
   feeling: [typedValue('good', 'good', 'feeling')],
   person: [],
+  /*
+   * Arc 4's transport modes ARE inventable, unlike a place: "the bus" is nobody's
+   * personal detail, so a turn that needs one has a correct neutral answer instead
+   * of going bare.
+   */
+  transport_mode: [typedValue('bus', 'the bus', 'transport_mode'), typedValue('train', 'the train', 'transport_mode')],
 }
 
 /*
@@ -355,6 +386,20 @@ const KNOWN_VALUES = {
    * introducing somebody by name alone, which needs no relation at all.
    */
   friend: 'relation', colleague: 'relation', classmate: 'relation',
+  /*
+   * A1 arc 4's places and transport. The two places are PUBLIC ones the episodes
+   * name themselves — a station and a toilet belong to nobody, which is why the arc
+   * can teach location without storing where a learner is. `TAUGHT_PLACES` reads
+   * this map, so adding them here is also what lets the engine recognise them
+   * inside a learner's own sentence.
+   *
+   * The two modes are typed separately, because the blueprint declares
+   * `transport_mode` incompatible with `place`: without the distinction a slot
+   * could build "How do I get to the bus?" and think it had personalised something.
+   */
+  station: 'place', 'the station': 'place', toilet: 'place', 'the toilet': 'place',
+  bus: 'transport_mode', 'the bus': 'transport_mode',
+  train: 'transport_mode', 'the train': 'transport_mode',
 }
 
 /*

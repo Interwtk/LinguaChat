@@ -2671,6 +2671,319 @@ export const EPISODE_SKELETON = [
         "type": "completion"
       }
     ]
+  },
+  {
+    "id": "where_is_it",
+    "level": "A1",
+    "arc": "finding_your_way",
+    "titleKey": "ep27Title",
+    "goalKey": "ep27Goal",
+    "canDoId": "ask_where_something_is",
+    "canDoNameKey": "ep27CanDoName",
+    "durationKey": "ep27Duration",
+    "estimatedMinutes": 9,
+    "xp": 75,
+    "prerequisites": [
+      "meeting_someone_new"
+    ],
+    "gardenItems": [
+      "where_is_pattern",
+      "toilet",
+      "here",
+      "there"
+    ],
+    "skillPrerequisites": [
+      "identify_things",
+      "polite_request"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "identify_thing",
+      "polite_request"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "identify_thing",
+        "itemIds": [
+          "its_a_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "where_is_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "upstairs"
+      },
+      {
+        "type": "word_order",
+        "itemId": "where_is_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "where_is_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_location",
+        "itemIds": [
+          "where_is_pattern",
+          "toilet"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "polite_request",
+        "itemIds": [
+          "please",
+          "can_i_have"
+        ]
+      },
+      {
+        "type": "choice",
+        "itemId": "behind"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_location",
+        "itemIds": [
+          "where_is_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "ask_location",
+        "itemIds": [
+          "where_is_pattern",
+          "toilet"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "its_over_there",
+    "level": "A1",
+    "arc": "finding_your_way",
+    "titleKey": "ep28Title",
+    "goalKey": "ep28Goal",
+    "canDoId": "say_where_something_is",
+    "canDoNameKey": "ep28CanDoName",
+    "durationKey": "ep28Duration",
+    "estimatedMinutes": 9,
+    "xp": 75,
+    "prerequisites": [
+      "where_is_it"
+    ],
+    "gardenItems": [
+      "its_location_pattern",
+      "next_to",
+      "near"
+    ],
+    "skillPrerequisites": [
+      "ask_where_something_is",
+      "identify_things"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "identify_thing",
+      "ask_location"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "ask_location",
+        "itemIds": [
+          "where_is_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "its_location_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "opposite"
+      },
+      {
+        "type": "choice",
+        "itemId": "next_to"
+      },
+      {
+        "type": "word_order",
+        "itemId": "its_location_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "near"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_location",
+        "itemIds": [
+          "its_location_pattern",
+          "next_to"
+        ]
+      },
+      {
+        "type": "choice",
+        "itemId": "downstairs"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "identify_thing",
+        "itemIds": [
+          "its_a_pattern"
+        ],
+        "thingId": "book"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_location",
+        "itemIds": [
+          "its_location_pattern",
+          "near"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "state_location",
+        "itemIds": [
+          "its_location_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "how_do_i_get_there",
+    "level": "A1",
+    "arc": "finding_your_way",
+    "titleKey": "ep29Title",
+    "goalKey": "ep29Goal",
+    "canDoId": "ask_about_getting_somewhere",
+    "canDoNameKey": "ep29CanDoName",
+    "durationKey": "ep29Duration",
+    "estimatedMinutes": 10,
+    "xp": 85,
+    "prerequisites": [
+      "its_over_there"
+    ],
+    "gardenItems": [
+      "station"
+    ],
+    "skillPrerequisites": [
+      "ask_where_something_is",
+      "ask_for_repair",
+      "polite_request",
+      "close_an_encounter"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "ask_location",
+      "repair_request",
+      "polite_request",
+      "close_encounter"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "ask_location",
+        "itemIds": [
+          "where_is_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "comprehension",
+        "itemId": "bus"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_transport",
+        "itemIds": [
+          "where_is_pattern",
+          "station"
+        ]
+      },
+      {
+        "type": "mini_story",
+        "storyObjective": "ask_transport",
+        "turns": [
+          {
+            "kind": "scene"
+          },
+          {
+            "kind": "choose"
+          },
+          {
+            "kind": "reply",
+            "evalKind": "ask_transport",
+            "itemIds": [
+              "where_is_pattern",
+              "station"
+            ]
+          },
+          {
+            "kind": "line"
+          },
+          {
+            "kind": "reply",
+            "evalKind": "repair_request",
+            "itemIds": [
+              "can_you_repeat"
+            ],
+            "repairKind": "repeat"
+          },
+          {
+            "kind": "line"
+          },
+          {
+            "kind": "close"
+          }
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "close_encounter",
+        "itemIds": [
+          "thank_you",
+          "bye"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "ask_transport",
+        "itemIds": [
+          "where_is_pattern",
+          "station"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
   }
 ]
 

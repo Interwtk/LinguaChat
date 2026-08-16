@@ -55,6 +55,13 @@ const MODEL_ANSWER = {
    */
   introduce_person: (v) => `This is my friend ${v.partner}.`,
   state_person_fact: (v) => `${v.partner} is a student.`,
+  /*
+   * A1 arc 4. The place is a PUBLIC one the session names itself - a station or a
+   * toilet belongs to nobody, so no model answer here can leak where a learner is.
+   */
+  ask_location: () => 'Where is the toilet?',
+  state_location: () => "It's next to the bag.",
+  ask_transport: () => 'How do I get to the station?',
 
   introduction: (v) => `Hi, I'm ${v.name}.`,
   ask_name: () => "What's your name?",
@@ -130,6 +137,10 @@ const PROMPT = {
   /* arc 3: somebody has to be there to introduce, and somebody to introduce them to */
   introduce_person: (v) => `${v.partner} is here and we have not met.`,
   state_person_fact: (v) => `Tell me one thing about ${v.partner}.`,
+  /* arc 4: a building to be lost in, a thing to place, and somewhere to go */
+  ask_location: () => 'You are in a museum and you need the toilet. Ask me.',
+  state_location: () => 'Your book is at the side of my bag. Where is it?',
+  ask_transport: () => 'You want to go to the station. Ask me.',
 
   introduction: () => 'Hi there!',
   ask_name: () => "I'm ready when you are.",

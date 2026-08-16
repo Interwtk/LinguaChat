@@ -9,7 +9,7 @@
  * simplest way to guarantee that is for A1's facts to live somewhere Pre-A1 does
  * not read.
  *
- * ARCS 1, 2 AND 3 ARE HERE. A1 is designed in full (seven arcs, twenty-one
+ * ARCS 1, 2, 3 AND 4 ARE HERE. A1 is designed in full (seven arcs, twenty-one
  * episodes, in docs/curriculum/a1-blueprint.json) and implemented one arc at a time.
  * Listing capabilities nobody can practise yet would make coverage look real, so the
  * capabilities appear here as their arcs are built.
@@ -18,7 +18,7 @@ import { A1, episodesOfLevel } from './levels.js'
 import { SKELETON_BY_ID } from './preA1Skeleton.generated.js'
 
 /* The arcs of A1 with runtime content today, in the blueprint's order. */
-export const A1_RUNTIME_ARCS = ['work_and_study', 'daily_rhythm', 'people_around_you']
+export const A1_RUNTIME_ARCS = ['work_and_study', 'daily_rhythm', 'people_around_you', 'finding_your_way']
 
 /*
  * The capability each A1 can-do is evidenced by, in the same shape Pre-A1 uses:
@@ -46,6 +46,15 @@ export const A1_CAN_DO_INTENT = {
    * capability has one headline function. Introducing somebody is that function.
    */
   introduce_someone_else: 'introduce_person',
+  /*
+   * Arc 4. Three capabilities, three intents — the arc that finally makes the
+   * one-intent-per-function rule look like arithmetic. Asking where something is,
+   * saying where it is and asking how to get somewhere are three different things
+   * to do with English, and the blueprint names all three.
+   */
+  ask_where_something_is: 'ask_location',
+  say_where_something_is: 'state_location',
+  ask_about_getting_somewhere: 'ask_transport',
 }
 
 /*
@@ -81,6 +90,12 @@ export const A1_REQUIRED_CAN_DOS = [
   'talk_about_work_or_study', 'ask_about_work_or_study',
   'talk_about_daily_routine', 'say_when_something_happens', 'ask_what_something_means',
   'introduce_someone_else',
+  /*
+   * Arc 4's two required ones. `ask_about_getting_somewhere` is deliberately absent:
+   * the blueprint scopes it `should`, and a should-have listed as required would
+   * quietly promote it — the opposite of the drift this list exists to prevent.
+   */
+  'ask_where_something_is', 'say_where_something_is',
 ]
 
 /*
@@ -101,6 +116,13 @@ export const A1_RECEPTIVE_ITEMS = [
    * sentence and answers with "she is".
    */
   'works_third', 'studies_third',
+  /*
+   * Arc 4's eight, and the largest receptive block in the level so far — because
+   * that IS the arc. The learner asks with words they own and hears an answer that
+   * is deliberately over their head: floors, relations they were never taught, a
+   * platform, a bus. None of it is ever asked for; the repair is what carries them.
+   */
+  'bus', 'train', 'upstairs', 'downstairs', 'opposite', 'behind', 'exit', 'platform',
 ]
 
 /*
@@ -183,8 +205,11 @@ export const A1_INTRODUCED_ITEMS = [
   /* arc 3 — who this is: three neutral relations, three pattern groups */
   'friend', 'colleague', 'classmate',
   'this_is_pattern', 'he_she_is_pattern', 'possessive_pattern',
+  /* arc 4 — where things are: two patterns, two places, four relations */
+  'where_is_pattern', 'its_location_pattern', 'here', 'there', 'next_to', 'near', 'toilet', 'station',
   /* receptive: heard, never asked for */
   'at_the_office', 'at_university', 'early', 'late', 'works_third', 'studies_third',
+  'bus', 'train', 'upstairs', 'downstairs', 'opposite', 'behind', 'exit', 'platform',
 ]
 
 /*

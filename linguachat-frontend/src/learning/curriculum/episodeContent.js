@@ -65,11 +65,12 @@ const CONTENT_LOADERS = {
      * partially built level must refuse the arcs it does not have rather than
      * hand back one it does. Each arc sprint has added exactly one line here and
      * nothing else had to change, which was the point of building it this way; the
-     * four arcs still missing cannot resolve to any of these three.
+     * three arcs still missing cannot resolve to any of these four.
      */
     work_and_study: () => import('../episodes/a1Arc1Content.js'),
     daily_rhythm: () => import('../episodes/a1Arc2Content.js'),
     people_around_you: () => import('../episodes/a1Arc3Content.js'),
+    finding_your_way: () => import('../episodes/a1Arc4Content.js'),
   },
 }
 

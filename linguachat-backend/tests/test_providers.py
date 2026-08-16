@@ -104,6 +104,12 @@ def test_the_provider_only_receives_linguistic_context():
         # without it is grading a different question. It is never a real person from
         # the learner's life — those are refused by the design, not sent.
         "partner_name",
+        # WHICH PLACE, and WHICH RELATION. Arc 4's turns are about a public place the
+        # EPISODE named — a toilet, an exit, a station — and its answers imply one of
+        # four taught relations. Both describe the task, exactly like `partner_name`,
+        # and neither can describe the learner: the arc captures no fact, stores no
+        # address, and never asks where anybody lives.
+        "place_name", "relation_hint",
     }
     # the support level and the attempt count were in the payload above and are
     # still not here; a new linguistic field must not smuggle them in

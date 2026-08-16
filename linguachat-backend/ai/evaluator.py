@@ -671,6 +671,94 @@ def _state_person_fact(text: str, partner: str = "") -> dict:
                  natural_version=natural, confidence=0.5)
 
 
+# ─── A1 arc 4 — "Where things are" ─────────────────────────────────────────
+#
+# Parity with the frontend's `evaluateAskLocation` / `evaluateStateLocation` /
+# `evaluateAskTransport`, including the one thing that is easy to leave out: a
+# learner who produces DIRECTIONS has produced A2, not this arc, so "go left" is
+# refused rather than praised. The arc's risk note is "directions creep", and a
+# fake/local provider that accepted them would be the crack it creeps through.
+_WHERE_IS = re.compile(r"\bwhere('?s|\s+is|\s+are)\b")
+_HOW_GET_TO = re.compile(r"\bhow\s+(do|can)\s+i\s+(get|go)\s+(to|there)\b")
+_WHICH_TRANSPORT = re.compile(r"\b(which|what)\s+(bus|train)\b|\bis\s+there\s+a\s+(bus|train)\b")
+_TAUGHT_RELATION = re.compile(r"\b(here|there|next\s+to|near)\b")
+_ITS_FRAME = re.compile(r"\bit('?s|\s+is)\b")
+_DIRECTIONS = re.compile(r"\b(left|right|straight\s+on|straight\s+ahead|first\s+street|second\s+street|turn)\b")
+_EXCUSE_ME = re.compile(r"\bexcuse\s+me\b|\bsorry\b")
+
+
+def _ask_location(text: str, place: str = "") -> dict:
+    what = (place or "").strip() or "the toilet"
+    natural = f"Where is {what}?"
+    n = normalize(text)
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True,
+                     natural_version=natural, confidence=0.95)
+    if _WHERE_IS.search(n) and len(n.split()) >= 3:
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=False,
+                     confidence=0.97 if _EXCUSE_ME.search(n) else 0.95)
+    if _ITS_FRAME.search(n):
+        return _base(error_type="answered_instead", retry_required=True,
+                     natural_version=natural, confidence=0.9)
+    if "where" in n:
+        return _base(error_type="missing_verb", retry_required=True,
+                     natural_version=natural, confidence=0.88)
+    return _base(error_type="no_question", retry_required=True,
+                 natural_version=natural, confidence=0.86)
+
+
+def _state_location(text: str, relation: str = "") -> dict:
+    hint = (relation or "").replace("_", " ").strip() or "here"
+    tail = f"{hint} the bag" if hint in ("next to", "near") else hint
+    natural = f"It's {tail}."
+    n = normalize(text)
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True,
+                     natural_version=natural, confidence=0.95)
+    # checked first, so "it's left" is not accepted for starting correctly
+    if _DIRECTIONS.search(n):
+        return _base(error_type="directions_not_taught", retry_required=True,
+                     natural_version=natural, confidence=0.9)
+    if _ITS_FRAME.search(n) and _TAUGHT_RELATION.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=False, confidence=0.96)
+    if _TAUGHT_RELATION.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=True, confidence=0.88)
+    if "next" in n and not re.search(r"\bnext\s+to\b", n):
+        return _base(error_type="missing_to", retry_required=True,
+                     natural_version=natural, confidence=0.92)
+    if _WHERE_IS.search(n):
+        return _base(error_type="asked_instead", retry_required=True,
+                     natural_version=natural, confidence=0.9)
+    if _ITS_FRAME.search(n):
+        return _base(error_type="missing_relation", retry_required=True,
+                     natural_version=natural, confidence=0.9)
+    return _base(error_type="no_location", retry_required=True,
+                 natural_version=natural, confidence=0.86)
+
+
+def _ask_transport(text: str, place: str = "") -> dict:
+    where = (place or "").strip() or "the station"
+    natural = f"How do I get to {where}?"
+    n = normalize(text)
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True,
+                     natural_version=natural, confidence=0.95)
+    if _HOW_GET_TO.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=False, confidence=0.95)
+    if _WHICH_TRANSPORT.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=True, confidence=0.9)
+    if _WHERE_IS.search(n):
+        return _base(error_type="asked_location_instead", retry_required=True,
+                     natural_version=natural, confidence=0.88)
+    return _base(error_type="no_transport_question", retry_required=True,
+                 natural_version=natural, confidence=0.5)
+
+
 def _close_encounter(text: str) -> dict:
     natural = "Bye."
     n = normalize(text)
@@ -914,6 +1002,13 @@ def evaluate_deterministic(payload: dict) -> dict:
         return _introduce_person(text, payload.get("partner_name") or "")
     if kind == "state_person_fact":
         return _state_person_fact(text, payload.get("partner_name") or "")
+    # arc 4: the place and the relation are task properties, and both travel
+    if kind == "ask_location":
+        return _ask_location(text, payload.get("place_name") or "")
+    if kind == "state_location":
+        return _state_location(text, payload.get("relation_hint") or "")
+    if kind == "ask_transport":
+        return _ask_transport(text, payload.get("place_name") or "")
     # sixth arc — the thing and the shape of the quantity travel with the turn,
     # for the same reason the repair strategy does: without them the verdict is
     # about a different question.
