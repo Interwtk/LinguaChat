@@ -370,4 +370,29 @@ const MUSIC = { type: 'like', value: 'music' }
   ok()
 }
 
+/*
+ * A STORY REPLY IS EVALUATED LIKE A STEP, SO IT NEEDS THE SAME FIELDS.
+ *
+ * Found by playing A1 arc 4's story in a browser: its repair turn declares
+ * `repairKind: 'repeat'`, the screen modelled "Sorry, can you repeat, please?", and
+ * the verdict came back "almost" — because the story path built its evaluation
+ * context WITHOUT the turn's own properties, so the evaluator fell back to a
+ * different repair strategy and graded a question the learner had not been asked.
+ *
+ * The same class as arc 2's lost `timeForm` and arc 3's lost `partner`, and the
+ * reason this group exists: every objective-specific field a story turn can carry
+ * must reach both the local evaluator and the provider payload.
+ */
+{
+  const story = readFileSync(new URL('../src/components/session/MiniStory.jsx', import.meta.url), 'utf8')
+  assert.match(story, /const turnFields = \(turn\) =>/, "the story path no longer collects a turn's own fields")
+  for (const field of ['repairKind', 'meaningWord', 'placeName', 'relationHint', 'timeForm']) {
+    assert.ok(new RegExp(`turn\?\.${field}`).test(story), `a story turn's ${field} is dropped before evaluation`)
+  }
+  /* and they must reach BOTH paths: the local preview and the remote payload */
+  assert.equal((story.match(/\.\.\.turnFields\(turn\)/g) || []).length, 2,
+    "the turn's fields must travel to the local context AND the provider payload")
+  ok()
+}
+
 console.log(`check-memory-and-story — OK  (${n} groups verified)`)

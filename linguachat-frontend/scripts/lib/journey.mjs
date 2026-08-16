@@ -27,13 +27,20 @@ import { ARC, getEpisode as getPreA1Episode } from '../../src/learning/episodes/
 import { getA1Arc1Episode } from '../../src/learning/episodes/a1Arc1.js'
 import { getA1Arc2Episode } from '../../src/learning/episodes/a1Arc2.js'
 import { getA1Arc3Episode } from '../../src/learning/episodes/a1Arc3.js'
+import { getA1Arc4Episode } from '../../src/learning/episodes/a1Arc4.js'
 
 /*
  * The harness plays any runtime episode, whatever level it belongs to. Content is
  * still one module per arc — this only means the harness can hold more than one at
  * a time, which is exactly the difference between tooling and the product.
  */
+/*
+ * Every level and arc with runtime content. Arc 3 was imported here when it
+ * landed and never added to this chain, so the harness could not play it —
+ * which is why a journey through arcs 3 and 4 reported an unknown episode.
+ */
 const getEpisode = (id) => getPreA1Episode(id) || getA1Arc1Episode(id) || getA1Arc2Episode(id)
+  || getA1Arc3Episode(id) || getA1Arc4Episode(id)
   || getA1Arc3Episode(id)
 import { evaluateFree } from '../../src/learning/engine/responseEvaluation.js'
 import { getStory, storyTurns, storyBranches, turnText } from '../../src/learning/engine/miniStory.js'
@@ -80,6 +87,10 @@ const ANSWERS = {
   /* A1 arc 3: presenting a person, and saying one thing about them */
   introduce_person: `This is my friend ${PARTNER_IN_ARC3}.`,
   state_person_fact: 'She is a student.',
+  /* A1 arc 4: the question, the answer, and the one that moves */
+  ask_location: 'Where is the toilet?',
+  state_location: "It's next to the bag.",
+  ask_transport: 'How do I get to the station?',
 
   express_like: 'I like music.',
   express_dislike: "I don't like coffee.",

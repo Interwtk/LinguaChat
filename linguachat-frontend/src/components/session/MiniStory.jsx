@@ -147,6 +147,30 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
     setLive(resolve(option.textEn, vars))
   }
 
+  /*
+   * THE TURN'S OWN FIELDS TRAVEL WITH IT.
+   *
+   * A story reply is evaluated exactly like a step, and it needs the same
+   * objective-specific properties: which repair strategy this turn asked for, which
+   * word an `ask_meaning` turn is about, which place a location question names, which
+   * relation its answer implies. Without them the evaluator judges a DIFFERENT
+   * question — arc 4's story turn asks for a repetition and was graded as if it had
+   * asked the learner to signal non-understanding, so the correct sentence on screen
+   * came back "casi".
+   *
+   * The same class of defect as arc 2's lost `timeForm` and arc 3's lost `partner`;
+   * this is the story path's version of it.
+   */
+  const turnFields = (turn) => ({
+    ...(turn?.repairKind ? { repairKind: turn.repairKind } : {}),
+    ...(turn?.meaningWord ? { meaningWord: turn.meaningWord } : {}),
+    ...(turn?.placeName ? { placeName: turn.placeName } : {}),
+    ...(turn?.relationHint ? { relationHint: turn.relationHint } : {}),
+    ...(turn?.timeForm ? { timeForm: turn.timeForm } : {}),
+    ...(turn?.personName ? { partner: turn.personName } : {}),
+  })
+
+
   async function submit({ fromSuggestion = false } = {}) {
     const text = reply
     if (!text.trim()) return
@@ -154,7 +178,8 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
     if (token === null) return
     const turnContext = { linguaSaid: resolve(turnText(turns[state.currentTurn - 1], state.branchId, story), vars) }
     const independent = isIndependentEvidence({ step: { type: 'free_reply', format: 'mini_story' }, assistanceUsed: fromSuggestion, correct: true })
-    const evalCtx = { name: vars.name, independent, turnContext, place: vars.place, targetNoun: vars.noun, targetThing: vars.item, activity: vars.activity }
+    const evalCtx = { name: vars.name, independent, turnContext, place: vars.place, targetNoun: vars.noun,
+      targetThing: vars.item, activity: vars.activity, ...turnFields(turn) }
     const preview = evaluateFree(turn.evalKind, text, evalCtx)
     const controller = new AbortController()
     abortRef.current = controller
@@ -166,6 +191,7 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
         episode: null, step: { evalKind: turn.evalKind, itemIds: turn.itemIds || [] },
         learnerResponse: text, learnerName: vars.name, place: vars.place,
         targetNoun: vars.noun, targetThing: vars.item, activity: vars.activity,
+        ...turnFields(turn),
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: storyScaffold, assistanceUsed: fromSuggestion,
         previousAttempts: 0, turnContext, signal: controller.signal,
