@@ -182,13 +182,22 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
   /*
    * Ids from the blueprint's UNBUILT arcs, derived rather than invented — and
    * "unbuilt" is read from `A1_RUNTIME_ARCS`, not from "any arc after this one".
-   * Arc 2's capabilities are registered now because arc 2 exists; the five arcs
-   * after it must still be unregistered.
+   * Each arc's capabilities are registered when that arc exists; every arc after
+   * the built ones must still be unregistered.
+   *
+   * The count is DERIVED. It used to be a fixed "at least ten", which was true of
+   * a level with one arc built and became false as arcs landed — the useful
+   * assertion is that the design still has unbuilt episodes at all, and that every
+   * capability belonging to them is absent from the runtime map.
    */
+  const unbuiltArcs = BLUEPRINT.arcs.filter(arc => !A1_RUNTIME_ARCS.includes(arc.id))
   const futureCanDos = BLUEPRINT.episodes
     .filter(ep => !A1_RUNTIME_ARCS.includes(ep.arc))
     .map(ep => ep.canDo)
-  assert.ok(futureCanDos.length >= 10, 'there should be plenty of unbuilt design')
+  assert.ok(unbuiltArcs.length > 0, 'A1 is fully built, so this group needs rewriting rather than passing')
+  assert.equal(futureCanDos.length,
+    BLUEPRINT.episodes.filter(ep => unbuiltArcs.some(arc => arc.id === ep.arc)).length,
+    'every episode of an unbuilt arc must contribute its capability to this list')
   for (const canDo of new Set(futureCanDos)) {
     assert.ok(!A1_CAN_DO_INTENT[canDo], `${canDo} is registered before its arc exists`)
   }

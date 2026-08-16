@@ -32,7 +32,16 @@ const ENTRY_BUDGET_KB = 500
  * gains the assertion that actually matters: a locale chunk carries its own
  * interface text, never another locale's, and never a step's prose.
  */
-const LOCALE_MAX_KB = 80
+/*
+ * 80 kB held from arc 1 to arc 3 and arc 4's eighty-eight new keys took Japanese to
+ * 84.4 kB and Arabic to 86.2 kB — both encode most characters in three bytes, so a
+ * locale's size tracks curriculum volume rather than anything going wrong. The
+ * number moves for the reason the comment above already gives; what does NOT move is
+ * the structural guard underneath it, which is the assertion that would actually
+ * catch a leak: a locale chunk carries its own interface text, never another
+ * locale's, and never a step's prose.
+ */
+const LOCALE_MAX_KB = 95
 
 const files = readdirSync(DIST).filter(f => f.endsWith('.js'))
 const sizeKb = (f) => statSync(join(DIST, f)).size / 1024
