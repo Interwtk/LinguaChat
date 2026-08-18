@@ -292,6 +292,16 @@ async function main() {
       learnerName: NAME, scaffoldLevel: 'medium', placeName: 'the bag', remote,
     })
     assert.equal(remote.calls, 0, 'ask_price is deterministic_local and must never escalate')
+
+    // nonsense is refused, never a crash, and never escalated either
+    for (const text of ['banana purple', 'asdfgh', '12345']) {
+      const r = await evaluateEpisodeResponse({
+        step: { evalKind: 'ask_price', itemIds: [] }, learnerResponse: text,
+        learnerName: NAME, scaffoldLevel: 'medium', remote: spy(null),
+      })
+      assert.equal(r.completedObjective, false, `ask_price must refuse: ${text}`)
+      assert.equal(r.source, 'deterministic')
+    }
     ok()
   }
 
