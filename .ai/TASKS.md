@@ -21,16 +21,6 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-CURR-005b] A1 arc 5, part 2 — evaluation, local and backend
-  owner:  claude-action
-  branch: curr/lc-curr-005b
-  blocked-on: LC-CURR-005a
-  why:    an intent without a local path makes the arc depend on a provider.
-  done:   one local evaluator per new intent, routed; each step's own fields reach
-          BOTH the local context and the provider payload; backend parity with
-          matching verdicts and its own tests; nonsense refused everywhere;
-          check:hybrid-evaluation and the backend suite green.
-
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
 
@@ -84,6 +74,10 @@ _(nothing is blocked)_
 
 ## DONE
 
+- [LC-CURR-005b] A1 arc 5 part 2 — backend ask_price evaluator (parity with the
+  frontend), and a real fix: placeName/relationHint were dropped inside
+  evaluateEpisodeResponse's own local re-evaluation, so ask_location (arc 4)
+  and ask_price/state_location (arc 5) showed the wrong model answer — PR #12
 - [LC-CURR-005a] A1 arc 5 part 1 — content, resolver, skeleton and the
   ask_price frame check — PR #11
 - [LC-OPS-007] A run that dies leaves its work behind: push early, draft PR
