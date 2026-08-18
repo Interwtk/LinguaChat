@@ -3,6 +3,22 @@
 Append only, newest first. A decision recorded here does not need re-litigating; a
 decision NOT recorded here is not a decision, it is a habit.
 
+## 2026-08-18 — The queue heals itself, and 120 turns was not enough
+
+Two runs died the same way on the same task: 32174953879 (121 turns, 11.39 USD) on
+the whole arc, and 32178509298 (121 turns, 14.17 USD) on 005a alone. Splitting the
+task did not fix it, which is the useful finding: the ceiling is the binding
+constraint, not the scope. Reading a1-blueprint.json is what spends it.
+
+So max-turns goes to 200, and the number is now a known cost rather than a guess:
+roughly 0.12 USD a turn on these runs.
+
+Both deaths also left a claim behind, and the chain then refused to start anything
+— correctly, because it cannot tell a working agent from a dead one. It can now:
+a claim whose agent is not running and whose branch has no open pull request is
+released automatically, on main, with a warning in the run summary. Without that,
+autonomy lasts until the first crash.
+
 ## 2026-08-18 — Tasks are sized to a run, and the claim is the one thing on main
 
 Run 32174953879 spent 121 turns and 11.39 USD on LC-CURR-005 and produced nothing:

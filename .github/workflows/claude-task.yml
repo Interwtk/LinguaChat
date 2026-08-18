@@ -182,7 +182,7 @@ jobs:
             that changes pricing, and anything that changes pedagogical scope.
           claude_args: |
             --model claude-sonnet-5
-            --max-turns 120
+            --max-turns 200
             --allowedTools Read,Write,Edit,Glob,Grep,Bash,TodoWrite
 
       - name: Nothing to do
