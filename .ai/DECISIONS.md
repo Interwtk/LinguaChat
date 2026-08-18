@@ -3,6 +3,24 @@
 Append only, newest first. A decision recorded here does not need re-litigating; a
 decision NOT recorded here is not a decision, it is a habit.
 
+## 2026-08-18 — Tasks are sized to a run, and the claim is the one thing on main
+
+Run 32174953879 spent 121 turns and 11.39 USD on LC-CURR-005 and produced nothing:
+no branch, no commit, no pull request, and a claim left behind that blocked the
+queue. The task was not wrong, it was too big — a whole arc is a session's work,
+and asking for it in one run guarantees the turn limit arrives before the pull
+request does.
+
+So an arc is now four tasks (005a content, 005b evaluation, 005c copy, 005d proof),
+each with a shape a single run can finish, and the prompt tells an agent that is
+running out of turns to stop early and leave the branch, the draft PR and the
+released claim behind.
+
+The same run exposed a contradiction I had written: TASKS.md says to claim on main
+(a claim on a branch is invisible, so locking does not work), while the prompt said
+never push to main. The agent resolved it correctly and I have made it explicit:
+coordination files under .ai/ may go straight to main, product code never does.
+
 ## 2026-08-18 — An agent never creates the OAuth secret
 
 Setting `CLAUDE_CODE_OAUTH_TOKEN` means holding the owner's credential and writing

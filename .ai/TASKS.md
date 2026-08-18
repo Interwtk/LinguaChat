@@ -21,18 +21,50 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-CURR-005] Implement A1 arc 5 — paying_and_choosing
-  owner:  claude-action
-  branch: curr/lc-curr-005
-  why:    it is the next arc the blueprint allows; arcs 1-4 are done.
-  done:   read the three curriculum documents in full FIRST. Author only arc 5:
-          content module, its own lazy chunk, resolver entry, intents with local
-          evaluation and backend parity, vocabulary within the arc's budget, i18n
-          in all 8 languages, check:a1-arc5 proving the blueprint contract, the
-          arc-frontier lists moved by exactly one, A1 still partial and closed,
-          arc 6 still failing closed, two clean cycles.
+_(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
+
+- [LC-CURR-005a] A1 arc 5, part 1 — contract, content module and resolver
+  owner:  unclaimed
+  branch: none
+  why:    arc 5 is the next arc the blueprint allows, and it does not fit in one
+          run: attempt 32174953879 spent 121 turns and 11.39 USD and produced
+          nothing, because the whole arc was asked for at once.
+  done:   read a1-blueprint.json, a1-authoring-contract.md and a1-map.md IN FULL.
+          State the arc's contract in the PR description first (episodes,
+          capabilities and their scopes, intents, semantic types, facts, vocabulary
+          budgets, patterns, XP, story, exclusions). Then author the episode module
+          + its content module + the resolver entry + the regenerated skeleton. No
+          evaluators yet. check:curriculum-authoring and check:a1-blueprint green,
+          A1 still partial and closed, arc 6 still failing closed.
+
+- [LC-CURR-005b] A1 arc 5, part 2 — evaluation, local and backend
+  owner:  unclaimed
+  branch: none
+  blocked-on: LC-CURR-005a
+  why:    an intent without a local path makes the arc depend on a provider.
+  done:   one local evaluator per new intent, routed; each step's own fields reach
+          BOTH the local context and the provider payload; backend parity with
+          matching verdicts and its own tests; nonsense refused everywhere;
+          check:hybrid-evaluation and the backend suite green.
+
+- [LC-CURR-005c] A1 arc 5, part 3 — copy in eight languages
+  owner:  unclaimed
+  branch: none
+  blocked-on: LC-CURR-005a
+  why:    an arc's keys land with the arc, not in the translation lane's batches.
+  done:   every key the arc uses present in the en base and in es pt fr it de ja ar,
+          placeholders preserved, check:i18n at 100 %, no raw key on screen.
+
+- [LC-CURR-005d] A1 arc 5, part 4 — prove it against the blueprint
+  owner:  unclaimed
+  branch: none
+  blocked-on: LC-CURR-005a, LC-CURR-005b, LC-CURR-005c
+  why:    an arc without its own check is a claim, not a contract.
+  done:   check:a1-arc5 in the shape of check:a1-arc4, including that every modelled
+          answer passes its own evaluator; the arc-frontier lists moved by exactly
+          one; check:all green counted by exit code; two clean cycles.
 
 - [LC-I18N-001] Audit the eight implemented languages (phase A)
   owner:  unclaimed
