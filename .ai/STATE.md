@@ -4,14 +4,14 @@ Rewrite this file at the end of every task. It describes the repo, not intention
 If a number here disagrees with a command, the command is right and this file is
 stale — fix it.
 
-_Last verified: 2026-08-18 · commit `0e5ce9f` (main)_
+_Last verified: 2026-08-18 · commit `c8a4c0b` (main)_
 
 ## Head
 
 | | |
 |---|---|
 | branch | `main` |
-| commit | `0e5ce9f` — chore(ops): the contract, the queue and the CI |
+| commit | `c8a4c0b` — fix(ci): id-token: write for the Claude jobs |
 | remote | `github.com/Interwtk/LinguaChat` (public) |
 | sync | 0 / 0 |
 | untracked | `linguachat-backend.zip`, `linguachat-frontend.zip` — the owner's, leave alone |
@@ -68,7 +68,11 @@ Journey Pre-A1 -> arc 4: 29 episodes, 25 can-dos, 97 garden items.
 
 ## Blockers
 
-- `CLAUDE_CODE_OAUTH_TOKEN` is NOT yet a repository secret, so the three Claude
-  workflows stop immediately with a clear message. The owner creates it once —
-  `.ai/HANDOFF.md` has the two commands. `qa.yml` needs no secret and already
-  works. Everything else is configured.
+- The Claude workflows cannot authenticate yet. Two of the three prerequisites are
+  now met: the secret exists (the guard step passes) and OIDC works after
+  `id-token: write` (`c8a4c0b`). The third is the **Claude Code GitHub App**, which
+  is not installed on this repository — the action exchanges its OIDC token with
+  the app and gets `401 - Claude Code is not installed on this repository`.
+  Installing an App is an authorisation grant made in GitHub's UI, so it is the
+  owner's action: github.com/apps/claude, or `/install-github-app` in Claude Code.
+- `qa.yml` needs none of that and is green on every push and pull request.

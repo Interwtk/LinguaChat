@@ -67,10 +67,18 @@ _(none — the queue is open)_
 - [LC-OPS-002] Enable the Claude workflows
   owner:  human (repository owner)
   branch: none
-  blocked-on: the repository secret CLAUDE_CODE_OAUTH_TOKEN does not exist. An
-          agent must not create it: handling a credential is the owner's action.
-  done:   run the two commands in .ai/HANDOFF.md, then a manual workflow_dispatch
-          of claude-task.yml finishes green.
+  blocked-on: the Claude Code GitHub App is not installed on this repository.
+          The secret exists and works, and OIDC now works — run 32174029231 got
+          "OIDC token successfully obtained" and then died on
+          "App token exchange failed: 401 - Claude Code is not installed on this
+          repository". Installing a GitHub App is an authorisation grant made in
+          GitHub's own UI; an agent cannot perform it.
+  done:   install github.com/apps/claude on Interwtk/LinguaChat (or run
+          /install-github-app inside Claude Code), then dispatch claude-task.yml
+          with task_id LC-CURR-005 and watch it open a PR.
+
+  history: 2026-08-18 secret created by the owner — that half is done.
+           2026-08-18 id-token: write added (PR #2, c8a4c0b) — OIDC works.
 
 ## DONE
 
