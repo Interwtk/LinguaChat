@@ -183,6 +183,14 @@ const OBJECTIVE_FORMATS = {
   state_location: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
   ask_transport: ['guided_reply', 'free_reply', 'recall', 'roleplay'],
 
+  /*
+   * Arc 5. `ask_price` has no authored story of its own — episode 33's story is
+   * `cafe_order_conversation`, already absent from this table's `mini_story` list
+   * below for the same episode-hosted reason as `ask_transport` above — so
+   * `mini_story` is absent here too.
+   */
+  ask_price: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+
   introduction: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'mini_story'],
   ask_name: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   nice_to_meet: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],

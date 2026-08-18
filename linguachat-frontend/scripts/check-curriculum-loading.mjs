@@ -28,9 +28,10 @@ import { A1_ARC1 } from '../src/learning/episodes/a1Arc1.js'
 import { A1_ARC2 } from '../src/learning/episodes/a1Arc2.js'
 import { A1_ARC3 } from '../src/learning/episodes/a1Arc3.js'
 import { A1_ARC4 } from '../src/learning/episodes/a1Arc4.js'
+import { A1_ARC5 } from '../src/learning/episodes/a1Arc5.js'
 
 /* A1's runtime episodes, arc by arc — the same order the generator uses. */
-const A1_EPISODES = [...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4]
+const A1_EPISODES = [...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5]
 import { ARC } from '../src/learning/episodes/index.js'
 import { EPISODE_SKELETON, SKELETON_BY_ID } from '../src/learning/curriculum/preA1Skeleton.generated.js'
 import { intentsForEpisode, productiveItemsOf, itemsOf, personalisesOf } from '../src/learning/curriculum/preA1Map.js'

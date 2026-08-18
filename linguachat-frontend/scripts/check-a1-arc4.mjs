@@ -452,11 +452,21 @@ const ok = () => { groups++ }
   ok()
 }
 
-/* ---- 16) arc 5 and beyond remain impossible ---- */
+/*
+ * ---- 16) beyond arc 4 remains impossible ----
+ *
+ * This group asserted arc 5 was impossible until it was built (LC-CURR-005a),
+ * at which point hardcoding the exact remaining list here would have been a
+ * lie about a fact this file does not own — the same lesson arc 1 and arc 2's
+ * own checks already learned. Exactly which arcs remain is `check:a1-
+ * blueprint`'s assertion to make precisely; this group only proves arc 4's
+ * own neighbour is no longer impossible, and that something still is.
+ */
 {
   const unbuilt = BLUEPRINT.arcs.filter(arc => !A1_RUNTIME_ARCS.includes(arc.id))
-  assert.deepEqual(unbuilt.map(a => a.id), ['paying_and_choosing', 'what_you_can_do', 'making_arrangements'],
-    'exactly three arcs remain unbuilt')
+  assert.ok(!unbuilt.some(a => a.id === 'paying_and_choosing'), 'arc 5 must no longer be unbuilt')
+  assert.ok(unbuilt.some(a => a.id === 'what_you_can_do') && unbuilt.some(a => a.id === 'making_arrangements'),
+    'the two arcs after arc 5 remain unbuilt')
   for (const arc of unbuilt) {
     assert.equal(hasContentLoader(A1, arc.id), false, `${arc.id} must have no loader`)
     for (const canDo of arc.newCanDos || []) {
@@ -478,12 +488,19 @@ const ok = () => { groups++ }
 {
   assert.equal(hasRuntimeContent(A1), true, 'A1 has content')
   assert.equal(isLevelAvailable(A1), false, 'A1 must stay closed to learners')
-  assert.equal(isLevelComplete(A1), false, 'A1 is four arcs of seven, so it is not complete')
+  assert.equal(isLevelComplete(A1), false, 'A1 is not yet seven arcs, so it is not complete')
   assert.equal(getLevel(A1).contentStatus, 'partial', 'contentStatus must stay partial')
-  assert.equal(episodesOfLevel(A1).length, A1_ARC1.length + A1_ARC2.length + A1_ARC3.length + A1_ARC4.length,
-    'A1 runtime is exactly its four built arcs')
-  assert.deepEqual(A1_RUNTIME_ARCS, ['work_and_study', 'daily_rhythm', 'people_around_you', 'finding_your_way'],
-    'the runtime arcs are exactly arcs 1–4, in the blueprint\'s order')
+  /*
+   * "A1 runtime is exactly its four built arcs" was true only until arc 5
+   * landed (LC-CURR-005a) — updating the exact total here every arc sprint is
+   * this file claiming a fact it does not own. What arc 4's own check can
+   * still assert, and keep asserting after later arcs: its own four arcs are
+   * IN the runtime, in the blueprint's order, as an unbroken prefix.
+   */
+  assert.ok(episodesOfLevel(A1).length >= A1_ARC1.length + A1_ARC2.length + A1_ARC3.length + A1_ARC4.length,
+    'A1 runtime holds at least its first four built arcs')
+  assert.deepEqual(A1_RUNTIME_ARCS.slice(0, 4), ['work_and_study', 'daily_rhythm', 'people_around_you', 'finding_your_way'],
+    'the first four runtime arcs are exactly arcs 1–4, in the blueprint\'s order')
   ok()
 }
 

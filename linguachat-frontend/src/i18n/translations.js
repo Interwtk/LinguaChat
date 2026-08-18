@@ -1693,6 +1693,29 @@ const base = {
   ep27Duration: "9 min",
   ep28Duration: "9 min",
   ep29Duration: "10 min",
+  /*
+   * A1 arc 5 (LC-CURR-005a). Only the four keys the authoring contract requires
+   * on every episode — title, goal, can-do name, duration. The step-level prose
+   * (scene, instruction, model, retry and praise keys) is referenced by the
+   * episode module but deliberately left undefined here: LC-CURR-005c is the
+   * copy sprint for this arc, exactly as it was for the four arcs before it.
+   */
+  ep30Title: "More than ten",
+  ep30Goal: "Say numbers above ten.",
+  ep30CanDoName: "I can use numbers above ten.",
+  ep30Duration: "9 min",
+  ep31Title: "How much is it?",
+  ep31Goal: "Ask the price.",
+  ep31CanDoName: "I can ask the price.",
+  ep31Duration: "9 min",
+  ep32Title: "This one or that one",
+  ep32Goal: "Choose, quantify, and ask the price.",
+  ep32CanDoName: "I can choose between two things and ask the price.",
+  ep32Duration: "9 min",
+  ep33Title: "Buying it",
+  ep33Goal: "Buy something, start to finish.",
+  ep33CanDoName: "I can buy something.",
+  ep33Duration: "10 min",
 }
 
 

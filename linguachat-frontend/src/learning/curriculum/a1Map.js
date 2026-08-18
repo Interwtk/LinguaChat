@@ -18,7 +18,7 @@ import { A1, episodesOfLevel } from './levels.js'
 import { SKELETON_BY_ID } from './preA1Skeleton.generated.js'
 
 /* The arcs of A1 with runtime content today, in the blueprint's order. */
-export const A1_RUNTIME_ARCS = ['work_and_study', 'daily_rhythm', 'people_around_you', 'finding_your_way']
+export const A1_RUNTIME_ARCS = ['work_and_study', 'daily_rhythm', 'people_around_you', 'finding_your_way', 'paying_and_choosing']
 
 /*
  * The capability each A1 can-do is evidenced by, in the same shape Pre-A1 uses:
@@ -55,6 +55,18 @@ export const A1_CAN_DO_INTENT = {
   ask_where_something_is: 'ask_location',
   say_where_something_is: 'state_location',
   ask_about_getting_somewhere: 'ask_transport',
+  /*
+   * Arc 5. `use_bigger_numbers` reuses `use_quantity` with its taught range
+   * extended, exactly as the blueprint's own `intentReuse` note prescribes — not
+   * a new intent. `ask_the_price` is the arc's one genuinely new intent.
+   * `buy_something`'s headline is Pre-A1's `cafe_order_conversation`, reused: the
+   * blueprint says the capability itself "reuses the café shape Pre-A1 already
+   * owns and adds the money the café never mentioned", and its second intent
+   * (below) is where that money enters.
+   */
+  use_bigger_numbers: 'use_quantity',
+  ask_the_price: 'ask_price',
+  buy_something: 'cafe_order_conversation',
 }
 
 /*
@@ -71,6 +83,12 @@ export const A1_CAN_DO_INTENT = {
  */
 export const A1_CAN_DO_EXTRA_INTENTS = {
   introduce_someone_else: ['state_person_fact'],
+  /*
+   * Arc 5. Buying is the café shape PLUS asking what something costs — the money
+   * the café never mentioned, in the blueprint's own words — so its second
+   * intent is `ask_price`, reused from episode 31/32 rather than duplicated.
+   */
+  buy_something: ['ask_price'],
 }
 
 /* Every intent a capability may be evidenced by, headline first. */
@@ -96,6 +114,8 @@ export const A1_REQUIRED_CAN_DOS = [
    * quietly promote it — the opposite of the drift this list exists to prevent.
    */
   'ask_where_something_is', 'say_where_something_is',
+  /* Arc 5's three — all required in the blueprint, no should-have among them. */
+  'use_bigger_numbers', 'ask_the_price', 'buy_something',
 ]
 
 /*
@@ -123,6 +143,11 @@ export const A1_RECEPTIVE_ITEMS = [
    * platform, a bus. None of it is ever asked for; the repair is what carries them.
    */
   'bus', 'train', 'upstairs', 'downstairs', 'opposite', 'behind', 'exit', 'platform',
+  /*
+   * Arc 5's one: the third option a shopkeeper offers unplanned. Understood,
+   * never asked for — the learner is never required to buy or name it.
+   */
+  'banana',
 ]
 
 /*
@@ -207,9 +232,11 @@ export const A1_INTRODUCED_ITEMS = [
   'this_is_pattern', 'he_she_is_pattern', 'possessive_pattern',
   /* arc 4 — where things are: two patterns, two places, four relations */
   'where_is_pattern', 'its_location_pattern', 'here', 'there', 'next_to', 'near', 'toilet', 'station',
+  /* arc 5 — what it costs: three patterns, two choosing words, a ticket, a unit */
+  'numbers_11_100', 'how_much_pattern', 'price_pattern', 'this_one', 'that_one', 'ticket', 'dollars',
   /* receptive: heard, never asked for */
   'at_the_office', 'at_university', 'early', 'late', 'works_third', 'studies_third',
-  'bus', 'train', 'upstairs', 'downstairs', 'opposite', 'behind', 'exit', 'platform',
+  'bus', 'train', 'upstairs', 'downstairs', 'opposite', 'behind', 'exit', 'platform', 'banana',
 ]
 
 /*

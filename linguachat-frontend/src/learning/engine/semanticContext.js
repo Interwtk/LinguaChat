@@ -179,6 +179,12 @@ export const INTENT_SLOTS = {
   ask_location: ['place', 'generic_object'],
   state_location: ['place', 'generic_object'],
   ask_transport: ['place', 'transport_mode'],
+  /*
+   * A1 arc 5. What you can ask the price OF: a generic thing or something
+   * orderable — the same pool `polite_request` already draws on, minus `drink`,
+   * because nothing in this arc's shop scene sells one.
+   */
+  ask_price: ['generic_object', 'food', 'consumable'],
 }
 
 export const slotsFor = (intent) => INTENT_SLOTS[intent] || []

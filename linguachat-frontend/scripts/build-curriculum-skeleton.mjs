@@ -33,6 +33,7 @@ import { A1_ARC1 } from '../src/learning/episodes/a1Arc1.js'
 import { A1_ARC2 } from '../src/learning/episodes/a1Arc2.js'
 import { A1_ARC3 } from '../src/learning/episodes/a1Arc3.js'
 import { A1_ARC4 } from '../src/learning/episodes/a1Arc4.js'
+import { A1_ARC5 } from '../src/learning/episodes/a1Arc5.js'
 import { getStory, storyTurns } from '../src/learning/engine/miniStory.js'
 
 const OUT = 'src/learning/curriculum/preA1Skeleton.generated.js'
@@ -95,7 +96,7 @@ const EPISODE_FIELDS = ['id', 'level', 'arc', 'titleKey', 'goalKey', 'canDoId', 
   'skillPrerequisites', 'role', 'reuseSkills']
 
 /* every level's episodes, in curriculum order: Pre-A1, then A1 arc by arc */
-const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4]
+const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5]
 
 const skeleton = RUNTIME_EPISODES.map(ep => ({
   ...pick(ep, EPISODE_FIELDS),
