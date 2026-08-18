@@ -115,12 +115,30 @@ jobs:
             1. Claim the task: move its block to IN_PROGRESS in .ai/TASKS.md with
                owner `claude-action` and the branch name you will use. Never claim a
                task that already has an owner.
-            2. Create a branch. Name it after the task: `curr/lc-curr-005`,
-               `i18n/lc-i18n-001`, `qa/lc-qa-001`.
-            3. Do the work in the smallest correct change. Read the curriculum
+            2. Create a branch, named after the task: `curr/lc-curr-005a`,
+               `i18n/lc-i18n-001`, `qa/lc-qa-001`. IF THAT BRANCH ALREADY EXISTS,
+               a previous run got part of the way: check it out, read its draft
+               pull request, and CONTINUE it. Never start that work again from
+               scratch, and never open a second pull request for the same task.
+            3. PUSH BEFORE YOU BUILD ANYTHING. Within your first fifteen turns, and
+               before the real work starts: commit whatever you have — a plan is
+               enough — push the branch, and open the pull request AS A DRAFT saying
+               what you are about to do. Three runs have now died at the turn ceiling
+               having produced nothing (121 turns and 11.39 USD, 121 and 14.17, 201
+               and 25.46) because each did all the work first and pushed last. A run
+               that dies leaves behind exactly what it has pushed, so push early and
+               push often: after every milestone, and never let twenty turns pass
+               without a commit reaching the branch.
+            4. Do the work in the smallest correct change. Read the curriculum
                contracts in full before authoring any curriculum; the blueprint
                decides, never your memory of it.
-            4. QA, and count check:all by exit code, not by grepping output:
+
+               SPEND TURNS ON THE WORK, NOT ON THE SUITE. `check:all` is 49 scripts
+               and a whole turn each time. While building, run only the specific
+               checks your change affects — `node scripts/check-a1-blueprint.mjs`,
+               for instance. Run the full suite when the work is done, and a second
+               time only if you had to fix something.
+            5. QA, and count check:all by exit code, not by grepping output:
                  cd linguachat-frontend && npm run check:all && npm run build
                  cd linguachat-backend  && python -m compileall . && python -m pytest -q
                If you fixed anything, run the whole thing twice and both must be
@@ -141,20 +159,20 @@ jobs:
             refuses to merge it. If you could not run something on the runner, say
             so plainly rather than implying you did.
 
-            5. Review your own diff as a reviewer would: scope creep, duplication,
+            6. Review your own diff as a reviewer would: scope creep, duplication,
                dead code, a real provider call, a secret, A1 opened by accident,
                Supabase, eager loading, an i18n regression, a frozen-UI regression.
-            6. Commit on your branch and open a PULL REQUEST. The PR body states
-               what changed, the evidence (numbers from the QA you actually ran),
-               and what you deliberately did not do.
+            7. Push the last commit and take the pull request out of draft. Its body
+               states what changed, the evidence (numbers from the QA you actually
+               ran), and what you deliberately did not do.
 
                THE ONLY THING THAT GOES STRAIGHT TO MAIN is the claim in step 1 and
-               the handoff in step 7: coordination files under .ai/ and nothing else,
+               the handoff in step 8: coordination files under .ai/ and nothing else,
                never a line of product code. A claim has to be visible to other
                agents before you start, which a branch cannot do. FUNCTIONAL WORK
                NEVER TOUCHES MAIN — it goes through the pull request that qa.yml
                gates.
-            7. Update .ai/STATE.md and .ai/HANDOFF.md so the next agent starts
+            8. Update .ai/STATE.md and .ai/HANDOFF.md so the next agent starts
                informed, and move the task to DONE only when the PR is open and
                green.
 
@@ -169,11 +187,12 @@ jobs:
               `linguachat-*.zip` archives.
             - One task per run. Do not start a second one.
             - IF YOU ARE RUNNING OUT OF TURNS, STOP EARLY and leave the repository
-              usable: push what you have to your branch, open the pull request as a
+              usable: push what you have to your branch, leave the pull request as a
               draft that says exactly where you stopped, release your claim in
-              .ai/TASKS.md and write the state into .ai/HANDOFF.md. A run that ends
-              with an abandoned claim and nothing pushed costs money and blocks the
-              queue for everyone else — that is worse than stopping at half.
+              .ai/TASKS.md and write the state into .ai/HANDOFF.md. Stopping at half
+              with the half pushed is a good outcome. Reaching the ceiling with an
+              abandoned claim and nothing pushed is the worst one, and it has now
+              happened three times.
 
             WHEN TO STOP AND ASK, by opening an issue that explains the choice
             rather than guessing: an undocumented product decision, a missing
@@ -188,8 +207,55 @@ jobs:
           allowed_bots: github-actions
           claude_args: |
             --model claude-sonnet-5
-            --max-turns 200
+            # 150, not 200. Three runs have hit the ceiling; the third cost 25.46 USD
+            # for nothing. With step 3 pushing early, a run that ends at the ceiling
+            # now leaves its work behind for the next one, so a lower ceiling bounds
+            # what a single attempt can cost without losing what it achieved.
+            --max-turns 150
             --allowedTools Read,Write,Edit,Glob,Grep,Bash,TodoWrite
+
+      # An agent can die mid-flight: the turn ceiling, a cancelled job, a runner
+      # fault. Three runs have, and each left the queue claiming somebody was
+      # working while nothing had been pushed. Whatever happened above, the
+      # repository is left in a state the next run can read.
+      - name: Leave the repository honest, whatever happened
+        if: always() && steps.queue.outputs.claimable == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --quiet
+          git checkout main --quiet && git reset --hard origin/main --quiet
+          BRANCH=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
+                   grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
+          if [ -z "${BRANCH:-}" ] || [ "$BRANCH" = "none" ]; then
+            echo "No claim is open. Nothing to tidy." >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          if ! git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            # Nothing was ever pushed: the claim is worthless and must not block the queue.
+            RELEASED=$(node .github/scripts/release-stale-claim.mjs || true)
+            if [ -n "$RELEASED" ]; then
+              git config user.name  "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add .ai/TASKS.md
+              git commit -m "chore(ops): release $RELEASED — its run ended with nothing pushed"
+              git push origin main
+              echo "::warning::$RELEASED released: the run ended without pushing a branch."
+              echo "Released **$RELEASED** — the run ended without pushing anything." >> "$GITHUB_STEP_SUMMARY"
+            fi
+            exit 0
+          fi
+          # Something was pushed. It must be visible as a draft pull request, so the
+          # next run can find it and continue instead of starting the work again.
+          OPEN=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
+          if [ "$OPEN" = "0" ]; then
+            gh pr create --draft --base main --head "$BRANCH" \
+              --title "WIP: $BRANCH" \
+              --body "Opened automatically because the run ended with commits on this branch and no pull request. It is a draft on purpose: it is unfinished, and the chain never merges a draft. The next run should continue this branch." >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::Opened a draft pull request for $BRANCH so the work is not lost."
+          else
+            echo "$BRANCH already has an open pull request." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Nothing to do
         if: steps.queue.outputs.claimable != 'true'

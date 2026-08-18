@@ -100,6 +100,8 @@ _(nothing is blocked)_
 
 ## DONE
 
+- [LC-OPS-007] A run that dies leaves its work behind: push early, draft PR
+  enforced by the workflow, a draft never freezes a claim, ceiling back to 150
 - [LC-OPS-006] Lane parity: the i18n lane accepts the input the chain sends,
   and "one agent at a time" now counts both lanes
 - [LC-OPS-005] Allow the one bot, route i18n to its own lane, true up the queue

@@ -168,9 +168,14 @@ jobs:
           BRANCH=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
                    grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
           if [ -n "${BRANCH:-}" ] && [ "$BRANCH" != "none" ]; then
-            OPEN=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
-            if [ "$OPEN" != "0" ]; then
-              echo "$BRANCH still has an open pull request — the claim is live."
+            # A READY pull request means the work is finished and waiting on CI or a
+            # merge, so its claim is live and must be left alone. A DRAFT means the
+            # opposite: unfinished work whose agent is no longer running. Treating a
+            # draft as live would deadlock the queue for ever, because the agent that
+            # would finish it can only start by claiming the task it already holds.
+            READY=$(gh pr list --head "$BRANCH" --state open --json isDraft --jq '[.[] | select(.isDraft == false)] | length')
+            if [ "$READY" != "0" ]; then
+              echo "$BRANCH has a pull request ready for review — the claim is live."
               exit 0
             fi
           fi

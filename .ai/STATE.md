@@ -68,15 +68,33 @@ Journey Pre-A1 -> arc 4: 29 episodes, 25 can-dos, 97 garden items.
   ONE claimable task, and dispatch it: `LC-I18N-*` to the translation lane,
   everything else to `claude-task.yml`. It merged PR #6 by itself and healed the
   stale claim on `LC-CURR-005a`.
-- `claude-task.yml` (200 turns) and `claude-i18n.yml` (100), both naming
+- `claude-task.yml` (150 turns) and `claude-i18n.yml` (100), both naming
   `allowed_bots: github-actions` so a chained run is not refused as a non-human
   initiator. Never `*`.
 - `claude-mention.yml` answers `@claude` from collaborators only.
 - Nothing triggers on `push`, so no run can start a run.
 
-Measured cost of an agent run: about **0.12 USD a turn**; two runs that hit the old
-120-turn ceiling cost 11.39 and 14.17 USD and produced nothing, which is why tasks
-are sized and the ceiling was raised.
+### What an autonomous run costs, and what that bought
+
+About **0.12 USD a turn**. Three runs have now ended at the turn ceiling:
+
+| run | turns | cost | produced |
+|---|---|---|---|
+| 32174953879 | 121 | 11.39 USD | nothing |
+| (second attempt) | 121 | 14.17 USD | nothing |
+| 32183746598 | 201 | 25.46 USD | nothing but its claim |
+
+Roughly 51 USD for no merged line. Raising the ceiling did not fix it and the third
+run proves it: the task had already been split to the smallest slice the blueprint
+allows. The cause is ordering, not size — each run did all the work first and pushed
+last, so dying cost it everything.
+
+Since LC-OPS-007 the agent must push a branch and open a DRAFT pull request inside
+its first fifteen turns and keep committing as it goes, and the workflow enforces
+the outcome whatever happens to the agent: commits but no pull request -> a draft is
+opened for it; nothing pushed at all -> the claim is released on the spot. A draft
+therefore never freezes the queue, and the ceiling is back down to 150 because a run
+that hits it now leaves its work behind.
 
 ## Blockers
 
