@@ -57,18 +57,32 @@ Journey Pre-A1 -> arc 4: 29 episodes, 25 can-dos, 97 garden items.
 5. `linguachat-backend.zip` contains a real OpenAI key. Never commit it; the owner
    may want to rotate that key.
 
-## Automation
+## Automation — working, and proven in live runs
 
-- `qa.yml` runs on every push and pull request: frontend checks counted by exit
-  code, build, i18n table, backend compileall and pytest, five guards. Verified
-  green on PR #1 — 49/49 on the runner, 431 backend tests.
-- `claude-mention.yml` (@claude, collaborators only), `claude-task.yml` (one task,
-  one branch, one PR, weekly + dispatch), `claude-i18n.yml` (translation lane).
-  None triggers on `push`, so nothing can loop.
+- `qa.yml` on every push and pull request: frontend checks counted by exit code,
+  build, the i18n table, backend compileall and pytest, five guards, and an
+  **evidence gate** that fails a non-draft PR whose description has no `## Evidence`
+  section naming the suites it ran.
+- `claude-chain.yml` — the chain. QA green + evidence -> merge; then verify the
+  coordination files, release a claim whose agent is gone, ask the queue for exactly
+  ONE claimable task, and dispatch it: `LC-I18N-*` to the translation lane,
+  everything else to `claude-task.yml`. It merged PR #6 by itself and healed the
+  stale claim on `LC-CURR-005a`.
+- `claude-task.yml` (200 turns) and `claude-i18n.yml` (100), both naming
+  `allowed_bots: github-actions` so a chained run is not refused as a non-human
+  initiator. Never `*`.
+- `claude-mention.yml` answers `@claude` from collaborators only.
+- Nothing triggers on `push`, so no run can start a run.
+
+Measured cost of an agent run: about **0.12 USD a turn**; two runs that hit the old
+120-turn ceiling cost 11.39 and 14.17 USD and produced nothing, which is why tasks
+are sized and the ceiling was raised.
 
 ## Blockers
 
-- The Claude workflows cannot authenticate yet. Two of the three prerequisites are
+_(none)_
+
+Historical, now resolved: the Claude workflows could not authenticate. Two of the three prerequisites are
   now met: the secret exists (the guard step passes) and OIDC works after
   `id-token: write` (`c8a4c0b`). The third is the **Claude Code GitHub App**, which
   is not installed on this repository — the action exchanges its OIDC token with

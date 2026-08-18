@@ -139,6 +139,12 @@ jobs:
             Stop and open an issue instead of guessing if a language needs a product
             decision (which variants to offer, how to label partial coverage), or if
             adding a language would break a bundle budget without a justification.
+          # A chained run is started by github-actions[bot], and the action refuses a
+          # non-human initiator unless it is named — run 32181656533 died on exactly
+          # that: "Workflow initiated by non-human actor: github-actions (type: Bot)".
+          # ONE bot, by name. Never '*': that would let any bot with write access to
+          # this repository start an agent holding the token.
+          allowed_bots: github-actions
           claude_args: |
             --model claude-sonnet-5
             --max-turns 100
