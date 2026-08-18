@@ -21,17 +21,17 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
-
-
 - [LC-CURR-005c] A1 arc 5, part 3 — copy in eight languages
-  owner:  unclaimed
-  branch: none
+  owner:  claude-action
+  branch: curr/lc-curr-005c
   blocked-on: LC-CURR-005a
   why:    an arc's keys land with the arc, not in the translation lane's batches.
   done:   every key the arc uses present in the en base and in es pt fr it de ja ar,
           placeholders preserved, check:i18n at 100 %, no raw key on screen.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
+
+
 
 - [LC-CURR-005d] A1 arc 5, part 4 — prove it against the blueprint
   owner:  unclaimed
