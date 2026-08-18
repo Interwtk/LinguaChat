@@ -126,6 +126,7 @@ jobs:
           claude_args: |
             --model claude-sonnet-5
             --max-turns 100
+            --allowedTools Read,Write,Edit,Glob,Grep,Bash,TodoWrite
 
       - name: Nothing to do
         if: steps.queue.outputs.claimable != 'true'
