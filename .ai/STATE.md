@@ -4,14 +4,14 @@ Rewrite this file at the end of every task. It describes the repo, not intention
 If a number here disagrees with a command, the command is right and this file is
 stale — fix it.
 
-_Last verified: 2026-08-18 · commit `7d36a79` (main)_
+_Last verified: 2026-08-18 · commit `4df7d26` (main) · frontend checked out from `curr/lc-curr-005c` at `beb1d98`_
 
 ## Head
 
 | | |
 |---|---|
 | branch | `main` |
-| commit | `7d36a79` — test(curriculum): ask_price nonsense refused, never escalated |
+| commit | `4df7d26` — chore(ops): claim LC-CURR-005c |
 | remote | `github.com/Interwtk/LinguaChat` (public) |
 | sync | 0 / 0 |
 | untracked | `linguachat-backend.zip`, `linguachat-frontend.zip` — the owner's, leave alone |
@@ -21,8 +21,8 @@ _Last verified: 2026-08-18 · commit `7d36a79` (main)_
 - Vite + React 18, mobile-first, one responsive shell.
 - Visual architecture FROZEN. Nav is Hoy · Chats · Palabras · Tú.
 - `npm run check:all` -> 49 invocations, 49 green (count by exit code).
-- `npm run build` green. Entry chunk 423.2 kB (budget 500), 25 chunks.
-- i18n: 1501 keys, 100 % in es pt fr it de ja ar, plus the English base.
+- `npm run build` green. Entry chunk 436.69 kB (budget 500), 25 chunks.
+- i18n: 1579 keys, 100 % in es pt fr it de ja ar, plus the English base.
 
 ## Backend
 
@@ -39,7 +39,7 @@ _Last verified: 2026-08-18 · commit `7d36a79` (main)_
 | A1 arc 2 `daily_rhythm` (21-23) | ready |
 | A1 arc 3 `people_around_you` (24-26) | closed, incl. real chunk-failure recovery |
 | A1 arc 4 `finding_your_way` (27-29) | ready — verified green at this commit |
-| A1 arc 5 `paying_and_choosing` (30-33) | content + evaluation done (005a, 005b); needs 005c (copy) and 005d (its own check) before it counts as ready |
+| A1 arc 5 `paying_and_choosing` (30-33) | content + evaluation + copy done (005a, 005b, 005c); needs 005d (its own check) before it counts as ready |
 | A1 arcs 6-7 | designed only; must fail closed |
 
 A1 is `contentStatus: partial`, `available: false`. Learner model v7.

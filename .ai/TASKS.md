@@ -21,14 +21,6 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-CURR-005c] A1 arc 5, part 3 — copy in eight languages
-  owner:  claude-action
-  branch: curr/lc-curr-005c
-  blocked-on: LC-CURR-005a
-  why:    an arc's keys land with the arc, not in the translation lane's batches.
-  done:   every key the arc uses present in the en base and in es pt fr it de ja ar,
-          placeholders preserved, check:i18n at 100 %, no raw key on screen.
-
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
 
@@ -74,6 +66,10 @@ _(nothing is blocked)_
 
 ## DONE
 
+- [LC-CURR-005c] A1 arc 5 part 3 — copy in eight languages: 78 step-level
+  keys (episodes 30-33 scene/instruction/model/retry/praise prose plus two
+  new mini-story keys) in the English base and es/pt/fr/it/de/ja/ar,
+  check:i18n at 100 % — PR #14
 - [LC-CURR-005b] A1 arc 5 part 2 — backend ask_price evaluator (parity with the
   frontend), and a real fix: placeName/relationHint were dropped inside
   evaluateEpisodeResponse's own local re-evaluation, so ask_location (arc 4)
