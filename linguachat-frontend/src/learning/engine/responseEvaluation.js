@@ -1453,6 +1453,7 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'ask_location': return evaluateAskLocation(text, ctx)
     case 'state_location': return evaluateStateLocation(text, ctx)
     case 'ask_transport': return evaluateAskTransport(text, ctx)
+    case 'ask_price': return evaluateAskPrice(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }
@@ -1634,6 +1635,48 @@ export function evaluateAskTransport(text, { independent = false, placeName = ''
   /* the hybrid band: not recognised locally, not therefore wrong */
   return { ...r, errorType: 'no_transport_question', conclusive: false, confidence: 0.5,
     priorityCorrection: 'ep29RetryExplainGet', explanation: 'ep29RetryExplainGet', retryRequired: true, retryPrompt: 'ep29RetryPromptGet' }
+}
+
+/*
+ * --- A1 arc 5 - "What it costs" ----------------------------------------------
+ *
+ * `ask_price`, the arc's one new intent and `deterministic_local` in the
+ * blueprint: "How much is it?" / "How much are they?" is the whole frame, and
+ * no idiomatic variant needs a provider to judge. Written now because
+ * `check-curriculum-map` requires every intent an episode uses to have a real
+ * dispatched evaluator the moment it is used — LC-CURR-005b is the routing,
+ * provider-payload and backend-parity pass over this and the rest of the arc.
+ */
+const HOW_MUCH = /\bhow\s+much\s+(is|are)\b/
+
+export function evaluateAskPrice(text, { independent = false, placeName = '' } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  const what = String(placeName || '').trim() || 'it'
+  r.naturalVersion = 'How much is ' + what + '?'
+
+  if (!n) {
+    return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep31RetryPromptEmpty' }
+  }
+  /* the frame, singular or plural */
+  if (HOW_MUCH.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.95
+    r.praiseKey = r.masteryEvidence.independent ? 'ep31PraiseIndependent' : 'ep31PraiseAsked'
+    return r
+  }
+  /* a statement where a question was asked - the commonest first attempt */
+  if (ITS_FRAME.test(n)) {
+    return { ...r, errorType: 'answered_instead', confidence: 0.9,
+      priorityCorrection: 'ep31RetryExplainFrame', explanation: 'ep31RetryExplainFrame', retryRequired: true, retryPrompt: 'ep31RetryPromptFrame' }
+  }
+  /* "how much" without is/are - one word short of the capability */
+  if (/\bhow\s+much\b/.test(n)) {
+    return { ...r, errorType: 'missing_verb', confidence: 0.88,
+      priorityCorrection: 'ep31RetryExplainFrame', explanation: 'ep31RetryExplainFrame', retryRequired: true, retryPrompt: 'ep31RetryPromptFrame' }
+  }
+  return { ...r, errorType: 'no_question', confidence: 0.86,
+    priorityCorrection: 'ep31RetryExplainFrame', explanation: 'ep31RetryExplainFrame', retryRequired: true, retryPrompt: 'ep31RetryPromptFrame' }
 }
 
 // Whether the hybrid router should consider escalating this verdict to Lingua.
