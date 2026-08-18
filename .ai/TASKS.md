@@ -21,14 +21,6 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-CURR-005d] A1 arc 5, part 4 — prove it against the blueprint
-  owner:  claude-action
-  branch: curr/lc-curr-005d
-  blocked-on: LC-CURR-005a, LC-CURR-005b, LC-CURR-005c
-  why:    an arc without its own check is a claim, not a contract.
-  done:   check:a1-arc5 in the shape of check:a1-arc4, including that every modelled
-          answer passes its own evaluator; the arc-frontier lists moved by exactly
-          one; check:all green counted by exit code; two clean cycles.
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
@@ -64,6 +56,10 @@ _(nothing is blocked)_
 
 ## DONE
 
+- [LC-CURR-005d] A1 arc 5 proved against the blueprint — check:a1-arc5 (19 groups),
+  plus a browser walkthrough of all four episodes: happy path, a wrong answer and
+  its retry, the model taken and recorded as assistance, replay without a second
+  reward — PR #15
 - [LC-CURR-005c] A1 arc 5 part 3 — copy in eight languages: 78 step-level
   keys (episodes 30-33 scene/instruction/model/retry/praise prose plus two
   new mini-story keys) in the English base and es/pt/fr/it/de/ja/ar,

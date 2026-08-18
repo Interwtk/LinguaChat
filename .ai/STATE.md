@@ -96,6 +96,30 @@ opened for it; nothing pushed at all -> the claim is released on the spot. A dra
 therefore never freezes the queue, and the ceiling is back down to 150 because a run
 that hits it now leaves its work behind.
 
+### A1 arc 5 was played, not just tested
+
+`paying_and_choosing` (30-33) is merged and closed to learners. Beyond the suites, it
+was played in a real browser on a production build, through the audited
+`forLearner: false` door, at 390 px and 1440 px:
+
+| what | result |
+|---|---|
+| all four episodes, end to end | 75 / 75 / 75 / 85 XP; `use_bigger_numbers`, `ask_the_price` x2, `buy_something` |
+| the purchase story | ran with the shopkeeper's turns, including the `respond_anything_else` turn LC-CURR-005d added |
+| a wrong price question | refused with the frame correction, composer returns, retry accepted |
+| a corrected answer | NOT counted as independent evidence |
+| the model taken | `assist=1`, and that turn earns no independence |
+| replay of a finished episode | XP stayed 75, Garden stayed 4 items — no second reward |
+| both widths | no horizontal overflow, no raw i18n key on screen, no runtime exception |
+
+The QA entry that made this possible was temporary and is gone; nothing of it is
+tracked.
+
+One observation, not a defect and not new to this arc: typing a modelled answer by
+hand, without pressing the "Usar:" button, still counts as independent evidence.
+Independence is defined as "did not press the model and did not retry", which is the
+policy every arc has shipped with.
+
 ## Blockers
 
 _(none)_
