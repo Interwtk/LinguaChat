@@ -21,13 +21,9 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-_(none — the queue is open)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-CURR-005] Implement A1 arc 5 — paying_and_choosing
-  owner:  unclaimed
-  branch: none
+  owner:  claude-action
+  branch: curr/lc-curr-005
   why:    it is the next arc the blueprint allows; arcs 1-4 are done.
   done:   read the three curriculum documents in full FIRST. Author only arc 5:
           content module, its own lazy chunk, resolver entry, intents with local
@@ -35,6 +31,8 @@ _(none — the queue is open)_
           in all 8 languages, check:a1-arc5 proving the blueprint contract, the
           arc-frontier lists moved by exactly one, A1 still partial and closed,
           arc 6 still failing closed, two clean cycles.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-I18N-001] Audit the eight implemented languages (phase A)
   owner:  unclaimed
