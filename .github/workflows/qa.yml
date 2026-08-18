@@ -130,3 +130,33 @@ jobs:
           for f in CLAUDE.md .ai/STATE.md .ai/TASKS.md .ai/HANDOFF.md; do
             test -f "$f" || { echo "$f is missing — the agent contract is incomplete"; exit 1; }
           done
+
+  evidence:
+    name: evidence — the PR shows the QA it ran
+    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # A green suite proves the suite ran somewhere. It does not prove the author
+      # walked the flow they changed. This job enforces the one thing a machine can
+      # check about that: the pull request has to STATE its evidence, in numbers.
+      # A draft is exempt — a draft is an agent saying "I am not finished".
+      - name: The description must carry an Evidence section
+        env:
+          BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$BODY" > /tmp/body.md
+          if ! grep -qi '^##\s*Evidence' /tmp/body.md; then
+            echo "::error::This pull request has no '## Evidence' section. Put the QA you actually ran in the description — counts, not adjectives. See CLAUDE.md."
+            exit 1
+          fi
+          missing=""
+          grep -qi 'check:all' /tmp/body.md || missing="$missing check:all"
+          grep -qiE 'build' /tmp/body.md   || missing="$missing build"
+          grep -qiE 'pytest|compileall' /tmp/body.md || missing="$missing backend"
+          if [ -n "$missing" ]; then
+            echo "::error::The Evidence section does not mention:$missing"
+            exit 1
+          fi
+          echo "Evidence section present and mentions the suites." >> "$GITHUB_STEP_SUMMARY"
