@@ -1,0 +1,64 @@
+# STATE — where LinguaChat actually is
+
+Rewrite this file at the end of every task. It describes the repo, not intentions.
+If a number here disagrees with a command, the command is right and this file is
+stale — fix it.
+
+_Last verified: 2026-08-18 · commit `401113a` (main)_
+
+## Head
+
+| | |
+|---|---|
+| branch | `main` |
+| commit | `401113a` — test: prove A1 arc 4 against its blueprint |
+| remote | `github.com/Interwtk/LinguaChat` (public) |
+| sync | 0 / 0 |
+| untracked | `linguachat-backend.zip`, `linguachat-frontend.zip` — the owner's, leave alone |
+
+## Frontend
+
+- Vite + React 18, mobile-first, one responsive shell.
+- Visual architecture FROZEN. Nav is Hoy · Chats · Palabras · Tú.
+- `npm run check:all` -> 49 invocations, 49 green (count by exit code).
+- `npm run build` green. Entry chunk 418.3 kB (budget 500), 24 chunks.
+- i18n: 1485 keys, 100 % in es pt fr it de ja ar, plus the English base.
+
+## Backend
+
+- FastAPI, pedagogical evaluation only. `python -m compileall .` clean.
+- 431 pytest passing.
+- Provider defaults to `local`; a key alone does not enable OpenAI.
+
+## Curriculum
+
+| level | state |
+|---|---|
+| Pre-A1 | 17 episodes, FROZEN |
+| A1 arc 1 `work_and_study` (18-20) | ready |
+| A1 arc 2 `daily_rhythm` (21-23) | ready |
+| A1 arc 3 `people_around_you` (24-26) | closed, incl. real chunk-failure recovery |
+| A1 arc 4 `finding_your_way` (27-29) | ready — verified green at this commit |
+| A1 arc 5 `paying_and_choosing` | NEXT FRONTIER — nothing authored |
+| A1 arcs 6-7 | designed only; must fail closed |
+
+A1 is `contentStatus: partial`, `available: false`. Learner model v7.
+Journey Pre-A1 -> arc 4: 29 episodes, 25 can-dos, 97 garden items.
+
+## Known risks and debt
+
+1. 26 advertised languages have no locale file. `LANGUAGE_OPTIONS` offers 46
+   entries; 26 distinct base languages beyond the 8 implemented fall back to
+   English while looking supported. -> `LC-I18N-002`.
+2. Instructional prose sometimes reads `interface_language` where it should read
+   `native_language`. Historical debt; needs its own sprint. -> `LC-I18N-003`.
+3. Unaccented Spanish remains on the unauthenticated entry screen. -> `LC-I18N-004`.
+4. `linguachat-frontend-old/` still exists in the tree; unused, unbuilt.
+5. `linguachat-backend.zip` contains a real OpenAI key. Never commit it; the owner
+   may want to rotate that key.
+
+## Blockers
+
+- `CLAUDE_CODE_OAUTH_TOKEN` is NOT yet a repository secret, so the Claude
+  workflows cannot run. The owner must create it once — `.ai/HANDOFF.md` has the
+  exact command. Everything else is configured.

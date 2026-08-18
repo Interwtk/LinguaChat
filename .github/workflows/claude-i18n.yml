@@ -1,0 +1,126 @@
+# The translation lane, deliberately separate from the curriculum lane so the two
+# never collide in the same diff: hundreds of translated strings must not arrive
+# inside a curricular fix, and a curricular fix must not wait on a translation
+# review. Different day, different branch prefix, different task ids.
+name: Claude — translations
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: 'i18n task id (e.g. LC-I18N-001). Empty = first unclaimed LC-I18N-* task.'
+        required: false
+        type: string
+      languages:
+        description: 'Optional batch, comma separated (e.g. zh,ko). Small batches only.'
+        required: false
+        type: string
+  schedule:
+    # Thursdays, 09:00 UTC — three days away from the curriculum run.
+    - cron: '0 9 * * 4'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: claude-i18n
+  cancel-in-progress: false
+
+jobs:
+  translate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      LINGUACHAT_PROVIDER: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refuse clearly if the token is not configured
+        env:
+          TOKEN_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          if [ "$TOKEN_PRESENT" != "true" ]; then
+            echo "CLAUDE_CODE_OAUTH_TOKEN is not set. See .ai/HANDOFF.md."
+            exit 1
+          fi
+
+      - id: queue
+        name: Is an i18n task claimable?
+        run: |
+          if grep -A2 -E '^\s*- \[LC-I18N-[0-9]+\]' .ai/TASKS.md | grep -qE '^\s*owner:\s*unclaimed'; then
+            echo "claimable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "claimable=false" >> "$GITHUB_OUTPUT"
+            echo "No unclaimed LC-I18N task. Nothing to do."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.queue.outputs.claimable == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: linguachat-frontend/package-lock.json
+
+      - name: Install
+        if: steps.queue.outputs.claimable == 'true'
+        run: npm ci --prefix linguachat-frontend
+
+      - uses: anthropics/claude-code-action@v1
+        if: steps.queue.outputs.claimable == 'true'
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are LinguaChat's internationalisation operator.
+
+            READ FIRST and obey over this prompt: CLAUDE.md, .ai/TRANSLATIONS.md,
+            .ai/TASKS.md, .ai/STATE.md.
+
+            Requested task: "${{ inputs.task_id }}" (empty = the first unclaimed
+            LC-I18N-* task). Requested language batch: "${{ inputs.languages }}"
+            (empty = decide from the task, and keep the batch small).
+
+            THE THREE LANGUAGES ARE NOT INTERCHANGEABLE
+
+            interface_language is the chrome. native_language is for explanations.
+            target_language is what is being learned, and it is English today.
+            The case that must always work: interface es + native ja + target en.
+            NEVER translate the English the learner is practising. Explanations may
+            and should use the native language.
+
+            Arabic and other RTL languages: RTL chrome, LTR English target and
+            input, and Chatto is never mirrored.
+
+            HOW TO WORK
+
+            1. Claim the task in .ai/TASKS.md (owner `claude-i18n`, and the branch),
+               and use a branch named `i18n/<lowercase task id>`.
+            2. Do only this task. Do not touch curriculum content, runtime logic or
+               the frozen visual architecture. If a key is missing because an arc
+               needs it, that belongs to the arc's PR, not to yours.
+            3. Copy must read like real UI written in that language, not like a
+               translation of English. Keep placeholders byte-for-byte, keep
+               variables and function names, keep product names (LinguaChat, Lingua,
+               Chatto), and keep pedagogical English in English.
+            4. Never mark a language as supported when it only falls back to
+               English. If coverage is partial, say so where the user can see it.
+            5. QA: `cd linguachat-frontend && npm run check:i18n && npm run check:all
+               && npm run build`. Count check:all by exit code. Report the real
+               numbers — keys, per-language coverage, chunk sizes.
+            6. Open a PULL REQUEST on your branch. Never push to main. Then update
+               .ai/TRANSLATIONS.md with measured coverage, not intentions, and
+               .ai/HANDOFF.md with where you stopped.
+
+            Stop and open an issue instead of guessing if a language needs a product
+            decision (which variants to offer, how to label partial coverage), or if
+            adding a language would break a bundle budget without a justification.
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 100
+
+      - name: Nothing to do
+        if: steps.queue.outputs.claimable != 'true'
+        run: echo "No unclaimed i18n task — exiting without cost." >> "$GITHUB_STEP_SUMMARY"
