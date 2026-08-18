@@ -4,14 +4,14 @@ Rewrite this file at the end of every task. It describes the repo, not intention
 If a number here disagrees with a command, the command is right and this file is
 stale — fix it.
 
-_Last verified: 2026-08-18 · commit `401113a` (main)_
+_Last verified: 2026-08-18 · commit `0e5ce9f` (main)_
 
 ## Head
 
 | | |
 |---|---|
 | branch | `main` |
-| commit | `401113a` — test: prove A1 arc 4 against its blueprint |
+| commit | `0e5ce9f` — chore(ops): the contract, the queue and the CI |
 | remote | `github.com/Interwtk/LinguaChat` (public) |
 | sync | 0 / 0 |
 | untracked | `linguachat-backend.zip`, `linguachat-frontend.zip` — the owner's, leave alone |
@@ -57,8 +57,18 @@ Journey Pre-A1 -> arc 4: 29 episodes, 25 can-dos, 97 garden items.
 5. `linguachat-backend.zip` contains a real OpenAI key. Never commit it; the owner
    may want to rotate that key.
 
+## Automation
+
+- `qa.yml` runs on every push and pull request: frontend checks counted by exit
+  code, build, i18n table, backend compileall and pytest, five guards. Verified
+  green on PR #1 — 49/49 on the runner, 431 backend tests.
+- `claude-mention.yml` (@claude, collaborators only), `claude-task.yml` (one task,
+  one branch, one PR, weekly + dispatch), `claude-i18n.yml` (translation lane).
+  None triggers on `push`, so nothing can loop.
+
 ## Blockers
 
-- `CLAUDE_CODE_OAUTH_TOKEN` is NOT yet a repository secret, so the Claude
-  workflows cannot run. The owner must create it once — `.ai/HANDOFF.md` has the
-  exact command. Everything else is configured.
+- `CLAUDE_CODE_OAUTH_TOKEN` is NOT yet a repository secret, so the three Claude
+  workflows stop immediately with a clear message. The owner creates it once —
+  `.ai/HANDOFF.md` has the two commands. `qa.yml` needs no secret and already
+  works. Everything else is configured.

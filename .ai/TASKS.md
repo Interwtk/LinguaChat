@@ -21,11 +21,7 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-OPS-001] Land the autonomous-operations infrastructure
-  owner:  claude-code (local session)
-  branch: chore/autonomous-ops
-  why:    without CLAUDE.md, this queue and CI, every session restarts from zero.
-  done:   CLAUDE.md + .ai/* + CI + Claude workflows merged to main via PR, QA green.
+_(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
@@ -78,6 +74,7 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## DONE
 
+- [LC-OPS-001] Autonomous-operations infrastructure — PR #1, merged as `0e5ce9f`
 - [LC-CURR-004] A1 arc 4 finding_your_way (27-29) — 401113a
 - [LC-CURR-003] A1 arc 3 people_around_you (24-26), incl. browser chunk recovery
 - [LC-CURR-002] A1 arc 2 daily_rhythm (21-23)
