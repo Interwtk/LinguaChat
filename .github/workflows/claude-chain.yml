@@ -142,10 +142,18 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          RUNNING=$(gh run list --workflow=claude-task.yml --json status \
-                      --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length')
+          # BOTH lanes. Counting only claude-task made "one agent at a time" mean
+          # "one agent per lane": a translation agent alive would not have stopped a
+          # curriculum agent from starting, and the two would have raced on the queue.
+          RUNNING=0
+          for WF in claude-task.yml claude-i18n.yml; do
+            N=$(gh run list --workflow="$WF" --json status \
+                  --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length')
+            echo "$WF: $N alive"
+            RUNNING=$((RUNNING + N))
+          done
           echo "running=$RUNNING" >> "$GITHUB_OUTPUT"
-          [ "$RUNNING" = "0" ] || echo "A claude-task run is already alive — not dispatching another."
+          [ "$RUNNING" = "0" ] || echo "An agent is already alive — not dispatching another."
 
       # A run can die holding its claim — max turns, a cancelled job, a runner
       # fault — and the queue would then say "somebody is working" for ever, so

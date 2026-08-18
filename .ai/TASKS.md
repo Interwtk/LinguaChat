@@ -99,6 +99,8 @@ _(nothing is blocked)_
 
 ## DONE
 
+- [LC-OPS-006] Lane parity: the i18n lane accepts the input the chain sends,
+  and "one agent at a time" now counts both lanes
 - [LC-OPS-005] Allow the one bot, route i18n to its own lane, true up the queue
 - [LC-OPS-004] The chain heals a stale claim; max-turns 200 — PR #6
 - [LC-OPS-002] Claude workflows enabled — secret, id-token: write and the GitHub
