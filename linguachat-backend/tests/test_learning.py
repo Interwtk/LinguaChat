@@ -1582,6 +1582,65 @@ def test_the_transport_question_is_the_hybrid_one():
     assert _state_location("banana purple")["confidence"] > 0.5
 
 
+# ---------- A1 arc 5: paying and choosing ----------
+#
+# Parity with the frontend's `evaluateAskPrice` — the arc's one new intent,
+# `deterministic_local` in the blueprint. `use_bigger_numbers` reuses
+# `use_quantity` and `buy_something`'s headline evidence reuses
+# `cafe_order_conversation`; both already have backend evaluators, so `ask_price`
+# is the only new dispatch this arc needs.
+def _ask_price(text, place="it"):
+    return evaluate_deterministic(_payload(expected_intent="ask_price",
+                                           place_name=place, learner_response=text))
+
+
+@pytest.mark.parametrize("text", [
+    "How much is it?", "How much are they?", "how much is it",
+    "How much is it??", "How much are these?",
+])
+def test_a_price_question_is_accepted(text):
+    r = _ask_price(text)
+    assert r["completed_objective"] is True, text
+    assert r["retry_required"] is False
+
+
+def test_the_thing_the_turn_asked_about_travels_into_the_price_model_answer():
+    """The same field arc 4 carries as place_name, reused for what a price is about."""
+    assert _ask_price("hmm", place="the bag")["natural_version"] == "How much is the bag?"
+    assert _ask_price("hmm")["natural_version"] == "How much is it?"
+
+
+def test_answering_a_price_question_when_it_asked_for_one():
+    r = _ask_price("It's twelve dollars.")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "answered_instead"
+
+
+def test_how_much_without_is_or_are_is_named_precisely():
+    r = _ask_price("How much")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "missing_verb"
+
+
+@pytest.mark.parametrize("text", ["banana purple", "asdfgh", "12345"])
+def test_arc_5_refuses_nonsense(text):
+    r = _ask_price(text)
+    assert r["completed_objective"] is False, text
+    assert r["retry_required"] is True, text
+
+
+def test_arc_5_empty_reply_is_safe():
+    r = evaluate_deterministic(_payload(expected_intent="ask_price", learner_response=""))
+    assert r["completed_objective"] is False
+    assert r["understood"] is False
+    assert r["error_type"] == "empty"
+
+
+def test_ask_price_verdict_is_deterministic_in_source():
+    r = evaluate_deterministic(_payload(expected_intent="ask_price", learner_response="How much is it?"))
+    assert r["source"] == "deterministic"
+
+
 @pytest.mark.parametrize("text,intent", [
     ("This is Ana.", "introduce_person"),
     ("Ana.", "introduce_person"),
