@@ -41,6 +41,20 @@ Then dispatch `claude-task.yml` with `task_id: LC-CURR-005`, `dry_run: false`.
 Until then `qa.yml` works — it needs none of this — and the Claude workflows fail
 fast with a clear message instead of half-running.
 
+## The chain runs itself now
+
+You probably did not have to be dispatched by hand. `claude-chain.yml` merges an
+agent's pull request once QA is green and it carries an `## Evidence` section, then
+picks exactly ONE claimable task and starts it. `next-task.mjs` is the single
+parser of the queue: it refuses to name anything while a task sits in IN_PROGRESS,
+and it honours `blocked-on:`. When nothing is claimable the chain stops, and that
+is a normal ending.
+
+So: do your task, put the real QA numbers under `## Evidence`, update TASKS and
+HANDOFF in the same pull request, and the next task starts itself. If you run out
+of turns, stop early — push the branch, open a DRAFT pull request saying where you
+stopped, release your claim. A draft is never auto-merged, and the chain waits.
+
 ## Next task
 
 `LC-CURR-005` — A1 arc 5, `paying_and_choosing`. READ ALL THREE curriculum

@@ -125,6 +125,22 @@ jobs:
                  cd linguachat-backend  && python -m compileall . && python -m pytest -q
                If you fixed anything, run the whole thing twice and both must be
                green.
+            EVIDENCE IS PART OF THE WORK, NOT A FORMALITY
+
+            A green suite proves the suite ran, not that your change works. Exercise
+            what you touched: a runtime change means walking the affected flow; an
+            episode means the happy path AND a wrong answer with its retry AND
+            help/model marked assisted AND replay without a duplicate reward; UI or
+            i18n means a real browser at 390 px and 1440 px; an evaluator means the
+            local and backend verdicts agreeing case by case. Always check:all
+            (by exit code), build, compileall and pytest. After any fix, two clean
+            cycles in a row.
+
+            Put the numbers in the pull request under a `## Evidence` heading. CI
+            fails a non-draft pull request that has no such section, and the chain
+            refuses to merge it. If you could not run something on the runner, say
+            so plainly rather than implying you did.
+
             5. Review your own diff as a reviewer would: scope creep, duplication,
                dead code, a real provider call, a secret, A1 opened by accident,
                Supabase, eager loading, an i18n regression, a frozen-UI regression.

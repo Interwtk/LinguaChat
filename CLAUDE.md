@@ -102,6 +102,27 @@ Count `check:all` by **exit code**, never by grepping its output: two of its
 scripts print success in a different format, which is how a report once claimed 46
 invocations for a suite of 49.
 
+### Functional proof, per kind of change
+
+A suite going green proves the suite ran. It does not prove the thing you changed
+works. So every functional change carries proof of ITS OWN behaviour, and the pull
+request states it in numbers:
+
+| what you changed | what you must actually exercise |
+|---|---|
+| runtime or frontend logic | walk the affected flow end to end, in the app, and say what happened |
+| an episode | the happy path, **a wrong answer and its retry**, help/model marked assisted rather than independent, and replay adding evidence without duplicating XP or Garden |
+| UI or i18n | a real browser at **390 px and 1440 px**, light and dark, no raw keys on screen, no horizontal overflow |
+| backend or an evaluator | local and backend verdicts agreeing case by case, including what each must REFUSE |
+| anything at all | `check:all` counted by exit code, `build`, `compileall`, `pytest` |
+| anything you fixed | **two consecutive clean cycles**, and the count restarts at every later fix |
+
+A pull request that cannot show this is not finished, and the chain will not merge
+it: `qa.yml` fails a non-draft pull request whose description has no `## Evidence`
+section naming the suites it ran. If you genuinely could not run something — no
+browser on the runner, for instance — say so plainly in the pull request instead of
+implying you did.
+
 Green tests are not visual proof. When acceptance is visual, look at the rendered
 result: 390 px mobile, 1440 px desktop, no horizontal overflow, keyboard reachable,
 reduced motion respected, sane aria.

@@ -112,6 +112,7 @@ _(none — the queue is open)_
 
 ## DONE
 
+- [LC-OPS-003] Safe chaining: merge on green, verify, dispatch exactly one next task
 - [LC-OPS-001] Autonomous-operations infrastructure — PR #1, merged as `0e5ce9f`
 - [LC-CURR-004] A1 arc 4 finding_your_way (27-29) — 401113a
 - [LC-CURR-003] A1 arc 3 people_around_you (24-26), incl. browser chunk recovery
