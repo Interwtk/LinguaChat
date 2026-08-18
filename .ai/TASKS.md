@@ -21,18 +21,16 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
-
-
 - [LC-CURR-005d] A1 arc 5, part 4 — prove it against the blueprint
-  owner:  unclaimed
-  branch: none
+  owner:  claude-action
+  branch: curr/lc-curr-005d
   blocked-on: LC-CURR-005a, LC-CURR-005b, LC-CURR-005c
   why:    an arc without its own check is a claim, not a contract.
   done:   check:a1-arc5 in the shape of check:a1-arc4, including that every modelled
           answer passes its own evaluator; the arc-frontier lists moved by exactly
           one; check:all green counted by exit code; two clean cycles.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-I18N-001] Audit the eight implemented languages (phase A)
   owner:  unclaimed
