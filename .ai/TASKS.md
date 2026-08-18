@@ -21,20 +21,19 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
-
-
 - [LC-CURR-005b] A1 arc 5, part 2 — evaluation, local and backend
-  owner:  unclaimed
-  branch: none
+  owner:  claude-action
+  branch: curr/lc-curr-005b
   blocked-on: LC-CURR-005a
   why:    an intent without a local path makes the arc depend on a provider.
   done:   one local evaluator per new intent, routed; each step's own fields reach
           BOTH the local context and the provider payload; backend parity with
           matching verdicts and its own tests; nonsense refused everywhere;
           check:hybrid-evaluation and the backend suite green.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
+
+
 
 - [LC-CURR-005c] A1 arc 5, part 3 — copy in eight languages
   owner:  unclaimed
