@@ -76,9 +76,17 @@ const curriculumOnlyProse = (minLength = 14) => {
 
 /* ---- 1) the skeleton is the curriculum, not a second opinion about it ---- */
 {
-  const committed = readFileSync(SKELETON_PATH, 'utf8')
+  /*
+   * Compared with line endings normalised, because the question is whether the
+   * skeleton still describes the episodes — not which platform checked it out.
+   * Git hands a Windows working tree CRLF while the generator writes LF, so a
+   * clean clone failed here with a diff of 61 598 characters in which not one
+   * character was content.
+   */
+  const sameContent = (text) => text.replace(/\r\n/g, '\n')
+  const committed = sameContent(readFileSync(SKELETON_PATH, 'utf8'))
   execFileSync(process.execPath, ['scripts/build-curriculum-skeleton.mjs'], { stdio: 'pipe' })
-  const regenerated = readFileSync(SKELETON_PATH, 'utf8')
+  const regenerated = sameContent(readFileSync(SKELETON_PATH, 'utf8'))
   assert.equal(regenerated, committed,
     'the committed skeleton differs from the episodes — run `npm run build:skeleton` and commit the result')
 
