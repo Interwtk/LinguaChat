@@ -23,6 +23,12 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
+  # The action exchanges a short-lived GitHub OIDC token as part of authenticating,
+  # and a job cannot mint one without this. Without it the run reaches the action
+  # and dies at "Failed to get OIDC token" — which is what happened on run
+  # 32173192998. It grants the job the right to prove its own identity to GitHub;
+  # it does not widen access to the repository or to any secret.
+  id-token: write
 
 concurrency:
   group: claude-i18n
