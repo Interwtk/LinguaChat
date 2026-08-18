@@ -150,7 +150,7 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', signal, remote } = params
   const kind = step?.evalKind
   /*
    * Whether this counts as unaided production, used only to choose the wording
@@ -182,6 +182,18 @@ export async function evaluateEpisodeResponse(params) {
     ...(timeForm ? { timeForm } : {}),
     ...(usualTime ? { usualTime } : {}),
     ...(Number.isInteger(targetCount) ? { targetCount } : {}),
+    /*
+     * WHICH PLACE, and WHICH RELATION — arc 4's `ask_location`/`state_location` and
+     * arc 5's `ask_price` all shape their model answer from these. They already
+     * reached the provider payload (`buildRemotePayload` reads them off `params`
+     * directly); this function's OWN local re-evaluation did not, so the verdict it
+     * returns — the one actually shown, since both intents are deterministic_local
+     * and never escalate — fell back to "the toilet" / "it" / "here" regardless of
+     * the step's real place or relation. Same bug class as the repairKind/partner/
+     * timeForm gaps above; see check-memory-and-story.mjs for the story-path twin.
+     */
+    ...(placeName ? { placeName } : {}),
+    ...(relationHint ? { relationHint } : {}),
   })
 
   // Conclusive local verdict (closed step, clear accept, empty, clear failure).

@@ -254,6 +254,47 @@ async function main() {
     ok()
   }
 
+  /*
+   * 17) placeName / relationHint must reach the VERDICT this function returns, not
+   * just the caller's own preview. `ask_location` (arc 4) and `ask_price`
+   * (arc 5) are deterministic_local and never escalate, so the returned
+   * `naturalVersion` is always built from this function's OWN internal local
+   * re-evaluation — found lost the same way arc 2's timeForm and arc 3's partner
+   * were: `buildRemotePayload` already read `params.placeName` correctly, but the
+   * local re-evaluation above did not receive it at all.
+   */
+  {
+    const r1 = await evaluateEpisodeResponse({
+      step: { evalKind: 'ask_location', itemIds: [] }, learnerResponse: 'hmm',
+      learnerName: NAME, scaffoldLevel: 'medium', placeName: 'the station', remote: spy(null),
+    })
+    assert.equal(r1.naturalVersion, 'Where is the station?',
+      'ask_location lost placeName inside evaluateEpisodeResponse')
+
+    const r2 = await evaluateEpisodeResponse({
+      step: { evalKind: 'ask_price', itemIds: [] }, learnerResponse: 'hmm',
+      learnerName: NAME, scaffoldLevel: 'medium', placeName: 'the bag', remote: spy(null),
+    })
+    assert.equal(r2.naturalVersion, 'How much is the bag?',
+      'ask_price lost placeName inside evaluateEpisodeResponse')
+
+    const r3 = await evaluateEpisodeResponse({
+      step: { evalKind: 'state_location', itemIds: [] }, learnerResponse: 'hmm',
+      learnerName: NAME, scaffoldLevel: 'medium', relationHint: 'near', remote: spy(null),
+    })
+    assert.equal(r3.naturalVersion, "It's near the bag.",
+      'state_location lost relationHint inside evaluateEpisodeResponse')
+
+    // and both still reach the provider payload, unchanged
+    const remote = spy(null)
+    await evaluateEpisodeResponse({
+      step: { evalKind: 'ask_price', itemIds: [] }, learnerResponse: 'no idea',
+      learnerName: NAME, scaffoldLevel: 'medium', placeName: 'the bag', remote,
+    })
+    assert.equal(remote.calls, 0, 'ask_price is deterministic_local and must never escalate')
+    ok()
+  }
+
   console.log(`check-hybrid-evaluation — OK  (${n} routing groups verified)`)
 }
 
