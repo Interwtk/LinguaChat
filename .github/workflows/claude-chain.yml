@@ -147,6 +147,35 @@ jobs:
           echo "running=$RUNNING" >> "$GITHUB_OUTPUT"
           [ "$RUNNING" = "0" ] || echo "A claude-task run is already alive — not dispatching another."
 
+      # A run can die holding its claim — max turns, a cancelled job, a runner
+      # fault — and the queue would then say "somebody is working" for ever, so
+      # autonomy would last exactly until the first crash. A claim whose agent is
+      # not running and whose branch has no open pull request is stale.
+      - name: Release a claim whose agent is gone
+        if: steps.busy.outputs.running == '0'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          BRANCH=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
+                   grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
+          if [ -n "${BRANCH:-}" ] && [ "$BRANCH" != "none" ]; then
+            OPEN=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
+            if [ "$OPEN" != "0" ]; then
+              echo "$BRANCH still has an open pull request — the claim is live."
+              exit 0
+            fi
+          fi
+          RELEASED=$(node .github/scripts/release-stale-claim.mjs)
+          if [ -z "$RELEASED" ]; then echo "Nothing was claimed."; exit 0; fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .ai/TASKS.md
+          git commit -m "chore(ops): release the stale claim on $RELEASED, whose agent is gone"
+          git push origin main
+          echo "::warning::Released a stale claim on $RELEASED."
+          echo "Released the stale claim on **$RELEASED** — no agent was running and its branch had no open PR." >> "$GITHUB_STEP_SUMMARY"
+
       - name: Which task is next?
         id: next
         run: |
