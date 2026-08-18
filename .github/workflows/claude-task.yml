@@ -128,9 +128,16 @@ jobs:
             5. Review your own diff as a reviewer would: scope creep, duplication,
                dead code, a real provider call, a secret, A1 opened by accident,
                Supabase, eager loading, an i18n regression, a frozen-UI regression.
-            6. Commit on your branch and open a PULL REQUEST. Never push to main.
-               The PR body states what changed, the evidence (numbers from the QA
-               you actually ran), and what you deliberately did not do.
+            6. Commit on your branch and open a PULL REQUEST. The PR body states
+               what changed, the evidence (numbers from the QA you actually ran),
+               and what you deliberately did not do.
+
+               THE ONLY THING THAT GOES STRAIGHT TO MAIN is the claim in step 1 and
+               the handoff in step 7: coordination files under .ai/ and nothing else,
+               never a line of product code. A claim has to be visible to other
+               agents before you start, which a branch cannot do. FUNCTIONAL WORK
+               NEVER TOUCHES MAIN — it goes through the pull request that qa.yml
+               gates.
             7. Update .ai/STATE.md and .ai/HANDOFF.md so the next agent starts
                informed, and move the task to DONE only when the PR is open and
                green.
@@ -145,6 +152,12 @@ jobs:
             - Do not add, move, modify or delete the owner's untracked
               `linguachat-*.zip` archives.
             - One task per run. Do not start a second one.
+            - IF YOU ARE RUNNING OUT OF TURNS, STOP EARLY and leave the repository
+              usable: push what you have to your branch, open the pull request as a
+              draft that says exactly where you stopped, release your claim in
+              .ai/TASKS.md and write the state into .ai/HANDOFF.md. A run that ends
+              with an abandoned claim and nothing pushed costs money and blocks the
+              queue for everyone else — that is worse than stopping at half.
 
             WHEN TO STOP AND ASK, by opening an issue that explains the choice
             rather than guessing: an undocumented product decision, a missing
