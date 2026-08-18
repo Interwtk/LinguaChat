@@ -15,6 +15,14 @@ on:
         description: 'Optional batch, comma separated (e.g. zh,ko). Small batches only.'
         required: false
         type: string
+      # The chain sends `dry_run` to whichever lane it picks. A workflow that does
+      # not declare an input does not merely ignore it — the dispatch is rejected
+      # outright, so without this the whole i18n lane is unreachable from the chain.
+      dry_run:
+        description: 'Report what it would do, change nothing.'
+        required: false
+        default: false
+        type: boolean
   schedule:
     # Thursdays, 09:00 UTC — three days away from the curriculum run.
     - cron: '0 9 * * 4'
@@ -57,7 +65,13 @@ jobs:
       - id: queue
         name: Is an i18n task claimable?
         run: |
-          if grep -A2 -E '^\s*- \[LC-I18N-[0-9]+\]' .ai/TASKS.md | grep -qE '^\s*owner:\s*unclaimed'; then
+          # Somebody else's claim counts. This lane can also be started by its own
+          # Thursday schedule, with no chain in the loop to check whether an agent
+          # is already alive, so the one-agent rule has to hold here too.
+          if awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md | grep -qE '^\s*- \[LC-'; then
+            echo "claimable=false" >> "$GITHUB_OUTPUT"
+            echo "A task is already IN_PROGRESS. One agent at a time. Nothing to do."
+          elif grep -A2 -E '^\s*- \[LC-I18N-[0-9]+\]' .ai/TASKS.md | grep -qE '^\s*owner:\s*unclaimed'; then
             echo "claimable=true" >> "$GITHUB_OUTPUT"
           else
             echo "claimable=false" >> "$GITHUB_OUTPUT"
@@ -88,6 +102,8 @@ jobs:
             Requested task: "${{ inputs.task_id }}" (empty = the first unclaimed
             LC-I18N-* task). Requested language batch: "${{ inputs.languages }}"
             (empty = decide from the task, and keep the batch small).
+            Dry run: "${{ inputs.dry_run }}" (true means change nothing; write your
+            findings on the run summary and stop).
 
             THE THREE LANGUAGES ARE NOT INTERCHANGEABLE
 
