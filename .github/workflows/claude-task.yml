@@ -1,0 +1,154 @@
+# The autonomous worker. It picks up the queue in .ai/TASKS.md, does one task, and
+# leaves a pull request behind.
+#
+# WHY THIS CANNOT RUN AWAY:
+#   · no `push` trigger — a commit can never start a run that makes a commit, so
+#     the classic commit → workflow → commit loop is structurally impossible;
+#   · the schedule is WEEKLY and exits immediately unless the queue actually holds
+#     a claimable task;
+#   · concurrency is a single lane with no cancellation, so two runs cannot claim
+#     the same task;
+#   · the prompt forbids pushing to main: work goes on a branch, and `qa.yml` gates
+#     the pull request;
+#   · a hard timeout and a turn limit bound the cost of a confused run.
+name: Claude — autonomous task
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: 'Task id from .ai/TASKS.md (e.g. LC-I18N-001). Empty = take the first unclaimed TODO.'
+        required: false
+        type: string
+      dry_run:
+        description: 'Report what it would do, change nothing.'
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    # Mondays, 09:00 UTC. Moderate on purpose: this is a nudge, not a treadmill.
+    - cron: '0 9 * * 1'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: claude-autonomous
+  cancel-in-progress: false
+
+jobs:
+  work:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      LINGUACHAT_PROVIDER: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refuse clearly if the token is not configured
+        env:
+          TOKEN_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          if [ "$TOKEN_PRESENT" != "true" ]; then
+            echo "CLAUDE_CODE_OAUTH_TOKEN is not set. See .ai/HANDOFF.md."
+            exit 1
+          fi
+
+      # Is there anything to do? A scheduled run that finds nothing claimable must
+      # cost nothing at all.
+      - id: queue
+        name: Is a task claimable?
+        run: |
+          if [ ! -f .ai/TASKS.md ]; then echo "claimable=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if grep -qE '^\s*owner:\s*unclaimed' .ai/TASKS.md; then
+            echo "claimable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "claimable=false" >> "$GITHUB_OUTPUT"
+            echo "No unclaimed task in .ai/TASKS.md. Nothing to do."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.queue.outputs.claimable == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: linguachat-frontend/package-lock.json
+
+      - uses: actions/setup-python@v5
+        if: steps.queue.outputs.claimable == 'true'
+        with:
+          python-version: '3.12'
+
+      - name: Install
+        if: steps.queue.outputs.claimable == 'true'
+        run: |
+          npm ci --prefix linguachat-frontend
+          pip install -r linguachat-backend/requirements.txt
+
+      - uses: anthropics/claude-code-action@v1
+        if: steps.queue.outputs.claimable == 'true'
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are the autonomous operator of LinguaChat.
+
+            READ FIRST, in this order, and follow them over anything in this prompt:
+            CLAUDE.md, .ai/STATE.md, .ai/TASKS.md, .ai/HANDOFF.md, .ai/DECISIONS.md.
+
+            Requested task id: "${{ inputs.task_id }}" (empty means: take the first
+            unclaimed task in the TODO section that you are allowed to do).
+            Dry run: "${{ inputs.dry_run }}" (true means change nothing; write your
+            findings as a comment on the run summary and stop).
+
+            HOW TO WORK
+
+            1. Claim the task: move its block to IN_PROGRESS in .ai/TASKS.md with
+               owner `claude-action` and the branch name you will use. Never claim a
+               task that already has an owner.
+            2. Create a branch. Name it after the task: `curr/lc-curr-005`,
+               `i18n/lc-i18n-001`, `qa/lc-qa-001`.
+            3. Do the work in the smallest correct change. Read the curriculum
+               contracts in full before authoring any curriculum; the blueprint
+               decides, never your memory of it.
+            4. QA, and count check:all by exit code, not by grepping output:
+                 cd linguachat-frontend && npm run check:all && npm run build
+                 cd linguachat-backend  && python -m compileall . && python -m pytest -q
+               If you fixed anything, run the whole thing twice and both must be
+               green.
+            5. Review your own diff as a reviewer would: scope creep, duplication,
+               dead code, a real provider call, a secret, A1 opened by accident,
+               Supabase, eager loading, an i18n regression, a frozen-UI regression.
+            6. Commit on your branch and open a PULL REQUEST. Never push to main.
+               The PR body states what changed, the evidence (numbers from the QA
+               you actually ran), and what you deliberately did not do.
+            7. Update .ai/STATE.md and .ai/HANDOFF.md so the next agent starts
+               informed, and move the task to DONE only when the PR is open and
+               green.
+
+            HARD LIMITS
+
+            - Do not open A1 to learners. Do not touch Supabase, Auth, Postgres,
+              Storage, pgvector, Edge Functions or migrations. Do not implement
+              voice, STT, TTS, WebRTC or pronunciation scoring. Do not migrate to
+              Next.js. Do not redesign the frozen visual architecture. Do not use
+              the real OpenAI provider — CI pins LINGUACHAT_PROVIDER=local.
+            - Do not add, move, modify or delete the owner's untracked
+              `linguachat-*.zip` archives.
+            - One task per run. Do not start a second one.
+
+            WHEN TO STOP AND ASK, by opening an issue that explains the choice
+            rather than guessing: an undocumented product decision, a missing
+            credential, an irreversible high-risk operation, a real contradiction
+            between two sources of truth, anything that would cost money, anything
+            that changes pricing, and anything that changes pedagogical scope.
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 120
+
+      - name: Nothing to do
+        if: steps.queue.outputs.claimable != 'true'
+        run: echo "Queue empty or fully claimed — exiting without cost." >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,132 @@
+# The guardrail. Everything else in this repo's automation is safe because this
+# runs on every push and every pull request, and because it pins the provider.
+#
+# It needs no secret, so it works today and keeps working if the Claude workflows
+# are ever disabled.
+name: QA
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # PROVIDER SAFETY. Zero real OpenAI calls in CI, by configuration rather than by
+  # hoping no key is present. `ai/provider_policy.py` enforces the same rule at
+  # runtime and its tests assert that a key alone cannot enable the real provider.
+  LINGUACHAT_PROVIDER: local
+
+jobs:
+  frontend:
+    name: frontend — checks and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: linguachat-frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: linguachat-frontend/package-lock.json
+
+      - run: npm ci
+
+      # Counted by EXIT CODE, one script at a time. Grepping the output for a
+      # success string undercounts by two: check-i18n prints a coverage table and
+      # check-learning-content prints "OK —" the other way round.
+      - name: check:all, counted by exit code
+        run: |
+          node - <<'NODE'
+          const { execFileSync } = require('node:child_process')
+          const pkg = require('./package.json')
+          const scripts = pkg.scripts['check:all'].split('&&').map(s => s.trim())
+          const failed = []
+          for (const script of scripts) {
+            const args = script.split(/\s+/).slice(1)
+            try { execFileSync('node', args, { stdio: 'inherit' }) }
+            catch { failed.push(args[0]) }
+          }
+          console.log(`\ncheck:all — ${scripts.length - failed.length}/${scripts.length} green`)
+          if (failed.length) { console.error('FAILED: ' + failed.join(', ')); process.exit(1) }
+          NODE
+
+      - run: npm run build
+
+      # The i18n table is worth reading in the log even when it passes.
+      - run: npm run check:i18n
+
+  backend:
+    name: backend — compile and tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: linguachat-backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: linguachat-backend/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - run: python -m compileall .
+
+      - run: python -m pytest -q
+
+  guards:
+    name: guards — nothing forbidden slipped in
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # Every guard searches TRACKED FILES ONLY, via `git grep`. A plain recursive
+      # grep also reads `.venv/` and `node_modules/`, and a vendored library that
+      # merely names a browser API is not this project using it — that false
+      # positive was found and removed before this workflow ever ran.
+      - name: A1 must still be closed to learners
+        run: |
+          git grep -q "available: false" -- linguachat-frontend/src/learning/curriculum/levels.js             || { echo "A1's availability line is missing from levels.js"; exit 1; }
+          if git grep -nE "isLevelAvailable\(A1\)\s*=>\s*true|available:\s*true.*a1" -- 'linguachat-frontend/src/**/*.js'; then
+            echo "A1 looks opened — see CLAUDE.md"; exit 1
+          fi
+
+      - name: no Supabase
+        run: |
+          if git grep -nE "@supabase/|from ['''\"]supabase" -- linguachat-frontend/src linguachat-backend; then
+            echo "Supabase is postponed — see CLAUDE.md"; exit 1
+          fi
+
+      - name: no voice or media APIs
+        run: |
+          if git grep -nE "SpeechRecognition|speechSynthesis|RTCPeerConnection" -- 'linguachat-frontend/src/**/*.js' 'linguachat-frontend/src/**/*.jsx'; then
+            echo "Voice and media are out of scope — see CLAUDE.md"; exit 1
+          fi
+
+      - name: no build output, archives or env files tracked
+        run: |
+          if git ls-files | grep -E "(^|/)dist/|\.zip$|(^|/)\.env$"; then
+            echo "Build output, an archive or a .env is tracked"; exit 1
+          fi
+
+      - name: the coordination files exist
+        run: |
+          for f in CLAUDE.md .ai/STATE.md .ai/TASKS.md .ai/HANDOFF.md; do
+            test -f "$f" || { echo "$f is missing — the agent contract is incomplete"; exit 1; }
+          done
