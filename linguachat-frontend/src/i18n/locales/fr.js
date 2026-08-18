@@ -1740,6 +1740,7 @@ export default {
   ep33CompOptWrong1: "Si tu as de la monnaie.",
   ep33CompOptWrong2: "Si tu es pressé.",
   ep33OpenInstruction: "Demande-le poliment — tu sais déjà comment.",
+  ep33AnythingInstruction: "Le vendeur te demande si tu veux autre chose. Réponds-lui.",
   ep33StoryInstruction: "L’achat entier, du début à la fin. Va jusqu’au bout.",
   ep33CloseInstruction: "Termine comme tu sais déjà le faire.",
   ep33FinalInstruction: "Toute la scène, de mémoire. Rien à l’écran.",

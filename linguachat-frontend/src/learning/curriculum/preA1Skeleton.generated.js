@@ -3330,6 +3330,13 @@ export const EPISODE_SKELETON = [
         ]
       },
       {
+        "type": "free_reply",
+        "evalKind": "respond_anything_else",
+        "itemIds": [
+          "thats_all"
+        ]
+      },
+      {
         "type": "mini_story",
         "storyObjective": "cafe_order_conversation",
         "turns": [

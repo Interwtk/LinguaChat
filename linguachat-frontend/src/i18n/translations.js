@@ -1785,6 +1785,7 @@ const base = {
   ep33CompOptWrong1: "If you have change.",
   ep33CompOptWrong2: "If you are in a hurry.",
   ep33OpenInstruction: "Ask for it politely — you already know how.",
+  ep33AnythingInstruction: "The shopkeeper asks if you want anything more. Answer them.",
   ep33StoryInstruction: "The whole purchase, start to finish. See it through.",
   ep33CloseInstruction: "Close it the way you already know how.",
   ep33FinalInstruction: "The whole shape, from memory. Nothing on screen.",

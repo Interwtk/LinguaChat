@@ -313,6 +313,14 @@ const PAY_04 = {
     { type: 'free_reply', speaker: 'lingua', promptEn: 'You are at the counter. Ask for a ticket.', instructionKey: 'ep33OpenInstruction',
       evalKind: 'cafe_order_conversation', suggestionEn: 'Can I have a ticket, please?', itemIds: ['can_i_have', 'ticket'] },
     /*
+     * REUSE: the shopkeeper's own move, unplanned — the same phrase the
+     * comprehension step above just taught the learner to recognise. The
+     * blueprint lists `respond_anything_else` as this episode's integrated
+     * reuse, and this is the turn that exercises it.
+     */
+    { type: 'free_reply', speaker: 'lingua', promptEn: 'The shopkeeper asks, "Anything else today?" What do you say?', instructionKey: 'ep33AnythingInstruction',
+      evalKind: 'respond_anything_else', suggestionEn: 'No, thank you.', itemIds: ['thats_all'] },
+    /*
      * THE STORY. The blueprint asks for it by name: "a hosted story at a
      * counter: the whole purchase, start to finish."
      */

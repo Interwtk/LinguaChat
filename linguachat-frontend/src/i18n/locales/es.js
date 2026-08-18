@@ -1740,6 +1740,7 @@ export default {
   ep33CompOptWrong1: "Si tienes cambio.",
   ep33CompOptWrong2: "Si tienes prisa.",
   ep33OpenInstruction: "Pídelo con cortesía: ya sabes cómo.",
+  ep33AnythingInstruction: "El vendedor te pregunta si quieres algo más. Respóndele.",
   ep33StoryInstruction: "La compra entera, de principio a fin. Llévala hasta el final.",
   ep33CloseInstruction: "Ciérrala como ya sabes hacerlo.",
   ep33FinalInstruction: "Toda la forma, de memoria. Nada en pantalla.",

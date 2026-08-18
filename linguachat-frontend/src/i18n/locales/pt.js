@@ -1740,6 +1740,7 @@ export default {
   ep33CompOptWrong1: "Se você tem troco.",
   ep33CompOptWrong2: "Se você está com pressa.",
   ep33OpenInstruction: "Peça com educação — você já sabe como.",
+  ep33AnythingInstruction: "O vendedor pergunta se você quer mais alguma coisa. Responda.",
   ep33StoryInstruction: "A compra inteira, do início ao fim. Vá até o final.",
   ep33CloseInstruction: "Encerre do jeito que você já sabe.",
   ep33FinalInstruction: "Toda a forma, de memória. Nada na tela.",
