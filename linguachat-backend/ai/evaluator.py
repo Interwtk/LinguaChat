@@ -759,6 +759,35 @@ def _ask_transport(text: str, place: str = "") -> dict:
                  natural_version=natural, confidence=0.5)
 
 
+# ─── A1 arc 5 — "What it costs" ─────────────────────────────────────────────
+#
+# `ask_price` is the arc's one new intent, `deterministic_local` in the blueprint:
+# "How much is it? / How much are they?" is the whole frame. Parity with the
+# frontend's `evaluateAskPrice`, reusing `_ITS_FRAME` from arc 4 for the same
+# "answered instead of asking" mistake.
+_HOW_MUCH = re.compile(r"\bhow\s+much\s+(is|are)\b")
+
+
+def _ask_price(text: str, place: str = "") -> dict:
+    what = (place or "").strip() or "it"
+    natural = f"How much is {what}?"
+    n = normalize(text)
+    if not n:
+        return _base(understood=False, error_type="empty", retry_required=True,
+                     natural_version=natural, confidence=0.95)
+    if _HOW_MUCH.search(n):
+        return _base(completed_objective=True, natural_version=natural,
+                     accepted_variant=False, confidence=0.95)
+    if _ITS_FRAME.search(n):
+        return _base(error_type="answered_instead", retry_required=True,
+                     natural_version=natural, confidence=0.9)
+    if "how much" in n:
+        return _base(error_type="missing_verb", retry_required=True,
+                     natural_version=natural, confidence=0.88)
+    return _base(error_type="no_question", retry_required=True,
+                 natural_version=natural, confidence=0.86)
+
+
 def _close_encounter(text: str) -> dict:
     natural = "Bye."
     n = normalize(text)
@@ -1009,6 +1038,9 @@ def evaluate_deterministic(payload: dict) -> dict:
         return _state_location(text, payload.get("relation_hint") or "")
     if kind == "ask_transport":
         return _ask_transport(text, payload.get("place_name") or "")
+    # arc 5 — the thing asked about is a task property, exactly like arc 4's place
+    if kind == "ask_price":
+        return _ask_price(text, payload.get("place_name") or "")
     # sixth arc — the thing and the shape of the quantity travel with the turn,
     # for the same reason the repair strategy does: without them the verdict is
     # about a different question.
