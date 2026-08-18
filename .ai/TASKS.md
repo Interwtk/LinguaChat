@@ -21,19 +21,6 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-CURR-005a] A1 arc 5, part 1 — contract, content module and resolver
-  owner:  claude-action
-  branch: curr/lc-curr-005a
-  why:    arc 5 is the next arc the blueprint allows, and it does not fit in one
-          run: attempt 32174953879 spent 121 turns and 11.39 USD and produced
-          nothing, because the whole arc was asked for at once.
-  done:   read a1-blueprint.json, a1-authoring-contract.md and a1-map.md IN FULL.
-          State the arc's contract in the PR description first (episodes,
-          capabilities and their scopes, intents, semantic types, facts, vocabulary
-          budgets, patterns, XP, story, exclusions). Then author the episode module
-          + its content module + the resolver entry + the regenerated skeleton. No
-          evaluators yet. check:curriculum-authoring and check:a1-blueprint green,
-          A1 still partial and closed, arc 6 still failing closed.
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
@@ -98,6 +85,8 @@ _(nothing is blocked)_
 
 ## DONE
 
+- [LC-CURR-005a] A1 arc 5 part 1 — content, resolver, skeleton and the
+  ask_price frame check — PR #11
 - [LC-OPS-007] A run that dies leaves its work behind: push early, draft PR
   enforced by the workflow, a draft never freezes a claim, ceiling back to 150
 - [LC-OPS-006] Lane parity: the i18n lane accepts the input the chain sends,
