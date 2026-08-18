@@ -95,24 +95,14 @@ _(none — the queue is open)_
 
 ## BLOCKED
 
-- [LC-OPS-002] Enable the Claude workflows
-  owner:  human (repository owner)
-  branch: none
-  blocked-on: the Claude Code GitHub App is not installed on this repository.
-          The secret exists and works, and OIDC now works — run 32174029231 got
-          "OIDC token successfully obtained" and then died on
-          "App token exchange failed: 401 - Claude Code is not installed on this
-          repository". Installing a GitHub App is an authorisation grant made in
-          GitHub's own UI; an agent cannot perform it.
-  done:   install github.com/apps/claude on Interwtk/LinguaChat (or run
-          /install-github-app inside Claude Code), then dispatch claude-task.yml
-          with task_id LC-CURR-005 and watch it open a PR.
-
-  history: 2026-08-18 secret created by the owner — that half is done.
-           2026-08-18 id-token: write added (PR #2, c8a4c0b) — OIDC works.
+_(nothing is blocked)_
 
 ## DONE
 
+- [LC-OPS-005] Allow the one bot, route i18n to its own lane, true up the queue
+- [LC-OPS-004] The chain heals a stale claim; max-turns 200 — PR #6
+- [LC-OPS-002] Claude workflows enabled — secret, id-token: write and the GitHub
+  App are all in place; OIDC and the app-token exchange both work
 - [LC-OPS-003] Safe chaining: merge on green, verify, dispatch exactly one next task
 - [LC-OPS-001] Autonomous-operations infrastructure — PR #1, merged as `0e5ce9f`
 - [LC-CURR-004] A1 arc 4 finding_your_way (27-29) — 401113a

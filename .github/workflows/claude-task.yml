@@ -180,6 +180,12 @@ jobs:
             credential, an irreversible high-risk operation, a real contradiction
             between two sources of truth, anything that would cost money, anything
             that changes pricing, and anything that changes pedagogical scope.
+          # A chained run is started by github-actions[bot], and the action refuses a
+          # non-human initiator unless it is named — run 32181656533 died on exactly
+          # that: "Workflow initiated by non-human actor: github-actions (type: Bot)".
+          # ONE bot, by name. Never '*': that would let any bot with write access to
+          # this repository start an agent holding the token.
+          allowed_bots: github-actions
           claude_args: |
             --model claude-sonnet-5
             --max-turns 200

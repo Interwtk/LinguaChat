@@ -17,29 +17,12 @@ system), a CI workflow that runs the whole QA suite on every push and PR with th
 provider pinned to `local`, and two Claude workflows written from the current
 official documentation of `anthropics/claude-code-action@v1`.
 
-## What has to happen first — one manual action, by the owner
+## Nothing is waiting on a human
 
-The Claude workflows need three things. Two are done:
-
-1. the repository secret `CLAUDE_CODE_OAUTH_TOKEN` — created by the owner, and the
-   guard step confirms it is present;
-2. `id-token: write` on the Claude jobs — added in `c8a4c0b`; the run now reports
-   "OIDC token successfully obtained".
-
-The third is missing and only the owner can supply it:
-
-3. **the Claude Code GitHub App, installed on this repository.** The action swaps
-   its OIDC token with that app, and without the installation the exchange returns
-   `401 - Claude Code is not installed on this repository`. Installing an App is an
-   authorisation grant made in GitHub's own UI, so no agent can do it:
-
-       https://github.com/apps/claude        (install on Interwtk/LinguaChat)
-       /install-github-app                   (the same thing, from Claude Code)
-
-Then dispatch `claude-task.yml` with `task_id: LC-CURR-005`, `dry_run: false`.
-
-Until then `qa.yml` works — it needs none of this — and the Claude workflows fail
-fast with a clear message instead of half-running.
+All three prerequisites are in place and proven in live runs: the secret exists,
+`id-token: write` is granted, and the Claude GitHub App is installed — OIDC and the
+app-token exchange both succeed. Chained runs are accepted because both agent
+workflows name `allowed_bots: github-actions`.
 
 ## The chain runs itself now
 

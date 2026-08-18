@@ -183,14 +183,22 @@ jobs:
           echo "id=$NEXT" >> "$GITHUB_OUTPUT"
           node .github/scripts/next-task.mjs --explain 2>&1 | tail -20 >> "$GITHUB_STEP_SUMMARY" || true
 
-      - name: Start it
+      # Which lane owns this task? Translations and curriculum are separate tracks
+      # on purpose, and the chain has to respect that or an i18n batch lands inside
+      # a curricular pull request. The id says which lane it belongs to.
+      - name: Start it, in the right lane
         if: steps.next.outputs.id != '' && steps.busy.outputs.running == '0'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TASK_ID: ${{ steps.next.outputs.id }}
         run: |
-          gh workflow run claude-task.yml --ref main \
-            -f task_id="${{ steps.next.outputs.id }}" -f dry_run=false
-          echo "Dispatched **${{ steps.next.outputs.id }}**." >> "$GITHUB_STEP_SUMMARY"
+          set -euo pipefail
+          case "$TASK_ID" in
+            LC-I18N-*) WORKFLOW=claude-i18n.yml ;;
+            *)         WORKFLOW=claude-task.yml ;;
+          esac
+          gh workflow run "$WORKFLOW" --ref main -f task_id="$TASK_ID" -f dry_run=false
+          echo "Dispatched **$TASK_ID** to $WORKFLOW." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Stop cleanly
         if: steps.next.outputs.id == ''
