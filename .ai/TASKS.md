@@ -21,9 +21,13 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
+_(none — the queue is open)_
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
+
 - [LC-CURR-005a] A1 arc 5, part 1 — contract, content module and resolver
-  owner:  claude-action
-  branch: curr/lc-curr-005a
+  owner:  unclaimed
+  branch: none
   why:    arc 5 is the next arc the blueprint allows, and it does not fit in one
           run: attempt 32174953879 spent 121 turns and 11.39 USD and produced
           nothing, because the whole arc was asked for at once.
@@ -35,7 +39,6 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
           evaluators yet. check:curriculum-authoring and check:a1-blueprint green,
           A1 still partial and closed, arc 6 still failing closed.
 
-## TODO — ordered; take the first unclaimed one you are allowed to do
 
 
 - [LC-CURR-005b] A1 arc 5, part 2 — evaluation, local and backend
