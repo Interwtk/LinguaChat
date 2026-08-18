@@ -1740,6 +1740,7 @@ export default {
   ep33CompOptWrong1: "Se hai il resto.",
   ep33CompOptWrong2: "Se hai fretta.",
   ep33OpenInstruction: "Chiedilo con cortesia — sai già come.",
+  ep33AnythingInstruction: "Il negoziante ti chiede se vuoi qualcos’altro. Rispondigli.",
   ep33StoryInstruction: "L’intero acquisto, dall’inizio alla fine. Portalo a termine.",
   ep33CloseInstruction: "Chiudilo come sai già fare.",
   ep33FinalInstruction: "Tutta la scena, a memoria. Niente sullo schermo.",

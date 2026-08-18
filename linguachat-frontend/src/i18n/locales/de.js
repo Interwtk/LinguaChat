@@ -1740,6 +1740,7 @@ export default {
   ep33CompOptWrong1: "Ob du Wechselgeld hast.",
   ep33CompOptWrong2: "Ob du es eilig hast.",
   ep33OpenInstruction: "Frag höflich danach — du weißt schon wie.",
+  ep33AnythingInstruction: "Der Verkäufer fragt, ob du noch etwas möchtest. Antworte ihm.",
   ep33StoryInstruction: "Der ganze Kauf, von Anfang bis Ende. Bring ihn zu Ende.",
   ep33CloseInstruction: "Schließ ihn so ab, wie du es schon kannst.",
   ep33FinalInstruction: "Die ganze Form, aus dem Kopf. Nichts auf dem Bildschirm.",

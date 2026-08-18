@@ -1740,6 +1740,7 @@ export default {
   ep33CompOptWrong1: "إن كان معك باقي المبلغ.",
   ep33CompOptWrong2: "إن كنت مستعجلًا.",
   ep33OpenInstruction: "اطلبه بأدب — تعرف بالفعل كيف.",
+  ep33AnythingInstruction: "يسألك البائع إن كنت تريد شيئًا آخر. أجبه.",
   ep33StoryInstruction: "عملية الشراء كاملة، من البداية إلى النهاية. أكملها حتى النهاية.",
   ep33CloseInstruction: "أنهِها بالطريقة التي تعرفها بالفعل.",
   ep33FinalInstruction: "الشكل كله، من الذاكرة. لا شيء على الشاشة.",

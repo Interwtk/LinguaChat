@@ -1740,6 +1740,7 @@ export default {
   ep33CompOptWrong1: "おつりを持っているか。",
   ep33CompOptWrong2: "急いでいるか。",
   ep33OpenInstruction: "丁寧に頼もう——もうやり方は知っている。",
+  ep33AnythingInstruction: "店員はほかに何かほしいか聞いている。答えよう。",
   ep33StoryInstruction: "買い物全体、最初から最後まで。最後までやり切ろう。",
   ep33CloseInstruction: "もう知っているやり方で締めくくろう。",
   ep33FinalInstruction: "全体を、覚えているとおりに。画面には何もない。",
