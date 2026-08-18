@@ -62,6 +62,11 @@ const MODEL_ANSWER = {
   ask_location: () => 'Where is the toilet?',
   state_location: () => "It's next to the bag.",
   ask_transport: () => 'How do I get to the station?',
+  /*
+   * A1 arc 5. The price question, unaided — a block carrying this objective
+   * asked the arc's own question, never the transport one it sits beside.
+   */
+  ask_price: () => 'How much is it?',
 
   introduction: (v) => `Hi, I'm ${v.name}.`,
   ask_name: () => "What's your name?",
@@ -141,6 +146,8 @@ const PROMPT = {
   ask_location: () => 'You are in a museum and you need the toilet. Ask me.',
   state_location: () => 'Your book is at the side of my bag. Where is it?',
   ask_transport: () => 'You want to go to the station. Ask me.',
+  /* arc 5: a thing to want, and a price to catch */
+  ask_price: () => 'You want to buy this ticket. Ask me.',
 
   introduction: () => 'Hi there!',
   ask_name: () => "I'm ready when you are.",

@@ -325,6 +325,37 @@ export const SEED_VOCAB = [
     meaning: { en: 'the way out', es: 'la salida', pt: 'a saída', fr: 'la sortie', it: 'l’uscita', de: 'der Ausgang', ja: '出口', ar: 'المخرج' } },
   { id: 'platform', term: 'platform', kind: 'word', emoji: 'p', example: 'Platform two.',
     meaning: { en: 'where you wait for the train', es: 'el andén', pt: 'a plataforma', fr: 'le quai', it: 'il binario', de: 'das Gleis', ja: 'ホーム', ar: 'الرصيف' } },
+
+  /*
+   * ─── A1 arc 5 — "What it costs" (`paying_and_choosing`, episodes 30–33) ───
+   *
+   * Nine productive entries and one receptive, close to the blueprint's budget
+   * of ten and eight: three patterns carry almost the whole arc, and the number
+   * extension is ONE item, exactly as `numbers_1_10` already is — the arc's own
+   * risk note is explicit that the numbers "arrive as prices rather than as
+   * counting", so there is no card for "eleven", "twelve", "thirteen"…
+   */
+  { id: 'numbers_11_100', term: 'eleven … one hundred', kind: 'pattern', emoji: '99', example: 'It’s fifteen.',
+    meaning: { en: 'the numbers eleven to one hundred', es: 'los números del once al cien', pt: 'os números de onze a cem', fr: 'les nombres de onze à cent', it: 'i numeri da undici a cento', de: 'die Zahlen elf bis hundert', ja: '１１から１００の数', ar: 'الأرقام من أحد عشر إلى مئة' } },
+  { id: 'how_much_pattern', term: 'How much is it? / How much are they?', kind: 'pattern', emoji: '$', example: 'How much is it?',
+    meaning: { en: 'asking the price', es: '¿Cuánto cuesta?', pt: 'Quanto custa?', fr: 'Combien ça coûte ?', it: 'Quanto costa?', de: 'Wie viel kostet das?', ja: 'いくらですか。', ar: 'كم سعره؟' } },
+  { id: 'price_pattern', term: 'It’s + number (+ neutral unit)', kind: 'pattern', emoji: '=', example: 'It’s twelve dollars.',
+    meaning: { en: 'stating a price', es: 'decir un precio', pt: 'dizer um preço', fr: 'dire un prix', it: 'dire un prezzo', de: 'einen Preis nennen', ja: '値段を言う', ar: 'ذكر السعر' } },
+  { id: 'this_one', term: 'this one', kind: 'phrase', emoji: '1', example: 'This one, please.',
+    meaning: { en: 'pointing at the one close to you', es: 'este / esta', pt: 'este / esta', fr: 'celui-ci / celle-ci', it: 'questo / questa', de: 'dieses hier', ja: 'これ', ar: 'هذا / هذه' } },
+  { id: 'that_one', term: 'that one', kind: 'phrase', emoji: '2', example: 'Not that one.',
+    meaning: { en: 'pointing at the other one', es: 'ese / esa', pt: 'esse / essa', fr: 'celui-là / celle-là', it: 'quello / quella', de: 'jenes dort', ja: 'それ', ar: 'ذلك / تلك' } },
+  { id: 'ticket', term: 'ticket', kind: 'word', emoji: 'T', example: 'Can I have a ticket, please?',
+    meaning: { en: 'what you buy to travel or enter', es: 'el billete / boleto', pt: 'o bilhete', fr: 'le billet', it: 'il biglietto', de: 'die Fahrkarte', ja: 'チケット', ar: 'التذكرة' } },
+  { id: 'dollars', term: 'dollars', kind: 'word', emoji: '$', example: 'It’s twelve dollars.',
+    meaning: { en: 'a neutral way to say a price out loud', es: 'dólares', pt: 'dólares', fr: 'dollars', it: 'dollari', de: 'Dollar', ja: 'ドル', ar: 'دولارات' } },
+
+  /*
+   * Receptive: the one unplanned thing a shopkeeper offers. Understood, never
+   * asked for — the learner is never required to buy or name it.
+   */
+  { id: 'banana', term: 'banana', kind: 'word', emoji: 'b', example: 'We also have a banana today.',
+    meaning: { en: 'a soft yellow fruit', es: 'un plátano', pt: 'uma banana', fr: 'une banane', it: 'una banana', de: 'eine Banane', ja: 'バナナ', ar: 'موزة' } },
 ]
 
 export const SEED_VOCAB_BY_ID = Object.fromEntries(SEED_VOCAB.map(item => [item.id, item]))

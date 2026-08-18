@@ -2984,6 +2984,406 @@ export const EPISODE_SKELETON = [
         "type": "completion"
       }
     ]
+  },
+  {
+    "id": "more_than_ten",
+    "level": "A1",
+    "arc": "paying_and_choosing",
+    "titleKey": "ep30Title",
+    "goalKey": "ep30Goal",
+    "canDoId": "use_bigger_numbers",
+    "canDoNameKey": "ep30CanDoName",
+    "durationKey": "ep30Duration",
+    "estimatedMinutes": 9,
+    "xp": 75,
+    "prerequisites": [
+      "how_do_i_get_there"
+    ],
+    "gardenItems": [
+      "numbers_11_100"
+    ],
+    "skillPrerequisites": [
+      "use_small_numbers"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "use_quantity"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "use_quantity",
+        "itemIds": [
+          "numbers_1_10"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "numbers_11_100"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "numbers_11_100"
+      },
+      {
+        "type": "choice",
+        "itemId": "numbers_11_100"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "numbers_11_100"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "use_quantity",
+        "itemIds": [
+          "numbers_11_100"
+        ],
+        "quantityForm": "bare"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_request",
+        "itemIds": [
+          "can_you_repeat"
+        ],
+        "repairKind": "repeat"
+      },
+      {
+        "type": "choice",
+        "itemId": "time_at_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "use_quantity",
+        "itemIds": [
+          "numbers_11_100"
+        ],
+        "quantityForm": "bare"
+      },
+      {
+        "type": "recall",
+        "evalKind": "use_quantity",
+        "itemIds": [
+          "numbers_11_100"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "how_much_is_it",
+    "level": "A1",
+    "arc": "paying_and_choosing",
+    "titleKey": "ep31Title",
+    "goalKey": "ep31Goal",
+    "canDoId": "ask_the_price",
+    "canDoNameKey": "ep31CanDoName",
+    "durationKey": "ep31Duration",
+    "estimatedMinutes": 9,
+    "xp": 75,
+    "prerequisites": [
+      "more_than_ten"
+    ],
+    "gardenItems": [
+      "how_much_pattern",
+      "ticket"
+    ],
+    "skillPrerequisites": [
+      "polite_request",
+      "use_bigger_numbers"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "polite_request",
+      "use_quantity"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "use_quantity",
+        "itemIds": [
+          "numbers_11_100"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "how_much_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "dollars"
+      },
+      {
+        "type": "word_order",
+        "itemId": "how_much_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "how_much_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_price",
+        "itemIds": [
+          "how_much_pattern",
+          "ticket"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "polite_request",
+        "itemIds": [
+          "can_i_have",
+          "ticket"
+        ]
+      },
+      {
+        "type": "choice",
+        "itemId": "numbers_11_100"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_price",
+        "itemIds": [
+          "how_much_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "ask_price",
+        "itemIds": [
+          "how_much_pattern",
+          "ticket"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "this_one_or_that_one",
+    "level": "A1",
+    "arc": "paying_and_choosing",
+    "titleKey": "ep32Title",
+    "goalKey": "ep32Goal",
+    "canDoId": "ask_the_price",
+    "canDoNameKey": "ep32CanDoName",
+    "durationKey": "ep32Duration",
+    "estimatedMinutes": 9,
+    "xp": 75,
+    "prerequisites": [
+      "how_much_is_it"
+    ],
+    "gardenItems": [
+      "price_pattern",
+      "this_one",
+      "that_one"
+    ],
+    "skillPrerequisites": [
+      "ask_the_price",
+      "use_small_numbers"
+    ],
+    "role": "reinforcement",
+    "reuseSkills": [
+      "use_quantity",
+      "express_preference"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "ask_price",
+        "itemIds": [
+          "how_much_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "this_one",
+          "that_one"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "price_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "this_one"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "that_one"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "use_quantity",
+        "itemIds": [
+          "this_one",
+          "quantity_pattern"
+        ],
+        "quantityForm": "bare"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "express_like",
+        "itemIds": [
+          "i_like"
+        ]
+      },
+      {
+        "type": "choice",
+        "itemId": "banana"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_price",
+        "itemIds": [
+          "that_one",
+          "how_much_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "ask_price",
+        "itemIds": [
+          "how_much_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "buying_it",
+    "level": "A1",
+    "arc": "paying_and_choosing",
+    "titleKey": "ep33Title",
+    "goalKey": "ep33Goal",
+    "canDoId": "buy_something",
+    "canDoNameKey": "ep33CanDoName",
+    "durationKey": "ep33Duration",
+    "estimatedMinutes": 10,
+    "xp": 85,
+    "prerequisites": [
+      "this_one_or_that_one"
+    ],
+    "gardenItems": [
+      "dollars"
+    ],
+    "skillPrerequisites": [
+      "ask_the_price",
+      "cafe_order",
+      "use_small_numbers"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "ask_price",
+      "cafe_order_conversation",
+      "polite_request",
+      "respond_anything_else",
+      "close_encounter"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "ask_price",
+        "itemIds": [
+          "how_much_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "comprehension",
+        "itemId": "thats_all"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "cafe_order_conversation",
+        "itemIds": [
+          "can_i_have",
+          "ticket"
+        ]
+      },
+      {
+        "type": "mini_story",
+        "storyObjective": "cafe_order_conversation",
+        "turns": [
+          {
+            "kind": "scene"
+          },
+          {
+            "kind": "reply",
+            "evalKind": "cafe_order_conversation",
+            "itemIds": [
+              "can_i_have",
+              "ticket"
+            ]
+          },
+          {
+            "kind": "line"
+          },
+          {
+            "kind": "choose"
+          },
+          {
+            "kind": "line"
+          },
+          {
+            "kind": "reply",
+            "evalKind": "finish_order",
+            "itemIds": [
+              "thats_all"
+            ]
+          },
+          {
+            "kind": "close"
+          }
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "close_encounter",
+        "itemIds": [
+          "thank_you",
+          "bye"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "cafe_order_conversation",
+        "itemIds": [
+          "can_i_have"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
   }
 ]
 

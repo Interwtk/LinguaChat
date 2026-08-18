@@ -279,6 +279,48 @@ const STORIES = {
       { kind: 'close', textEn: 'Good luck!', noteKey: 'storyNoteClose' },
     ],
   },
+  /*
+   * A1 arc 5. `buy_something`'s headline evidence intent, reused from Pre-A1
+   * rather than invented — the blueprint's own words for the capability: "It
+   * reuses the café shape Pre-A1 already owns and adds the money the café never
+   * mentioned." The money enters as the shopkeeper's own line; the learner is
+   * never asked to state a price, only to ask for the thing and close the sale,
+   * exactly as episode 33's evidence target reads: "a purchase held unaided from
+   * greeting to goodbye."
+   *
+   * `home: 'episode'`, like `ask_transport` before it: this story belongs to
+   * episode 33 and must never also be offered as a loose daily-session block —
+   * `OBJECTIVE_FORMATS['cafe_order_conversation']` stays without `mini_story` for
+   * exactly that reason.
+   */
+  cafe_order_conversation: {
+    storyId: 'buying_a_ticket',
+    objective: 'cafe_order_conversation',
+    home: 'episode',
+    turns: [
+      { kind: 'scene', textEn: 'You are at the counter with {partner}. It is your turn to order.', noteKey: 'storyNoteScene' },
+      { kind: 'reply', evalKind: 'cafe_order_conversation', instructionKey: 'storyReplyOrder', suggestionEn: 'Can I have a ticket, please?', itemIds: ['can_i_have', 'ticket'] },
+      { kind: 'line', speaker: 'partner', textEn: 'Sure — it’s fifteen dollars. Anything else?' },
+      {
+        kind: 'choose',
+        promptKey: 'storyChooseReply',
+        options: [
+          { branch: 'accept', textEn: 'Yes, please.' },
+          { branch: 'decline', textEn: 'No, thank you.' },
+        ],
+      },
+      {
+        kind: 'line',
+        speaker: 'partner',
+        byBranch: {
+          accept: 'Of course. Anything else?',
+          decline: 'No problem. Here you are.',
+        },
+      },
+      { kind: 'reply', evalKind: 'finish_order', instructionKey: 'storyReplyFinish', suggestionEn: 'That’s all, thanks.', itemIds: ['thats_all'] },
+      { kind: 'close', textEn: 'Thank you — safe travels!', noteKey: 'storyNoteClose' },
+    ],
+  },
 }
 
 export const STORY_OBJECTIVES = Object.keys(STORIES)

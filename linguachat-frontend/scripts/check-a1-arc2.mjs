@@ -185,7 +185,8 @@ const AT = new Date('2026-08-12T09:00:00Z').getTime()
   const futureCanDos = BLUEPRINT.episodes
     .filter(ep => !A1_RUNTIME_ARCS.includes(ep.arc))
     .map(ep => ep.canDo)
-  assert.ok(futureCanDos.length >= 8, 'there should be plenty of unbuilt design left')
+  /* five episodes across arcs 6-7 remain unbuilt; the number shrinks by exactly as many as each arc sprint builds */
+  assert.ok(futureCanDos.length >= 5, 'there should be plenty of unbuilt design left')
   for (const canDo of new Set(futureCanDos)) {
     assert.ok(!A1_CAN_DO_INTENT[canDo], `${canDo} is registered before its arc exists`)
   }
