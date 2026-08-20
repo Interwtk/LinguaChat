@@ -21,23 +21,13 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-I18N-003] Make `user_language` the one real auxiliary-language preference
-  owner:  claude-i18n
-  branch: i18n/lc-i18n-003
-  why:    legacy native/interface storage and APIs can still diverge even though the product has one user language.
-  done:   migrate/reconcile persisted mismatches deterministically; supported product
-          APIs cannot independently change interface/native; meanings use
-          user_language then English fallback; es/ja/ar reload tests prove UI,
-          explanations, corrections and meanings stay together; Arabic auxiliary
-          UI is RTL and target English/input remains LTR; no target-English copy is
-          translated and no stored progress is lost.
+_(nothing is in progress)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-I18N-004] Localize visible auxiliary copy and add plural-aware count rendering
   owner:  unclaimed
   branch: none
-  blocked-on: LC-I18N-003
   why:    welcome, placement and LanguageIdentity still bypass i18n; fixed `{count}` templates cannot be correct in all locales.
   done:   welcome has no Spanish assumption; placement instructions/explanations and
           profile mood/relationship/progress/style literals use user_language;
@@ -61,7 +51,6 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 - [LC-I18N-002] Stop advertising languages that only fall back to English (phase B)
   owner:  unclaimed
   branch: none
-  blocked-on: LC-I18N-003
   why:    the visible picker has 46 rows / 34 base languages while only 8 base auxiliary locales are implemented.
   done:   derive picker/support metadata from one source of truth; the 26 currently
           unimplemented bases are honestly unavailable, partial/coming-soon, or
@@ -117,6 +106,13 @@ _(nothing is manually blocked; dependencies above control order)_
 
 ## DONE
 
+- [LC-I18N-003] One canonical `user_language` — PR #19: `services/language.js` has
+  a single storage writer so native/interface can no longer diverge through a
+  supported API; `ensureLanguagePreferences()` reconciles any pre-existing
+  mismatch deterministically on every load; meaning fallback simplified to
+  `user_language -> English`; new `check-user-language` regression (9 groups,
+  wired into `check:all`); es/ja legacy-mismatch + Arabic RTL proved in a real
+  browser at 390px/1440px; backend audited and needed no change
 - [LC-I18N-001] Eight-language phase-A audit — evidence in `.ai/TRANSLATIONS.md`:
   structural parity is real but hardcoded placement/profile/welcome copy,
   user_language divergence, plural gaps, support-honesty drift and RTL/fallback

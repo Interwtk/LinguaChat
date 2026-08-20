@@ -352,6 +352,73 @@ product” goal and must remain visible:
 
 ---
 
+# LC-I18N-003 — one canonical `user_language`, 2026-08-20
+
+Closes the architecture defect A1 (and simplifies A2) from the phase-A audit:
+`services/language.js` used to have three writers (`writeLanguage('native', …)`,
+`setInterfaceLanguage`) that could leave native and interface storage pointing at
+two different languages. It now has exactly one writer, `writeUserLanguage()`,
+called by the one exported setter (`setNativeLanguage`, aliased in `AppContext` as
+`updateNativeLanguage`). There is no `setInterfaceLanguage` export and no
+`updateInterfaceLanguage` context API left to call independently.
+
+`ensureLanguagePreferences()` rewrites both native and interface storage from the
+one resolved language **every load**, not only when nothing was stored — this is
+what deterministically reconciles a legacy or hand-edited mismatch (e.g.
+`native=ja` / `interface=es`, the exact state LC-I18N-001 flagged) instead of
+preserving it.
+
+`localizedMeaning.js`'s `getLocalizedMeaning()` and `learningContent.js`'s
+`getLocalizedVocab()` dropped their second `interfaceLanguage` argument: the
+fallback chain is now `user_language full code -> user_language base -> English`,
+matching the corrected product contract. The three call sites that used to pass
+both (`TodayView`, `MemoryGarden`, `EpisodeShell`) now pass one.
+
+Backend was audited, not changed: `ai/openai_tutor.py`, `ai/local_engine.py` and
+`ai/evaluator.py` only ever read `native_language` for explanations/corrections;
+`interface_language` is accepted by the schema but was never consumed to produce
+divergent auxiliary-language behaviour, so no backend fix was required for this
+task.
+
+## Measured evidence
+
+- `npm run check:i18n` — 1580/1580 keys, 100% parity across es/pt/fr/it/de/ja/ar;
+  unaffected by this change (no locale-dictionary edits).
+- New `npm run check:user-language` (`scripts/check-user-language.mjs`, wired into
+  `check:all`) — 9 groups: no independent interface-only setter exported; es/ja/ar
+  each survive a simulated reload with native/interface still equal; a seeded
+  legacy `native=ja` / `interface=es` mismatch collapses to one language
+  (`ja`/`ja`) and the interface storage key itself is rewritten, not merely
+  shadowed; target language stays English regardless of `user_language`;
+  `getLocalizedMeaning` falls back to English, never to a third language.
+- `npm run check:all` — 52/52 scripts, exit code 0, two consecutive clean cycles.
+- `npm run build` — exit code 0 both cycles; entry bundle 436.66 kB (<500 kB budget
+  unchanged); `check-bundle-boundaries` OK.
+- Backend: `python -m compileall .` clean and `python -m pytest -q` 444 passed,
+  both cycles — unchanged, confirming the backend truly needed no edit.
+- Real browser proof (Playwright/Chromium against the Vite dev server) at **390px
+  and 1440px**: seeded legacy `native=ja`/`interface=es` localStorage and reloaded
+  — the app converged to `native=ja, interface=ja`
+  (`document.documentElement.lang="ja"`), all auxiliary copy rendered in Japanese.
+  Set Arabic through the one supported path and reloaded —
+  `document.documentElement.dir="rtl"`, layout mirrored correctly at both widths,
+  no horizontal overflow, the target-English phrase (`"Can I have water?"`) stayed
+  LTR/untranslated, Chatto was not mirrored, and `console --errors` was empty at
+  both viewports.
+- The pre-existing hardcoded-English welcome bubble (LC-I18N-001 finding A3) is
+  still visibly present and unchanged — confirmed out of scope for this task and
+  left for LC-I18N-004, not silently fixed or silently left undocumented.
+
+## What is still open after this task
+
+A1 (native/interface divergence) and the two-language meaning fallback half of A2
+are closed. Still open, unchanged by this task and tracked by their own ids:
+welcome/placement/profile hardcodes (LC-I18N-004), placement/curriculum truth
+(LC-PROD-001), picker/support honesty (LC-I18N-002), plural-aware count rendering
+(LC-I18N-004), and a real i18n linter (LC-QA-001).
+
+---
+
 ## How to add a language, per batch
 
 Small batches. A language is “supported” only after the product can honestly provide

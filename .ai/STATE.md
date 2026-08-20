@@ -4,7 +4,8 @@ Rewrite this file at the end of every task. It describes measured reality, not
 intentions. Live GitHub evidence wins over prose.
 
 _Last product-content baseline: A1 arc 5 on main. LC-OPS-009 cloud automation is
-merged and LC-I18N-001 is complete in its audit PR._
+merged, LC-I18N-001 audited the language architecture, and LC-I18N-003 (canonical
+`user_language`) is complete in PR #19._
 
 ## Product / repository
 
@@ -19,16 +20,26 @@ merged and LC-I18N-001 is complete in its audit PR._
 
 LC-OPS-009 final evidence established:
 
-- `check:all` **51/51**;
 - `check:cloud-automation` **12/12 groups**;
-- production build green, entry **436.85 kB** (<500 kB);
 - i18n structural parity **1580/1580** for es/pt/fr/it/de/ja/ar;
-- backend compileall clean;
-- **444 pytest passed**;
 - draft→ready live QA event proved on PR #17.
 
-LC-I18N-001 is documentation/coordination only; its PR must still pass the current
-full QA gate before merge.
+LC-I18N-001 is documentation/coordination only; its PR still passed the full QA
+gate before merge.
+
+LC-I18N-003 (PR #19) re-measured the full gate after collapsing native/interface
+into one canonical `user_language`:
+
+- `check:all` **52/52** (51 existing + new `check-user-language`, 9 groups), exit
+  code 0, two consecutive clean cycles;
+- production build green, entry **436.66 kB** (<500 kB), both cycles;
+- backend `compileall` clean and **444 pytest passed**, both cycles (backend
+  untouched — audited and confirmed it never consumed `interface_language`
+  divergently);
+- real browser proof at 390px/1440px: a seeded legacy `native=ja`/`interface=es`
+  mismatch reconciled to `ja`/`ja` on reload, and Arabic rendered
+  `document.documentElement.dir="rtl"` with no console errors or overflow at
+  either width.
 
 ## Curriculum truth
 
@@ -62,10 +73,13 @@ proved that structural parity is not product completeness.
 
 ### Confirmed cross-language defects
 
-1. Legacy native/interface storage and APIs can still diverge; existing mismatches
-   are preserved instead of migrated to one `user_language`.
-2. Meanings still use `native -> interface -> English` fallback rather than one
-   user language -> English.
+1. ~~Legacy native/interface storage and APIs can still diverge~~ — **fixed by
+   LC-I18N-003**: `services/language.js` has one storage writer, no independent
+   interface-only setter is exported, and any pre-existing mismatch is
+   deterministically reconciled to one value on every load.
+2. ~~Meanings still use `native -> interface -> English` fallback~~ — **fixed by
+   LC-I18N-003**: `getLocalizedMeaning`/`getLocalizedVocab` now resolve
+   `user_language -> English` only.
 3. The Lingua welcome message is hardcoded English and tells everyone they may ask
    for a word “in Spanish”.
 4. Placement A1–C2 instructions/explanations are hardcoded Spanish and bypass i18n.
@@ -86,7 +100,7 @@ Full evidence and per-language findings are in `.ai/TRANSLATIONS.md` under
 
 ## Ordered quality queue after the audit
 
-1. `LC-I18N-003` — canonical user_language + safe legacy migration.
+1. ~~`LC-I18N-003` — canonical user_language + safe legacy migration.~~ **Done, PR #19.**
 2. `LC-I18N-004` — localize welcome/placement/profile hardcodes + plural-aware counts.
 3. `LC-PROD-001` — make placement/profile/planner truthful about available curricula.
 4. `LC-I18N-002` — make the language picker/support claims honest.
