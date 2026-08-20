@@ -53,8 +53,6 @@ if ! grep -qi '^##[[:space:]]*Evidence' /tmp/agent-pr-body.md; then
   exit 0
 fi
 
-# Queue-backed agent tasks must land their final coordination atomically with the
-# functional change. This removes the old post-merge bookkeeping seam entirely.
 case "$BRANCH" in
   curr/*|i18n/*|qa/*|ops/*)
     CHANGED=$(gh pr view "$NUMBER" --json files --jq '.files[].path')
@@ -68,7 +66,6 @@ case "$BRANCH" in
       exit 0
     fi
 
-    # Derive LC-CURR-005a / LC-I18N-001 / etc. from the conventional branch slug.
     slug="${BRANCH#*/}"
     IFS='-' read -r p1 p2 p3 _rest <<< "$slug"
     TASK_ID="${p1^^}-${p2^^}-${p3}"
@@ -83,8 +80,14 @@ case "$BRANCH" in
     ;;
 esac
 
-# Rebase merge keeps main linear. Expected QA/evidence checks above are the gate.
-gh pr merge "$NUMBER" --rebase --delete-branch
+# A conflict or transient merge refusal is recoverable work, not a reason for the
+# orchestrator job itself to go red and stop healing.
+if ! gh pr merge "$NUMBER" --rebase --delete-branch; then
+  echo "PR #$NUMBER could not be merged; watchdog will return it to resumable work."
+  out reason merge-failed
+  exit 0
+fi
+
 out merged true
 out reason merged
 echo "Merged PR #$NUMBER ($BRANCH)."
