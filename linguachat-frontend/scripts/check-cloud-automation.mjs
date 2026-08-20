@@ -5,7 +5,6 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const here = fileURLToPath(new URL('.', import.meta.url))
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const read = rel => readFileSync(join(root, rel), 'utf8')
 
@@ -74,12 +73,14 @@ assert.match(chain, /release-stale-claim\.mjs/)
 assert.match(chain, /continue this branch|safe resume|same task can resume/i)
 ok()
 
-// 9. The corrected language rule is what autonomous prompts carry.
+// 9. The corrected language rule is what autonomous prompts carry. Reject the old
+// POSITIVE contract, not text that explicitly says the old combination is forbidden.
+const oldPositiveMixedRule = /(?:case|requirement)\s+that\s+must\s+always\s+work[^\n]*(?:interface[^\n]*es[^\n]*native[^\n]*ja|native[^\n]*ja[^\n]*interface[^\n]*es)/i
 for (const [name, text] of [['task', task], ['i18n', i18n]]) {
   assert.match(text, /user_language/)
   assert.match(text, /same user choice|same language/i)
-  assert.doesNotMatch(text, /interface es \+ native ja|interface=es\/native=ja/,
-    `${name} still requires mixed interface/native languages`)
+  assert.doesNotMatch(text, oldPositiveMixedRule,
+    `${name} still positively requires independent interface/native languages`)
   assert.match(text, /target language.*English|English is the target/i)
 }
 ok()
