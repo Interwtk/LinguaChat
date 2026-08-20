@@ -102,7 +102,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
   // deterministic roleplay partner — stable per learner, reproducible on reload
   const partner = useMemo(() => partnerFor(profile.name || 'guest'), [profile.name])
   const nativeLang = nativeLanguageInfo.base
-  const meaningOf = (id) => getLocalizedMeaning(SEED_VOCAB_BY_ID[id]?.meaning, nativeLanguageInfo, interfaceLanguageInfo)
+  const meaningOf = (id) => getLocalizedMeaning(SEED_VOCAB_BY_ID[id]?.meaning, nativeLanguageInfo)
 
   /*
    * A run the planner opened to see whether the learner can hold the

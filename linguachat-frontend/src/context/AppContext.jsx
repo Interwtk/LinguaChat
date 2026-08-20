@@ -2,7 +2,6 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo, u
 import { sendChatMessage } from '../services/api'
 import {
   ensureLanguagePreferences,
-  setInterfaceLanguage as persistInterfaceLanguage,
   setNativeLanguage as persistNativeLanguage,
 } from '../services/language'
 import {
@@ -258,21 +257,18 @@ export function AppProvider({ children }) {
   )
   const interfaceReady = isLocaleReady(interfaceLanguage)
 
+  /*
+   * The one language updater. `persistNativeLanguage` writes both the native and
+   * interface storage together (see services/language.js), so there is no
+   * separate `updateInterfaceLanguage`: a supported product API cannot move
+   * interface and native apart because there is only ever one value to set.
+   */
   const updateNativeLanguage = useCallback((language) => {
-    const native = persistNativeLanguage(language)
-    const nextInterface = persistInterfaceLanguage(native)
+    const userLanguage = persistNativeLanguage(language)
     setLanguagePreferences(previous => ({
       ...previous,
-      nativeLanguage: native,
-      interfaceLanguage: nextInterface,
-    }))
-  }, [])
-
-  const updateInterfaceLanguage = useCallback((language) => {
-    const nextInterface = persistInterfaceLanguage(language)
-    setLanguagePreferences(previous => ({
-      ...previous,
-      interfaceLanguage: nextInterface,
+      nativeLanguage: userLanguage,
+      interfaceLanguage: userLanguage,
     }))
   }, [])
 
@@ -1018,7 +1014,6 @@ export function AppProvider({ children }) {
       targetLanguage,
       setNativeLanguage: updateNativeLanguage,
       updateNativeLanguage,
-      updateInterfaceLanguage,
       t,
       authUser,
       loginMock, signupMock,

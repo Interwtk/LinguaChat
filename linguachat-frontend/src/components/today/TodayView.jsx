@@ -388,7 +388,7 @@ export function TodayView({ onOpenPath }) {
               “{phrase.phrase}”
             </p>
             <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5, marginTop: 6 }}>
-              {getLocalizedMeaning(phrase.meaning, nativeLanguageInfo, interfaceLanguageInfo)}
+              {getLocalizedMeaning(phrase.meaning, nativeLanguageInfo)}
             </p>
           </SmallWindow>
         </div>

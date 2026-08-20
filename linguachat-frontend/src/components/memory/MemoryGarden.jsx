@@ -45,10 +45,10 @@ function groupColor(group) {
 const groupProgress = (group) => (group === GROUPS.CanUse ? 1 : group === GROUPS.Practicing ? 0.6 : 0.25)
 
 export function MemoryGarden() {
-  const { localProgress, t, nativeLanguageInfo, interfaceLanguageInfo } = useApp()
+  const { localProgress, t, nativeLanguageInfo } = useApp()
   const [filter, setFilter] = useState('All')
   const [expanded, setExpanded] = useState(null)
-  const meaningOf = (item) => getLocalizedMeaning(item?.meaning, nativeLanguageInfo, interfaceLanguageInfo)
+  const meaningOf = (item) => getLocalizedMeaning(item?.meaning, nativeLanguageInfo)
   const hasRealItems = localProgress.learnedItems.length > 0
   // the learner model is the authority on how far each item has come
   const learnerModel = loadLearnerModel()
