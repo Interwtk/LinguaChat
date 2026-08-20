@@ -48,6 +48,26 @@ _(nothing is in progress)_
           no A2+ curriculum is invented in this task; regression/browser journeys
           cover beginner plus a placement result above current curriculum.
 
+- [LC-PED-001] Stress-test every completed teaching arc with real learner-shaped scenarios
+  owner:  unclaimed
+  branch: none
+  blocked-on: LC-PROD-001
+  why:    green structural/evaluator checks do not prove the sequence teaches well, resists false mastery, or transfers beyond memorised answers.
+  done:   derive the completed runtime arc list from the live curriculum sources and
+          run at least 20 DISTINCT learner journeys per arc (not 20 duplicate asserts).
+          Per arc the matrix must cover independent happy paths with varied natural
+          answers, wrong/near-miss + retry, help/model use that remains assisted,
+          nonsense/out-of-scope/refusal, replay/idempotency/progress persistence,
+          and transfer to a novel context after intervening material. Verify support
+          fades after genuine success and rises after struggle; mastery/can-do never
+          comes from model copying or recognition alone; prerequisites, vocabulary/
+          grammar ceilings, XP/reward uniqueness and evaluator refusal boundaries
+          hold. Run rendered functional samples at 390px/1440px, including es/ja/ar
+          auxiliary experiences while target English stays English. Commit a
+          per-arc pedagogical report with failures, fixes and evidence; any fix resets
+          the clean-cycle count. This is a simulated/software learning audit: do not
+          claim scientifically proven human learning from it.
+
 - [LC-I18N-002] Stop advertising languages that only fall back to English (phase B)
   owner:  unclaimed
   branch: none
@@ -102,7 +122,24 @@ _(nothing is in progress)_
 
 ## BLOCKED
 
-_(nothing is manually blocked; dependencies above control order)_
+- [LC-PED-002] Final all-arcs learning acceptance gate before A1 can open
+  owner:  unclaimed
+  branch: none
+  why:    the owner requires every arc to be re-reviewed as one complete learning journey before learners can enter finished A1.
+  done:   move this task to TODO only after A1 arcs 6 and 7 are implemented from the
+          live blueprint/authoring contract. On the FINAL curriculum head, re-derive
+          every Pre-A1 + A1 arc and run at least 20 distinct learner journeys per arc
+          again (the current blueprint implies 6 Pre-A1 + 7 A1 arcs, so >=260 final
+          arc scenarios if that design remains current), plus longitudinal journeys
+          from a new learner through A1 exit. Prove delayed recall after intervening
+          sessions, transfer to unfamiliar examples, support fading/recovery,
+          independent evidence for every required can-do, no false mastery, no
+          duplicate rewards, no regression in earlier arcs, cross-arc prerequisite
+          reuse, and browser usability at 390px/1440px for es/ja/ar. Two consecutive
+          clean full cycles after the last fix. A1 MUST remain unavailable until
+          LC-PED-002 is DONE and the separate availability decision is explicitly
+          approved. Simulations establish internal pedagogical correctness; claims
+          about real-human learning efficacy require later real-learner pilot data.
 
 ## DONE
 
