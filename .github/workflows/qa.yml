@@ -108,6 +108,15 @@ jobs:
             test -f "$f" || { echo "$f is missing — the agent contract is incomplete"; exit 1; }
           done
 
+      - name: the task queue keeps its structural boundaries
+        run: |
+          set -euo pipefail
+          test "$(grep -c '^## IN_PROGRESS$' .ai/TASKS.md)" -eq 1 || { echo "TASKS.md must contain exactly one IN_PROGRESS heading"; exit 1; }
+          test "$(grep -c '^## TODO\b' .ai/TASKS.md)" -eq 1 || { echo "TASKS.md must contain exactly one TODO heading"; exit 1; }
+          test "$(grep -c '^## BLOCKED$' .ai/TASKS.md)" -eq 1 || { echo "TASKS.md must contain exactly one BLOCKED heading"; exit 1; }
+          test "$(grep -c '^## DONE$' .ai/TASKS.md)" -eq 1 || { echo "TASKS.md must contain exactly one DONE heading"; exit 1; }
+          node linguachat-frontend/scripts/check-queue-recovery.mjs
+
   evidence:
     name: evidence — the PR shows the QA it ran
     if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
