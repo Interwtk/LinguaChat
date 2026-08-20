@@ -4,7 +4,17 @@ import { useApp } from '../../context/AppContext'
 import { JourneyRail } from '../layout/JourneyRail'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { getLanguageOption, languageFromInput, searchLanguages } from '../../services/language'
-import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS, MAX_INTERESTS, toggleInterestId } from '../../services/tutorPreferences'
+import {
+  TUTOR_OPTION_GROUPS,
+  INTEREST_OPTIONS,
+  MAX_INTERESTS,
+  toggleInterestId,
+  GOAL_OPTIONS,
+  CORRECTION_OPTIONS,
+  VIBE_OPTIONS,
+  labelKeyFor,
+  personalityName,
+} from '../../services/tutorPreferences'
 
 const MOOD_COLORS = [
   /*
@@ -12,19 +22,33 @@ const MOOD_COLORS = [
    * rename here would silently reset the choice of every learner who already
    * picked one. What each id paints is a palette token, and none is purple.
    */
-  { id: 'violet', label: 'Calm', bg: 'var(--accent)' },
-  { id: 'coral', label: 'Energetic', bg: 'var(--accent)' },
-  { id: 'green', label: 'Grounded', bg: 'var(--positive)' },
-  { id: 'yellow', label: 'Playful', bg: 'var(--accent)' },
+  { id: 'violet', labelKey: 'moodCalm', bg: 'var(--accent)' },
+  { id: 'coral', labelKey: 'moodEnergetic', bg: 'var(--accent)' },
+  { id: 'green', labelKey: 'moodGrounded', bg: 'var(--positive)' },
+  { id: 'yellow', labelKey: 'moodPlayful', bg: 'var(--accent)' },
 ]
 
 const RELATIONSHIP_STAGES = [
-  { days: 0, label: 'New acquaintances' },
-  { days: 3, label: 'Familiar faces' },
-  { days: 7, label: 'Steady companions' },
-  { days: 14, label: 'Close companions' },
-  { days: 30, label: 'Long-time partners' },
+  { days: 0, labelKey: 'relStageNew' },
+  { days: 3, labelKey: 'relStageFamiliar' },
+  { days: 7, labelKey: 'relStageSteady' },
+  { days: 14, labelKey: 'relStageClose' },
+  { days: 30, labelKey: 'relStageLongTime' },
 ]
+
+/* Bounded conversational-topic vocabulary that `services/localProgress.js`
+ * can infer (see TOPIC_RULES there); mission/step ids beyond this set render
+ * as their raw stored id, same as before this fix rather than a raw-key leak. */
+const TOPIC_LABEL_KEYS = {
+  travel: 'topicTravel',
+  work: 'topicWork',
+  food: 'topicFood',
+  hobbies: 'topicHobbies',
+  feelings: 'topicFeelings',
+  translation: 'topicTranslation',
+  grammar: 'topicGrammar',
+  conversation: 'topicConversation',
+}
 
 function PreferenceButtons({ label, value, options, onChange, t }) {
   return (
@@ -56,9 +80,13 @@ function PreferenceButtons({ label, value, options, onChange, t }) {
   )
 }
 
-function getRelationshipLabel(streak) {
+function getRelationshipLabelKey(streak) {
   const stage = [...RELATIONSHIP_STAGES].reverse().find(s => streak >= s.days)
-  return stage?.label || 'New acquaintances'
+  return stage?.labelKey || 'relStageNew'
+}
+
+function topicLabel(t, id) {
+  return t(TOPIC_LABEL_KEYS[id] || labelKeyFor(GOAL_OPTIONS, id) || id)
 }
 
 export function LanguageIdentity() {
@@ -147,12 +175,13 @@ export function LanguageIdentity() {
   const confidence = localProgress.confidence || 0
   const streak = localProgress.streak || 0
   const progressData = [45, 54, 62, Math.max(45, confidence - 5), confidence]
-    .map((score, index) => ({ week: index === 4 ? 'Now' : `W${index + 1}`, score }))
+    .map((score, index) => ({ week: index === 4 ? t('progressNow') : `W${index + 1}`, score }))
   const practicedTopics = hasLocalProgress && localProgress.topics.length
     ? localProgress.topics
     : profile.preferences?.goals || [profile.goal || 'Travel']
   const currentMood = MOOD_COLORS.find(m => m.id === moodColor) || MOOD_COLORS[0]
-  const relationship = getRelationshipLabel(streak)
+  const relationship = t(getRelationshipLabelKey(streak))
+  const [confidenceSummaryBefore, confidenceSummaryAfter = ''] = t('confidenceSummary', { delta: confidence - 45 }).split('{percent}')
   const currentLanguage = useMemo(() => getLanguageOption(nativeLanguageInfo), [nativeLanguageInfo])
   const languageResults = useMemo(
     () => searchLanguages(languageSearch, currentLanguage),
@@ -268,7 +297,7 @@ export function LanguageIdentity() {
               </div>
 
               <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 8 }}>
-                {profile.tutorPersonality || 'Gentle Guide'} style
+                {t('tutorPersonalityStyle', { style: t(personalityName(profile.tutorPersonality) || 'persGentleName') })}
               </p>
             </div>
           </div>
@@ -290,7 +319,7 @@ export function LanguageIdentity() {
                     transition: 'all 0.2s',
                   }} />
                   <span style={{ fontSize: 10, color: moodColor === m.id ? 'var(--ink)' : 'var(--muted)', fontWeight: moodColor === m.id ? 700 : 500 }}>
-                    {m.label}
+                    {t(m.labelKey)}
                   </span>
                 </button>
               ))}
@@ -497,7 +526,9 @@ export function LanguageIdentity() {
             ))}
           </div>
           <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 12 }}>
-            Confidence: <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{confidence}%</span> (+{confidence - 45}% since you started)
+            {confidenceSummaryBefore}
+            <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{confidence}%</span>
+            {confidenceSummaryAfter}
           </p>
         </div>
 
@@ -511,7 +542,7 @@ export function LanguageIdentity() {
               </p>
               <p style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--ink)' }}>{relationship}</p>
               <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 2 }}>
-                {streak} days practicing together
+                {t('withLinguaDays', { count: streak })}
               </p>
             </div>
             <div style={{
@@ -531,16 +562,16 @@ export function LanguageIdentity() {
           <div className="flex flex-wrap gap-2 mb-4">
             {practicedTopics.map(g => (
               <span key={g} style={{ fontSize: '0.8125rem', fontWeight: 600, padding: '4px 12px', borderRadius: 999, background: 'var(--accent-soft)', color: 'var(--accent)', border: '1px solid var(--accent)' }}>
-                {g}
+                {topicLabel(t, g)}
               </span>
             ))}
             <span style={{ fontSize: '0.8125rem', fontWeight: 600, padding: '4px 12px', borderRadius: 999, background: 'var(--info-soft)', color: 'var(--info)', border: '1px solid var(--info)' }}>
-              {profile.preferences?.dailyGoal || profile.dailyGoal || 10} min/day
+              {t('dailyGoalMinutes', { count: profile.preferences?.dailyGoal || profile.dailyGoal || 10 })}
             </span>
           </div>
           <p style={{ fontSize: '0.875rem', color: 'var(--muted)', lineHeight: 1.6 }}>
-            {t('correctionStyleLabel')}: <strong style={{ color: 'var(--ink)' }}>{profile.preferences?.correctionIntensity || 'Balanced'}</strong>.
-            {t('practiceVibeLabel')}: <strong style={{ color: 'var(--ink)' }}>{profile.preferences?.practiceVibe || 'Motivational'}</strong>.
+            {t('correctionStyleLabel')}: <strong style={{ color: 'var(--ink)' }}>{t(labelKeyFor(CORRECTION_OPTIONS, profile.preferences?.correctionIntensity) || 'corrBalanced')}</strong>.
+            {t('practiceVibeLabel')}: <strong style={{ color: 'var(--ink)' }}>{t(labelKeyFor(VIBE_OPTIONS, profile.preferences?.practiceVibe) || 'vibeMotivational')}</strong>.
           </p>
         </div>
 
