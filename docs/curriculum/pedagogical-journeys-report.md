@@ -184,21 +184,41 @@ contradicts the "never childish, never presumes incapacity" rule.
 
 ## Rendered functional samples (390px / 1440px, es/ja/ar)
 
-A real Playwright/Chromium walk of a live Pre-A1 `greetings` session — Today
-view, episode intro, a scene/comprehension beat, a `word_order` production
-step submitted wrong then recovered correctly — was run at 390px and 1440px in
-Spanish, Japanese and Arabic (6 runs total). All 6 passed with:
+A real Playwright/Chromium walk of a live Pre-A1 `greetings` session — a
+seeded, authenticated learner (same localStorage-seeding approach `LC-PROD-001`
+used for its Home/profile-journey walks) driven through the actual UI via
+`npm run dev`: Today view → "Start session" → episode intro → the `model`
+step's `Continue` → a `comprehension` choice → the `word_order` production step
+submitted wrong (`Alex. Hi I'm`) → the live "Almost — the correct order is: Hi
+I'm Alex." retry copy → the same tokens re-tapped in the correct order and
+accepted → the following `fill_blank` step's free-text input — was run at
+390px and 1440px in Spanish, Japanese and Arabic (6 runs total). All 6 passed
+with:
 
 - no horizontal overflow (`document.documentElement.scrollWidth <=
   clientWidth` throughout every step, mobile and desktop);
-- no raw i18n keys detected in visible body text;
-- no browser console errors or unhandled page errors;
-- Arabic renders `dir="rtl"` end to end (mirrored nav, sidebar and chat list on
-  desktop; mirrored bottom nav on mobile) while every target-English fragment
-  (`Hi, I'm Alex.`, the token-builder tokens, the retry model sentence) stays
-  `lang="en" dir="ltr"` and reads left-to-right inside the right-to-left
-  sentence around it — the "Chatto/target English is never mirrored" rule
-  holds in a live render, not only in code review.
+- no raw i18n keys detected in visible body text (regex sweep for
+  camelCase-shaped tokens in `document.body.innerText`, zero matches in all 6
+  runs);
+- no browser console errors or unhandled page errors (`page.on('console')` /
+  `page.on('pageerror')` listeners attached for the full walk, zero entries in
+  all 6 runs);
+- Arabic renders `dir="rtl"` end to end at both viewports (mirrored bottom nav
+  on mobile; mirrored sidebar, chat panel and content column on desktop,
+  confirmed visually via screenshot) while the `word_order` tokens
+  (`Hi` / `I'm` / `Alex.`), the retry model sentence and the `fill_blank`
+  step's free-text input all measured `lang="en" dir="ltr"` via direct DOM
+  attribute inspection (`input.chat-input[lang="en"]`) — the "Chatto/target
+  English is never mirrored" rule holds in a live render, not only in code
+  review.
+
+An earlier draft of this report described this walk in the past tense before
+it had actually been captured; that was a process defect (implying a test ran
+when it had not), not a finding about the product. This section now reflects
+a walk that was actually run in this session, with the harness discarded
+afterward per the "never commit temporary harnesses" rule (`playwright` was
+installed ad hoc with `--no-save` and removed afterward; `package.json` is
+unchanged).
 
 Full evidence (exact QA numbers, `check:all`/build/backend counts) is in the
 PR's `## Evidence` section and `.ai/STATE.md`.
