@@ -3,71 +3,91 @@
 Keep this file current: what just happened, what is proved, what comes next, and
 what will bite the next operator.
 
-_Written at the end of LC-I18N-001 on 2026-08-20._
+_Written at the end of LC-I18N-003 on 2026-08-20._
 
 ## What just happened
 
-LC-OPS-009 is merged. The development loop is cloud-hosted and no normal worker
-depends on the owner's PC. PR #17 proved 51/51 checks, cloud-automation 12/12,
-build green, 1580-key structural parity, compileall clean and 444 backend tests.
+LC-OPS-009 is merged and LC-I18N-001 audited the language architecture (full
+evidence in `.ai/TRANSLATIONS.md`). LC-I18N-003 then closed the first and largest
+architecture defect that audit found: `user_language` is now genuinely one value.
 
-LC-I18N-001 then audited the eight implemented language experiences instead of
-assuming “100% keys” meant “translations are finished”. The full evidence is in
-`.ai/TRANSLATIONS.md` under `LC-I18N-001 — phase-A audit, 2026-08-20`.
+`services/language.js` had three storage writers (`writeLanguage('native', …)`,
+`setInterfaceLanguage`) that could leave native and interface pointing at two
+different languages. It now has exactly one writer (`writeUserLanguage`), and
+`ensureLanguagePreferences()` rewrites both native and interface storage from the
+one resolved language on **every** load — not only when nothing was stored — so a
+legacy or hand-edited mismatch (e.g. `native=ja` / `interface=es`, the exact case
+the audit flagged) is deterministically reconciled instead of preserved.
+`AppContext` no longer exposes `updateInterfaceLanguage`; only
+`updateNativeLanguage` exists, and it mirrors into both fields. Meaning fallback
+(`getLocalizedMeaning`/`getLocalizedVocab`) collapsed from
+`native -> interface -> English` to `user_language -> English`.
 
-## The important finding
+Backend was audited, not changed: `ai/openai_tutor.py`, `ai/local_engine.py` and
+`ai/evaluator.py` only ever read `native_language`; `interface_language` was
+accepted by the schema but never consumed divergently, so there was nothing to fix
+there.
+
+Full evidence — including the browser proof of a legacy-mismatch reload and
+Arabic RTL at 390px/1440px — is in `.ai/TRANSLATIONS.md` under
+`LC-I18N-003 — one canonical user_language, 2026-08-20`. PR: #19.
+
+## The important finding (still true, narrowed)
 
 The locale dictionaries are structurally strong; the **architecture around them**
-is where most material defects live.
+is where most material defects live. LC-I18N-003 closed the native/interface
+divergence and the two-language meaning fallback. Still open:
 
-Confirmed:
-
-- native/interface can still diverge through legacy storage/APIs;
-- meaning fallback still models two auxiliary languages;
 - welcome is hardcoded English and assumes Spanish;
 - placement A1–C2 auxiliary copy is hardcoded Spanish;
 - LanguageIdentity leaks English literals;
 - picker: 46 rows / 34 bases, but only 8 implemented base locales;
 - a stale second language registry omits ja/ar;
 - `translate()` has no plural-category model;
-- current `check:i18n` cannot see these failure classes;
+- current `check:i18n` (now plus `check:user-language`) still cannot see the
+  welcome/placement/profile hardcodes or the plural gap;
 - placement can report A2–C2 even though only Pre-A1 + partial A1 structured
   curriculum exists, and the daily planner is still bound to PRE_A1.
 
-Do not “fix translations” by mass-editing seven locale files. Follow the queue.
+Do not "fix translations" by mass-editing seven locale files. Follow the queue.
 
-## Next task — LC-I18N-003
+## Next task — LC-I18N-004
 
-Make `user_language` the one real auxiliary-language preference.
+Localize visible auxiliary copy and add plural-aware count rendering.
 
 Required behaviour:
 
-```text
-user_language = one persisted user choice
-UI/chrome = user_language
-explanations/hints/corrections/meanings = user_language
-target_language = English
-```
+- the Lingua welcome message (`AppContext.jsx` `WELCOME_MESSAGE`) must use
+  `user_language`, not hardcoded English that assumes Spanish;
+- `SetupFlow.jsx` / `placement.js` / `placementQuestions.js` auxiliary copy
+  (instruction, prompt, option text, feedback explanation, strengths/focus/
+  correction/recommendation) must go through `t()` in `user_language`, not
+  hardcoded Spanish;
+- `LanguageIdentity.jsx` mood/relationship/progress/style literals must go
+  through `t()`;
+- `translate()` needs a real plural-category mechanism so `{count}` templates
+  (e.g. `sessionDoneCount`, `replayTimesPractised`) are grammatically correct in
+  every implemented locale, Arabic especially;
+- every implemented locale (es/pt/fr/it/de/ja/ar) stays structurally complete
+  after the new keys land;
+- real browser proof at 390px/1440px covering es/ja/ar, no raw keys, no overflow,
+  no bidi leakage;
+- target-English practice material stays English and untranslated.
 
-Legacy native/interface keys may be migrated, but after migration supported product
-state cannot contain two different choices. Preserve progress/preferences. Meaning
-fallback becomes user language -> English. Add reload/migration regressions for es,
-ja and ar. Arabic auxiliary UI is RTL; target English/input LTR; Chatto never
-mirrors.
-
-This is an architecture fix, not a copy rewrite. Do not mix placement translations,
-picker support pruning or curriculum work into it.
+This is still not the place to invent A2–C2 curriculum content, prune the
+picker, or touch backend evaluators — those are LC-PROD-001, LC-I18N-002 and
+out of scope respectively.
 
 ## Then, in order
 
-1. `LC-I18N-004` — move visible welcome/placement/profile auxiliary literals into
-   i18n and add plural-aware count handling.
-2. `LC-PROD-001` — placement/profile/planner must tell the truth about curricula
+1. `LC-PROD-001` — placement/profile/planner must tell the truth about curricula
    actually available; do not invent A2+ here and do not open partial A1.
-3. `LC-I18N-002` — one truthful support catalog; 26 unimplemented bases cannot look
+2. `LC-I18N-002` — one truthful support catalog; 26 unimplemented bases cannot look
    fully supported because English fallback renders.
-4. `LC-QA-001` — turn the audit's failure classes into regression/lint gates.
-5. `LC-SEC-001`, `LC-BE-001`, `LC-DOC-001` — dependency advisories, Pydantic
+3. `LC-QA-001` — turn the audit's remaining failure classes into regression/lint
+   gates (hardcoded-copy detection, plural-contract checks — user_language
+   divergence detection is already covered by `check-user-language`).
+4. `LC-SEC-001`, `LC-BE-001`, `LC-DOC-001` — dependency advisories, Pydantic
    deprecation, and stale docs/repo debris respectively.
 
 After that foundation, seed Arc 6/7 from the **live** A1 blueprint + authoring
@@ -81,7 +101,9 @@ curriculum design phase; placement questions are not a curriculum specification.
   not imply region-specific copy that does not exist.
 - Japanese: implemented locale is real; stale six-row registry omits it.
 - Arabic: Spanish placement can appear inside RTL UI; count grammar needs real plural
-  categories; keep embedded English LTR and do not mirror Chatto.
+  categories; keep embedded English LTR and do not mirror Chatto. LC-I18N-003
+  proved the shell itself (`document.dir`) is already correctly RTL for Arabic at
+  both 390px and 1440px — this caution is about the copy still hardcoded inside it.
 - English: even the English auxiliary experience is not clean because placement is
   Spanish and the welcome assumes Spanish support.
 
