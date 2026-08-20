@@ -1,51 +1,38 @@
-# The translation lane, deliberately separate from the curriculum lane so the two
-# never collide in the same diff: hundreds of translated strings must not arrive
-# inside a curricular fix, and a curricular fix must not wait on a translation
-# review. Different day, different branch prefix, different task ids.
+# Dedicated internationalisation worker. It is dispatched only by Claude — chain;
+# the chain owns scheduling and routing so i18n can never race the general lane.
 name: Claude — translations
 
 on:
   workflow_dispatch:
     inputs:
       task_id:
-        description: 'i18n task id (e.g. LC-I18N-001). Empty = first unclaimed LC-I18N-* task.'
+        description: 'Exact LC-I18N task id selected by the chain.'
         required: false
         type: string
       languages:
-        description: 'Optional batch, comma separated (e.g. zh,ko). Small batches only.'
+        description: 'Optional comma-separated implementation batch.'
         required: false
         type: string
-      # The chain sends `dry_run` to whichever lane it picks. A workflow that does
-      # not declare an input does not merely ignore it — the dispatch is rejected
-      # outright, so without this the whole i18n lane is unreachable from the chain.
       dry_run:
         description: 'Report what it would do, change nothing.'
         required: false
         default: false
         type: boolean
-  schedule:
-    # Thursdays, 09:00 UTC — three days away from the curriculum run.
-    - cron: '0 9 * * 4'
 
 permissions:
   contents: write
   pull-requests: write
   issues: write
-  # The action exchanges a short-lived GitHub OIDC token as part of authenticating,
-  # and a job cannot mint one without this. Without it the run reaches the action
-  # and dies at "Failed to get OIDC token" — which is what happened on run
-  # 32173192998. It grants the job the right to prove its own identity to GitHub;
-  # it does not widen access to the repository or to any secret.
   id-token: write
 
 concurrency:
-  group: claude-i18n
+  group: linguachat-claude-writer
   cancel-in-progress: false
 
 jobs:
   translate:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       LINGUACHAT_PROVIDER: local
     steps:
@@ -62,32 +49,50 @@ jobs:
             exit 1
           fi
 
-      - id: queue
-        name: Is an i18n task claimable?
-        run: |
-          # Somebody else's claim counts. This lane can also be started by its own
-          # Thursday schedule, with no chain in the loop to check whether an agent
-          # is already alive, so the one-agent rule has to hold here too.
-          if awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md | grep -qE '^\s*- \[LC-'; then
-            echo "claimable=false" >> "$GITHUB_OUTPUT"
-            echo "A task is already IN_PROGRESS. One agent at a time. Nothing to do."
-          elif grep -A2 -E '^\s*- \[LC-I18N-[0-9]+\]' .ai/TASKS.md | grep -qE '^\s*owner:\s*unclaimed'; then
-            echo "claimable=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "claimable=false" >> "$GITHUB_OUTPUT"
-            echo "No unclaimed LC-I18N task. Nothing to do."
-          fi
-
       - uses: actions/setup-node@v4
-        if: steps.queue.outputs.claimable == 'true'
         with:
           node-version: '22'
           cache: npm
           cache-dependency-path: linguachat-frontend/package-lock.json
 
+      - id: queue
+        name: Validate the i18n task against next-task.mjs
+        env:
+          REQUESTED: ${{ inputs.task_id }}
+        run: |
+          set -euo pipefail
+          NEXT=$(node .github/scripts/next-task.mjs || true)
+          if [ -z "$NEXT" ]; then
+            echo "claimable=false" >> "$GITHUB_OUTPUT"
+            echo "No task is claimable."
+            exit 0
+          fi
+          case "$NEXT" in
+            LC-I18N-*) ;;
+            *)
+              echo "claimable=false" >> "$GITHUB_OUTPUT"
+              echo "$NEXT belongs to the general lane, not i18n."
+              exit 0
+              ;;
+          esac
+          if [ -n "${REQUESTED:-}" ] && [ "$REQUESTED" != "$NEXT" ]; then
+            echo "claimable=false" >> "$GITHUB_OUTPUT"
+            echo "Requested $REQUESTED but the only claimable task is $NEXT. Refusing safely."
+            exit 0
+          fi
+          echo "claimable=true" >> "$GITHUB_OUTPUT"
+          echo "task_id=$NEXT" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        if: steps.queue.outputs.claimable == 'true'
+        with:
+          python-version: '3.12'
+
       - name: Install
         if: steps.queue.outputs.claimable == 'true'
-        run: npm ci --prefix linguachat-frontend
+        run: |
+          npm ci --prefix linguachat-frontend
+          pip install -r linguachat-backend/requirements.txt
 
       - uses: anthropics/claude-code-action@v1
         if: steps.queue.outputs.claimable == 'true'
@@ -96,76 +101,94 @@ jobs:
           prompt: |
             You are LinguaChat's internationalisation operator.
 
-            READ FIRST and obey over this prompt: CLAUDE.md, .ai/TRANSLATIONS.md,
-            .ai/TASKS.md, .ai/STATE.md.
+            READ FIRST and obey over this prompt:
+            CLAUDE.md, .ai/TRANSLATIONS.md, .ai/TASKS.md, .ai/STATE.md, .ai/HANDOFF.md.
 
-            Requested task: "${{ inputs.task_id }}" (empty = the first unclaimed
-            LC-I18N-* task). Requested language batch: "${{ inputs.languages }}"
-            (empty = decide from the task, and keep the batch small).
-            Dry run: "${{ inputs.dry_run }}" (true means change nothing; write your
-            findings on the run summary and stop).
+            Exact task selected by the shared queue parser: "${{ steps.queue.outputs.task_id }}".
+            Optional language batch: "${{ inputs.languages }}". Dry run: "${{ inputs.dry_run }}".
 
-            THE THREE LANGUAGES ARE NOT INTERCHANGEABLE
+            AUTHORITATIVE LANGUAGE PRODUCT RULE
+            The learner chooses ONE user_language. That same language governs the
+            interface/chrome, explanations, hints, corrections, interpretations and
+            meanings. English is the target language being learned. Legacy
+            interface_language/native_language may still exist internally, but they
+            represent the same user choice and must remain synchronized. Do NOT
+            implement or preserve mixed interface=es/native=ja behavior.
 
-            interface_language is the chrome. native_language is for explanations.
-            target_language is what is being learned, and it is English today.
-            The case that must always work: interface es + native ja + target en.
-            NEVER translate the English the learner is practising. Explanations may
-            and should use the native language.
-
-            Arabic and other RTL languages: RTL chrome, LTR English target and
-            input, and Chatto is never mirrored.
+            Examples:
+            - user_language=es -> auxiliary experience Spanish; target English.
+            - user_language=ja -> auxiliary experience Japanese; target English.
+            - user_language=ar -> auxiliary experience Arabic/RTL; target English/LTR.
+            English practice text/input stays English and LTR. Chatto is never mirrored.
 
             HOW TO WORK
+            1. Claim exactly this LC-I18N task on main (owner `claude-i18n`) and use
+               branch `i18n/<lowercase-task-id>`. The initial claim is the only normal
+               direct-main coordination write.
+            2. If that branch/draft PR already exists, continue it. Never duplicate it.
+            3. Push a checkpoint and open a DRAFT PR within the first 15 turns; push
+               every milestone and never go 20 turns without remote progress.
+            4. Do only this i18n task. Copy must sound native, preserve placeholders,
+               product names and target-English practice content. Never advertise a
+               language as supported because English fallback happens to render.
+            5. Run targeted checks while editing. Final QA always includes:
+                 cd linguachat-frontend && npm run check:i18n && npm run check:all && npm run build
+                 cd linguachat-backend && python -m compileall . && python -m pytest -q
+               UI/i18n changes require a real browser at 390px and 1440px, including
+               RTL when affected. If a fix follows validation, restart and get two
+               consecutive clean cycles.
+            6. BEFORE marking the PR ready, update .ai/TRANSLATIONS.md with measured
+               facts and put final bookkeeping IN THIS BRANCH: move the task to DONE
+               in .ai/TASKS.md and update .ai/STATE.md + .ai/HANDOFF.md. These merge
+               atomically; no later direct-main completion commit.
+            7. Put exact numbers and browser evidence under `## Evidence`, review the
+               diff for raw keys/fallback leaks/hardcoded strings/RTL/target-English
+               corruption, push, then mark ready.
 
-            1. Claim the task in .ai/TASKS.md (owner `claude-i18n`, and the branch),
-               and use a branch named `i18n/<lowercase task id>`.
-            2. Do only this task. Do not touch curriculum content, runtime logic or
-               the frozen visual architecture. If a key is missing because an arc
-               needs it, that belongs to the arc's PR, not to yours.
-            3. Copy must read like real UI written in that language, not like a
-               translation of English. Keep placeholders byte-for-byte, keep
-               variables and function names, keep product names (LinguaChat, Lingua,
-               Chatto), and keep pedagogical English in English.
-            4. Never mark a language as supported when it only falls back to
-               English. If coverage is partial, say so where the user can see it.
-            5. QA: `cd linguachat-frontend && npm run check:i18n && npm run check:all
-               && npm run build`. Count check:all by exit code. Report the real
-               numbers — keys, per-language coverage, chunk sizes.
-            EVIDENCE IS PART OF THE WORK, NOT A FORMALITY
-
-            A green suite proves the suite ran, not that your change works. Exercise
-            what you touched: a runtime change means walking the affected flow; an
-            episode means the happy path AND a wrong answer with its retry AND
-            help/model marked assisted AND replay without a duplicate reward; UI or
-            i18n means a real browser at 390 px and 1440 px; an evaluator means the
-            local and backend verdicts agreeing case by case. Always check:all
-            (by exit code), build, compileall and pytest. After any fix, two clean
-            cycles in a row.
-
-            Put the numbers in the pull request under a `## Evidence` heading. CI
-            fails a non-draft pull request that has no such section, and the chain
-            refuses to merge it. If you could not run something on the runner, say
-            so plainly rather than implying you did.
-
-            6. Open a PULL REQUEST on your branch. Never push to main. Then update
-               .ai/TRANSLATIONS.md with measured coverage, not intentions, and
-               .ai/HANDOFF.md with where you stopped.
-
-            Stop and open an issue instead of guessing if a language needs a product
-            decision (which variants to offer, how to label partial coverage), or if
-            adding a language would break a bundle budget without a justification.
-          # A chained run is started by github-actions[bot], and the action refuses a
-          # non-human initiator unless it is named — run 32181656533 died on exactly
-          # that: "Workflow initiated by non-human actor: github-actions (type: Bot)".
-          # ONE bot, by name. Never '*': that would let any bot with write access to
-          # this repository start an agent holding the token.
+            HARD LIMITS
+            No curriculum scope changes, Supabase, real provider calls, voice/STT/TTS,
+            WebRTC, pronunciation scoring, calls/video calls, or frozen-UI redesign.
+            A1 remains unavailable until its final gate. One task per run. If turns
+            run low, checkpoint the existing branch/draft and release the claim so
+            the next run can resume it instead of losing work.
           allowed_bots: github-actions
           claude_args: |
             --model claude-sonnet-5
-            --max-turns 100
+            --max-turns 120
             --allowedTools Read,Write,Edit,Glob,Grep,Bash,TodoWrite
+
+      - name: Leave the repository honest, whatever happened
+        if: always() && steps.queue.outputs.claimable == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --quiet
+          git checkout main --quiet && git reset --hard origin/main --quiet
+          BRANCH=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
+            grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
+          if [ -z "${BRANCH:-}" ] || [ "$BRANCH" = "none" ]; then exit 0; fi
+
+          if ! git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            RELEASED=$(node .github/scripts/release-stale-claim.mjs || true)
+            if [ -n "$RELEASED" ]; then
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add .ai/TASKS.md
+              git commit -m "chore(ops): release $RELEASED — its i18n run pushed nothing"
+              git push origin main
+              echo "Released **$RELEASED** because the run pushed nothing." >> "$GITHUB_STEP_SUMMARY"
+            fi
+            exit 0
+          fi
+
+          OPEN=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
+          if [ "$OPEN" = "0" ]; then
+            gh pr create --draft --base main --head "$BRANCH" \
+              --title "WIP: $BRANCH" \
+              --body "Automatic recovery draft. This i18n task is unfinished; continue this branch on the next run."
+          fi
 
       - name: Nothing to do
         if: steps.queue.outputs.claimable != 'true'
-        run: echo "No unclaimed i18n task — exiting without cost." >> "$GITHUB_STEP_SUMMARY"
+        run: echo "No i18n task is claimable — clean exit without Claude cost." >> "$GITHUB_STEP_SUMMARY"
