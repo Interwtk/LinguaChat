@@ -50,9 +50,9 @@ older adults, and never childish. **Do not redesign for taste.**
   pgvector, Edge Functions, migrations or cloud sync.
 - **No migration to Next.js.** Vite + React stays; FastAPI stays as the
   pedagogical backend.
-- **Voice and media are out of scope:** no WebRTC, STT, TTS or pronunciation
-  scoring. The call and video surfaces may exist as honest "coming soon" screens
-  and must not pretend to work.
+- **Voice and media are out of scope:** no WebRTC, STT, TTS, pronunciation
+  scoring, live calls or video calls. Their surfaces may exist only as honest
+  "coming soon" UI and must not pretend to work.
 
 ## Provider safety
 
@@ -65,67 +65,108 @@ OpenAI is used only when the owner authorises it explicitly, in writing.
 
 Pre-A1: 17 episodes, frozen. A1: 7 arcs, 21 episodes, ids 18–38.
 
-Arcs 1–4 (18–29) have runtime content. A1 stays `contentStatus: partial` and
-`available: false` until the whole level is finished and separately approved.
-Implement **one arc at a time**, the next one the blueprint allows, and never a
-later arc in the same sprint.
+A1 arcs 1–5 (episodes 18–33) have runtime content and have been proved against
+their blueprints; arc 5 also has a production-build browser walkthrough covering
+all four episodes. Arcs 6–7 (34–38) remain designed-only and must fail closed.
+
+A1 stays `contentStatus: partial` and `available: false` until **all seven arcs**
+are implemented, all required capabilities and integrated conversations satisfy
+the blueprint, final functional/browser QA passes, and a separate A1 completion
+gate deliberately changes the level state. Never infer availability from "all
+runtime episodes passed" while runtime is incomplete.
 
 Episodes without runtime content fail closed with `unknown_episode`. A normal
-learner asking for a built-but-closed level gets `level_unavailable` **before any
+learner asking for built-but-closed A1 gets `level_unavailable` **before any A1
 content chunk is fetched**.
 
-## The three languages, which are never the same thing
+## Language architecture — one user language, English target
 
-`interface_language` (the chrome) · `native_language` (explanations) ·
-`target_language` (what is being learned — currently English).
+The learner chooses **one `user_language`**. That same language governs the whole
+auxiliary experience:
 
-The case that must always work: interface `es`, native `ja`, target `en` — Spanish
-UI, Japanese explanations, English study material. Arabic: RTL chrome, LTR English
-target and input, and **Chatto is never mirrored**.
+- UI/chrome and navigation;
+- explanations and hints;
+- corrections and why-the-answer-was-wrong prose;
+- interpretations, meanings and supporting pedagogical feedback.
 
-Never translate the English the learner is practising. Explanations may and should
-use the native language.
+The `target_language` is what the learner is learning — currently **English**.
+Never translate the English the learner is practising.
 
-Do not advertise a language as supported when it only falls back to English.
+Legacy runtime/storage names `interface_language` and `native_language` may still
+exist for compatibility, but they represent **the same user choice** and must stay
+synchronised. They are not two product preferences and must not be exposed as two
+independent pickers. A persisted legacy mismatch must be reconciled deterministically
+rather than producing a mixed-language experience.
+
+Examples that must work:
+
+- `user_language=es` → UI + explanations + corrections + meanings in Spanish;
+  practice material in English.
+- `user_language=ja` → all auxiliary experience in Japanese; practice material in
+  English.
+- `user_language=ar` → auxiliary experience Arabic/RTL; English target and English
+  input LTR; **Chatto is never mirrored**.
+
+Do not advertise a language as supported when it only falls back to English. A
+language is honestly supported only when the user can receive the complete
+auxiliary experience in it at the quality level the product claims.
+
+## Autonomous operations
+
+The normal development loop is cloud-hosted. A powered-off owner computer must be
+irrelevant.
+
+- `.ai/TASKS.md` is the queue and the lock: one IN_PROGRESS task maximum.
+- `.github/scripts/next-task.mjs` is the only authority for claimability and
+  dependencies.
+- `Claude — chain` is the scheduler/router. Workers do not own independent schedules.
+- General, i18n and interactive Claude writers share one repository-wide concurrency
+  group: never two writers at once.
+- The initial queue claim may go directly to `main` so every agent can see the lock.
+  Functional work always goes through a branch + PR.
+- Final `TASKS.md` DONE movement, `STATE.md` and `HANDOFF.md` travel **inside the
+  same PR** as the completed task and land atomically with it.
+- A run that dies must leave resumable branch/draft work or release its claim. A red
+  PR is resumable work, not a permanent queue lock.
+- The chain may use an hourly watchdog as recovery, but normal progression happens
+  in the same orchestration run after a successful merge.
+- Never add a generic Claude `push` trigger and never use `allowed_bots: '*'`.
 
 ## QA protocol — for every change that matters
 
 `baseline → reproduce → root cause → minimal fix → regression → revalidate`, and
 if there was a fix, **two consecutive clean cycles**.
 
-```
+```bash
 cd linguachat-frontend && npm run check:all && npm run build
 cd linguachat-backend  && python -m compileall . && python -m pytest
 ```
 
-Count `check:all` by **exit code**, never by grepping its output: two of its
-scripts print success in a different format, which is how a report once claimed 46
-invocations for a suite of 49.
+Count `check:all` by **exit code**, never by grepping its output.
 
 ### Functional proof, per kind of change
 
 A suite going green proves the suite ran. It does not prove the thing you changed
-works. So every functional change carries proof of ITS OWN behaviour, and the pull
+works. Every functional change carries proof of ITS OWN behaviour, and the pull
 request states it in numbers:
 
 | what you changed | what you must actually exercise |
 |---|---|
-| runtime or frontend logic | walk the affected flow end to end, in the app, and say what happened |
-| an episode | the happy path, **a wrong answer and its retry**, help/model marked assisted rather than independent, and replay adding evidence without duplicating XP or Garden |
-| UI or i18n | a real browser at **390 px and 1440 px**, light and dark, no raw keys on screen, no horizontal overflow |
-| backend or an evaluator | local and backend verdicts agreeing case by case, including what each must REFUSE |
-| anything at all | `check:all` counted by exit code, `build`, `compileall`, `pytest` |
-| anything you fixed | **two consecutive clean cycles**, and the count restarts at every later fix |
+| runtime or frontend logic | walk the affected flow end to end in the app and report what happened |
+| an episode | happy path, **wrong answer + retry**, help/model recorded assisted rather than independent, replay without duplicate XP/Garden reward |
+| UI or i18n | real browser at **390 px and 1440 px**, light and dark when relevant, no raw keys, no horizontal overflow; RTL when affected |
+| backend or evaluator | local and backend verdicts agree case by case, including refusal cases |
+| automation/workflows | focused fixture/regression proof of routing, locking, failure recovery and loop safety |
+| anything at all | `check:all` by exit code, `build`, `compileall`, `pytest` |
+| anything you fixed | **two consecutive clean cycles**, count restarted after every later fix |
 
-A pull request that cannot show this is not finished, and the chain will not merge
-it: `qa.yml` fails a non-draft pull request whose description has no `## Evidence`
-section naming the suites it ran. If you genuinely could not run something — no
-browser on the runner, for instance — say so plainly in the pull request instead of
-implying you did.
+A pull request that cannot show this is not finished. `qa.yml` fails a non-draft PR
+whose description has no `## Evidence` section naming the suites it ran. If a test
+could genuinely not be run, say so plainly instead of implying it passed.
 
-Green tests are not visual proof. When acceptance is visual, look at the rendered
+Green tests are not visual proof. When acceptance is visual, inspect the rendered
 result: 390 px mobile, 1440 px desktop, no horizontal overflow, keyboard reachable,
-reduced motion respected, sane aria.
+reduced motion respected and sane aria.
 
 ## Git
 
@@ -134,15 +175,15 @@ Functional work goes on a branch and through a pull request — never straight t
 secrets. Keep curriculum work and translation work in separate PRs.
 
 **User-owned untracked archives** (`linguachat-*.zip` at the repo root) are the
-owner's: do not add, move, modify or delete them. One of them contains a real
-`.env`; committing it would publish a key.
+owner's: do not add, move, modify or delete them. One historical archive may
+contain a real `.env`; never publish it.
 
 ## Before calling anything done
 
 Read your own diff as a reviewer and look for: scope creep, duplication, dead
 code, accidental provider calls, secrets, A1 opened by accident, Supabase creeping
-in, eager loading, a wrong fallback, an i18n regression, a frozen-UI regression.
-Then run QA.
+in, eager loading, a wrong fallback, an i18n regression, a frozen-UI regression,
+or an autonomous-workflow state that can deadlock after a crash/red PR.
 
-Optimise for correctness, evidence and fidelity to the blueprint — not for volume
-of change.
+Optimise for correctness, evidence and fidelity to the blueprint — **quality over
+speed and volume of change**.
