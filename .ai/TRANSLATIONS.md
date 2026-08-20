@@ -36,58 +36,321 @@ NEVER translate the English the learner is practising.
 
 ## Current coverage — measured, not claimed
 
-Latest verified main after A1 arc 5: `npm run check:i18n` reports **1580 visible
+Latest verified main after LC-OPS-009: `npm run check:i18n` reports **1580 visible
 keys** in the English base and 100% key parity in the seven implemented locale
 files. Key parity means structure is complete; it does **not** certify linguistic
 quality, truthful support, pluralisation or absence of hardcoded strings.
 
-| language | keys | structural coverage | current status |
+| language | keys | structural coverage | audit status |
 |---|---:|---:|---|
-| en (base) | 1580 | source | target + base auxiliary copy |
-| es | 1580 | 100% | implemented; quality audit pending |
-| pt | 1580 | 100% | implemented; quality audit pending |
-| fr | 1580 | 100% | implemented; quality audit pending |
-| it | 1580 | 100% | implemented; quality audit pending |
-| de | 1580 | 100% | implemented; quality audit pending |
-| ja | 1580 | 100% | implemented; quality audit pending |
-| ar | 1580 | 100% | implemented; RTL/quality re-audit pending |
+| en (base) | 1580 | source | structural baseline; hardcoded product copy still bypasses it |
+| es | 1580 | 100% | implemented; confirmed plural/copy debt and placement bypass |
+| pt | 1580 | 100% | implemented; placement/profile/welcome bypass confirmed |
+| fr | 1580 | 100% | implemented; placement/profile/welcome bypass confirmed |
+| it | 1580 | 100% | implemented; placement/profile/welcome bypass confirmed |
+| de | 1580 | 100% | implemented; placement/profile/welcome bypass confirmed |
+| ja | 1580 | 100% | implemented; placement/profile/welcome bypass confirmed |
+| ar | 1580 | 100% | implemented; placement/profile/welcome bypass + plural/RTL architecture debt confirmed |
 
-`LC-I18N-001` is the required quality audit before treating “100%” as anything
-stronger than key parity.
+The seven lazy locale modules actually present are `es/pt/fr/it/de/ja/ar`; English
+is the base dictionary. This is the real implemented set today.
 
-## The honesty gap — LC-I18N-002
+---
 
-The product currently advertises substantially more language options than it has
-full locale implementations. Historical snapshots counted 46 option rows and 26
-additional base languages without locale files, but those numbers must be derived
-again from live code during LC-I18N-002 rather than copied as truth.
+# LC-I18N-001 — phase-A audit, 2026-08-20
 
-Historical candidates without full locale files included:
+This audit is intentionally **diagnostic only**. It does not bulk-edit translation
+copy. Findings below are separated into what static/runtime code proves and what
+still needs rendered/native-speaker quality review.
 
-    zh ko hi ru tr nl pl vi id th uk el he sv no da fi ro cs hu bn ur fa sw fil ms
+## A. Cross-language defects confirmed by code
 
-No language may be labelled fully supported merely because English fallback keeps
-the screen from crashing. The picker must tell the truth about implemented,
-partial/interface-only or coming-soon support.
+### A1. The product can still persist two different languages
 
-## Audit contract — LC-I18N-001
+`services/language.js` stores separate native and interface keys and
+`ensureLanguagePreferences()` preserves an already-stored mismatch instead of
+reconciling it. `AppContext` still exposes a separate `updateInterfaceLanguage()`.
 
-Audit all eight currently implemented languages for more than key counts:
+At the same time, `updateNativeLanguage()` sets both values together. This means
+normal use often looks correct, but old storage or an internal caller can still
+produce the product state the owner explicitly rejected.
 
-- natural, idiomatic UI copy and correct register;
-- missing diacritics / punctuation conventions;
-- placeholder integrity and suspicious interpolation;
-- plural/count grammar;
-- hardcoded visible strings bypassing i18n;
-- raw keys on real rendered surfaces;
-- silent English fallbacks;
-- consistent one-`user_language` behaviour across UI, explanations, hints,
-  corrections and meanings;
-- target English never translated accidentally;
-- RTL direction, nested LTR English and Chatto non-mirroring.
+**Impact:** all eight language experiences.
 
-The audit reports findings first; fixes land in small, reviewable PRs so one large
-translation diff cannot hide regressions.
+Required fix: one canonical `user_language`; legacy native/interface storage may be
+read during migration but must deterministically converge to the same value and may
+not be independently writable through supported product APIs.
+
+### A2. Meanings still implement the superseded two-language fallback
+
+`localizedMeaning.js` resolves in this order:
+
+1. native full code;
+2. native base;
+3. interface base;
+4. English.
+
+`learningContent.js` therefore still accepts both native and interface language.
+Under the corrected product contract there is only `user_language -> English
+fallback` for auxiliary meaning text.
+
+**Impact:** all languages; especially legacy-mismatch users.
+
+### A3. The welcome message bypasses i18n and assumes Spanish
+
+`AppContext.jsx` hardcodes the initial Lingua message in English and includes:
+“ask for a word in Spanish”. It does not use `user_language` at all.
+
+**Impact:** every non-English interface sees English auxiliary copy; Japanese,
+Arabic, Portuguese, French, Italian and German users are explicitly told to ask in
+Spanish. The assumption is also conceptually wrong for an English-interface user.
+
+### A4. Placement is Spanish-only while claiming A1–C2
+
+`SetupFlow.jsx` renders placement question `instruction`, `prompt`, option text and
+feedback explanation directly rather than through `t()`.
+
+`placement.js` contains the level-plan strengths/focus/correction/recommendation in
+hardcoded Spanish, including missing diacritics in several strings.
+
+`placementQuestions.js` defines `CEFR_LEVELS = ['A1','A2','B1','B2','C1','C2']` but
+all auxiliary instructions/explanations are hardcoded Spanish.
+
+**Impact by user language:**
+
+| user_language | placement auxiliary experience today |
+|---|---|
+| es | understandable, but contains accent/copy debt |
+| en | Spanish instructions/explanations |
+| pt | Spanish instructions/explanations |
+| fr | Spanish instructions/explanations |
+| it | Spanish instructions/explanations |
+| de | Spanish instructions/explanations |
+| ja | Spanish instructions/explanations |
+| ar | Spanish instructions/explanations inside an RTL shell |
+
+This is both i18n debt and **product-truth debt**: the placement can announce A2,
+B1, B2, C1 or C2 even though the structured curriculum repository currently has
+only frozen Pre-A1 and partial A1 contracts/runtime. The daily-session planner is
+also currently wired to `episodesOfLevel(PRE_A1)`. A learner can therefore be shown
+a high CEFR badge without receiving a structured curriculum at that level.
+
+Do not solve this by inventing A2–C2 content inside an i18n PR. Product truth and
+future CEFR curriculum design need their own task.
+
+### A5. Profile / Language Identity has visible English literals
+
+`LanguageIdentity.jsx` contains visible labels outside i18n, including:
+
+- mood names: `Calm`, `Energetic`, `Grounded`, `Playful`;
+- relationship stages: `New acquaintances`, `Familiar faces`, `Steady companions`,
+  `Close companions`, `Long-time partners`;
+- `Now` in progress data;
+- fallback `B1`;
+- `Gentle Guide` plus literal `style`.
+
+These are visible auxiliary strings and must follow `user_language`.
+
+`JourneyRail` is rendered there as an **embedded section**, not a global navigation
+rail. That is not itself a frozen-architecture violation; do not remove it merely
+because the component name is historical.
+
+### A6. The visible language picker advertises far more than implemented locales
+
+`services/language.js`, which feeds `LanguageIdentity`, contains **46 option rows**
+covering **34 base languages**. Only 8 base languages have an implemented auxiliary
+locale today: `en/es/pt/fr/it/de/ja/ar`.
+
+That leaves **26 base languages without full locale implementations**:
+
+`zh ko hi ru tr nl pl vi id th uk el he sv no da fi ro cs hu bn ur fa sw fil ms`
+
+Variants such as `zh-CN`, `zh-TW`, `es-CO`, `pt-BR` are options, not additional base
+locale implementations. LC-I18N-002 must make the support claim honest rather than
+counting picker rows as languages.
+
+### A7. Two language-option registries have drifted
+
+`services/language.js` has the 46-row picker catalog. `i18n/translations.js` also
+exports a separate `LANGUAGE_OPTIONS` containing only six rows (`es/en/pt/fr/it/de`)
+and omits implemented `ja/ar`; its display labels also contain unaccented
+`Espanol`, `Portugues`, `Francais`.
+
+Current code search found the visible picker using the service catalog; no product
+consumer of the six-row export was established during this audit. Treat it as
+**confirmed source-of-truth drift / likely dead API**, not as proof of a visible
+bug. Consolidate only after usage is proved.
+
+### A8. No pluralisation mechanism exists
+
+`translate()` performs key lookup plus `{placeholder}` replacement only. It has no
+plural-category selection.
+
+Visible count strings such as `sessionDoneCount` and `replayTimesPractised` use one
+fixed template. Spanish already demonstrates the issue (`1 actividades
+completadas` is possible). Arabic requires multiple grammatical number categories,
+so one fixed Arabic template cannot be generally correct either.
+
+**Impact:** potentially all locales; severity varies by grammar. This is a QA/system
+gap, not something to patch by adding one Spanish conditional in a component.
+
+### A9. Current `check:i18n` cannot detect the defects above
+
+It checks only:
+
+- missing keys;
+- extra keys;
+- placeholder-name parity.
+
+It does **not** detect hardcoded visible strings, raw-key rendering in real UI,
+silent English fallback, plural/count grammar, duplicate source keys,
+user-language divergence, advertised-but-unimplemented languages or RTL semantic
+mistakes. This confirms LC-QA-001 is necessary.
+
+## B. Per-language audit summary
+
+“Confirmed” below means supported by current source/runtime structure. “Review”
+means linguistic naturalness still requires rendered/native-quality inspection; no
+claim of native-language perfection is made from static reading alone.
+
+### English (`en`)
+
+- Base dictionary: 1580 keys.
+- Confirmed: placement/support content bypasses dictionary and is Spanish, so an
+  English auxiliary experience is not fully English.
+- Confirmed: welcome is English but assumes Spanish as the user's support language.
+- Confirmed: profile literals happen to be English, masking the fact they bypass
+  localisation.
+- Confirmed: count system has no plural engine.
+- Review: tone consistency and whether target-English examples are clearly
+  distinguished from auxiliary English when both are visually identical.
+
+### Spanish (`es`)
+
+- 1580/1580 structural parity; placeholders structurally green.
+- Confirmed: placement copy is Spanish but contains documented missing diacritics
+  (`ingles`, `basicas`, `proxima`, `corregira`, etc.).
+- Confirmed: `sessionDoneCount` uses one plural template and can produce singular
+  errors such as `1 actividades completadas`.
+- Confirmed: LanguageIdentity English mood/relationship/style literals leak into
+  Spanish UI.
+- Review: older episode/tutorial phrasing and regional neutrality; stale keys that
+  mention “Práctica” are not automatically visible defects and must be checked at
+  their consumer before editing.
+
+### Portuguese (`pt`)
+
+- 1580/1580 structural parity; placeholders structurally green.
+- Confirmed: placement is Spanish, welcome is English/Spanish-assumptive, and
+  profile mood/relationship literals are English.
+- Confirmed: no locale-aware plural mechanism.
+- Review: Brazilian-vs-European neutrality and count/gender agreement in rendered
+  surfaces. `pt-BR` / `pt-PT` picker variants currently resolve to one base `pt`
+  auxiliary locale, so the product must not imply region-specific copy unless it
+  actually provides it.
+
+### French (`fr`)
+
+- 1580/1580 structural parity; placeholders structurally green.
+- Confirmed: placement Spanish; welcome/profile hardcoded leaks; no plural engine.
+- Confirmed: `fr-CA` picker variant maps to base `fr`; no separate Canadian French
+  locale exists.
+- Review: register consistency (`tu`), typography/spacing around French
+  punctuation, and regional claim honesty.
+
+### Italian (`it`)
+
+- 1580/1580 structural parity; placeholders structurally green.
+- Confirmed: placement Spanish; welcome/profile hardcoded leaks; no plural engine.
+- Review: natural register, gender/number agreement and count strings in rendered
+  UI.
+
+### German (`de`)
+
+- 1580/1580 structural parity; placeholders structurally green.
+- Confirmed: placement Spanish; welcome/profile hardcoded leaks; no plural engine.
+- Review: compound/long-label layout at 390px, case/gender agreement in
+  interpolation and consistency of informal `du` register.
+
+### Japanese (`ja`)
+
+- 1580/1580 structural parity; placeholders structurally green.
+- Confirmed: placement Spanish; welcome/profile hardcoded leaks.
+- Confirmed: Japanese is implemented but omitted by the duplicate six-row
+  `translations.js` language registry.
+- Review: natural product register, punctuation/spacing around embedded English,
+  line wrapping at 390px and whether count phrases need Japanese counters rather
+  than literal Western constructions.
+
+### Arabic (`ar`)
+
+- 1580/1580 structural parity; placeholders structurally green.
+- Confirmed: main document/profile RTL decision is currently keyed specifically to
+  `base === 'ar'`; this works for Arabic today but is not a reusable RTL-language
+  model for future Hebrew/Persian/Urdu support.
+- Confirmed: placement inserts Spanish auxiliary text inside the Arabic RTL
+  experience.
+- Confirmed: target-English phrases are intentionally present in Arabic support
+  copy; these must remain LTR and must not be mistaken for untranslated leakage.
+- Confirmed: a single `{count}` template cannot model Arabic plural categories.
+- Review: nested bidi isolation for every English token/example/input, punctuation,
+  line wrapping, focus order and Chatto non-mirroring in real rendered screens.
+
+## C. Raw keys / silent fallback assessment
+
+The normal translator falls back `locale dictionary -> English base -> raw key`.
+Current structural QA proves implemented locale files contain all 1580 base keys,
+so a missing-key English fallback is not expected for those keys at this commit.
+That does **not** prove no raw key can render from an unknown/dynamic key at runtime.
+Rendered-route tests are still required.
+
+Unsupported picker languages do fall through the locale-loader/fallback model rather
+than possessing their own complete auxiliary dictionary. That is the material
+support-honesty defect addressed by LC-I18N-002.
+
+## D. Fix order created from this audit
+
+Do not bulk-fix seven locale files at once. The safe order is:
+
+1. **LC-I18N-003 — canonical `user_language` + legacy migration.** Remove supported
+   interface/native divergence, reconcile old storage, simplify meaning fallback,
+   and add es/ja/ar reload + RTL/LTR regressions.
+2. **LC-I18N-004 — visible hardcoded auxiliary copy.** Move welcome, placement and
+   LanguageIdentity literals into the one-language i18n path; add plural-aware
+   count handling rather than one-off singular hacks.
+3. **LC-PROD-001 — placement/curriculum truth.** A placement result may not promise
+   a structured A2–C2 learning path that does not exist, and the daily planner may
+   not stay permanently bound to Pre-A1 once another level becomes truly
+   available. Solve product truth without opening unfinished A1 or inventing A2+.
+4. **LC-I18N-002 — support/picker honesty.** Derive the one language catalog from
+   real support metadata; 26 unimplemented bases must be honestly unavailable,
+   partial/coming-soon, or implemented before being called supported.
+5. **LC-QA-001 — real i18n linter.** Pin the failure classes above so they cannot
+   return.
+
+After those structural fixes, perform language-specific native/rendered copy PRs in
+small batches. “1580/1580” must never again be reported as synonymous with
+“translation quality is finished.”
+
+## E. Separate non-i18n quality signals discovered while auditing
+
+These are not fixes for this audit PR, but they affect the owner's “deliverable
+product” goal and must remain visible:
+
+- `README.md` is materially stale: it still describes Practice/Journey/mocks and a
+  B1 payload in ways that no longer match the frozen architecture/current product.
+- auth/login/signup are localStorage mocks while their UI can look account-like;
+  product must be honest about local-only identity until real persistence is an
+  authorised scope.
+- current repo has no A2/B1/B2/C1/C2 curriculum contracts; only Pre-A1 and A1
+  curriculum documents exist. Supporting “any level” therefore requires deliberate
+  post-A1 CEFR curriculum design, not merely exposing the placement badges.
+- `npm ci` reports 1 moderate + 3 high dependency vulnerabilities; audit affected
+  dependency paths before upgrading, never `npm audit fix --force` blindly.
+- backend has a Pydantic V1 `@validator` deprecation warning to migrate before
+  Pydantic v3.
+
+---
 
 ## How to add a language, per batch
 
@@ -105,13 +368,3 @@ its complete auxiliary experience in that language. For each implementation batc
 - no budget raised without measured justification.
 
 Protect variables, function names and product names (LinguaChat, Lingua, Chatto).
-
-## Known debt / queued work
-
-- `LC-I18N-001` — audit the eight implemented languages for real quality.
-- `LC-I18N-002` — make advertised support match implemented support.
-- `LC-QA-001` — turn `check:i18n` from a key-parity check into a real linter for
-  hardcoded visible strings, fallback leaks, raw keys, plurals and support honesty.
-- Historical entry-screen Spanish and other hardcoded copy should be treated as
-  audit findings and fixed from evidence rather than carried forward as unverified
-  permanent assumptions.
