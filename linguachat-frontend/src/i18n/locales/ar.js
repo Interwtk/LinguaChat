@@ -692,6 +692,8 @@ export default {
   analyzing: "Lingua تفهم إنجليزيتك...",
   resultBubble: "الآن أفهم إنجليزيتك. إليك ما وجدته.",
   detectedLevel: "المستوى المُقدّر",
+  placementCourseHeading: "ما تعلّمك LinguaChat اليوم",
+  placementCourseBody: "لاحظت Lingua أيضًا أن مستوى إنجليزيتك أعلى من هذا. المسار الموجَّه الآن هو {course}، وسينمو نحو مستواك المُقدَّر كلما فُتحت مستويات جديدة.",
   canDo: "ما تستطيع فعله بالفعل",
   focusAreas: "ما سنحسّنه",
   practiceRecommendation: "توصية التدريب",

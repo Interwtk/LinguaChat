@@ -1394,6 +1394,8 @@ const base = {
   analyzing: 'Lingua is understanding your English...',
   resultBubble: 'I understand your English now. Here is what I found.',
   detectedLevel: 'Detected level',
+  placementCourseHeading: "What LinguaChat teaches you today",
+  placementCourseBody: "Lingua also saw your English testing higher than this. The guided course right now is {course} — it will grow toward your tested level as new levels open.",
   canDo: 'What you can already do',
   focusAreas: 'What we will improve',
   practiceRecommendation: 'Practice recommendation',

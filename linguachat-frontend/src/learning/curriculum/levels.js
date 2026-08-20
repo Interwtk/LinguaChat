@@ -46,7 +46,14 @@ export const A1 = 'a1'
 export const CONTENT_STATUSES = ['none', 'partial', 'complete']
 
 export const LEVELS = [
-  { id: PRE_A1, order: 1, contentStatus: 'complete', available: true, episodeLevel: 'Pre-A1' },
+  /*
+   * `labelKey` only exists on a level once it is `available`, matching the note
+   * above: an unavailable level has no user-facing name to translate. It is the
+   * one thing placement/profile/Home may show a learner as "what LinguaChat
+   * actually teaches right now" — never the raw CEFR label a placement quiz
+   * produced, which can name a level this registry does not open.
+   */
+  { id: PRE_A1, order: 1, contentStatus: 'complete', available: true, episodeLevel: 'Pre-A1', labelKey: 'preA1LevelBadge' },
   /*
    * A1: arc 1 of seven is implemented, so there IS content — and the level is not
    * finished and not open. `available: false` is what keeps it out of Home, out of
@@ -87,6 +94,9 @@ export const availableLevelIds = () => LEVELS.filter(l => l.available).map(l => 
  * a real choice, and that is the moment to decide where the answer lives.
  */
 export const playableLevelId = () => availableLevelIds()[0] || null
+
+/* The i18n key for an available level's user-facing name, or null. */
+export const labelKeyOfLevel = (levelId) => getLevel(levelId)?.labelKey || null
 
 /* The level id an episode's own metadata declares, or null. */
 export const levelIdOfEpisode = (episode) =>

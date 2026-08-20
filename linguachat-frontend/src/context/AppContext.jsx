@@ -45,14 +45,16 @@ import {
   saveTutorPreferences,
 } from '../services/tutorPreferences'
 // the planner works from the shape of the level; the episode itself loads when it starts
-import { PRE_A1, episodesOfLevel } from '../learning/curriculum/levels.js'
+import { playableLevelId, episodesOfLevel } from '../learning/curriculum/levels.js'
 import { episodeRequest } from '../learning/curriculum/episodeContent.js'
 
 /*
  * The episodes a session may draw on. The planner itself is level-agnostic — it
  * takes whatever list it is given — so the level lives here, at the call site.
+ * `playableLevelId()` derives it from the curriculum registry rather than a
+ * hardcoded level id, so this keeps agreeing with Home once a second level opens.
  */
-const ARC = episodesOfLevel(PRE_A1)
+const ARC = episodesOfLevel(playableLevelId())
 import { loadLearnerModel, saveLearnerModel, recordItemSeen } from '../learning/engine/learnerModel.js'
 import { markFactUsed, rotateFactUsage, selectLearnerFact } from '../learning/engine/learnerFacts.js'
 import {
