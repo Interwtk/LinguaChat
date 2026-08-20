@@ -21,9 +21,13 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
+_(none — the queue is open)_
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
+
 - [LC-PROD-001] Make placement results honest about the curriculum the app can teach
-  owner:  claude-action
-  branch: fix/lc-prod-001
+  owner:  unclaimed
+  branch: none
   blocked-on: LC-I18N-004, LC-I18N-005
   why:    placement can announce A1–C2 while only Pre-A1 + partial A1 have structured curriculum, and the daily planner is hard-wired to Pre-A1.
   done:   no learner is promised a structured CEFR path that does not exist; profile,
@@ -33,7 +37,6 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
           no A2+ curriculum is invented in this task; regression/browser journeys
           cover beginner plus a placement result above current curriculum.
 
-## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-PED-001] Stress-test every completed teaching arc with real learner-shaped scenarios
   owner:  unclaimed
