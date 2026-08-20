@@ -21,17 +21,7 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-PROD-001] Make placement results honest about the curriculum the app can teach
-  owner:  claude-action
-  branch: fix/lc-prod-001
-  blocked-on: LC-I18N-004, LC-I18N-005
-  why:    placement can announce A1–C2 while only Pre-A1 + partial A1 have structured curriculum, and the daily planner is hard-wired to Pre-A1.
-  done:   no learner is promised a structured CEFR path that does not exist; profile,
-          placement reveal, Home and daily-session planning agree on what is actually
-          available; unfinished A1 remains fail-closed; future level selection is
-          driven by available curriculum rather than a permanent PRE_A1 constant;
-          no A2+ curriculum is invented in this task; regression/browser journeys
-          cover beginner plus a placement result above current curriculum.
+_(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
@@ -146,6 +136,35 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## DONE
 
+- [LC-PROD-001] Make placement results honest about the curriculum the app can teach
+  — PR #25: `calculatePlacementResult()` still returns the diagnostic CEFR
+  `level`/`detectedLevel` but now separately returns `currentCourseLevelId`/
+  `currentCourseLabelKey`, derived from the curriculum registry
+  (`playableLevelId()`), never assumed equal to the diagnostic score. `LevelReveal`
+  shows both: the raw diagnostic badge and a new honest "what LinguaChat teaches
+  you today" card, proven live in a real browser to say the same PRE-A1 course
+  whether the diagnostic lands at A1 or C1. `ProgressMap`/`JourneyRail`'s "you are
+  here" now derives from the same registry answer (new `COURSE_NODE_BY_LEVEL_ID`
+  in `mockData.js`) instead of the raw CEFR label, so a high placement can no
+  longer point the profile journey map at a Travel/Confidence/Fluency node this
+  build has no content for. Home's daily planner, the session builder
+  (`AppContext.jsx`) and the replay list (`CompletedEpisodes.jsx`) all now derive
+  their arc from `playableLevelId()` instead of a hardcoded `PRE_A1` constant, so
+  they stay correct the day a second level opens; `check-curriculum-authoring.mjs`
+  was extended to enforce this per call site while Pre-A1's own frozen exit
+  criteria (`readiness.js`/`preA1Map.js`) keep their literal `PRE_A1` call. New
+  `check-placement-honesty` (7 groups) pins all of this. No A2+ curriculum
+  invented; A1 stays `available: false`. `check:all` 54/54 (was 53), two
+  consecutive clean cycles; build entry 447.64 kB / bundle-boundaries entry
+  438.4 kB, two consecutive clean cycles; backend `compileall` clean + 444 pytest
+  passed, two consecutive clean cycles, unchanged. Real browser proof (Playwright/
+  Chromium) at 390px/1440px: a fresh signup → placement → LevelReveal walk landing
+  at diagnostic B1 shows "What LinguaChat teaches you today: ... PRE-A1"; seeded
+  Home/profile-journey walks for a beginner (diagnostic A1) and a learner who
+  tested above current curriculum (diagnostic C1) render the identical Pre-A1
+  session and "you are here: Start" journey node in both cases; Arabic renders
+  RTL end to end with no horizontal overflow, no raw i18n keys and no console
+  errors, and the target-English phrase stayed LTR.
 - [LC-I18N-005] Detect the learner's preferred device language before login without
   geo guessing — PR #24: `detectNativeLanguage()` now returns the first
   `navigator.languages` candidate whose base is in `SUPPORTED_LOCALES`
