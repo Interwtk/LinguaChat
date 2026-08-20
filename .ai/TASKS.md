@@ -21,25 +21,13 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-I18N-002] Stop advertising languages that only fall back to English (phase B)
-  owner:  claude-i18n
-  branch: i18n/lc-i18n-002
-  why:    the visible picker has 46 rows / 34 base languages while only 8 base auxiliary locales are implemented.
-  done:   derive picker/support metadata from one source of truth; the 26 currently
-          unimplemented bases are honestly unavailable, partial/coming-soon, or
-          implemented before being called supported; regional variants do not imply
-          region-specific copy when only a base locale exists; ja/ar cannot disappear
-          through the stale six-row registry; no language is supported merely by
-          English fallback. Subsequent language expansion happens in small reviewed
-          batches and a language becomes selectable only when login/onboarding/UI,
-          explanations, hints, corrections and meanings are genuinely complete.
+_(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-QA-001] Extend check:i18n into a real linter
   owner:  unclaimed
   branch: none
-  blocked-on: LC-I18N-002, LC-I18N-004
   why:    the current check proves key parity only and missed every material defect found in LC-I18N-001.
   done:   detect hardcoded visible auxiliary strings, placeholder mismatches,
           duplicate locale keys, unsupported-language claims, raw-key/silent fallback
@@ -113,6 +101,37 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## DONE
 
+- [LC-I18N-002] Stop advertising languages that only fall back to English
+  (phase B) — PR #30: `services/language.js`'s `LANGUAGE_OPTIONS` now carries
+  a `supported` flag computed from `SUPPORTED_LOCALES` (the one real source of
+  truth, unchanged) instead of every one of its 46 rows being equally
+  selectable; new `isSupportedLanguage()` is the one reusable predicate.
+  `LanguageIdentity`'s post-login picker now renders the 26 unimplemented
+  bases as visibly disabled with a "coming soon" badge (reusing the existing
+  `upcoming` key) instead of letting them be chosen and silently persisted as
+  `user_language` while every string renders English fallback under a false
+  label — the exact defect LC-I18N-001 finding A6 confirmed. Regional variants
+  inherit their base's support (`es-CO`/`pt-BR`/`fr-CA` stay selectable,
+  `zh-CN` does not), so a region row can never imply region-specific copy
+  beyond its base. `ensureLanguagePreferences()` now self-heals a
+  persisted-but-unsupported base instead of letting a pre-fix or hand-edited
+  choice keep claiming a language forever, the same self-healing pattern
+  LC-I18N-003 already applies to a legacy native/interface mismatch. Removed
+  the drifted, zero-importer duplicate `LANGUAGE_OPTIONS`/`detectNativeLanguage`/
+  `getLanguageName` registry in `i18n/translations.js` (finding A7 — six rows,
+  missing `ja`/`ar` entirely) outright, so it can never be picked up by a
+  future accidental import. New `check:language-support` (10 groups). No
+  locale copy touched; `check:i18n` unchanged at 1726 base keys, 100% coverage
+  es/pt/fr/it/de/ja/ar. `check:all` 56/56 (was 55), two consecutive clean
+  cycles; build entry 447.81 kB / bundle-boundaries entry 438.6 kB, two
+  consecutive clean cycles; backend `compileall` clean + 444 pytest passed,
+  two consecutive clean cycles, unchanged. Real browser proof (Playwright/
+  Chromium) at 390px/1440px for es/ja/ar (6 runs): searching "hindi" shows the
+  Hindi row disabled with the locale's own "coming soon" badge; searching
+  "japan" shows it enabled with no badge, and clicking it then Save actually
+  persists `ja` — the supported path stays fully working end to end; no
+  horizontal overflow, no console errors, no raw `{key}` leaks; Arabic
+  `dir="rtl"`, Spanish/Japanese `dir="ltr"`, all six runs.
 - [LC-PED-001] Stress-test every completed teaching arc with real learner-shaped
   scenarios — PR #26: new `check-pedagogical-journeys.mjs` (wired into
   `check:all`) plays all 11 completed runtime arcs (Pre-A1's six, A1's first

@@ -3,7 +3,7 @@
 Keep this file current: what just happened, what is proved, what comes next, and
 what will bite the next operator.
 
-_Written for LC-PED-001 on 2026-08-20. Live main/TASKS wins if it changes after
+_Written for LC-I18N-002 on 2026-08-20. Live main/TASKS wins if it changes after
 this branch was cut._
 
 ## What just happened
@@ -127,6 +127,37 @@ do, and resume/finish existing work rather than re-claiming and re-releasing it.
 such stale branch existed for LC-I18N-005 at claim time; `i18n/lc-i18n-005` was
 created fresh.
 
+LC-I18N-002 (PR #30) then closed the picker/support-honesty gap this queue had
+pointed at since `LC-I18N-001` finding A6: `LanguageIdentity`'s post-login picker
+still let a learner select any of 46 rows / 34 base languages, and picking one of
+the 26 with no implemented locale persisted it as `user_language` and set
+`document.lang` to it while every visible string kept silently rendering English
+— the same false-support-claim failure mode `LC-I18N-005` had already closed for
+*automatic* detection, still reachable through manual selection. `services/
+language.js`'s `LANGUAGE_OPTIONS` now carries a `supported` flag computed from
+`SUPPORTED_LOCALES` (the loader's own real list, not a second hand-maintained
+one); the picker disables the 26 unsupported rows with a "coming soon" badge
+instead of letting them be chosen; `ensureLanguagePreferences()` self-heals a
+persisted-but-unsupported base (from before this fix, or hand-edited storage)
+back to a genuinely supported one on the next load, the same self-healing
+pattern `LC-I18N-003` already applies to a legacy native/interface mismatch.
+The drifted, zero-importer duplicate `LANGUAGE_OPTIONS`/`detectNativeLanguage`/
+`getLanguageName` registry LC-I18N-001 flagged in `i18n/translations.js`
+(finding A7 — six rows, missing `ja`/`ar` entirely) is now removed outright
+rather than merely unused, so it can never be picked up by a future accidental
+import. New `check-language-support` (10 groups) pins all of this; `check:all`
+56/56 (was 55), two consecutive clean cycles; build entry 447.81 kB /
+bundle-boundaries entry 438.6 kB, two consecutive clean cycles; backend
+`compileall` clean + 444 pytest passed, two consecutive clean cycles, unchanged.
+Real browser proof (Playwright/Chromium, installed ad hoc with `--no-save` and
+removed afterward) at 390px/1440px in es/ja/ar (6 runs): searching "hindi" in
+the real popover shows it disabled with the locale's own "coming soon" badge;
+searching "japan" shows it enabled with no badge, and selecting it then Save
+actually persists `ja` end to end — the supported path stays fully working, not
+merely visually unaffected; no overflow, no console errors, no raw `{key}`
+leaks; Arabic `dir="rtl"`, Spanish/Japanese `dir="ltr"`, all six runs. Full
+detail in `.ai/TRANSLATIONS.md` under "LC-I18N-002".
+
 ## The 40-turn failure — what it actually means now
 
 Run `32331959420` was an interactive `Claude — mention` run. It authenticated on a
@@ -219,21 +250,23 @@ supported locales may be selected — this is now enforced in code, not just pol
 
 ## Current i18n path
 
-`LC-I18N-005` is DONE (PR #24), `LC-PROD-001` is DONE (PR #25), and `LC-PED-001`
-is DONE (PR #26, merged into main's `.ai/TASKS.md` DONE section in this same PR).
-The next language/quality tasks are:
+`LC-I18N-005` is DONE (PR #24), `LC-PROD-001` is DONE (PR #25), `LC-PED-001` is
+DONE (PR #26), and `LC-I18N-002` is DONE (PR #30, merged into main's
+`.ai/TASKS.md` DONE section in this same PR). The next language/quality task is:
 
-1. `LC-I18N-002` — one truthful supported-language catalog; expand future languages
-   only in small complete batches;
-2. `LC-QA-001` — turn remaining i18n failure classes into regression gates.
+1. `LC-QA-001` — turn remaining i18n failure classes into regression gates.
 
 Do not mass-add Hindi/Korean/etc. as selector labels first. A language becomes
 supported only after login/onboarding/UI + explanations/hints/corrections/meanings
-are actually complete and tested. Note for whoever picks up `LC-I18N-002`: the new
-`LanguageSwitcher` (pre-login) deliberately mirrors this — it only ever lists
-`SUPPORTED_LOCALES`, never the full 46-row `LanguageIdentity` picker, so expanding
-that 46-row catalog does not by itself change what the pre-login switcher offers;
-both must be updated together if a language becomes genuinely supported.
+are actually complete and tested — and, since `LC-I18N-002`, only after it is
+added to `SUPPORTED_LOCALES` (`i18n/translations.js`'s `LOADERS`), which is now
+the single flag that makes a base selectable everywhere at once: the post-login
+`LanguageIdentity` picker (via `LANGUAGE_OPTIONS.supported`) and the pre-login
+`LanguageSwitcher` (which already only ever lists `SUPPORTED_LOCALES`) both read
+the same source, so there is no longer a second catalog to remember to update in
+step. Adding a base to `SUPPORTED_LOCALES` before its locale dictionary, native
+copy review and browser/RTL proof are actually complete would make it fully
+selectable immediately — do the work first, wire the loader last.
 
 ## Supabase — owner now authorizes gradual beta persistence, but do not guess a project
 
