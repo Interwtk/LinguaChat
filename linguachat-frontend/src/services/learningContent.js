@@ -15,10 +15,10 @@ export function getVocabItem(id) {
   return SEED_VOCAB_BY_ID[id] || null
 }
 
-// Returns seed vocab with the native-resolved meaning attached, ready to render.
-export function getLocalizedVocab(nativeLanguage, interfaceLanguage) {
+// Returns seed vocab with the user_language-resolved meaning attached, ready to render.
+export function getLocalizedVocab(userLanguage) {
   return SEED_VOCAB.map(item => ({
     ...item,
-    trans: getLocalizedMeaning(item.meaning, nativeLanguage, interfaceLanguage),
+    trans: getLocalizedMeaning(item.meaning, userLanguage),
   }))
 }

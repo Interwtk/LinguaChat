@@ -139,15 +139,23 @@ function readLanguage(codeKey, legacyKey = null) {
   return null
 }
 
-function writeLanguage(prefix, info) {
-  const keys = prefix === 'native'
-    ? [NATIVE_CODE_KEY, NATIVE_BASE_KEY, NATIVE_NAME_KEY]
-    : [INTERFACE_CODE_KEY, INTERFACE_BASE_KEY, INTERFACE_NAME_KEY]
+/*
+ * The ONE storage writer. There is deliberately no writer that touches only the
+ * native keys or only the interface keys: `user_language` is a single learner
+ * choice, and native/interface are legacy storage names for that same choice
+ * kept for compatibility. Writing both together, always, is what makes it
+ * impossible for a supported product API to leave them pointing at two
+ * different languages.
+ */
+function writeUserLanguage(info) {
   try {
-    localStorage.setItem(keys[0], info.code)
-    localStorage.setItem(keys[1], info.base)
-    localStorage.setItem(keys[2], info.name)
-    if (prefix === 'native') localStorage.setItem(LEGACY_NATIVE_KEY, info.base)
+    localStorage.setItem(NATIVE_CODE_KEY, info.code)
+    localStorage.setItem(NATIVE_BASE_KEY, info.base)
+    localStorage.setItem(NATIVE_NAME_KEY, info.name)
+    localStorage.setItem(LEGACY_NATIVE_KEY, info.base)
+    localStorage.setItem(INTERFACE_CODE_KEY, info.code)
+    localStorage.setItem(INTERFACE_BASE_KEY, info.base)
+    localStorage.setItem(INTERFACE_NAME_KEY, info.name)
   } catch {}
 }
 
@@ -166,18 +174,17 @@ export function getStoredNativeLanguage() {
 
 export function setNativeLanguage(language) {
   const info = makeLanguageInfo(language)
-  writeLanguage('native', info)
+  writeUserLanguage(info)
   return info
 }
 
+/*
+ * `interfaceLanguage` is not a second preference: it is the same `user_language`
+ * choice, read through its legacy name. There is no `setInterfaceLanguage` — the
+ * only supported way to change it is `setNativeLanguage`, which writes both.
+ */
 export function getStoredInterfaceLanguage() {
-  return readLanguage(INTERFACE_CODE_KEY) || getStoredNativeLanguage()
-}
-
-export function setInterfaceLanguage(language) {
-  const info = makeLanguageInfo(language)
-  writeLanguage('interface', info)
-  return info
+  return getStoredNativeLanguage()
 }
 
 export function getStoredTargetLanguage() {
@@ -187,14 +194,17 @@ export function getStoredTargetLanguage() {
 
 export function ensureLanguagePreferences() {
   const existingNative = readLanguage(NATIVE_CODE_KEY, LEGACY_NATIVE_KEY)
-  const native = existingNative || detectNativeLanguage()
-  const existingInterface = readLanguage(INTERFACE_CODE_KEY)
-  const interfaceLanguage = existingInterface || native
+  const userLanguage = existingNative || detectNativeLanguage()
   const target = getStoredTargetLanguage()
-
-  if (!existingNative) setNativeLanguage(native)
-  if (!existingInterface) setInterfaceLanguage(interfaceLanguage)
-  return { nativeLanguage: native, interfaceLanguage, targetLanguage: target }
+  /*
+   * Reconcile on every load, not only when nothing was stored yet. Older builds
+   * (or storage edited outside this module) could leave native/interface
+   * pointing at two different languages; rewriting both from the one resolved
+   * `userLanguage` is what deterministically collapses any such mismatch back
+   * onto a single choice instead of preserving it.
+   */
+  writeUserLanguage(userLanguage)
+  return { nativeLanguage: userLanguage, interfaceLanguage: userLanguage, targetLanguage: target }
 }
 
 export function languageFromInput(value) {

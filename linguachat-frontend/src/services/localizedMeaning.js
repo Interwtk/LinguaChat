@@ -1,13 +1,15 @@
 /*
- * localizedMeaning — resolves NATIVE-language meanings for pedagogical items.
+ * localizedMeaning — resolves the ONE auxiliary-language meaning for pedagogical
+ * items.
  *
  * Fallback priority (never Spanish as a universal fallback):
- *   1. native full code   (e.g. ja-JP)
- *   2. native base        (e.g. ja)
- *   3. interface base     (e.g. the UI language)
- *   4. English
+ *   1. user_language full code   (e.g. ja-JP)
+ *   2. user_language base        (e.g. ja)
+ *   3. English
  *
- * Accepts language info objects ({ code, base }) or plain strings.
+ * Accepts a language info object ({ code, base }) or a plain string. There is
+ * only ever one auxiliary language to resolve against: native and interface are
+ * legacy names for the same `user_language` choice, so this never takes two.
  */
 
 function baseOf(lang) {
@@ -22,15 +24,10 @@ function fullOf(lang) {
   return String(raw).toLowerCase() || null
 }
 
-export function getLocalizedMeaning(meaning, nativeLanguage, interfaceLanguage) {
+export function getLocalizedMeaning(meaning, userLanguage) {
   if (!meaning) return ''
   if (typeof meaning === 'string') return meaning
-  const candidates = [
-    fullOf(nativeLanguage),
-    baseOf(nativeLanguage),
-    baseOf(interfaceLanguage),
-    'en',
-  ]
+  const candidates = [fullOf(userLanguage), baseOf(userLanguage), 'en']
   for (const code of candidates) {
     if (code && meaning[code]) return meaning[code]
   }
