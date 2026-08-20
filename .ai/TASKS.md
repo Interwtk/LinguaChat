@@ -21,42 +21,108 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-I18N-001] Audit the eight implemented languages (phase A)
-  owner:  chatgpt-supervisor
-  branch: i18n/lc-i18n-001-audit
-  why:    100 % key coverage is not the same as correct copy or a coherent language experience.
-  done:   a report in .ai/TRANSLATIONS.md listing, per language: suspicious or
-          missing placeholders, plural/count errors, missing diacritics, hardcoded
-          visible strings, raw keys, silent fallbacks, user_language inconsistencies,
-          and RTL defects. Fixes go in separate small PRs, not inside the audit.
+_(nothing is in progress)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
+
+- [LC-I18N-003] Make `user_language` the one real auxiliary-language preference
+  owner:  unclaimed
+  branch: none
+  why:    legacy native/interface storage and APIs can still diverge even though the product has one user language.
+  done:   migrate/reconcile persisted mismatches deterministically; supported product
+          APIs cannot independently change interface/native; meanings use
+          user_language then English fallback; es/ja/ar reload tests prove UI,
+          explanations, corrections and meanings stay together; Arabic auxiliary
+          UI is RTL and target English/input remains LTR; no target-English copy is
+          translated and no stored progress is lost.
+
+- [LC-I18N-004] Localize visible auxiliary copy and add plural-aware count rendering
+  owner:  unclaimed
+  branch: none
+  blocked-on: LC-I18N-003
+  why:    welcome, placement and LanguageIdentity still bypass i18n; fixed `{count}` templates cannot be correct in all locales.
+  done:   welcome has no Spanish assumption; placement instructions/explanations and
+          profile mood/relationship/progress/style literals use user_language;
+          count copy uses locale-aware plural categories rather than component hacks;
+          every implemented locale remains structurally complete; real browser
+          proof at 390px/1440px includes es/ja/ar and no raw keys/overflow/bidi
+          leakage; English practice material remains English.
+
+- [LC-PROD-001] Make placement results honest about the curriculum the app can teach
+  owner:  unclaimed
+  branch: none
+  blocked-on: LC-I18N-004
+  why:    placement can announce A1–C2 while only Pre-A1 + partial A1 have structured curriculum, and the daily planner is hard-wired to Pre-A1.
+  done:   no learner is promised a structured CEFR path that does not exist; profile,
+          placement reveal, Home and daily-session planning agree on what is actually
+          available; unfinished A1 remains fail-closed; future level selection is
+          driven by available curriculum rather than a permanent PRE_A1 constant;
+          no A2+ curriculum is invented in this task; regression/browser journeys
+          cover beginner plus a placement result above current curriculum.
 
 - [LC-I18N-002] Stop advertising languages that only fall back to English (phase B)
   owner:  unclaimed
   branch: none
-  why:    historical snapshots show many more picker options than full locale implementations.
-  done:   derive the exact live option/locales lists from code, decide honestly per
-          language (implemented, partial/interface-only, or coming soon), and make
-          the picker tell the truth. No language may be labelled fully supported on
-          the strength of an English fallback.
+  blocked-on: LC-I18N-003
+  why:    the visible picker has 46 rows / 34 base languages while only 8 base auxiliary locales are implemented.
+  done:   derive picker/support metadata from one source of truth; the 26 currently
+          unimplemented bases are honestly unavailable, partial/coming-soon, or
+          implemented before being called supported; regional variants do not imply
+          region-specific copy when only a base locale exists; ja/ar cannot disappear
+          through the stale six-row registry; no language is supported merely by
+          English fallback.
 
 - [LC-QA-001] Extend check:i18n into a real linter
   owner:  unclaimed
   branch: none
-  why:    the current check counts keys; it cannot see many defects that matter.
-  done:   detect hardcoded visible strings, placeholder mismatches, plural errors,
-          locale chunk cross-contamination, raw keys, silent fallback, and a
-          language advertised without coverage. No absurd false positives: product
-          names, Lingua, Chatto, URLs, codes and intentional English target material
-          may legitimately match across languages.
+  blocked-on: LC-I18N-002, LC-I18N-004
+  why:    the current check proves key parity only and missed every material defect found in LC-I18N-001.
+  done:   detect hardcoded visible auxiliary strings, placeholder mismatches,
+          duplicate locale keys, unsupported-language claims, raw-key/silent fallback
+          cases that can be proved statically or through a harness, plural-category
+          contract violations, and user_language divergence without absurd false
+          positives for product names, URLs, codes or intentional target English.
+
+- [LC-SEC-001] Audit and safely resolve the current frontend dependency vulnerabilities
+  owner:  unclaimed
+  branch: none
+  blocked-on: LC-QA-001
+  why:    `npm ci` reports 1 moderate and 3 high vulnerabilities; severity alone is not enough to justify a forced upgrade.
+  done:   record exact advisory/package/dependency paths and runtime-vs-build exposure;
+          upgrade only through compatible safe ranges or document why an advisory is
+          not reachable; never use `npm audit fix --force` blindly; full frontend,
+          backend and rendered smoke QA remains green with no bundle regression.
+
+- [LC-BE-001] Remove the Pydantic V1 validator deprecation safely
+  owner:  unclaimed
+  branch: none
+  blocked-on: LC-SEC-001
+  why:    backend tests pass but `ai/schemas.py` emits a V1-style `@validator` deprecation that will matter before Pydantic v3.
+  done:   migrate to the supported Pydantic API without changing accepted/rejected
+          provider verdict semantics; parity/refusal tests pin behaviour; compileall
+          clean and pytest green without that deprecation warning.
+
+- [LC-DOC-001] Reconcile README and historical repository debris with the real product
+  owner:  unclaimed
+  branch: none
+  blocked-on: LC-BE-001
+  why:    README still describes legacy Practice/Journey/mock/B1 behaviour and old root/frontend artifacts can mislead future agents.
+  done:   README describes the current architecture and explicit local-only/deferred
+          boundaries; prove whether `linguachat-frontend-old/`, `pacientes.txt` and
+          `procedimientos.txt` are unused before removing anything; no owner archive
+          or secret is touched; docs cannot claim A2+ curriculum, real auth, voice or
+          other unavailable functionality.
 
 ## BLOCKED
 
-_(nothing is blocked)_
+_(nothing is manually blocked; dependencies above control order)_
 
 ## DONE
 
+- [LC-I18N-001] Eight-language phase-A audit — evidence in `.ai/TRANSLATIONS.md`:
+  structural parity is real but hardcoded placement/profile/welcome copy,
+  user_language divergence, plural gaps, support-honesty drift and RTL/fallback
+  risks are not solved by 1580/1580 key counts
 - [LC-OPS-009] Cloud autonomy repair — PR #17: same-run advancement after merge,
   hourly chain watchdog, one shared task selector, one Claude writer lock, red/draft
   recovery, atomic final bookkeeping, QA on ready_for_review, corrected user_language
