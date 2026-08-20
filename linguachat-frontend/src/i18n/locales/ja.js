@@ -760,6 +760,7 @@ export default {
   keyFix: "重要な修正",
   practiceAgain: "このトピックをもう一度練習",
   bestTopic: "得意なトピック",
+  confidencePtsGained: "自信ポイント +{count}",
   mostPracticed: "一番練習した",
   chooseEnergyEyebrow: "Linguaがどう寄り添うか",
   chooseEnergyTitle: "Linguaの雰囲気を選ぼう",

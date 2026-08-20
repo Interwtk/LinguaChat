@@ -26,51 +26,21 @@
  * shows and would force pointless copy nobody's UI can reach.
  *
  *   node scripts/check-i18n.mjs
+ *
+ * Structural/reachability defects (hardcoded auxiliary strings, raw-key/silent
+ * fallback, dead files) are a different kind of check — see check-i18n-lint.mjs,
+ * wired in right after this one.
  */
 import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import { LOCALE_ORDER, extractBase, extractLocale, placeholders } from './lib/i18nSource.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const TRANSLATIONS = resolve(here, '../src/i18n/translations.js')
 
 // Every declared interface locale is fully supported and gated.
-const LOCALE_ORDER = ['es', 'pt', 'fr', 'it', 'de', 'ja', 'ar']
 const FULLY_SUPPORTED = [...LOCALE_ORDER]
-
-// Collect `  key: value,` pairs from a dictionary body.
-function readPairs(lines, from = 0, until = () => false) {
-  const dict = {}
-  for (let i = from; i < lines.length; i++) {
-    if (until(lines[i])) break
-    const kv = lines[i].match(/^\s{2}([A-Za-z0-9_]+):\s*(.*?),?\s*$/)
-    if (kv) dict[kv[1]] = kv[2]
-  }
-  return dict
-}
-
-// English lives in translations.js as `const base = { … }`; it is both a locale
-// and the fallback, so it always ships in the entry chunk.
-function extractBase(source) {
-  const lines = source.split(/\r?\n/)
-  const start = lines.findIndex(l => /^const base = \{$/.test(l))
-  if (start === -1) return {}
-  return readPairs(lines, start + 1, (l) => /^\}/.test(l))
-}
-
-// Every other locale is its own lazily-imported module: `export default { … }`.
-function extractLocale(source) {
-  const lines = source.split(/\r?\n/)
-  const start = lines.findIndex(l => /^export default \{$/.test(l))
-  if (start === -1) return {}
-  return readPairs(lines, start + 1, (l) => /^\}/.test(l))
-}
-
-const placeholders = (value) => {
-  const found = new Set()
-  for (const m of String(value || '').matchAll(/\{(\w+)\}/g)) found.add(m[1])
-  return [...found].sort()
-}
 
 const PLURAL_CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other']
 const SAMPLE_COUNTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 20, 50, 99, 100, 101, 200, 999]
@@ -89,16 +59,30 @@ function requiredCategoriesFor(locale) {
 }
 
 const source = await readFile(TRANSLATIONS, 'utf8')
-const base = extractBase(source)
+const { dict: base, duplicates: baseDuplicates } = extractBase(source)
 const dicts = { base }
+const localeDuplicates = { base: baseDuplicates }
 for (const loc of LOCALE_ORDER) {
-  dicts[loc] = extractLocale(await readFile(resolve(here, `../src/i18n/locales/${loc}.js`), 'utf8'))
+  const { dict, duplicates } = extractLocale(await readFile(resolve(here, `../src/i18n/locales/${loc}.js`), 'utf8'))
+  dicts[loc] = dict
+  localeDuplicates[loc] = duplicates
 }
 const baseKeys = Object.keys(base)
 
 if (!baseKeys.length) {
   console.error('check-i18n: could not read base dictionary keys. Aborting.')
   process.exit(2)
+}
+
+// A duplicate `key:` inside one object literal silently keeps only the last
+// value — the earlier one, and whatever it was meant to say, is unreachable
+// dead copy. Coverage/placeholder counts above see only the surviving key, so
+// this can never surface as "missing" or "mismatched"; it needs its own gate.
+let duplicateGateFailed = false
+for (const [loc, dupes] of Object.entries(localeDuplicates)) {
+  if (!dupes.length) continue
+  duplicateGateFailed = true
+  console.log(`\n[${loc}] duplicate keys (only the last occurrence survives):\n  ` + dupes.join('\n  '))
 }
 
 // Every base key ending `_other` names a plural stem; that stem's `_<category>`
@@ -166,4 +150,4 @@ for (const loc of LOCALE_ORDER) {
 }
 
 console.log('\nUntranslated keys fall back to English, but gated locales must be complete.\n')
-process.exit(gateFailed ? 1 : 0)
+process.exit((gateFailed || duplicateGateFailed) ? 1 : 0)

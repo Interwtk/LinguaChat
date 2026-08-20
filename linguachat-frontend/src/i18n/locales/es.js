@@ -871,6 +871,7 @@ export default {
   keyFix: 'Correccion clave',
   practiceAgain: 'Practicar este tema otra vez',
   bestTopic: 'Mejor tema',
+  confidencePtsGained: '+{count} puntos de confianza',
   mostPracticed: 'Mas practicado',
   practice: 'Practica',
   identity: 'Identidad',
