@@ -41,7 +41,15 @@ const ENTRY_BUDGET_KB = 500
  * catch a leak: a locale chunk carries its own interface text, never another
  * locale's, and never a step's prose.
  */
-const LOCALE_MAX_KB = 95
+/*
+ * 95 kB held until LC-I18N-004, which closed the placement flow being Spanish-only
+ * for every other interface language: 18 questions x 4 fields, 5 level plans x 7
+ * fields and the plural-aware count categories added ~113 real keys per locale
+ * that simply did not exist before (they were hardcoded Spanish shared by every
+ * learner, not translated content). That took Arabic to 101.5 kB and Japanese to
+ * 97.2 kB. Measured, not guessed; the number moves for the same reason as above.
+ */
+const LOCALE_MAX_KB = 110
 
 const files = readdirSync(DIST).filter(f => f.endsWith('.js'))
 const sizeKb = (f) => statSync(join(DIST, f)).size / 1024

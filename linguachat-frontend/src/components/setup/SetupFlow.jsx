@@ -42,7 +42,7 @@ function SetupShell({ children, step, totalSteps }) {
 }
 
 function PlacementTest() {
-  const { completePlacement, t } = useApp()
+  const { completePlacement, t, interfaceLanguage } = useApp()
   const [phase, setPhase] = useState('intro')
   const [placementState, setPlacementState] = useState(() => getInitialPlacementState('A2'))
   const [selectedOption, setSelectedOption] = useState(null)
@@ -60,7 +60,7 @@ function PlacementTest() {
     setFeedback(evaluated.feedback)
     window.setTimeout(() => {
       if (shouldFinishPlacement(evaluated.nextState)) {
-        completePlacement(calculatePlacementResult(evaluated.nextState))
+        completePlacement(calculatePlacementResult(evaluated.nextState, interfaceLanguage))
         return
       }
       setPlacementState(evaluated.nextState)
@@ -128,10 +128,10 @@ function PlacementTest() {
 
           <div className="rounded-3xl p-5 md:p-6 mb-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', fontWeight: 600, marginBottom: 8 }}>
-              {question.instruction}
+              {t(question.instructionKey)}
             </p>
             <h2 style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--ink)', lineHeight: 1.25 }}>
-              {question.prompt}
+              {t(question.promptKey)}
             </h2>
             <p style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.45, marginTop: 10 }}>
               {t('placementExamplesNote')}
@@ -179,7 +179,7 @@ function PlacementTest() {
                 {feedback.isCorrect ? t('placementCorrect') : t('placementIncorrect')}
               </p>
               <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>
-                {feedback.explanation}
+                {t(feedback.explanationKey)}
               </p>
             </div>
           )}
@@ -194,8 +194,10 @@ function LevelReveal() {
   const { profile, setAuthStep, t } = useApp()
   const moti = getMotiMoment('placementDone')
   const result = profile.placementResult || { level: 'B1', vocab: 72, grammar: 65, conversation: 78 }
-  const strengths = result.strengths || result.placementStrengths || ['You can communicate simple ideas.']
-  const focusAreas = result.focusAreas || result.placementFocusAreas || ['word order', 'questions', 'everyday vocabulary']
+  const strengths = result.strengths || result.placementStrengths || [t('placementFallbackStrength')]
+  const focusAreas = result.focusAreas || result.placementFocusAreas || [
+    t('placementFallbackFocus1'), t('placementFallbackFocus2'), t('placementFallbackFocus3'),
+  ]
 
   return (
     <SetupShell step={1} totalSteps={3}>
@@ -257,7 +259,7 @@ function LevelReveal() {
                 {t('nextGoal')}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.6 }}>
-                {result.practiceRecommendation || 'Lingua will start with short replies and one active mini goal per turn.'}
+                {result.practiceRecommendation || t('placementFallbackRecommendation')}
               </p>
             </div>
             <div className="rounded-2xl p-4" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}>
@@ -265,7 +267,7 @@ function LevelReveal() {
                 {t('howLinguaCorrects')}
               </p>
               <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.6 }}>
-                {result.recommendedCorrectionStyle || 'Balanced corrections with short examples.'}
+                {result.recommendedCorrectionStyle || t('placementFallbackCorrection')}
               </p>
             </div>
           </div>
