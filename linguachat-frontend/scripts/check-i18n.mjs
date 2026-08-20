@@ -13,6 +13,18 @@
  * (Untranslated keys still render — they fall back to English — but a "complete"
  * interface locale must not rely on that fallback for visible text.)
  *
+ * Plural-aware keys: a base key ending `_other` (e.g. `sessionDoneCount_other`)
+ * marks `sessionDoneCount` as a plural stem — `translate()` resolves it through
+ * Intl.PluralRules at runtime rather than one fixed template (see
+ * src/i18n/translations.js). Each locale's required categories are its own
+ * grammar, not English's: Arabic genuinely needs zero/one/two/few/many/other,
+ * Japanese only ever needs `other`, most others need one/other. Required
+ * categories are derived by sampling Intl.PluralRules(locale).select() over a
+ * representative range rather than resolvedOptions().pluralCategories, which
+ * would also list categories (e.g. Spanish/French/Italian/Portuguese "many")
+ * that never actually get selected for the small integer counts this product
+ * shows and would force pointless copy nobody's UI can reach.
+ *
  *   node scripts/check-i18n.mjs
  */
 import { readFile } from 'node:fs/promises'
@@ -60,6 +72,22 @@ const placeholders = (value) => {
   return [...found].sort()
 }
 
+const PLURAL_CATEGORIES = ['zero', 'one', 'two', 'few', 'many', 'other']
+const SAMPLE_COUNTS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 20, 50, 99, 100, 101, 200, 999]
+
+function pluralStemOf(key) {
+  for (const cat of PLURAL_CATEGORIES) {
+    if (key.endsWith(`_${cat}`)) return { stem: key.slice(0, -(cat.length + 1)), category: cat }
+  }
+  return null
+}
+
+function requiredCategoriesFor(locale) {
+  let rules
+  try { rules = new Intl.PluralRules(locale) } catch { rules = new Intl.PluralRules('en') }
+  return [...new Set(SAMPLE_COUNTS.map(n => rules.select(n)))]
+}
+
 const source = await readFile(TRANSLATIONS, 'utf8')
 const base = extractBase(source)
 const dicts = { base }
@@ -73,7 +101,20 @@ if (!baseKeys.length) {
   process.exit(2)
 }
 
-console.log(`\ni18n coverage — ${baseKeys.length} visible keys in base (English)\n`)
+// Every base key ending `_other` names a plural stem; that stem's `_<category>`
+// keys are validated separately, per locale, against that locale's own grammar.
+const pluralStems = new Set()
+for (const key of baseKeys) {
+  const parsed = pluralStemOf(key)
+  if (parsed && parsed.category === 'other') pluralStems.add(parsed.stem)
+}
+const isPluralVariantKey = (key) => {
+  const parsed = pluralStemOf(key)
+  return Boolean(parsed && pluralStems.has(parsed.stem))
+}
+const scalarBaseKeys = baseKeys.filter(k => !isPluralVariantKey(k))
+
+console.log(`\ni18n coverage — ${baseKeys.length} visible keys in base (English), ${pluralStems.size} plural-aware\n`)
 console.log('locale   translated   missing   extra   phMismatch   coverage')
 console.log('------   ----------   -------   -----   ----------   --------')
 
@@ -83,12 +124,29 @@ const detail = {}
 for (const loc of LOCALE_ORDER) {
   const dict = dicts[loc] || {}
   const keys = Object.keys(dict)
-  const missing = baseKeys.filter(k => !(k in dict))
-  const extra = keys.filter(k => !(k in base))
-  const phMismatch = baseKeys.filter(k => (k in dict) &&
+  const missing = scalarBaseKeys.filter(k => !(k in dict))
+  const extra = keys.filter(k => !isPluralVariantKey(k) && !(k in base))
+  const phMismatch = scalarBaseKeys.filter(k => (k in dict) &&
     placeholders(base[k]).join(',') !== placeholders(dict[k]).join(','))
-  const translated = baseKeys.length - missing.length
-  const pct = Math.round((translated / baseKeys.length) * 100)
+
+  const requiredCats = requiredCategoriesFor(loc)
+  for (const stem of pluralStems) {
+    const baseRef = base[`${stem}_other`]
+    for (const cat of requiredCats) {
+      const k = `${stem}_${cat}`
+      if (!(k in dict)) missing.push(k)
+      else if (placeholders(baseRef).join(',') !== placeholders(dict[k]).join(',')) phMismatch.push(k)
+    }
+    for (const cat of PLURAL_CATEGORIES) {
+      if (requiredCats.includes(cat)) continue
+      const k = `${stem}_${cat}`
+      if (k in dict) extra.push(k)
+    }
+  }
+
+  const totalBase = scalarBaseKeys.length + [...pluralStems].reduce((sum) => sum + requiredCats.length, 0)
+  const translated = totalBase - missing.length
+  const pct = Math.round((translated / totalBase) * 100)
   detail[loc] = { missing, extra, phMismatch }
   const gate = FULLY_SUPPORTED.includes(loc)
   const bad = gate && (missing.length || extra.length || phMismatch.length)

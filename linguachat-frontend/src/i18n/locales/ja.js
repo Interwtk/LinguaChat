@@ -226,8 +226,7 @@ export default {
 
   sessionDoneNext: "明日はここから続けます。",
 
-  sessionDoneCount: "{count} 個のアクティビティ完了",
-
+  sessionDoneCount_other: "{count} 個のアクティビティ完了",
   sessionDoneCta: "今日に戻る",
 
   sessionDurationLabel: "今日はどのくらい？",
@@ -1481,9 +1480,9 @@ export default {
   mainNavigation: "メインナビゲーション",
   close: "閉じる",
   you: "あなた",
-  streakDaysShort: "{count}日連続",
+  streakDaysShort_other: "{count}日連続",
   streakStartToday: "今日から続けてみましょう",
-  streakAria: "連続日数：{count}日",
+  streakAria_other: "連続日数：{count}日",
   focusMode: "集中モード",
   exitFocusMode: "集中モードを終了",
   focusModeHint: "画面に残すのはひとつだけ。",
@@ -1496,7 +1495,7 @@ export default {
   sessionTodayEyebrow: "今日のセッション",
   yourGoalIs: "あなたの言葉：「{goal}」",
   episodesLabel: "エピソード",
-  practicedTimes: "{count}回出てきました",
+  practicedTimes_other: "{count}回出てきました",
   conversationWithLingua: "Linguaとの会話",
   yourWordsTitle: "あなたのことば",
   yourWordsSubtitle: "全部で{count}。ひとつも消えません。",
@@ -1514,7 +1513,7 @@ export default {
   chatsNoMatches: "まだ一致するものはありません。",
   chatRowEpisodeStep: "ステップ{step}で止まっています",
   chatRowNotes: "見直しておきたいこと",
-  chatRowArchive: "以前の会話{count}件",
+  chatRowArchive_other: "以前の会話{count}件",
   chattoRowResume: "エピソードは止めたところで待っています",
   chattoRowStory: "今日のために短いお話を置いておきました",
   backToChats: "チャット一覧へ",
