@@ -21,18 +21,16 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-_(nothing is in progress)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-I18N-001] Audit the eight implemented languages (phase A)
-  owner:  unclaimed
-  branch: none
+  owner:  chatgpt-supervisor
+  branch: i18n/lc-i18n-001-audit
   why:    100 % key coverage is not the same as correct copy or a coherent language experience.
   done:   a report in .ai/TRANSLATIONS.md listing, per language: suspicious or
           missing placeholders, plural/count errors, missing diacritics, hardcoded
           visible strings, raw keys, silent fallbacks, user_language inconsistencies,
           and RTL defects. Fixes go in separate small PRs, not inside the audit.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-I18N-002] Stop advertising languages that only fall back to English (phase B)
   owner:  unclaimed
