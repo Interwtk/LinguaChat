@@ -1,150 +1,129 @@
 # STATE — where LinguaChat actually is
 
 Rewrite this file at the end of every task. It describes measured reality, not
-intentions. If a number here disagrees with a command or live GitHub run, live
-evidence wins and this file must be corrected.
+intentions. Live GitHub evidence wins over prose.
 
-_Last product baseline on main: 2026-08-18 · `157df479`._
+_Last product-content baseline: A1 arc 5 on main. LC-OPS-009 cloud automation is
+merged and LC-I18N-001 is complete in its audit PR._
 
-`LC-OPS-009` implementation is complete in PR #17. GitHub is the authority for
-whether that PR is still open or has merged; its `## Evidence` section is the
-authority for the final clean-cycle run ids. This file describes the state the PR
-is intended to place on main.
+## Product / repository
 
-## Repository / product
+- Default branch: `main`; public repo `Interwtk/LinguaChat`.
+- Vite + React 18 frontend, FastAPI pedagogical backend.
+- Visual architecture frozen; primary nav Hoy · Chats · Palabras · Tú.
+- No Supabase, real-provider QA, voice/STT/TTS/WebRTC/pronunciation/calls/video.
+- Provider QA remains `LINGUACHAT_PROVIDER=local`.
+- Owner archives/secrets are not project inputs and are never touched.
 
-| | |
-|---|---|
-| default branch | `main` |
-| last product-content baseline | `157df479` — A1 arc 5 complete + browser walkthrough recorded |
-| automation delivery | PR #17, `ops/lc-ops-009-cloud-autonomy-v2` |
-| remote | `github.com/Interwtk/LinguaChat` (public) |
+## Verified QA baseline
 
-Historical owner archives such as `linguachat-*.zip` are not project inputs and
-must never be committed or modified by automation.
+LC-OPS-009 final evidence established:
 
-## Frontend
+- `check:all` **51/51**;
+- `check:cloud-automation` **12/12 groups**;
+- production build green, entry **436.85 kB** (<500 kB);
+- i18n structural parity **1580/1580** for es/pt/fr/it/de/ja/ar;
+- backend compileall clean;
+- **444 pytest passed**;
+- draft→ready live QA event proved on PR #17.
 
-- Vite + React 18, mobile-first, one responsive shell.
-- Visual architecture FROZEN. Primary nav: Hoy · Chats · Palabras · Tú.
-- `check:all` now contains **51** invocations after adding
-  `check:cloud-automation` (12 focused automation groups).
-- First clean PR #17 validation after the only automation-test fix: run
-  `32334267568` → **51/51**, production build green, entry **436.85 kB** (<500 kB).
-- i18n structural parity on that run: **1580/1580** English-base keys in each of
-  es/pt/fr/it/de/ja/ar, zero missing/extra/placeholder mismatches.
-- Key parity is structural only. `LC-I18N-001` remains the required linguistic,
-  fallback, RTL and hardcoded-string audit.
+LC-I18N-001 is documentation/coordination only; its PR must still pass the current
+full QA gate before merge.
 
-Final acceptance of LC-OPS-009 still follows the repository rule: after the final
-bookkeeping commit, the PR must show two consecutive clean validation cycles. Do
-not replace the PR evidence with this snapshot.
-
-## Backend
-
-- FastAPI pedagogical backend.
-- PR #17 run `32334267568`: `python -m compileall .` clean and **444 pytest passed**.
-- One existing warning remains: Pydantic V1-style `@validator` in `ai/schemas.py`
-  is deprecated and should be migrated deliberately before Pydantic v3, not mixed
-  into this automation PR.
-- Provider defaults to `local`; an API key alone does not enable OpenAI. CI pins
-  `LINGUACHAT_PROVIDER=local`.
-
-## Dependency/security signal found during audit
-
-`npm ci` currently reports **4 dependency vulnerabilities (1 moderate, 3 high)**.
-That is a signal, not yet a proved exploitable product defect. Do not run
-`npm audit fix --force` blindly. A separate dependency/security audit must identify
-which packages/paths are affected, whether they are build-only or runtime, safe
-upgrade ranges, and regression impact before changing versions.
-
-## Curriculum
+## Curriculum truth
 
 | level | state |
 |---|---|
-| Pre-A1 | 17 episodes, FROZEN and available |
-| A1 arc 1 `work_and_study` (18–20) | ready |
-| A1 arc 2 `daily_rhythm` (21–23) | ready |
-| A1 arc 3 `people_around_you` (24–26) | ready |
-| A1 arc 4 `finding_your_way` (27–29) | ready |
-| A1 arc 5 `paying_and_choosing` (30–33) | ready; blueprint check + production browser walkthrough |
-| A1 arc 6 `what_you_can_do` (34–35) | designed only; no runtime content |
-| A1 arc 7 `making_arrangements` (36–38) | designed only; no runtime content |
+| Pre-A1 | 17 episodes, frozen and available |
+| A1 arcs 1–5, episodes 18–33 | runtime-ready |
+| A1 arc 6, episodes 34–35 | designed only |
+| A1 arc 7, episodes 36–38 | designed only |
 
-A1 correctly remains `contentStatus: partial`, `available: false`. Arcs 6–7 must
-fail closed. Never infer “A1 complete” from “all currently-built episodes pass”.
+A1 remains `contentStatus: partial`, `available: false`. No A2/B1/B2/C1/C2
+structured curriculum contracts exist in the current curriculum docs; placement
+badges for those levels are therefore not evidence that the app can teach a full
+structured path at those levels.
 
-Arc 5 browser evidence on main covers all four episodes, a wrong price question +
-retry, model/help recorded as assistance, and replay without duplicate reward.
+The daily-session call site is currently bound to `episodesOfLevel(PRE_A1)`, which
+must be reconciled before any second level becomes truly playable.
 
-## Language architecture — owner-corrected rule
+## Language truth after LC-I18N-001
 
-One `user_language` governs UI/chrome, explanations, hints, corrections,
-interpretations and meanings. English is the target language.
+Authoritative product rule:
 
-Legacy `interface_language` and `native_language` may remain internally for
-compatibility but are one user choice and must stay synchronised. The former mixed
-requirement `interface=es + native=ja + target=en` is superseded. Arabic auxiliary
-experience is RTL; target English/input remain LTR; Chatto is never mirrored.
+```text
+user_language = one user choice
+UI / explanations / hints / corrections / meanings = user_language
+target_language = English
+```
 
-## Queue after LC-OPS-009
+Structural coverage remains 1580 keys in each implemented locale, but the audit
+proved that structural parity is not product completeness.
 
-`IN_PROGRESS` is empty in the PR's final queue state. Ordered next work:
+### Confirmed cross-language defects
 
-1. `LC-I18N-001` — audit the eight implemented languages for real quality.
-2. `LC-I18N-002` — make language support/picker claims truthful.
-3. `LC-QA-001` — strengthen i18n linting beyond key parity.
+1. Legacy native/interface storage and APIs can still diverge; existing mismatches
+   are preserved instead of migrated to one `user_language`.
+2. Meanings still use `native -> interface -> English` fallback rather than one
+   user language -> English.
+3. The Lingua welcome message is hardcoded English and tells everyone they may ask
+   for a word “in Spanish”.
+4. Placement A1–C2 instructions/explanations are hardcoded Spanish and bypass i18n.
+5. LanguageIdentity leaks English mood/relationship/progress/style literals.
+6. The visible picker has **46 option rows / 34 base languages**, while only
+   **8 base auxiliary locales** exist (`en/es/pt/fr/it/de/ja/ar`): 26 bases have no
+   full locale implementation.
+7. A second six-row `LANGUAGE_OPTIONS` in `translations.js` has drifted and even
+   omits implemented ja/ar; current visible picker uses the larger service catalog.
+8. `translate()` has placeholder substitution but no plural-category mechanism;
+   fixed `{count}` strings are grammatically unsafe, demonstrably in Spanish and
+   especially Arabic.
+9. `check:i18n` currently validates missing/extra keys + placeholder parity only;
+   it cannot detect most defects above.
 
-A1 arcs 6–7 are intentionally not yet represented by invented implementation
-contracts in TASKS. Seed them from the live blueprint/authoring contract after the
-current infrastructure + language-quality foundation is stable.
+Full evidence and per-language findings are in `.ai/TRANSLATIONS.md` under
+`LC-I18N-001 — phase-A audit, 2026-08-20`.
 
-## Automation after LC-OPS-009
+## Ordered quality queue after the audit
 
-The repaired architecture is cloud-hosted; a powered-off owner PC is irrelevant:
+1. `LC-I18N-003` — canonical user_language + safe legacy migration.
+2. `LC-I18N-004` — localize welcome/placement/profile hardcodes + plural-aware counts.
+3. `LC-PROD-001` — make placement/profile/planner truthful about available curricula.
+4. `LC-I18N-002` — make the language picker/support claims honest.
+5. `LC-QA-001` — real i18n lint/regression protection.
+6. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories and upgrade safely.
+7. `LC-BE-001` — migrate Pydantic V1 validator without semantic drift.
+8. `LC-DOC-001` — reconcile stale README / prove unused historical debris before cleanup.
 
-- `Claude — chain` owns scheduling/routing and has an hourly watchdog at minute 17.
-- Normal progression does **not** wait for the watchdog: after a green agent PR is
-  merged from QA, the same chain invocation refreshes main and advances.
-- `next-task.mjs` is the single claimability/dependency authority.
-- General and i18n workers have no independent schedules and refuse work from the
-  wrong lane or a stale requested task id.
-- General, i18n and interactive `@claude` writers share
-  `linguachat-claude-writer`, preventing concurrent repository mutation.
-- Final TASKS DONE + STATE + HANDOFF are required inside the same task PR before
-  merge; no post-merge bookkeeping seam is normal operation.
-- A missed green event can be recovered by the watchdog. Dead draft/red/incomplete
-  work is made resumable and the claim released rather than freezing the queue.
-- QA explicitly declares `ready_for_review` so a real draft→ready transition is a
-  supported CI event once this workflow version is on main.
-- No generic Claude `push` trigger; no `allowed_bots: '*'`.
-- Autonomous worker prompts use the corrected one-`user_language` contract.
+Only after the language/product-truth foundation is stable should the queue be
+seeded with Arc 6/7 implementation tasks from the live A1 blueprint and authoring
+contract, followed by the separate A1 completion gate. A2+ curriculum requires its
+own deliberate CEFR design phase; do not invent it from placement questions.
 
-### Failure that motivated the repair
+## Automation
 
-Run `32331959420` (`Claude — mention`) ran on GitHub-hosted Ubuntu and proved the
-owner PC was not involved. OAuth secret, OIDC exchange and Claude GitHub App token
-all succeeded. The run failed at the interactive lane's 40-turn ceiling
-(`error_max_turns`, turn 41, zero permission denials) before pushing a remote
-branch. Issue-mode Claude also cannot edit `.github/workflows`, so the
-infrastructure task had been assigned to the wrong execution lane. Blind rerun was
-rejected as the wrong remedy.
+LC-OPS-009 is live and cloud-hosted:
 
-## Known risks/debt to work from evidence
+- chain owns scheduling/routing and has hourly watchdog;
+- same-run merge→advance is the normal path;
+- `next-task.mjs` is the queue authority;
+- task/i18n/mention writers share one concurrency lock;
+- red/draft/incomplete work is resumable;
+- final TASKS/STATE/HANDOFF is atomic with task PRs;
+- ready_for_review triggers QA;
+- no generic Claude push loop.
 
-1. i18n 100% structural parity may hide poor copy, hardcoded strings, plurals,
-   fallback leaks, RTL defects and one-language inconsistency.
-2. The picker historically exposes more language options than full locale
-   implementations; LC-I18N-002 must derive exact live counts.
-3. `npm ci` reports 1 moderate + 3 high vulnerabilities; dependency audit pending.
-4. Pydantic V1 validator deprecation warning; planned migration before Pydantic v3.
-5. `linguachat-frontend-old/` and unrelated historical root files are cleanup
-   candidates only after proving they are unused.
-6. Some source comments can drift from runtime truth; documentation consistency
-   should eventually be checked rather than trusted manually.
-7. A1 arcs 6–7 and the final A1 completion gate remain real product work.
+The owner PC is not part of normal execution.
+
+## Other confirmed quality signals
+
+- `npm ci`: 1 moderate + 3 high vulnerability advisories; no blind force fix.
+- backend: one Pydantic V1-style `@validator` deprecation warning.
+- README is materially stale relative to frozen/current architecture.
+- auth/login/signup are localStorage mocks and must not be represented as real cloud
+  accounts while persistent auth remains deferred.
 
 ## Blockers
 
-No user-PC, OAuth, OIDC or Claude-App blocker. Remaining work is software/product
-quality work handled through the queue and QA gates.
+No owner-PC/OAuth/OIDC/GitHub-App blocker. Remaining work is product and engineering
+quality handled through the queue and QA gates.
