@@ -28,6 +28,7 @@ import { getA1Arc1Episode } from '../../src/learning/episodes/a1Arc1.js'
 import { getA1Arc2Episode } from '../../src/learning/episodes/a1Arc2.js'
 import { getA1Arc3Episode } from '../../src/learning/episodes/a1Arc3.js'
 import { getA1Arc4Episode } from '../../src/learning/episodes/a1Arc4.js'
+import { getA1Arc5Episode } from '../../src/learning/episodes/a1Arc5.js'
 
 /*
  * The harness plays any runtime episode, whatever level it belongs to. Content is
@@ -38,10 +39,12 @@ import { getA1Arc4Episode } from '../../src/learning/episodes/a1Arc4.js'
  * Every level and arc with runtime content. Arc 3 was imported here when it
  * landed and never added to this chain, so the harness could not play it —
  * which is why a journey through arcs 3 and 4 reported an unknown episode.
+ * Arc 5 (`paying_and_choosing`) had the same gap: its module was never added to
+ * this chain, so `playEpisode(model, 'more_than_ten', ...)` threw `unknown
+ * episode` — found by LC-PED-001, which needs every runtime arc playable.
  */
 const getEpisode = (id) => getPreA1Episode(id) || getA1Arc1Episode(id) || getA1Arc2Episode(id)
-  || getA1Arc3Episode(id) || getA1Arc4Episode(id)
-  || getA1Arc3Episode(id)
+  || getA1Arc3Episode(id) || getA1Arc4Episode(id) || getA1Arc5Episode(id)
 import { evaluateFree } from '../../src/learning/engine/responseEvaluation.js'
 import { getStory, storyTurns, storyBranches, turnText } from '../../src/learning/engine/miniStory.js'
 import {
@@ -161,6 +164,25 @@ const DAY = 24 * 60 * 60 * 1000
  */
 export function playEpisode(model, episodeId, {
   profile, atMs, mode = null, wantsOtherBranch = false, trace = null, unaidedAttempt = false,
+  /*
+   * Three optional hooks, each defaulting to the exact behaviour above so every
+   * existing caller (the two-learner Pre-A1 journey, every `check-a1-arc*`
+   * curriculum check) is unaffected:
+   *
+   *   answerOverride(step)  what a learner would actually type, when it needs to
+   *                         be something other than the single canonical answer
+   *                         `answerFor` returns — a natural paraphrase, or a
+   *                         value from a novel context nothing in the episode
+   *                         itself ever names, so a pass proves the evaluator
+   *                         judges structure rather than a memorised string.
+   *   ctxOverride(step)     extra evaluation context to merge over `ctxFor`'s
+   *                         own — for the same novel-context substitutions.
+   *   wrongText(step)       what a first, wrong attempt types before recovering
+   *                         with the real answer, when a genuine near-miss or a
+   *                         nonsense reply is being exercised instead of the
+   *                         fixed 'hmm' every profile used before this.
+   */
+  answerOverride = null, ctxOverride = null, wrongText = null,
 } = {}) {
   const ep = getEpisode(episodeId)
   if (!ep) throw new Error(`journey: unknown episode ${episodeId}`)
@@ -206,8 +228,11 @@ export function playEpisode(model, episodeId, {
      */
     if (profile.retries({ step, scaffold: scaffold.currentLevel })) {
       retries += 1
-      const wrong = evaluateFree(step.evalKind, 'hmm', ctxFor(step, model, false))
-      if (wrong.completedObjective) throw new Error('journey: "hmm" should never pass')
+      const wrongReply = wrongText ? wrongText(step) : 'hmm'
+      const wrongCtx = { ...ctxFor(step, model, false), ...(ctxOverride ? ctxOverride(step) : {}) }
+      const wrong = evaluateFree(step.evalKind, wrongReply, wrongCtx)
+      if (wrong.completedObjective) throw new Error(`journey: "${wrongReply}" should never pass ${step.evalKind}`)
+      if (!wrong.retryRequired) throw new Error(`journey: a rejected ${step.evalKind} reply must ask for another go`)
       for (const id of step.itemIds || []) {
         recordItemAttempt(model, id, { correct: false, independent: false, evidenceKind, atMs })
       }
@@ -216,10 +241,11 @@ export function playEpisode(model, episodeId, {
     }
 
     const independent = isIndependentEvidence({ step, assistanceUsed: usesSuggestion, correct: true })
-    const reply = answerFor(step)
-    const result = evaluateFree(step.evalKind, reply, ctxFor(step, model, independent))
+    const reply = answerOverride ? answerOverride(step) : answerFor(step)
+    const ctx = { ...ctxFor(step, model, independent), ...(ctxOverride ? ctxOverride(step) : {}) }
+    const result = evaluateFree(step.evalKind, reply, ctx)
     if (!result.completedObjective) {
-      throw new Error(`journey: ${ep.id}/${step.evalKind} rejected its own answer → ${result.errorType}`)
+      throw new Error(`journey: ${ep.id}/${step.evalKind} rejected "${reply}" → ${result.errorType}`)
     }
     /*
      * The same call the player makes, so a fact the blueprint asks an arc to
