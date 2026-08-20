@@ -10,8 +10,9 @@ research/first-launch/Supabase-beta contracts) is merged, LC-I18N-004
 (welcome/placement/profile localization + plural-aware counts) is complete in
 PR #22, LC-I18N-005 (honest first-launch device-language detection) is complete
 in PR #24, LC-PROD-001 (honest placement/profile/Home curriculum agreement) is
-complete in PR #25, and LC-PED-001 (per-arc learner-journey pedagogical stress
-test) is complete in PR #26._
+complete in PR #25, LC-PED-001 (per-arc learner-journey pedagogical stress
+test) is complete in PR #26, and LC-I18N-002 (honest language-support catalog —
+only the 8 implemented bases are selectable anywhere) is complete in PR #30._
 
 ## Product / repository
 
@@ -78,6 +79,27 @@ Full detail in `.ai/TASKS.md` DONE entry for `LC-PROD-001` (prior baseline:
   both viewports; target-English tokens/retry text/free-text input all
   measured `lang="en" dir="ltr"` by DOM inspection.
 
+`LC-I18N-002` (PR #30), latest measured baseline on top of that:
+
+- `LANGUAGE_OPTIONS.supported` (`services/language.js`) now derived from
+  `SUPPORTED_LOCALES`; `LanguageIdentity`'s post-login picker disables the 26
+  unimplemented bases with a "coming soon" badge instead of letting them be
+  selected and silently persisted as `user_language` under English fallback;
+  `ensureLanguagePreferences()` self-heals a persisted-but-unsupported base;
+  the drifted zero-importer duplicate `LANGUAGE_OPTIONS` registry in
+  `i18n/translations.js` (missing `ja`/`ar`) is removed outright;
+- new `check-language-support` — 10 groups;
+- `check:all` **56/56** (was 55), two consecutive clean cycles;
+- build entry 447.81 kB, `check-bundle-boundaries` entry 438.6 kB, two
+  consecutive clean cycles; backend `compileall` clean + 444 pytest passed,
+  two consecutive clean cycles, unchanged;
+- real browser proof (Playwright/Chromium, installed ad hoc and removed after
+  use) at 390px/1440px in es/ja/ar (6 runs): searching "hindi" in the picker
+  shows it disabled with the locale's own "coming soon" badge; searching
+  "japan" shows it enabled with no badge, and selecting it then Save actually
+  persists `ja` end to end; no overflow, no console errors, no raw `{key}`
+  leaks; Arabic `dir="rtl"`, Spanish/Japanese `dir="ltr"`, all six runs.
+
 ## Curriculum truth
 
 | level | state |
@@ -131,12 +153,15 @@ target_language = English
 LC-I18N-003 fixed native/interface divergence and simplified meaning fallback to
 `user_language -> English`. LC-I18N-004 fixed the three concrete hardcoded-copy
 defects LC-I18N-001 found (welcome, placement, LanguageIdentity) and added a real
-`Intl.PluralRules`-based plural-category model; see `.ai/TRANSLATIONS.md`.
+`Intl.PluralRules`-based plural-category model. LC-I18N-002 closed finding A6/A7:
+the post-login picker still listed 46 rows / 34 base languages, but only the 8
+implemented bases (`en/es/pt/fr/it/de/ja/ar`) can now actually become the
+persisted `user_language` anywhere in the product — the other 26 render
+disabled with a "coming soon" badge instead of silently falling back to
+English under a false language label; see `.ai/TRANSLATIONS.md`.
 
-Still open before language expansion:
+Still open before further language expansion:
 
-- picker exposes 46 option rows / 34 base languages but only 8 full base locales
-  exist (`en/es/pt/fr/it/de/ja/ar`);
 - current `check:i18n` still cannot detect most semantic/claim defects beyond key
   parity and plural-category completeness (`LC-QA-001` addresses this).
 
@@ -212,13 +237,12 @@ Initial cloud scope when unblocked:
 No raw audio/video, indefinite chat/event logs, pgvector, Edge Functions or Storage
 in the first cloud milestone.
 
-## Ordered quality queue after LC-PED-001
+## Ordered quality queue after LC-I18N-002
 
-1. `LC-I18N-002` — truthful language support catalog; future expansion in small complete batches.
-2. `LC-QA-001` — real i18n lint/regression gates.
-3. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
-4. `LC-BE-001` — migrate Pydantic V1 validator.
-5. `LC-DOC-001` — stale README / proven-unused historical debris.
+1. `LC-QA-001` — real i18n lint/regression gates.
+2. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
+3. `LC-BE-001` — migrate Pydantic V1 validator.
+4. `LC-DOC-001` — stale README / proven-unused historical debris.
 
 `LC-CLOUD-001` is blocked only on project identity/creation, not on owner intent.
 Arc 6/7 are seeded only after the language/product/pedagogical foundation is stable.

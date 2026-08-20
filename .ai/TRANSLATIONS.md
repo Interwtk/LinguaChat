@@ -36,25 +36,152 @@ NEVER translate the English the learner is practising.
 
 ## Current coverage — measured, not claimed
 
-Latest verified main after LC-I18N-004 (PR #22): `npm run check:i18n` reports
-**1724 visible keys** in the English base (6 plural-aware) and 100% coverage in
-the seven implemented locale files. Coverage now includes plural-category
-completeness, not just flat key parity; it still does not by itself certify
-translation quality.
+Latest verified main after LC-PROD-001 (PR #25), unchanged by LC-I18N-002 (this
+task touches no locale copy): `npm run check:i18n` reports **1726 visible keys**
+in the English base (6 plural-aware) and 100% coverage in the seven implemented
+locale files. Coverage now includes plural-category completeness, not just flat
+key parity; it still does not by itself certify translation quality.
 
 | language | keys | structural coverage | audit status |
 |---|---:|---:|---|
-| en (base) | 1724 | source | structural baseline; welcome/placement/profile now route through it |
-| es | 1724 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| pt | 1724 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| fr | 1724 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| it | 1724 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| de | 1724 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| ja | 1718 | 100% | implemented; fewer keys is correct — Japanese has no grammatical plural, so it needs one category per plural key instead of six |
-| ar | 1748 | 100% | implemented; more keys is correct — Arabic plural grammar needs `zero/one/two/few/many/other`, all six populated |
+| en (base) | 1726 | source | structural baseline; welcome/placement/profile now route through it |
+| es | 1726 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| pt | 1726 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| fr | 1726 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| it | 1726 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| de | 1726 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| ja | 1720 | 100% | implemented; fewer keys is correct — Japanese has no grammatical plural, so it needs one category per plural key instead of six |
+| ar | 1750 | 100% | implemented; more keys is correct — Arabic plural grammar needs `zero/one/two/few/many/other`, all six populated |
 
 The seven lazy locale modules actually present are `es/pt/fr/it/de/ja/ar`; English
-is the base dictionary. This is the real implemented set today.
+is the base dictionary. This is the real implemented set today — the same 8 bases
+(`en` + these 7) `LC-I18N-002` now makes the ONLY selectable set anywhere in the
+product, closing the gap where the post-login picker previously let a learner
+choose any of 46 rows / 34 base languages.
+
+---
+
+# LC-I18N-002 — stop advertising languages that only fall back to English, 2026-08-20
+
+Phase B of the LC-I18N-001 audit (findings A6/A7). PR #30, branch `i18n/lc-i18n-002`.
+Touches no locale copy — the 1726/100% table above is unchanged by this task.
+
+## What was wrong
+
+`LanguageIdentity.jsx`'s post-login picker rendered all 46 rows of
+`services/language.js`'s `LANGUAGE_OPTIONS` (34 base languages) as equally
+selectable. Picking any of the 26 bases with no implemented locale
+(`zh ko hi ru tr nl pl vi id th uk el he sv no da fi ro cs hu bn ur fa sw fil ms`)
+persisted it as `user_language`, set `document.documentElement.lang` to it, and
+then every visible string silently rendered English — the exact false-support
+claim `docs/product/language-detection-contract.md` already forbade for
+*automatic* detection (fixed by LC-I18N-005), but which manual selection could
+still reach. Separately, `i18n/translations.js` carried its own drifted, six-row
+`LANGUAGE_OPTIONS` (missing `ja`/`ar` entirely, unaccented `Espanol`/`Portugues`/
+`Francais` labels) plus a dead `detectNativeLanguage`/`getLanguageName` pair —
+confirmed by grep to have zero real importers anywhere in `src/`, `scripts/` or
+tests, i.e. genuinely unused rather than merely superseded.
+
+## What changed
+
+- **`services/language.js`**: `LANGUAGE_OPTIONS` now carries a `supported`
+  field computed from `SUPPORTED_LOCALES` (`i18n/translations.js`'s own export
+  — the same list the lazy locale loader ships, already the one real source of
+  truth used by `LanguageSwitcher` and `detectNativeLanguage`). No row is
+  hand-flagged; the flag can never drift from what locale dictionaries actually
+  exist. New `isSupportedLanguage(base)` is the one reusable predicate — the
+  picker and `ensureLanguagePreferences` both call it rather than each growing
+  their own copy of the rule. `getLanguageOption`'s custom/no-match branch and
+  `searchLanguages`'s results carry the same flag through.
+- **`ensureLanguagePreferences()`**: a persisted native/interface base that is
+  **not** in `SUPPORTED_LOCALES` no longer survives a reload. Before this task
+  the picker could persist any of the 26 unsupported bases; without this guard
+  that stale choice would keep silently claiming a language forever. It now
+  self-heals to the next genuinely supported device preference, or English if
+  none exists — the same self-healing pattern LC-I18N-003 already applies to a
+  legacy native/interface mismatch. A genuinely supported persisted choice is
+  completely unaffected (proved: `ja` survives reload under a later `fr-FR`
+  device preference, same as LC-I18N-005's regression).
+- **`LanguageIdentity.jsx`**: the popover's option rows now render the 26
+  unsupported bases as visibly disabled (`disabled`, `aria-disabled`, muted
+  color, `cursor: not-allowed`, ~60% opacity) with a `t('upcoming')` badge
+  ("Coming soon" — the existing key `CallSurface.jsx` already uses for
+  voice/video), and their `onClick` is a no-op. They stay listed and
+  searchable for roadmap visibility (per the task's "honestly unavailable,
+  partial/coming-soon" options — this batch chose coming-soon over removing
+  them outright) but can never become the persisted choice. The 8 supported
+  rows are completely unaffected — same click-to-select-then-Save flow as
+  before.
+- **`i18n/translations.js`**: removed the dead duplicate `LANGUAGE_OPTIONS` /
+  `detectNativeLanguage` / `getLanguageName` (LC-I18N-001 finding A7) outright,
+  not merely left unused — it can no longer be picked up by a future accidental
+  import and reintroduce a second, wrong source of truth that omits `ja`/`ar`.
+  `SUPPORTED_LOCALES` (used elsewhere, unaffected) remains the only export of
+  its kind in this file.
+- New **`check:language-support`** (`scripts/check-language-support.mjs`, wired
+  into `check:all`), 10 groups.
+
+Regional variants inherit their **base**'s support, not a hand-set flag of their
+own: `es-CO`/`pt-BR`/`fr-CA` (bases already implemented) stay selectable, while
+`zh-CN`/`zh-TW` (base `zh`, unimplemented) are disabled exactly like plain `zh` —
+so a region row can never imply region-specific copy beyond what its base locale
+actually has, and the "8 supported bases" invariant can't be quietly widened by
+adding a plausible-looking regional row.
+
+## Evidence
+
+- `check:language-support` — 10 groups: the supported base set is exactly
+  `en/es/pt/fr/it/de/ja/ar`, no more (overclaiming) and no fewer (`ja`/`ar`
+  cannot silently disappear now that the drifted six-row registry is gone);
+  all 26 unimplemented bases are present in the catalog (still discoverable)
+  but explicitly `supported:false`; `es-CO`/`pt-BR`/`fr-CA` stay supported while
+  `zh-CN` does not (regional-variant honesty); `getLanguageOption` reports the
+  flag correctly both directions including an unknown made-up code;
+  `searchLanguages` propagates the flag through its results; a base persisted
+  before this fix (simulated: `hi` written directly to the legacy storage keys)
+  self-heals to the next supported device preference on reload, or to English
+  with no supported preference anywhere; a genuinely supported persisted choice
+  (`ja`) is completely unaffected by a later different device preference;
+  `isSupportedLanguage` is exported as the one predicate; `translations.js` no
+  longer exports `LANGUAGE_OPTIONS`/`detectNativeLanguage`/`getLanguageName`,
+  and `SUPPORTED_LOCALES` still has exactly 8 entries.
+- `check:i18n` — 1726 base keys, es/pt/fr/it/de/ja/ar all 100%, unchanged (no
+  locale-dictionary edits in this task).
+- `check:all` — **56/56** (was 55), two consecutive clean cycles.
+- `build` — entry `447.81 kB` gzip `130.90 kB` (< 500 kB budget, +0.17 kB over
+  LC-PED-001's `447.64 kB` from the `supported` computation and the picker's
+  disabled-row styling), two consecutive clean cycles; `check:bundle-boundaries`
+  7 boundary groups, entry `438.6 kB`, 26 JS chunks, 1435.6 kB total, two
+  consecutive clean cycles.
+- Backend: `compileall` clean, `pytest -q` 444 passed, two consecutive clean
+  cycles — unchanged, confirming no backend edit was needed (this is a
+  frontend-only picker/storage concern, same as LC-I18N-005).
+- Real browser proof (Playwright against the built `dist/` via `vite preview`,
+  system Chromium at `/usr/bin/chromium`, installed transiently with
+  `npm install --no-save playwright` and removed afterward — `package.json`
+  unchanged, same technique as every prior LC-I18N browser pass) at **390px and
+  1440px** for **es/ja/ar** (6 runs), each seeded via `localStorage` into an
+  authenticated session on the real "You" screen, then the real popover opened
+  through the real "Change language" button:
+  - Searching "hindi" in all 6 runs: the Hindi row renders `disabled` with the
+    locale's own `upcoming` badge text visible (`Próximamente`/`近日公開`/`قريبًا`).
+  - Searching "japan" in all 6 runs: the Japanese row stays enabled with no
+    badge; clicking it then Save actually persists `lc2-native-language-base
+    = "ja"` — the supported path is fully unaffected end to end, not merely
+    "not disabled" in the DOM.
+  - All 6 runs: no horizontal overflow, no console/page errors, no raw
+    `{key}`-shaped untranslated placeholder anywhere in the visible page text.
+  - `document.documentElement.dir` is `"rtl"` for `ar` and `"ltr"` for `es`/`ja`
+    at both viewports, confirming the disabled-row styling doesn't break the
+    existing RTL layout.
+
+## What is still open after this task
+
+`LC-QA-001` (turning these and other i18n failure classes into a general
+linter) remains next. Actually implementing any of the 26 unsupported bases —
+locale dictionaries, native-quality copy review, browser/RTL proof — is future
+small-batch work per "How to add a language, per batch" below; this task made
+the picker honest about what exists today, it did not add a ninth language.
 
 ---
 
