@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { ThemeToggle } from '../ui/ThemeToggle'
+import { LanguageSwitcher } from '../ui/LanguageSwitcher'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { TutorPersonalizationStep } from '../onboarding/TutorPersonalizationStep'
 import { getMotiMoment } from '../../services/motiMoments'
@@ -39,6 +40,7 @@ function SetupShell({ children, step, totalSteps }) {
               }} />
             ))}
           </div>
+          <LanguageSwitcher compact />
           <ThemeToggle compact />
         </div>
       </div>

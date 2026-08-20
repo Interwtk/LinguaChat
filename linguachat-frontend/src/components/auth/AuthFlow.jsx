@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { ThemeToggle } from '../ui/ThemeToggle'
+import { LanguageSwitcher } from '../ui/LanguageSwitcher'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 
 function AuthShell({ children, back, onBack }) {
@@ -13,7 +14,10 @@ function AuthShell({ children, back, onBack }) {
           <ChattoMascot mood="happy" size={30} decorative={true} animated={false} />
           <span style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--ink)' }}>LinguaChat</span>
         </div>
-        <ThemeToggle compact />
+        <div className="flex items-center gap-2">
+          <LanguageSwitcher compact />
+          <ThemeToggle compact />
+        </div>
       </div>
 
       {back && (
