@@ -21,13 +21,9 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-_(none — the queue is open)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-I18N-002] Stop advertising languages that only fall back to English (phase B)
-  owner:  unclaimed
-  branch: none
+  owner:  claude-i18n
+  branch: i18n/lc-i18n-002
   why:    the visible picker has 46 rows / 34 base languages while only 8 base auxiliary locales are implemented.
   done:   derive picker/support metadata from one source of truth; the 26 currently
           unimplemented bases are honestly unavailable, partial/coming-soon, or
@@ -37,6 +33,8 @@ _(none — the queue is open)_
           English fallback. Subsequent language expansion happens in small reviewed
           batches and a language becomes selectable only when login/onboarding/UI,
           explanations, hints, corrections and meanings are genuinely complete.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-QA-001] Extend check:i18n into a real linter
   owner:  unclaimed
