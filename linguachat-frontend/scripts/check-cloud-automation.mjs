@@ -42,8 +42,8 @@ ok()
 assert.doesNotMatch(mention, /^\s*issues:\s*$/m, 'mention lane must not auto-run from issue assignment')
 assert.match(mention, /TRIAGE\/REVIEW lane|triage\/review lane/i)
 assert.match(mention, /never edit\s+`?\.github\/workflows|NEVER take ownership of a queue-sized implementation/i)
-assert.doesNotMatch(mention, /--allowedTools[^\n]*(?:Write|Edit)/,
-  'interactive mention lane regained mutation tools')
+assert.match(mention, /--allowedTools\s+Read,Glob,Grep,Bash,TodoWrite\b/,
+  'interactive mention lane must expose only read/diagnostic tools plus TodoWrite')
 assert.match(mention, /--max-turns 80/)
 ok()
 
