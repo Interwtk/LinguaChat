@@ -1,5 +1,5 @@
-import { CEFR_LEVELS, PLACEMENT_QUESTIONS } from '../data/placementQuestions'
-import { translate } from '../i18n/translations'
+import { CEFR_LEVELS, PLACEMENT_QUESTIONS } from '../data/placementQuestions.js'
+import { translate } from '../i18n/translations.js'
 import { playableLevelId, labelKeyOfLevel } from '../learning/curriculum/levels.js'
 
 const MIN_QUESTIONS = 6
