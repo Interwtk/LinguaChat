@@ -21,13 +21,9 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-_(nothing is in progress)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-I18N-003] Make `user_language` the one real auxiliary-language preference
-  owner:  unclaimed
-  branch: none
+  owner:  claude-i18n
+  branch: i18n/lc-i18n-003
   why:    legacy native/interface storage and APIs can still diverge even though the product has one user language.
   done:   migrate/reconcile persisted mismatches deterministically; supported product
           APIs cannot independently change interface/native; meanings use
@@ -35,6 +31,8 @@ _(nothing is in progress)_
           explanations, corrections and meanings stay together; Arabic auxiliary
           UI is RTL and target English/input remains LTR; no target-English copy is
           translated and no stored progress is lost.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-I18N-004] Localize visible auxiliary copy and add plural-aware count rendering
   owner:  unclaimed
