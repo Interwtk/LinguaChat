@@ -1,11 +1,5 @@
-# Interactive Claude: answers @claude in an issue or a pull request comment.
-#
-# SECURITY, because this repository is PUBLIC:
-#   · gated to OWNER / MEMBER / COLLABORATOR — a stranger cannot spend the token
-#     or steer the agent;
-#   · `issue_comment` and `issues`, never `pull_request_target`, so a fork's code
-#     is never checked out in a job that holds the secret;
-#   · no `push` trigger anywhere, so a commit can never start a run that commits.
+# Interactive Claude: bounded help on issues/PRs. Complex queue work is dispatched
+# through the autonomous workers; this lane still shares their writer lock.
 name: Claude — mention
 
 on:
@@ -20,20 +14,14 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-  # The action exchanges a short-lived GitHub OIDC token as part of authenticating,
-  # and a job cannot mint one without this. Without it the run reaches the action
-  # and dies at "Failed to get OIDC token" — which is what happened on run
-  # 32173192998. It grants the job the right to prove its own identity to GitHub;
-  # it does not widen access to the repository or to any secret.
   id-token: write
 
 concurrency:
-  group: claude-mention-${{ github.event.issue.number || github.event.pull_request.number }}
+  group: linguachat-claude-writer
   cancel-in-progress: false
 
 jobs:
   claude:
-    # A trigger phrase from somebody who can already write here, or an assignment.
     if: |
       (github.event_name == 'issues' &&
         (github.event.issue.author_association == 'OWNER' ||
@@ -51,16 +39,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      # The `secrets` context is not available in a step `if`, so the presence of
-      # the token travels as a BOOLEAN through env. The value itself is never
-      # exposed, printed or written anywhere.
       - name: Refuse clearly if the token is not configured
         env:
           TOKEN_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
         run: |
           if [ "$TOKEN_PRESENT" != "true" ]; then
-            echo "CLAUDE_CODE_OAUTH_TOKEN is not set. See .ai/HANDOFF.md — the owner"
-            echo "creates it once with: gh secret set CLAUDE_CODE_OAUTH_TOKEN"
+            echo "CLAUDE_CODE_OAUTH_TOKEN is not set. See .ai/HANDOFF.md."
             exit 1
           fi
 
