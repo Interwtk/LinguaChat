@@ -1,5 +1,6 @@
-# Interactive Claude: bounded help on issues/PRs. Complex queue work is dispatched
-# through the autonomous workers; this lane still shares their writer lock.
+# Interactive Claude is a bounded triage/review lane only.
+# Long-running implementation is ALWAYS dispatched through the autonomous workers,
+# which checkpoint branches/PRs and can resume after a run ends.
 name: Claude — mention
 
 on:
@@ -7,11 +8,9 @@ on:
     types: [created]
   pull_request_review_comment:
     types: [created]
-  issues:
-    types: [assigned]
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
   issues: write
   id-token: write
@@ -23,17 +22,14 @@ concurrency:
 jobs:
   claude:
     if: |
-      (github.event_name == 'issues' &&
-        (github.event.issue.author_association == 'OWNER' ||
-         github.event.issue.author_association == 'MEMBER' ||
-         github.event.issue.author_association == 'COLLABORATOR')) ||
-      (github.event_name != 'issues' &&
-        contains(github.event.comment.body, '@claude') &&
-        (github.event.comment.author_association == 'OWNER' ||
-         github.event.comment.author_association == 'MEMBER' ||
-         github.event.comment.author_association == 'COLLABORATOR'))
+      contains(github.event.comment.body, '@claude') &&
+      (github.event.comment.author_association == 'OWNER' ||
+       github.event.comment.author_association == 'MEMBER' ||
+       github.event.comment.author_association == 'COLLABORATOR')
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
+    env:
+      LINGUACHAT_PROVIDER: local
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,7 +48,37 @@ jobs:
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           track_progress: true
+          prompt: |
+            You are LinguaChat's INTERACTIVE TRIAGE/REVIEW lane, not its autonomous
+            implementation worker.
+
+            Read CLAUDE.md, .ai/STATE.md, .ai/TASKS.md and .ai/HANDOFF.md first.
+
+            Your job is bounded:
+            - inspect the issue/PR/question and diagnose it precisely;
+            - review code/diffs and identify root causes, risks and the smallest safe
+              correction;
+            - answer the user/reviewer with a concise evidence-based recommendation;
+            - NEVER take ownership of a queue-sized implementation, never edit
+              `.github/workflows`, never perform broad refactors, and never start a
+              long task that could die at the turn ceiling.
+
+            If the request needs implementation beyond a tiny review/comment, say
+            explicitly that it belongs in `.ai/TASKS.md` and name the smallest task
+            boundary and acceptance evidence. The cloud `Claude — chain` plus
+            `Claude — autonomous task` / `Claude — translations` workers are the
+            implementation path. They checkpoint within 15 turns, push every
+            milestone and can be resumed after a run ends.
+
+            Do not hide failures. A turn ceiling is a safety boundary, not a reason to
+            lose work: this lane must finish analysis well before the ceiling. Do not
+            claim code was changed when this lane only reviewed it.
+
+            Product constraints still apply: one user_language for all auxiliary
+            experience, English target, A1 fail-closed until final gates, no real paid
+            provider calls, no voice/STT/TTS/WebRTC/pronunciation/calls/video.
+          allowed_bots: github-actions
           claude_args: |
             --model claude-sonnet-5
-            --max-turns 40
-            --allowedTools Read,Write,Edit,Glob,Grep,Bash,TodoWrite
+            --max-turns 80
+            --allowedTools Read,Glob,Grep,Bash,TodoWrite
