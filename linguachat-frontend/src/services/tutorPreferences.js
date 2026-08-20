@@ -89,6 +89,36 @@ export const TUTOR_OPTION_GROUPS = [
 ]
 
 /*
+ * Legacy guided-onboarding preference config (tutor personality, goals, daily
+ * pace, correction intensity, practice vibe). `id` is the stored value (also
+ * sent to the backend/profile) and stays English; the visible label is always
+ * looked up through its `*Key`/`labelKey`. Shared by the onboarding SetupFlow
+ * screen and the Language Identity profile summary so the two surfaces cannot
+ * drift, and so a profile-page summary of an onboarding choice is never
+ * rendered as the raw stored id.
+ */
+export const PERSONALITIES = [
+  { id: 'Gentle Guide',    emoji: '🌿', nameKey: 'persGentleName', descKey: 'persGentleDesc', sampleKey: 'persGentleSample', aura: 'var(--positive)',  soft: 'var(--positive-soft)' },
+  { id: 'Casual Friend',   emoji: '😊', nameKey: 'persCasualName', descKey: 'persCasualDesc', sampleKey: 'persCasualSample', aura: 'var(--accent)',  soft: 'var(--accent-soft)' },
+  { id: 'Strict Coach',    emoji: '📐', nameKey: 'persStrictName', descKey: 'persStrictDesc', sampleKey: 'persStrictSample', aura: 'var(--info)',   soft: 'var(--info-soft)' },
+  { id: 'Interview Mentor',emoji: '🎯', nameKey: 'persMentorName', descKey: 'persMentorDesc', sampleKey: 'persMentorSample', aura: 'var(--accent)', soft: 'var(--accent-soft)' },
+]
+export const personalityName = (id) => PERSONALITIES.find(p => p.id === id)?.nameKey
+
+export const GOAL_OPTIONS = [
+  { id: 'Travel', key: 'goalOptTravel' }, { id: 'Work', key: 'goalOptWork' },
+  { id: 'Study', key: 'goalOptStudy' }, { id: 'Friends', key: 'goalOptFriends' },
+  { id: 'Streaming', key: 'goalOptStreaming' }, { id: 'Immigration', key: 'goalOptImmigration' },
+]
+export const VIBE_OPTIONS = [
+  { id: 'Motivational', key: 'vibeMotivational' }, { id: 'Calm', key: 'vibeCalm' }, { id: 'Challenging', key: 'vibeChallenging' },
+]
+export const CORRECTION_OPTIONS = [
+  { id: 'Every mistake', key: 'corrEvery' }, { id: 'Balanced', key: 'corrBalanced' }, { id: 'Only big errors', key: 'corrOnlyBig' },
+]
+export const labelKeyFor = (list, id) => list.find(o => o.id === id)?.key
+
+/*
  * The interests a learner may choose, taken from the catalogue that gives them
  * meaning rather than listed again here.
  *

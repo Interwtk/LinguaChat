@@ -12,6 +12,14 @@ import {
   getNextQuestion,
   shouldFinishPlacement,
 } from '../../services/placement'
+import {
+  CORRECTION_OPTIONS,
+  GOAL_OPTIONS,
+  PERSONALITIES,
+  VIBE_OPTIONS,
+  labelKeyFor,
+  personalityName,
+} from '../../services/tutorPreferences'
 
 function SetupShell({ children, step, totalSteps }) {
   return (
@@ -389,14 +397,8 @@ function SetupChoice() {
 
 /* ---- TUTOR PERSONALITY ---- */
 // `id` is the stored value (also used by the backend/profile) and stays English.
-// The visible name/desc/sample are localized via i18n keys.
-const PERSONALITIES = [
-  { id: 'Gentle Guide',    emoji: '🌿', nameKey: 'persGentleName', descKey: 'persGentleDesc', sampleKey: 'persGentleSample', aura: 'var(--positive)',  soft: 'var(--positive-soft)' },
-  { id: 'Casual Friend',   emoji: '😊', nameKey: 'persCasualName', descKey: 'persCasualDesc', sampleKey: 'persCasualSample', aura: 'var(--accent)',  soft: 'var(--accent-soft)' },
-  { id: 'Strict Coach',    emoji: '📐', nameKey: 'persStrictName', descKey: 'persStrictDesc', sampleKey: 'persStrictSample', aura: 'var(--info)',   soft: 'var(--info-soft)' },
-  { id: 'Interview Mentor',emoji: '🎯', nameKey: 'persMentorName', descKey: 'persMentorDesc', sampleKey: 'persMentorSample', aura: 'var(--accent)', soft: 'var(--accent-soft)' },
-]
-const personalityName = (id) => PERSONALITIES.find(p => p.id === id)?.nameKey
+// The visible name/desc/sample are localized via i18n keys. Option config lives
+// in services/tutorPreferences.js, shared with the Language Identity screen.
 
 function TutorPersonality() {
   const { completeTutorPersonality, t } = useApp()
@@ -468,20 +470,9 @@ function TutorPersonality() {
 }
 
 /* ---- LEARNING PREFERENCES ---- */
-// `id` stays English (stored/sent); the visible label is localized.
-const GOAL_OPTIONS = [
-  { id: 'Travel', key: 'goalOptTravel' }, { id: 'Work', key: 'goalOptWork' },
-  { id: 'Study', key: 'goalOptStudy' }, { id: 'Friends', key: 'goalOptFriends' },
-  { id: 'Streaming', key: 'goalOptStreaming' }, { id: 'Immigration', key: 'goalOptImmigration' },
-]
-const VIBE_OPTIONS = [
-  { id: 'Motivational', key: 'vibeMotivational' }, { id: 'Calm', key: 'vibeCalm' }, { id: 'Challenging', key: 'vibeChallenging' },
-]
-const CORRECTION_OPTIONS = [
-  { id: 'Every mistake', key: 'corrEvery' }, { id: 'Balanced', key: 'corrBalanced' }, { id: 'Only big errors', key: 'corrOnlyBig' },
-]
+// `id` stays English (stored/sent); the visible label is localized. Option
+// config lives in services/tutorPreferences.js, shared with Language Identity.
 const DAILY_OPTIONS = [5, 10, 15, 30]
-const labelKeyFor = (list, id) => list.find(o => o.id === id)?.key
 
 function LearningPreferences() {
   const { completeLearningPrefs, profile, t } = useApp()
