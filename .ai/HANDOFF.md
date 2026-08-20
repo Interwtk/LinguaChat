@@ -3,180 +3,186 @@
 Keep this file current: what just happened, what is proved, what comes next, and
 what will bite the next operator.
 
-_Written at the end of LC-I18N-003 on 2026-08-20; pedagogical acceptance gates added the same day._
+_Written for LC-OPS-010 on 2026-08-20. Live main/TASKS wins if it changes after
+this branch was cut._
 
 ## What just happened
 
-LC-OPS-009 is merged and LC-I18N-001 audited the language architecture (full
-evidence in `.ai/TRANSLATIONS.md`). LC-I18N-003 then closed the first and largest
-architecture defect that audit found: `user_language` is now genuinely one value.
+LC-OPS-009 already repaired the cloud chain and made the owner's PC irrelevant to
+normal work. LC-I18N-001 audited the language architecture, and LC-I18N-003 (PR
+#19) made one canonical `user_language` real: native/interface legacy state now
+reconciles to one value, supported APIs cannot independently diverge it, meanings
+use `user_language -> English`, and es/ja/ar reload + Arabic RTL were browser-proved.
 
-`services/language.js` had three storage writers (`writeLanguage('native', …)`,
-`setInterfaceLanguage`) that could leave native and interface pointing at two
-different languages. It now has exactly one writer (`writeUserLanguage`), and
-`ensureLanguagePreferences()` rewrites both native and interface storage from the
-one resolved language on **every** load — not only when nothing was stored — so a
-legacy or hand-edited mismatch (e.g. `native=ja` / `interface=es`, the exact case
-the audit flagged) is deterministically reconciled instead of preserved.
-`AppContext` no longer exposes `updateInterfaceLanguage`; only
-`updateNativeLanguage` exists, and it mirrors into both fields. Meaning fallback
-(`getLocalizedMeaning`/`getLocalizedVocab`) collapsed from
-`native -> interface -> English` to `user_language -> English`.
+LC-OPS-010 addresses the remaining failure class exposed by run `32331959420` and
+turns the owner's new product directions into explicit evidence-backed contracts.
 
-Backend was audited, not changed: `ai/openai_tutor.py`, `ai/local_engine.py` and
-`ai/evaluator.py` only ever read `native_language`; `interface_language` was
-accepted by the schema but never consumed divergently, so there was nothing to fix
-there.
+## The 40-turn failure — what it actually means now
 
-Full evidence — including the browser proof of a legacy-mismatch reload and
-Arabic RTL at 390px/1440px — is in `.ai/TRANSLATIONS.md` under
-`LC-I18N-003 — one canonical user_language, 2026-08-20`. PR: #19.
+Run `32331959420` was an interactive `Claude — mention` run. It authenticated on a
+GitHub-hosted Ubuntu runner, had no permission denial, then hit the old 40-turn
+ceiling at turn 41 before pushing a branch. It was also the wrong lane for a large
+workflow/infrastructure task.
 
-## New non-negotiable pedagogical QA requirement
+The correct 24/7 architecture is **not one infinite Claude process**. Every hosted
+runner/process has sensible boundaries. Reliability comes from bounded runs that
+checkpoint remote work and can be resumed by the cloud chain/watchdog.
 
-Do not treat “all checks green” as proof that a teaching arc teaches well. Two
-pedagogical gates now exist in `.ai/TASKS.md`:
+LC-OPS-010 therefore changes `Claude — mention` into triage/review only:
 
-### LC-PED-001 — before more curriculum is layered on top
+- no automatic run from issue assignment;
+- repository contents read-only;
+- no Write/Edit Claude tools;
+- explicit prohibition on queue-sized implementation or `.github/workflows` edits;
+- bounded analysis ceiling raised 40 -> 80 so reviews have headroom.
 
-After LC-I18N-004 and LC-PROD-001, stress-test **every completed runtime arc with at
-least 20 distinct learner journeys per arc**. Derive arc count from live curriculum,
-not from this prose. At the current design/runtime state that means 6 Pre-A1 arcs +
-5 built A1 arcs, so at least 220 arc-level scenarios if unchanged.
+Actual implementation remains in the autonomous task/i18n workers, which already:
 
-Each arc's matrix must include:
+- claim through the shared queue;
+- push a branch/draft PR in the first 15 turns;
+- push every milestone and never intentionally go 20 turns without remote progress;
+- leave resumable draft work or release the claim if a run ends;
+- are recovered by the chain/watchdog rather than losing the project at a turn
+  boundary.
 
-- independent happy paths using multiple natural phrasings, not only model answers;
-- wrong and near-miss responses followed by retry/repair;
-- model/help use that stays recorded as assisted and cannot create mastery;
-- nonsense, out-of-scope, refusal and false-positive pressure;
-- replay, persistence, idempotency and no duplicate XP/rewards;
-- delayed recall after intervening material and transfer to a novel context;
-- support fading after genuine success and increasing after struggle;
-- prerequisite, vocabulary and grammar-ceiling enforcement;
-- rendered functional samples at 390px and 1440px, including es/ja/ar auxiliary
-  experiences while target English remains English.
+`check-cloud-automation` now pins the mention lane as triage-only so this regression
+cannot quietly return.
 
-A report must record failures and fixes per arc. Any fix restarts the clean-cycle
-count. Twenty duplicated assertions do not satisfy the requirement: these are
-learner journeys / behavioural scenarios.
+## Learning-science baseline — read before learner-facing design
 
-### LC-PED-002 — final gate before A1 can open
+New source: `docs/research/learning-science-foundation.md`.
 
-This task is intentionally under BLOCKED until A1 arcs 6 and 7 are implemented from
-the live blueprint/authoring contract. Move it to TODO only after the full A1
-runtime exists. Then repeat >=20 journeys for **every** Pre-A1 + A1 arc on the final
-head and add longitudinal new-learner→A1-exit journeys. The current blueprint has 6
-Pre-A1 + 7 A1 arcs, implying >=260 final arc scenarios if that design remains
-current.
+Before materially changing curriculum sequence, feedback, mastery, review timing,
+scaffolding, motivation/gamification or age adaptation, the task/PR must identify:
 
-The final gate must prove delayed recall, transfer, support fading/recovery,
-independent evidence for every required can-do, cross-arc prerequisite reuse, no
-false mastery, no duplicate rewards and no regression in earlier arcs. It requires
-two consecutive clean full cycles after the last fix. **A1 must remain unavailable
-until LC-PED-002 is DONE and a separate availability decision is explicitly
-approved.**
+1. the learner problem;
+2. measured LinguaChat evidence;
+3. the supporting research principle/source;
+4. what would falsify the design;
+5. a learning measure independent of clicks/completion.
 
-Important epistemic boundary: simulated/software learner QA can prove internal
-pedagogical logic and useful learning proxies; it cannot scientifically prove real
-humans learn. A real-human efficacy claim later needs actual learner pilot data,
-kept separate from simulation evidence.
+The baseline incorporates CEFR action-oriented can-dos, Nation's Four Strands,
+retrieval practice, spacing, interaction/output, corrective feedback, age-sensitive
+adaptation, autonomy/competence/relatedness, healthy gamification and habit
+formation.
 
-## The important finding (still true, narrowed)
+Do **not** implement pseudo-neuroscience or generic dopamine claims. LinguaChat should
+be compelling and habit-forming, but success is retained learning per useful minute
+and healthy return behaviour — not maximizing addiction or raw screen time. No
+loot-box/variable gambling rewards, fake urgency, shame notifications, forced
+infinite scroll or punitive streak destruction.
 
-The locale dictionaries are structurally strong; the **architecture around them**
-is where most material defects live. LC-I18N-003 closed the native/interface
-divergence and the two-language meaning fallback. Still open:
+`LC-PED-001` remains the intermediate >=20-distinct-journeys-per-completed-arc audit.
+`LC-PED-002` remains the final all-arcs gate after A1 arcs 6/7. Software simulation
+cannot replace the later real-learner beta/pilot evidence.
 
-- welcome is hardcoded English and assumes Spanish;
-- placement A1–C2 auxiliary copy is hardcoded Spanish;
-- LanguageIdentity leaks English literals;
-- picker: 46 rows / 34 bases, but only 8 implemented base locales;
-- a stale second language registry omits ja/ar;
-- `translate()` has no plural-category model;
-- current `check:i18n` (now plus `check:user-language`) still cannot see the
-  welcome/placement/profile hardcodes or the plural gap;
-- placement can report A2–C2 even though only Pre-A1 + partial A1 structured
-  curriculum exists, and the daily planner is still bound to PRE_A1.
+## First-launch language — do not infer language from country
 
-Do not "fix translations" by mass-editing seven locale files. Follow the queue.
+New source: `docs/product/language-detection-contract.md`.
 
-## Next task — LC-I18N-004
+The learner should get an understandable interface from the very first screen, but
+country/physical location is not the correct primary signal. India, Canada,
+Switzerland and many other places are multilingual; travellers/VPNs exist.
 
-Localize visible auxiliary copy and add plural-aware count rendering.
+Correct priority on a clean launch:
 
-Required behaviour:
+1. explicit persisted LinguaChat choice, if one exists;
+2. ordered device/browser preferred languages (`navigator.languages` on web/PWA);
+3. first honestly supported base-locale match;
+4. safe English fallback;
+5. an immediately accessible manual language switcher.
 
-- the Lingua welcome message (`AppContext.jsx` `WELCOME_MESSAGE`) must use
-  `user_language`, not hardcoded English that assumes Spanish;
-- `SetupFlow.jsx` / `placement.js` / `placementQuestions.js` auxiliary copy
-  (instruction, prompt, option text, feedback explanation, strengths/focus/
-  correction/recommendation) must go through `t()` in `user_language`, not
-  hardcoded Spanish;
-- `LanguageIdentity.jsx` mood/relationship/progress/style literals must go
-  through `t()`;
-- `translate()` needs a real plural-category mechanism so `{count}` templates
-  (e.g. `sessionDoneCount`, `replayTimesPractised`) are grammatically correct in
-  every implemented locale, Arabic especially;
-- every implemented locale (es/pt/fr/it/de/ja/ar) stays structurally complete
-  after the new keys land;
-- real browser proof at 390px/1440px covering es/ja/ar, no raw keys, no overflow,
-  no bidi leakage;
-- target-English practice material stays English and untranslated.
+Region only disambiguates a language variant that is actually implemented. No
+GPS/IP/SIM lookup is needed. Explicit learner choice always wins.
 
-This is still not the place to invent A2–C2 curriculum content, prune the
-picker, or touch backend evaluators — those are LC-PROD-001, LC-I18N-002 and
-out of scope respectively.
+`LC-I18N-005` implements this after LC-I18N-004. Do not auto-select Hindi merely
+because a device is in India; `hi-IN`, `ta-IN`, `bn-IN`, `en-IN`, etc. are different
+language preferences and only genuinely supported locales may be selected.
 
-## Then, in order
+## Current i18n path
 
-1. `LC-PROD-001` — placement/profile/planner must tell the truth about curricula
-   actually available; do not invent A2+ here and do not open partial A1.
-2. `LC-PED-001` — pedagogical stress audit: >=20 distinct learner journeys per
-   completed arc before more curriculum is layered on top.
-3. `LC-I18N-002` — one truthful support catalog; 26 unimplemented bases cannot look
-   fully supported because English fallback renders.
-4. `LC-QA-001` — turn the audit's remaining failure classes into regression/lint
-   gates (hardcoded-copy detection, plural-contract checks — user_language
-   divergence detection is already covered by `check-user-language`).
-5. `LC-SEC-001`, `LC-BE-001`, `LC-DOC-001` — dependency advisories, Pydantic
-   deprecation, and stale docs/repo debris respectively.
+At branch creation, the next language task was `LC-I18N-004`: localize the welcome,
+placement and LanguageIdentity hardcodes and implement proper plural categories.
+The cloud chain may have claimed it on main while this ops branch was being written;
+**preserve the live main claim when reconciling TASKS before merge.**
 
-After that foundation, seed Arc 6/7 from the **live** A1 blueprint + authoring
-contract. After Arc 7, `LC-PED-002` is mandatory before any A1 opening decision.
-A2–C2 need a later explicit curriculum design phase; placement questions are not a
-curriculum specification.
+Then:
 
-## Language-specific cautions
+1. `LC-I18N-005` — preferred-device-language detection before login;
+2. `LC-PROD-001` — make placement/profile/planner truthful about curricula actually available;
+3. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc;
+4. `LC-I18N-002` — one truthful supported-language catalog; expand future languages
+   only in small complete batches;
+5. `LC-QA-001` — turn remaining i18n failure classes into regression gates.
 
-- Spanish: placement accents/copy debt + singular count forms are confirmed.
-- Portuguese/French regional picker variants currently share one base locale; do
-  not imply region-specific copy that does not exist.
-- Japanese: implemented locale is real; stale six-row registry omits it.
-- Arabic: Spanish placement can appear inside RTL UI; count grammar needs real plural
-  categories; keep embedded English LTR and do not mirror Chatto. LC-I18N-003
-  proved the shell itself (`document.dir`) is already correctly RTL for Arabic at
-  both 390px and 1440px — this caution is about the copy still hardcoded inside it.
-- English: even the English auxiliary experience is not clean because placement is
-  Spanish and the welcome assumes Spanish support.
+Do not mass-add Hindi/Korean/etc. as selector labels first. A language becomes
+supported only after login/onboarding/UI + explanations/hints/corrections/meanings
+are actually complete and tested.
 
-Naturalness/register still deserves rendered/native-quality review after the
-structural defects are fixed. Static reading is not proof of native perfection.
+## Supabase — owner now authorizes gradual beta persistence, but do not guess a project
 
-## Keep these non-i18n signals visible
+New source: `docs/architecture/supabase-beta-plan.md`.
 
-- `npm ci` reports 1 moderate + 3 high advisories; investigate dependency paths and
-  compatible versions, never force-fix blindly.
-- backend emits one Pydantic V1 `@validator` deprecation warning.
-- README is stale and still describes legacy Practice/Journey/mock/B1 behaviour.
-- login/signup are localStorage mocks; do not market them as real cloud accounts.
+Connected Supabase discovery on 2026-08-20 showed only:
+
+- `Evolabs Platform` — active;
+- `SG-Evolabs-Auth-Testing` — inactive.
+
+No LinguaChat project ref was found in the live repo/current configuration. The
+inactive project must **not** be restored merely because it is paused: its name
+suggests EvoLabs testing and touching the wrong project risks work data.
+
+`LC-CLOUD-001` is therefore BLOCKED until the exact LinguaChat Supabase project is
+positively identified, or a new dedicated project is deliberately created in a
+Supabase organization confirmed by the owner.
+
+When unblocked, first cloud milestone is deliberately small:
+
+- real Supabase Auth;
+- profiles;
+- compact episode/capability progress;
+- minimal learner facts actually used;
+- RLS + cross-user denial tests;
+- one-time local-state migration + offline/idempotent retry;
+- measured database bytes/user and growth thresholds.
+
+Do not initially store raw audio/video, screenshots, indefinite conversation/event
+logs, duplicate curriculum content or whole learner-state snapshots on every turn.
+No pgvector, Edge Functions, Realtime fan-out or Storage in the first milestone
+unless a later measured requirement justifies them.
+
+The current Free plan is intentionally treated as a tight budget. The architecture
+document defines internal warning thresholds well below the platform database cap;
+verify official quotas again at implementation time because service limits change.
+
+## Children / age adaptation
+
+Pedagogically, LinguaChat should adapt presentation/scaffolding to younger, adult and
+older learners without equating age with intelligence. Public accounts for minors
+also require a separate privacy/consent/compliance review before release. Do not
+collect exact birth dates just to personalize lessons unless a later legal/product
+review proves the need.
+
+## Still open engineering signals
+
+- `npm ci` reports 1 moderate + 3 high advisories; `LC-SEC-001` audits exact paths
+  before any upgrade; never force-fix blindly.
+- backend has one Pydantic V1 `@validator` deprecation; `LC-BE-001` handles it.
+- README is stale; `LC-DOC-001` updates it only after proving historical debris is unused.
+- current login/signup remain localStorage mocks until dedicated cloud work proves
+  real Auth; never market them as cloud accounts before then.
 
 ## Permanent traps
 
-- Quality over speed. One task per PR.
+- Quality over speed. One functional task per PR.
+- Live GitHub evidence wins over prose.
 - Count `check:all` by exit code.
-- Tests are not functional proof; use browser/evaluator evidence required by CLAUDE.md.
-- Never infer A1 completeness from currently-built A1 episodes.
-- No Supabase, paid-provider QA, voice/STT/TTS/WebRTC/pronunciation/calls/video.
+- A green suite is not functional/browser/pedagogical proof.
+- Never infer A1 completeness from currently-built episodes.
+- A1 cannot open before LC-PED-002 + separate availability decision.
+- Voice/STT/TTS/WebRTC/pronunciation/calls/video remain deferred.
+- Provider QA remains local/fake; no real paid OpenAI calls without written owner authorization.
+- Supabase is permitted only through dedicated LC-CLOUD scope; never improvise a
+  connection or relax QA guards early.
 - Never touch owner archives/secrets.
-- Never blind-rerun failed CI; read the log and fix the cause.
+- Never blind-rerun failed CI; diagnose the deterministic cause or make the work resumable.

@@ -34,10 +34,23 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
-- [LC-PROD-001] Make placement results honest about the curriculum the app can teach
+- [LC-I18N-005] Detect the learner's preferred device language before login without geo guessing
   owner:  unclaimed
   branch: none
   blocked-on: LC-I18N-004
+  why:    the first screen should already be understandable, but country/location is not a reliable language selector in multilingual countries or for travellers.
+  done:   implement `docs/product/language-detection-contract.md`: on a clean first
+          launch choose the first honestly supported locale from ordered device/browser
+          preferences (`navigator.languages` on web/PWA), allow safe base-locale
+          fallback, and persist one user_language; explicit user choice always wins;
+          no GPS/IP/SIM location is required. Prove es-CL, ja-JP, ar-SA RTL/LTR,
+          regional fallback, unsupported-first-language fallback and persisted manual
+          override at 390px/1440px with no mixed auxiliary copy or raw keys.
+
+- [LC-PROD-001] Make placement results honest about the curriculum the app can teach
+  owner:  unclaimed
+  branch: none
+  blocked-on: LC-I18N-004, LC-I18N-005
   why:    placement can announce A1–C2 while only Pre-A1 + partial A1 have structured curriculum, and the daily planner is hard-wired to Pre-A1.
   done:   no learner is promised a structured CEFR path that does not exist; profile,
           placement reveal, Home and daily-session planning agree on what is actually
@@ -51,20 +64,21 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
   branch: none
   blocked-on: LC-PROD-001
   why:    green structural/evaluator checks do not prove the sequence teaches well, resists false mastery, or transfers beyond memorised answers.
-  done:   derive the completed runtime arc list from the live curriculum sources and
-          run at least 20 DISTINCT learner journeys per arc (not 20 duplicate asserts).
-          Per arc the matrix must cover independent happy paths with varied natural
-          answers, wrong/near-miss + retry, help/model use that remains assisted,
-          nonsense/out-of-scope/refusal, replay/idempotency/progress persistence,
-          and transfer to a novel context after intervening material. Verify support
-          fades after genuine success and rises after struggle; mastery/can-do never
-          comes from model copying or recognition alone; prerequisites, vocabulary/
-          grammar ceilings, XP/reward uniqueness and evaluator refusal boundaries
-          hold. Run rendered functional samples at 390px/1440px, including es/ja/ar
-          auxiliary experiences while target English stays English. Commit a
-          per-arc pedagogical report with failures, fixes and evidence; any fix resets
-          the clean-cycle count. This is a simulated/software learning audit: do not
-          claim scientifically proven human learning from it.
+  done:   use `docs/research/learning-science-foundation.md`, derive the completed
+          runtime arc list from live curriculum sources, and run at least 20 DISTINCT
+          learner journeys per arc (not 20 duplicate asserts). Per arc cover varied
+          independent natural answers, wrong/near-miss + retry, help/model use that
+          remains assisted, nonsense/out-of-scope/refusal, replay/idempotency/progress
+          persistence, delayed retrieval after intervening material and transfer to a
+          novel context. Verify support fades after genuine success and rises after
+          struggle; mastery/can-do never comes from model copying or recognition alone;
+          prerequisites, vocabulary/grammar ceilings, XP/reward uniqueness and
+          evaluator refusal boundaries hold. Include age-sensitive usability review
+          for younger, adult and older learner profiles without assuming age=ability.
+          Run rendered functional samples at 390px/1440px including es/ja/ar while
+          target English stays English. Commit a per-arc pedagogical report with
+          failures, fixes and evidence; any fix resets clean-cycle count. Software
+          simulation is not scientific proof of human efficacy.
 
 - [LC-I18N-002] Stop advertising languages that only fall back to English (phase B)
   owner:  unclaimed
@@ -75,7 +89,9 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
           implemented before being called supported; regional variants do not imply
           region-specific copy when only a base locale exists; ja/ar cannot disappear
           through the stale six-row registry; no language is supported merely by
-          English fallback.
+          English fallback. Subsequent language expansion happens in small reviewed
+          batches and a language becomes selectable only when login/onboarding/UI,
+          explanations, hints, corrections and meanings are genuinely complete.
 
 - [LC-QA-001] Extend check:i18n into a real linter
   owner:  unclaimed
@@ -120,6 +136,19 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## BLOCKED
 
+- [LC-CLOUD-001] Introduce size-capped Supabase beta accounts and compact learner progress
+  owner:  unclaimed
+  branch: none
+  why:    the owner authorized gradual Supabase use for the beta, but no LinguaChat-specific project is currently identified in the connected account and guessing could corrupt EvoLabs data.
+  done:   first positively identify or deliberately create a LinguaChat Supabase
+          project in a user-confirmed organization. Then implement only the staged
+          minimum in `docs/architecture/supabase-beta-plan.md`: reproducible migrations,
+          real Auth, profiles + compact episode/capability progress, RLS with cross-user
+          denial tests, safe one-time local-state migration, offline/retry/idempotency,
+          measured database bytes/user and internal size thresholds. No raw audio/video,
+          indefinite chat/event logs, pgvector, Edge Functions or Storage in this
+          first milestone. Security/performance advisors reviewed and two clean cycles.
+
 - [LC-PED-002] Final all-arcs learning acceptance gate before A1 can open
   owner:  unclaimed
   branch: none
@@ -141,6 +170,13 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## DONE
 
+- [LC-OPS-010] Resilience + evidence-first product contract — interactive @claude is
+  triage/review only instead of a lossy long-task runner; its old issue-assignment
+  path is removed and its turn ceiling raised to 80 for bounded analysis. Autonomous
+  workers remain the resumable implementation path with early checkpoints. Added
+  authoritative learning-science, first-launch locale-detection and size-capped
+  Supabase-beta design contracts; Supabase implementation stays blocked until the
+  exact LinguaChat project is identified/created.
 - [LC-I18N-003] One canonical `user_language` — PR #19: `services/language.js` has
   a single storage writer so native/interface can no longer diverge through a
   supported API; `ensureLanguagePreferences()` reconciles any pre-existing

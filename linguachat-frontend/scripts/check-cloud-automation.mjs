@@ -38,17 +38,26 @@ for (const [name, text] of [['chain', chain], ['task', task], ['i18n', i18n], ['
 }
 ok()
 
-// 4. A QA transition from draft -> ready is a first-class trigger.
+// 4. Interactive @claude is triage/review only, never the long-running implementation lane.
+assert.doesNotMatch(mention, /^\s*issues:\s*$/m, 'mention lane must not auto-run from issue assignment')
+assert.match(mention, /TRIAGE\/REVIEW lane|triage\/review lane/i)
+assert.match(mention, /never edit\s+`?\.github\/workflows|NEVER take ownership of a queue-sized implementation/i)
+assert.match(mention, /--allowedTools\s+Read,Glob,Grep,Bash,TodoWrite\b/,
+  'interactive mention lane must expose only read/diagnostic tools plus TodoWrite')
+assert.match(mention, /--max-turns 80/)
+ok()
+
+// 5. A QA transition from draft -> ready is a first-class trigger.
 assert.match(qa, /pull_request:\s*\n\s*types:\s*\[[^\]]*ready_for_review[^\]]*\]/)
 ok()
 
-// 5. Same-run advancement is explicit; the workflow does not wait for a second event.
+// 6. Same-run advancement is explicit; the workflow does not wait for a second event.
 assert.match(chain, /needs:\s*\[merge\]/)
 assert.match(chain, /github\.event_name == 'workflow_run' && needs\.merge\.outputs\.merged == 'true'/)
 assert.match(chain, /Refresh main after a same-run merge/)
 ok()
 
-// 6. Both workers ask the one queue parser and reject the wrong lane/request.
+// 7. Both workers ask the one queue parser and reject the wrong lane/request.
 assert.match(task, /node \.github\/scripts\/next-task\.mjs/)
 assert.match(i18n, /node \.github\/scripts\/next-task\.mjs/)
 assert.match(task, /LC-I18N-\*\)/)
@@ -57,7 +66,7 @@ assert.match(task, /Requested \$REQUESTED but the only claimable task is \$NEXT/
 assert.match(i18n, /Requested \$REQUESTED but the only claimable task is \$NEXT/)
 ok()
 
-// 7. Final bookkeeping is part of the PR merge contract, not a later main commit.
+// 8. Final bookkeeping is part of the PR merge contract, not a later main commit.
 for (const f of ['.ai/TASKS.md', '.ai/STATE.md', '.ai/HANDOFF.md']) {
   assert.ok(mergeScript.includes(f), `merge contract does not require ${f}`)
 }
@@ -66,14 +75,14 @@ assert.match(task, /final bookkeeping IN THE SAME BRANCH/)
 assert.match(i18n, /final bookkeeping IN THIS BRANCH/)
 ok()
 
-// 8. Watchdog recovery handles green, red and unfinished work without spawning duplicates.
+// 9. Watchdog recovery handles green, red and unfinished work without spawning duplicates.
 assert.match(chain, /Recover a green ready PR if an event was missed/)
 assert.match(chain, /gh pr ready "\$NUMBER" --undo/)
 assert.match(chain, /release-stale-claim\.mjs/)
 assert.match(chain, /continue this branch|safe resume|same task can resume/i)
 ok()
 
-// 9. The corrected language rule is what autonomous prompts carry. Reject the old
+// 10. The corrected language rule is what autonomous prompts carry. Reject the old
 // POSITIVE contract, not text that explicitly says the old combination is forbidden.
 const oldPositiveMixedRule = /(?:case|requirement)\s+that\s+must\s+always\s+work[^\n]*(?:interface[^\n]*es[^\n]*native[^\n]*ja|native[^\n]*ja[^\n]*interface[^\n]*es)/i
 for (const [name, text] of [['task', task], ['i18n', i18n]]) {
@@ -85,7 +94,7 @@ for (const [name, text] of [['task', task], ['i18n', i18n]]) {
 }
 ok()
 
-// 10. next-task itself: busy means NOTHING can fan out.
+// 11. next-task itself: busy means NOTHING can fan out.
 function runQueue(markdown) {
   const dir = mkdtempSync(join(tmpdir(), 'lc-queue-'))
   const file = join(dir, 'TASKS.md')
@@ -111,7 +120,7 @@ assert.equal(runQueue(`
 `), '')
 ok()
 
-// 11. A blocked first TODO is skipped for the first genuinely claimable task.
+// 12. A blocked first TODO is skipped for the first genuinely claimable task.
 assert.equal(runQueue(`
 ## IN_PROGRESS
 ## TODO
@@ -127,7 +136,7 @@ assert.equal(runQueue(`
 `), 'LC-QA-001')
 ok()
 
-// 12. Once the dependency is DONE, order is respected again.
+// 13. Once the dependency is DONE, order is respected again.
 assert.equal(runQueue(`
 ## IN_PROGRESS
 ## TODO
