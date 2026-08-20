@@ -401,21 +401,44 @@ export function LanguageIdentity() {
                 <div style={{ maxHeight: 282, overflowY: 'auto', paddingInlineEnd: 4 }}>
                   {languageResults.map(option => {
                     const active = selectedLanguage?.code === option.code
+                    /*
+                     * A language only becomes selectable once LinguaChat can
+                     * honestly serve its complete auxiliary experience
+                     * (`option.supported`, derived from `SUPPORTED_LOCALES`
+                     * in services/language.js — the one source of truth).
+                     * Every other catalog row stays visible for discovery but
+                     * disabled, so picking it can never persist a language
+                     * that would then silently render mostly-English UI
+                     * under a false label (LC-I18N-001 finding A6).
+                     */
                     return (
                       <button
                         key={option.code}
                         type="button"
-                        onClick={() => setSelectedLanguage(option)}
+                        disabled={!option.supported}
+                        aria-disabled={!option.supported}
+                        onClick={() => option.supported && setSelectedLanguage(option)}
                         className="w-full rounded-xl px-3 py-2 text-left transition-all"
                         style={{
                           background: active ? 'var(--accent-soft)' : 'transparent',
                           border: `1px solid ${active ? 'var(--accent)' : 'transparent'}`,
-                          color: 'var(--ink)',
-                          cursor: 'pointer',
+                          color: option.supported ? 'var(--ink)' : 'var(--muted)',
+                          cursor: option.supported ? 'pointer' : 'not-allowed',
+                          opacity: option.supported ? 1 : 0.6,
                         }}
                       >
-                        <span style={{ display: 'block', fontSize: 14, fontWeight: 800 }}>
-                          {option.nativeName}
+                        <span className="flex items-center gap-2">
+                          <span style={{ display: 'block', fontSize: 14, fontWeight: 800 }}>
+                            {option.nativeName}
+                          </span>
+                          {!option.supported && (
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, padding: '1px 8px', borderRadius: 999,
+                              background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--muted)',
+                            }}>
+                              {t('upcoming')}
+                            </span>
+                          )}
                         </span>
                         <span style={{ display: 'block', fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>
                           {option.englishName} · {option.code}

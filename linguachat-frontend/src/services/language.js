@@ -28,7 +28,16 @@ const FALLBACK_NAMES = {
   zh: 'Chinese',
 }
 
-export const LANGUAGE_OPTIONS = [
+/*
+ * `supported` is derived from `SUPPORTED_LOCALES` (the same list the lazy
+ * locale loader ships) rather than hand-flagged per row, so this catalog can
+ * never drift into claiming a base is supported when no locale dictionary
+ * actually exists for it, or silently dropping one that does (the LC-I18N-001
+ * A6/A7 defects: 46 picker rows / 34 base languages, only 8 honestly
+ * implemented). Only a `supported` row may become the persisted
+ * `user_language` end to end — see `getLanguageOption`/`ensureLanguagePreferences`.
+ */
+const LANGUAGE_CATALOG = [
   { code: 'en', base: 'en', englishName: 'English', nativeName: 'English', aliases: ['ingles', 'inglés', 'english'] },
   { code: 'en-US', base: 'en', englishName: 'English (United States)', nativeName: 'English (US)', aliases: ['american english', 'usa', 'us english', 'united states'] },
   { code: 'en-GB', base: 'en', englishName: 'English (United Kingdom)', nativeName: 'English (UK)', aliases: ['british english', 'uk english', 'united kingdom'] },
@@ -76,6 +85,15 @@ export const LANGUAGE_OPTIONS = [
   { code: 'fil', base: 'fil', englishName: 'Filipino', nativeName: 'Filipino', aliases: ['filipino', 'tagalog', 'tagalo'] },
   { code: 'ms', base: 'ms', englishName: 'Malay', nativeName: 'Bahasa Melayu', aliases: ['malay', 'malayo', 'melayu'] },
 ]
+
+export const LANGUAGE_OPTIONS = LANGUAGE_CATALOG.map(option => ({
+  ...option,
+  supported: SUPPORTED_LOCALES.includes(option.base),
+}))
+
+export function isSupportedLanguage(base) {
+  return SUPPORTED_LOCALES.includes(String(base || '').toLowerCase())
+}
 
 function normalizeSearchText(value) {
   return String(value || '')
@@ -212,7 +230,15 @@ export function getStoredTargetLanguage() {
 
 export function ensureLanguagePreferences() {
   const existingNative = readLanguage(NATIVE_CODE_KEY, LEGACY_NATIVE_KEY)
-  const userLanguage = existingNative || detectNativeLanguage()
+  /*
+   * A persisted choice only wins when its base is actually one LinguaChat can
+   * serve end to end. Before LC-I18N-002 the post-login picker could persist
+   * any of its 46 rows, including the 26 unimplemented bases — that stored
+   * value must not keep silently claiming a language every string renders in
+   * English fallback merely because it was already written to disk once.
+   */
+  const validExisting = existingNative && isSupportedLanguage(existingNative.base) ? existingNative : null
+  const userLanguage = validExisting || detectNativeLanguage()
   const target = getStoredTargetLanguage()
   /*
    * Reconcile on every load, not only when nothing was stored yet. Older builds
@@ -253,6 +279,7 @@ export function getLanguageOption(language) {
     nativeName,
     aliases: [],
     custom: true,
+    supported: isSupportedLanguage(info.base),
   }
 }
 
