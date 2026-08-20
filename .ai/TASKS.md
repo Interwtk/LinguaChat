@@ -21,13 +21,9 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-_(none — the queue is open)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-I18N-005] Detect the learner's preferred device language before login without geo guessing
-  owner:  unclaimed
-  branch: none
+  owner:  claude-i18n
+  branch: i18n/lc-i18n-005
   blocked-on: LC-I18N-004
   why:    the first screen should already be understandable, but country/location is not a reliable language selector in multilingual countries or for travellers.
   done:   implement `docs/product/language-detection-contract.md`: on a clean first
@@ -37,6 +33,8 @@ _(none — the queue is open)_
           no GPS/IP/SIM location is required. Prove es-CL, ja-JP, ar-SA RTL/LTR,
           regional fallback, unsupported-first-language fallback and persisted manual
           override at 390px/1440px with no mixed auxiliary copy or raw keys.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-PROD-001] Make placement results honest about the curriculum the app can teach
   owner:  unclaimed
