@@ -94,13 +94,13 @@ function checkAuth() {
   } catch { return false }
 }
 
-const WELCOME_MESSAGE = {
+const createWelcomeMessage = (language) => ({
   id: 'welcome',
   role: 'lingua',
-  text: "Hi! I'm Lingua, your English companion. Ready to practice? You can write anything in English, ask for a word in Spanish, or just say hello. Mistakes are welcome here.",
+  text: translate(language, 'linguaWelcomeGreeting'),
   feedback: null,
   ts: Date.now(),
-}
+})
 
 export function AppProvider({ children }) {
   // Auth/setup flow: null = main app, 'entry'/'login'/'signup'/'forgot'/'placement'/'tutor-personality'/'learning-prefs' = flow screens
@@ -143,7 +143,7 @@ export function AppProvider({ children }) {
   })
   const [view, setView] = useState('today')
   const [sessionId, setSessionId] = useState(getOrCreateSessionId)
-  const [messages, setMessages] = useState(() => loadStoredMessages(WELCOME_MESSAGE))
+  const [messages, setMessages] = useState(() => loadStoredMessages(createWelcomeMessage(languagePreferences.interfaceLanguage.base)))
   const [localProgress, setLocalProgress] = useState(loadLocalProgress)
   const [activeMission, setActiveMission] = useState(loadActiveMission)
   const [completedMissions, setCompletedMissions] = useState(loadCompletedMissions)
@@ -983,15 +983,15 @@ export function AppProvider({ children }) {
   }, [])
 
   const clearMessages = useCallback(() => {
-    setMessages([WELCOME_MESSAGE])
+    setMessages([createWelcomeMessage(interfaceLanguageInfo.base)])
     setSelectedMessage(null)
-  }, [])
+  }, [interfaceLanguageInfo.base])
 
   const resetLocalProgress = useCallback(() => {
-    if (!window.confirm('Reset local chat history and progress on this device?')) return
+    if (!window.confirm(t('resetProgressConfirm'))) return
     clearStoredProgress()
     setSessionId(createSessionId())
-    setMessages([WELCOME_MESSAGE])
+    setMessages([createWelcomeMessage(interfaceLanguageInfo.base)])
     setLocalProgress(createEmptyProgress())
     setSelectedMessage(null)
     setConnectionNotice(null)
@@ -1002,7 +1002,7 @@ export function AppProvider({ children }) {
     setMissionFeedback(null)
     setMissionCelebration(null)
     setView('today')
-  }, [])
+  }, [t, interfaceLanguageInfo.base])
 
   const activeMissionDetails = getActiveMissionDetails(activeMission)
 
