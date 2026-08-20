@@ -6,9 +6,10 @@ intentions. Live GitHub evidence wins over prose.
 _Last product-content baseline: A1 arc 5 on main. LC-OPS-009 cloud automation is
 merged, LC-I18N-001 audited language architecture, LC-I18N-003 (canonical
 `user_language`) is complete in PR #19, LC-OPS-010 (resumable Claude lanes +
-research/first-launch/Supabase-beta contracts) is merged, and LC-I18N-004
+research/first-launch/Supabase-beta contracts) is merged, LC-I18N-004
 (welcome/placement/profile localization + plural-aware counts) is complete in
-PR #22._
+PR #22, and LC-I18N-005 (honest first-launch device-language detection) is
+complete in PR #24._
 
 ## Product / repository
 
@@ -21,24 +22,32 @@ PR #22._
 
 ## Verified QA baseline
 
-LC-I18N-004 (PR #22), latest measured baseline:
+LC-I18N-005 (PR #24), latest measured baseline:
 
-- `check:i18n` **1724** base keys (6 plural-aware), es/pt/fr/it/de/ja/ar all
-  100% coverage (ja 1718 / ar 1748 keys — correct per-locale plural-category
-  counts, not a defect);
-- `check:all` **52/52**, two consecutive clean cycles;
-- production build green, entry **447.05 kB** (<500 kB), two consecutive
-  clean cycles; `check-bundle-boundaries` entry 437.8 kB, 25 JS chunks,
-  1431.1 kB total;
+- `check:i18n` unchanged — **1724** base keys (6 plural-aware), es/pt/fr/it/de/ja/ar
+  all 100% coverage (ja 1718 / ar 1748 keys — correct per-locale plural-category
+  counts, not a defect); this task reused the existing `selectLanguage` key rather
+  than adding new ones;
+- new `check:language-detection` — 9 groups proving first-launch detection only
+  auto-selects a `SUPPORTED_LOCALES` base, regional fallback (`pt-BR`→`pt`),
+  unsupported-preference skipping, persisted-choice survival across a later device
+  change, target-stays-English, and no geolocation API use;
+- `check:all` **53/53**, two consecutive clean cycles;
+- production build green, entry **447.28 kB** (<500 kB), two consecutive
+  clean cycles; `check-bundle-boundaries` entry 438.0 kB, 26 JS chunks,
+  1432.1 kB total;
 - backend `compileall` clean and **444 pytest passed**, two consecutive clean
-  cycles (one pre-existing Pydantic V1 `@validator` warning, tracked as
+  cycles, unchanged (one pre-existing Pydantic V1 `@validator` warning, tracked as
   `LC-BE-001`);
-- real browser 390px/1440px for es/ja/ar: entry, signup, placement intro/
-  question/feedback, identity/profile screens — no raw keys, no overflow, no
-  console errors; Arabic RTL end to end (mirrored layout/nav/forms), English
-  practice content and email placeholders stay LTR.
+- real browser 390px/1440px: `es-CL`/`ja-JP`/`ar-SA` device preferences each
+  resolve to the matching auxiliary language on the entry screen (Arabic RTL, both
+  LTR otherwise), an unsupported-only preference list falls back to English, a
+  regional `pt-BR` preference resolves to base `pt`, and a manual choice made via
+  the new pre-login `LanguageSwitcher` survives a later reload under a different
+  device preference — no raw keys, no overflow, no console errors.
 
-Full detail in `.ai/TRANSLATIONS.md` under "LC-I18N-004".
+Full detail in `.ai/TRANSLATIONS.md` under "LC-I18N-005" (prior baseline:
+"LC-I18N-004").
 
 ## Curriculum truth
 
@@ -97,9 +106,10 @@ Still open before language expansion:
 - current `check:i18n` still cannot detect most semantic/claim defects beyond key
   parity and plural-category completeness (`LC-QA-001` addresses this).
 
-## First-launch language detection — new contract
+## First-launch language detection — implemented (LC-I18N-005)
 
-`docs/product/language-detection-contract.md` defines the correct approach:
+`docs/product/language-detection-contract.md` defines the correct approach, and
+`LC-I18N-005` (PR #24) implements and browser-proves it:
 
 - device/browser preferred-language order is the first-launch hint;
 - on web/PWA use `navigator.languages` / base-locale matching;
@@ -109,8 +119,14 @@ Still open before language expansion:
 - no GPS/IP/SIM location permission is needed for language selection;
 - only honestly supported locales may be auto-selected.
 
-`LC-I18N-005` is queued after LC-I18N-004 to implement and browser-test this before
-placement/product-truth work.
+`detectNativeLanguage()` (`services/language.js`) now walks `navigator.languages` in
+order and returns the first candidate whose base is in `SUPPORTED_LOCALES`
+(`en/es/pt/fr/it/de/ja/ar`), instead of unconditionally taking the first preference
+regardless of support — the previous behaviour could set `document.lang` to an
+unimplemented language (e.g. `hi`) while every string silently rendered English. A
+compact `LanguageSwitcher` (new, limited to the same eight locales) is now reachable
+from `AuthShell` and `SetupShell`, since no manual override existed before login
+prior to this task. See `.ai/TRANSLATIONS.md` under "LC-I18N-005" for full evidence.
 
 ## Automation — LC-OPS-010 delta
 
@@ -162,16 +178,15 @@ Initial cloud scope when unblocked:
 No raw audio/video, indefinite chat/event logs, pgvector, Edge Functions or Storage
 in the first cloud milestone.
 
-## Ordered quality queue after LC-I18N-004
+## Ordered quality queue after LC-I18N-005
 
-1. `LC-I18N-005` — first-launch preferred-device-language detection.
-2. `LC-PROD-001` — honest placement/profile/planner versus curricula available.
-3. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc.
-4. `LC-I18N-002` — truthful language support catalog; future expansion in small complete batches.
-5. `LC-QA-001` — real i18n lint/regression gates.
-6. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
-7. `LC-BE-001` — migrate Pydantic V1 validator.
-8. `LC-DOC-001` — stale README / proven-unused historical debris.
+1. `LC-PROD-001` — honest placement/profile/planner versus curricula available.
+2. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc.
+3. `LC-I18N-002` — truthful language support catalog; future expansion in small complete batches.
+4. `LC-QA-001` — real i18n lint/regression gates.
+5. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
+6. `LC-BE-001` — migrate Pydantic V1 validator.
+7. `LC-DOC-001` — stale README / proven-unused historical debris.
 
 `LC-CLOUD-001` is blocked only on project identity/creation, not on owner intent.
 Arc 6/7 are seeded only after the language/product/pedagogical foundation is stable.

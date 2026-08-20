@@ -21,18 +21,7 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-I18N-005] Detect the learner's preferred device language before login without geo guessing
-  owner:  claude-i18n
-  branch: i18n/lc-i18n-005
-  blocked-on: LC-I18N-004
-  why:    the first screen should already be understandable, but country/location is not a reliable language selector in multilingual countries or for travellers.
-  done:   implement `docs/product/language-detection-contract.md`: on a clean first
-          launch choose the first honestly supported locale from ordered device/browser
-          preferences (`navigator.languages` on web/PWA), allow safe base-locale
-          fallback, and persist one user_language; explicit user choice always wins;
-          no GPS/IP/SIM location is required. Prove es-CL, ja-JP, ar-SA RTL/LTR,
-          regional fallback, unsupported-first-language fallback and persisted manual
-          override at 390px/1440px with no mixed auxiliary copy or raw keys.
+_(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
@@ -159,6 +148,21 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## DONE
 
+- [LC-I18N-005] Detect the learner's preferred device language before login without
+  geo guessing — PR #24: `detectNativeLanguage()` now returns the first
+  `navigator.languages` candidate whose base is in `SUPPORTED_LOCALES`
+  (`en/es/pt/fr/it/de/ja/ar`) instead of the first preference regardless of support,
+  so an unimplemented device language can no longer be persisted/displayed while
+  every string silently renders English; a persisted choice still always wins. New
+  compact `LanguageSwitcher` (same eight locales) added to `AuthShell`/`SetupShell`
+  — no manual override existed anywhere pre-login before this task. New
+  `check:language-detection` (9 groups) proves the contract's QA-acceptance list
+  directly against the detection function. `check:all` 53/53, two consecutive clean
+  cycles; build entry 447.28 kB, two clean cycles; backend 444 pytest passed,
+  unchanged. Real browser proof at 390px/1440px: es-CL/ja-JP/ar-SA resolve
+  correctly (Arabic RTL), an unsupported-only preference list falls back to
+  English, `pt-BR` resolves to base `pt`, and a manual switcher choice survives a
+  reload under a different device preference.
 - [LC-I18N-004] Localize welcome/placement/profile + plural-aware counts — PR #22:
   welcome message reads from `linguaWelcomeGreeting` via `user_language`, no
   Spanish assumption; placement instructions/prompts/options-note/feedback and the
