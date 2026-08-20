@@ -41,7 +41,6 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
           failures, fixes and evidence; any fix resets clean-cycle count. Software
           simulation is not scientific proof of human efficacy.
 
-
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-I18N-002] Stop advertising languages that only fall back to English (phase B)
