@@ -1,8 +1,12 @@
 import { useApp } from '../../context/AppContext'
-import { PRE_A1, episodesOfLevel } from '../../learning/curriculum/levels.js'
+import { playableLevelId, episodesOfLevel } from '../../learning/curriculum/levels.js'
 
-/* one level's episodes: a replay list must not offer another level's content */
-const ARC = episodesOfLevel(PRE_A1)
+/*
+ * One level's episodes: a replay list must not offer another level's content.
+ * `playableLevelId()` — not a hardcoded level id — so this keeps agreeing with
+ * Home once a second level opens.
+ */
+const ARC = episodesOfLevel(playableLevelId())
 import { getEpisodeState, loadLearnerModel } from '../../learning/engine/learnerModel.js'
 import { timesPractised, canTryOtherBranch } from '../../learning/engine/episodeRuns.js'
 

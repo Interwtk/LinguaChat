@@ -430,16 +430,28 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
    * difference between an architecture that is level-aware and one that has a
    * `level` field nobody reads.
    */
+  /*
+   * `readiness.js`/`preA1Map.js` hold Pre-A1's own frozen exit criteria
+   * (`PRE_A1_EXIT_CRITERIA`) — that graduation contract stays pinned to
+   * Pre-A1 by name regardless of what else opens later, so it keeps the
+   * literal `episodesOfLevel(PRE_A1)` call.
+   *
+   * Home, the session builder and the replay list are not about Pre-A1
+   * specifically — they are about whatever level a learner may actually
+   * play (LC-PROD-001), so they must derive it from `playableLevelId()`
+   * rather than a hardcoded level id, or they silently stop agreeing with
+   * curriculum availability the day a second level opens.
+   */
   const mustBeScoped = {
-    'src/learning/curriculum/readiness.js': 'Pre-A1 readiness',
-    'src/learning/curriculum/preA1Map.js': 'the Pre-A1 registry',
-    'src/components/today/TodayView.jsx': 'Home',
-    'src/context/AppContext.jsx': 'the session the app builds',
-    'src/components/episode/CompletedEpisodes.jsx': 'the replay list',
+    'src/learning/curriculum/readiness.js': { what: 'Pre-A1 readiness', pattern: /episodesOfLevel\(PRE_A1\)/ },
+    'src/learning/curriculum/preA1Map.js': { what: 'the Pre-A1 registry', pattern: /episodesOfLevel\(PRE_A1\)/ },
+    'src/components/today/TodayView.jsx': { what: 'Home', pattern: /episodesOfLevel\(playableLevelId\(\)\)/ },
+    'src/context/AppContext.jsx': { what: 'the session the app builds', pattern: /episodesOfLevel\(playableLevelId\(\)\)/ },
+    'src/components/episode/CompletedEpisodes.jsx': { what: 'the replay list', pattern: /episodesOfLevel\(playableLevelId\(\)\)/ },
   }
-  for (const [path, what] of Object.entries(mustBeScoped)) {
+  for (const [path, { what, pattern }] of Object.entries(mustBeScoped)) {
     const src = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
-    assert.ok(/episodesOfLevel\(PRE_A1\)/.test(src),
+    assert.ok(pattern.test(src),
       `${what} must take its episodes from the level registry (${path})`)
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
     assert.ok(!/EPISODE_SKELETON as ARC|EPISODE_SKELETON\.(filter|map|every|some|find)/.test(code),
