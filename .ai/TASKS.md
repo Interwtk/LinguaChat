@@ -21,6 +21,14 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
+- [LC-OPS-009] Make the autonomous cloud chain self-healing and PC-independent
+  owner:  chatgpt-supervisor
+  branch: ops/lc-ops-009-cloud-autonomy-v2
+  why:    the current chain can merge successfully and still go dormant, while the
+          interactive @claude lane can also hit its turn ceiling before preserving work.
+  done:   same-run post-merge advancement, hourly chain watchdog, one selector and
+          one writer lock, atomic final bookkeeping, QA on ready_for_review, corrected
+          user-language rule in worker prompts, and focused regression evidence.
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
