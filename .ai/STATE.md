@@ -9,8 +9,9 @@ merged, LC-I18N-001 audited language architecture, LC-I18N-003 (canonical
 research/first-launch/Supabase-beta contracts) is merged, LC-I18N-004
 (welcome/placement/profile localization + plural-aware counts) is complete in
 PR #22, LC-I18N-005 (honest first-launch device-language detection) is complete
-in PR #24, and LC-PROD-001 (honest placement/profile/Home curriculum agreement)
-is complete in PR #25._
+in PR #24, LC-PROD-001 (honest placement/profile/Home curriculum agreement) is
+complete in PR #25, and LC-PED-001 (per-arc learner-journey pedagogical stress
+test) is complete in PR #26._
 
 ## Product / repository
 
@@ -58,6 +59,25 @@ LC-PROD-001 (PR #25), latest measured baseline:
 Full detail in `.ai/TASKS.md` DONE entry for `LC-PROD-001` (prior baseline:
 "LC-I18N-005" in `.ai/TRANSLATIONS.md`).
 
+`LC-PED-001` (PR #26), latest measured baseline on top of that:
+
+- new `check-pedagogical-journeys` — 253 distinct learner journeys across all
+  11 completed runtime arcs (every arc clears the >=20 floor), played through
+  the real evaluator/scaffold/learner-model engine, not fixtures; two real
+  harness defects found and fixed (arc 5 unreachable, no override hooks for
+  natural-variant/near-miss/novel-context play);
+- `check:all` **55/55** (was 54), two consecutive clean cycles;
+- build entry 447.64 kB, `check-bundle-boundaries` entry 438.4 kB, two
+  consecutive clean cycles; backend `compileall` clean + 444 pytest passed,
+  two consecutive clean cycles, unchanged;
+- real browser proof (Playwright/Chromium, installed ad hoc and removed after
+  use): a seeded Pre-A1 `greetings` session driven through the live UI at
+  390px/1440px in es/ja/ar (6 runs) — a `word_order` step submitted wrong,
+  recovered via the real retry copy, then completed; no overflow, no raw
+  keys, no console/page errors in any run; Arabic `dir="rtl"` end to end at
+  both viewports; target-English tokens/retry text/free-text input all
+  measured `lang="en" dir="ltr"` by DOM inspection.
+
 ## Curriculum truth
 
 | level | state |
@@ -90,11 +110,13 @@ It explicitly rejects pseudo-neuroscience / generic "dopamine hack" reasoning.
 Product success is retained learning and healthy return behaviour, not maximum raw
 time-on-screen.
 
-`LC-PED-001` remains the intermediate simulated-learning stress gate: >=20 distinct
-learner journeys per completed runtime arc. `LC-PED-002` remains the final all-arcs
-gate after A1 arcs 6–7; with today's 6 Pre-A1 + 7 A1 design it implies >=260 final
-arc scenarios plus longitudinal journeys. Human efficacy claims require later real
-pilot data and must not be inferred from simulated QA.
+`LC-PED-001` is complete (PR #26): the intermediate simulated-learning stress
+gate — 253 journeys across all 11 completed runtime arcs, each clearing the
+>=20-distinct-journeys floor. `LC-PED-002` remains the final all-arcs gate
+after A1 arcs 6–7; with today's 6 Pre-A1 + 7 A1 design it implies >=260 final
+arc scenarios plus longitudinal journeys. Human efficacy claims require later
+real pilot data and must not be inferred from simulated QA — `LC-PED-001`'s
+253 journeys establish internal pedagogical consistency, not human efficacy.
 
 ## Language truth
 
@@ -190,14 +212,13 @@ Initial cloud scope when unblocked:
 No raw audio/video, indefinite chat/event logs, pgvector, Edge Functions or Storage
 in the first cloud milestone.
 
-## Ordered quality queue after LC-PROD-001
+## Ordered quality queue after LC-PED-001
 
-1. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc.
-2. `LC-I18N-002` — truthful language support catalog; future expansion in small complete batches.
-3. `LC-QA-001` — real i18n lint/regression gates.
-4. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
-5. `LC-BE-001` — migrate Pydantic V1 validator.
-6. `LC-DOC-001` — stale README / proven-unused historical debris.
+1. `LC-I18N-002` — truthful language support catalog; future expansion in small complete batches.
+2. `LC-QA-001` — real i18n lint/regression gates.
+3. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
+4. `LC-BE-001` — migrate Pydantic V1 validator.
+5. `LC-DOC-001` — stale README / proven-unused historical debris.
 
 `LC-CLOUD-001` is blocked only on project identity/creation, not on owner intent.
 Arc 6/7 are seeded only after the language/product/pedagogical foundation is stable.

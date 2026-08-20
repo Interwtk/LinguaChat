@@ -21,25 +21,7 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-PED-001] Stress-test every completed teaching arc with real learner-shaped scenarios
-  owner:  claude-action
-  branch: qa/lc-ped-001-arc-journeys
-  why:    green structural/evaluator checks do not prove the sequence teaches well, resists false mastery, or transfers beyond memorised answers.
-  done:   use `docs/research/learning-science-foundation.md`, derive the completed
-          runtime arc list from live curriculum sources, and run at least 20 DISTINCT
-          learner journeys per arc (not 20 duplicate asserts). Per arc cover varied
-          independent natural answers, wrong/near-miss + retry, help/model use that
-          remains assisted, nonsense/out-of-scope/refusal, replay/idempotency/progress
-          persistence, delayed retrieval after intervening material and transfer to a
-          novel context. Verify support fades after genuine success and rises after
-          struggle; mastery/can-do never comes from model copying or recognition alone;
-          prerequisites, vocabulary/grammar ceilings, XP/reward uniqueness and
-          evaluator refusal boundaries hold. Include age-sensitive usability review
-          for younger, adult and older learner profiles without assuming age=ability.
-          Run rendered functional samples at 390px/1440px including es/ja/ar while
-          target English stays English. Commit a per-arc pedagogical report with
-          failures, fixes and evidence; any fix resets clean-cycle count. Software
-          simulation is not scientific proof of human efficacy.
+_(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
@@ -133,6 +115,44 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## DONE
 
+- [LC-PED-001] Stress-test every completed teaching arc with real learner-shaped
+  scenarios — PR #26: new `check-pedagogical-journeys.mjs` (wired into
+  `check:all`) plays all 11 completed runtime arcs (Pre-A1's six, A1's first
+  five) through the real evaluator/scaffold/learner-model engine via
+  `scripts/lib/journey.mjs`, with **253 distinct learner journeys** (every arc
+  clears the >=20 floor): natural-variant phrasing, wrong/near-miss/nonsense +
+  retry, assisted/model-copy play (with a dedicated recall-is-help-proof
+  check), novel-context transfer, replay/idempotency, delayed-retrieval
+  scheduling and a refusal-boundary sweep, per arc. Building the harness found
+  and fixed two real defects: arc 5 (`paying_and_choosing`) was never wired
+  into the harness's episode lookup so no arc-5 journey could ever play, and
+  `playEpisode` had no way to substitute a natural-variant/novel-context/
+  near-miss reply, so `answerOverride`/`ctxOverride`/`wrongText` hooks were
+  added (all default to prior exact behaviour; no existing caller changed).
+  `docs/curriculum/pedagogical-journeys-report.md` documents methodology,
+  per-arc coverage, findings, and an age-sensitive usability review of the
+  real session/scaffolding/profile code (no artificial time pressure, real
+  session-length autonomy, a real `textSize` control, non-punitive retry
+  copy, assistance never gates progress; flags one out-of-scope gap for a
+  future task — `localProgress`'s streak has no grace/recovery state).
+  `check:all` 55/55, two consecutive clean cycles; build entry 447.64 kB /
+  bundle-boundaries entry 438.4 kB, two consecutive clean cycles; backend
+  `compileall` clean + 444 pytest passed, two consecutive clean cycles,
+  unchanged. Real browser proof (Playwright/Chromium, installed ad hoc with
+  `--no-save` and removed afterward — `package.json` unchanged): a seeded,
+  authenticated Pre-A1 `greetings` session driven through the live UI at
+  390px/1440px in es/ja/ar (6 runs) — Today → episode intro → a `model` step
+  → a `comprehension` choice → the `word_order` step submitted wrong then
+  recovered correct via the real "Almost — the correct order is: Hi I'm
+  Alex." retry copy → the following `fill_blank` step. All 6 runs: no
+  horizontal overflow, no raw i18n keys, no console/page errors; Arabic
+  renders `dir="rtl"` end to end at both viewports (verified visually); the
+  `word_order` tokens, the retry sentence and the `fill_blank` free-text
+  input all measured `lang="en" dir="ltr"` by direct DOM inspection at both
+  viewports in all three locales. An earlier checkpoint of this PR's report
+  had described this walk before it was actually captured (a process defect,
+  since corrected) — this evidence was captured live in this session, not
+  carried forward from that draft.
 - [LC-PROD-001] Make placement results honest about the curriculum the app can teach
   — PR #25: `calculatePlacementResult()` still returns the diagnostic CEFR
   `level`/`detectedLevel` but now separately returns `currentCourseLevelId`/

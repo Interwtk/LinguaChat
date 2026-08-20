@@ -3,7 +3,7 @@
 Keep this file current: what just happened, what is proved, what comes next, and
 what will bite the next operator.
 
-_Written for LC-PROD-001 on 2026-08-20. Live main/TASKS wins if it changes after
+_Written for LC-PED-001 on 2026-08-20. Live main/TASKS wins if it changes after
 this branch was cut._
 
 ## What just happened
@@ -75,6 +75,51 @@ for a beginner (A1 diagnostic) and an above-curriculum learner (C1 diagnostic)
 render the IDENTICAL Pre-A1 session and "you are here: Start" node in both cases;
 Arabic RTL end to end with no overflow, no raw keys, no console errors.
 
+LC-PED-001 (PR #26) then closed the intermediate pedagogical-quality gate this
+queue had pointed at since `LC-OPS-010`: every prior check proved content was
+well-formed and that one canonical, hand-picked transcript produces the right
+evidence — not that the sequence actually teaches well against real, varied
+learner behaviour. New `check-pedagogical-journeys.mjs` (wired into `check:all`)
+plays all 11 completed runtime arcs (Pre-A1's six, A1's first five) through the
+real evaluator/scaffold/learner-model engine via `scripts/lib/journey.mjs`, with
+**253 distinct learner journeys** — natural-variant phrasing, wrong/near-miss/
+nonsense + retry, assisted/model-copy play (with a dedicated recall-is-help-proof
+check), novel-context transfer, replay/idempotency, delayed-retrieval scheduling
+and a refusal-boundary sweep per arc, every arc clearing the >=20 floor. Building
+the harness found two real defects: arc 5 (`paying_and_choosing`) was never wired
+into the harness's episode lookup chain, so no arc-5 journey could ever play; and
+`playEpisode` had no way to substitute a natural-variant/near-miss/novel-context
+reply, so optional `answerOverride`/`ctxOverride`/`wrongText` hooks were added
+(all default to prior exact behaviour; no existing caller's behaviour changed).
+`docs/curriculum/pedagogical-journeys-report.md` documents methodology, per-arc
+coverage and an age-sensitive usability review read from the real session/
+scaffolding/profile code (no artificial time pressure, real session-length
+autonomy, a real `textSize` control, non-punitive retry copy, assistance never
+gates progress; flags one out-of-scope gap for a future task — `localProgress`'s
+streak has no grace/recovery state, which CLAUDE.md requires).
+
+This PR had stalled across several prior runs (draft checkpoint, then repeated
+claim/release cycles while an unrelated queue-boundary bug was fixed in
+`LC-OPS-012`/`LC-OPS-013`). Its report had also drifted ahead of its evidence: an
+earlier checkpoint described the 390px/1440px es/ja/ar Playwright browser walk in
+the past tense before that walk had actually been run — a process defect (implying
+a test ran when it had not), not a finding about the product. This run actually
+performed that walk live before closing the task: a seeded, authenticated Pre-A1
+`greetings` session driven through the real UI (`npm run dev`, Playwright/Chromium
+installed ad hoc with `--no-save` and removed afterward — `package.json`
+unchanged) at 390px/1440px in es/ja/ar (6 runs) — Today → episode intro → a
+`model` step → a `comprehension` choice → the `word_order` step submitted wrong
+then recovered via the real "Almost — the correct order is: Hi I'm Alex." retry
+copy → the following `fill_blank` step. All 6 runs: no horizontal overflow, no raw
+i18n keys, no console/page errors; Arabic renders `dir="rtl"` end to end at both
+viewports (verified visually — mirrored bottom nav on mobile, mirrored sidebar/
+chat panel/content column on desktop); the `word_order` tokens, the retry sentence
+and the `fill_blank` free-text input all measured `lang="en" dir="ltr"` by direct
+DOM inspection in every locale/viewport. `check:all` 55/55 (was 54), two
+consecutive clean cycles; build entry 447.64 kB / bundle-boundaries entry
+438.4 kB, two consecutive clean cycles; backend `compileall` clean + 444 pytest
+passed, two consecutive clean cycles, unchanged.
+
 **Note for the next operator (still true, kept from the LC-I18N-004 handoff):** a
 task can show `unclaimed` on `main` while its branch/PR already has real commits
 sitting in draft — check the branch and PR first before assuming there is nothing to
@@ -137,9 +182,11 @@ and healthy return behaviour — not maximizing addiction or raw screen time. No
 loot-box/variable gambling rewards, fake urgency, shame notifications, forced
 infinite scroll or punitive streak destruction.
 
-`LC-PED-001` remains the intermediate >=20-distinct-journeys-per-completed-arc audit.
-`LC-PED-002` remains the final all-arcs gate after A1 arcs 6/7. Software simulation
-cannot replace the later real-learner beta/pilot evidence.
+`LC-PED-001` is DONE (PR #26): 253 distinct learner journeys across all 11
+completed runtime arcs. `LC-PED-002` remains the final all-arcs gate after A1
+arcs 6/7. Software simulation cannot replace the later real-learner beta/pilot
+evidence — `LC-PED-001` proves internal pedagogical consistency, not human
+efficacy.
 
 ## First-launch language — implemented, do not infer language from country
 
@@ -172,14 +219,13 @@ supported locales may be selected — this is now enforced in code, not just pol
 
 ## Current i18n path
 
-`LC-I18N-005` is DONE (PR #24) and `LC-PROD-001` is DONE (PR #25, merged into
-main's `.ai/TASKS.md` DONE section in this same PR). The next language/quality
-tasks are:
+`LC-I18N-005` is DONE (PR #24), `LC-PROD-001` is DONE (PR #25), and `LC-PED-001`
+is DONE (PR #26, merged into main's `.ai/TASKS.md` DONE section in this same PR).
+The next language/quality tasks are:
 
-1. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc;
-2. `LC-I18N-002` — one truthful supported-language catalog; expand future languages
+1. `LC-I18N-002` — one truthful supported-language catalog; expand future languages
    only in small complete batches;
-3. `LC-QA-001` — turn remaining i18n failure classes into regression gates.
+2. `LC-QA-001` — turn remaining i18n failure classes into regression gates.
 
 Do not mass-add Hindi/Korean/etc. as selector labels first. A language becomes
 supported only after login/onboarding/UI + explanations/hints/corrections/meanings
