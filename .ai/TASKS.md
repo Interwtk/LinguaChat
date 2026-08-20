@@ -21,42 +21,37 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-OPS-009] Make the autonomous cloud chain self-healing and PC-independent
-  owner:  chatgpt-supervisor
-  branch: ops/lc-ops-009-cloud-autonomy-v2
-  why:    the current chain can merge successfully and still go dormant, while the
-          interactive @claude lane can also hit its turn ceiling before preserving work.
-  done:   same-run post-merge advancement, hourly chain watchdog, one selector and
-          one writer lock, atomic final bookkeeping, QA on ready_for_review, corrected
-          user-language rule in worker prompts, and focused regression evidence.
+_(nothing is in progress)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-I18N-001] Audit the eight implemented languages (phase A)
   owner:  unclaimed
   branch: none
-  why:    100 % key coverage is not the same as correct copy.
-  done:   a report in .ai/TRANSLATIONS.md listing, per language: missing or
-          suspicious placeholders, plural errors, missing diacritics, hardcoded
-          visible strings, raw keys reaching the screen, native/interface mixups,
-          RTL defects. Fixes go in separate small PRs, not in this audit.
+  why:    100 % key coverage is not the same as correct copy or a coherent language experience.
+  done:   a report in .ai/TRANSLATIONS.md listing, per language: suspicious or
+          missing placeholders, plural/count errors, missing diacritics, hardcoded
+          visible strings, raw keys, silent fallbacks, user_language inconsistencies,
+          and RTL defects. Fixes go in separate small PRs, not inside the audit.
 
 - [LC-I18N-002] Stop advertising languages that only fall back to English (phase B)
   owner:  unclaimed
   branch: none
-  why:    46 options are offered; 8 languages exist. The other 26 look supported.
-  done:   derive both lists from the code, decide honestly per language (implement,
-          or mark interface-only / coming soon), and make the picker tell the truth.
-          No language may be labelled supported on the strength of a fallback.
+  why:    historical snapshots show many more picker options than full locale implementations.
+  done:   derive the exact live option/locales lists from code, decide honestly per
+          language (implemented, partial/interface-only, or coming soon), and make
+          the picker tell the truth. No language may be labelled fully supported on
+          the strength of an English fallback.
 
 - [LC-QA-001] Extend check:i18n into a real linter
   owner:  unclaimed
   branch: none
-  why:    the current check counts keys; it cannot see the defects that matter.
+  why:    the current check counts keys; it cannot see many defects that matter.
   done:   detect hardcoded visible strings, placeholder mismatches, plural errors,
           locale chunk cross-contamination, raw keys, silent fallback, and a
           language advertised without coverage. No absurd false positives: product
-          names, Lingua, Chatto, URLs and codes may match across languages.
+          names, Lingua, Chatto, URLs, codes and intentional English target material
+          may legitimately match across languages.
 
 ## BLOCKED
 
@@ -64,6 +59,10 @@ _(nothing is blocked)_
 
 ## DONE
 
+- [LC-OPS-009] Cloud autonomy repair — PR #17: same-run advancement after merge,
+  hourly chain watchdog, one shared task selector, one Claude writer lock, red/draft
+  recovery, atomic final bookkeeping, QA on ready_for_review, corrected user_language
+  worker contract, and `check:cloud-automation` regression coverage
 - [LC-CURR-005d] A1 arc 5 proved against the blueprint — check:a1-arc5 (19 groups),
   plus a browser walkthrough of all four episodes: happy path, a wrong answer and
   its retry, the model taken and recorded as assistance, replay without a second
