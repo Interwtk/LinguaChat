@@ -58,6 +58,106 @@ is the base dictionary. This is the real implemented set today.
 
 ---
 
+# LC-I18N-005 — honest first-launch device-language detection, 2026-08-20
+
+Implements `docs/product/language-detection-contract.md` for the first screen a new
+learner sees, before any explicit choice exists. PR #24, branch `i18n/lc-i18n-005`.
+
+## What changed
+
+- **`detectNativeLanguage()`** (`services/language.js`): used to take
+  `navigator.languages[0]` unconditionally via `candidates.find(Boolean)`. Any
+  device preference — supported or not — was persisted as `user_language` and set
+  `document.documentElement.lang` to it, while `translate()`'s locale fallback
+  silently rendered English for any unimplemented locale. A device set to `hi-IN`
+  therefore produced `lang="hi-IN"` with entirely English visible copy — precisely
+  the false support claim the contract forbids ("never silently present
+  mostly-English UI while labeling the experience Hindi"). It now walks the ordered
+  preference list and returns the first candidate whose **base** language is in
+  `SUPPORTED_LOCALES` (imported from `i18n/translations.js`, the same list the
+  lazy-locale loader itself uses — one source of truth, not a second hardcoded set),
+  falling back to English when no candidate matches. `ensureLanguagePreferences()`
+  is unchanged: an already-persisted choice is still read first and always wins,
+  so this only affects the very first, storage-empty launch.
+- **`LanguageSwitcher`** (`components/ui/LanguageSwitcher.jsx`, new): the contract
+  requires a manual override to be reachable "before/inside login/onboarding" so a
+  learner can immediately fix a wrong or absent automatic detection. No such control
+  existed pre-login before this task — the only language picker
+  (`LanguageIdentity.jsx`, with its full 46-row aspirational catalog and search
+  popover) lives inside the main app, after signup/placement/setup complete. The new
+  component is a compact native `<select>` limited to the eight locales
+  `SUPPORTED_LOCALES` actually implements (not the 46-row picker, so it cannot
+  advertise an unsupported language), wired through the existing
+  `setNativeLanguage`/`updateNativeLanguage` context API — no new persistence path.
+  Added next to `ThemeToggle` in `AuthShell` (`AuthFlow.jsx`: entry/login/signup/
+  forgot) and `SetupShell` (`SetupFlow.jsx`: placement/setup-choice/personality/
+  learning-prefs), the two shared headers that cover every screen before the main
+  app.
+- **`scripts/check-language-detection.mjs`** (new, wired into `check:all` as
+  `check:language-detection`): proves the contract's own "QA acceptance" list
+  directly against `detectNativeLanguage()`/`ensureLanguagePreferences()` using a
+  mocked `localStorage` + `navigator` (same isolated-module-per-scenario technique
+  `check-user-language.mjs` uses), so the regression is pinned to the real
+  first-launch code path rather than a UI-level approximation.
+
+## Evidence
+
+- `check:language-detection` — 9 groups: `es-CL`+`en-US` → `es` (region preserved in
+  `code`, base drives locale/RTL); `ja-JP`+`en-US` → `ja`; `ar-SA`+`en-US` → `ar`;
+  `hi-IN`+`en-US` → `en` (unsupported preference skipped, not honoured); `hi-IN`+
+  `ko-KR`+`th-TH` with **no** supported candidate anywhere → `en` (the regression
+  this task exists for — the old code would have picked `hi` unconditionally);
+  `pt-BR`+`en-US` → `pt` (regional variant resolves to its supported base, not to
+  English); a persisted manual choice (`ar`) survives a later "reload" that presents
+  a completely different device preference (`fr-FR`); target language stays `en`
+  regardless of the detected auxiliary language; a `navigator.geolocation` stub whose
+  `getCurrentPosition` throws is never called — detection depends only on
+  `navigator.languages`/`navigator.language`.
+- `check:all` — 53/53 scripts green (new script included), two consecutive clean
+  cycles.
+- `build` — entry `447.28 kB` gzip `130.70 kB` (<500 kB budget, +0.23 kB over
+  LC-I18N-004's `447.05 kB` from the new switcher component), two consecutive clean
+  cycles; `check:bundle-boundaries` 7 boundary groups, entry `438.0 kB`, 26 JS
+  chunks, 1432.1 kB total.
+- Backend: `compileall` clean, `pytest -q` 444 passed — unchanged, confirming no
+  backend edit was needed (detection is a frontend-only, `navigator`-driven
+  concern).
+- Real browser proof (Playwright against the built `dist/` via `vite preview`,
+  system Chromium at `/usr/bin/chromium`, installed transiently for this task and
+  **not** added to `package.json` — same as the prior LC-I18N-003/004 browser
+  passes) at **390px and 1440px**, each context seeded with `navigator.languages`
+  via `addInitScript` before any page script runs:
+  - `['es-CL','en-US']` → `document.documentElement.lang="es-CL"`, `dir="ltr"`,
+    entry title renders in Spanish, no raw `{key}` placeholders, no horizontal
+    overflow, no console errors, at both viewports.
+  - `['ja-JP','en-US']` → `lang="ja-JP"`, `dir="ltr"`, entry title in Japanese, same
+    clean checks at both viewports.
+  - `['ar-SA','en-US']` → `lang="ar-SA"`, `dir="rtl"`, entry title in Arabic, same
+    clean checks at both viewports; Chatto is not mirrored (icon only, no directional
+    asset) and the English target phrase inside placement is unaffected by this
+    change (untouched by this task).
+  - `['hi-IN','ko-KR']` (no supported candidate at all) → `lang="en"`, confirming the
+    fallback holds even when nothing in the preference list is a supported base.
+  - `['pt-BR','en-US']` → `lang="pt-BR"` (base `pt`), confirming the regional
+    fallback resolves to the implemented base instead of dropping to English.
+  - Manual override: with device preference `en-US`, selecting Arabic from the new
+    `LanguageSwitcher` on the entry screen immediately set `lang="ar"`/`dir="rtl"`;
+    reloading the same page with the device preference now claiming `ja-JP` left the
+    interface on `lang="ar"` — the explicit choice was not overwritten by a later
+    automatic re-detection, per the contract's "any manual learner choice wins
+    permanently until the learner changes it again."
+  - No test used `navigator.geolocation`, IP lookup or any permission prompt.
+
+## Known pre-existing issue observed, not fixed here
+
+The Spanish entry screen renders `entryTitle: 'Practica ingles'` (missing the accent
+on "inglés", `es.js:565`). This is unrelated to detection/switcher logic, was not
+introduced by this change, and falls under the native-copy review LC-I18N-001
+already flagged for Spanish (missing diacritics) — left for a future small-batch
+copy pass rather than fixed inside this detection-logic task.
+
+---
+
 # LC-I18N-004 — welcome/placement/profile localization + plural categories, 2026-08-20
 
 Resolves the three concrete defects LC-I18N-001 confirmed by code (A3 welcome,

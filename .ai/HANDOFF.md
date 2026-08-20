@@ -3,7 +3,7 @@
 Keep this file current: what just happened, what is proved, what comes next, and
 what will bite the next operator.
 
-_Written for LC-I18N-004 on 2026-08-20. Live main/TASKS wins if it changes after
+_Written for LC-I18N-005 on 2026-08-20. Live main/TASKS wins if it changes after
 this branch was cut._
 
 ## What just happened
@@ -15,29 +15,39 @@ reconciles to one value, supported APIs cannot independently diverge it, meaning
 use `user_language -> English`, and es/ja/ar reload + Arabic RTL were browser-proved.
 LC-OPS-010 turned the failure class exposed by run `32331959420` into the current
 resumable-worker architecture and added the learning-science/first-launch/
-Supabase-beta contracts referenced below.
+Supabase-beta contracts referenced below. LC-I18N-004 (PR #22) then closed the three
+concrete hardcoded-copy defects LC-I18N-001 found by code (welcome message,
+placement instructions/prompts/explanations/level-plan text, LanguageIdentity mood/
+relationship/progress/style literals) and replaced the fixed `{count}` template
+model with real `Intl.PluralRules`-based plural categories.
 
-LC-I18N-004 (PR #22) then closed the three concrete hardcoded-copy defects
-LC-I18N-001 found by code — the welcome message, the placement flow's
-instructions/prompts/explanations/level-plan text, and LanguageIdentity's mood/
-relationship/progress/style literals — and replaced the fixed `{count}` template
-model with real `Intl.PluralRules`-based plural categories. Full measured evidence
-is in `.ai/TRANSLATIONS.md` under "LC-I18N-004"; the short version: `check:i18n`
-1724 base keys (6 plural-aware) at 100% coverage across es/pt/fr/it/de/ja/ar,
-`check:all` 52/52 two consecutive clean cycles, build entry 447.05 kB two clean
-cycles, backend 444 pytest passed two clean cycles, and real Playwright-driven
-browser proof at 390px/1440px for es/ja/ar covering entry/signup/placement/
-identity screens with correct Arabic RTL and no raw-key/overflow/console-error
-regressions.
+LC-I18N-005 (PR #24) then implemented `docs/product/language-detection-contract.md`:
+`detectNativeLanguage()` (`services/language.js`) used to take
+`navigator.languages[0]` unconditionally, so a device set to an unimplemented
+language (e.g. `hi-IN`) would be persisted as `user_language` and set
+`document.lang` to it while every visible string silently rendered English — the
+false-support-claim failure mode the contract explicitly forbids. It now walks the
+ordered preference list and returns the first candidate whose base is in
+`SUPPORTED_LOCALES` (the same list the lazy-locale loader uses), falling back to
+English when nothing matches; an already-persisted choice is untouched and still
+always wins. A new compact `LanguageSwitcher` (limited to the eight actually
+supported locales) is now reachable from `AuthShell` and `SetupShell`, since no
+manual override existed anywhere before login prior to this task, and the contract
+requires one. Full measured evidence is in `.ai/TRANSLATIONS.md` under
+"LC-I18N-005"; short version: new `check:language-detection` (9 groups) proves the
+contract's own QA-acceptance list against the real detection function, `check:all`
+53/53 two consecutive clean cycles, build entry 447.28 kB two clean cycles, backend
+444 pytest passed unchanged, and real Playwright browser proof at 390px/1440px for
+es-CL/ja-JP/ar-SA device preferences, an unsupported-only preference list falling
+back to English, a `pt-BR` regional preference resolving to base `pt`, and a manual
+switcher choice surviving a later reload under a different device preference.
 
-**Note for the next operator:** this branch/PR had previously accumulated several
-claim/release cycles on `main` (visible in `git log`) without the underlying work
-actually finishing — the branch had real, substantial commits sitting in draft
-PR #22 the whole time, but nobody had run final QA, browser proof and bookkeeping
-to close it out. If you see a similar pattern (task shows `unclaimed` on main but
-its branch already has commits/an open PR), check the branch and PR first before
-assuming there is nothing to do — resume and finish existing work rather than
-re-claiming and re-releasing it.
+**Note for the next operator (still true, kept from the LC-I18N-004 handoff):** a
+task can show `unclaimed` on `main` while its branch/PR already has real commits
+sitting in draft — check the branch and PR first before assuming there is nothing to
+do, and resume/finish existing work rather than re-claiming and re-releasing it. No
+such stale branch existed for LC-I18N-005 at claim time; `i18n/lc-i18n-005` was
+created fresh.
 
 ## The 40-turn failure — what it actually means now
 
@@ -98,45 +108,53 @@ infinite scroll or punitive streak destruction.
 `LC-PED-002` remains the final all-arcs gate after A1 arcs 6/7. Software simulation
 cannot replace the later real-learner beta/pilot evidence.
 
-## First-launch language — do not infer language from country
+## First-launch language — implemented, do not infer language from country
 
-New source: `docs/product/language-detection-contract.md`.
+Source: `docs/product/language-detection-contract.md`, implemented by LC-I18N-005.
 
 The learner should get an understandable interface from the very first screen, but
 country/physical location is not the correct primary signal. India, Canada,
 Switzerland and many other places are multilingual; travellers/VPNs exist.
 
-Correct priority on a clean launch:
+Correct priority on a clean launch, now real in `services/language.js`:
 
-1. explicit persisted LinguaChat choice, if one exists;
+1. explicit persisted LinguaChat choice, if one exists (`ensureLanguagePreferences`
+   reads storage first, unchanged by this task);
 2. ordered device/browser preferred languages (`navigator.languages` on web/PWA);
-3. first honestly supported base-locale match;
+3. first honestly supported base-locale match (`detectNativeLanguage()` now filters
+   through `SUPPORTED_LOCALES`, not merely `candidates.find(Boolean)`);
 4. safe English fallback;
-5. an immediately accessible manual language switcher.
+5. an immediately accessible manual language switcher (new `LanguageSwitcher` in
+   `AuthShell`/`SetupShell`).
 
-Region only disambiguates a language variant that is actually implemented. No
-GPS/IP/SIM lookup is needed. Explicit learner choice always wins.
+Region only disambiguates a language variant that is actually implemented (proved:
+`pt-BR` resolves to base `pt`, not English). No GPS/IP/SIM lookup is needed or used
+(proved: a `navigator.geolocation.getCurrentPosition` stub that throws is never
+called). Explicit learner choice always wins (proved: a manual switcher pick
+survives a later reload under a completely different device preference).
 
-`LC-I18N-005` implements this now that LC-I18N-004 is done. Do not auto-select
-Hindi merely because a device is in India; `hi-IN`, `ta-IN`, `bn-IN`, `en-IN`,
-etc. are different language preferences and only genuinely supported locales may
-be selected.
+Do not auto-select Hindi merely because a device is in India; `hi-IN`, `ta-IN`,
+`bn-IN`, `en-IN`, etc. are different language preferences and only genuinely
+supported locales may be selected — this is now enforced in code, not just policy.
 
 ## Current i18n path
 
-`LC-I18N-004` is DONE (PR #22, merged into main's `.ai/TASKS.md` DONE section in
+`LC-I18N-005` is DONE (PR #24, merged into main's `.ai/TASKS.md` DONE section in
 this same PR). The next language task is:
 
-1. `LC-I18N-005` — preferred-device-language detection before login;
-2. `LC-PROD-001` — make placement/profile/planner truthful about curricula actually available;
-3. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc;
-4. `LC-I18N-002` — one truthful supported-language catalog; expand future languages
+1. `LC-PROD-001` — make placement/profile/planner truthful about curricula actually available;
+2. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc;
+3. `LC-I18N-002` — one truthful supported-language catalog; expand future languages
    only in small complete batches;
-5. `LC-QA-001` — turn remaining i18n failure classes into regression gates.
+4. `LC-QA-001` — turn remaining i18n failure classes into regression gates.
 
 Do not mass-add Hindi/Korean/etc. as selector labels first. A language becomes
 supported only after login/onboarding/UI + explanations/hints/corrections/meanings
-are actually complete and tested.
+are actually complete and tested. Note for whoever picks up `LC-I18N-002`: the new
+`LanguageSwitcher` (pre-login) deliberately mirrors this — it only ever lists
+`SUPPORTED_LOCALES`, never the full 46-row `LanguageIdentity` picker, so expanding
+that 46-row catalog does not by itself change what the pre-login switcher offers;
+both must be updated together if a language becomes genuinely supported.
 
 ## Supabase — owner now authorizes gradual beta persistence, but do not guess a project
 
