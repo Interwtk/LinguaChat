@@ -1,3 +1,5 @@
+import { SUPPORTED_LOCALES } from '../i18n/translations.js'
+
 const NATIVE_CODE_KEY = 'lc2-native-language-code'
 const NATIVE_BASE_KEY = 'lc2-native-language-base'
 const NATIVE_NAME_KEY = 'lc2-native-language-name'
@@ -159,10 +161,26 @@ function writeUserLanguage(info) {
   } catch {}
 }
 
+/*
+ * First-launch detection picks the FIRST candidate whose base language
+ * LinguaChat can honestly serve end to end (`SUPPORTED_LOCALES`, the same
+ * list the locale loader ships), not merely the first device preference.
+ * `docs/product/language-detection-contract.md`: automatic detection may
+ * only choose a language LinguaChat can actually serve at the advertised
+ * quality level, never a device preference that would render mostly-English
+ * UI while claiming to be some other language. A candidate whose base is
+ * unsupported is skipped in favour of the next one; when none match, English
+ * is the safe final fallback (also itself in SUPPORTED_LOCALES).
+ */
 export function detectNativeLanguage() {
   try {
     const candidates = navigator.languages?.length ? navigator.languages : [navigator.language]
-    return makeLanguageInfo(candidates.find(Boolean) || FALLBACK_LANGUAGE.code)
+    const supported = candidates.find((candidate) => {
+      if (!candidate) return false
+      const base = String(candidate).split('-', 1)[0].toLowerCase()
+      return SUPPORTED_LOCALES.includes(base)
+    })
+    return makeLanguageInfo(supported || FALLBACK_LANGUAGE.code)
   } catch {
     return FALLBACK_LANGUAGE
   }
