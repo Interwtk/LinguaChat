@@ -1,44 +1,27 @@
-# The chain: one task is integrated, and exactly one next task starts.
-#
-#   agent opens PR -> QA runs -> green? merge -> verify the queue was updated
-#   -> pick exactly ONE unblocked task -> dispatch it -> repeat -> stop when the
-#   queue has nothing claimable.
-#
-# HOW IT CANNOT RUN AWAY
-#   · Nothing here triggers on `push`. The two entry points are "QA finished on a
-#     pull request" and "a pull request was merged", so a commit cannot start a run
-#     that makes a commit.
-#   · Only ONE agent can be alive: `next-task.mjs` refuses to name a task while
-#     anything sits in IN_PROGRESS, and this workflow also refuses to dispatch while
-#     a `claude-task` run is queued or in progress.
-#   · Nothing merges that QA has not passed, and a red PR is left alone for the
-#     agent to fix — the chain simply stops advancing.
-#   · Only agent-authored branches are auto-merged. A human's PR is never merged by
-#     a robot.
-#   · The queue is finite and every task must be claimed to start, so the chain
-#     terminates by construction.
+# The cloud orchestrator. A finished agent PR is merged and the next task starts
+# without relying on a second GitHub event. An hourly watchdog repairs stalls.
 name: Claude — chain
 
 on:
-  # QA finished. If it was green on an agent's pull request, merge it.
   workflow_run:
     workflows: ["QA"]
     types: [completed]
-  # A pull request landed. Decide what happens next.
   pull_request:
     types: [closed]
-  # And a manual way to start or resume the chain.
+  schedule:
+    # Recovery net only. Normal advancement happens in the same QA-triggered run.
+    - cron: '17 * * * *'
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Why you are starting the chain by hand (recorded in the summary).'
+        description: 'Why the chain is being started manually.'
         required: false
         type: string
 
 permissions:
   contents: write
   pull-requests: write
-  actions: write        # to dispatch the next task
+  actions: write
   checks: read
 
 concurrency:
@@ -46,7 +29,6 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # ── 1. Merge an agent's pull request, but only when QA passed on it ──────────
   merge:
     if: >
       github.event_name == 'workflow_run' &&
@@ -54,59 +36,40 @@ jobs:
       github.event.workflow_run.event == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      merged: ${{ steps.merge_pr.outputs.merged }}
+      pr_number: ${{ steps.merge_pr.outputs.pr_number }}
+      reason: ${{ steps.merge_pr.outputs.reason }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Merge if this is an agent PR and everything is green
+      - id: merge_pr
+        name: Merge the green agent PR under the shared contract
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: bash .github/scripts/merge-agent-pr.sh "$HEAD_BRANCH"
+
+      - name: Record merge result
         run: |
-          set -euo pipefail
+          echo "merge=${{ steps.merge_pr.outputs.merged }} reason=${{ steps.merge_pr.outputs.reason }} pr=${{ steps.merge_pr.outputs.pr_number }}" >> "$GITHUB_STEP_SUMMARY"
 
-          # Agent branches only. A human's pull request is never merged by a robot.
-          case "$HEAD_BRANCH" in
-            curr/*|i18n/*|qa/*|ops/*|fix/*) ;;
-            *) echo "…$HEAD_BRANCH is not an agent branch. Leaving it alone."; exit 0 ;;
-          esac
-
-          NUMBER=$(gh pr list --head "$HEAD_BRANCH" --state open --json number --jq '.[0].number // empty')
-          if [ -z "$NUMBER" ]; then echo "No open PR for $HEAD_BRANCH."; exit 0; fi
-
-          STATE=$(gh pr view "$NUMBER" --json isDraft,mergeable,reviewDecision \
-                    --jq '"\(.isDraft) \(.mergeable) \(.reviewDecision // "NONE")"')
-          echo "PR #$NUMBER — draft/mergeable/review: $STATE"
-
-          # A draft is an agent saying "I stopped half way". Never merge one.
-          if [ "$(gh pr view "$NUMBER" --json isDraft --jq .isDraft)" = "true" ]; then
-            echo "PR #$NUMBER is a draft — the agent stopped early on purpose."; exit 0
-          fi
-
-          # Every check must be green, not just the run that triggered this.
-          if ! gh pr checks "$NUMBER" --required 2>/dev/null; then
-            gh pr checks "$NUMBER" || true
-          fi
-          if gh pr checks "$NUMBER" | grep -qE "fail|pending"; then
-            echo "PR #$NUMBER still has failing or pending checks — not merging."; exit 0
-          fi
-
-          # The evidence rule: a PR that does not show its QA numbers is not done.
-          gh pr view "$NUMBER" --json body --jq .body > /tmp/body.md
-          if ! grep -qi "## Evidence" /tmp/body.md; then
-            gh pr comment "$NUMBER" --body "Not merged: the description has no \`## Evidence\` section. Every functional change has to show the QA it actually ran — see CLAUDE.md."
-            echo "PR #$NUMBER has no evidence section."; exit 0
-          fi
-
-          gh pr merge "$NUMBER" --rebase --delete-branch
-          echo "Merged PR #$NUMBER." >> "$GITHUB_STEP_SUMMARY"
-
-  # ── 2. Something landed. Check the queue and start exactly one next task ─────
   advance:
+    needs: [merge]
+    # `always()` is required because merge is intentionally skipped for schedule,
+    # workflow_dispatch and pull_request.closed entry points.
     if: >
-      github.event_name == 'workflow_dispatch' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+      always() &&
+      (
+        github.event_name == 'schedule' ||
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+        (github.event_name == 'workflow_run' && needs.merge.outputs.merged == 'true')
+      )
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -117,90 +80,115 @@ jobs:
         with:
           node-version: '22'
 
-      # An agent that finishes must leave the queue and the handoff current. If it
-      # did not, the chain stops here rather than starting the next task on top of
-      # a lie about where the project is.
-      - name: The coordination files must be current
-        if: github.event_name == 'pull_request'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NUMBER: ${{ github.event.pull_request.number }}
-          BRANCH: ${{ github.event.pull_request.head.ref }}
+      - name: Refresh main after a same-run merge
+        if: github.event_name == 'workflow_run' && needs.merge.outputs.merged == 'true'
         run: |
-          set -euo pipefail
-          case "$BRANCH" in
-            curr/*|i18n/*|qa/*|ops/*) ;;
-            *) echo "Not an agent task branch — no bookkeeping expected."; exit 0 ;;
-          esac
-          CHANGED=$(gh pr view "$NUMBER" --json files --jq '.files[].path')
-          echo "$CHANGED" | grep -q "^.ai/TASKS.md$"   || echo "::warning::PR #$NUMBER did not update .ai/TASKS.md"
-          echo "$CHANGED" | grep -q "^.ai/HANDOFF.md$" || echo "::warning::PR #$NUMBER did not update .ai/HANDOFF.md"
+          git fetch origin main --quiet
+          git reset --hard origin/main
 
-      - name: Is another agent already running?
+      - name: Is any Claude writer already alive?
         id: busy
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          # BOTH lanes. Counting only claude-task made "one agent at a time" mean
-          # "one agent per lane": a translation agent alive would not have stopped a
-          # curriculum agent from starting, and the two would have raced on the queue.
           RUNNING=0
-          for WF in claude-task.yml claude-i18n.yml; do
-            N=$(gh run list --workflow="$WF" --json status \
-                  --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length')
+          for WF in claude-task.yml claude-i18n.yml claude-mention.yml; do
+            N=$(gh run list --workflow="$WF" --limit 30 --json status \
+              --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length')
             echo "$WF: $N alive"
             RUNNING=$((RUNNING + N))
           done
           echo "running=$RUNNING" >> "$GITHUB_OUTPUT"
-          [ "$RUNNING" = "0" ] || echo "An agent is already alive — not dispatching another."
+          if [ "$RUNNING" != "0" ]; then
+            echo "Another Claude writer is alive; watchdog will not mutate the queue." >> "$GITHUB_STEP_SUMMARY"
+          fi
 
-      # A run can die holding its claim — max turns, a cancelled job, a runner
-      # fault — and the queue would then say "somebody is working" for ever, so
-      # autonomy would last exactly until the first crash. A claim whose agent is
-      # not running and whose branch has no open pull request is stale.
-      - name: Release a claim whose agent is gone
-        if: steps.busy.outputs.running == '0'
+      # If a previous QA/merge event was missed, the watchdog may safely finish a
+      # READY claimed PR using exactly the same merge contract as the normal path.
+      - id: recover_merge
+        name: Recover a green ready PR if an event was missed
+        if: steps.busy.outputs.running == '0' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
+            grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
+          if [ -z "${BRANCH:-}" ] || [ "$BRANCH" = "none" ]; then
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+            echo "reason=no-claim" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          bash .github/scripts/merge-agent-pr.sh "$BRANCH"
+
+      - name: Refresh main after watchdog recovery merge
+        if: steps.recover_merge.outputs.merged == 'true'
+        run: |
+          git fetch origin main --quiet
+          git reset --hard origin/main
+
+      # A dead worker with a DRAFT is resumable. A dead worker with a RED ready PR
+      # is also resumable: convert it back to draft, release the claim, then the
+      # next worker continues the same branch/PR. Pending checks are simply waited on.
+      - name: Heal a stale or red claim
+        if: steps.busy.outputs.running == '0' && steps.recover_merge.outputs.merged != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           BRANCH=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
-                   grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
-          if [ -n "${BRANCH:-}" ] && [ "$BRANCH" != "none" ]; then
-            # A READY pull request means the work is finished and waiting on CI or a
-            # merge, so its claim is live and must be left alone. A DRAFT means the
-            # opposite: unfinished work whose agent is no longer running. Treating a
-            # draft as live would deadlock the queue for ever, because the agent that
-            # would finish it can only start by claiming the task it already holds.
-            READY=$(gh pr list --head "$BRANCH" --state open --json isDraft --jq '[.[] | select(.isDraft == false)] | length')
-            if [ "$READY" != "0" ]; then
-              echo "$BRANCH has a pull request ready for review — the claim is live."
-              exit 0
+            grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
+          [ -n "${BRANCH:-}" ] && [ "$BRANCH" != "none" ] || exit 0
+
+          NUMBER=$(gh pr list --head "$BRANCH" --state open --json number,isDraft --jq '.[0].number // empty')
+          if [ -n "$NUMBER" ]; then
+            DRAFT=$(gh pr view "$NUMBER" --json isDraft --jq .isDraft)
+            if [ "$DRAFT" = "false" ]; then
+              CHECKS=$(gh pr checks "$NUMBER" 2>&1 || true)
+              if printf '%s\n' "$CHECKS" | grep -qi 'pending'; then
+                echo "$BRANCH has pending QA; waiting rather than restarting it." >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              if printf '%s\n' "$CHECKS" | grep -qiE 'fail|cancel'; then
+                gh pr ready "$NUMBER" --undo
+                echo "PR #$NUMBER had red QA; returned it to draft so the same task can resume." >> "$GITHUB_STEP_SUMMARY"
+              elif [ "${{ steps.recover_merge.outputs.reason }}" != "no-open-pr" ] && [ -n "${{ steps.recover_merge.outputs.reason }}" ]; then
+                # Green but not mergeable under the contract (for example missing
+                # bookkeeping/evidence): make it resumable instead of deadlocking.
+                gh pr ready "$NUMBER" --undo
+                echo "PR #$NUMBER is green but incomplete under the merge contract; returned to draft." >> "$GITHUB_STEP_SUMMARY"
+              else
+                # Ready/green PR on a non-watchdog entry point: preserve the claim.
+                exit 0
+              fi
             fi
           fi
-          RELEASED=$(node .github/scripts/release-stale-claim.mjs)
-          if [ -z "$RELEASED" ]; then echo "Nothing was claimed."; exit 0; fi
-          git config user.name  "github-actions[bot]"
+
+          RELEASED=$(node .github/scripts/release-stale-claim.mjs || true)
+          if [ -z "$RELEASED" ]; then exit 0; fi
+          git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .ai/TASKS.md
-          git commit -m "chore(ops): release the stale claim on $RELEASED, whose agent is gone"
+          git commit -m "chore(ops): release $RELEASED so its existing work can resume"
           git push origin main
-          echo "::warning::Released a stale claim on $RELEASED."
-          echo "Released the stale claim on **$RELEASED** — no agent was running and its branch had no open PR." >> "$GITHUB_STEP_SUMMARY"
+          echo "Released **$RELEASED** for safe resume." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Refresh main after claim repair
+        if: steps.busy.outputs.running == '0'
+        run: |
+          git fetch origin main --quiet
+          git reset --hard origin/main
 
       - name: Which task is next?
         id: next
+        if: steps.busy.outputs.running == '0'
         run: |
           NEXT=$(node .github/scripts/next-task.mjs || true)
           echo "id=$NEXT" >> "$GITHUB_OUTPUT"
-          node .github/scripts/next-task.mjs --explain 2>&1 | tail -20 >> "$GITHUB_STEP_SUMMARY" || true
+          node .github/scripts/next-task.mjs --explain 2>&1 | tail -30 >> "$GITHUB_STEP_SUMMARY" || true
 
-      # Which lane owns this task? Translations and curriculum are separate tracks
-      # on purpose, and the chain has to respect that or an i18n batch lands inside
-      # a curricular pull request. The id says which lane it belongs to.
-      - name: Start it, in the right lane
-        if: steps.next.outputs.id != '' && steps.busy.outputs.running == '0'
+      - name: Start exactly one task in its correct lane
+        if: steps.busy.outputs.running == '0' && steps.next.outputs.id != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TASK_ID: ${{ steps.next.outputs.id }}
@@ -211,9 +199,8 @@ jobs:
             *)         WORKFLOW=claude-task.yml ;;
           esac
           gh workflow run "$WORKFLOW" --ref main -f task_id="$TASK_ID" -f dry_run=false
-          echo "Dispatched **$TASK_ID** to $WORKFLOW." >> "$GITHUB_STEP_SUMMARY"
+          echo "Dispatched **$TASK_ID** to **$WORKFLOW**." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Stop cleanly
-        if: steps.next.outputs.id == ''
-        run: |
-          echo "Nothing claimable. The chain stops here — this is a normal ending, not a failure." >> "$GITHUB_STEP_SUMMARY"
+        if: steps.busy.outputs.running == '0' && steps.next.outputs.id == ''
+        run: echo "Nothing claimable. Clean stop." >> "$GITHUB_STEP_SUMMARY"
