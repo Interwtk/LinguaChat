@@ -765,6 +765,7 @@ export default {
   keyFix: "التصحيح الرئيسي",
   practiceAgain: "تدرّب على هذا الموضوع مجددًا",
   bestTopic: "أفضل موضوع",
+  confidencePtsGained: "+{count} نقطة ثقة",
   mostPracticed: "الأكثر تدريبًا",
   chooseEnergyEyebrow: "كيف ستعمل Lingua معك",
   chooseEnergyTitle: "اختر طاقة Lingua",

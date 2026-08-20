@@ -761,6 +761,7 @@ export default {
   keyFix: "Correction clé",
   practiceAgain: "Repratiquer ce thème",
   bestTopic: "Meilleur thème",
+  confidencePtsGained: "+{count} points de confiance",
   mostPracticed: "Le plus pratiqué",
   chooseEnergyEyebrow: "Comment Lingua va travailler avec toi",
   chooseEnergyTitle: "Choisis l'énergie de Lingua",

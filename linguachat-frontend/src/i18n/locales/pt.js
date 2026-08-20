@@ -761,6 +761,7 @@ export default {
   keyFix: "Correção-chave",
   practiceAgain: "Praticar este tema de novo",
   bestTopic: "Melhor tema",
+  confidencePtsGained: "+{count} pontos de confiança",
   mostPracticed: "Mais praticado",
   chooseEnergyEyebrow: "Como a Lingua vai trabalhar contigo",
   chooseEnergyTitle: "Escolhe a energia da Lingua",

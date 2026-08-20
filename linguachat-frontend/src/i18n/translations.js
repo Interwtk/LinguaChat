@@ -1480,6 +1480,7 @@ const base = {
   keyFix: 'Key fix',
   practiceAgain: 'Practice this topic again',
   bestTopic: 'Best topic',
+  confidencePtsGained: '+{count} confidence pts',
   mostPracticed: 'Most practiced',
   practice: 'Practice',
   identity: 'Identity',

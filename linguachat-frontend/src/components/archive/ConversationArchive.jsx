@@ -260,7 +260,7 @@ export function ConversationArchive() {
               {t('bestTopic')}
             </p>
             <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>{bestTopic}</p>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--positive)', fontWeight: 600, marginTop: 2 }}>+{hasRealSessions ? Math.max(1, Math.round((localProgress.confidence - 45) / 5)) : 9} confidence pts</p>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--positive)', fontWeight: 600, marginTop: 2 }}>{t('confidencePtsGained', { count: hasRealSessions ? Math.max(1, Math.round((localProgress.confidence - 45) / 5)) : 9 })}</p>
           </div>
           <div className="rounded-2xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 8 }}>
