@@ -889,8 +889,8 @@ const base = {
 
   sessionDoneNext: "Tomorrow we’ll build on this.",
 
-  sessionDoneCount: "{count} activities completed",
-
+  sessionDoneCount_one: "{count} activity completed",
+  sessionDoneCount_other: "{count} activities completed",
   sessionDoneCta: "Back to today",
 
   sessionDurationLabel: "How long today?",
@@ -1521,9 +1521,11 @@ const base = {
   mainNavigation: "Main navigation",
   close: "Close",
   you: "You",
-  streakDaysShort: "{count} days in a row",
+  streakDaysShort_one: "{count} day in a row",
+  streakDaysShort_other: "{count} days in a row",
   streakStartToday: "Start your streak today",
-  streakAria: "Streak: {count} days",
+  streakAria_one: "Streak: {count} day",
+  streakAria_other: "Streak: {count} days",
   focusMode: "Focus mode",
   exitFocusMode: "Exit focus",
   focusModeHint: "Leave one thing on screen.",
@@ -1536,7 +1538,8 @@ const base = {
   sessionTodayEyebrow: "Today’s session",
   yourGoalIs: "You said: “{goal}”",
   episodesLabel: "episodes",
-  practicedTimes: "Came up {count} times",
+  practicedTimes_one: "Came up {count} time",
+  practicedTimes_other: "Came up {count} times",
   conversationWithLingua: "Conversation with Lingua",
   yourWordsTitle: "Your words",
   yourWordsSubtitle: "{count} in total. None of them get lost.",
@@ -1554,7 +1557,8 @@ const base = {
   chatsNoMatches: "Nothing matches that yet.",
   chatRowEpisodeStep: "You left it at step {step}",
   chatRowNotes: "Things worth going over",
-  chatRowArchive: "{count} earlier conversations",
+  chatRowArchive_one: "{count} earlier conversation",
+  chatRowArchive_other: "{count} earlier conversations",
   chattoRowResume: "Your episode is waiting where you left it",
   chattoRowStory: "I left you a short story for today",
   backToChats: "Back to chats",
@@ -1857,9 +1861,39 @@ export function loadLocale(language) {
   return promise
 }
 
+const pluralRulesCache = new Map()
+function pluralCategoryFor(code, count) {
+  let rules = pluralRulesCache.get(code)
+  if (!rules) {
+    try { rules = new Intl.PluralRules(code) } catch { rules = new Intl.PluralRules('en') }
+    pluralRulesCache.set(code, rules)
+  }
+  return rules.select(count)
+}
+
+/*
+ * A key is pluralisable when its dictionary defines a `<key>_other` variant —
+ * every CLDR locale has an "other" category, so its presence is what marks a key
+ * as plural-aware rather than a plain string. When `params.count` is a number,
+ * resolve `<key>_<category>` for this locale's actual grammatical category
+ * (Intl.PluralRules, not a hardcoded one/many split), falling back to `_other`
+ * for any category this locale's copy does not distinguish (e.g. Japanese only
+ * ever has "other"; Arabic can have all six).
+ */
+function resolveKey(code, key, params) {
+  const dict = dictionaries[code]
+  const otherKey = `${key}_other`
+  if (typeof params.count !== 'number' || !(dict?.[otherKey] || base[otherKey])) return key
+  const category = pluralCategoryFor(code, params.count)
+  const categoryKey = `${key}_${category}`
+  if (dict?.[categoryKey] || base[categoryKey]) return categoryKey
+  return otherKey
+}
+
 export function translate(language, key, params = {}) {
   const code = normalizeLocale(language)
-  const template = dictionaries[code]?.[key] || base[key] || key
+  const resolvedKey = resolveKey(code, key, params)
+  const template = dictionaries[code]?.[resolvedKey] || base[resolvedKey] || dictionaries[code]?.[key] || base[key] || key
   return Object.entries(params).reduce(
     (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
     template,
