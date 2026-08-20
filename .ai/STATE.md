@@ -1,134 +1,153 @@
 # STATE — where LinguaChat actually is
 
-Rewrite this file at the end of every task. It describes the repo, not intentions.
-If a number here disagrees with a command, the command is right and this file is
-stale — fix it.
+Rewrite this file at the end of every task. It describes measured reality, not
+intentions. If a number here disagrees with a command or live GitHub run, the live
+evidence wins and this file must be corrected.
 
-_Last verified: 2026-08-18 · commit `4df7d26` (main) · frontend checked out from `curr/lc-curr-005c` at `beb1d98`_
+_Last product baseline verified on main: 2026-08-18 · `157df479`._
 
-## Head
+`LC-OPS-009` is being validated in PR #17. Until that PR is green and merged, its
+workflow changes are a candidate, not production automation. The product baseline
+below is already on main; the automation section distinguishes current-main facts
+from the PR #17 repair.
+
+## Repository / product baseline
 
 | | |
 |---|---|
-| branch | `main` |
-| commit | `4df7d26` — chore(ops): claim LC-CURR-005c |
+| default branch | `main` |
+| product baseline | `157df479` — A1 arc 5 complete + browser walkthrough recorded |
+| coordination claim | `393fe540` — LC-OPS-009 claimed for the cloud-autonomy repair |
+| active ops branch | `ops/lc-ops-009-cloud-autonomy-v2` / PR #17 |
 | remote | `github.com/Interwtk/LinguaChat` (public) |
-| sync | 0 / 0 |
-| untracked | `linguachat-backend.zip`, `linguachat-frontend.zip` — the owner's, leave alone |
+
+Historical owner archives such as `linguachat-*.zip` are not project inputs and
+must never be committed or modified by automation.
 
 ## Frontend
 
 - Vite + React 18, mobile-first, one responsive shell.
-- Visual architecture FROZEN. Nav is Hoy · Chats · Palabras · Tú.
-- `npm run check:all` -> 49 invocations, 49 green (count by exit code).
-- `npm run build` green. Entry chunk 436.69 kB (budget 500), 25 chunks.
-- i18n: 1579 keys, 100 % in es pt fr it de ja ar, plus the English base.
+- Visual architecture FROZEN. Primary nav: Hoy · Chats · Palabras · Tú.
+- Last verified main `npm run check:all`: **50/50** invocations, counted by exit code.
+- Last verified main build: green; entry chunk remained below the 500 kB budget.
+- i18n structural parity: **1580 English-base keys**, 100% key parity in
+  es/pt/fr/it/de/ja/ar. Linguistic/support honesty is NOT certified by that number;
+  `LC-I18N-001` is queued for the real audit.
+- PR #17 adds `check:cloud-automation` to `check:all`; its new total/result is not
+  recorded as verified until GitHub QA completes.
 
 ## Backend
 
-- FastAPI, pedagogical evaluation only. `python -m compileall .` clean.
-- 444 pytest passing.
-- Provider defaults to `local`; a key alone does not enable OpenAI.
+- FastAPI pedagogical backend.
+- Last verified main `python -m compileall .`: clean.
+- Last verified main pytest: **444 passed**.
+- Provider defaults to `local`; possession of an API key alone does not enable
+  OpenAI. CI pins `LINGUACHAT_PROVIDER=local`.
 
 ## Curriculum
 
 | level | state |
 |---|---|
-| Pre-A1 | 17 episodes, FROZEN |
-| A1 arc 1 `work_and_study` (18-20) | ready |
-| A1 arc 2 `daily_rhythm` (21-23) | ready |
-| A1 arc 3 `people_around_you` (24-26) | closed, incl. real chunk-failure recovery |
-| A1 arc 4 `finding_your_way` (27-29) | ready — verified green at this commit |
-| A1 arc 5 `paying_and_choosing` (30-33) | content + evaluation + copy done (005a, 005b, 005c); needs 005d (its own check) before it counts as ready |
-| A1 arcs 6-7 | designed only; must fail closed |
+| Pre-A1 | 17 episodes, FROZEN and available |
+| A1 arc 1 `work_and_study` (18–20) | ready |
+| A1 arc 2 `daily_rhythm` (21–23) | ready |
+| A1 arc 3 `people_around_you` (24–26) | ready |
+| A1 arc 4 `finding_your_way` (27–29) | ready |
+| A1 arc 5 `paying_and_choosing` (30–33) | ready; blueprint check + production browser walkthrough |
+| A1 arc 6 `what_you_can_do` (34–35) | designed only; no runtime content |
+| A1 arc 7 `making_arrangements` (36–38) | designed only; no runtime content |
 
-A1 is `contentStatus: partial`, `available: false`. Learner model v7.
-Journey Pre-A1 -> arc 4: 29 episodes, 25 can-dos, 97 garden items.
+A1 is correctly `contentStatus: partial`, `available: false`. Arcs 6–7 must fail
+closed. Do not open A1 merely because every currently-built episode passes.
 
-## Known risks and debt
+Arc 5 evidence on main includes all four episodes in a production build: happy
+path, a wrong price question + retry, model/help recorded as assistance, and replay
+without duplicate XP/reward.
 
-1. 26 advertised languages have no locale file. `LANGUAGE_OPTIONS` offers 46
-   entries; 26 distinct base languages beyond the 8 implemented fall back to
-   English while looking supported. -> `LC-I18N-002`.
-2. Instructional prose sometimes reads `interface_language` where it should read
-   `native_language`. Historical debt; needs its own sprint. -> `LC-I18N-003`.
-3. Unaccented Spanish remains on the unauthenticated entry screen. -> `LC-I18N-004`.
-4. `linguachat-frontend-old/` still exists in the tree; unused, unbuilt.
-5. `linguachat-backend.zip` contains a real OpenAI key. Never commit it; the owner
-   may want to rotate that key.
+## Language architecture — owner-corrected rule
 
-## Automation — working, and proven in live runs
+One `user_language` governs UI/chrome, explanations, hints, corrections,
+interpretations and meanings. English is the target language.
 
-- `qa.yml` on every push and pull request: frontend checks counted by exit code,
-  build, the i18n table, backend compileall and pytest, five guards, and an
-  **evidence gate** that fails a non-draft PR whose description has no `## Evidence`
-  section naming the suites it ran.
-- `claude-chain.yml` — the chain. QA green + evidence -> merge; then verify the
-  coordination files, release a claim whose agent is gone, ask the queue for exactly
-  ONE claimable task, and dispatch it: `LC-I18N-*` to the translation lane,
-  everything else to `claude-task.yml`. It merged PR #6 by itself and healed the
-  stale claim on `LC-CURR-005a`.
-- `claude-task.yml` (150 turns) and `claude-i18n.yml` (100), both naming
-  `allowed_bots: github-actions` so a chained run is not refused as a non-human
-  initiator. Never `*`.
-- `claude-mention.yml` answers `@claude` from collaborators only.
-- Nothing triggers on `push`, so no run can start a run.
+Legacy `interface_language` and `native_language` may exist internally but are one
+user choice and must stay synchronised. The old mixed requirement
+`interface=es + native=ja + target=en` is superseded and must not drive code/tests.
+Arabic auxiliary experience is RTL; target English/input remain LTR; Chatto is never
+mirrored.
 
-### What an autonomous run costs, and what that bought
+## Current queue
 
-About **0.12 USD a turn**. Three runs have now ended at the turn ceiling:
+While PR #17 is open:
 
-| run | turns | cost | produced |
-|---|---|---|---|
-| 32174953879 | 121 | 11.39 USD | nothing |
-| (second attempt) | 121 | 14.17 USD | nothing |
-| 32183746598 | 201 | 25.46 USD | nothing but its claim |
+1. `LC-OPS-009` — IN_PROGRESS, cloud autonomy repair.
+2. `LC-I18N-001` — next after OPS-009: audit the eight implemented languages.
+3. `LC-I18N-002` — support/picker honesty.
+4. `LC-QA-001` — strengthen the i18n linter.
 
-Roughly 51 USD for no merged line. Raising the ceiling did not fix it and the third
-run proves it: the task had already been split to the smallest slice the blueprint
-allows. The cause is ordering, not size — each run did all the work first and pushed
-last, so dying cost it everything.
+Arc 6/7 are not yet queued as implementation tasks. They must be seeded from the
+live A1 blueprint after the infrastructure/i18n audit establishes a truthful,
+stable base; do not invent their task contracts from summaries.
 
-Since LC-OPS-007 the agent must push a branch and open a DRAFT pull request inside
-its first fifteen turns and keep committing as it goes, and the workflow enforces
-the outcome whatever happens to the agent: commits but no pull request -> a draft is
-opened for it; nothing pushed at all -> the claim is released on the spot. A draft
-therefore never freezes the queue, and the ceiling is back down to 150 because a run
-that hits it now leaves its work behind.
+## Automation — baseline defects found by audit
 
-### A1 arc 5 was played, not just tested
+Current-main automation before PR #17 has useful guardrails, but is **not yet
+fully self-healing**:
 
-`paying_and_choosing` (30-33) is merged and closed to learners. Beyond the suites, it
-was played in a real browser on a production build, through the audited
-`forLearner: false` door, at 390 px and 1440 px:
+- `qa.yml` gates frontend checks/build, i18n table, backend compileall/pytest,
+  forbidden-scope guards and an `## Evidence` section.
+- `claude-chain.yml` can merge a green agent PR and dispatch work, but normal
+  advancement depends on a later event; a merge performed with the workflow token
+  can therefore leave a correct queue dormant.
+- general and i18n workers still own independent weekly schedules and use different
+  claimability logic instead of one selector.
+- interactive `@claude` does not share the autonomous writer lock.
+- a dead agent can leave a red READY PR holding a claim indefinitely.
+- `qa.yml` did not explicitly listen to `ready_for_review`, forcing historical
+  close/reopen/extra-commit workarounds.
 
-| what | result |
-|---|---|
-| all four episodes, end to end | 75 / 75 / 75 / 85 XP; `use_bigger_numbers`, `ask_the_price` x2, `buy_something` |
-| the purchase story | ran with the shopkeeper's turns, including the `respond_anything_else` turn LC-CURR-005d added |
-| a wrong price question | refused with the frame correction, composer returns, retry accepted |
-| a corrected answer | NOT counted as independent evidence |
-| the model taken | `assist=1`, and that turn earns no independence |
-| replay of a finished episode | XP stayed 75, Garden stayed 4 items — no second reward |
-| both widths | no horizontal overflow, no raw i18n key on screen, no runtime exception |
+### Confirmed 2026-08-20 failure
 
-The QA entry that made this possible was temporary and is gone; nothing of it is
-tracked.
+GitHub-hosted run `32331959420` (`Claude — mention`) was independent of the owner's
+PC and authenticated correctly: checkout, OAuth secret, OIDC exchange and Claude
+GitHub App token all succeeded. It failed because the interactive lane had
+`--max-turns 40`; Claude returned `error_max_turns` at turn 41, with zero permission
+denials, and no remote branch had been pushed. The action's issue-mode capability
+also states it cannot modify `.github/workflows`, so LC-OPS-009 was assigned to the
+wrong lane. Blindly rerunning it would reproduce the failure class.
 
-One observation, not a defect and not new to this arc: typing a modelled answer by
-hand, without pressing the "Usar:" button, still counts as independent evidence.
-Independence is defined as "did not press the model and did not retry", which is the
-policy every arc has shipped with.
+### PR #17 repair contract
+
+PR #17 is intended to make the normal loop fully cloud-hosted and recoverable:
+
+- same-run advancement after successful agent merge;
+- hourly `Claude — chain` watchdog as recovery, not the main mechanism;
+- worker schedules removed; chain is the sole scheduler/router;
+- `.github/scripts/next-task.mjs` is the one claimability authority;
+- general/i18n/mention writers share one concurrency lock;
+- red/draft/stale work becomes resumable rather than a permanent claim;
+- `ready_for_review` triggers QA;
+- final TASKS DONE + STATE + HANDOFF land atomically in the task PR;
+- autonomous prompts carry the corrected one-`user_language` rule;
+- focused `check:cloud-automation` regression coverage is part of `check:all`.
+
+**Do not call this repair verified until PR #17's GitHub QA and focused regression
+checks are green with exact evidence.**
+
+## Known product / technical risks to audit next
+
+1. Structural 100% i18n parity may hide poor copy, hardcoded strings, bad plurals,
+   fallback leaks, RTL defects and user-language inconsistency.
+2. The language picker historically advertises many more languages than have full
+   locale implementations; exact live counts must be derived in LC-I18N-002.
+3. `linguachat-frontend-old/` and unrelated historical root files remain technical
+   debris; clean only through a deliberate, proved-unused cleanup PR.
+4. Some source comments (for example older A1 frontier prose) can become stale even
+   when runtime flags remain correct; documentation consistency should be linted or
+   audited instead of trusted manually.
+5. A1 arcs 6–7 and the final A1 completion gate remain real product work.
 
 ## Blockers
 
-_(none)_
-
-Historical, now resolved: the Claude workflows could not authenticate. Two of the three prerequisites are
-  now met: the secret exists (the guard step passes) and OIDC works after
-  `id-token: write` (`c8a4c0b`). The third is the **Claude Code GitHub App**, which
-  is not installed on this repository — the action exchanges its OIDC token with
-  the app and gets `401 - Claude Code is not installed on this repository`.
-  Installing an App is an authorisation grant made in GitHub's UI, so it is the
-  owner's action: github.com/apps/claude, or `/install-github-app` in Claude Code.
-- `qa.yml` needs none of that and is green on every push and pull request.
+No user-PC blocker. GitHub-hosted runners, Claude OAuth/OIDC and the Claude GitHub
+App are all proven available. The active blocker is **software correctness of the
+automation itself**, being repaired and validated in PR #17.
