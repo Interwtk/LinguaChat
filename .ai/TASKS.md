@@ -21,16 +21,7 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-I18N-004] Localize visible auxiliary copy and add plural-aware count rendering
-  owner:  claude-i18n
-  branch: i18n/lc-i18n-004
-  why:    welcome, placement and LanguageIdentity still bypass i18n; fixed `{count}` templates cannot be correct in all locales.
-  done:   welcome has no Spanish assumption; placement instructions/explanations and
-          profile mood/relationship/progress/style literals use user_language;
-          count copy uses locale-aware plural categories rather than component hacks;
-          every implemented locale remains structurally complete; real browser
-          proof at 390px/1440px includes es/ja/ar and no raw keys/overflow/bidi
-          leakage; English practice material remains English.
+_(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
@@ -170,6 +161,24 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## DONE
 
+- [LC-I18N-004] Localize welcome/placement/profile + plural-aware counts — PR #22:
+  welcome message reads from `linguaWelcomeGreeting` via `user_language`, no
+  Spanish assumption; placement instructions/prompts/options-note/feedback and the
+  per-tier strengths/focus/correction/recommendation plan render through
+  `instructionKey`/`promptKey`/`explanationKey`/`placementPlan<Tier>*` i18n keys
+  (English practice options untouched); LanguageIdentity mood/relationship/
+  progress/style literals localized; `Intl.PluralRules`-based plural categories
+  replace fixed `{count}` templates (`sessionDoneCount_one/two/few/many/other`
+  etc.), `check-i18n.mjs` extended to validate per-locale plural-category
+  completeness. `check:i18n` 1724 base keys, es/pt/fr/it/de/ja/ar 100% coverage
+  (ja 1718/ar 1748 keys reflect Japanese's no-plural vs Arabic's 6-way plural
+  grammar, both structurally complete). `check:all` 52/52 scripts green, `build`
+  entry 447.05 kB, two consecutive clean cycles; backend `compileall` clean +
+  444 pytest passed, two consecutive clean cycles. Real browser proof at
+  390px/1440px for es/ja/ar: entry, signup, placement intro/question/feedback,
+  and identity/profile screens — no raw keys, no horizontal overflow, no console
+  errors; Arabic renders RTL end to end (mirrored layout/nav/forms) while English
+  practice content and email placeholders stay LTR.
 - [LC-OPS-010] Resilience + evidence-first product contract — interactive @claude is
   triage/review only instead of a lossy long-task runner; its old issue-assignment
   path is removed and its turn ceiling raised to 80 for bounded analysis. Autonomous

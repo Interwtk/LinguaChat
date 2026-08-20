@@ -36,24 +36,87 @@ NEVER translate the English the learner is practising.
 
 ## Current coverage — measured, not claimed
 
-Latest verified main after LC-OPS-009: `npm run check:i18n` reports **1580 visible
-keys** in the English base and 100% key parity in the seven implemented locale
-files. Key parity means structure is complete; it does **not** certify linguistic
-quality, truthful support, pluralisation or absence of hardcoded strings.
+Latest verified main after LC-I18N-004 (PR #22): `npm run check:i18n` reports
+**1724 visible keys** in the English base (6 plural-aware) and 100% coverage in
+the seven implemented locale files. Coverage now includes plural-category
+completeness, not just flat key parity; it still does not by itself certify
+translation quality.
 
 | language | keys | structural coverage | audit status |
 |---|---:|---:|---|
-| en (base) | 1580 | source | structural baseline; hardcoded product copy still bypasses it |
-| es | 1580 | 100% | implemented; confirmed plural/copy debt and placement bypass |
-| pt | 1580 | 100% | implemented; placement/profile/welcome bypass confirmed |
-| fr | 1580 | 100% | implemented; placement/profile/welcome bypass confirmed |
-| it | 1580 | 100% | implemented; placement/profile/welcome bypass confirmed |
-| de | 1580 | 100% | implemented; placement/profile/welcome bypass confirmed |
-| ja | 1580 | 100% | implemented; placement/profile/welcome bypass confirmed |
-| ar | 1580 | 100% | implemented; placement/profile/welcome bypass + plural/RTL architecture debt confirmed |
+| en (base) | 1724 | source | structural baseline; welcome/placement/profile now route through it |
+| es | 1724 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| pt | 1724 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| fr | 1724 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| it | 1724 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| de | 1724 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| ja | 1718 | 100% | implemented; fewer keys is correct — Japanese has no grammatical plural, so it needs one category per plural key instead of six |
+| ar | 1748 | 100% | implemented; more keys is correct — Arabic plural grammar needs `zero/one/two/few/many/other`, all six populated |
 
 The seven lazy locale modules actually present are `es/pt/fr/it/de/ja/ar`; English
 is the base dictionary. This is the real implemented set today.
+
+---
+
+# LC-I18N-004 — welcome/placement/profile localization + plural categories, 2026-08-20
+
+Resolves the three concrete defects LC-I18N-001 confirmed by code (A3 welcome,
+placement Spanish-only, LanguageIdentity English leaks) plus the missing
+plural-category model. PR #22, branch `i18n/lc-i18n-004`.
+
+## What changed
+
+- **Welcome message** (`AppContext.jsx`): `WELCOME_MESSAGE` constant replaced with
+  `createWelcomeMessage(language)`, rendering `linguaWelcomeGreeting` through
+  `translate()` instead of a hardcoded English string that assumed the reader
+  could parse "ask for a word in Spanish."
+- **Placement flow** (`SetupFlow.jsx`, `services/placement.js`,
+  `data/placementQuestions.js`): every question's `instruction`/`prompt`/
+  `explanation` and the aggregate `skill` field became `instructionKey`/
+  `promptKey`/`explanationKey`/`skillKey`, resolved via `t()` at the call site.
+  `levelPlan()` in `services/placement.js` no longer hardcodes Spanish
+  strengths/focus/correction/recommendation text per CEFR tier — it now looks up
+  `placementPlan<Tier>Strength1/2`, `...Focus1/2/3`, `...Correction`,
+  `...Recommendation` through `translate(language, key)`, with `language` passed
+  down from `calculatePlacementResult(state, language)`. The English practice
+  options themselves (`Where you live?` etc.) are untouched — only the
+  auxiliary instruction/explanation/plan prose moved to `user_language`.
+- **LanguageIdentity** (`LanguageIdentity.jsx`): mood, relationship, progress-path
+  and tutor-style literals localized; option config (`PERSONALITIES`,
+  `GOAL_OPTIONS`, `VIBE_OPTIONS`, `CORRECTION_OPTIONS`) consolidated into
+  `services/tutorPreferences.js`, shared between `SetupFlow.jsx` and
+  `LanguageIdentity.jsx` so the same id -> label-key mapping cannot drift
+  between the two screens.
+- **Plural categories** (`i18n/translations.js`, all seven locale files,
+  `scripts/check-i18n.mjs`): count copy (`sessionDoneCount` etc.) now resolves
+  through `Intl.PluralRules` per-locale categories instead of a single
+  `{count}` template string. `check-i18n.mjs` validates that every plural-aware
+  base key has all categories a given locale's `Intl.PluralRules` actually uses
+  (Japanese: `other` only; Arabic: `zero/one/two/few/many/other`) rather than
+  assuming English's `one/other` split universally.
+
+## Evidence
+
+- `check:i18n`: 1724 base keys (6 plural-aware), es/pt/fr/it/de/ja/ar all 100%
+  coverage (ja 1718 keys, ar 1748 keys — see table above for why those counts
+  differ from 1724 and are still "100%").
+- `check:all`: 49/49 scripts green, two consecutive clean cycles.
+- `build`: entry `447.05 kB` gzip `130.83 kB` (< 500 kB budget), two consecutive
+  clean cycles; `check-bundle-boundaries` 7 boundary groups, entry `437.8 kB`,
+  25 JS chunks, 1431.1 kB total.
+- Backend: `compileall` clean, `pytest -q` 444 passed, two consecutive clean
+  cycles (one pre-existing Pydantic V1 `@validator` deprecation warning,
+  tracked separately as `LC-BE-001`, unrelated to this change).
+- Real browser proof (Playwright against a local `vite` dev server, system
+  Chromium) at 390px and 1440px for es/ja/ar: entry screen, signup form,
+  placement intro/question/feedback, and the identity/profile screen. No raw
+  `t()` keys rendered, no `document.documentElement.scrollWidth` overflow past
+  viewport width at any captured screen, no browser console errors. Arabic
+  renders `dir="rtl"` on both `<html>` and inside the flow (mirrored sidebar/nav
+  on desktop, mirrored form layout on mobile) while English placement options
+  and the `you@example.com` email placeholder correctly stay LTR. Chatto is not
+  present on the identity screen (avatar only), so no mirroring regression to
+  check there.
 
 ---
 

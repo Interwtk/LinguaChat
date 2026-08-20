@@ -4,9 +4,11 @@ Rewrite this file at the end of every task. It describes measured reality, not
 intentions. Live GitHub evidence wins over prose.
 
 _Last product-content baseline: A1 arc 5 on main. LC-OPS-009 cloud automation is
-merged, LC-I18N-001 audited language architecture, and LC-I18N-003 (canonical
-`user_language`) is complete in PR #19. LC-OPS-010 is the current ops/research
-contract PR; its changes are not main truth until merged._
+merged, LC-I18N-001 audited language architecture, LC-I18N-003 (canonical
+`user_language`) is complete in PR #19, LC-OPS-010 (resumable Claude lanes +
+research/first-launch/Supabase-beta contracts) is merged, and LC-I18N-004
+(welcome/placement/profile localization + plural-aware counts) is complete in
+PR #22._
 
 ## Product / repository
 
@@ -17,18 +19,26 @@ contract PR; its changes are not main truth until merged._
 - Voice/STT/TTS/WebRTC/pronunciation/calls/video remain deferred.
 - Owner archives/secrets are not project inputs and are never touched.
 
-## Verified QA baseline before LC-OPS-010
+## Verified QA baseline
 
-LC-I18N-003 (PR #19) measured:
+LC-I18N-004 (PR #22), latest measured baseline:
 
+- `check:i18n` **1724** base keys (6 plural-aware), es/pt/fr/it/de/ja/ar all
+  100% coverage (ja 1718 / ar 1748 keys — correct per-locale plural-category
+  counts, not a defect);
 - `check:all` **52/52**, two consecutive clean cycles;
-- production build green, entry **436.66 kB** (<500 kB), both cycles;
-- backend `compileall` clean and **444 pytest passed**, both cycles;
-- real browser 390px/1440px: legacy `native=ja` / `interface=es` reconciled to
-  `ja`/`ja`; Arabic shell RTL without overflow/console errors.
+- production build green, entry **447.05 kB** (<500 kB), two consecutive
+  clean cycles; `check-bundle-boundaries` entry 437.8 kB, 25 JS chunks,
+  1431.1 kB total;
+- backend `compileall` clean and **444 pytest passed**, two consecutive clean
+  cycles (one pre-existing Pydantic V1 `@validator` warning, tracked as
+  `LC-BE-001`);
+- real browser 390px/1440px for es/ja/ar: entry, signup, placement intro/
+  question/feedback, identity/profile screens — no raw keys, no overflow, no
+  console errors; Arabic RTL end to end (mirrored layout/nav/forms), English
+  practice content and email placeholders stay LTR.
 
-LC-OPS-010 adds a new focused automation invariant, so its final check count/evidence
-must be taken from its own PR rather than copied from this baseline.
+Full detail in `.ai/TRANSLATIONS.md` under "LC-I18N-004".
 
 ## Curriculum truth
 
@@ -76,17 +86,16 @@ target_language = English
 ```
 
 LC-I18N-003 fixed native/interface divergence and simplified meaning fallback to
-`user_language -> English`.
+`user_language -> English`. LC-I18N-004 fixed the three concrete hardcoded-copy
+defects LC-I18N-001 found (welcome, placement, LanguageIdentity) and added a real
+`Intl.PluralRules`-based plural-category model; see `.ai/TRANSLATIONS.md`.
 
 Still open before language expansion:
 
-- welcome copy assumes Spanish;
-- placement A1–C2 auxiliary copy is hardcoded Spanish;
-- LanguageIdentity leaks English literals;
-- no plural-category model;
 - picker exposes 46 option rows / 34 base languages but only 8 full base locales
   exist (`en/es/pt/fr/it/de/ja/ar`);
-- current `check:i18n` cannot detect most semantic/hardcoded/claim defects.
+- current `check:i18n` still cannot detect most semantic/claim defects beyond key
+  parity and plural-category completeness (`LC-QA-001` addresses this).
 
 ## First-launch language detection — new contract
 
@@ -153,17 +162,16 @@ Initial cloud scope when unblocked:
 No raw audio/video, indefinite chat/event logs, pgvector, Edge Functions or Storage
 in the first cloud milestone.
 
-## Ordered quality queue after LC-OPS-010
+## Ordered quality queue after LC-I18N-004
 
-1. `LC-I18N-004` — localize welcome/placement/profile + plural-aware counts.
-2. `LC-I18N-005` — first-launch preferred-device-language detection.
-3. `LC-PROD-001` — honest placement/profile/planner versus curricula available.
-4. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc.
-5. `LC-I18N-002` — truthful language support catalog; future expansion in small complete batches.
-6. `LC-QA-001` — real i18n lint/regression gates.
-7. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
-8. `LC-BE-001` — migrate Pydantic V1 validator.
-9. `LC-DOC-001` — stale README / proven-unused historical debris.
+1. `LC-I18N-005` — first-launch preferred-device-language detection.
+2. `LC-PROD-001` — honest placement/profile/planner versus curricula available.
+3. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc.
+4. `LC-I18N-002` — truthful language support catalog; future expansion in small complete batches.
+5. `LC-QA-001` — real i18n lint/regression gates.
+6. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
+7. `LC-BE-001` — migrate Pydantic V1 validator.
+8. `LC-DOC-001` — stale README / proven-unused historical debris.
 
 `LC-CLOUD-001` is blocked only on project identity/creation, not on owner intent.
 Arc 6/7 are seeded only after the language/product/pedagogical foundation is stable.

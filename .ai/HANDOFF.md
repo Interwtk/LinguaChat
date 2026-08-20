@@ -3,7 +3,7 @@
 Keep this file current: what just happened, what is proved, what comes next, and
 what will bite the next operator.
 
-_Written for LC-OPS-010 on 2026-08-20. Live main/TASKS wins if it changes after
+_Written for LC-I18N-004 on 2026-08-20. Live main/TASKS wins if it changes after
 this branch was cut._
 
 ## What just happened
@@ -13,9 +13,31 @@ normal work. LC-I18N-001 audited the language architecture, and LC-I18N-003 (PR
 #19) made one canonical `user_language` real: native/interface legacy state now
 reconciles to one value, supported APIs cannot independently diverge it, meanings
 use `user_language -> English`, and es/ja/ar reload + Arabic RTL were browser-proved.
+LC-OPS-010 turned the failure class exposed by run `32331959420` into the current
+resumable-worker architecture and added the learning-science/first-launch/
+Supabase-beta contracts referenced below.
 
-LC-OPS-010 addresses the remaining failure class exposed by run `32331959420` and
-turns the owner's new product directions into explicit evidence-backed contracts.
+LC-I18N-004 (PR #22) then closed the three concrete hardcoded-copy defects
+LC-I18N-001 found by code — the welcome message, the placement flow's
+instructions/prompts/explanations/level-plan text, and LanguageIdentity's mood/
+relationship/progress/style literals — and replaced the fixed `{count}` template
+model with real `Intl.PluralRules`-based plural categories. Full measured evidence
+is in `.ai/TRANSLATIONS.md` under "LC-I18N-004"; the short version: `check:i18n`
+1724 base keys (6 plural-aware) at 100% coverage across es/pt/fr/it/de/ja/ar,
+`check:all` 52/52 two consecutive clean cycles, build entry 447.05 kB two clean
+cycles, backend 444 pytest passed two clean cycles, and real Playwright-driven
+browser proof at 390px/1440px for es/ja/ar covering entry/signup/placement/
+identity screens with correct Arabic RTL and no raw-key/overflow/console-error
+regressions.
+
+**Note for the next operator:** this branch/PR had previously accumulated several
+claim/release cycles on `main` (visible in `git log`) without the underlying work
+actually finishing — the branch had real, substantial commits sitting in draft
+PR #22 the whole time, but nobody had run final QA, browser proof and bookkeeping
+to close it out. If you see a similar pattern (task shows `unclaimed` on main but
+its branch already has commits/an open PR), check the branch and PR first before
+assuming there is nothing to do — resume and finish existing work rather than
+re-claiming and re-releasing it.
 
 ## The 40-turn failure — what it actually means now
 
@@ -95,18 +117,15 @@ Correct priority on a clean launch:
 Region only disambiguates a language variant that is actually implemented. No
 GPS/IP/SIM lookup is needed. Explicit learner choice always wins.
 
-`LC-I18N-005` implements this after LC-I18N-004. Do not auto-select Hindi merely
-because a device is in India; `hi-IN`, `ta-IN`, `bn-IN`, `en-IN`, etc. are different
-language preferences and only genuinely supported locales may be selected.
+`LC-I18N-005` implements this now that LC-I18N-004 is done. Do not auto-select
+Hindi merely because a device is in India; `hi-IN`, `ta-IN`, `bn-IN`, `en-IN`,
+etc. are different language preferences and only genuinely supported locales may
+be selected.
 
 ## Current i18n path
 
-At branch creation, the next language task was `LC-I18N-004`: localize the welcome,
-placement and LanguageIdentity hardcodes and implement proper plural categories.
-The cloud chain may have claimed it on main while this ops branch was being written;
-**preserve the live main claim when reconciling TASKS before merge.**
-
-Then:
+`LC-I18N-004` is DONE (PR #22, merged into main's `.ai/TASKS.md` DONE section in
+this same PR). The next language task is:
 
 1. `LC-I18N-005` — preferred-device-language detection before login;
 2. `LC-PROD-001` — make placement/profile/planner truthful about curricula actually available;
