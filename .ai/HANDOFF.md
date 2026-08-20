@@ -1,83 +1,82 @@
 # HANDOFF — read this, then start
 
-Keep this file short and current: what just happened, what is still being proved,
-what comes next, and what will bite the next operator.
+Keep this file current: what just happened, what is proved, what comes next, and
+what will bite the next operator.
 
-_Written during LC-OPS-009 / PR #17 on 2026-08-20._
+_Written at the end of LC-OPS-009 / PR #17 on 2026-08-20._
 
 ## What just happened
 
-A1 arc 5 (`paying_and_choosing`, episodes 30–33) is already complete on main. Its
-four PRs delivered content/resolver, evaluator parity + a routing bug fix, all eight
-current locale copies, and `check:a1-arc5`; a later production-build browser
-walkthrough covered all four episodes, wrong-answer retry, model/help assistance and
-replay without duplicate reward. Do **not** redo arc 5.
+A1 arc 5 (`paying_and_choosing`, episodes 30–33) was already complete before this
+ops task. Do not redo it. Main has content/resolver, frontend/backend evaluator
+parity, eight-language copy, `check:a1-arc5`, and a production-build walkthrough of
+all four episodes covering happy path, wrong/retry, model/help assistance and replay
+without duplicate reward.
 
-The automation then exposed another seam. After arc 5 bookkeeping became correct,
-the queue had `LC-I18N-001` claimable but no event woke the next worker. On
-2026-08-20 the owner also triggered issue #16 through `@claude`; run `32331959420`
-authenticated correctly on a GitHub-hosted Ubuntu runner but died at the interactive
-lane's 40-turn ceiling (`error_max_turns`, turn 41, zero permission denials) before
-pushing a remote branch. Issue-mode Claude also cannot modify `.github/workflows`,
-so that was the wrong execution lane for an infrastructure repair.
+LC-OPS-009 repaired the cloud development loop after two concrete failures:
 
-ChatGPT supervisor claimed `LC-OPS-009` on main (`393fe540`) and is implementing the
-workflow repair directly in PR #17, branch `ops/lc-ops-009-cloud-autonomy-v2`.
+1. the queue could become correct and claimable after a merge yet no event woke the
+   next worker;
+2. issue #16 was sent through interactive `@claude`; run `32331959420` authenticated
+   correctly on GitHub-hosted Ubuntu but hit `error_max_turns` at turn 41 with zero
+   permission denials and no remote branch, and issue-mode Claude cannot edit
+   `.github/workflows` anyway.
 
-## PR #17 — what the candidate repair changes
+The owner PC was never the runtime dependency. The problem was orchestration.
 
-- `Claude — chain` advances in the SAME workflow invocation after it merges a green
-  agent PR; it no longer relies on GitHub generating a second workflow event from a
-  `GITHUB_TOKEN` merge.
-- The chain has an hourly watchdog (`17 * * * *`) as a recovery net.
-- General and i18n workers no longer have their own schedules.
-- `next-task.mjs` is the one selector; an explicit task id that is not currently
-  claimable is refused safely and each lane refuses the other's task family.
-- `claude-task`, `claude-i18n` and `claude-mention` share one writer concurrency
-  group.
-- A shared merge script requires green checks, `## Evidence`, and for queue-backed
-  task branches final `.ai/TASKS.md` + `.ai/STATE.md` + `.ai/HANDOFF.md` bookkeeping
-  in the same PR. The task must be under DONE on the branch before merge.
-- Watchdog recovery can merge a READY green PR whose event was missed. A dead/red
-  READY PR is returned to draft and its claim released so the **same branch/PR** can
-  be resumed rather than deadlocking or duplicating work.
-- QA listens to `ready_for_review` explicitly.
-- Autonomous prompts now carry the owner-corrected language rule: ONE
-  `user_language` for UI + explanations + hints + corrections + meanings; English
-  is the target language. Legacy interface/native names are one synchronized choice.
-- `check:cloud-automation` was added to `check:all` with focused routing/locking/
-  schedule/same-run/language/queue fixtures.
+## LC-OPS-009 result
 
-This description is implementation state, not acceptance evidence. **Read PR #17
-and its latest GitHub Actions before assuming any of it is verified.**
+PR #17 introduces:
 
-## Next action
+- same-run advancement after a successful QA-gated agent merge;
+- hourly chain watchdog at minute 17 as a recovery net;
+- no worker-local schedules;
+- `next-task.mjs` as the one claimability/dependency authority;
+- strict lane routing and rejection of stale requested task ids;
+- one writer lock (`linguachat-claude-writer`) shared by task/i18n/mention lanes;
+- a shared merge contract requiring green checks, `## Evidence`, atomic
+  TASKS/STATE/HANDOFF bookkeeping, and the task under DONE on the PR branch;
+- watchdog recovery of missed green PRs;
+- red/draft/incomplete work returned to a resumable state instead of holding the
+  queue forever;
+- QA trigger for `ready_for_review`;
+- corrected worker language rule: one `user_language` for the complete auxiliary
+  experience, English target;
+- `check:cloud-automation` (12 focused groups) inside `check:all`.
 
-1. Finish PR #17 documentation/bookkeeping and inspect its draft QA.
-2. Fix every real failure at root cause; do not rerun blindly.
-3. Because this task already involved fixes, obtain **two consecutive clean full QA
-   cycles** after the final fix.
-4. Replace PR #17's pending Evidence section with exact focused-check, check:all,
-   build, compileall and pytest numbers.
-5. Move LC-OPS-009 to DONE on the PR branch, update STATE/HANDOFF, then mark ready.
-   `ready_for_review` must itself trigger a fresh QA run.
-6. Merge only after that ready-state QA is green. The new chain/watchdog should then
-   discover the next claimable task without owner-PC involvement.
+The first validation after fixing the new test's own false positive was GitHub run
+`32334267568`: `check:cloud-automation` 12/12, `check:all` 51/51, build green
+(entry 436.85 kB), i18n 1580/1580 in every implemented locale, compileall clean,
+444 pytest. Because a fix occurred during the task, PR #17 must still show two
+consecutive clean cycles after the **final bookkeeping commit** before merge. Read
+the PR's latest `## Evidence`; it supersedes this snapshot.
 
-After LC-OPS-009, the current queue intentionally starts with:
+## Next task after PR #17 merges
 
-- `LC-I18N-001` — audit the eight implemented languages for real quality, not key
-  counts;
-- `LC-I18N-002` — make advertised language support truthful;
-- `LC-QA-001` — strengthen i18n linting.
+`LC-I18N-001` — **audit, do not bulk-fix**.
 
-A1 arcs 6–7 are designed in the live blueprint but are not yet queued. Do not invent
-their task contracts from this handoff; read the blueprint/authoring contract when
-seeding them after the infrastructure/i18n base is honest.
+The eight implemented languages (English base + es/pt/fr/it/de/ja/ar) have 100%
+structural key parity, but that does not prove good language. Audit each one for:
 
-## Language rule — do not regress this again
+- natural copy/register and missing diacritics;
+- placeholders and count/plural grammar;
+- hardcoded visible strings;
+- raw i18n keys and silent English fallback;
+- consistency that UI, explanations, hints, corrections and meanings all follow the
+  same `user_language`;
+- target English remaining English/LTR;
+- RTL layout, nested LTR English and Chatto non-mirroring.
 
-The old three-independent-language contract is obsolete.
+Record measured findings in `.ai/TRANSLATIONS.md`. Keep fixes in small subsequent
+PRs so a huge translation diff cannot hide mistakes.
+
+Then `LC-I18N-002` makes advertised support truthful, followed by `LC-QA-001` to
+turn key-parity checks into a real i18n linter.
+
+A1 arcs 6–7 are real later work but are not yet queued with invented details. When
+it is time to seed them, read `a1-blueprint.json` and the authoring contract in full.
+
+## Language rule — authoritative
 
 ```text
 user_language = the user's language
@@ -85,29 +84,36 @@ UI / explanations / hints / corrections / meanings = user_language
 target_language = English
 ```
 
-While legacy `interface_language` and `native_language` variables exist, they must
-represent the same user choice. Spanish user => all auxiliary experience Spanish;
-Japanese user => all auxiliary experience Japanese; Arabic user => auxiliary Arabic
-RTL while target English/input stay LTR. Chatto is never mirrored.
+Legacy `interface_language` and `native_language` are compatibility names for the
+same user choice, not separate settings. Spanish user => all auxiliary Spanish;
+Japanese user => all auxiliary Japanese; Arabic user => auxiliary Arabic/RTL while
+target English/input stay LTR. Chatto never mirrors.
+
+## New audit signals to keep, not blindly patch
+
+- `npm ci` reports **4 dependency vulnerabilities: 1 moderate, 3 high**. Audit
+  affected dependency paths and safe versions before changing anything; never use
+  `npm audit fix --force` as a reflex.
+- Backend tests are green but emit one Pydantic deprecation warning for a V1-style
+  `@validator` in `ai/schemas.py`. Migrate deliberately before Pydantic v3.
+- Historical folders/files such as `linguachat-frontend-old/` and unrelated empty
+  root artifacts are cleanup candidates only after proving no build/test/docs path
+  depends on them.
 
 ## Traps this repo has already sprung
 
-- Count `check:all` by exit code, not success-string grep.
+- Count `check:all` by exit code.
 - A suite going green is not functional proof. Episodes need happy + wrong/retry +
-  assisted + replay evidence; UI/i18n needs a real browser at 390/1440; evaluators
-  need frontend/backend refusal/acceptance parity.
-- A step/story field must reach both local evaluation and provider payload. Bugs
-  have already come from dropped `repairKind`, `placeName`, `relationHint`,
-  `timeForm` and partner/person context.
-- Any model answer displayed to a learner must pass the evaluator judging it.
-- A missing dynamic-import chunk is memoized by browsers; the recovery path needs a
-  document reload and must not be simplified into an inert retry.
-- Never infer “A1 complete” from “all runtime A1 episodes pass” while arcs 6–7 do
-  not exist. Keep A1 partial/unavailable until its final gate.
-- No Supabase, real OpenAI QA, voice/STT/TTS/WebRTC/pronunciation/calls/video calls.
-- Do not touch owner archives/secrets.
-- Do not send a workflow-editing infrastructure task through interactive
-  `@claude`; issue-mode Claude cannot modify `.github/workflows` and its 40-turn
-  bound is intentionally for smaller interactive work.
-- Do not blindly rerun a red workflow. Read the job log, identify the deterministic
-  cause, then change the cause or make the work safely resumable.
+  assisted + replay; UI/i18n needs browser proof at 390/1440; evaluators need
+  frontend/backend parity including refusal cases.
+- A step/story field must reach local evaluation AND the provider payload.
+- Every displayed model answer must pass its evaluator.
+- Failed dynamic imports are browser-memoized; do not simplify the deliberate reload
+  recovery path into an inert retry.
+- Never infer “A1 complete” from all *runtime* A1 episodes passing while arcs 6–7
+  do not exist. Keep A1 partial/unavailable until the final gate.
+- No Supabase, real-provider QA, voice/STT/TTS/WebRTC/pronunciation/calls/video.
+- Never touch owner archives/secrets.
+- Do not route workflow-editing infrastructure through interactive `@claude`.
+- Never blind-rerun a failed workflow: read its logs, identify the deterministic
+  cause, fix that cause or make the work resumable.
