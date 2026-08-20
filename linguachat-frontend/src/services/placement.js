@@ -1,4 +1,5 @@
 import { CEFR_LEVELS, PLACEMENT_QUESTIONS } from '../data/placementQuestions'
+import { translate } from '../i18n/translations'
 
 const MIN_QUESTIONS = 6
 const MAX_QUESTIONS = 10
@@ -15,45 +16,30 @@ function readableList(items) {
   return [...new Set(items)].slice(0, 3)
 }
 
-function levelPlan(level) {
-  const index = levelIndex(level)
-  if (index <= 0) {
-    return {
-      strengths: ['Ya puedes reconocer frases muy simples en ingles.', 'Puedes empezar con saludos, gustos y emociones.'],
-      focusAreas: ['frases con I am', 'presentarte', 'preguntas basicas'],
-      correction: 'Lingua te corregira con frases cortas y ejemplos listos para copiar.',
-      recommendation: 'Tu proxima meta: escribir una frase simple y agregar una palabra extra.',
-    }
-  }
-  if (index === 1) {
-    return {
-      strengths: ['Ya puedes entender frases cotidianas y algunas preguntas simples.', 'Puedes practicar rutinas, gustos y lugares.'],
-      focusAreas: ['preguntas con do', 'rutina diaria', 'preposiciones cotidianas'],
-      correction: 'Lingua te dara una correccion breve y una frase para responder de inmediato.',
-      recommendation: 'Tu proxima meta: responder con una frase completa y una razon corta.',
-    }
-  }
-  if (index === 2) {
-    return {
-      strengths: ['Ya puedes conectar ideas simples y hablar de planes o experiencias.', 'Puedes sostener una conversacion corta con apoyo.'],
-      focusAreas: ['pasado simple', 'planes futuros', 'conectores como because y but'],
-      correction: 'Lingua marcara el patron principal y te pedira usarlo en otra frase.',
-      recommendation: 'Tu proxima meta: contar algo que paso y explicar por que.',
-    }
-  }
-  if (index === 3) {
-    return {
-      strengths: ['Ya puedes expresar opiniones con mas detalle.', 'Puedes empezar a sonar mas natural en situaciones reales.'],
-      focusAreas: ['condicionales', 'comparaciones', 'phrasal verbs utiles'],
-      correction: 'Lingua te ayudara a elegir frases mas naturales y precisas.',
-      recommendation: 'Tu proxima meta: dar una opinion con una razon y un contraste.',
-    }
-  }
+// index 4 (C1) and 5 (C2) intentionally share one plan: the placement adapts by
+// skill difficulty, not by a separate C2 auxiliary track.
+function planTierFor(index) {
+  if (index <= 0) return 'A1'
+  if (index === 1) return 'A2'
+  if (index === 2) return 'B1'
+  if (index === 3) return 'B2'
+  return 'Advanced'
+}
+
+function levelPlan(level, language) {
+  const tier = planTierFor(levelIndex(level))
   return {
-    strengths: ['Ya manejas estructuras complejas y puedes trabajar matices.', 'Puedes practicar precision, tono y naturalidad.'],
-    focusAreas: ['registro formal', 'matices de certeza', 'expresiones idiomaticas'],
-    correction: 'Lingua afinara tono, precision y alternativas mas naturales.',
-    recommendation: 'Tu proxima meta: expresar la misma idea con distinto tono.',
+    strengths: [
+      translate(language, `placementPlan${tier}Strength1`),
+      translate(language, `placementPlan${tier}Strength2`),
+    ],
+    focusAreas: [
+      translate(language, `placementPlan${tier}Focus1`),
+      translate(language, `placementPlan${tier}Focus2`),
+      translate(language, `placementPlan${tier}Focus3`),
+    ],
+    correction: translate(language, `placementPlan${tier}Correction`),
+    recommendation: translate(language, `placementPlan${tier}Recommendation`),
   }
 }
 
@@ -119,7 +105,7 @@ export function evaluateAnswer(question, optionId, state) {
   const answer = {
     questionId: question.id,
     level: question.level,
-    skill: question.skill,
+    skillKey: question.skillKey,
     selectedOptionId: optionId,
     correctOptionId: question.correctOptionId,
     isCorrect,
@@ -136,12 +122,11 @@ export function evaluateAnswer(question, optionId, state) {
       targetLevel: CEFR_LEVELS[nextIndex],
       questionNumber: answers.length + 1,
     },
+    // Rendered through t() at the call site — explanationKey resolves via
+    // user_language, never the practice-material English options.
     feedback: {
       isCorrect,
-      title: isCorrect
-        ? 'Bien. Subiremos un poco la dificultad.'
-        : 'No pasa nada. Probemos algo mas simple.',
-      explanation: question.explanation,
+      explanationKey: question.explanationKey,
     },
   }
 }
@@ -158,7 +143,7 @@ export function shouldFinishPlacement(state) {
   return recent.length === 4 && levels.size <= 2 && (accuracy >= 0.75 || accuracy <= 0.25)
 }
 
-export function calculatePlacementResult(state) {
+export function calculatePlacementResult(state, language) {
   const answers = state.answers || []
   const weighted = answers.reduce((sum, answer) => {
     const index = levelIndex(answer.level)
@@ -170,13 +155,13 @@ export function calculatePlacementResult(state) {
   const score = Math.round((correct / Math.max(1, answers.length)) * 100)
   const confidence = Math.min(95, Math.round(55 + answers.length * 3 + Math.abs(score - 50) * 0.35))
 
-  const plan = levelPlan(level)
-  const correctSkills = readableList(answers.filter(answer => answer.isCorrect).map(answer => answer.skill))
-  const missedSkills = readableList(answers.filter(answer => !answer.isCorrect).map(answer => answer.skill))
-  const strengths = correctSkills.length
-    ? correctSkills.map(skill => `Reconoces bien: ${skill}.`)
+  const plan = levelPlan(level, language)
+  const correctSkillKeys = readableList(answers.filter(answer => answer.isCorrect).map(answer => answer.skillKey))
+  const missedSkillKeys = readableList(answers.filter(answer => !answer.isCorrect).map(answer => answer.skillKey))
+  const strengths = correctSkillKeys.length
+    ? correctSkillKeys.map(skillKey => translate(language, 'placementSkillRecognized', { skill: translate(language, skillKey) }))
     : plan.strengths
-  const focusAreas = missedSkills.length ? missedSkills : plan.focusAreas
+  const focusAreas = missedSkillKeys.length ? missedSkillKeys.map(skillKey => translate(language, skillKey)) : plan.focusAreas
 
   return {
     level,
