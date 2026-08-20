@@ -688,6 +688,8 @@ export default {
   analyzing: "Lingua comprend ton anglais...",
   resultBubble: "Je comprends ton anglais maintenant. Voici ce que j'ai trouvé.",
   detectedLevel: "Niveau estimé",
+  placementCourseHeading: "Ce que LinguaChat t'enseigne aujourd'hui",
+  placementCourseBody: "Lingua a aussi vu que ton anglais teste plus haut que cela. Le parcours guidé, pour l'instant, c'est {course} — il évoluera vers ton niveau testé à mesure que de nouveaux niveaux s'ouvriront.",
   canDo: "Ce que tu sais déjà faire",
   focusAreas: "Ce que nous allons améliorer",
   practiceRecommendation: "Recommandation de pratique",

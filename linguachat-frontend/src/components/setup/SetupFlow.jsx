@@ -13,6 +13,7 @@ import {
   getNextQuestion,
   shouldFinishPlacement,
 } from '../../services/placement'
+import { playableLevelId, labelKeyOfLevel } from '../../learning/curriculum/levels.js'
 import {
   CORRECTION_OPTIONS,
   GOAL_OPTIONS,
@@ -203,7 +204,12 @@ function PlacementTest() {
 function LevelReveal() {
   const { profile, setAuthStep, t } = useApp()
   const moti = getMotiMoment('placementDone')
-  const result = profile.placementResult || { level: 'B1', vocab: 72, grammar: 65, conversation: 78 }
+  const currentCourseLevelId = playableLevelId()
+  const result = profile.placementResult || {
+    level: 'B1', vocab: 72, grammar: 65, conversation: 78,
+    currentCourseLevelId,
+    currentCourseLabelKey: labelKeyOfLevel(currentCourseLevelId),
+  }
   const strengths = result.strengths || result.placementStrengths || [t('placementFallbackStrength')]
   const focusAreas = result.focusAreas || result.placementFocusAreas || [
     t('placementFallbackFocus1'), t('placementFallbackFocus2'), t('placementFallbackFocus3'),
@@ -248,6 +254,24 @@ function LevelReveal() {
               {t('placementPoint')} {result.level}.
             </p>
           </div>
+
+          {/*
+            * The detected level above is a diagnostic read of the learner's English,
+            * not a promise that LinguaChat can teach every level it can name. This
+            * card states plainly what the guided course actually is today, so a
+            * learner who tests above it is never left assuming a path exists that
+            * this build cannot open yet.
+            */}
+          {result.currentCourseLabelKey && (
+            <div className="rounded-2xl p-4 mb-6" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+              <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 8 }}>
+                {t('placementCourseHeading')}
+              </p>
+              <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.6 }}>
+                {t('placementCourseBody', { course: t(result.currentCourseLabelKey) })}
+              </p>
+            </div>
+          )}
 
           <div className="grid gap-3 mb-6">
             <div className="rounded-2xl p-4" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>

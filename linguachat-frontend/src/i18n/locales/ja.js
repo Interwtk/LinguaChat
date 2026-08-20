@@ -687,6 +687,8 @@ export default {
   analyzing: "Linguaがあなたの英語を理解しています…",
   resultBubble: "あなたの英語がわかりました。見つけたことはこちらです。",
   detectedLevel: "推定レベル",
+  placementCourseHeading: "LinguaChatが今日教えること",
+  placementCourseBody: "Linguaは、あなたの英語がこれより高いレベルであることにも気づいています。今のガイド付きコースは{course}です。新しいレベルが開くたびに、判定されたレベルに近づいていきます。",
   canDo: "すでにできること",
   focusAreas: "これから伸ばすこと",
   practiceRecommendation: "練習のおすすめ",

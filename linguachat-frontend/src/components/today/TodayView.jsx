@@ -8,14 +8,17 @@ import { ChattoMascot } from '../mascot/ChattoMascot'
 import { StreakFlame } from '../ui/StreakFlame'
 // Home names episodes and shows their keys; it never renders their content
 import { SKELETON_BY_ID } from '../../learning/curriculum/preA1Skeleton.generated.js'
-import { PRE_A1, episodesOfLevel } from '../../learning/curriculum/levels.js'
+import { playableLevelId, episodesOfLevel } from '../../learning/curriculum/levels.js'
 
 /*
  * The level Home is about. Progress, the next episode and the completion card all
  * describe one level: with A1 in the curriculum an unfiltered list would show a
  * learner 17/38 and offer them an episode from a level they cannot open.
+ *
+ * `playableLevelId()` — not a hardcoded level id — so this stays correct the day
+ * a second level opens instead of quietly continuing to plan Pre-A1 forever.
  */
-const ARC = episodesOfLevel(PRE_A1)
+const ARC = episodesOfLevel(playableLevelId())
 
 const getEpisode = (id) => SKELETON_BY_ID[id] || null
 import { planDay, arcProgress } from '../../learning/engine/planner.js'

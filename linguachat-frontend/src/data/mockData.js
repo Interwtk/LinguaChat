@@ -18,13 +18,16 @@ export const JOURNEY_NODES = [
   { id: 'fluency',    label: 'Fluency',    emoji: 'Ok', levels: 'C1 - C2', xp: 1500 },
 ]
 
-export const LEVEL_TO_NODE = {
-  A1: 'start',
-  A2: 'basics',
-  B1: 'travel',
-  B2: 'confidence',
-  C1: 'fluency',
-  C2: 'fluency',
+/*
+ * Which node is "you are here" — keyed by the curriculum registry's own level id
+ * (learning/curriculum/levels.js), not by a raw CEFR placement label. A learner's
+ * assessed English can be any CEFR band; this map only answers where LinguaChat's
+ * actual guided course has them today, so it can never claim a node (Travel,
+ * Confidence, Fluency) this build has no content for.
+ */
+export const COURSE_NODE_BY_LEVEL_ID = {
+  pre_a1: 'start',
+  a1: 'basics',
 }
 
 export const MOCK_STATS = {

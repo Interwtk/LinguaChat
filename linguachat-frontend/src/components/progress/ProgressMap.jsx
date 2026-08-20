@@ -1,5 +1,6 @@
-import { JOURNEY_NODES, LEVEL_TO_NODE } from '../../data/mockData'
+import { JOURNEY_NODES, COURSE_NODE_BY_LEVEL_ID } from '../../data/mockData'
 import { useApp } from '../../context/AppContext'
+import { PRE_A1 } from '../../learning/curriculum/levels.js'
 
 const NODE_LABEL_KEYS = {
   start: 'journeyStart',
@@ -9,9 +10,11 @@ const NODE_LABEL_KEYS = {
   fluency: 'journeyFluency',
 }
 
-export function ProgressMap({ level = 'B1' }) {
+/* `courseLevelId` is the actual playable curriculum level — never the learner's
+ * raw CEFR placement, which can name a level this build cannot open yet. */
+export function ProgressMap({ courseLevelId = PRE_A1 }) {
   const { t } = useApp()
-  const currentNodeId = LEVEL_TO_NODE[level] || 'travel'
+  const currentNodeId = COURSE_NODE_BY_LEVEL_ID[courseLevelId] || 'start'
   const currentIdx = JOURNEY_NODES.findIndex(n => n.id === currentNodeId)
 
   return (

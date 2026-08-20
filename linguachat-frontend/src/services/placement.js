@@ -1,5 +1,6 @@
 import { CEFR_LEVELS, PLACEMENT_QUESTIONS } from '../data/placementQuestions'
 import { translate } from '../i18n/translations'
+import { playableLevelId, labelKeyOfLevel } from '../learning/curriculum/levels.js'
 
 const MIN_QUESTIONS = 6
 const MAX_QUESTIONS = 10
@@ -163,6 +164,12 @@ export function calculatePlacementResult(state, language) {
     : plan.strengths
   const focusAreas = missedSkillKeys.length ? missedSkillKeys.map(skillKey => translate(language, skillKey)) : plan.focusAreas
 
+  // `level`/`detectedLevel` is a diagnostic read of the learner's English — it can
+  // legitimately name any CEFR band the quiz supports. `currentCourseLevelId` is
+  // the separate, honest answer to "what will LinguaChat actually teach me right
+  // now", derived from the curriculum registry rather than assumed equal to it.
+  const currentCourseLevelId = playableLevelId()
+
   return {
     level,
     detectedLevel: level,
@@ -177,6 +184,8 @@ export function calculatePlacementResult(state, language) {
     placementFocusAreas: focusAreas,
     recommendedCorrectionStyle: plan.correction,
     practiceRecommendation: plan.recommendation,
+    currentCourseLevelId,
+    currentCourseLabelKey: labelKeyOfLevel(currentCourseLevelId),
     answers,
     completedAt: new Date().toISOString(),
   }
