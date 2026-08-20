@@ -45,7 +45,7 @@ into one canonical `user_language`:
 
 | level | state |
 |---|---|
-| Pre-A1 | 17 episodes, frozen and available |
+| Pre-A1 | 17 episodes, 6 arcs, frozen and available |
 | A1 arcs 1–5, episodes 18–33 | runtime-ready |
 | A1 arc 6, episodes 34–35 | designed only |
 | A1 arc 7, episodes 36–38 | designed only |
@@ -57,6 +57,34 @@ structured path at those levels.
 
 The daily-session call site is currently bound to `episodesOfLevel(PRE_A1)`, which
 must be reconciled before any second level becomes truly playable.
+
+## Pedagogical acceptance — new hard quality requirement
+
+Passing evaluators and structural checks is necessary but not enough. Before more
+curriculum is built on top of the existing sequence, `LC-PED-001` must stress-test
+**every completed runtime arc with at least 20 distinct learner journeys per arc**.
+The current runtime has 6 Pre-A1 arcs + 5 A1 arcs, so the audit is at least **220
+arc-level scenarios** if the runtime count is unchanged when the task starts.
+
+Those scenarios must exercise independent natural answers, wrong/near-miss + retry,
+help/model use, nonsense/refusal, replay/idempotency, delayed recall and transfer to
+a novel context. They must verify that support fades after real success, rises after
+struggle, assisted/recognition-only work cannot create false mastery, prerequisites
+and vocabulary/grammar ceilings hold, and rewards/progress are not duplicated.
+Rendered samples must include mobile/desktop and es/ja/ar auxiliary experiences.
+
+A second task, `LC-PED-002`, is reserved as the **final all-arcs learning acceptance
+gate** and stays BLOCKED until A1 arcs 6–7 exist. On the final curriculum head it
+must repeat at least 20 journeys for every Pre-A1 + A1 arc and add longitudinal
+new-learner→A1-exit journeys. The current blueprint contains 6 Pre-A1 + 7 A1 arcs,
+so that would be at least **260 final arc scenarios** if the blueprint remains
+unchanged. A1 must not become available until this gate is DONE and the separate
+availability decision is explicitly approved.
+
+These software/simulated-learner audits can establish internal pedagogical logic,
+transfer proxies and absence of false mastery; they cannot scientifically prove
+that real humans learn. Any public claim of real-human learning efficacy requires
+later pilot data from actual learners, kept distinct from simulated QA evidence.
 
 ## Language truth after LC-I18N-001
 
@@ -103,16 +131,17 @@ Full evidence and per-language findings are in `.ai/TRANSLATIONS.md` under
 1. ~~`LC-I18N-003` — canonical user_language + safe legacy migration.~~ **Done, PR #19.**
 2. `LC-I18N-004` — localize welcome/placement/profile hardcodes + plural-aware counts.
 3. `LC-PROD-001` — make placement/profile/planner truthful about available curricula.
-4. `LC-I18N-002` — make the language picker/support claims honest.
-5. `LC-QA-001` — real i18n lint/regression protection.
-6. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories and upgrade safely.
-7. `LC-BE-001` — migrate Pydantic V1 validator without semantic drift.
-8. `LC-DOC-001` — reconcile stale README / prove unused historical debris before cleanup.
+4. `LC-PED-001` — >=20 distinct simulated learner journeys per completed runtime arc; fix pedagogical defects before more curriculum is layered on top.
+5. `LC-I18N-002` — make the language picker/support claims honest.
+6. `LC-QA-001` — real i18n lint/regression protection.
+7. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories and upgrade safely.
+8. `LC-BE-001` — migrate Pydantic V1 validator without semantic drift.
+9. `LC-DOC-001` — reconcile stale README / prove unused historical debris before cleanup.
 
-Only after the language/product-truth foundation is stable should the queue be
-seeded with Arc 6/7 implementation tasks from the live A1 blueprint and authoring
-contract, followed by the separate A1 completion gate. A2+ curriculum requires its
-own deliberate CEFR design phase; do not invent it from placement questions.
+After that foundation, seed Arc 6/7 implementation tasks from the live A1 blueprint
+and authoring contract. `LC-PED-002` is the mandatory final all-arcs gate after Arc
+7 and before any A1 availability decision. A2+ curriculum requires its own
+deliberate CEFR design phase; do not invent it from placement questions.
 
 ## Automation
 
