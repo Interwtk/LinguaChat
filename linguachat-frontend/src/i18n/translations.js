@@ -1,31 +1,3 @@
-export const LANGUAGE_OPTIONS = [
-  { code: 'es', label: 'Espanol', nativeName: 'Español' },
-  { code: 'en', label: 'English', nativeName: 'English' },
-  { code: 'pt', label: 'Portugues', nativeName: 'Português' },
-  { code: 'fr', label: 'Francais', nativeName: 'Français' },
-  { code: 'it', label: 'Italiano', nativeName: 'Italiano' },
-  { code: 'de', label: 'Deutsch', nativeName: 'Deutsch' },
-]
-
-export function detectNativeLanguage() {
-  try {
-    const language = navigator.languages?.find(Boolean) || navigator.language || ''
-    return language.split('-', 1)[0].toLowerCase() || 'en'
-  } catch {}
-  return 'en'
-}
-
-export function getLanguageName(code) {
-  const baseCode = String(code || 'en').split('-', 1)[0]
-  const fixed = LANGUAGE_OPTIONS.find(item => item.code === baseCode)?.nativeName
-  if (fixed) return fixed
-  try {
-    return new Intl.DisplayNames(['en'], { type: 'language' }).of(code) || 'English'
-  } catch {
-    return 'English'
-  }
-}
-
 const base = {
   // Setup choice (recommended vs personalize)
   recommended: 'Recommended',
