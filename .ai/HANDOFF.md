@@ -3,7 +3,7 @@
 Keep this file current: what just happened, what is proved, what comes next, and
 what will bite the next operator.
 
-_Written at the end of LC-I18N-003 on 2026-08-20._
+_Written at the end of LC-I18N-003 on 2026-08-20; pedagogical acceptance gates added the same day._
 
 ## What just happened
 
@@ -31,6 +31,56 @@ there.
 Full evidence — including the browser proof of a legacy-mismatch reload and
 Arabic RTL at 390px/1440px — is in `.ai/TRANSLATIONS.md` under
 `LC-I18N-003 — one canonical user_language, 2026-08-20`. PR: #19.
+
+## New non-negotiable pedagogical QA requirement
+
+Do not treat “all checks green” as proof that a teaching arc teaches well. Two
+pedagogical gates now exist in `.ai/TASKS.md`:
+
+### LC-PED-001 — before more curriculum is layered on top
+
+After LC-I18N-004 and LC-PROD-001, stress-test **every completed runtime arc with at
+least 20 distinct learner journeys per arc**. Derive arc count from live curriculum,
+not from this prose. At the current design/runtime state that means 6 Pre-A1 arcs +
+5 built A1 arcs, so at least 220 arc-level scenarios if unchanged.
+
+Each arc's matrix must include:
+
+- independent happy paths using multiple natural phrasings, not only model answers;
+- wrong and near-miss responses followed by retry/repair;
+- model/help use that stays recorded as assisted and cannot create mastery;
+- nonsense, out-of-scope, refusal and false-positive pressure;
+- replay, persistence, idempotency and no duplicate XP/rewards;
+- delayed recall after intervening material and transfer to a novel context;
+- support fading after genuine success and increasing after struggle;
+- prerequisite, vocabulary and grammar-ceiling enforcement;
+- rendered functional samples at 390px and 1440px, including es/ja/ar auxiliary
+  experiences while target English remains English.
+
+A report must record failures and fixes per arc. Any fix restarts the clean-cycle
+count. Twenty duplicated assertions do not satisfy the requirement: these are
+learner journeys / behavioural scenarios.
+
+### LC-PED-002 — final gate before A1 can open
+
+This task is intentionally under BLOCKED until A1 arcs 6 and 7 are implemented from
+the live blueprint/authoring contract. Move it to TODO only after the full A1
+runtime exists. Then repeat >=20 journeys for **every** Pre-A1 + A1 arc on the final
+head and add longitudinal new-learner→A1-exit journeys. The current blueprint has 6
+Pre-A1 + 7 A1 arcs, implying >=260 final arc scenarios if that design remains
+current.
+
+The final gate must prove delayed recall, transfer, support fading/recovery,
+independent evidence for every required can-do, cross-arc prerequisite reuse, no
+false mastery, no duplicate rewards and no regression in earlier arcs. It requires
+two consecutive clean full cycles after the last fix. **A1 must remain unavailable
+until LC-PED-002 is DONE and a separate availability decision is explicitly
+approved.**
+
+Important epistemic boundary: simulated/software learner QA can prove internal
+pedagogical logic and useful learning proxies; it cannot scientifically prove real
+humans learn. A real-human efficacy claim later needs actual learner pilot data,
+kept separate from simulation evidence.
 
 ## The important finding (still true, narrowed)
 
@@ -82,17 +132,20 @@ out of scope respectively.
 
 1. `LC-PROD-001` — placement/profile/planner must tell the truth about curricula
    actually available; do not invent A2+ here and do not open partial A1.
-2. `LC-I18N-002` — one truthful support catalog; 26 unimplemented bases cannot look
+2. `LC-PED-001` — pedagogical stress audit: >=20 distinct learner journeys per
+   completed arc before more curriculum is layered on top.
+3. `LC-I18N-002` — one truthful support catalog; 26 unimplemented bases cannot look
    fully supported because English fallback renders.
-3. `LC-QA-001` — turn the audit's remaining failure classes into regression/lint
+4. `LC-QA-001` — turn the audit's remaining failure classes into regression/lint
    gates (hardcoded-copy detection, plural-contract checks — user_language
    divergence detection is already covered by `check-user-language`).
-4. `LC-SEC-001`, `LC-BE-001`, `LC-DOC-001` — dependency advisories, Pydantic
+5. `LC-SEC-001`, `LC-BE-001`, `LC-DOC-001` — dependency advisories, Pydantic
    deprecation, and stale docs/repo debris respectively.
 
 After that foundation, seed Arc 6/7 from the **live** A1 blueprint + authoring
-contract, then a separate final A1 completion gate. A2–C2 need a later explicit
-curriculum design phase; placement questions are not a curriculum specification.
+contract. After Arc 7, `LC-PED-002` is mandatory before any A1 opening decision.
+A2–C2 need a later explicit curriculum design phase; placement questions are not a
+curriculum specification.
 
 ## Language-specific cautions
 
