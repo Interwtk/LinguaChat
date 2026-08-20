@@ -3,7 +3,7 @@
 Keep this file current: what just happened, what is proved, what comes next, and
 what will bite the next operator.
 
-_Written for LC-I18N-005 on 2026-08-20. Live main/TASKS wins if it changes after
+_Written for LC-PROD-001 on 2026-08-20. Live main/TASKS wins if it changes after
 this branch was cut._
 
 ## What just happened
@@ -41,6 +41,39 @@ contract's own QA-acceptance list against the real detection function, `check:al
 es-CL/ja-JP/ar-SA device preferences, an unsupported-only preference list falling
 back to English, a `pt-BR` regional preference resolving to base `pt`, and a manual
 switcher choice surviving a later reload under a different device preference.
+
+LC-PROD-001 (PR #25) then closed the gap this queue had flagged since LC-I18N-005:
+placement, the profile "journey map" and Home's daily planner could each disagree
+with what curriculum LinguaChat can actually teach. `calculatePlacementResult()`
+returned a raw CEFR label (A1–C2) with no ceiling tied to real content and
+`LevelReveal` rendered it as if a structured path existed there; Home's daily
+planner and the session builder (`AppContext.jsx`) were hardcoded to
+`episodesOfLevel(PRE_A1)` independent of the placement result; and the profile
+journey map (`ProgressMap`/`JourneyRail`) placed "you are here" from that same raw
+CEFR label against a `LEVEL_TO_NODE` map, so a B1+ placement could point at a
+Travel/Confidence/Fluency node this build has no content for. Only Pre-A1 is
+`available` (`learning/curriculum/levels.js`), so every one of those was an implied
+promise this build could not keep.
+
+The fix keeps the diagnostic CEFR read (`level`/`detectedLevel`) but adds a
+separate, honest answer — `currentCourseLevelId`/`currentCourseLabelKey` — derived
+from the curriculum registry via `playableLevelId()`, never assumed equal to the
+diagnostic. `LevelReveal` now shows both, side by side, so a learner who tests above
+Pre-A1 is never left assuming a path exists that isn't open yet. Home, the session
+builder, the replay list (`CompletedEpisodes.jsx`) and the journey map
+(`COURSE_NODE_BY_LEVEL_ID` in `mockData.js`, replacing `LEVEL_TO_NODE`) all now
+derive from `playableLevelId()` instead of a hardcoded level id or the raw CEFR
+label, so this stays correct the day a second level opens instead of silently
+continuing to plan/show Pre-A1 forever. New `check-placement-honesty` (7 groups)
+pins the whole chain; `check-curriculum-authoring.mjs` now checks each of the five
+scoped call sites against its own required pattern instead of one shared literal.
+`check:all` 54/54 (was 53) two consecutive clean cycles, build entry 447.64 kB two
+clean cycles, backend 444 pytest passed unchanged, and real Playwright browser
+proof at 390px/1440px: a live signup → placement → LevelReveal walk at a B1
+diagnostic shows the honest PRE-A1 course card; seeded Home/profile-journey walks
+for a beginner (A1 diagnostic) and an above-curriculum learner (C1 diagnostic)
+render the IDENTICAL Pre-A1 session and "you are here: Start" node in both cases;
+Arabic RTL end to end with no overflow, no raw keys, no console errors.
 
 **Note for the next operator (still true, kept from the LC-I18N-004 handoff):** a
 task can show `unclaimed` on `main` while its branch/PR already has real commits
@@ -139,14 +172,14 @@ supported locales may be selected — this is now enforced in code, not just pol
 
 ## Current i18n path
 
-`LC-I18N-005` is DONE (PR #24, merged into main's `.ai/TASKS.md` DONE section in
-this same PR). The next language task is:
+`LC-I18N-005` is DONE (PR #24) and `LC-PROD-001` is DONE (PR #25, merged into
+main's `.ai/TASKS.md` DONE section in this same PR). The next language/quality
+tasks are:
 
-1. `LC-PROD-001` — make placement/profile/planner truthful about curricula actually available;
-2. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc;
-3. `LC-I18N-002` — one truthful supported-language catalog; expand future languages
+1. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc;
+2. `LC-I18N-002` — one truthful supported-language catalog; expand future languages
    only in small complete batches;
-4. `LC-QA-001` — turn remaining i18n failure classes into regression gates.
+3. `LC-QA-001` — turn remaining i18n failure classes into regression gates.
 
 Do not mass-add Hindi/Korean/etc. as selector labels first. A language becomes
 supported only after login/onboarding/UI + explanations/hints/corrections/meanings

@@ -8,8 +8,9 @@ merged, LC-I18N-001 audited language architecture, LC-I18N-003 (canonical
 `user_language`) is complete in PR #19, LC-OPS-010 (resumable Claude lanes +
 research/first-launch/Supabase-beta contracts) is merged, LC-I18N-004
 (welcome/placement/profile localization + plural-aware counts) is complete in
-PR #22, and LC-I18N-005 (honest first-launch device-language detection) is
-complete in PR #24._
+PR #22, LC-I18N-005 (honest first-launch device-language detection) is complete
+in PR #24, and LC-PROD-001 (honest placement/profile/Home curriculum agreement)
+is complete in PR #25._
 
 ## Product / repository
 
@@ -22,32 +23,40 @@ complete in PR #24._
 
 ## Verified QA baseline
 
-LC-I18N-005 (PR #24), latest measured baseline:
+LC-PROD-001 (PR #25), latest measured baseline:
 
-- `check:i18n` unchanged — **1724** base keys (6 plural-aware), es/pt/fr/it/de/ja/ar
-  all 100% coverage (ja 1718 / ar 1748 keys — correct per-locale plural-category
-  counts, not a defect); this task reused the existing `selectLanguage` key rather
-  than adding new ones;
-- new `check:language-detection` — 9 groups proving first-launch detection only
-  auto-selects a `SUPPORTED_LOCALES` base, regional fallback (`pt-BR`→`pt`),
-  unsupported-preference skipping, persisted-choice survival across a later device
-  change, target-stays-English, and no geolocation API use;
-- `check:all` **53/53**, two consecutive clean cycles;
-- production build green, entry **447.28 kB** (<500 kB), two consecutive
-  clean cycles; `check-bundle-boundaries` entry 438.0 kB, 26 JS chunks,
-  1432.1 kB total;
+- new `check-placement-honesty` — 7 groups proving the diagnostic CEFR placement
+  level can land anywhere on the scale without moving what the app claims to
+  actually teach, that an unavailable level can never acquire a `labelKey`, that
+  Home/AppContext/CompletedEpisodes all derive their arc from `playableLevelId()`
+  rather than a hardcoded level id, and that the profile journey map's "current"
+  node agrees with that same registry answer, never the raw placement label;
+- `check-curriculum-authoring.mjs` extended so each of the five scoped call sites
+  is checked against its OWN required pattern (`readiness.js`/`preA1Map.js` keep
+  the literal `episodesOfLevel(PRE_A1)` for Pre-A1's frozen exit criteria; Home/
+  AppContext/CompletedEpisodes now require `episodesOfLevel(playableLevelId())`);
+- two new i18n keys (`placementCourseHeading`, `placementCourseBody`) for the
+  honest "what LinguaChat teaches you today" card in `LevelReveal`, translated in
+  all seven non-English locales — `check:i18n` **1726** base keys, 100% coverage
+  unchanged elsewhere;
+- `check:all` **54/54** (was 53), two consecutive clean cycles;
+- production build green, entry **447.64 kB** (<500 kB), two consecutive clean
+  cycles; `check-bundle-boundaries` entry 438.4 kB, 26 JS chunks, 1435.0 kB total;
 - backend `compileall` clean and **444 pytest passed**, two consecutive clean
   cycles, unchanged (one pre-existing Pydantic V1 `@validator` warning, tracked as
   `LC-BE-001`);
-- real browser 390px/1440px: `es-CL`/`ja-JP`/`ar-SA` device preferences each
-  resolve to the matching auxiliary language on the entry screen (Arabic RTL, both
-  LTR otherwise), an unsupported-only preference list falls back to English, a
-  regional `pt-BR` preference resolves to base `pt`, and a manual choice made via
-  the new pre-login `LanguageSwitcher` survives a later reload under a different
-  device preference — no raw keys, no overflow, no console errors.
+- real browser proof (Playwright/Chromium) at 390px/1440px: a fresh signup →
+  placement → LevelReveal walk landing at a B1 diagnostic renders both the raw
+  diagnostic badge AND "What LinguaChat teaches you today: ... PRE-A1"; seeded
+  Home/profile-journey walks for a beginner (diagnostic A1) and a learner who
+  tested above current curriculum (diagnostic C1) render the IDENTICAL Pre-A1
+  session and "you are here: Start" journey node in both cases — the core claim
+  of this task, proven live rather than only by unit assertion; Arabic renders
+  RTL end to end (mirrored nav/layout), no horizontal overflow, no raw i18n keys,
+  no console errors, and the target-English phrase stayed LTR.
 
-Full detail in `.ai/TRANSLATIONS.md` under "LC-I18N-005" (prior baseline:
-"LC-I18N-004").
+Full detail in `.ai/TASKS.md` DONE entry for `LC-PROD-001` (prior baseline:
+"LC-I18N-005" in `.ai/TRANSLATIONS.md`).
 
 ## Curriculum truth
 
@@ -62,8 +71,11 @@ A1 remains `contentStatus: partial`, `available: false`. No A2/B1/B2/C1/C2
 structured curriculum contracts exist. Placement labels for those levels do not
 mean LinguaChat can yet teach full paths at those levels.
 
-The daily-session call site is still bound to `episodesOfLevel(PRE_A1)` and must be
-reconciled before another level is genuinely playable.
+Placement, Home's daily planner, the session builder and the profile journey map
+now all derive their curriculum from `playableLevelId()` (the curriculum registry)
+rather than a hardcoded level id or the raw CEFR placement label (`LC-PROD-001`,
+PR #25) — this stays correct the day a second level opens instead of quietly
+continuing to plan/show Pre-A1 forever.
 
 ## Pedagogical quality contract
 
@@ -178,15 +190,14 @@ Initial cloud scope when unblocked:
 No raw audio/video, indefinite chat/event logs, pgvector, Edge Functions or Storage
 in the first cloud milestone.
 
-## Ordered quality queue after LC-I18N-005
+## Ordered quality queue after LC-PROD-001
 
-1. `LC-PROD-001` — honest placement/profile/planner versus curricula available.
-2. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc.
-3. `LC-I18N-002` — truthful language support catalog; future expansion in small complete batches.
-4. `LC-QA-001` — real i18n lint/regression gates.
-5. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
-6. `LC-BE-001` — migrate Pydantic V1 validator.
-7. `LC-DOC-001` — stale README / proven-unused historical debris.
+1. `LC-PED-001` — >=20 distinct learner journeys per completed runtime arc.
+2. `LC-I18N-002` — truthful language support catalog; future expansion in small complete batches.
+3. `LC-QA-001` — real i18n lint/regression gates.
+4. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
+5. `LC-BE-001` — migrate Pydantic V1 validator.
+6. `LC-DOC-001` — stale README / proven-unused historical debris.
 
 `LC-CLOUD-001` is blocked only on project identity/creation, not on owner intent.
 Arc 6/7 are seeded only after the language/product/pedagogical foundation is stable.
