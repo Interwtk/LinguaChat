@@ -21,13 +21,9 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-_(none — the queue is open)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-I18N-004] Localize visible auxiliary copy and add plural-aware count rendering
-  owner:  unclaimed
-  branch: none
+  owner:  claude-i18n
+  branch: i18n/lc-i18n-004
   why:    welcome, placement and LanguageIdentity still bypass i18n; fixed `{count}` templates cannot be correct in all locales.
   done:   welcome has no Spanish assumption; placement instructions/explanations and
           profile mood/relationship/progress/style literals use user_language;
@@ -36,7 +32,7 @@ _(none — the queue is open)_
           proof at 390px/1440px includes es/ja/ar and no raw keys/overflow/bidi
           leakage; English practice material remains English.
 
-
+## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-I18N-005] Detect the learner's preferred device language before login without geo guessing
   owner:  unclaimed
