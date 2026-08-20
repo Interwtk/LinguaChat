@@ -21,9 +21,13 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
+_(none — the queue is open)_
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
+
 - [LC-PED-001] Stress-test every completed teaching arc with real learner-shaped scenarios
-  owner:  claude-action
-  branch: qa/lc-ped-001-arc-journeys
+  owner:  unclaimed
+  branch: none
   why:    green structural/evaluator checks do not prove the sequence teaches well, resists false mastery, or transfers beyond memorised answers.
   done:   use `docs/research/learning-science-foundation.md`, derive the completed
           runtime arc list from live curriculum sources, and run at least 20 DISTINCT
@@ -41,7 +45,6 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
           failures, fixes and evidence; any fix resets clean-cycle count. Software
           simulation is not scientific proof of human efficacy.
 
-## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-I18N-002] Stop advertising languages that only fall back to English (phase B)
   owner:  unclaimed
