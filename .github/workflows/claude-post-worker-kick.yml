@@ -1,0 +1,42 @@
+# Close the post-merge race in claude-chain.yml.
+#
+# The chain can receive pull_request.closed while the worker that just merged is
+# still reported as in_progress. Its shared writer guard correctly refuses to
+# dispatch in that instant, but without a later event the queue waits for the
+# hourly watchdog. This workflow emits that later event only after the worker is
+# fully completed, so the existing chain can immediately re-check the queue.
+name: Claude — post-worker kick
+
+on:
+  workflow_run:
+    workflows:
+      - "Claude — autonomous task"
+      - "Claude — translations"
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: claude-post-worker-kick
+  cancel-in-progress: false
+
+jobs:
+  kick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Dispatch the chain after the worker is fully finished
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
+          SOURCE_RUN_ID: ${{ github.event.workflow_run.id }}
+          SOURCE_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+        run: |
+          set -euo pipefail
+          gh workflow run claude-chain.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main \
+            -f reason="post-worker completion: ${SOURCE_WORKFLOW} run ${SOURCE_RUN_ID} (${SOURCE_CONCLUSION})"
+          echo "Dispatched Claude — chain after ${SOURCE_WORKFLOW} completed (${SOURCE_CONCLUSION})." >> "$GITHUB_STEP_SUMMARY"
