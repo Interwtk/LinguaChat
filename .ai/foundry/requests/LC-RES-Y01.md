@@ -322,3 +322,22 @@ psychology` → 30 studies/12 topics, exit 0; `check-foundry-scope.mjs` →
 content or code changed; correct action unchanged: stay in draft until
 `LC-OPS-015` lands, then rebase and rerun #50's final-head QA/evidence
 contract.
+
+## Update (2026-08-21, new session): still blocked, no material change
+
+Fresh session, re-verified independently: branch even with `origin/main`
+(`ff6ee28`, 0 behind, 14 ahead — unchanged content). Gates still pass on this
+branch's own head (`check-supervisor-evidence.mjs --partial psychology` → 30
+studies/12 topics, exit 0; `check-foundry-scope.mjs --require-complete` →
+`Foundry scope OK for LC-RES-Y01: 4 changed files.`, exit 0). Read current
+`main`'s `check-supervisor-evidence.mjs` directly: still no `--ref`/path CLI
+argument, corpus still resolved via `import.meta.url` off the live working
+tree — root cause unchanged. PR #57 (`LC-OPS-015` fix) and PR #56 both still
+`OPEN`/draft/`mergeable`, unmerged. Issue #52 still `OPEN`. Watched the bug
+reproduce live once more in orchestrator run `32515593327`
+(2026-08-21T18:53:12Z, minutes before this update): `pedagogical: 0 unique
+primary studies; 0 topics` → `Foundry PR #53 (foundry/research-ped/lc-res-p01):
+merge gate=scope-or-quality; returned to draft.` — same signature, same
+sibling PR, consistent with every prior observation. No content or code
+changed; correct action unchanged: stay in draft until `LC-OPS-015` lands,
+then rebase and rerun #50's final-head QA/evidence contract.
