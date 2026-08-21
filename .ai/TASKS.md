@@ -21,21 +21,13 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-SEC-001] Audit and safely resolve the current frontend dependency vulnerabilities
-  owner:  claude-action
-  branch: qa/lc-sec-001-frontend-deps
-  why:    `npm ci` reports 1 moderate and 3 high vulnerabilities; severity alone is not enough to justify a forced upgrade.
-  done:   record exact advisory/package/dependency paths and runtime-vs-build exposure;
-          upgrade only through compatible safe ranges or document why an advisory is
-          not reachable; never use `npm audit fix --force` blindly; full frontend,
-          backend and rendered smoke QA remains green with no bundle regression.
+_(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-BE-001] Remove the Pydantic V1 validator deprecation safely
   owner:  unclaimed
   branch: none
-  blocked-on: LC-SEC-001
   why:    backend tests pass but `ai/schemas.py` emits a V1-style `@validator` deprecation that will matter before Pydantic v3.
   done:   migrate to the supported Pydantic API without changing accepted/rejected
           provider verdict semantics; parity/refusal tests pin behaviour; compileall
@@ -87,6 +79,26 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
           about real-human learning efficacy require later real-learner pilot data.
 
 ## DONE
+
+- [LC-SEC-001] Audit and safely resolve the current frontend dependency vulnerabilities
+  — PR #32: `npm audit` on `linguachat-frontend` reported 4 advisories (1 moderate,
+  3 high), all in devDependencies/build tooling, none reachable from the shipped
+  production bundle. postcss (`GHSA-fxqj-rqcc-2cmp`, `GHSA-r28c-9q8g-f849`, high)
+  and its transitive nanoid (`GHSA-28wg-ghj8-5hjv`, `GHSA-2v37-7h3g-55p8`, high)
+  fixed via the safe non-forced `npm audit fix`: postcss 8.5.15 → 8.5.26, still
+  inside the existing `^8.4.38` range, no `package.json` change. esbuild
+  (`GHSA-67mh-4wv8-2f99`, moderate, transitive via vite) and vite itself
+  (`GHSA-4w7w-66w2-5vf9`, `GHSA-v6wh-96g9-6wx3`, `GHSA-fx2h-pf6j-xcff`) are all
+  dev-server-only issues — two of the three vite ones Windows-specific;
+  `vite.config.js` never sets `server.host` so the dev server binds to localhost
+  only, and no CI workflow runs `vite dev`/`npm run dev` publicly. Fixed with a
+  single controlled major bump, vite 5.4.21 → `^6.4.3` (not the 5→8.2.2, three-major
+  jump `npm audit fix --force` proposed); confirmed `@vitejs/plugin-react@4.7.0`
+  already supports vite `^6` and the production build is byte-identical
+  before/after (same content hash, 450.83 kB / gzip 131.70 kB entry chunk).
+  `npm audit` now reports 0 vulnerabilities. Two consecutive clean cycles of
+  `check:all`, `build`, `compileall`, `pytest` (444 passed both times).
+  `LC-BE-001`'s stale `blocked-on: LC-SEC-001` is cleared in the same PR.
 
 - [LC-QA-001] Extend check:i18n into a real linter — PR #31: new
   `check-i18n-lint.mjs` (wired into `check:all` right after `check-i18n.mjs`)
