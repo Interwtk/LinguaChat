@@ -1,0 +1,17 @@
+{
+  "taskId": "LC-RES-Y02",
+  "lane": "research-psy",
+  "status": "complete",
+  "cleanCycles": 2,
+  "summary": "Added 28 unique, DOI/Crossref-verified primary empirical studies to docs/research/supervisors/psychology-primary.json (30 -> 58 total), closing the two topics batch 1 (LC-RES-Y01) deferred entirely (goal setting and progress feedback; habit/return behavior, 4 studies each) and rebalancing memory retention/forgetting and mastery criteria/delayed assessment (1 -> 4 each combined). All 14 mandatory-coverage topics from docs/research/supervisor-evidence-contract.md #7 now have at least 4 records, and none exceeds 5, keeping the corpus well distributed ahead of the eventual 100+/topic-share gate. Every record was verified against the Crossref API plus a second distinct HTTPS source (PubMed/PMC, ERIC, or a publisher/university repository) before inclusion; a diverse 11-record sample was independently re-verified against Crossref during compilation. Six parallel research passes returned 31 candidate records; 3 were caught as duplicates during compilation (one against the existing batch-1 corpus, two against each other within batch 2) and dropped rather than kept, then replaced with 3 freshly verified studies covering the same topics so the batch still delivers 28 net-new unique records, well above the 25-study minimum.",
+  "writeScopeRespected": [
+    "docs/research/supervisors/psychology-primary.json",
+    "docs/research/supervisors/batches/psy-02.md"
+  ],
+  "evidence": {
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n — exit 0, run twice consecutively clean after rebasing onto origin/main",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q — exit 0 (444 passed), run twice consecutively clean after rebasing onto origin/main",
+    "evidenceGatePartial": "node .github/scripts/check-supervisor-evidence.mjs --partial psychology — psychology: 58 unique primary studies; 14 topics; partial gate passed",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/research-psy/lc-res-y02 --base origin/main --head HEAD — OK, 2 changed files (corpus json, batch doc), all inside allowed write scope"
+  }
+}
