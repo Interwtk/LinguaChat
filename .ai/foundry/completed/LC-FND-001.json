@@ -1,0 +1,18 @@
+{
+  "taskId": "LC-FND-001",
+  "lane": "core",
+  "status": "complete",
+  "cleanCycles": 2,
+  "summary": "Audited the shared A1-C2 curriculum master, level blueprint template and supervisor evidence contract/ledger against the live A1 blueprint, authoring contract and learning-science foundation. Added the machine-checkable primary-study record schema and topic-distribution thresholds to supervisor-evidence-contract.md so research lanes have one canonical source instead of reverse-engineering the deterministic gate.",
+  "writeScopeRespected": [
+    "docs/curriculum/curriculum-master-a1-c2.md",
+    "docs/curriculum/level-blueprint-template.md",
+    "docs/research/supervisor-evidence-contract.md",
+    "docs/research/supervisor-evidence-ledger.md"
+  ],
+  "evidence": {
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n — exit 0, run twice consecutively clean",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q — exit 0 (444 passed), run twice consecutively clean",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/core/lc-fnd-001-master --base origin/main --head HEAD --require-complete — OK, 5 changed files (4 write-scope docs + completion marker), all inside allowed scope"
+  }
+}
