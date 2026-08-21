@@ -1,0 +1,17 @@
+{
+  "taskId": "LC-BP-B1",
+  "lane": "level-b1",
+  "status": "complete",
+  "cleanCycles": 2,
+  "summary": "Authored the B1 level blueprint (docs/curriculum/blueprints/b1.md + b1.json) against the shared A1-C2 curriculum master and the level blueprint template: a 17-capability graph (12 required, 4 should, 1 optional) across 7 arcs (what_happened, i_think_that, which_one, somethings_wrong, looking_ahead, keep_talking, the_long_conversation), CEFR-referenced, with a full reuse/spacing matrix, evidence/mastery targets, personalization plan, Four Strands audit, evaluation requirements with pragmatic-appropriateness examples, explicit exclusions to B2, and two flagged core-engine requirements (hybrid-evaluation density at B1, discourse-level evaluation for topic-change/follow-up capabilities). Since A2's own blueprint (LC-BP-A2) is a parallel sibling lane and had not landed at design time, every A2-facing prerequisite is explicitly marked as an expected-but-unverified A2 exit capability, sourced only from the master contract's own A2 description and from ids A1 already coined in its deferredToA2 list, with an explicit instruction for LC-AUD-001 to reconcile them against the real A2 blueprint. No runtime code, scripts, or other docs were touched; write scope was exactly docs/curriculum/blueprints/b1.md and docs/curriculum/blueprints/b1.json.",
+  "writeScopeRespected": [
+    "docs/curriculum/blueprints/b1.md",
+    "docs/curriculum/blueprints/b1.json"
+  ],
+  "evidence": {
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n — exit 0, run twice consecutively clean (no frontend files touched by this task; run as regression proof)",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q — exit 0 (444 passed), run twice consecutively clean",
+    "blueprintJson": "node -e \"require('./docs/curriculum/blueprints/b1.json')\" parses cleanly; 17 canDos, 7 arcs, 21 patterns; every canDos[].prerequisites entry resolves to another canDos[] id, an existing runtime id (polite_request), or an entry in prerequisiteReconciliation.expectedA2ExitCapabilities — checked programmatically",
+    "knownGap": "No structural b1.json checker script exists yet (out of this task's write scope); flagged explicitly in b1.md section 16 as a gap for a future core/QA task rather than silently assumed solved"
+  }
+}
