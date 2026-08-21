@@ -297,6 +297,32 @@ history again. No content or code changed; correct action is unchanged: stay in
 draft until `LC-OPS-015` (PR #57) merges, then rebase and rerun #50's final-head
 QA/evidence contract.
 
+## Update (2026-08-21, new session): PR #57 closed unmerged; fix now lives in PR #56, close but not landed
+
+Fresh session, re-verified independently: branch still even with `origin/main`
+(0 behind, 15 ahead), content unchanged (`check-supervisor-evidence.mjs --partial
+psychology` → 30 studies/12 topics, exit 0; `check-foundry-scope.mjs
+--require-complete` → `Foundry scope OK for LC-RES-Y01: 4 changed files.`, exit 0).
+Read current `main`'s `check-supervisor-evidence.mjs` directly: still no `--ref`
+argument, corpus still resolved via `import.meta.url` off the live working tree —
+root cause unchanged, gate still broken on `main`.
+
+Status of the fix itself has moved: PR #57 (`LC-OPS-015`, the standalone fix) is
+now `CLOSED` (`closedAt` 2026-08-21T19:00:39Z) without merging — superseded by
+PR #56 (`ops/lc-ops-016-shared-automation-fixes`), which bundles the identical
+fix ("make Foundry evidence validation read the candidate ref instead of the
+runner checkout") plus other automation repairs. PR #56 is `OPEN`, not draft,
+`mergeable`, and per `gh pr checks 56`: `frontend`, `backend`, `guards` all
+`pass`; only `evidence — the PR shows the QA it ran` currently `fail` (per its
+own body, an earlier placeholder-evidence-text issue it says was already
+corrected — its own description records a clean two-cycle QA run). So the fix
+is close to landing but still not merged as of this session.
+
+No content or code changed on this branch; correct action unchanged: stay in
+draft, do not touch `.github/scripts/**` myself (still outside this task's
+`writeScopes`), and once PR #56 (or whatever successor lands `LC-OPS-015`)
+merges, rebase and rerun #50's final-head QA/evidence contract.
+
 ## Update (2026-08-21, new session): still blocked, no material change
 
 Fresh session, re-verified independently: branch even with `origin/main`
