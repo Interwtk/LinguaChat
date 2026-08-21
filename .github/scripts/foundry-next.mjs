@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs'
 import process from 'node:process'
+import { pathToFileURL } from 'node:url'
 
 const MANIFEST = new URL('../../.ai/foundry/tasks.json', import.meta.url)
 const COMPLETED_DIR = new URL('../../.ai/foundry/completed/', import.meta.url)
@@ -45,37 +46,41 @@ export function readyTasks(tasks, done = completedSet(tasks)) {
   return ready
 }
 
-const manifest = loadManifest()
-const tasks = manifest.tasks
-const done = completedSet(tasks)
-const arg = (name) => {
-  const i = process.argv.indexOf(name)
-  return i >= 0 ? process.argv[i + 1] : null
-}
-const taskId = arg('--task')
-const branch = arg('--branch')
+function runCli() {
+  const manifest = loadManifest()
+  const tasks = manifest.tasks
+  const done = completedSet(tasks)
+  const arg = (name) => {
+    const i = process.argv.indexOf(name)
+    return i >= 0 ? process.argv[i + 1] : null
+  }
+  const taskId = arg('--task')
+  const branch = arg('--branch')
 
-if (taskId) {
-  const task = tasks.find(t => t.id === taskId)
-  if (!task) process.exitCode = 2
-  else {
-    const waiting = task.dependsOn.filter(dep => !done.has(dep))
-    console.log(JSON.stringify({ ...task, completed: done.has(task.id), waitingOn: waiting, ready: !done.has(task.id) && waiting.length === 0 }))
+  if (taskId) {
+    const task = tasks.find(t => t.id === taskId)
+    if (!task) process.exitCode = 2
+    else {
+      const waiting = task.dependsOn.filter(dep => !done.has(dep))
+      console.log(JSON.stringify({ ...task, completed: done.has(task.id), waitingOn: waiting, ready: !done.has(task.id) && waiting.length === 0 }))
+    }
+  } else if (branch) {
+    const task = tasks.find(t => t.branch === branch)
+    if (!task) process.exitCode = 2
+    else console.log(JSON.stringify(task))
+  } else if (process.argv.includes('--all')) {
+    console.log(JSON.stringify(readyTasks(tasks, done)))
+  } else if (process.argv.includes('--explain')) {
+    for (const task of tasks) {
+      const waiting = task.dependsOn.filter(dep => !done.has(dep))
+      const status = done.has(task.id) ? 'DONE' : waiting.length ? `WAIT ${waiting.join(',')}` : 'READY'
+      console.error(`${task.id.padEnd(14)} ${task.lane.padEnd(14)} ${status}`)
+    }
+    console.log(JSON.stringify(readyTasks(tasks, done)))
+  } else {
+    const ready = readyTasks(tasks, done)
+    if (ready[0]) console.log(ready[0].id)
   }
-} else if (branch) {
-  const task = tasks.find(t => t.branch === branch)
-  if (!task) process.exitCode = 2
-  else console.log(JSON.stringify(task))
-} else if (process.argv.includes('--all')) {
-  console.log(JSON.stringify(readyTasks(tasks, done)))
-} else if (process.argv.includes('--explain')) {
-  for (const task of tasks) {
-    const waiting = task.dependsOn.filter(dep => !done.has(dep))
-    const status = done.has(task.id) ? 'DONE' : waiting.length ? `WAIT ${waiting.join(',')}` : 'READY'
-    console.error(`${task.id.padEnd(14)} ${task.lane.padEnd(14)} ${status}`)
-  }
-  console.log(JSON.stringify(readyTasks(tasks, done)))
-} else {
-  const ready = readyTasks(tasks, done)
-  if (ready[0]) console.log(ready[0].id)
 }
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) runCli()
