@@ -15,8 +15,10 @@ test) is complete in PR #26, LC-I18N-002 (honest language-support catalog —
 only the 8 implemented bases are selectable anywhere) is complete in PR #30,
 LC-QA-001 (a real i18n linter over reachable source, not just dictionary
 parity) is complete in PR #31, LC-SEC-001 (frontend dependency
-vulnerability audit and safe resolution) is complete in PR #32, and
-LC-BE-001 (Pydantic V2 validator migration) is complete in PR #33._
+vulnerability audit and safe resolution) is complete in PR #32, LC-BE-001
+(Pydantic V2 validator migration) is complete in PR #33, and LC-DOC-001
+(README rewritten for the real product, proven-unused repository debris
+removed) is complete in PR #34._
 
 ## Product / repository
 
@@ -188,6 +190,31 @@ Full detail in `.ai/TASKS.md` DONE entry for `LC-PROD-001` (prior baseline:
 - no frontend/UI code changed, so no browser walkthrough applies; this is a
   backend-only internal API migration with no observable behaviour change.
 
+`LC-DOC-001` (PR #34), latest measured baseline on top of that:
+
+- `README.md` rewritten in English to match `CLAUDE.md`/`docs/`: Lingua/Chatto,
+  the frozen Hoy·Chats·Palabras·Tú nav, current curriculum state (Pre-A1
+  frozen/available, A1 arcs 1-5 built but `available: false` until all seven
+  arcs pass their gates), the real `user_language` localization architecture
+  (8 locales, Arabic RTL, English target never translated), and an explicit
+  "what's real / what's mocked or deferred" split (mock `localStorage` auth —
+  not real accounts; no cloud persistence until a dedicated `LC-CLOUD-*` task;
+  no voice/media; no A2+ curriculum; no payments/deploy);
+- `linguachat-frontend-old/` (a superseded Create-React-App frontend, its own
+  17k-line `package-lock.json`), `pacientes.txt` and `procedimientos.txt`
+  (both empty) removed after confirming via `git grep` across every tracked
+  file that none of the three is referenced by any CI workflow, build script
+  or source file — only by README's own stale diagram and this task's `.ai/
+  TASKS.md` description, both now updated/resolved;
+- no owner-owned untracked archive (`linguachat-*.zip`) or secret touched;
+  nothing under `linguachat-frontend/src` or `linguachat-backend/` changed;
+- `check:all` **57/57** unchanged (docs/removal-only change), two consecutive
+  clean cycles; production build byte-identical, entry `450.83 kB` / gzip
+  `131.70 kB`, two consecutive clean cycles; backend `compileall` clean + 444
+  pytest passed, two consecutive clean cycles, unchanged;
+- no runtime/UI behaviour changed, so no browser walkthrough applies beyond
+  the build/bundle-boundary checks above.
+
 ## Curriculum truth
 
 | level | state |
@@ -329,12 +356,12 @@ Initial cloud scope when unblocked:
 No raw audio/video, indefinite chat/event logs, pgvector, Edge Functions or Storage
 in the first cloud milestone.
 
-## Ordered quality queue after LC-BE-001
+## Ordered quality queue after LC-DOC-001
 
-1. `LC-DOC-001` — stale README / proven-unused historical debris.
-
-`LC-CLOUD-001` is blocked only on project identity/creation, not on owner intent.
-Arc 6/7 are seeded only after the language/product/pedagogical foundation is stable.
+_(none — the general engineering TODO queue is empty)_. `LC-CLOUD-001` is
+blocked only on project identity/creation, not on owner intent. Arc 6/7 are
+seeded only after the language/product/pedagogical foundation is stable, and
+`LC-PED-002` moves to TODO only once arcs 6/7 are implemented.
 
 ## Other confirmed quality signals
 
@@ -343,7 +370,8 @@ Arc 6/7 are seeded only after the language/product/pedagogical foundation is sta
   `@field_validator(mode="before")`; `pytest -W error::pydantic.PydanticDeprecatedSince20`
   passes all 444 tests, confirming the deprecation no longer fires anywhere in
   the suite. No Pydantic V1-style `@validator` remains in the backend.
-- README is materially stale.
+- README now matches the real product as of `LC-DOC-001` (PR #34); keep it
+  current as architecture/curriculum state changes.
 - current auth/login/signup are localStorage mocks; they must not be marketed as
   real cloud accounts until LC-CLOUD work proves real Auth.
 

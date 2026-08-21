@@ -3,10 +3,62 @@
 Keep this file current: what just happened, what is proved, what comes next, and
 what will bite the next operator.
 
-_Written for LC-BE-001 on 2026-08-21. Live main/TASKS wins if it changes after
+_Written for LC-DOC-001 on 2026-08-21. Live main/TASKS wins if it changes after
 this branch was cut._
 
-## What just happened
+## What just happened (LC-DOC-001, PR #34)
+
+`README.md` had drifted to describe an earlier product state: Spanish prose, a
+legacy Practice/Journey architecture, a "B1" test level in its example payload,
+no mention of Lingua/Chatto or the frozen Hoy·Chats·Palabras·Tú nav, and no
+mention of the real `user_language` localization work this queue has spent
+several tasks on (LC-I18N-002 through LC-QA-001). It was rewritten in English,
+matching `CLAUDE.md`/`docs/`, with an explicit split between what's real today
+(local-engine conversation, Pre-A1 frozen/available, A1 arcs 1-5 built but the
+whole level stays `available: false` until LC-PED-002 + a separate opening
+decision, `localStorage`-only progress, the 8-locale `user_language` auxiliary
+experience with Arabic RTL) and what's mocked or deferred (auth is a
+`localStorage` mock, not a real account system; no cloud persistence until a
+dedicated `LC-CLOUD-*` task; no voice/media; no A2+ curriculum; no payments or
+deploy) — the exact boundaries `LC-DOC-001`'s `done` criteria named.
+
+The task's other half was proving `linguachat-frontend-old/` (a superseded
+Create-React-App frontend — its own React 19 + `react-scripts` app, complete
+with a 17,261-line `package-lock.json`), `pacientes.txt` and
+`procedimientos.txt` (both zero-byte, names unrelated to a language-learning
+product) were actually unused before deleting anything, not just assuming it
+from their names. All three were added in the same initial commit (`536dd62`,
+"feat: add guided LinguaChat learning experience") alongside the real backend
+and the now-superseded frontend. `git grep` (case-insensitive, across every
+tracked file) for `frontend-old`, `pacientes` and `procedimientos` found
+exactly two hits for each: README's own stale architecture diagram, and this
+task's own description in `.ai/TASKS.md` — no `.github/workflows/*.yml`, no
+`package.json`, no script under `linguachat-frontend/scripts/`, and no source
+file anywhere names any of the three. That is what "unused" means here: not
+merely "nothing imports it," but a full-repo textual sweep across build
+tooling, CI and source, not just app code. All three were then removed.
+
+No owner-owned untracked archive (`linguachat-*.zip`) or secret was touched;
+nothing under `linguachat-frontend/src` or `linguachat-backend/` changed —
+this is a docs-and-dead-file-removal task only. `check:all` **57/57**
+unchanged (no new suite — nothing testable changed), two consecutive clean
+cycles; production build byte-identical before/after, entry `450.83 kB` / gzip
+`131.70 kB`, two consecutive clean cycles; backend `compileall` clean + 444
+pytest passed, two consecutive clean cycles, unchanged. No runtime/UI
+behaviour changed, so no browser walkthrough applies beyond the build/
+bundle-boundary checks above — consistent with the QA table's own guidance
+that a docs-only change carries `check:all`/build/compileall/pytest proof, not
+a feature walkthrough.
+
+**Note for the next operator:** the general engineering TODO queue this file
+and `.ai/STATE.md` have been pointing at since `LC-OPS-010` (`LC-BE-001` then
+`LC-DOC-001`) is now empty. The next queue-visible task is either a fresh
+finding from a future audit, or `LC-CLOUD-001`/`LC-PED-002`, both still
+genuinely BLOCKED (project identity for the former, arcs 6/7 for the latter —
+see `.ai/TASKS.md`). Don't manufacture busywork to fill the queue; if nothing
+is claimable, say so.
+
+## What happened before that
 
 LC-OPS-009 already repaired the cloud chain and made the owner's PC irrelevant to
 normal work. LC-I18N-001 audited the language architecture, and LC-I18N-003 (PR
@@ -369,17 +421,15 @@ supported locales may be selected — this is now enforced in code, not just pol
 ## Current i18n path
 
 `LC-I18N-005` is DONE (PR #24), `LC-PROD-001` is DONE (PR #25), `LC-PED-001` is
-DONE (PR #26), `LC-I18N-002` is DONE (PR #30), `LC-QA-001` is DONE (PR #31) and
-`LC-SEC-001` is DONE (PR #32, merged into main's `.ai/TASKS.md` DONE section in
-this same PR): `check:i18n` plus `check-i18n-lint.mjs` gate every i18n failure
-class this queue had open — duplicate keys, raw-key/silent-fallback, hardcoded
-visible strings, unsupported-language claims (`LC-I18N-002`) and
-`user_language` divergence (`LC-I18N-003`) — and `npm audit` on
-`linguachat-frontend` now reports 0 vulnerabilities. The next quality tasks are
-the general engineering queue, in order:
-
-1. `LC-BE-001` — migrate the Pydantic V1 validator.
-2. `LC-DOC-001` — reconcile the stale README / proven-unused historical debris.
+DONE (PR #26), `LC-I18N-002` is DONE (PR #30), `LC-QA-001` is DONE (PR #31),
+`LC-SEC-001` is DONE (PR #32), `LC-BE-001` is DONE (PR #33) and `LC-DOC-001`
+is DONE (PR #34): `check:i18n` plus `check-i18n-lint.mjs` gate every i18n
+failure class this queue had open — duplicate keys, raw-key/silent-fallback,
+hardcoded visible strings, unsupported-language claims (`LC-I18N-002`) and
+`user_language` divergence (`LC-I18N-003`) — `npm audit` on
+`linguachat-frontend` reports 0 vulnerabilities, the backend has no remaining
+Pydantic V1-style `@validator`, and the README/repo root now match the real
+product. The general engineering TODO queue is empty; see the note above.
 
 Do not mass-add Hindi/Korean/etc. as selector labels first. A language becomes
 supported only after login/onboarding/UI + explanations/hints/corrections/meanings
@@ -443,7 +493,10 @@ review proves the need.
   `LC-SEC-001` (PR #32).
 - backend has no remaining Pydantic V1-style `@validator` usage as of
   `LC-BE-001` (PR #33).
-- README is stale; `LC-DOC-001` updates it only after proving historical debris is unused.
+- README now matches the real product as of `LC-DOC-001` (PR #34);
+  `linguachat-frontend-old/`, `pacientes.txt` and `procedimientos.txt` are gone
+  — keep the README current as architecture/curriculum state changes rather
+  than letting it drift again.
 - current login/signup remain localStorage mocks until dedicated cloud work proves
   real Auth; never market them as cloud accounts before then.
 

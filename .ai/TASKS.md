@@ -21,15 +21,7 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-DOC-001] Reconcile README and historical repository debris with the real product
-  owner:  claude-action
-  branch: docs/lc-doc-001-readme-cleanup
-  why:    README still describes legacy Practice/Journey/mock/B1 behaviour and old root/frontend artifacts can mislead future agents.
-  done:   README describes the current architecture and explicit local-only/deferred
-          boundaries; prove whether `linguachat-frontend-old/`, `pacientes.txt` and
-          `procedimientos.txt` are unused before removing anything; no owner archive
-          or secret is touched; docs cannot claim A2+ curriculum, real auth, voice or
-          other unavailable functionality.
+_(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
@@ -70,6 +62,33 @@ _(none — the queue is open)_
           about real-human learning efficacy require later real-learner pilot data.
 
 ## DONE
+
+- [LC-DOC-001] Reconcile README and historical repository debris with the real
+  product — PR #34: `README.md` described a legacy Practice/Journey/mock/B1-era
+  product in Spanish prose, with no mention of Lingua/Chatto, Pre-A1/A1, the
+  frozen Hoy·Chats·Palabras·Tú nav, or the real `user_language` localization
+  architecture. Rewritten in English (matching `CLAUDE.md`/`docs/`) to state the
+  current architecture explicitly: what's real (local-engine conversation,
+  Pre-A1 frozen/available, A1 arcs 1-5 built but the whole level stays
+  `available: false`, `localStorage`-only progress, 8-locale `user_language`
+  auxiliary experience with Arabic RTL) versus what's mocked/deferred (local
+  mock auth — not a real account system, no cloud persistence until a dedicated
+  `LC-CLOUD-*` task, no voice/media, no A2+ curriculum, no payments/deploy).
+  Proved `linguachat-frontend-old/` (a superseded Create-React-App frontend),
+  `pacientes.txt` and `procedimientos.txt` (both empty, unrelated to the
+  product) unused before removing them: all three were added in the repo's
+  initial commit (`536dd62`); `git grep` across every tracked file found zero
+  references to any of the three outside README's own stale architecture
+  diagram and this task's own description in `.ai/TASKS.md` — no CI workflow,
+  build script or source file names any of them. No owner-owned untracked
+  archive (`linguachat-*.zip`) or secret touched; nothing under `linguachat-
+  frontend/` or `linguachat-backend/` changed. `check:all` **57/57** unchanged
+  (docs/removal-only change, no new suite), two consecutive clean cycles;
+  production build byte-identical, entry `450.83 kB` (gzip `131.70 kB`), two
+  consecutive clean cycles; backend `compileall` clean + 444 pytest passed, two
+  consecutive clean cycles, unchanged. Docs-only change with no runtime/UI
+  behaviour touched, so no browser walkthrough applies beyond the build/
+  bundle-boundary checks above.
 
 - [LC-BE-001] Remove the Pydantic V1 validator deprecation safely — PR #33:
   `ai/schemas.py`'s `MissionFeedback.score` validator was the only Pydantic
