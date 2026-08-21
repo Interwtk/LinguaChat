@@ -1,0 +1,720 @@
+{
+  "blueprintVersion": "a1.blueprint.foundry.v1",
+  "taskId": "LC-BP-A1",
+  "level": "a1",
+  "template": "docs/curriculum/level-blueprint-template.md",
+  "masterContract": "docs/curriculum/curriculum-master-a1-c2.md",
+  "designStatus": "complete",
+  "productAvailability": false,
+  "reconciledAgainstRepoHead": "5dd108a",
+
+  "provenance": {
+    "note": "This file does not replace docs/curriculum/a1-blueprint.json (a1.blueprint.v1), which stays the live, checked source of truth that runtime tooling (check:a1-blueprint, check:a1-arc1..5, check:curriculum-map) validates against. It reconciles that live blueprint into the shared A1-C2 template and master contract for cross-level (LC-AUD-001) and supervisor use. No runtime module imports this file.",
+    "carriedVerbatimFrom": [
+      "docs/curriculum/a1-blueprint.json (definition, preA1Inheritance, skillFamilies, canDos core fields, patterns, semanticTypes, intentStrategy, evaluationStrategy, arcs core fields, episodes, counts, reuseMatrix, autonomy, exitCriteria, graduationArchitecture, factsToCapture, personalization, deferredToA2, optionalOrNotTaken, authoringContract, risks)",
+      "docs/curriculum/a1-map.md (narrative rationale, skill graph, trimming history)",
+      "docs/curriculum/a1-authoring-contract.md (arc-by-arc implementation record, architecture decisions)"
+    ],
+    "newlySynthesizedForThisReconciliation": [
+      "cefr tags per capability (working correspondence to the CEFR Companion Volume 2020, not a certified alignment)",
+      "the six-category evidence model (recognition / guided production / open assisted production / open independent production / transfer / delayed retrieval) mapped onto the level's existing evidence fields and reuse matrix",
+      "per-arc dominant Four Strand tag, personalization allowance, transfer target and delayed-retrieval target",
+      "explicit dependency-graph validation statement",
+      "core-engine requirements list distinguishing resolved vs still-open items",
+      "cross-level acceptance obligations for LC-BP-A2 and later gates",
+      "human-pilot questions"
+    ],
+    "rule": "Nothing in newlySynthesizedForThisReconciliation invents a capability, pattern, episode, vocabulary budget or numeric threshold that is not already present in the carried-verbatim sources. Where the template asks for something the live blueprint does not specify precisely enough to state as fact (e.g. per-episode personalizationMode, per-capability vocabulary split), this file says so explicitly instead of guessing."
+  },
+
+  "implementationStatus": {
+    "contentStatus": "partial",
+    "available": false,
+    "arcsImplemented": ["work_and_study", "daily_rhythm", "people_around_you", "finding_your_way", "paying_and_choosing"],
+    "arcsDesignedOnly": ["what_you_can_do", "making_arrangements"],
+    "episodesImplemented": [18, 33],
+    "episodesDesignedOnly": [34, 38],
+    "evidence": "linguachat-frontend/package.json check:all includes check-a1-arc1.mjs through check-a1-arc5.mjs; no check-a1-arc6/7 scripts exist yet. Matches CLAUDE.md: 'A1 arcs 1-5 (episodes 18-33) have runtime content ... Arcs 6-7 (34-38) remain designed-only and must fail closed.'",
+    "graduationGate": "A1 stays contentStatus: partial and available: false until all seven arcs are implemented, all required capabilities and integrated conversations satisfy this blueprint, final functional/browser QA passes, LC-PED-002 completes its final all-arcs pedagogical gate, and a separate A1 completion gate deliberately changes the level state. This reconciliation does not and must not change any of those flags."
+  },
+
+  "levelIdentity": {
+    "level": "a1",
+    "prerequisiteLevel": "pre_a1",
+    "prerequisiteLevelStatus": "frozen, 17 episodes, 6 arcs (see docs/curriculum/pre-a1-freeze.md)",
+    "cefrSourceReferences": [
+      "Common European Framework of Reference for Languages: Learning, Teaching, Assessment (Council of Europe, 2001)",
+      "Common European Framework of Reference for Languages: Companion Volume with New Descriptors (Council of Europe, 2020)"
+    ],
+    "cefrMappingCaveat": "Per curriculum-master-a1-c2.md section 3, these are a working correspondence used to keep A1's design honest about what 'A1' means, not a certified CEFR alignment. LinguaChat's A1 is textual/interactive only; no listening, speaking or pronunciation descriptor is claimed as covered until those systems are implemented and tested (master contract section 13; CLAUDE.md voice/media boundary).",
+    "learnerModelVersion": 7,
+    "designedAgainstRepoHead": "1f4dc1f (docs/curriculum/a1-blueprint.json original design baseline)"
+  },
+
+  "exitPromise": {
+    "canDo": [
+      "talk about their own everyday life in the present: what they do, where they live, how their day goes and roughly when",
+      "say who the people around them are and what those people are, simply",
+      "find their way in a place: ask where something is and understand a short answer",
+      "handle a small purchase end to end: choose, ask the price, understand the number, pay",
+      "say what they can and cannot do, and ask the same of someone else",
+      "arrange to meet somebody at a day, a time and a place",
+      "keep a conversation alive when they meet unknown language, by asking what a word means or how to say something"
+    ],
+    "cannotYet": [
+      "talk about the past in any form",
+      "talk about the future beyond a present-tense arrangement with a time word",
+      "give or follow directions of more than one step",
+      "explain a reason with a subordinate clause",
+      "describe people or places in more than one attribute",
+      "use third-person -s productively (heard, not produced)",
+      "spell aloud, handle dates or months, or give personal contact details",
+      "sustain a conversation that changes topic more than once"
+    ],
+    "interactionCeiling": "one situation, one topic, 10-12 meaningful turns, with repair available and support fading as evidence allows"
+  },
+
+  "preA1Inheritance": {
+    "reuseFrequently": ["introduce_self", "ask_for_repair", "polite_request", "express_preferences", "identify_things"],
+    "reuseOccasionally": ["ask_name", "ask_wellbeing", "ask_origin", "express_needs", "close_an_encounter", "respond_anything_else"],
+    "supportOnly": ["full_greeting", "full_conversation", "cafe_order"],
+    "needsEarlyA1Reuse": ["use_small_numbers", "make_plan", "cafe_order", "full_conversation"],
+    "reuseEvidenceFromRepo": {
+      "introduce_self": 7, "ask_for_repair": 4, "ask_wellbeing": 3, "express_preferences": 3,
+      "express_needs": 3, "polite_request": 3, "respond_anything_else": 3, "ask_name": 2,
+      "full_greeting": 2, "ask_origin": 2, "close_an_encounter": 2, "identify_things": 2,
+      "full_conversation": 1, "make_plan": 1, "cafe_order": 1, "use_small_numbers": 1
+    }
+  },
+
+  "skillFamilies": [
+    { "id": "own_life", "label": "Your own life", "canDos": ["talk_about_work_or_study", "ask_about_work_or_study", "talk_about_daily_routine", "say_when_something_happens"] },
+    { "id": "people_around", "label": "The people around you", "canDos": ["introduce_someone_else"] },
+    { "id": "place_and_movement", "label": "Place and movement", "canDos": ["ask_where_something_is", "say_where_something_is", "ask_about_getting_somewhere"] },
+    { "id": "transactions", "label": "Small transactions", "canDos": ["use_bigger_numbers", "ask_the_price", "buy_something"] },
+    { "id": "ability", "label": "What you can do", "canDos": ["say_what_you_can_do", "ask_someone_about_ability"] },
+    { "id": "arrangements", "label": "Arranging something", "canDos": ["arrange_to_meet"] },
+    { "id": "conversation_management", "label": "Keeping the conversation alive", "canDos": ["ask_what_something_means", "ask_how_to_say_something"] }
+  ],
+
+  "requiredCapabilityTable": [
+    {
+      "id": "talk_about_work_or_study", "family": "own_life", "scope": "required",
+      "learnerCanDo": "Say simply what they do — work or study — and where.",
+      "cefr": ["Information exchange A1"],
+      "prerequisites": ["introduce_self", "ask_origin"],
+      "patterns": ["i_do_life_pattern"],
+      "semanticNeeds": ["place"],
+      "vocabulary": "tracked at arc level, see arcs.work_and_study.vocabularyBudget (6 productive / 6 receptive)",
+      "firstContext": "work_and_study",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": ["daily_rhythm", "people_around_you"], "delayedRetrieval": "shared spaced-review scheduler once required-core (see exitCriteria.readinessDimensionsForA2)" },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "ask_about_work_or_study", "family": "own_life", "scope": "required",
+      "learnerCanDo": "Ask someone else what they do, making the exchange mutual.",
+      "cefr": ["Information exchange A1", "Interviewing A1"],
+      "prerequisites": ["talk_about_work_or_study", "ask_name"],
+      "patterns": ["do_you_question_pattern"],
+      "semanticNeeds": ["place"],
+      "vocabulary": "see arcs.work_and_study.vocabularyBudget",
+      "firstContext": "work_and_study",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": ["daily_rhythm", "what_you_can_do"], "delayedRetrieval": "shared spaced-review scheduler" },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "talk_about_daily_routine", "family": "own_life", "scope": "required",
+      "learnerCanDo": "Describe a few things they usually do in a normal day.",
+      "cefr": ["Information exchange A1"],
+      "prerequisites": ["talk_about_work_or_study"],
+      "patterns": ["i_do_life_pattern", "frequency_pattern"],
+      "semanticNeeds": ["time_point", "activity"],
+      "vocabulary": "see arcs.daily_rhythm.vocabularyBudget (8 productive / 6 receptive)",
+      "firstContext": "daily_rhythm",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": ["what_you_can_do"], "delayedRetrieval": "shared spaced-review scheduler" },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "say_when_something_happens", "family": "own_life", "scope": "required",
+      "learnerCanDo": "Say roughly when something happens — part of the day, or the hour.",
+      "cefr": ["Information exchange A1", "Vocabulary range A1 (numbers/time)"],
+      "prerequisites": ["talk_about_daily_routine", "use_small_numbers"],
+      "patterns": ["time_at_pattern", "part_of_day_pattern"],
+      "semanticNeeds": ["time_point"],
+      "vocabulary": "see arcs.daily_rhythm.vocabularyBudget",
+      "firstContext": "daily_rhythm",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": ["paying_and_choosing", "making_arrangements (consolidated)"], "delayedRetrieval": "shared spaced-review scheduler" },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "ask_what_something_means", "family": "conversation_management", "scope": "required",
+      "learnerCanDo": "Ask what an unfamiliar word means and keep the conversation going.",
+      "cefr": ["Asking for clarification A1 (cooperating strategy)"],
+      "prerequisites": ["ask_for_repair"],
+      "patterns": ["what_does_mean_pattern"],
+      "semanticNeeds": [],
+      "vocabulary": "see arcs.daily_rhythm.vocabularyBudget",
+      "firstContext": "daily_rhythm",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": ["people_around_you", "finding_your_way", "paying_and_choosing", "what_you_can_do", "making_arrangements"], "delayedRetrieval": "shared spaced-review scheduler; the single most-reused A1 capability, see reuseMatrix row" },
+      "evaluation": "deterministic_local",
+      "intentReuse": "repair_request with a new repairKind subtype"
+    },
+    {
+      "id": "introduce_someone_else", "family": "people_around", "scope": "required",
+      "learnerCanDo": "Introduce a third person to someone and say one true thing about them.",
+      "cefr": ["Conversation / social contact A1", "Information exchange A1"],
+      "prerequisites": ["introduce_self", "full_greeting"],
+      "patterns": ["this_is_pattern", "he_she_is_pattern", "possessive_pattern"],
+      "semanticNeeds": ["relation", "person"],
+      "vocabulary": "see arcs.people_around_you.vocabularyBudget (6 productive / 6 receptive)",
+      "firstContext": "people_around_you",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": ["making_arrangements (consolidated)"], "delayedRetrieval": "shared spaced-review scheduler" },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "ask_where_something_is", "family": "place_and_movement", "scope": "required",
+      "learnerCanDo": "Ask where something is in a real place.",
+      "cefr": ["Obtaining goods and services A1", "Information exchange A1"],
+      "prerequisites": ["identify_things", "ask_name"],
+      "patterns": ["where_is_pattern"],
+      "semanticNeeds": ["place", "generic_object"],
+      "vocabulary": "see arcs.finding_your_way.vocabularyBudget (8 productive / 8 receptive)",
+      "firstContext": "finding_your_way",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": ["paying_and_choosing"], "delayedRetrieval": "shared spaced-review scheduler" },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "say_where_something_is", "family": "place_and_movement", "scope": "required",
+      "learnerCanDo": "Give a short answer when asked where something is.",
+      "cefr": ["Obtaining goods and services A1"],
+      "prerequisites": ["ask_where_something_is", "identify_things"],
+      "patterns": ["its_location_pattern"],
+      "semanticNeeds": ["place", "generic_object"],
+      "vocabulary": "see arcs.finding_your_way.vocabularyBudget",
+      "firstContext": "finding_your_way",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": ["making_arrangements (consolidated)"], "delayedRetrieval": "shared spaced-review scheduler" },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "ask_about_getting_somewhere", "family": "place_and_movement", "scope": "should",
+      "learnerCanDo": "Ask how to get somewhere by a simple means of transport.",
+      "cefr": ["Obtaining goods and services A1"],
+      "prerequisites": ["ask_where_something_is", "polite_request"],
+      "patterns": ["where_is_pattern"],
+      "semanticNeeds": ["place", "transport_mode"],
+      "vocabulary": "see arcs.finding_your_way.vocabularyBudget",
+      "firstContext": "finding_your_way",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 1, "transferContexts": [], "delayedRetrieval": "single-appearance risk; see reuseMatrix.singleAppearanceRisks and mitigation" },
+      "evaluation": "hybrid",
+      "note": "first candidate to drop if the level needs trimming (a1-blueprint.json risks.thin_transactions_branch analog for this capability)"
+    },
+    {
+      "id": "use_bigger_numbers", "family": "transactions", "scope": "required",
+      "learnerCanDo": "Understand and say numbers above ten, inside a price or a clock time.",
+      "cefr": ["Vocabulary range A1 (numbers)"],
+      "prerequisites": ["use_small_numbers"],
+      "patterns": ["numbers_11_100"],
+      "semanticNeeds": ["time_point"],
+      "vocabulary": "see arcs.paying_and_choosing.vocabularyBudget (10 productive / 8 receptive)",
+      "firstContext": "paying_and_choosing",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": ["making_arrangements"], "delayedRetrieval": "shared spaced-review scheduler" },
+      "evaluation": "deterministic_local",
+      "intentReuse": "use_quantity with a level-aware taught range"
+    },
+    {
+      "id": "ask_the_price", "family": "transactions", "scope": "required",
+      "learnerCanDo": "Ask how much something costs.",
+      "cefr": ["Goods and services / transactions A1"],
+      "prerequisites": ["polite_request", "use_bigger_numbers"],
+      "patterns": ["how_much_pattern"],
+      "semanticNeeds": ["generic_object", "food"],
+      "vocabulary": "see arcs.paying_and_choosing.vocabularyBudget",
+      "firstContext": "paying_and_choosing",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": [], "delayedRetrieval": "single-appearance risk; returns as RECEPTIVE input only in making_arrangements per a1-blueprint.json reuseMatrix.mitigation, carried by the review scheduler" },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "buy_something", "family": "transactions", "scope": "required",
+      "learnerCanDo": "Complete a small purchase end to end: choose, ask the price, understand the number, pay.",
+      "cefr": ["Obtaining goods and services A1"],
+      "prerequisites": ["ask_the_price", "cafe_order", "use_small_numbers"],
+      "patterns": ["how_much_pattern", "price_pattern"],
+      "semanticNeeds": ["generic_object", "food"],
+      "vocabulary": "see arcs.paying_and_choosing.vocabularyBudget",
+      "firstContext": "paying_and_choosing",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": [], "delayedRetrieval": "single-appearance risk; same mitigation as ask_the_price" },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "say_what_you_can_do", "family": "ability", "scope": "required",
+      "learnerCanDo": "Say what they can and cannot do.",
+      "cefr": ["Information exchange A1"],
+      "prerequisites": ["express_preferences"],
+      "patterns": ["can_ability_pattern"],
+      "semanticNeeds": ["activity"],
+      "vocabulary": "see arcs.what_you_can_do.vocabularyBudget (6 productive / 6 receptive)",
+      "firstContext": "what_you_can_do",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": ["making_arrangements (consolidated)"], "delayedRetrieval": "shared spaced-review scheduler" },
+      "evaluation": "deterministic_local",
+      "architecturalNote": "The evaluator must tell ability-can from request-can; Pre-A1 already produces 'Can you repeat, please?' — see coreEngineRequirements.canAmbiguity",
+      "implementationStatus": "designed only; arc what_you_can_do (episodes 34-35) is not yet runtime content"
+    },
+    {
+      "id": "ask_someone_about_ability", "family": "ability", "scope": "should",
+      "learnerCanDo": "Ask someone else what they can do.",
+      "cefr": ["Interviewing A1"],
+      "prerequisites": ["say_what_you_can_do", "ask_about_work_or_study"],
+      "patterns": ["can_you_ability_pattern"],
+      "semanticNeeds": ["activity"],
+      "vocabulary": "see arcs.what_you_can_do.vocabularyBudget",
+      "firstContext": "what_you_can_do",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 1, "transferContexts": ["making_arrangements"], "delayedRetrieval": "shared spaced-review scheduler" },
+      "evaluation": "deterministic_local",
+      "implementationStatus": "designed only"
+    },
+    {
+      "id": "ask_how_to_say_something", "family": "conversation_management", "scope": "should",
+      "learnerCanDo": "Ask how to say something they do not know in English.",
+      "cefr": ["Asking for clarification A1 (cooperating strategy)"],
+      "prerequisites": ["ask_what_something_means"],
+      "patterns": ["how_do_you_say_pattern"],
+      "semanticNeeds": [],
+      "vocabulary": "see arcs.what_you_can_do.vocabularyBudget",
+      "firstContext": "what_you_can_do",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 1, "transferContexts": ["making_arrangements"], "delayedRetrieval": "shared spaced-review scheduler" },
+      "evaluation": "deterministic_local",
+      "intentReuse": "repair_request with a new repairKind subtype",
+      "implementationStatus": "designed only"
+    },
+    {
+      "id": "arrange_to_meet", "family": "arrangements", "scope": "required",
+      "learnerCanDo": "Arrange to meet somebody at a day, a time and a place, and confirm it.",
+      "cefr": ["Information exchange A1 (working correspondence; see cefrCaveats.arrangeToMeet below)"],
+      "prerequisites": ["say_when_something_happens", "make_plan", "say_where_something_is"],
+      "patterns": ["day_of_week_pattern", "arrange_pattern"],
+      "semanticNeeds": ["day", "time_point", "place", "activity"],
+      "vocabulary": "see arcs.making_arrangements.vocabularyBudget (6 productive / 6 receptive)",
+      "firstContext": "making_arrangements",
+      "evidence": { "recognition": true, "guidedProduction": true, "openAssistedProduction": true, "openIndependentProductionTarget": 2, "transferContexts": [], "delayedRetrieval": "evidence target reached inside the arc's own 3 episodes, same pattern as introduce_someone_else; see docs/curriculum/a1-authoring-contract.md 'independent: 2 is a level target, not an arc exit'" },
+      "evaluation": "hybrid",
+      "implementationStatus": "designed only"
+    }
+  ],
+
+  "cefrCaveats": {
+    "arrangeToMeet": "Fixing a day/time/place with no unexpected complication is a reasonable A1-band task, but 'arranging to meet' in CEFR terms typically sits closer to the A2 'goal-oriented co-operation' family once negotiation or an unexpected problem is involved. This capability is deliberately kept inside A1's tight ceiling — no negotiation, a scripted counter-proposal at most, all language already taught elsewhere in the level (a1-blueprint.json: 'Nothing new is needed to say it — which is the point') — but LC-BP-A2 and LC-AUD-001 must confirm A2's own 'making arrangements' capability (if any) is a genuine complexity increase (handling an unexpected change, negotiating between two options) and not a restatement of this one."
+  },
+
+  "arcs": [
+    {
+      "id": "work_and_study", "order": 1, "titleConcept": "What you do",
+      "communicativeProblem": "A first conversation runs out after a name and an origin: the learner cannot say what fills their days, and cannot ask.",
+      "prerequisiteArcs": [], "newCanDos": ["talk_about_work_or_study", "ask_about_work_or_study"],
+      "vocabularyBudget": { "newProductive": 6, "newReceptive": 6 },
+      "conversationTarget": { "meaningfulTurns": 6, "learnerOpenTurns": 3, "learnerInitiatedQuestions": 1 },
+      "episodes": [18, 19, 20],
+      "dominantFourStrand": "meaning-focused output, with language-focused learning for the new statement frame",
+      "personalizationAllowance": "light — which neutral workplace/study place is shown may vary with a safe neutral fallback; job/profession vocabulary stays out of scope per a1-blueprint.json risks.textbook_drift",
+      "neutralFallbackContext": "home / the office / university (three neutral workplaces, per a1-map.md section 5)",
+      "transferTarget": "daily_rhythm (frame reused for routine), people_around_you (frame reused for a third person)",
+      "delayedRetrievalTarget": "shared spaced-review scheduler; also directly consolidated in episode 20's integrated exchange"
+    },
+    {
+      "id": "daily_rhythm", "order": 2, "titleConcept": "How your day goes",
+      "communicativeProblem": "The learner can say what they do but not when or how often, so they cannot describe a day or understand somebody else's.",
+      "prerequisiteArcs": ["work_and_study"], "newCanDos": ["talk_about_daily_routine", "say_when_something_happens", "ask_what_something_means"],
+      "vocabularyBudget": { "newProductive": 8, "newReceptive": 6 },
+      "conversationTarget": { "meaningfulTurns": 7, "learnerOpenTurns": 3, "learnerInitiatedQuestions": 1 },
+      "episodes": [21, 22, 23],
+      "dominantFourStrand": "language-focused learning (the level's densest pattern moment: three new pattern groups) balanced by meaning-focused output",
+      "personalizationAllowance": "none for the hosted story (deliberate — a1-authoring-contract.md: 'Arc 2 does NOT consume the story personalisation contract'); light only on the reused express-preferences turn, which already takes its subject from the learner's existing interest/fact context",
+      "neutralFallbackContext": "get up / have breakfast (neutral routine actions, independent of interests)",
+      "transferTarget": "what_you_can_do (routine frame reused for ability context)",
+      "delayedRetrievalTarget": "shared spaced-review scheduler; ask_what_something_means is the level's single most-reused capability (see reuseMatrix)"
+    },
+    {
+      "id": "people_around_you", "order": 3, "titleConcept": "Who this is",
+      "communicativeProblem": "The learner can introduce themselves but not anybody else, so a conversation with two other people is closed to them.",
+      "prerequisiteArcs": ["work_and_study"], "newCanDos": ["introduce_someone_else"],
+      "vocabularyBudget": { "newProductive": 6, "newReceptive": 6 },
+      "conversationTarget": { "meaningfulTurns": 8, "learnerOpenTurns": 3, "learnerInitiatedQuestions": 1 },
+      "episodes": [24, 25, 26],
+      "dominantFourStrand": "meaning-focused output through interaction (roleplay)",
+      "personalizationAllowance": "none — the arc explicitly refuses family/relation personalization; a1-blueprint.json factsToCapture marks relation_names store:false with the reason 'naming a learner's family is personal data with no reuse the curriculum needs'",
+      "neutralFallbackContext": "a neutral partner and three neutral relations (friend, colleague, classmate) plus a no-relation form ('This is Ana.')",
+      "transferTarget": "making_arrangements (consolidated: the closing story reuses full_greeting + introduce_someone_else together)",
+      "delayedRetrievalTarget": "reaches its independent-evidence target inside this arc's own three episodes (one capability across three episodes), not deferred to a later run — see a1-authoring-contract.md 'one capability, three episodes'"
+    },
+    {
+      "id": "finding_your_way", "order": 4, "titleConcept": "Where things are",
+      "communicativeProblem": "In a real place the learner cannot ask where anything is, and cannot understand the short answer if somebody tells them.",
+      "prerequisiteArcs": ["work_and_study"], "newCanDos": ["ask_where_something_is", "say_where_something_is", "ask_about_getting_somewhere"],
+      "vocabularyBudget": { "newProductive": 8, "newReceptive": 8 },
+      "conversationTarget": { "meaningfulTurns": 8, "learnerOpenTurns": 4, "learnerInitiatedQuestions": 2 },
+      "episodes": [27, 28, 29],
+      "dominantFourStrand": "meaning-focused input (comprehending real, partly-unknown answers) with interaction/repair",
+      "personalizationAllowance": "light — the place/object being sought may vary with a neutral fallback; the should-have transport episode is the first trim candidate if personalization needs simplifying",
+      "neutralFallbackContext": "a generic building with generic objects (book, bag) and near/next-to relations",
+      "transferTarget": "paying_and_choosing (the place situation carries into the shop)",
+      "delayedRetrievalTarget": "shared spaced-review scheduler; say_where_something_is is consolidated again in making_arrangements"
+    },
+    {
+      "id": "paying_and_choosing", "order": 5, "titleConcept": "What it costs",
+      "communicativeProblem": "The learner can ask for something politely but cannot find out what it costs, choose between two, or understand a number above ten.",
+      "prerequisiteArcs": ["finding_your_way"], "newCanDos": ["use_bigger_numbers", "ask_the_price", "buy_something"],
+      "vocabularyBudget": { "newProductive": 10, "newReceptive": 8 },
+      "conversationTarget": { "meaningfulTurns": 10, "learnerOpenTurns": 4, "learnerInitiatedQuestions": 2 },
+      "episodes": [30, 31, 32, 33],
+      "dominantFourStrand": "meaning-focused output plus fluency development in the closing integrated purchase (episode 33 introduces almost no new language)",
+      "personalizationAllowance": "light — what is being bought may reflect an interest with a neutral fallback item; price numbers never personalize",
+      "neutralFallbackContext": "a generic shop item at a neutral price",
+      "transferTarget": "making_arrangements (numbers/time reused; price/purchase return only as receptive input, per reuseMatrix.mitigation)",
+      "delayedRetrievalTarget": "the heaviest arc in the level (a1-map.md: 'a number system, a question form and a transaction'); ask_the_price and buy_something are the level's two single-appearance-risk capabilities and rely on the shared review scheduler for delayed retrieval"
+    },
+    {
+      "id": "what_you_can_do", "order": 6, "titleConcept": "What you can and can't do",
+      "communicativeProblem": "The learner cannot say what they are able to do, so they cannot accept, decline or explain themselves when something is offered.",
+      "prerequisiteArcs": ["daily_rhythm"], "newCanDos": ["say_what_you_can_do", "ask_someone_about_ability", "ask_how_to_say_something"],
+      "vocabularyBudget": { "newProductive": 6, "newReceptive": 6 },
+      "conversationTarget": { "meaningfulTurns": 9, "learnerOpenTurns": 4, "learnerInitiatedQuestions": 2 },
+      "episodes": [34, 35],
+      "dominantFourStrand": "meaning-focused output (personalized ability statements)",
+      "personalizationAllowance": "light — the activity in 'I can/can't ___' naturally reflects an interest, with a neutral fallback list of activities",
+      "neutralFallbackContext": "swim / cook / drive (neutral abilities independent of interest)",
+      "transferTarget": "making_arrangements (consolidated: an invitation needs an ability answer)",
+      "delayedRetrievalTarget": "shared spaced-review scheduler",
+      "implementationStatus": "designed only; episodes 34-35 are not yet runtime content and must fail closed"
+    },
+    {
+      "id": "making_arrangements", "order": 7, "titleConcept": "Let's meet",
+      "communicativeProblem": "The learner can agree that something sounds good but cannot fix when, where, or confirm it — so nothing they arrange actually happens.",
+      "prerequisiteArcs": ["daily_rhythm", "finding_your_way", "what_you_can_do"], "newCanDos": ["arrange_to_meet"],
+      "vocabularyBudget": { "newProductive": 6, "newReceptive": 6 },
+      "conversationTarget": { "meaningfulTurns": 12, "learnerOpenTurns": 5, "learnerInitiatedQuestions": 2 },
+      "episodes": [36, 37, 38],
+      "dominantFourStrand": "fluency development — the arc introduces almost nothing new and holds a whole arrangement, from invitation to confirmation, together",
+      "personalizationAllowance": "light — the activity/place proposed may reflect an interest with a neutral fallback; day/time never personalize",
+      "neutralFallbackContext": "a neutral activity and a neutral place already established in finding_your_way",
+      "transferTarget": "this is the level's closing arc; its evidence is the level's own exit conversation, not a later arc",
+      "delayedRetrievalTarget": "the closing story (episode 38) is itself the level's integrated delayed-retrieval and transfer proof, reusing language from six of the level's seven arcs plus Pre-A1",
+      "implementationStatus": "designed only; episodes 36-38 are not yet runtime content and must fail closed"
+    }
+  ],
+
+  "dependencyGraphValidation": {
+    "method": "manual trace during LC-BP-A1 reconciliation, cross-checked against docs/curriculum/a1-map.md section 7's skill graph and docs/curriculum/a1-blueprint.json's per-canDo prerequisites array",
+    "noCycles": true,
+    "noOrphanRequiredCapabilities": "every required capability's prerequisite chain terminates in a Pre-A1 required-core capability (see preA1Inheritance) or an earlier A1 capability already in this table",
+    "noPrerequisiteAbsentFromCurrentOrEarlierLevel": true,
+    "openItem": "no level exit requiring evidence the runtime cannot record: PARTIALLY OPEN — see coreEngineRequirements.a1ReadinessFunction. Required-capability and integrated-conversation evidence is already recordable (learner model v7, per-episode evidence); the A1-specific readiness/graduation derivation function itself does not exist yet and is deferred to implementation phase 8, same as the live a1-blueprint.json already declares."
+  },
+
+  "patterns": [
+    { "id": "i_do_life_pattern", "form": "I + verb (+ place/object)", "enables": ["talk_about_work_or_study", "talk_about_daily_routine"], "prerequisite": null, "reaches": "independent", "firstArc": "work_and_study", "reuseArcs": ["daily_rhythm", "what_you_can_do", "making_arrangements"] },
+    { "id": "do_you_question_pattern", "form": "Do you + verb?", "enables": ["ask_about_work_or_study"], "prerequisite": "i_do_life_pattern", "reaches": "independent", "firstArc": "work_and_study", "reuseArcs": ["daily_rhythm", "what_you_can_do"] },
+    { "id": "frequency_pattern", "form": "usually / sometimes + verb", "enables": ["talk_about_daily_routine"], "prerequisite": "i_do_life_pattern", "reaches": "guided_production", "firstArc": "daily_rhythm", "reuseArcs": ["making_arrangements"] },
+    { "id": "part_of_day_pattern", "form": "in the morning / afternoon / evening", "enables": ["say_when_something_happens"], "prerequisite": null, "reaches": "independent", "firstArc": "daily_rhythm", "reuseArcs": ["making_arrangements"] },
+    { "id": "time_at_pattern", "form": "at + hour", "enables": ["say_when_something_happens", "arrange_to_meet"], "prerequisite": "numbers_1_10", "reaches": "independent", "firstArc": "daily_rhythm", "reuseArcs": ["making_arrangements", "paying_and_choosing"] },
+    { "id": "what_does_mean_pattern", "form": "What does ___ mean?", "enables": ["ask_what_something_means"], "prerequisite": "repair_pattern", "reaches": "independent", "firstArc": "daily_rhythm", "reuseArcs": ["people_around_you", "finding_your_way", "paying_and_choosing", "making_arrangements"] },
+    { "id": "this_is_pattern", "form": "This is + person", "enables": ["introduce_someone_else"], "prerequisite": "im_pattern", "reaches": "independent", "firstArc": "people_around_you", "reuseArcs": ["making_arrangements"] },
+    { "id": "he_she_is_pattern", "form": "He / She is + noun", "enables": ["introduce_someone_else"], "prerequisite": "im_pattern", "reaches": "independent", "firstArc": "people_around_you", "reuseArcs": ["what_you_can_do"] },
+    { "id": "possessive_pattern", "form": "my / your / his / her + noun", "enables": ["introduce_someone_else"], "prerequisite": null, "reaches": "guided_production", "firstArc": "people_around_you", "reuseArcs": ["finding_your_way", "paying_and_choosing"] },
+    { "id": "where_is_pattern", "form": "Where is / Where's + thing?", "enables": ["ask_where_something_is", "ask_about_getting_somewhere"], "prerequisite": "its_a_pattern", "reaches": "independent", "firstArc": "finding_your_way", "reuseArcs": ["paying_and_choosing", "making_arrangements"] },
+    { "id": "its_location_pattern", "form": "It's + here / there / next to / near + X", "enables": ["say_where_something_is"], "prerequisite": "its_a_pattern", "reaches": "independent", "firstArc": "finding_your_way", "reuseArcs": ["making_arrangements"] },
+    { "id": "numbers_11_100", "form": "eleven ... one hundred", "enables": ["use_bigger_numbers", "ask_the_price", "say_when_something_happens"], "prerequisite": "numbers_1_10", "reaches": "independent", "firstArc": "paying_and_choosing", "reuseArcs": ["making_arrangements"] },
+    { "id": "how_much_pattern", "form": "How much is it / are they?", "enables": ["ask_the_price"], "prerequisite": "quantity_pattern", "reaches": "independent", "firstArc": "paying_and_choosing", "reuseArcs": ["making_arrangements"] },
+    { "id": "price_pattern", "form": "It's + number (+ neutral unit)", "enables": ["buy_something"], "prerequisite": "numbers_11_100", "reaches": "guided_production", "firstArc": "paying_and_choosing", "reuseArcs": [] },
+    { "id": "can_ability_pattern", "form": "I can / I can't + verb", "enables": ["say_what_you_can_do"], "prerequisite": null, "reaches": "independent", "firstArc": "what_you_can_do", "reuseArcs": ["making_arrangements"] },
+    { "id": "can_you_ability_pattern", "form": "Can you + verb?", "enables": ["ask_someone_about_ability"], "prerequisite": "can_ability_pattern", "reaches": "independent", "firstArc": "what_you_can_do", "reuseArcs": ["making_arrangements"] },
+    { "id": "how_do_you_say_pattern", "form": "How do you say ___?", "enables": ["ask_how_to_say_something"], "prerequisite": "what_does_mean_pattern", "reaches": "independent", "firstArc": "what_you_can_do", "reuseArcs": ["making_arrangements"] },
+    { "id": "day_of_week_pattern", "form": "on + day", "enables": ["arrange_to_meet"], "prerequisite": null, "reaches": "independent", "firstArc": "making_arrangements", "reuseArcs": [] },
+    { "id": "arrange_pattern", "form": "Let's meet at + time / See you + day", "enables": ["arrange_to_meet"], "prerequisite": "time_at_pattern", "reaches": "independent", "firstArc": "making_arrangements", "reuseArcs": [] }
+  ],
+
+  "semanticTypes": {
+    "existing": ["interest", "activity", "drink", "food", "consumable", "place", "feeling", "person", "generic_object"],
+    "a1Required": [
+      { "id": "time_point", "requiredBy": ["say_when_something_happens", "arrange_to_meet"], "incompatibleWith": ["drink", "person"], "status": "implemented (arc daily_rhythm)" },
+      { "id": "day", "requiredBy": ["arrange_to_meet"], "incompatibleWith": ["time_point", "place"], "status": "designed only, needed by arc making_arrangements (not yet implemented)" },
+      { "id": "relation", "requiredBy": ["introduce_someone_else"], "incompatibleWith": ["person", "place"], "status": "implemented (arc people_around_you)" }
+    ],
+    "a1Should": [
+      { "id": "transport_mode", "requiredBy": ["ask_about_getting_somewhere"], "incompatibleWith": ["place"], "status": "only needed if the should-have transport episode is built; drop the type with the episode" }
+    ],
+    "explicitlyNotNeeded": [
+      { "id": "job", "why": "A workplace is a place; naming professions is a vocabulary list the level refuses." },
+      { "id": "money", "why": "A price is a number with a neutral unit; the evaluator compares the number." },
+      { "id": "month", "why": "Dates are deferred to A2." },
+      { "id": "colour", "why": "No A1 capability needs it." }
+    ]
+  },
+
+  "intentStrategy": {
+    "rule": "One intent per communicative function. Variants travel as a subtype on the step payload, the way Pre-A1 already carries repairKind, quantityForm and thingId — not as a new intent.",
+    "newIntents": ["state_life_fact", "ask_life_fact", "state_routine", "ask_routine", "introduce_person", "state_person_fact", "ask_location", "state_location", "ask_transport", "ask_price", "state_price", "state_ability", "ask_ability", "arrange_meeting"],
+    "newSubtypesOnExistingIntents": [
+      { "intent": "repair_request", "newRepairKinds": ["ask_meaning", "ask_how_to_say"] },
+      { "intent": "use_quantity", "change": "level-aware taught range so 11-100 counts as target evidence in A1 while Pre-A1 keeps 1-10" }
+    ],
+    "counts": { "preA1Intents": 29, "newA1Intents": 14, "wouldBeUnderOnePerPhrase": 30 },
+    "explosionGuard": "If an arc's design needs more than three new intents, the arc is teaching phrases rather than a capability."
+  },
+
+  "evaluationStrategy": {
+    "deterministic_local": ["state_life_fact", "ask_life_fact", "state_routine", "ask_routine", "ask_location", "state_location", "ask_price", "state_price", "state_ability", "ask_ability", "arrange_meeting", "use_quantity"],
+    "hybrid": ["introduce_person", "state_person_fact", "ask_transport"],
+    "remoteLikely": [],
+    "rule": "The canonical frame is always judged locally. Escalation is for a reply that is inconclusive, exactly as Pre-A1 routes it. No capability is designed to depend on the provider being reachable.",
+    "evidenceEnforcement": "check:hybrid-evaluation and check:repair-evaluation are the runtime gates that prove the evaluator rejects nonsense per intent (level QA acceptance item 4); this reconciliation does not re-derive per-intent nonsense/near-miss/wrong-meaning example sets, since inventing them without reading the runtime evaluator would risk contradicting what actually ships."
+  },
+
+  "counts": {
+    "arcs": 7, "episodes": 21, "episodeRange": "20-24",
+    "canDosRequired": 13, "canDosShould": 3, "canDosOptional": 2, "canDosDeferred": 12,
+    "newPatterns": 19, "newIntents": 14, "newSemanticTypesRequired": 3, "newSemanticTypesShould": 1,
+    "newProductiveVocabularyBudget": 50, "newReceptiveVocabularyBudget": 46,
+    "plannedEpisodeNumbers": [18, 38]
+  },
+
+  "reuseMatrix": {
+    "legendSource": "docs/curriculum/a1-blueprint.json (I introduced, R reused-and-evaluated, C consolidated in an integrated conversation)",
+    "legendMappingToTemplate": "check:a1-arc2 through check:a1-arc5 require every R/C mark to be EXERCISED BY A STEP, not merely recognised — stricter than the template's minimum. An R or C mark in an arc later than the introducing arc satisfies the template's T (transfer: new situation, same capability, per master contract section 6 'topics are contexts, not curriculum') by construction, because every A1 arc is a distinct communicative situation. A C mark additionally satisfies F (fluency: no new language, held together) and, on the closing arc, D (delayed retrieval across a real arc gap). A separate G (guided-only reuse) row does not exist in A1's matrix because guided-only mentions are not counted as reuse evidence at all.",
+    "arcOrder": ["work_and_study", "daily_rhythm", "people_around_you", "finding_your_way", "paying_and_choosing", "what_you_can_do", "making_arrangements"],
+    "rows": {
+      "introduce_self": ["R", "-", "R", "-", "-", "-", "C"],
+      "ask_name": ["R", "-", "R", "-", "-", "-", "-"],
+      "full_greeting": ["-", "-", "R", "-", "-", "-", "-"],
+      "ask_wellbeing": ["-", "-", "R", "-", "-", "-", "C"],
+      "ask_origin": ["R", "-", "-", "-", "-", "-", "-"],
+      "full_conversation": ["C", "-", "C", "-", "-", "-", "-"],
+      "express_preferences": ["-", "R", "-", "-", "R", "R", "C"],
+      "express_needs": ["-", "-", "-", "-", "R", "R", "-"],
+      "make_plan": ["-", "-", "-", "-", "-", "-", "C"],
+      "polite_request": ["-", "-", "-", "R", "R", "-", "R"],
+      "respond_anything_else": ["-", "-", "-", "-", "R", "-", "-"],
+      "cafe_order": ["-", "-", "-", "-", "C", "-", "-"],
+      "ask_for_repair": ["R", "R", "-", "R", "R", "R", "C"],
+      "close_an_encounter": ["R", "-", "R", "R", "R", "-", "C"],
+      "identify_things": ["-", "-", "-", "I-R", "R", "-", "-"],
+      "use_small_numbers": ["-", "R", "-", "-", "R", "-", "R"],
+      "talk_about_work_or_study": ["I", "R", "R", "-", "-", "-", "-"],
+      "ask_about_work_or_study": ["I", "R", "-", "-", "-", "R", "-"],
+      "talk_about_daily_routine": ["-", "I", "-", "-", "-", "R", "-"],
+      "say_when_something_happens": ["-", "I", "-", "-", "R", "-", "C"],
+      "ask_what_something_means": ["-", "I", "R", "R", "R", "R", "R"],
+      "introduce_someone_else": ["-", "-", "I", "-", "-", "-", "R"],
+      "ask_where_something_is": ["-", "-", "-", "I", "R", "-", "-"],
+      "say_where_something_is": ["-", "-", "-", "I", "-", "-", "C"],
+      "ask_about_getting_somewhere": ["-", "-", "-", "I", "-", "-", "-"],
+      "use_bigger_numbers": ["-", "-", "-", "-", "I", "-", "R"],
+      "ask_the_price": ["-", "-", "-", "-", "I", "-", "-"],
+      "buy_something": ["-", "-", "-", "-", "I/C", "-", "-"],
+      "say_what_you_can_do": ["-", "-", "-", "-", "-", "I", "C"],
+      "ask_someone_about_ability": ["-", "-", "-", "-", "-", "I", "R"],
+      "ask_how_to_say_something": ["-", "-", "-", "-", "-", "I", "R"],
+      "arrange_to_meet": ["-", "-", "-", "-", "-", "-", "I/C"]
+    },
+    "singleAppearanceRisks": ["ask_about_getting_somewhere", "ask_the_price", "buy_something"],
+    "mitigation": "The three thin rows are all in the transactions branch. ask_the_price and buy_something return in the closing arc only as receptive input, so the review scheduler carries them; ask_about_getting_somewhere is a should-have and is the first candidate to drop if the level needs trimming."
+  },
+
+  "autonomy": {
+    "early": { "arcs": ["work_and_study", "daily_rhythm"], "modelAnswer": "available while a frame is new, withheld on the arc's last recall", "openProductionsPerEpisode": "2-3", "learnerInitiatedQuestions": "1 per arc", "repair": "planted once per arc" },
+    "mid": { "arcs": ["people_around_you", "finding_your_way", "paying_and_choosing"], "modelAnswer": "withheld on the integrated episode of each arc", "openProductionsPerEpisode": "2-4", "learnerInitiatedQuestions": "1-2 per arc", "repair": "required by design in at least one episode per arc" },
+    "late": { "arcs": ["what_you_can_do", "making_arrangements"], "modelAnswer": "withheld by default; support returns after a wrong answer", "openProductionsPerEpisode": "3-5", "learnerInitiatedQuestions": "2 per arc", "repair": "learner-chosen rather than scripted" },
+    "principle": "Phase is a design expectation, not a rule the engine applies. The support engine keeps deciding from this learner's evidence, exactly as it does in Pre-A1 — per master contract section 10, no level-specific implementation may bypass the central scaffolding logic."
+  },
+
+  "evidenceModel": {
+    "categoriesFromMasterContract": ["recognition", "guidedProduction", "openAssistedProduction", "openIndependentProduction", "transfer", "delayedRetrieval"],
+    "mapping": {
+      "recognition": "comprehension steps (scene, model, comprehension, choice) — the learner understands/chooses",
+      "guidedProduction": "word_order, fill_blank, guided_reply steps — substantial supplied structure",
+      "openAssistedProduction": "free_reply/recall attempts where the shared scaffolding engine recorded a hint, model or suggestion used — see docs/curriculum/adaptive-support.md",
+      "openIndependentProduction": "free_reply/recall/story-reply attempts with no support used; this is the canDos[].evidence.independent count in the live blueprint, a LEVEL target, not an arc-exit requirement (see docs/curriculum/a1-authoring-contract.md 'independent: 2 is a level target, not an arc exit')",
+      "transfer": "an R or C mark in the reuseMatrix in an arc later than the capability's introducing arc — a genuinely new situation exercising the same capability",
+      "delayedRetrieval": "the shared spaced-review scheduler across sessions, extended from Pre-A1's overdue-review rule to the A1+Pre-A1 union (see exitCriteria.readinessDimensionsForA2)"
+    },
+    "graduationRule": "A1 cannot graduate a learner using only recognition or guided production (master contract section 9). Required capabilities need independent (openIndependentProduction) evidence AND transfer evidence; exact numeric thresholds are deliberately not fixed yet — a1-blueprint.json exitCriteria states 'the number is chosen when there is evidence from real journeys, not now', and this reconciliation preserves that honesty rather than inventing a number."
+  },
+
+  "exitCriteria": {
+    "curriculumCompleteA1": "every one of the 21 planned episodes completed at least once",
+    "readinessDimensionsForA2": [
+      { "dimension": "required capabilities produced unaided", "appliesTo": "the 13 required A1 can-dos", "note": "the same shape as Pre-A1's independentEvidencePerCanDo; the number is chosen when there is evidence from real journeys, not now" },
+      { "dimension": "integrated conversations held unaided", "appliesTo": ["daily_rhythm", "paying_and_choosing", "making_arrangements"], "note": "at least the closing one" },
+      { "dimension": "review health", "appliesTo": "required-core items of A1 and of Pre-A1 together", "note": "Pre-A1's overdue-review rule extended to the union, not replaced" },
+      { "dimension": "no fragile required capability", "appliesTo": "the 13 required A1 can-dos" },
+      { "dimension": "breadth", "appliesTo": "the seven skill families", "note": "recent evidence from at least five of them, so a learner cannot leave the level on one branch" }
+    ],
+    "notCriteria": ["every language item at can_use", "any 0-100 score", "episode completion as mastery"],
+    "lastRequiredA1Capability": "arrange_to_meet",
+    "firstA2Capability": "talk_about_what_you_did"
+  },
+
+  "graduationArchitecture": {
+    "milestoneKeyForA1": "levelMilestones.a1",
+    "scales": true,
+    "changeNeeded": "MILESTONE_LEVELS in learnerModel.js currently lists only 'pre_a1'; adding 'a1' is a one-line extension and sanitizeLevelMilestones already loops over the list.",
+    "principle": "curriculumCompleteA1 != currentReadinessA2 != graduatedA1, exactly as Pre-A1 keeps the three apart. Historical, monotonic, idempotent, written where evidence changes.",
+    "status": "not yet implemented — see coreEngineRequirements.a1ReadinessFunction; implementationPhases.phase 8"
+  },
+
+  "factsToCapture": [
+    { "id": "work_or_study", "semanticType": "place", "confidence": "medium", "source": "learner statement in arc 1", "reuseContexts": ["daily_rhythm", "what_you_can_do", "making_arrangements"], "privacy": "no employer names; a neutral category is enough", "store": true, "implementationStatus": "implemented — see docs/curriculum/a1-authoring-contract.md 'work_or_study, the fact arc 1 stores'" },
+    { "id": "usual_time", "semanticType": "time_point", "confidence": "low", "source": "learner statement in arc 2", "reuseContexts": ["making_arrangements"], "privacy": "harmless", "store": true, "implementationStatus": "implemented — see docs/curriculum/a1-authoring-contract.md 'usual_time is captured, not deferred'" },
+    { "id": "can_do_activity", "semanticType": "activity", "confidence": "medium", "source": "learner statement in arc 6", "reuseContexts": ["making_arrangements"], "privacy": "harmless", "store": true, "implementationStatus": "designed only — arc 6 not yet implemented" },
+    { "id": "preferred_day", "semanticType": "day", "confidence": "low", "source": "learner statement in arc 7", "reuseContexts": ["making_arrangements"], "privacy": "harmless", "store": true, "implementationStatus": "designed only — arc 7 not yet implemented" },
+    { "id": "relation_names", "semanticType": "relation", "store": false, "why": "Naming a learner's family is personal data with no reuse the curriculum needs; the arc works with a neutral partner." },
+    { "id": "home_address", "store": false, "why": "Never collected, never practised with real values." },
+    { "id": "phone_number", "store": false, "why": "Never collected." }
+  ],
+
+  "personalizationPlan": {
+    "arcAllowances": "see arcs[].personalizationAllowance and arcs[].neutralFallbackContext above",
+    "compatibleSlotTypes": ["object (a countable thing from semanticContext.THINGS)", "activity", "topic (conversational, never graded)", "subject (the noun in 'I like ___')"],
+    "neutralFallbackRequired": true,
+    "rule": "Every personalised slot must have a neutral value that keeps the English correct, exactly as the semantic layer already enforces for Pre-A1. An arc that cannot run without a remembered fact is a broken arc.",
+    "safeSlots": ["name", "origin", "likes", "interests", "work_or_study", "usual_time", "can_do_activity", "preferred_day"],
+    "invariant": "Personalization may change what the conversation is ABOUT. It may never change canDoId, evaluation intent, mastery threshold, required evidence, prerequisite graph, XP/reward for equivalent work, whether a required capability can be skipped, or the grammar/vocabulary burden expected for the level (master contract section 7).",
+    "topicDiversityExpectation": "governed by the shared topic-diversity policy (master contract section 8: explicit interests appear often enough to feel personal, the same interest does not dominate consecutive sessions, neutral real-life contexts remain present) — this is shared/core engine behaviour, not an A1-specific rule, and A1 does not override it.",
+    "qaProof": "check:interest-personalization proves the contract with a synthetic template never registered as an episode; invariantDrift(storyA, storyB) is how an author proves two personalisations still teach the same thing (docs/curriculum/a1-authoring-contract.md 'Interest personalization')."
+  },
+
+  "evaluationRequirements": {
+    "newIntentsAndSubtypes": "see intentStrategy and evaluationStrategy above",
+    "exampleCategoriesRequiredPerIntent": ["clearly correct", "natural variant", "near miss", "wrong meaning", "nonsense", "correct meaning but insufficient target form (where form matters)"],
+    "note": "This reconciliation does not author the concrete example sentences per intent — that is runtime evaluator/episode-authoring work already covered by check:hybrid-evaluation, check:repair-evaluation and check:edge-cases for arcs 1-5, and remains outstanding for the not-yet-implemented arcs 6-7. Inventing example sentences here without reading the live evaluator source would risk asserting behaviour that does not match runtime.",
+    "canAmbiguity": "see coreEngineRequirements.canAmbiguity — the one flagged evaluator design problem in the level"
+  },
+
+  "fourStrandsAudit": {
+    "meaningFocusedInput": "present throughout via scene/comprehension/story steps; heaviest in finding_your_way (comprehending real, partly-unknown answers) and the daily_rhythm/finding_your_way/making_arrangements hosted stories",
+    "meaningFocusedOutput": "the level's dominant strand — every arc's evidence target is an unaided statement or question in a real communicative frame",
+    "languageFocusedLearning": "concentrated early: work_and_study introduces the level's core statement frame, daily_rhythm is explicitly the level's densest pattern moment (three new pattern groups); density drops through the middle arcs and is near zero in the closing arcs",
+    "fluencyDevelopment": "strongest in the closing episodes of each arc (integration/consolidation episodes carry a newLanguageBudget near zero) and across the whole of making_arrangements, which introduces almost nothing new and holds prior language together under a withheld model answer",
+    "outOfScope": "listening, speaking and pronunciation remain separate future capabilities per master contract section 13 and the CLAUDE.md voice/media boundary; A1 implements and tests only reading/meaning-focused input, written meaning-focused output, chat/roleplay interaction, form-focused learning and written fluency development"
+  },
+
+  "interactionDiscourseMediation": {
+    "turnTakingAndRepair": "inherits Pre-A1's ask_for_repair and adds two new repair frames (ask_meaning, ask_how_to_say); repair is planted by design in the early/mid arcs and learner-chosen by the late arcs",
+    "conversationLength": "grows from 6 meaningful turns (work_and_study) to 12 (making_arrangements), staying within the level's own ceiling of one situation and one topic",
+    "discourseCoherence": "single-topic by design at A1 (interactionCeiling); no A1 arc requires the learner to follow a topic change, which is explicitly deferred (cannotYet: 'sustain a conversation that changes topic more than once')",
+    "summarizationOrMediationTasks": "none — mediation-like tasks (summarizing/simplifying for another person) are not an A1 capability; the master contract lists mediation as an available text-first mode in principle (section 13) but A1's arcs do not need it, and no mediation intent is proposed here",
+    "registerAndPragmatics": "minimal at A1: polite forms inherited from Pre-A1 (polite_request, close_an_encounter); no register distinction is taught or assessed, consistent with the level's ceiling"
+  },
+
+  "explicitExclusions": {
+    "deferredToA2": [
+      { "id": "talk_about_what_you_did", "why": "A second tense doubles every pattern the level owns. It is the first A2 capability precisely because it is the obvious next unlock.", "firstA2": true },
+      { "id": "talk_about_future_plans_with_going_to", "why": "A present tense with a time word already arranges things. going_to adds a form without adding a function A1 needs." },
+      { "id": "explain_a_reason", "why": "because turns one clause into two. Choice and preference work without it at this level." },
+      { "id": "follow_multi_step_directions", "why": "Asking where something is and understanding a short answer is the autonomy; left/right/straight sequences are a comprehension load of their own." },
+      { "id": "describe_people_and_places", "why": "One attribute is enough for A1 (She's a student). Adjective order, plurals and there is/are belong together, later." },
+      { "id": "third_person_s_productive", "why": "Heard throughout A1, produced in A2. The morphology costs more than the capability it adds while is covers most needs." },
+      { "id": "dates_and_months", "why": "Days of the week serve arrangements. Dates need ordinals and a second number system." },
+      { "id": "spell_aloud", "why": "The alphabet is a system, not a phrase, and it pays off mainly with contact details this product does not collect." },
+      { "id": "accommodation_and_travel_booking", "why": "A new context with its own vocabulary, when the transactional muscle A1 builds is already exercised by a shop and a counter." },
+      { "id": "comparatives", "why": "Choosing works with this one at A1. Comparison is a structure with no A1 function." },
+      { "id": "frequency_full_set", "why": "Two adverbs make a routine truthful. Four make a grammar exercise." },
+      { "id": "give_personal_contact_details", "why": "Deliberate product decision: the curriculum never trains a learner to type real personal data." }
+    ],
+    "optionalOrNotTaken": [
+      { "id": "say_your_age", "scope": "optional", "why": "Cheap to say and rarely needed to act. Available as receptive input inside personal exchanges; not a required production." },
+      { "id": "describe_someone_simply", "scope": "optional", "why": "Trimmed from the required set in review: He's a student already carries the function, and adjectives invite a catalogue." },
+      { "id": "colours", "scope": "not_taken", "why": "A vocabulary set looking for a capability. If choosing ever needs it, this one is doing the work." },
+      { "id": "understand_simple_written_instructions", "scope": "not_taken", "why": "Mostly interface language, which the product already localises." }
+    ]
+  },
+
+  "coreEngineRequirements": [
+    {
+      "id": "canAmbiguity",
+      "problem": "'Can you...?' already exists in Pre-A1 as a polite request ('Can you repeat, please?'). A1 arc what_you_can_do adds 'Can you swim?' as a question about ability. Same surface words, different communicative act.",
+      "whyEngineCannotExpressItYet": "the evaluator currently has one repair_request-style handling for 'can you' requests; nothing yet disambiguates ability sense from request sense",
+      "earliestLevelNeeded": "A1, arc what_you_can_do (episodes 34-35)",
+      "proposedSharedBehaviour": "disambiguate by the semantic type of what follows the verb (an activity-type complement signals ability; a communicative-act complement like 'repeat' or 'say that again' signals request), per a1-blueprint.json canDos.say_what_you_can_do.architecturalNote",
+      "regressionRisk": "must not break Pre-A1's existing 'Can you repeat, please?' request handling",
+      "testsRequired": "a future check:a1-arc6 plus a regression case added to check:hybrid-evaluation exercising both senses",
+      "status": "OPEN — arc what_you_can_do is designed only; this is blocking content for that arc, not for arcs already implemented"
+    },
+    {
+      "id": "a1ReadinessFunction",
+      "problem": "A1 needs its own readiness/graduation derivation (levelMilestones.a1), the same shape as Pre-A1's readiness.js/graduation.js pair, but scoped to A1's 13 required capabilities plus the exitCriteria.readinessDimensionsForA2 dimensions.",
+      "whyEngineCannotExpressItYet": "MILESTONE_LEVELS in learnerModel.js currently lists only 'pre_a1'; no A1-specific readiness function exists",
+      "earliestLevelNeeded": "A1's own exit gate (implementation phase 8), not any individual arc",
+      "proposedSharedBehaviour": "extend MILESTONE_LEVELS with 'a1' (sanitizeLevelMilestones already loops over the list per a1-blueprint.json graduationArchitecture.changeNeeded) and add an A1 readiness derivation mirroring pre_a1's shape",
+      "regressionRisk": "must not change Pre-A1's own readiness/graduation behaviour",
+      "testsRequired": "two-learner journey tests analogous to check:pre-a1-journeys, run against A1 once all seven arcs are implemented",
+      "status": "OPEN — explicitly deferred, not blocking arcs 1-7 content authoring"
+    },
+    {
+      "id": "perArcChunkLoading",
+      "problem": "twenty-one episodes could not live in one lazy chunk without growing the entry bundle.",
+      "status": "RESOLVED — implemented in phase 0 before episode 18 shipped; see docs/curriculum/a1-authoring-contract.md 'One registry, and the player goes through it' and 'The entry-chunk budget, restated'. Kept here only so a future reader does not re-discover it as open."
+    },
+    {
+      "id": "levelAwareCurriculumRegistry",
+      "problem": "the original registry was one flat Pre-A1 list with no level concept.",
+      "status": "RESOLVED — see docs/curriculum/a1-authoring-contract.md sections 'The registry' and 'Who asks the registry'."
+    },
+    {
+      "id": "sessionRunnerObjectiveFormatGuard",
+      "problem": "an objective missing from OBJECTIVE_FORMATS was allowed every format, so an unknown A1 intent could be planned as a mini_story and silently graded as something else — the defect the closure audit found in Pre-A1's sixth arc, then re-triggered in A1 arc 2 before arc 3 fixed it generally.",
+      "status": "RESOLVED — see docs/curriculum/a1-authoring-contract.md 'The systemic bug this arc had to fix first'; check:memory-and-story holds the general fix permanently."
+    }
+  ],
+
+  "qaAcceptance": {
+    "structuralBlueprintValidation": "check:a1-blueprint (validates the live a1-blueprint.json and that no runtime module imports it)",
+    "authoringContract": "check:curriculum-authoring, applied per this document's carried authoringContract block below",
+    "perArcRuntimeGates": "check:a1-arc1 through check:a1-arc5 for implemented arcs; check:a1-arc6/7 do not exist yet and must be created before those arcs can be marked implemented",
+    "evaluatorRefusalTests": "check:hybrid-evaluation, check:repair-evaluation, check:edge-cases",
+    "personalizationInvariantTests": "check:interest-personalization",
+    "prerequisiteAndReuseTests": "check:curriculum-map, per-arc reuse assertions inside check:a1-arc2 through check:a1-arc5",
+    "journeysPerCompletedArc": "at least 20 varied learner-shaped journeys per completed arc, per LC-PED-001 (docs/curriculum/pedagogical-journeys-report.md) and CLAUDE.md's pedagogical acceptance rule",
+    "assistedVsIndependentProof": "docs/curriculum/adaptive-support.md's shared scaffolding engine, exercised per arc",
+    "transferAndDelayedRetrieval": "reuseMatrix R/C marks (transfer) and the shared spaced-review scheduler (delayed retrieval), see evidenceModel",
+    "replayIdempotency": "check:episode-replay",
+    "noFalseMastery": "check:learner-facts, check:activity-signals — a fact/garden item is only granted from the learner's own words, never from a copied model answer",
+    "browserUsability": "390px and 1440px, light/dark where relevant, per CLAUDE.md QA protocol; verified per-arc as each arc shipped (see a1-authoring-contract.md per-arc sections)",
+    "twoCleanFullCycles": "required after the final change of any implementation sprint, per CLAUDE.md QA protocol"
+  },
+
+  "crossLevelAcceptance": {
+    "priorLevelExitSuppliesPrerequisites": "A1's own prerequisites resolve entirely to Pre-A1's required-core capabilities (see dependencyGraphValidation); Pre-A1 is frozen and already proven (docs/curriculum/pre-a1-freeze.md, check:pre-a1-journeys, check:graduation)",
+    "noUnpreparedLanguageJump": "A1's first capability (talk_about_work_or_study) is the smallest step from Pre-A1's personal exchange (a1-map.md section 5); this must be re-confirmed once A2's LC-BP-A2 blueprint exists, since A2's first capability (talk_about_what_you_did) needs A1's present-tense statement frame as its base",
+    "noDuplicatedCapabilityAlreadyTaught": "verified by this reconciliation against Pre-A1's 16 capabilities (preA1Inheritance) — no A1 capability restates a Pre-A1 one; the one open question is cefrCaveats.arrangeToMeet against a possible A2 arrangement capability, flagged for LC-BP-A2/LC-AUD-001",
+    "oldRequiredCapabilitiesContinueToReceiveUsefulReuse": "see reuseMatrix — every Pre-A1 required-core capability that entered A1 thin (make_plan, use_small_numbers, cafe_order, full_conversation) is consolidated at least once inside A1",
+    "complexityRisesCoherently": "A1 stays within one situation/one topic per interactionCeiling, matching master contract section 4's A1 definition; A2's job (master contract section 4) is to add connected clauses, which A1 deliberately does not attempt",
+    "graduationEvidenceAttainableThroughRealRuntimePaths": "PARTIALLY OPEN pending coreEngineRequirements.a1ReadinessFunction; the underlying per-episode evidence itself is already recordable in the learner model for implemented arcs",
+    "obligationForLaterBlueprints": "LC-BP-A2 must read this file's cefrCaveats and explicitExclusions.deferredToA2 as its own required starting inputs, per master contract section 20 ('reconcile the existing live blueprint into the master contract' precedes new-level design)"
+  },
+
+  "humanPilotQuestions": [
+    "does the can/can't ability-vs-request disambiguation feel natural to a real beginner once arc what_you_can_do ships, or does it produce confusing corrections?",
+    "does arrange_to_meet feel genuinely A1-appropriate to real beginners, or does fixing a day/time/place in one held conversation feel like an A2-level task despite the tight ceiling (see cefrCaveats.arrangeToMeet)?",
+    "do the two single-appearance transactional capabilities (ask_the_price, buy_something) need a second live exposure earlier than the review scheduler alone provides, once real delayed-retention data exists?",
+    "does daily_rhythm's density (three new pattern groups in one arc, the level's admitted densest moment) produce measurable frustration or dropout compared to lighter arcs?",
+    "does light personalization on paying_and_choosing and what_you_can_do feel personal to a real learner, or repetitive across sessions?",
+    "does withholding the model answer by default in the late arcs (what_you_can_do, making_arrangements) measurably affect confidence or completion, compared to the early/mid arcs' more available support?"
+  ],
+
+  "authoringContract": {
+    "everyFutureEpisodeMustDeclare": ["id", "level", "arc", "canDoId", "role (primary or reinforcement)", "curriculumPrerequisites", "skillPrerequisites", "titleKey", "goalKey", "canDoNameKey", "durationKey", "estimatedMinutes", "xp", "steps", "each productive step's evalKind", "semantic slots where a step personalises", "gardenItems", "receptive items declared as receptive", "reuse skills the episode exercises"],
+    "mustNotDeclare": ["fields no runtime reads", "targetItems, reviewItems or personalized — all three are derived", "a can-do that no step produces"],
+    "checksThatMustPassPerArc": ["a new can-do that is actually produced in an open turn", "declared reuse actually exercised by a step", "every evalKind present in the session runner's prompt and model-answer tables", "every semantic slot compatible with the intent", "every Garden grant reachable and in the vocabulary catalogue", "every locale key present in all eight locales", "no prerequisite cycle", "the arc's content absent from the entry chunk", "two consecutive clean cycles"]
+  },
+
+  "risks": [
+    { "id": "textbook_drift", "risk": "The level slides into topic units — food, family, clothes.", "mitigation": "Every arc names a communicative problem before a topic, and no arc exists for a vocabulary set." },
+    { "id": "pattern_overload", "risk": "Time, numbers, questions and third person all arriving at once.", "mitigation": "One new pattern group per episode, two only on an integration episode; the number extension arrives as prices." },
+    { "id": "intent_explosion", "risk": "One intent per phrase would add thirty for twenty-one episodes.", "mitigation": "Fourteen intents plus subtypes on existing ones; repair grows by repairKind, quantity by range." },
+    { "id": "garden_explosion", "risk": "Every scene word becoming a tracked item.", "mitigation": "Days of the week and numbers 11-100 are one item each, as numbers_1_10 already is; receptive input is not granted." },
+    { "id": "can_ambiguity", "risk": "Ability can colliding with Pre-A1's request can.", "mitigation": "Documented as the level's one real evaluator debt; see coreEngineRequirements.canAmbiguity — the ability arc must resolve it with a rule, not a second intent." },
+    { "id": "thin_transactions_branch", "risk": "Price and purchase appearing once each.", "mitigation": "Both return as receptive input in the closing arc and are carried by the review scheduler; the should-have transport episode is the trim candidate." },
+    { "id": "single_chunk_a1", "risk": "Twenty-one episodes in one lazy chunk.", "mitigation": "RESOLVED — see coreEngineRequirements.perArcChunkLoading." },
+    { "id": "copy_volume", "risk": "Twenty-one episodes times eight locales.", "mitigation": "Arc-sized sprints, each finishing with complete locales; the i18n check already fails on a missing key." },
+    { "id": "arrange_to_meet_cefr_boundary", "risk": "arrange_to_meet may read closer to A2's goal-oriented co-operation band than A1's information-exchange band.", "mitigation": "see cefrCaveats.arrangeToMeet; flagged for LC-BP-A2 and LC-AUD-001 rather than silently resolved here." }
+  ]
+}
