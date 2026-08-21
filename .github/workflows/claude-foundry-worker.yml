@@ -116,16 +116,25 @@ jobs:
 
             EVIDENCE RULES FOR RESEARCH LANES
             - Each research batch must add at least 25 NEW unique PRIMARY empirical studies after deduplication.
-            - Reviews/meta-analyses/theory papers are maps, not primary-study count.
-            - Verify each record against authoritative primary/publisher/index sources (DOI/Crossref, PubMed/NCBI,
-              ERIC/IES, university repositories, or the peer-reviewed publisher). Use multiple identifiers where possible.
-            - Never invent a DOI, sample, institution, result or limitation. If a fact cannot be verified, omit the study.
-            - Record design, sample when available, institution, venue, topic, measured outcome, limitations,
-              persistentId, sourceUrl, qualityGrade A/B, sourceType=primary and verified=true.
-            - Results that conflict with other studies stay in the corpus. Do not cherry-pick.
+            - Reviews, meta-analyses and theory papers are discovery maps, not primary-study count.
+            - Verify every counted record against authoritative identity/primary sources. At minimum every record must
+              have TWO distinct HTTPS verificationSources, with at least one identity source from DOI.org/Crossref,
+              PubMed/NCBI or ERIC/IES. Publisher/university repositories can be the other source.
+            - Never invent or infer a DOI, sample size, population, institution, result, limitation, identifier or
+              quality grade. If a required field cannot be verified, OMIT the study instead of filling a guess.
+            - EVERY primary-study JSON record must contain all of these fields exactly enough for the deterministic gate:
+              id, title, authors, year, design, sampleSize (positive integer), population, venue, institution, topic,
+              outcome, limitations, sourceUrl (HTTPS), persistentId (DOI/PMID/ERIC), verificationSources (>=2 distinct
+              HTTPS URLs including DOI/Crossref/PubMed/ERIC), verifiedAt (ISO date/date-time), qualityGrade (A or B),
+              qualityRationale, sourceType="primary", verified=true.
+            - Results that conflict with other studies stay in the corpus. Do not cherry-pick positive findings.
             - Pedagogy research must stay about second-language acquisition/teaching/assessment.
             - Psychology research is learning psychology (memory, retrieval, spacing, cognitive load, motivation,
               self-regulation, feedback, transfer, anxiety/affect in learning, habits/engagement), not diagnosis or therapy.
+            - Before a research batch is allowed to call itself complete, run its real partial gate:
+                pedagogy:  node .github/scripts/check-supervisor-evidence.mjs --partial pedagogical
+                psychology: node .github/scripts/check-supervisor-evidence.mjs --partial psychology
+              A malformed, duplicate, unverifiable or non-primary record is a hard failure, even before 100 studies.
 
             CURRICULUM QUALITY RULES
             - Interests may change contexts, examples and occasional events; they must never change the capability
@@ -146,9 +155,10 @@ jobs:
             3. Run:
                  node .github/scripts/check-foundry-scope.mjs --branch "${{ steps.task.outputs.branch }}" --base origin/main --head HEAD
                before the final push.
-            4. For tasks whose manifest says requiresEvidenceReady=true, also run:
+            4. Research tasks must also run the matching --partial supervisor evidence gate above.
+               Tasks whose manifest says requiresEvidenceReady=true must additionally run:
                  node .github/scripts/check-supervisor-evidence.mjs
-               and do not complete unless it passes.
+               and must not complete unless the 100+100 full gate passes.
             5. Only when truly finished create .ai/foundry/completed/${{ inputs.task_id }}.json containing at least:
                  {"taskId":"${{ inputs.task_id }}","lane":"${{ inputs.lane }}","status":"complete","cleanCycles":2}
                Do not create this marker for partial work.
