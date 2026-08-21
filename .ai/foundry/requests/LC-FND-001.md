@@ -152,3 +152,17 @@ information once the owner has already confirmed the blocker — do not repeat
 it unless `main` has moved, `check-foundry-scope.mjs` has changed, or new PR
 feedback arrives. This task's own deliverable remains done; it is waiting on
 the shared-automation fix above (or a manual merge), not on further work here.
+
+## Resynced 2026-08-21 (main moved, trivial and out of scope)
+
+`main` advanced by one commit (`chore(ops): release LC-DOC-001 so its existing
+work can resume`, `.ai/TASKS.md` only) — outside this task's `writeScopes` and
+unrelated to its content. `.github/scripts/check-foundry-scope.mjs` is
+byte-identical to the version already diagnosed; no new PR feedback since the
+owner's 07:17:38Z confirmation. Merged `main` in (no conflicts; only
+`.ai/TASKS.md` changed) and re-ran `check-foundry-scope.mjs --require-complete`
+from this branch's own checkout: `Foundry scope OK for LC-FND-001: 6 changed
+files`, marker still validated. Did not re-run the full frontend/backend QA
+cycles — none of the four in-scope documents or the completion marker changed,
+so the prior two clean cycles still stand. This task remains done and blocked
+only on the shared-automation fix described above.
