@@ -128,3 +128,27 @@ finding, re-confirmed end to end:
 Still no content or scope change needed. The deliverable has been complete and
 evidence-backed across three sessions now; the only blocker remains the
 ref-unaware marker check in shared automation, outside this task's `writeScopes`.
+
+## Owner-confirmed 2026-08-21T07:17:38Z
+
+The repo owner reviewed PR #37 and confirmed this diagnosis directly (see PR
+comment at that timestamp): `check-foundry-scope.mjs --require-complete` reads
+the completion marker off the physical working tree (`existsSync`/
+`readFileSync`) instead of the candidate `--head` ref, so it can falsely fail
+every correct Foundry PR whose marker exists only on the candidate branch. The
+owner's explicit direction: keep PR #37 Draft, do not work around or weaken the
+gate, and do not edit shared automation from this scope-limited branch. The fix
+belongs in the serial queue (or a dedicated `LC-OPS-*` Foundry task) and must
+change marker validation to read the candidate ref (e.g. `git show
+${head}:${marker}`), keep `changed.includes(marker)`, and add a regression that
+runs the guard from a `main` checkout against a separate foundry head
+containing the marker, with two clean full cycles after the fix.
+
+Resumed sessions after this point: `main` has not moved since this branch's
+last sync (verified via `git merge-base --is-ancestor origin/main HEAD`) and
+the four in-scope documents plus the completion marker are unchanged and still
+correct. Re-running the full QA/re-verification loop every session adds no new
+information once the owner has already confirmed the blocker — do not repeat
+it unless `main` has moved, `check-foundry-scope.mjs` has changed, or new PR
+feedback arrives. This task's own deliverable remains done; it is waiting on
+the shared-automation fix above (or a manual merge), not on further work here.
