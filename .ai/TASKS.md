@@ -17,20 +17,12 @@ _(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
-- [LC-CURR-006] Implement A1 arc 6 `what_you_can_do` from the live blueprint
-  owner:  unclaimed
-  branch: none
-  why:    A1 arc 6 is designed but not implemented; the final A1 pedagogical gate cannot run until arcs 6 and 7 exist.
-  done:   implement only A1 `what_you_can_do`, episodes 34–35, from
-          `docs/curriculum/a1-blueprint.json` and `docs/curriculum/a1-map.md`;
-          preserve Pre-A1 unchanged and keep A1 `available: false`; prove the
-          episode flows with happy path, wrong/retry, assisted/model use and replay
-          without duplicate reward; keep locale-copy work separate; run frontend/
-          backend evaluator parity where affected, rendered 390px/1440px proof for
-          es/ja/ar, `check:all`, build, `check:i18n`, compileall and pytest, then two
-          consecutive clean full cycles after the final fix. Final bookkeeping must
-          hand off arc 7 as a separate serial curriculum task rather than implement it
-          inside this task.
+_(none — the queue is open. Do not seed a new serial `LC-CURR-006`/`LC-CURR-007`
+for A1 arcs 6–7: the merged Curriculum Foundry pipeline
+(`.ai/foundry/tasks.json`, `.ai/foundry/README.md`) now owns remaining A1
+curriculum work through its `LC-CONT-A1` lane, gated behind
+`LC-FND-002`/`LC-AUD-001`/the evidence-ready supervisor gates. A serial task
+here would duplicate or conflict with that lane's write scope.)_
 
 ## BLOCKED
 
@@ -61,7 +53,7 @@ _(none — the queue is open)_
 
 ## DONE
 
-- [LC-DOC-001] Reconcile README and historical repository debris with the real product — PR #34; README corrected, proven-unused legacy frontend/text debris removed, no runtime code changed; final coordination seeds LC-CURR-006 and keeps Supabase fail-closed.
+- [LC-DOC-001] Reconcile README and historical repository debris with the real product — PR #34; README rewritten to describe the real product (Lingua/Chatto identity, frozen Hoy·Chats·Palabras·Tú nav, honest Pre-A1 frozen/A1 partial-unavailable curriculum state, one `user_language`, eight implemented auxiliary locales with Arabic RTL, explicit deferred/unimplemented boundaries); proven-unused legacy debris (`linguachat-frontend-old/` CRA tree, empty `pacientes.txt`/`procedimientos.txt`) removed after confirming zero references anywhere outside their own initial commit; no runtime frontend/backend code changed. Reconciled against the Curriculum Foundry pipeline merged to `main` after this branch was first opened — the queue is left open rather than seeding a new serial `LC-CURR-006`, since Foundry's `LC-CONT-A1` lane (`.ai/foundry/tasks.json`) now owns remaining A1 arc 6–7 work and a duplicate serial task would conflict with its write scope. Supabase stays fail-closed under `LC-CLOUD-001`.
 - [LC-BE-001] Remove the Pydantic V1 validator deprecation safely — PR #33; migrated to `field_validator`, behavior preserved, 444 pytest.
 - [LC-SEC-001] Audit and safely resolve frontend dependency vulnerabilities — PR #32; safe compatible upgrades, `npm audit` 0, no forced audit fix.
 - [LC-QA-001] Extend `check:i18n` into a real source linter — PR #31; reachable-source AST linting for raw keys, hardcoded auxiliary copy and duplicate keys.
