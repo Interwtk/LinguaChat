@@ -24,7 +24,7 @@ function hasPersistentIdentity(value='') {
     /^https:\/\/doi\.org\/10\.\d{4,9}\//.test(v) || /^pmid:\s*\d+$/.test(v) || /^eric:\s*[a-z0-9-]+$/.test(v)
 }
 
-export function validateCorpus(domain, records) {
+export function validateCorpus(domain, records, { requireReady = true } = {}) {
   if (!Array.isArray(records)) return { domain, records: [], errors: ['root must be a JSON array'], uniqueCount: 0, topicCounts: {} }
   const errors = []
   const seenId = new Set(), seenStudy = new Set()
@@ -64,27 +64,37 @@ export function validateCorpus(domain, records) {
     if (topic) topicCounts.set(topic, (topicCounts.get(topic) || 0) + 1)
   })
   const uniqueCount = seenStudy.size
-  if (uniqueCount < MIN) errors.push(`${domain}: ${uniqueCount}/${MIN} unique verified primary studies`)
-  const topicValues = [...topicCounts.values()]
-  if (topicCounts.size < 6) errors.push(`${domain}: only ${topicCounts.size} topics; need >=6`)
-  if (uniqueCount >= MIN && topicValues.some(n => n > Math.floor(uniqueCount * 0.35))) errors.push(`${domain}: one topic exceeds 35% of the evidence base`)
-  const strongTopics = topicValues.filter(n => n >= 8).length
-  if (uniqueCount >= MIN && strongTopics < 5) errors.push(`${domain}: fewer than 5 topics have >=8 studies`)
+  if (requireReady) {
+    if (uniqueCount < MIN) errors.push(`${domain}: ${uniqueCount}/${MIN} unique verified primary studies`)
+    const topicValues = [...topicCounts.values()]
+    if (topicCounts.size < 6) errors.push(`${domain}: only ${topicCounts.size} topics; need >=6`)
+    if (uniqueCount >= MIN && topicValues.some(n => n > Math.floor(uniqueCount * 0.35))) errors.push(`${domain}: one topic exceeds 35% of the evidence base`)
+    const strongTopics = topicValues.filter(n => n >= 8).length
+    if (uniqueCount >= MIN && strongTopics < 5) errors.push(`${domain}: fewer than 5 topics have >=8 studies`)
+  }
   return { domain, records, errors, uniqueCount, topicCounts: Object.fromEntries(topicCounts) }
 }
 
-function load(domain, url) {
+function load(domain, url, options) {
   if (!existsSync(url)) return { domain, records: [], errors: [`missing ${url.pathname}`], uniqueCount: 0, topicCounts: {} }
   let records
   try { records = JSON.parse(readFileSync(url, 'utf8')) } catch (e) { return { domain, records: [], errors: [`invalid JSON: ${e.message}`], uniqueCount: 0, topicCounts: {} } }
-  return validateCorpus(domain, records)
+  return validateCorpus(domain, records, options)
 }
 
 function runCli() {
+  const partialIndex = process.argv.indexOf('--partial')
+  const partial = partialIndex >= 0
+  const requestedDomain = partial && process.argv[partialIndex + 1] && !process.argv[partialIndex + 1].startsWith('--') ? process.argv[partialIndex + 1] : null
+  const entries = requestedDomain ? [[requestedDomain, FILES[requestedDomain]]] : Object.entries(FILES)
+  if (requestedDomain && !FILES[requestedDomain]) {
+    console.error(`Unknown evidence domain: ${requestedDomain}`)
+    process.exit(2)
+  }
   let failed = false
-  for (const [domain, url] of Object.entries(FILES)) {
-    const result = load(domain, url)
-    console.log(`${domain}: ${result.uniqueCount || 0}/${MIN} unique primary studies; ${Object.keys(result.topicCounts || {}).length} topics`)
+  for (const [domain, url] of entries) {
+    const result = load(domain, url, { requireReady: !partial })
+    console.log(`${domain}: ${result.uniqueCount || 0}${partial ? '' : `/${MIN}`} unique primary studies; ${Object.keys(result.topicCounts || {}).length} topics`)
     if (result.errors.length) {
       failed = true
       for (const e of result.errors.slice(0, 80)) console.error(`- ${e}`)
@@ -92,7 +102,8 @@ function runCli() {
     }
   }
   if (failed) process.exit(1)
-  console.log('Supervisor evidence gate: READY (100+100 unique, identity-verified, primary empirical studies).')
+  if (partial) console.log('Supervisor evidence partial gate: every present primary-study record is structurally verifiable and deduplicated.')
+  else console.log('Supervisor evidence gate: READY (100+100 unique, identity-verified, primary empirical studies).')
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) runCli()
