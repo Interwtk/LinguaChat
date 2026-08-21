@@ -58,6 +58,33 @@ jobs:
           echo "claimable=true" >> "$GITHUB_OUTPUT"
           echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
 
+      - name: Bootstrap exact resumable branch and draft PR
+        if: steps.task.outputs.claimable == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.task.outputs.branch }}
+          TASK_ID: ${{ inputs.task_id }}
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            git fetch origin "$BRANCH" --quiet
+            git switch -C "$BRANCH" "origin/$BRANCH"
+          else
+            git switch -c "$BRANCH"
+            git commit --allow-empty -m "chore(foundry): bootstrap $TASK_ID"
+            git push -u origin "$BRANCH"
+          fi
+
+          OPEN=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
+          if [ "$OPEN" = "0" ]; then
+            gh pr create --draft --base main --head "$BRANCH" \
+              --title "WIP: $TASK_ID" \
+              --body $'## Summary\nAutomatic bootstrap draft. Resume this exact task/branch.\n\n## Evidence\nIncomplete — do not merge.'
+          fi
+
       - name: Refuse clearly if the Claude token is absent
         if: steps.task.outputs.claimable == 'true'
         env:
@@ -108,9 +135,9 @@ jobs:
             - Never edit .ai/TASKS.md, .ai/STATE.md or .ai/HANDOFF.md. The serial product queue remains independent.
             - Work only inside this task's writeScopes from .ai/foundry/tasks.json, plus its own
               .ai/foundry/completed/<TASK>.json and .ai/foundry/requests/<TASK>.md.
-            - Use exactly the branch above. If it exists, resume it and its open PR; do not restart.
+            - The exact branch above is already checked out and has a Draft PR before you start. Resume it; do not restart.
             - Rebase/merge current main before final validation. Resolve only conflicts inside your allowed scope.
-            - Open or preserve a DRAFT PR quickly. Push checkpoints. Never claim work or tests that did not happen.
+            - Preserve the DRAFT PR while working. Push checkpoints. Never claim work or tests that did not happen.
             - If a required change is outside your scope, do not make it secretly. Record the exact blocker in the PR
               and .ai/foundry/requests/<TASK>.md. Keep the PR draft.
 
@@ -182,8 +209,8 @@ jobs:
         run: |
           set -euo pipefail
           if ! git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-            echo "Worker ended before pushing a branch; the watchdog will dispatch this task again." >> "$GITHUB_STEP_SUMMARY"
-            exit 0
+            echo "::error::Bootstrap invariant broken: expected remote branch $BRANCH"
+            exit 1
           fi
           OPEN=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
           if [ "$OPEN" = "0" ]; then
