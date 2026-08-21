@@ -14,13 +14,15 @@ const i18n = read('.github/workflows/claude-i18n.yml')
 const mention = read('.github/workflows/claude-mention.yml')
 const qa = read('.github/workflows/qa.yml')
 const mergeScript = read('.github/scripts/merge-agent-pr.sh')
+const foundryScope = read('.github/scripts/check-foundry-scope.mjs')
+const evidenceScript = read('.github/scripts/check-supervisor-evidence.mjs')
 const nextTask = join(root, '.github/scripts/next-task.mjs')
 
 let groups = 0
 const ok = () => { groups++ }
 
 // 1. The chain, not a worker, owns the scheduler.
-assert.match(chain, /schedule:\s*\n\s*#?[\s\S]*?cron:\s*['"]17 \* \* \* \*['"]/) 
+assert.match(chain, /schedule:\s*\n\s*#?[\s\S]*?cron:\s*['"]17 \* \* \* \*['"]/)
 assert.doesNotMatch(task, /^\s*schedule:/m)
 assert.doesNotMatch(i18n, /^\s*schedule:/m)
 ok()
@@ -150,6 +152,22 @@ assert.equal(runQueue(`
 ## DONE
 - [LC-OPS-111] dependency
 `), 'LC-I18N-001')
+ok()
+
+// 14. Docs agent branches are first-class and normal merges preserve their evidenced
+// final trees instead of replaying merge-history commits through a forced rebase.
+assert.match(mergeScript, /curr\/\*\|i18n\/\*\|qa\/\*\|ops\/\*\|docs\/\*\|fix\/\*/)
+assert.match(mergeScript, /curr\/\*\|i18n\/\*\|qa\/\*\|ops\/\*\|docs\/\*\)/)
+assert.match(mergeScript, /gh pr merge "\$NUMBER" --merge --delete-branch/)
+assert.doesNotMatch(mergeScript, /gh pr merge "\$NUMBER" --rebase/)
+ok()
+
+// 15. Foundry completion and evidence must both be evaluated from the same candidate
+// head. This pins the checkout-vs-ref bug that cycled valid research PRs to Draft.
+assert.match(foundryScope, /\['--partial', domain, '--ref', head\]/)
+assert.match(foundryScope, /\[evidenceScript, '--ref', head\]/)
+assert.match(evidenceScript, /git', \['show', `\$\{ref\}:\$\{spec\.path\}`\]/)
+assert.match(evidenceScript, /missing \$\{spec\.path\} at \$\{ref\}/)
 ok()
 
 console.log(`check-cloud-automation — OK (${groups} groups)`)
