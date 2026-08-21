@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import { execFileSync, spawnSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
 import process from 'node:process'
 import { loadManifest } from './foundry-next.mjs'
 
@@ -51,12 +50,19 @@ if (violations.length) {
 console.log(`Foundry scope OK for ${task.id}: ${changed.length} changed files.`)
 
 if (requireComplete) {
-  if (!changed.includes(marker) || !existsSync(marker)) {
+  if (!changed.includes(marker)) {
+    console.error(`Ready PR must add ${marker}`)
+    process.exit(1)
+  }
+  let markerText
+  try {
+    markerText = execFileSync('git', ['show', `${head}:${marker}`], { encoding:'utf8', stdio:['ignore','pipe','pipe'] })
+  } catch (e) {
     console.error(`Ready PR must add ${marker}`)
     process.exit(1)
   }
   let m
-  try { m = JSON.parse(readFileSync(marker, 'utf8')) } catch (e) {
+  try { m = JSON.parse(markerText) } catch (e) {
     console.error(`Invalid completion marker: ${e.message}`); process.exit(1)
   }
   if (m.taskId !== task.id || m.status !== 'complete' || Number(m.cleanCycles) < 2) {
