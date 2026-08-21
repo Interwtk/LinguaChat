@@ -244,3 +244,34 @@ two-clean-cycle QA count is unaffected and no new QA run was required. Correct
 action remains unchanged from the prior update: stay in draft until
 `LC-OPS-015` lands, then rebase and rerun this PR's final-head evidence/QA
 contract.
+
+## Update (2026-08-21, new session): LC-OPS-015 fix now exists as PR #57, still unmerged
+
+Fresh session, re-verified from scratch again (no drift): branch even with
+`origin/main` (`ff6ee28`); content diff vs. main unchanged (4 files, all
+in-scope); `check-supervisor-evidence.mjs --partial psychology` and
+`check-foundry-scope.mjs ... --require-complete` both exit 0 (30 studies, 12
+topics). PR #50 still `OPEN`/draft, `mergeable`, per-commit checks green
+(`frontend`, `backend`, `guards`; `evidence` skips on drafts by design).
+
+New since the last update: the actual fix for issue #52/`LC-OPS-015` now
+exists as **PR #57** (`ops/fix-foundry-evidence-ref`, "fix(ops): validate
+Foundry research evidence from candidate head"), open and draft, CI green as
+of `2026-08-21T18:30:37Z`. Read its diff directly — it adds `--ref <head>`
+support to `check-supervisor-evidence.mjs` (corpus read via
+`git show <ref>:<path>` when a ref is given) and makes
+`check-foundry-scope.mjs --require-complete` pass `--head` through to both
+the partial and full evidence-gate subprocess calls. This is exactly the fix
+this file has been describing since the first update; it matches the root
+cause precisely and does not weaken any threshold. A sibling PR **#56**
+(`ops/lc-ops-016-shared-automation-fixes`) is also open/draft/green and may
+bundle related automation fixes.
+
+Neither #56 nor #57 is merged yet, so the orchestrator's `--require-complete`
+evidence gate on `main` is still unfixed and this branch's correct action is
+unchanged: stay in draft, do not merge #57 myself (outside this task's lane
+and scope — that PR belongs to whichever lane owns `.github/scripts/**`, per
+issue #52's explicit instruction), and once it lands, rebase this branch and
+rerun PR #50's final-head evidence/QA contract before marking ready. No
+content or code changed on this branch this session; the two-clean-cycle QA
+count is unaffected.
