@@ -1,0 +1,187 @@
+name: Claude — curriculum foundry worker
+run-name: Foundry ${{ inputs.lane }} — ${{ inputs.task_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: 'Exact foundry task id.'
+        required: true
+        type: string
+      lane:
+        description: 'Foundry lane.'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: linguachat-foundry-${{ inputs.lane }}
+  cancel-in-progress: false
+
+jobs:
+  work:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    env:
+      LINGUACHAT_PROVIDER: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Validate task, dependencies and lane
+        id: task
+        env:
+          TASK_ID: ${{ inputs.task_id }}
+          LANE: ${{ inputs.lane }}
+        run: |
+          set -euo pipefail
+          JSON=$(node .github/scripts/foundry-next.mjs --task "$TASK_ID")
+          READY=$(printf '%s' "$JSON" | jq -r .ready)
+          EXPECTED_LANE=$(printf '%s' "$JSON" | jq -r .lane)
+          BRANCH=$(printf '%s' "$JSON" | jq -r .branch)
+          if [ "$EXPECTED_LANE" != "$LANE" ]; then
+            echo "::error::$TASK_ID belongs to $EXPECTED_LANE, not $LANE"
+            exit 1
+          fi
+          if [ "$READY" != "true" ]; then
+            echo "Task is complete or still waiting; clean stop."
+            echo "claimable=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "claimable=true" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse clearly if the Claude token is absent
+        if: steps.task.outputs.claimable == 'true'
+        env:
+          TOKEN_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          [ "$TOKEN_PRESENT" = "true" ] || { echo "::error::CLAUDE_CODE_OAUTH_TOKEN is not configured"; exit 1; }
+
+      - uses: actions/setup-node@v4
+        if: steps.task.outputs.claimable == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: linguachat-frontend/package-lock.json
+
+      - uses: actions/setup-python@v5
+        if: steps.task.outputs.claimable == 'true'
+        with:
+          python-version: '3.12'
+
+      - name: Install deterministic product dependencies
+        if: steps.task.outputs.claimable == 'true'
+        run: |
+          npm ci --prefix linguachat-frontend
+          pip install -r linguachat-backend/requirements.txt
+
+      - uses: anthropics/claude-code-action@v1
+        if: steps.task.outputs.claimable == 'true'
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are one autonomous worker in LinguaChat's parallel Curriculum Foundry.
+
+            TASK: "${{ inputs.task_id }}"
+            LANE: "${{ inputs.lane }}"
+            EXACT BRANCH: "${{ steps.task.outputs.branch }}"
+
+            READ FIRST:
+            - CLAUDE.md
+            - .ai/foundry/README.md
+            - .ai/foundry/tasks.json
+            - docs/curriculum/curriculum-master-a1-c2.md when present
+            - docs/curriculum/level-blueprint-template.md when present
+            - docs/research/supervisor-evidence-contract.md when present
+            - docs/research/supervisor-evidence-ledger.md when present
+            - every existing live curriculum/learning-science contract relevant to this task
+
+            COORDINATION CONTRACT
+            - Never edit .ai/TASKS.md, .ai/STATE.md or .ai/HANDOFF.md. The serial product queue remains independent.
+            - Work only inside this task's writeScopes from .ai/foundry/tasks.json, plus its own
+              .ai/foundry/completed/<TASK>.json and .ai/foundry/requests/<TASK>.md.
+            - Use exactly the branch above. If it exists, resume it and its open PR; do not restart.
+            - Rebase/merge current main before final validation. Resolve only conflicts inside your allowed scope.
+            - Open or preserve a DRAFT PR quickly. Push checkpoints. Never claim work or tests that did not happen.
+            - If a required change is outside your scope, do not make it secretly. Record the exact blocker in the PR
+              and .ai/foundry/requests/<TASK>.md. Keep the PR draft.
+
+            EVIDENCE RULES FOR RESEARCH LANES
+            - Each research batch must add at least 25 NEW unique PRIMARY empirical studies after deduplication.
+            - Reviews/meta-analyses/theory papers are maps, not primary-study count.
+            - Verify each record against authoritative primary/publisher/index sources (DOI/Crossref, PubMed/NCBI,
+              ERIC/IES, university repositories, or the peer-reviewed publisher). Use multiple identifiers where possible.
+            - Never invent a DOI, sample, institution, result or limitation. If a fact cannot be verified, omit the study.
+            - Record design, sample when available, institution, venue, topic, measured outcome, limitations,
+              persistentId, sourceUrl, qualityGrade A/B, sourceType=primary and verified=true.
+            - Results that conflict with other studies stay in the corpus. Do not cherry-pick.
+            - Pedagogy research must stay about second-language acquisition/teaching/assessment.
+            - Psychology research is learning psychology (memory, retrieval, spacing, cognitive load, motivation,
+              self-regulation, feedback, transfer, anxiety/affect in learning, habits/engagement), not diagnosis or therapy.
+
+            CURRICULUM QUALITY RULES
+            - Interests may change contexts, examples and occasional events; they must never change the capability
+              standard, mastery threshold or make a level easier.
+            - Evidence, not episode position, controls scaffolding. Recognition is not independent production.
+            - Require retrieval, spacing, transfer, corrective feedback with retry, fading support and honest mastery.
+            - CEFR claims must be capability-based and fail closed. Do not claim complete speaking/listening coverage
+              while voice/listening systems are not implemented.
+            - A1 stays unavailable until its existing final acceptance gate is satisfied.
+            - Preserve Pre-A1 freeze and existing proven behavior unless this task explicitly requires a compatible fix.
+
+            COMPLETION CONTRACT
+            1. Run targeted checks while working.
+            2. Before completion, run TWO consecutive clean full cycles after the last fix:
+                 cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n
+                 cd linguachat-backend && python -m compileall . && python -m pytest -q
+               If anything changes after a clean cycle, restart the count.
+            3. Run:
+                 node .github/scripts/check-foundry-scope.mjs --branch "${{ steps.task.outputs.branch }}" --base origin/main --head HEAD
+               before the final push.
+            4. For tasks whose manifest says requiresEvidenceReady=true, also run:
+                 node .github/scripts/check-supervisor-evidence.mjs
+               and do not complete unless it passes.
+            5. Only when truly finished create .ai/foundry/completed/${{ inputs.task_id }}.json containing at least:
+                 {"taskId":"${{ inputs.task_id }}","lane":"${{ inputs.lane }}","status":"complete","cleanCycles":2}
+               Do not create this marker for partial work.
+            6. Put exact measured evidence in the PR under ## Evidence, push, self-review the full diff, then mark ready.
+               A ready PR is a declaration that the task is complete and safe for automatic merge.
+
+            Do not optimize for speed by deleting tests, relaxing gates, shrinking evidence requirements, hiding
+            contradictory studies, or broadening write scope. Speed comes from parallel independence, not lower quality.
+          allowed_bots: github-actions
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 180
+            --allowedTools Read,Write,Edit,Glob,Grep,Bash,TodoWrite,WebSearch,WebFetch
+
+      - name: Recovery — ensure resumable work has a draft PR
+        if: always() && steps.task.outputs.claimable == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.task.outputs.branch }}
+          TASK_ID: ${{ inputs.task_id }}
+        run: |
+          set -euo pipefail
+          if ! git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            echo "Worker ended before pushing a branch; the watchdog will dispatch this task again." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          OPEN=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
+          if [ "$OPEN" = "0" ]; then
+            gh pr create --draft --base main --head "$BRANCH" \
+              --title "WIP: $TASK_ID" \
+              --body $'## Summary\nAutomatic recovery draft. Resume this exact task/branch.\n\n## Evidence\nIncomplete — do not merge.'
+          fi
+
+      - name: Clean no-op
+        if: steps.task.outputs.claimable != 'true'
+        run: echo "Nothing claimable for this exact task." >> "$GITHUB_STEP_SUMMARY"
