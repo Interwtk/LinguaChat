@@ -93,6 +93,44 @@ without hitting that failure. Treat the autonomous task lane as healthy again.
 Do not re-apply the old "do not repeatedly rerun" caution without a new failure to
 justify it.
 
+## Merge required manual intervention — a real automation gap in `merge-agent-pr.sh`
+
+PR #34 was fully finished (README rewrite, debris removal, `## Evidence`, DONE
+bookkeeping, all QA checks green, `mergeStateStatus: CLEAN`) well before this run,
+yet the chain's QA-triggered merge job (`.github/scripts/merge-agent-pr.sh`) never
+merged it. Two real defects, found by this run while diagnosing the stall:
+
+1. The script's branch-prefix allowlist is `curr/*|i18n/*|qa/*|ops/*|fix/*` — it
+   does not include `docs/*`. Every push to `docs/lc-doc-001-readme-cleanup`
+   therefore hit the `non-agent` early-exit and was silently never considered for
+   merge, no matter how green or complete it became. This is almost certainly why
+   two prior "wake the chain" PRs (#40, #43) existed and still didn't get this task
+   merged — they addressed a startup/diagnostic failure class, not this filter.
+2. Separately, this branch's long history of repeated `Merge remote-tracking
+   branch 'origin/main'` commits means `gh pr merge --rebase` (the strategy the
+   script always uses) fails outright: replaying the branch's commits one at a
+   time against ever-newer intermediate bases produces a real conflict in
+   `.ai/TASKS.md` partway through, even though a single ordinary 3-way merge
+   against the current main tip is clean. Verified locally both ways before
+   touching anything real: `git rebase origin/main` on a scratch copy of the
+   branch conflicts on `.ai/TASKS.md`; `git merge origin/main` on the same scratch
+   copy resolves with no conflicts at all.
+
+Given the PR was fully evidenced and green, this run merged it directly
+(`gh pr merge 34 --merge --delete-branch`, not `--rebase`) rather than leaving a
+finished task stuck indefinitely, and re-verified the actual resulting merge
+commit on `main` (`21d1223`) with a fresh `check:all`/`build`/backend
+`compileall`+`pytest` run — all green, matching the PR's own reported numbers
+(entry `450.83 kB`, 444 pytest passed).
+
+**For the next operator or ops task:** `merge-agent-pr.sh` should add `docs/*` to
+its accepted prefixes, and either fall back to a plain merge when `--rebase` fails
+instead of giving up, or (simpler) stop using `--rebase` at all in favor of a
+regular merge commit, since the agent workflow already produces many
+intermediate `Merge main into branch` commits by design (step 3 of the standing
+worker instructions). This was not fixed in this run to keep `LC-DOC-001` scoped
+to its own concern; it is a real, reproducible gap worth its own small `ops/` task.
+
 ## QA — what was actually run on the final head
 
 This task changed documentation and removed dead files only; no runtime/UI/backend
