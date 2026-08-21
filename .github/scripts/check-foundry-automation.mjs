@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs'
 import { loadManifest, readyTasks } from './foundry-next.mjs'
 import { validateCorpus } from './check-supervisor-evidence.mjs'
 
@@ -81,6 +82,10 @@ for (const task of tasks.filter(t => ['content','integration','final-acceptance'
   expect(task.requiresEvidenceReady === true, `${task.id} must require evidence-ready supervisor gate`)
 }
 
+// Release hardening cannot rewrite the evidence corpus after supervisor acceptance.
+const releaseTask = byId.get('LC-RC-001')
+expect(releaseTask && !releaseTask.writeScopes.some(s => s === 'docs/**' || s.startsWith('docs/research')), 'LC-RC-001 must not be allowed to rewrite supervisor research evidence')
+
 // Evidence validator regression: 100 unique primary studies across 10 topics should pass.
 const topics = ['retrieval','spacing','feedback','transfer','motivation','cognitive-load','interaction','vocabulary','assessment','self-regulation']
 const corpus = Array.from({ length: 100 }, (_, i) => ({
@@ -128,4 +133,18 @@ for (let i = 0; i < 40; i++) imbalanced[i].topic = 'retrieval'
 evidence = validateCorpus('fixture', imbalanced)
 expect(evidence.errors.some(e => e.includes('exceeds 35%')), 'over-concentrated evidence corpus was accepted')
 
-if (!process.exitCode) console.log(`Foundry automation contract OK: ${tasks.length} tasks, acyclic DAG, guarded fan-out/fan-in, write isolation and 100+100 evidence validator regression.`)
+// Both automatic entry paths must invoke the SAME cycle implementation. This pins
+// the bridge into the already-proven serial chain and prevents orchestrator drift.
+const chain = readFileSync(new URL('../workflows/claude-chain.yml', import.meta.url), 'utf8')
+const standalone = readFileSync(new URL('../workflows/curriculum-foundry.yml', import.meta.url), 'utf8')
+const cycle = readFileSync(new URL('./run-foundry-cycle.sh', import.meta.url), 'utf8')
+const worker = readFileSync(new URL('../workflows/claude-foundry-worker.yml', import.meta.url), 'utf8')
+expect(chain.includes('bash .github/scripts/run-foundry-cycle.sh'), 'proven Claude chain is not bridged to Foundry cycle')
+expect(chain.includes("startsWith(github.event.workflow_run.head_branch, 'foundry/')"), 'proven chain does not self-heal red Foundry QA events')
+expect(standalone.includes('bash .github/scripts/run-foundry-cycle.sh'), 'standalone watchdog does not share Foundry cycle implementation')
+expect(cycle.includes('merge-foundry-pr.sh'), 'Foundry cycle does not use the guarded merge helper')
+expect(cycle.includes('gh workflow run claude-foundry-worker.yml'), 'Foundry cycle cannot dispatch workers')
+expect(cycle.includes('worker already queued/running'), 'Foundry cycle lacks duplicate-run guard')
+expect(worker.includes('--partial pedagogical') && worker.includes('--partial psychology'), 'research worker prompt is not aligned with per-batch evidence validation')
+
+if (!process.exitCode) console.log(`Foundry automation contract OK: ${tasks.length} tasks, acyclic DAG, guarded fan-out/fan-in, shared self-healing cycle, write isolation and 100+100 evidence validator regression.`)
