@@ -104,3 +104,27 @@ Resumed this branch and re-checked before making any further change:
 
 No content or scope change was needed this session. This task remains genuinely
 done and still blocked only by the shared-automation bug above.
+
+## Re-verified 2026-08-21 (second resumed session)
+
+Resumed again after PR #37 was cycled back to draft by the orchestrator. Same
+finding, re-confirmed end to end:
+
+- `.github/scripts/check-foundry-scope.mjs` on current `origin/main` is still
+  filesystem-based (`existsSync(marker)` / `readFileSync(marker)`) in the
+  `--require-complete` block, not ref-aware — unpatched, no `.ai/TASKS.md` entry
+  targets it.
+- `main`'s only change since the branch's last sync was to `.ai/TASKS.md`
+  (LC-DOC-001 claim/release churn in the serial queue) — entirely outside this
+  task's `writeScopes` and outside the Foundry coordination contract's editable
+  files. Merged cleanly with no conflicts.
+- Re-ran the full completion contract from the branch's own checkout after the
+  merge: `check:all`, `build`, `check:i18n` (frontend) and `compileall`,
+  `pytest -q` (backend, 444 passed) — two consecutive clean cycles, all exit 0.
+- `check-foundry-scope.mjs --require-complete` from the branch checkout: `Foundry
+  scope OK for LC-FND-001: 6 changed files` (4 write-scope docs + completion
+  marker + this request file) — still OK; marker still validated.
+
+Still no content or scope change needed. The deliverable has been complete and
+evidence-backed across three sessions now; the only blocker remains the
+ref-unaware marker check in shared automation, outside this task's `writeScopes`.
