@@ -200,3 +200,20 @@ none of the four in-scope documents or the completion marker changed, so the
 prior two clean cycles still stand. This task remains done and blocked only
 on the shared-automation fix described above (ref-unaware marker check in
 `check-foundry-scope.mjs --require-complete`).
+
+## Resynced 2026-08-21 (main moved again, trivial and out of scope)
+
+`main` advanced one more commit past the previous entry (still the same
+LC-DOC-001 claim/release churn in the serial queue, `.ai/TASKS.md` only) —
+outside this task's `writeScopes`. `.github/scripts/check-foundry-scope.mjs`
+lines 54/59 are still `existsSync(marker)`/`readFileSync(marker)`
+(filesystem-based, not ref-aware), unchanged from the version the owner
+confirmed at 07:17:38Z; no new PR feedback since. Merged `main` in (no
+conflicts; only `.ai/TASKS.md` changed) and re-ran
+`check-foundry-scope.mjs --require-complete` from this branch's own
+checkout: `Foundry scope OK for LC-FND-001: 6 changed files`, marker still
+validated. Did not re-run the full frontend/backend QA cycles — none of the
+four in-scope documents or the completion marker changed, so the prior two
+clean cycles still stand. Per the owner's direction, PR #37 stays Draft and
+this branch does not touch `check-foundry-scope.mjs`. This task remains done
+and blocked only on the shared-automation fix described above.
