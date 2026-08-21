@@ -1,0 +1,17 @@
+{
+  "taskId": "LC-RES-Y03",
+  "lane": "research-psy",
+  "status": "complete",
+  "cleanCycles": 2,
+  "summary": "Added 30 unique, DOI/Crossref-verified primary empirical studies to docs/research/supervisors/psychology-primary.json (58 -> 88 total). Retrieval practice / testing effect and distributed / spaced practice were prioritized up to 8 records each -- the first two topics in the corpus to clear the eventual 'at least 5 topics with >=8 studies' threshold from docs/research/supervisor-evidence-contract.md #1a. Every other mandatory-coverage topic from #7 moved from 4-5 to a uniform 6, keeping the corpus evenly distributed with no topic below 6 and none above 8 (9% of the 88-record total, well under the eventual 35% ceiling). Seven parallel research passes were each given the full 58-DOI batch-1/2 exclusion list up front to avoid the duplicate-rediscovery issue seen in batch 2. Every one of the 30 candidate DOIs was independently re-verified directly against the live Crossref API during compilation (not just trusting each pass's self-report), and a further spot check confirmed four reported second-source URLs (ERIC, PubMed x2, PMC) resolve live. Two structural defects caught by the deterministic --partial gate were fixed before finalizing: one record's second verification source used a bare http:// (non-HTTPS) URL and was replaced with a verified HTTPS Semantic Scholar API source; one record had only a single verification source and was given a second, independently confirmed HTTPS OpenAlex source. No duplicate DOIs or titles were found against the existing 58-record corpus or among the 30 new candidates.",
+  "writeScopeRespected": [
+    "docs/research/supervisors/psychology-primary.json",
+    "docs/research/supervisors/batches/psy-03.md"
+  ],
+  "evidence": {
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n — exit 0, run twice consecutively clean after rebasing onto origin/main",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q — exit 0 (444 passed), run twice consecutively clean after rebasing onto origin/main",
+    "evidenceGatePartial": "node .github/scripts/check-supervisor-evidence.mjs --partial psychology — psychology: 88 unique primary studies; 14 topics; partial gate passed",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/research-psy/lc-res-y03 --base origin/main --head HEAD — OK, 2 changed files (corpus json, batch doc), all inside allowed write scope"
+  }
+}
