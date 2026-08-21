@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { loadManifest, readyTasks } from './foundry-next.mjs'
+import { validateCorpus } from './check-supervisor-evidence.mjs'
 
 const { tasks } = loadManifest()
 const byId = new Map(tasks.map(t => [t.id, t]))
@@ -80,4 +81,51 @@ for (const task of tasks.filter(t => ['content','integration','final-acceptance'
   expect(task.requiresEvidenceReady === true, `${task.id} must require evidence-ready supervisor gate`)
 }
 
-if (!process.exitCode) console.log(`Foundry automation contract OK: ${tasks.length} tasks, acyclic DAG, guarded fan-out/fan-in and evidence gates.`)
+// Evidence validator regression: 100 unique primary studies across 10 topics should pass.
+const topics = ['retrieval','spacing','feedback','transfer','motivation','cognitive-load','interaction','vocabulary','assessment','self-regulation']
+const corpus = Array.from({ length: 100 }, (_, i) => ({
+  id: `TEST-${String(i+1).padStart(3,'0')}`,
+  title: `Synthetic validator study ${i+1}`,
+  authors: [`Researcher ${i+1}`],
+  year: 2020,
+  design: 'randomized controlled experiment',
+  sampleSize: 60 + i,
+  population: 'adult learners',
+  venue: 'Peer-reviewed journal',
+  institution: 'Accredited university',
+  topic: topics[i % topics.length],
+  outcome: 'measured learning outcome',
+  limitations: 'synthetic regression fixture only',
+  sourceUrl: `https://publisher.example/study-${i+1}`,
+  persistentId: `doi:10.1234/test.${i+1}`,
+  verificationSources: [`https://doi.org/10.1234/test.${i+1}`, `https://publisher.example/study-${i+1}`],
+  verifiedAt: '2026-08-21',
+  qualityGrade: 'A',
+  qualityRationale: 'synthetic complete record for validator regression',
+  sourceType: 'primary',
+  verified: true,
+}))
+let evidence = validateCorpus('fixture', corpus)
+expect(evidence.errors.length === 0, `valid 100-study corpus was rejected: ${evidence.errors.slice(0,3).join('; ')}`)
+
+const duplicate = structuredClone(corpus)
+duplicate[99].persistentId = duplicate[0].persistentId
+evidence = validateCorpus('fixture', duplicate)
+expect(evidence.errors.some(e => e.includes('duplicate study')), 'duplicate primary study was not rejected')
+
+const review = structuredClone(corpus)
+review[0].sourceType = 'meta-analysis'
+evidence = validateCorpus('fixture', review)
+expect(evidence.errors.some(e => e.includes('sourceType must be primary')), 'meta-analysis was allowed to count as a primary study')
+
+const unverifiable = structuredClone(corpus)
+unverifiable[0].verificationSources = ['https://publisher.example/a','https://publisher.example/b']
+evidence = validateCorpus('fixture', unverifiable)
+expect(evidence.errors.some(e => e.includes('DOI/Crossref, PubMed or ERIC')), 'record without independent identity source was accepted')
+
+const imbalanced = structuredClone(corpus)
+for (let i = 0; i < 40; i++) imbalanced[i].topic = 'retrieval'
+evidence = validateCorpus('fixture', imbalanced)
+expect(evidence.errors.some(e => e.includes('exceeds 35%')), 'over-concentrated evidence corpus was accepted')
+
+if (!process.exitCode) console.log(`Foundry automation contract OK: ${tasks.length} tasks, acyclic DAG, guarded fan-out/fan-in, write isolation and 100+100 evidence validator regression.`)
