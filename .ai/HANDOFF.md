@@ -3,7 +3,7 @@
 Keep this file current: what just happened, what is proved, what comes next, and
 what will bite the next operator.
 
-_Written for LC-QA-001 on 2026-08-21. Live main/TASKS wins if it changes after
+_Written for LC-SEC-001 on 2026-08-21. Live main/TASKS wins if it changes after
 this branch was cut._
 
 ## What just happened
@@ -224,6 +224,43 @@ found is actually fixed end to end, not merely present in a dictionary; no
 console/page errors, no horizontal overflow, no raw key leaks; Arabic
 renders `dir="rtl"` end to end (mirrored sidebar/nav) at both viewports.
 
+LC-SEC-001 (PR #32) then closed the queue's standing `npm ci` advisory line:
+1 moderate + 3 high in `linguachat-frontend`. Severity alone was not enough
+to justify a forced upgrade, so this run recorded exact advisory IDs,
+packages and dependency paths, then split the fix by reachability rather
+than reflexively running `npm audit fix --force`. postcss
+(`GHSA-fxqj-rqcc-2cmp`/`GHSA-r28c-9q8g-f849`) and its transitive nanoid
+(`GHSA-28wg-ghj8-5hjv`/`GHSA-2v37-7h3g-55p8`) are both build-time-only
+(sourcemap path traversal / non-cryptographic ID generator misuse, neither
+attacker-reachable in how LinguaChat builds), fixed with the plain
+non-forced `npm audit fix`: postcss 8.5.15 → 8.5.26, still inside the
+existing `^8.4.38` devDependency range, zero `package.json` change; nanoid
+came along for free as postcss's own `^3.3.12` dependency. Transitive
+esbuild (`GHSA-67mh-4wv8-2f99`) and vite itself
+(`GHSA-4w7w-66w2-5vf9`/`GHSA-v6wh-96g9-6wx3`/`GHSA-fx2h-pf6j-xcff`) are all
+dev-server-only issues — two of the three vite ones are Windows-specific on
+top of that — and this repo's `vite.config.js` never sets `server.host`
+(dev server binds to localhost only), with no CI workflow anywhere running
+`vite dev`/`npm run dev` publicly, so none of the four were reachable in
+this project's actual runtime or CI/build pipeline either way. Rather than
+leaving them or blindly forcing the 5→8.2.2 three-major jump
+`npm audit fix --force` proposed, this run first confirmed
+`@vitejs/plugin-react@4.7.0` already declares peer support for `vite ^6`,
+then took the single smallest major step that actually clears the
+advisories: vite 5.4.21 → `^6.4.3`. Proved side by side in a scratch copy
+before touching the real branch (`npm run build` on vite 5 vs. vite 6:
+byte-identical output, same content hash, `450.83 kB` / gzip `131.70 kB`
+entry chunk — the version bump changes nothing about what actually ships).
+`npm audit` now reports **0 vulnerabilities**. No functional/runtime code
+changed (only `package.json`/`package-lock.json`), so per the QA table this
+task carries build/bundle-boundary proof rather than a browser walkthrough.
+Two consecutive clean cycles: `check:all` 57/57 unchanged, `build`
+byte-identical, backend `compileall` clean + 444 pytest passed unchanged
+(the one pre-existing Pydantic V1 `@validator` warning is untouched — that
+is `LC-BE-001`'s scope, not this one). `LC-BE-001`'s stale
+`blocked-on: LC-SEC-001` line is cleared in this same PR since its actual
+blocker is gone.
+
 ## The 40-turn failure — what it actually means now
 
 Run `32331959420` was an interactive `Claude — mention` run. It authenticated on a
@@ -317,17 +354,17 @@ supported locales may be selected — this is now enforced in code, not just pol
 ## Current i18n path
 
 `LC-I18N-005` is DONE (PR #24), `LC-PROD-001` is DONE (PR #25), `LC-PED-001` is
-DONE (PR #26), `LC-I18N-002` is DONE (PR #30), and `LC-QA-001` is DONE (PR #31,
-merged into main's `.ai/TASKS.md` DONE section in this same PR): `check:i18n`
-plus the new `check-i18n-lint.mjs` now gate every i18n failure class this
-queue had open — duplicate keys, raw-key/silent-fallback, hardcoded visible
-strings, unsupported-language claims (`LC-I18N-002`) and `user_language`
-divergence (`LC-I18N-003`). The next quality tasks are the general engineering
-queue, in order:
+DONE (PR #26), `LC-I18N-002` is DONE (PR #30), `LC-QA-001` is DONE (PR #31) and
+`LC-SEC-001` is DONE (PR #32, merged into main's `.ai/TASKS.md` DONE section in
+this same PR): `check:i18n` plus `check-i18n-lint.mjs` gate every i18n failure
+class this queue had open — duplicate keys, raw-key/silent-fallback, hardcoded
+visible strings, unsupported-language claims (`LC-I18N-002`) and
+`user_language` divergence (`LC-I18N-003`) — and `npm audit` on
+`linguachat-frontend` now reports 0 vulnerabilities. The next quality tasks are
+the general engineering queue, in order:
 
-1. `LC-SEC-001` — audit the 1 moderate + 3 high npm advisories safely.
-2. `LC-BE-001` — migrate the Pydantic V1 validator.
-3. `LC-DOC-001` — reconcile the stale README / proven-unused historical debris.
+1. `LC-BE-001` — migrate the Pydantic V1 validator.
+2. `LC-DOC-001` — reconcile the stale README / proven-unused historical debris.
 
 Do not mass-add Hindi/Korean/etc. as selector labels first. A language becomes
 supported only after login/onboarding/UI + explanations/hints/corrections/meanings
@@ -387,8 +424,8 @@ review proves the need.
 
 ## Still open engineering signals
 
-- `npm ci` reports 1 moderate + 3 high advisories; `LC-SEC-001` audits exact paths
-  before any upgrade; never force-fix blindly.
+- `npm audit` on `linguachat-frontend` reports 0 vulnerabilities as of
+  `LC-SEC-001` (PR #32).
 - backend has one Pydantic V1 `@validator` deprecation; `LC-BE-001` handles it.
 - README is stale; `LC-DOC-001` updates it only after proving historical debris is unused.
 - current login/signup remain localStorage mocks until dedicated cloud work proves

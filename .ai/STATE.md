@@ -13,8 +13,9 @@ in PR #24, LC-PROD-001 (honest placement/profile/Home curriculum agreement) is
 complete in PR #25, LC-PED-001 (per-arc learner-journey pedagogical stress
 test) is complete in PR #26, LC-I18N-002 (honest language-support catalog —
 only the 8 implemented bases are selectable anywhere) is complete in PR #30,
-and LC-QA-001 (a real i18n linter over reachable source, not just dictionary
-parity) is complete in PR #31._
+LC-QA-001 (a real i18n linter over reachable source, not just dictionary
+parity) is complete in PR #31, and LC-SEC-001 (frontend dependency
+vulnerability audit and safe resolution) is complete in PR #32._
 
 ## Product / repository
 
@@ -137,6 +138,36 @@ Full detail in `.ai/TASKS.md` DONE entry for `LC-PROD-001` (prior baseline:
   confianza" / "自信ポイント +5" / "+5 نقطة ثقة"); no console/page errors, no
   horizontal overflow, no raw key leaks; Arabic `dir="rtl"` end to end at both
   viewports.
+
+`LC-SEC-001` (PR #32), latest measured baseline on top of that:
+
+- `npm audit` on `linguachat-frontend` reported 4 advisories (1 moderate, 3
+  high): postcss (`GHSA-fxqj-rqcc-2cmp`, `GHSA-r28c-9q8g-f849`, high),
+  transitive nanoid (`GHSA-28wg-ghj8-5hjv`, `GHSA-2v37-7h3g-55p8`, high),
+  transitive esbuild (`GHSA-67mh-4wv8-2f99`, moderate) and vite
+  (`GHSA-4w7w-66w2-5vf9`, `GHSA-v6wh-96g9-6wx3`, `GHSA-fx2h-pf6j-xcff`) —
+  all in devDependencies/build tooling, none reachable from the shipped
+  production bundle;
+- postcss/nanoid fixed by the safe non-forced `npm audit fix`: postcss
+  8.5.15 → 8.5.26, still inside the existing `^8.4.38` range, zero
+  `package.json` change; nanoid resolved to 3.3.18 as postcss's own
+  dependency;
+- esbuild/vite are dev-server-only issues (two of the three vite ones
+  Windows-specific); `vite.config.js` never sets `server.host` so the dev
+  server binds to localhost only, and no CI workflow runs `vite dev`/
+  `npm run dev` publicly. Fixed with one controlled major bump, vite
+  5.4.21 → `^6.4.3` — not the 5→8.2.2 three-major jump `npm audit fix
+  --force` proposed; confirmed `@vitejs/plugin-react@4.7.0` already
+  supports vite `^6` first;
+- `npm audit` now reports **0 vulnerabilities**;
+- `check:all` **57/57** unchanged (no new suite — this is a dependency-only
+  change), two consecutive clean cycles; production build byte-identical
+  before/after, same content hash, entry `450.83 kB` / gzip `131.70 kB`,
+  two consecutive clean cycles; backend `compileall` clean + 444 pytest
+  passed, two consecutive clean cycles, unchanged;
+- no functional/runtime code changed (package.json/package-lock.json only),
+  so no browser walkthrough beyond the build/bundle-boundary checks above
+  applies.
 
 ## Curriculum truth
 
@@ -279,18 +310,17 @@ Initial cloud scope when unblocked:
 No raw audio/video, indefinite chat/event logs, pgvector, Edge Functions or Storage
 in the first cloud milestone.
 
-## Ordered quality queue after LC-QA-001
+## Ordered quality queue after LC-SEC-001
 
-1. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
-2. `LC-BE-001` — migrate Pydantic V1 validator.
-3. `LC-DOC-001` — stale README / proven-unused historical debris.
+1. `LC-BE-001` — migrate Pydantic V1 validator.
+2. `LC-DOC-001` — stale README / proven-unused historical debris.
 
 `LC-CLOUD-001` is blocked only on project identity/creation, not on owner intent.
 Arc 6/7 are seeded only after the language/product/pedagogical foundation is stable.
 
 ## Other confirmed quality signals
 
-- `npm ci`: 1 moderate + 3 high vulnerability advisories; no blind force fix.
+- `npm ci` / `npm audit`: 0 vulnerabilities (`LC-SEC-001`, PR #32).
 - backend: one Pydantic V1-style `@validator` deprecation warning.
 - README is materially stale.
 - current auth/login/signup are localStorage mocks; they must not be marketed as
