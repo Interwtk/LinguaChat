@@ -308,3 +308,17 @@ LC-RES-Y01: 4 changed files.`, exit 0). Issue #52 still `OPEN`. PR #57
 No content or code changed; correct action unchanged: stay in draft until
 `LC-OPS-015` lands, then rebase and rerun #50's final-head QA/evidence
 contract.
+
+## Update (2026-08-21, new session): still blocked, no material change
+
+Fresh session, re-verified independently: branch even with `origin/main`
+(`ff6ee28`, 0 behind); `psychology-primary.json` confirmed still absent from
+`origin/main` (expected — no `LC-RES-Y0x` batch has merged yet). Gates still
+pass on this branch's own head (`check-supervisor-evidence.mjs --partial
+psychology` → 30 studies/12 topics, exit 0; `check-foundry-scope.mjs` →
+`Foundry scope OK for LC-RES-Y01: 4 changed files.`, exit 0). Issue #52 still
+`OPEN`. PR #57 (`LC-OPS-015` fix) and PR #56 both still `OPEN`/draft/
+`mergeable`, unmerged — root cause and fix unchanged from prior updates. No
+content or code changed; correct action unchanged: stay in draft until
+`LC-OPS-015` lands, then rebase and rerun #50's final-head QA/evidence
+contract.
