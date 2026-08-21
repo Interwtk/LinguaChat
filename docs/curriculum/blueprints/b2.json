@@ -1725,7 +1725,7 @@
         "I"
       ]
     },
-    "b1RowsNote": "b1.* prerequisite reuse (express_opinion_with_reason, compare_two_options, handle_a_common_unexpected_problem, sustain_a_conversation_over_a_topic_change, narrate_past_events, explain_and_justify_a_choice, describe_future_plans_and_intentions) is not tabulated here because their arc-by-arc B1 reuse pattern is owned by b1.md/b1.json, not by this file — cross-checked in LC-AUD-001."
+    "b1RowsNote": "b1.* prerequisite reuse (give_an_opinion, compare_options_with_reasons, negotiate_a_solution, sustain_topic_change, narrate_connected_event, talk_about_plans_and_intentions) is not tabulated here because their arc-by-arc B1 reuse pattern is owned by b1.md/b1.json, not by this file — cross-checked in LC-AUD-001."
   },
   "coreEngineRequirements": [
     {
