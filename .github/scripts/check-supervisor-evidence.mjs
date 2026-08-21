@@ -6,32 +6,60 @@ const FILES = {
   psychology: new URL('../../docs/research/supervisors/psychology-primary.json', import.meta.url),
 }
 const MIN = 100
-const required = ['id','title','authors','year','design','venue','institution','topic','outcome','limitations','sourceUrl','persistentId','qualityGrade','verified']
+const required = [
+  'id','title','authors','year','design','sampleSize','population','venue','institution',
+  'topic','outcome','limitations','sourceUrl','persistentId','verificationSources',
+  'verifiedAt','qualityGrade','qualityRationale','sourceType','verified'
+]
+const IDENTITY_HOSTS = new Set(['doi.org','api.crossref.org','pubmed.ncbi.nlm.nih.gov','eric.ed.gov'])
 
 function norm(s='') { return String(s).trim().toLowerCase().replace(/\s+/g,' ') }
-function load(domain, url) {
-  if (!existsSync(url)) return { domain, records: [], errors: [`missing ${url.pathname}`] }
-  let records
-  try { records = JSON.parse(readFileSync(url, 'utf8')) } catch (e) { return { domain, records: [], errors: [`invalid JSON: ${e.message}`] } }
-  if (!Array.isArray(records)) return { domain, records: [], errors: ['root must be a JSON array'] }
+function httpsUrl(value) {
+  try { const u = new URL(String(value)); return u.protocol === 'https:' ? u : null } catch { return null }
+}
+function hasPersistentIdentity(value='') {
+  const v = norm(value)
+  return /^doi:\s*10\.\d{4,9}\//.test(v) || /^10\.\d{4,9}\//.test(v) ||
+    /^https:\/\/doi\.org\/10\.\d{4,9}\//.test(v) || /^pmid:\s*\d+$/.test(v) || /^eric:\s*[a-z0-9-]+$/.test(v)
+}
+
+export function validateCorpus(domain, records) {
+  if (!Array.isArray(records)) return { domain, records: [], errors: ['root must be a JSON array'], uniqueCount: 0, topicCounts: {} }
   const errors = []
   const seenId = new Set(), seenStudy = new Set()
   const topicCounts = new Map()
   records.forEach((r, i) => {
+    const label = `#${i+1} ${r?.id || '?'}`
     for (const key of required) {
-      if (r[key] === undefined || r[key] === null || r[key] === '') errors.push(`#${i+1} ${r.id || '?'} missing ${key}`)
+      const value = r?.[key]
+      if (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)) errors.push(`${label} missing ${key}`)
     }
-    if (r.verified !== true) errors.push(`#${i+1} ${r.id || '?'} verified must be true`)
-    if (!['A','B'].includes(r.qualityGrade)) errors.push(`#${i+1} ${r.id || '?'} qualityGrade must be A or B`)
-    if (r.sourceType && r.sourceType !== 'primary') errors.push(`#${i+1} ${r.id || '?'} sourceType must be primary`)
-    const id = norm(r.id)
-    if (seenId.has(id)) errors.push(`duplicate record id ${r.id}`)
+    if (r?.verified !== true) errors.push(`${label} verified must be true`)
+    if (r?.sourceType !== 'primary') errors.push(`${label} sourceType must be primary`)
+    if (!['A','B'].includes(r?.qualityGrade)) errors.push(`${label} qualityGrade must be A or B`)
+    if (!Number.isInteger(r?.sampleSize) || r.sampleSize <= 0) errors.push(`${label} sampleSize must be a positive integer`)
+    if (!Number.isInteger(r?.year) || r.year < 1900 || r.year > new Date().getUTCFullYear()) errors.push(`${label} year is invalid`)
+    if (!/^\d{4}-\d{2}-\d{2}(T.*Z)?$/.test(String(r?.verifiedAt || ''))) errors.push(`${label} verifiedAt must be an ISO date/date-time`)
+    if (!hasPersistentIdentity(r?.persistentId)) errors.push(`${label} persistentId must be a DOI, PMID or ERIC identifier`)
+
+    const source = httpsUrl(r?.sourceUrl)
+    if (!source) errors.push(`${label} sourceUrl must be HTTPS`)
+    const verification = Array.isArray(r?.verificationSources) ? r.verificationSources : []
+    const validVerification = verification.map(httpsUrl).filter(Boolean)
+    if (validVerification.length < 2) errors.push(`${label} needs >=2 valid HTTPS verificationSources`)
+    if (new Set(validVerification.map(u => u.href)).size < 2) errors.push(`${label} verificationSources must be distinct`)
+    if (!validVerification.some(u => IDENTITY_HOSTS.has(u.hostname))) {
+      errors.push(`${label} needs DOI/Crossref, PubMed or ERIC among verificationSources`)
+    }
+
+    const id = norm(r?.id)
+    if (seenId.has(id)) errors.push(`duplicate record id ${r?.id}`)
     seenId.add(id)
-    const pid = norm(r.persistentId)
-    const fingerprint = pid || `${norm(r.title)}|${r.year}`
-    if (seenStudy.has(fingerprint)) errors.push(`duplicate study ${r.persistentId || r.title}`)
+    const pid = norm(r?.persistentId)
+    const fingerprint = pid || `${norm(r?.title)}|${r?.year}`
+    if (seenStudy.has(fingerprint)) errors.push(`duplicate study ${r?.persistentId || r?.title}`)
     seenStudy.add(fingerprint)
-    const topic = norm(r.topic)
+    const topic = norm(r?.topic)
     if (topic) topicCounts.set(topic, (topicCounts.get(topic) || 0) + 1)
   })
   const uniqueCount = seenStudy.size
@@ -44,15 +72,22 @@ function load(domain, url) {
   return { domain, records, errors, uniqueCount, topicCounts: Object.fromEntries(topicCounts) }
 }
 
+function load(domain, url) {
+  if (!existsSync(url)) return { domain, records: [], errors: [`missing ${url.pathname}`], uniqueCount: 0, topicCounts: {} }
+  let records
+  try { records = JSON.parse(readFileSync(url, 'utf8')) } catch (e) { return { domain, records: [], errors: [`invalid JSON: ${e.message}`], uniqueCount: 0, topicCounts: {} } }
+  return validateCorpus(domain, records)
+}
+
 let failed = false
 for (const [domain, url] of Object.entries(FILES)) {
   const result = load(domain, url)
   console.log(`${domain}: ${result.uniqueCount || 0}/${MIN} unique primary studies; ${Object.keys(result.topicCounts || {}).length} topics`)
   if (result.errors.length) {
     failed = true
-    for (const e of result.errors.slice(0, 60)) console.error(`- ${e}`)
-    if (result.errors.length > 60) console.error(`- ... ${result.errors.length - 60} more`)
+    for (const e of result.errors.slice(0, 80)) console.error(`- ${e}`)
+    if (result.errors.length > 80) console.error(`- ... ${result.errors.length - 80} more`)
   }
 }
 if (failed) process.exit(1)
-console.log('Supervisor evidence gate: READY (100+100 unique validated primary studies).')
+console.log('Supervisor evidence gate: READY (100+100 unique, identity-verified, primary empirical studies).')
