@@ -2,7 +2,7 @@ from enum import Enum
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class ChatMode(str, Enum):
@@ -61,7 +61,7 @@ class MissionFeedback(BaseModel):
     corrected_answer: str | None = None
     hint: str | None = None
 
-    @validator("score", pre=True)
+    @field_validator("score", mode="before")
     @classmethod
     def clamp_score(cls, value):
         try:
