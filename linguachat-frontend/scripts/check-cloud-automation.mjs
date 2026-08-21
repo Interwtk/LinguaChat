@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -16,6 +16,7 @@ const qa = read('.github/workflows/qa.yml')
 const mergeScript = read('.github/scripts/merge-agent-pr.sh')
 const foundryScope = read('.github/scripts/check-foundry-scope.mjs')
 const evidenceScript = read('.github/scripts/check-supervisor-evidence.mjs')
+const evidenceValidator = join(root, '.github/scripts/check-supervisor-evidence.mjs')
 const nextTask = join(root, '.github/scripts/next-task.mjs')
 
 let groups = 0
@@ -163,11 +164,97 @@ assert.doesNotMatch(mergeScript, /gh pr merge "\$NUMBER" --rebase/)
 ok()
 
 // 15. Foundry completion and evidence must both be evaluated from the same candidate
-// head. This pins the checkout-vs-ref bug that cycled valid research PRs to Draft.
+// head. This pins the wiring so future refactors cannot silently drop --ref again.
 assert.match(foundryScope, /evidenceScript, '--partial', domain, '--ref', head/)
 assert.match(foundryScope, /evidenceScript, '--ref', head/)
 assert.match(evidenceScript, /git', \['show', `\$\{ref\}:\$\{spec\.path\}`\]/)
 assert.match(evidenceScript, /missing \$\{spec\.path\} at \$\{ref\}/)
+ok()
+
+// 16. Functional checkout-vs-candidate regression. The validator process runs from a
+// physical main checkout that has no corpus, while a separate candidate ref owns the
+// evidence. Valid candidate evidence must pass; missing/invalid candidate evidence
+// must still fail closed; and the full gate must read BOTH corpora from the candidate.
+const evidenceRepo = mkdtempSync(join(tmpdir(), 'lc-foundry-evidence-ref-'))
+const git = args => execFileSync('git', args, {
+  cwd: evidenceRepo,
+  encoding: 'utf8',
+  stdio: ['ignore', 'pipe', 'pipe'],
+})
+const runEvidence = args => execFileSync(process.execPath, [evidenceValidator, ...args], {
+  cwd: evidenceRepo,
+  encoding: 'utf8',
+  stdio: ['ignore', 'pipe', 'pipe'],
+})
+const topics = ['retrieval','spacing','feedback','transfer','motivation','cognitive-load','interaction','vocabulary','assessment','self-regulation']
+const makeCorpus = prefix => Array.from({ length: 100 }, (_, i) => ({
+  id: `${prefix}-${String(i + 1).padStart(3, '0')}`,
+  title: `${prefix} candidate-head study ${i + 1}`,
+  authors: [`Researcher ${i + 1}`],
+  year: 2020,
+  design: 'randomized controlled experiment',
+  sampleSize: 80 + i,
+  population: 'adult language learners',
+  venue: 'Peer-reviewed journal',
+  institution: 'Accredited university',
+  topic: topics[i % topics.length],
+  outcome: 'measured learning outcome',
+  limitations: 'synthetic deterministic regression fixture only',
+  sourceUrl: `https://publisher.example/${prefix.toLowerCase()}-${i + 1}`,
+  persistentId: `doi:10.4321/${prefix.toLowerCase()}.${i + 1}`,
+  verificationSources: [
+    `https://doi.org/10.4321/${prefix.toLowerCase()}.${i + 1}`,
+    `https://publisher.example/${prefix.toLowerCase()}-${i + 1}`,
+  ],
+  verifiedAt: '2026-08-21',
+  qualityGrade: 'A',
+  qualityRationale: 'synthetic complete record for candidate-head gate regression',
+  sourceType: 'primary',
+  verified: true,
+}))
+
+try {
+  git(['init', '-b', 'main'])
+  git(['config', 'user.email', 'qa@linguachat.invalid'])
+  git(['config', 'user.name', 'LinguaChat QA'])
+  writeFileSync(join(evidenceRepo, 'README.md'), 'physical main intentionally has no supervisor corpus\n')
+  git(['add', 'README.md'])
+  git(['commit', '-m', 'fixture: main without evidence'])
+
+  git(['switch', '-c', 'candidate'])
+  const evidenceDir = join(evidenceRepo, 'docs/research/supervisors')
+  mkdirSync(evidenceDir, { recursive: true })
+  writeFileSync(join(evidenceDir, 'pedagogical-primary.json'), JSON.stringify(makeCorpus('PED')))
+  writeFileSync(join(evidenceDir, 'psychology-primary.json'), JSON.stringify(makeCorpus('PSY')))
+  git(['add', 'docs/research/supervisors'])
+  git(['commit', '-m', 'fixture: candidate owns valid evidence'])
+
+  git(['switch', 'main'])
+  const partial = runEvidence(['--partial', 'psychology', '--ref', 'candidate'])
+  assert.match(partial, /psychology: 100 unique primary studies; 10 topics/)
+  const full = runEvidence(['--ref', 'candidate'])
+  assert.match(full, /pedagogical: 100\/100 unique primary studies; 10 topics/)
+  assert.match(full, /psychology: 100\/100 unique primary studies; 10 topics/)
+  assert.match(full, /Supervisor evidence gate: READY/)
+
+  assert.throws(
+    () => runEvidence(['--partial', 'psychology', '--ref', 'main']),
+    'missing corpus on the candidate ref must fail closed',
+  )
+
+  git(['switch', '-c', 'invalid'])
+  mkdirSync(evidenceDir, { recursive: true })
+  writeFileSync(join(evidenceDir, 'psychology-primary.json'), '{ definitely-not-json')
+  git(['add', 'docs/research/supervisors/psychology-primary.json'])
+  git(['commit', '-m', 'fixture: invalid candidate evidence'])
+  git(['switch', 'main'])
+  assert.throws(
+    () => runEvidence(['--partial', 'psychology', '--ref', 'invalid']),
+    'invalid candidate JSON must fail closed',
+  )
+} finally {
+  rmSync(evidenceRepo, { recursive: true, force: true })
+}
 ok()
 
 console.log(`check-cloud-automation — OK (${groups} groups)`)
