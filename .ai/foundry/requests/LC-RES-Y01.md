@@ -140,3 +140,42 @@ hitting a different lane/task/file (`pedagogical-primary.json` vs.
 root-cause diagnosis and suggested fix above with a second, independent,
 live production instance — whichever lane owns `.github/scripts/**` should
 treat this as confirmed and not branch-specific.
+
+## Update (2026-08-21, new session): re-verified, still blocked, escalating ownership gap
+
+Fresh session, no prior context carried over except this file/branch/PR state.
+Re-checked everything from scratch rather than trusting the earlier entries:
+
+- Branch is even with `origin/main` (`ff6ee28`) — no rebase needed, no conflicts.
+- Content diff vs. `origin/main` is unchanged: 4 files, all inside scope
+  (`psychology-primary.json`, `batches/psy-01.md`, this request file, the
+  completion marker).
+- `node .github/scripts/check-supervisor-evidence.mjs --partial psychology` →
+  `psychology: 30 unique primary studies; 12 topics` — passes, exit 0.
+- `node .github/scripts/check-foundry-scope.mjs --branch foundry/research-psy/lc-res-y01 --base origin/main --head HEAD`
+  → `Foundry scope OK for LC-RES-Y01: 4 changed files.` — passes, exit 0.
+- Read current `main`'s `.github/scripts/check-foundry-scope.mjs` directly: the
+  `--require-complete` branch still does
+  `spawnSync(process.execPath, [evidenceScript, '--partial', domain], { stdio:'inherit' })`
+  with no ref/path argument, and `merge-foundry-pr.sh` still never checks out
+  `origin/$BRANCH` before calling it with `--require-complete`. The bug
+  described above is unchanged and still live on `main`.
+- PR #50's per-commit CI checks are still green (`frontend`, `backend`,
+  `guards`); `evidence` check shows `skipping` (that check only runs on
+  ready/non-draft PRs, which this deliberately stays as, per the reasoning
+  below).
+- Checked `.ai/foundry/tasks.json` for a task whose `writeScopes` covers
+  `.github/scripts/**`: **none exists.** No current Foundry lane owns the file
+  that needs the fix. Since `.github/scripts/**` is also outside every research
+  lane's scope, no research worker can fix this in-scope, and the task graph
+  itself doesn't have a task to claim it. This is worth a human/product-queue
+  decision (e.g. a new ops-lane task, or a direct `.ai/TASKS.md` entry) rather
+  than something a Foundry research worker can resolve by waiting.
+
+No new action taken beyond this note: marking the PR ready would just get
+auto-reverted to draft with the same `scope-or-quality` / `0 unique primary
+studies` false negative already reproduced twice (this branch and sibling
+PR #53). Left in draft. This task's own deliverable (25+ new unique verified
+primary psychology studies, batch 1/4) remains complete and unchanged; nothing
+here required re-running the two-clean-cycle QA cycle since no code/content
+changed.
