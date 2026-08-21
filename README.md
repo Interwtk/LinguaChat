@@ -1,217 +1,110 @@
-# LinguaChat Local
+# LinguaChat
 
-Proyecto local con backend FastAPI y frontend premium Vite/React.
+LinguaChat is a language-learning product centered on guided conversation and structured practice.
 
-## Estructura
+## Product identity
 
-```text
-LinguaChat-local/
-  linguachat-backend/       # API FastAPI real
-  linguachat-frontend/      # frontend premium oficial
-  linguachat-frontend-old/  # respaldo del frontend CRA anterior
-```
+- **Lingua** is the tutor and conversational teaching agent.
+- **Chatto** is the visual mascot only. Chatto does not act as a second tutor or chat agent.
+- The language being learned is **English** (`target_language`).
+- The learner has one auxiliary **`user_language`** for the interface, explanations, hints, corrections, interpretations and meanings.
 
-La tutora del producto se llama **Lingua**.
+The current implemented auxiliary locales are:
 
-## Backend
+`en`, `es`, `pt`, `fr`, `it`, `de`, `ja`, `ar`.
 
-Instalacion:
+Unsupported languages must not be presented as fully supported just because the app can fall back to English. Arabic auxiliary UI renders RTL; target-English content and English inputs remain LTR.
 
-```powershell
-cd linguachat-backend
-python -m pip install -r requirements.txt
-```
+## Current curriculum truth
 
-Ejecucion:
+### Pre-A1
 
-```powershell
-python -m uvicorn main:app --reload
-```
+Pre-A1 is complete, available and **frozen**. Its curriculum and visual teaching flow are not a place for opportunistic edits.
 
-La API queda disponible en `http://127.0.0.1:8000` y su documentacion en
-`http://127.0.0.1:8000/docs`.
+### A1
 
-### Que proveedor usa el backend
+A1 is partially implemented and remains **unavailable to learners** (`available: false`). Runtime arcs 1–5 exist. The live curriculum blueprint still has two designed but unimplemented arcs:
 
-Una sola variable lo decide, `LINGUACHAT_PROVIDER`:
+- arc 6 — `what_you_can_do`, episodes 34–35;
+- arc 7 — `making_arrangements`, episodes 36–38.
 
-| modo | que hace |
-|---|---|
-| `local` (por defecto) | motor local determinista. Conversacion real, sin red, sin coste. |
-| `fake` | escenarios guionizados de evaluacion (ver mas abajo). Sin red. |
-| `openai` | el modelo real. Necesita `OPENAI_API_KEY`. |
+A1 must remain fail-closed until all planned A1 runtime work is complete, the final all-arcs pedagogical acceptance gate passes, and a separate explicit availability decision is made.
 
-**Tener una API key NO activa el proveedor real.** Una key es una capacidad;
-usarla es una decision, y la decision es esa linea. Esto es deliberado: antes
-bastaba con que la key fuera legible, asi que un `.env` de desarrollo con key
-mandaba peticiones reales en cuanto alguien escribia en el chat local.
+Planning or Foundry documents for A2+ do not make A2+ runtime curriculum available.
 
-Desarrollo y QA normal (nada que recordar, nada que borrar):
+## Frozen visual architecture
 
-```powershell
-cd linguachat-backend
-python -m uvicorn main:app --reload
-```
+The established product navigation and responsive architecture are frozen around:
 
-Probar el modelo real, a proposito:
+**Hoy · Chats · Palabras · Tú**
 
-```powershell
-$env:LINGUACHAT_PROVIDER = "openai"     # y OPENAI_API_KEY configurada en .env
-python -m uvicorn main:app --reload
-```
+Existing responsive layouts, navigation behavior, component hierarchy and Chatto presentation should be preserved unless a separately approved visual task changes that contract.
 
-Si pides `openai` sin key, el servidor **no arranca** y dice por que: servir
-respuestas locales a quien cree estar probando OpenAI es peor que un error claro.
-Un modo mal escrito (`banana`) tampoco activa nada: se queda en `local` con un
-warning. `OPENAI_ENABLED=false` sigue siendo un interruptor sobre las peticiones
-reales, y no desactiva el fake, que no hace ninguna.
+## What is real today
 
-Al arrancar, el backend registra una linea con el modo elegido y nunca con la
-key. El header `X-LinguaChat-Provider` sigue diciendo quien respondio cada turno
-(`local` u `openai`).
+- local guided-conversation and curriculum runtime;
+- Pre-A1 curriculum and A1 arcs 1–5;
+- learner progress stored locally in the browser;
+- one canonical auxiliary `user_language`;
+- eight implemented auxiliary locales including Arabic RTL;
+- placement that distinguishes a diagnostic CEFR result from the curriculum LinguaChat can actually teach today;
+- curriculum/evaluator/learner-model QA, including per-arc learner-journey stress tests;
+- source-level i18n linting for raw keys, hardcoded auxiliary copy and duplicate locale keys.
 
-### Provider simulado (solo desarrollo y pruebas)
+## What is intentionally not implemented
 
-La evaluacion remota vive detras de un `EvaluationProvider`. Junto al real hay
-uno falso que reproduce, a proposito, los casos feos que no se pueden esperar a
-que ocurran solos:
+- no cloud account/persistence backend;
+- no Supabase/Auth/Postgres/Storage/pgvector/Edge Functions under the current product contract;
+- no voice, STT, TTS, pronunciation scoring, WebRTC, calls or video calls;
+- no real paid-provider runtime calls;
+- no A2+ runtime curriculum;
+- no production payments/deployment promise in this repository baseline.
 
-```powershell
-$env:LINGUACHAT_FAKE_PROVIDER = "success"       # veredicto valido
-$env:LINGUACHAT_FAKE_PROVIDER = "timeout"       # la peticion nunca vuelve a tiempo
-$env:LINGUACHAT_FAKE_PROVIDER = "invalid"       # JSON que no cumple el contrato
-$env:LINGUACHAT_FAKE_PROVIDER = "contradictory" # "exito" y "reintenta" a la vez
-$env:LINGUACHAT_FAKE_PROVIDER = "error"         # el proveedor lanza una excepcion
-$env:LINGUACHAT_FAKE_PROVIDER = "disabled"      # no hay proveedor remoto
-```
+Historical design/research documents may discuss deferred ideas. They are not implementation authorization and do not override `CLAUDE.md`, `.ai/STATE.md`, `.ai/TASKS.md` or the current owner contract.
 
-Solo se activa cuando se pide (`LINGUACHAT_PROVIDER=fake`, o la propia
-`LINGUACHAT_FAKE_PROVIDER`, que ademas nombra el escenario), asi que un
-despliegue normal no puede terminar sobre mocks. Y el fake gana sobre `openai`:
-quien pidio un escenario guionizado esta haciendo una prueba controlada, y
-convertirla en una llamada real la invalidaria. Nunca llama a OpenAI real y no
-debe usarse en produccion; es para desarrollo y para las pruebas automaticas.
+## Repository layout
 
-Las pruebas automaticas no pueden llegar a OpenAI por dos razones independientes:
-`tests/conftest.py` fuerza modo `local` y quita la key del entorno, y ademas
-construir un cliente real de OpenAI hace fallar el test que lo intente. Los tests
-que ejercitan la ruta del proveedor real piden el modo explicitamente y sustituyen
-el cliente, asi que tampoco salen a la red.
-Cualquiera que sea la respuesta, sigue pasando por la validacion estricta antes
-de que se confie en ella.
+- `linguachat-frontend/` — React/Vite frontend, curriculum runtime, local learner state and i18n.
+- `linguachat-backend/` — FastAPI/backend evaluator and provider boundary.
+- `docs/` — product, research, architecture and curriculum contracts.
+- `.ai/` — live queue, state, handoff and coordination decisions.
+- `.github/` — QA and autonomous orchestration.
 
-## Frontend oficial
+The old `linguachat-frontend-old/` Create React App tree and unrelated empty root text files were proven unused and removed by `LC-DOC-001` rather than kept as misleading architecture.
 
-Instalacion:
+## Local development
 
-```powershell
+Frontend:
+
+```bash
 cd linguachat-frontend
-npm install
-```
-
-Ejecucion:
-
-```powershell
+npm ci
 npm run dev
 ```
 
-Vite sirve la aplicacion en `http://localhost:5173`.
+Frontend validation:
 
-Configura la URL del backend copiando `.env.example` a `.env`:
-
-```env
-VITE_API_URL=http://127.0.0.1:8000
-```
-
-Si no se define la variable, el frontend usa esa misma URL local por defecto.
-
-## Integracion real
-
-El Practice Room envia mensajes a `POST /chat` mediante
-`linguachat-frontend/src/services/api.js`.
-
-Payload del frontend:
-
-```json
-{
-  "message": "how you are",
-  "level": "B1",
-  "mode": "Friendly",
-  "history": []
-}
-```
-
-El servicio normaliza respuestas con `reply`, `response`, `message` o un string
-al contrato usado por la interfaz:
-
-```json
-{
-  "reply": "string",
-  "correction": null,
-  "explanation": null,
-  "suggestion": null,
-  "mode": "chat"
-}
-```
-
-Si OpenAI no esta disponible, el backend usa su motor local y la interfaz lo
-indica sin interrumpir el chat. Si FastAPI no responde, el frontend usa el
-fallback mock para no bloquear la demo.
-
-## Memoria y progreso local
-
-El frontend conserva en `localStorage`:
-
-- `lc2-session-id`: identificador anonimo y persistente de la sesion local.
-- `lc2-chat-messages`: hasta 100 mensajes recientes del Practice Room.
-- `lc2-local-progress`: streak, XP, confianza, mensajes, correcciones, temas,
-  frases aprendidas y resumen de sesiones.
-- `lc2-active-mission`: mision guiada en curso, paso actual, respuestas y XP.
-- `lc2-completed-missions`: misiones terminadas en este dispositivo.
-
-El backend usa `session_id` para conservar solamente las ultimas 8
-interacciones en RAM. No persiste perfiles, emails ni preferencias. Si FastAPI
-se reinicia, puede reconstruir contexto corto desde el `history` enviado por el
-frontend.
-
-Conversation Archive, Memory Garden, Language Identity y Journey Rail muestran
-mocks durante la primera sesion. Despues de practicar, sustituyen gradualmente
-esas cifras por datos reales guardados en el dispositivo.
-
-`Language Identity` incluye el boton **Reset local progress**, que borra solo
-sesion, chat y progreso local; no elimina el perfil mock ni cambia la
-configuracion visual.
-
-## Misiones guiadas
-
-Today y Journey Rail pueden iniciar una Practice Mission segun nivel y objetivo.
-La mision se integra dentro del chat: Lingua presenta la practica, envia cada
-paso como mensaje, muestra opciones como chips cuando corresponde y evalua la
-respuesta desde el input normal del Practice Room.
-
-Al completar pasos se suma XP local. Al terminar una mision se guarda el avance
-en `localStorage` y se actualizan Today, Journey Rail y Language Identity. El
-usuario tambien puede salir de una mision y volver al chat libre sin borrar el
-progreso anterior.
-
-## Flujos mock
-
-Por ahora siguen siendo locales y no requieren backend:
-
-- Entry, login, signup y recuperacion de contrasena.
-- Placement test y configuracion de personalidad.
-- Preferencias y perfil.
-- Language Identity.
-- Memory Garden.
-- Conversation Archive.
-
-No se implementaron auth real, base de datos, pagos ni deploy en esta etapa.
-
-## Verificacion
-
-```powershell
-python -m compileall linguachat-backend
-cd linguachat-frontend
-npm install
+```bash
+npm run check:all
 npm run build
+npm run check:i18n
 ```
+
+Backend:
+
+```bash
+cd linguachat-backend
+python -m pip install -r requirements.txt
+python -m compileall .
+python -m pytest -q
+```
+
+The runtime provider contract remains local for repository development and QA; do not introduce real paid-provider calls to make tests pass.
+
+## Quality contract
+
+A green structural check is necessary but not sufficient. Changes must prove the flow they affect. Runtime episode work requires happy-path, wrong/retry, assisted/model-use and replay-without-duplicate-reward evidence. UI/i18n changes require rendered checks at 390px and 1440px, including Spanish, Japanese and Arabic where applicable.
+
+After any fix, validation restarts. A final change needs two consecutive clean full cycles on the exact final head: frontend `check:all`, production build, i18n validation, backend `compileall`, backend pytest and repository guards.
+
+See `CLAUDE.md`, `.ai/STATE.md`, `.ai/TASKS.md` and `.ai/HANDOFF.md` for the live operating contract.
