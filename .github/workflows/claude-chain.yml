@@ -59,17 +59,24 @@ jobs:
   advance:
     needs: [merge]
     # `always()` is required because merge is intentionally skipped for schedule,
-    # workflow_dispatch and pull_request.closed entry points.
+    # workflow_dispatch and pull_request.closed entry points. Foundry QA events also
+    # enter here even when red so the self-healing cycle can return/resume that PR.
     if: >
       always() &&
       (
         github.event_name == 'schedule' ||
         github.event_name == 'workflow_dispatch' ||
         (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
-        (github.event_name == 'workflow_run' && needs.merge.outputs.merged == 'true')
+        (
+          github.event_name == 'workflow_run' &&
+          (
+            needs.merge.outputs.merged == 'true' ||
+            startsWith(github.event.workflow_run.head_branch, 'foundry/')
+          )
+        )
       )
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -82,6 +89,19 @@ jobs:
 
       - name: Refresh main after a same-run merge
         if: github.event_name == 'workflow_run' && needs.merge.outputs.merged == 'true'
+        run: |
+          git fetch origin main --quiet
+          git reset --hard origin/main
+
+      # This runs independently of the serial writer lock. Foundry tasks have their
+      # own per-lane concurrency and exact write scopes, so a docs/backend task in
+      # the old queue must not stall evidence research or independent blueprints.
+      - name: Advance Curriculum Foundry independently
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/run-foundry-cycle.sh
+
+      - name: Refresh main after Foundry cycle
         run: |
           git fetch origin main --quiet
           git reset --hard origin/main
@@ -101,7 +121,7 @@ jobs:
           done
           echo "running=$RUNNING" >> "$GITHUB_OUTPUT"
           if [ "$RUNNING" != "0" ]; then
-            echo "Another Claude writer is alive; watchdog will not mutate the queue." >> "$GITHUB_STEP_SUMMARY"
+            echo "Another serial Claude writer is alive; watchdog will not mutate the serial queue." >> "$GITHUB_STEP_SUMMARY"
           fi
 
       # If a previous QA/merge event was missed, the watchdog may safely finish a

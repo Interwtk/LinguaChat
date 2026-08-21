@@ -1,0 +1,44 @@
+name: Curriculum Foundry — orchestrator
+run-name: Curriculum Foundry — ${{ github.event_name }}
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    workflows: ["QA"]
+    types: [completed]
+  pull_request:
+    types: [closed]
+  schedule:
+    - cron: '7,27,47 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+  checks: read
+  issues: write
+
+concurrency:
+  group: linguachat-curriculum-foundry-orchestrator
+  cancel-in-progress: false
+
+jobs:
+  orchestrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run one self-healing Foundry cycle
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/run-foundry-cycle.sh
