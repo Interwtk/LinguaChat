@@ -1,0 +1,12 @@
+{
+  "taskId": "LC-BP-C1",
+  "lane": "level-c1",
+  "status": "complete",
+  "cleanCycles": 2,
+  "artifacts": [
+    "docs/curriculum/blueprints/c1.md",
+    "docs/curriculum/blueprints/c1.json",
+    ".ai/foundry/requests/LC-BP-C1.md"
+  ],
+  "notes": "Design-only C1 blueprint: 28 capabilities (21 required, 7 should) across 7 arcs. Cross-level prerequisites reference explicitly flagged assumed B1/B2 exit capabilities pending LC-AUD-001, consistent with the same pattern LC-BP-C2 used for assumed C1 exit capabilities. Four CORE-engine requirements raised in the request doc, none implemented privately."
+}
