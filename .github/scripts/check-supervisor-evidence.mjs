@@ -1,10 +1,11 @@
 #!/usr/bin/env node
+import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 const FILES = {
-  pedagogical: new URL('../../docs/research/supervisors/pedagogical-primary.json', import.meta.url),
-  psychology: new URL('../../docs/research/supervisors/psychology-primary.json', import.meta.url),
+  pedagogical: 'docs/research/supervisors/pedagogical-primary.json',
+  psychology: 'docs/research/supervisors/psychology-primary.json',
 }
 const MIN = 100
 const required = [
@@ -75,10 +76,27 @@ export function validateCorpus(domain, records, { requireReady = true } = {}) {
   return { domain, records, errors, uniqueCount, topicCounts: Object.fromEntries(topicCounts) }
 }
 
-function load(domain, url, options) {
-  if (!existsSync(url)) return { domain, records: [], errors: [`missing ${url.pathname}`], uniqueCount: 0, topicCounts: {} }
+function readCorpusText(path, ref) {
+  if (ref) {
+    try {
+      return execFileSync('git', ['show', `${ref}:${path}`], { encoding:'utf8', stdio:['ignore','pipe','pipe'] })
+    } catch {
+      return null
+    }
+  }
+  const url = new URL(`../../${path}`, import.meta.url)
+  if (!existsSync(url)) return null
+  return readFileSync(url, 'utf8')
+}
+
+function load(domain, path, options, ref = null) {
+  const text = readCorpusText(path, ref)
+  if (text === null) {
+    const where = ref ? `${path} at ${ref}` : path
+    return { domain, records: [], errors: [`missing ${where}`], uniqueCount: 0, topicCounts: {} }
+  }
   let records
-  try { records = JSON.parse(readFileSync(url, 'utf8')) } catch (e) { return { domain, records: [], errors: [`invalid JSON: ${e.message}`], uniqueCount: 0, topicCounts: {} } }
+  try { records = JSON.parse(text) } catch (e) { return { domain, records: [], errors: [`invalid JSON: ${e.message}`], uniqueCount: 0, topicCounts: {} } }
   return validateCorpus(domain, records, options)
 }
 
@@ -86,14 +104,16 @@ function runCli() {
   const partialIndex = process.argv.indexOf('--partial')
   const partial = partialIndex >= 0
   const requestedDomain = partial && process.argv[partialIndex + 1] && !process.argv[partialIndex + 1].startsWith('--') ? process.argv[partialIndex + 1] : null
+  const refIndex = process.argv.indexOf('--ref')
+  const ref = refIndex >= 0 && process.argv[refIndex + 1] && !process.argv[refIndex + 1].startsWith('--') ? process.argv[refIndex + 1] : null
   const entries = requestedDomain ? [[requestedDomain, FILES[requestedDomain]]] : Object.entries(FILES)
   if (requestedDomain && !FILES[requestedDomain]) {
     console.error(`Unknown evidence domain: ${requestedDomain}`)
     process.exit(2)
   }
   let failed = false
-  for (const [domain, url] of entries) {
-    const result = load(domain, url, { requireReady: !partial })
+  for (const [domain, path] of entries) {
+    const result = load(domain, path, { requireReady: !partial }, ref)
     console.log(`${domain}: ${result.uniqueCount || 0}${partial ? '' : `/${MIN}`} unique primary studies; ${Object.keys(result.topicCounts || {}).length} topics`)
     if (result.errors.length) {
       failed = true
