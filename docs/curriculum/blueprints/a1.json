@@ -421,7 +421,7 @@
     { "id": "possessive_pattern", "form": "my / your / his / her + noun", "enables": ["introduce_someone_else"], "prerequisite": null, "reaches": "guided_production", "firstArc": "people_around_you", "reuseArcs": ["finding_your_way", "paying_and_choosing"] },
     { "id": "where_is_pattern", "form": "Where is / Where's + thing?", "enables": ["ask_where_something_is", "ask_about_getting_somewhere"], "prerequisite": "its_a_pattern", "reaches": "independent", "firstArc": "finding_your_way", "reuseArcs": ["paying_and_choosing", "making_arrangements"] },
     { "id": "its_location_pattern", "form": "It's + here / there / next to / near + X", "enables": ["say_where_something_is"], "prerequisite": "its_a_pattern", "reaches": "independent", "firstArc": "finding_your_way", "reuseArcs": ["making_arrangements"] },
-    { "id": "numbers_11_100", "form": "eleven ... one hundred", "enables": ["use_bigger_numbers", "ask_the_price", "say_when_something_happens"], "prerequisite": "numbers_1_10", "reaches": "independent", "firstArc": "paying_and_choosing", "reuseArcs": ["making_arrangements"] },
+    { "id": "numbers_11_100", "form": "eleven … one hundred", "enables": ["use_bigger_numbers", "ask_the_price", "say_when_something_happens"], "prerequisite": "numbers_1_10", "reaches": "independent", "firstArc": "paying_and_choosing", "reuseArcs": ["making_arrangements"] },
     { "id": "how_much_pattern", "form": "How much is it / are they?", "enables": ["ask_the_price"], "prerequisite": "quantity_pattern", "reaches": "independent", "firstArc": "paying_and_choosing", "reuseArcs": ["making_arrangements"] },
     { "id": "price_pattern", "form": "It's + number (+ neutral unit)", "enables": ["buy_something"], "prerequisite": "numbers_11_100", "reaches": "guided_production", "firstArc": "paying_and_choosing", "reuseArcs": [] },
     { "id": "can_ability_pattern", "form": "I can / I can't + verb", "enables": ["say_what_you_can_do"], "prerequisite": null, "reaches": "independent", "firstArc": "what_you_can_do", "reuseArcs": ["making_arrangements"] },
@@ -442,7 +442,7 @@
       { "id": "transport_mode", "requiredBy": ["ask_about_getting_somewhere"], "incompatibleWith": ["place"], "status": "only needed if the should-have transport episode is built; drop the type with the episode" }
     ],
     "explicitlyNotNeeded": [
-      { "id": "job", "why": "A workplace is a place; naming professions is a vocabulary list the level refuses." },
+      { "id": "job", "why": "A workplace is a `place`; naming professions is a vocabulary list the level refuses." },
       { "id": "money", "why": "A price is a number with a neutral unit; the evaluator compares the number." },
       { "id": "month", "why": "Dates are deferred to A2." },
       { "id": "colour", "why": "No A1 capability needs it." }
@@ -454,7 +454,7 @@
     "newIntents": ["state_life_fact", "ask_life_fact", "state_routine", "ask_routine", "introduce_person", "state_person_fact", "ask_location", "state_location", "ask_transport", "ask_price", "state_price", "state_ability", "ask_ability", "arrange_meeting"],
     "newSubtypesOnExistingIntents": [
       { "intent": "repair_request", "newRepairKinds": ["ask_meaning", "ask_how_to_say"] },
-      { "intent": "use_quantity", "change": "level-aware taught range so 11-100 counts as target evidence in A1 while Pre-A1 keeps 1-10" }
+      { "intent": "use_quantity", "change": "level-aware taught range so 11–100 counts as target evidence in A1 while Pre-A1 keeps 1–10" }
     ],
     "counts": { "preA1Intents": 29, "newA1Intents": 14, "wouldBeUnderOnePerPhrase": 30 },
     "explosionGuard": "If an arc's design needs more than three new intents, the arc is teaching phrases rather than a capability."
@@ -469,12 +469,14 @@
   },
 
   "counts": {
-    "arcs": 7, "episodes": 21, "episodeRange": "20-24",
+    "arcs": 7, "episodes": 21, "episodeRange": "20–24",
     "canDosRequired": 13, "canDosShould": 3, "canDosOptional": 2, "canDosDeferred": 12,
     "newPatterns": 19, "newIntents": 14, "newSemanticTypesRequired": 3, "newSemanticTypesShould": 1,
     "newProductiveVocabularyBudget": 50, "newReceptiveVocabularyBudget": 46,
     "plannedEpisodeNumbers": [18, 38]
   },
+
+  "episodesNote": "The per-episode array (plannedNumber, situation, novelty, newLanguageBudget, reusedLanguage, likelyFormats, evidence) is intentionally NOT duplicated in this file. It already exists, runtime-checked, at docs/curriculum/a1-blueprint.json.episodes and is validated per arc by check:a1-arc1 through check:a1-arc5. Copying it here would create a second source of truth for exactly the data that check-a1-blueprint.mjs exists to keep honest, with no way to guarantee the copy stays in sync as arcs 6-7 are built. Each arc's episode NUMBERS are still listed at arcs[].episodes above for at-a-glance cross-referencing; full episode content lives only in the live blueprint.",
 
   "reuseMatrix": {
     "legendSource": "docs/curriculum/a1-blueprint.json (I introduced, R reused-and-evaluated, C consolidated in an integrated conversation)",
@@ -515,13 +517,13 @@
       "arrange_to_meet": ["-", "-", "-", "-", "-", "-", "I/C"]
     },
     "singleAppearanceRisks": ["ask_about_getting_somewhere", "ask_the_price", "buy_something"],
-    "mitigation": "The three thin rows are all in the transactions branch. ask_the_price and buy_something return in the closing arc only as receptive input, so the review scheduler carries them; ask_about_getting_somewhere is a should-have and is the first candidate to drop if the level needs trimming."
+    "mitigation": "The three thin rows are all in the transactions branch. `ask_the_price` and `buy_something` return in the closing arc only as receptive input, so the review scheduler carries them; `ask_about_getting_somewhere` is a should-have and is the first candidate to drop if the level needs trimming."
   },
 
   "autonomy": {
-    "early": { "arcs": ["work_and_study", "daily_rhythm"], "modelAnswer": "available while a frame is new, withheld on the arc's last recall", "openProductionsPerEpisode": "2-3", "learnerInitiatedQuestions": "1 per arc", "repair": "planted once per arc" },
-    "mid": { "arcs": ["people_around_you", "finding_your_way", "paying_and_choosing"], "modelAnswer": "withheld on the integrated episode of each arc", "openProductionsPerEpisode": "2-4", "learnerInitiatedQuestions": "1-2 per arc", "repair": "required by design in at least one episode per arc" },
-    "late": { "arcs": ["what_you_can_do", "making_arrangements"], "modelAnswer": "withheld by default; support returns after a wrong answer", "openProductionsPerEpisode": "3-5", "learnerInitiatedQuestions": "2 per arc", "repair": "learner-chosen rather than scripted" },
+    "early": { "arcs": ["work_and_study", "daily_rhythm"], "modelAnswer": "available while a frame is new, withheld on the arc's last recall", "openProductionsPerEpisode": "2–3", "learnerInitiatedQuestions": "1 per arc", "repair": "planted once per arc" },
+    "mid": { "arcs": ["people_around_you", "finding_your_way", "paying_and_choosing"], "modelAnswer": "withheld on the integrated episode of each arc", "openProductionsPerEpisode": "2–4", "learnerInitiatedQuestions": "1–2 per arc", "repair": "required by design in at least one episode per arc" },
+    "late": { "arcs": ["what_you_can_do", "making_arrangements"], "modelAnswer": "withheld by default; support returns after a wrong answer", "openProductionsPerEpisode": "3–5", "learnerInitiatedQuestions": "2 per arc", "repair": "learner-chosen rather than scripted" },
     "principle": "Phase is a design expectation, not a rule the engine applies. The support engine keeps deciding from this learner's evidence, exactly as it does in Pre-A1 — per master contract section 10, no level-specific implementation may bypass the central scaffolding logic."
   },
 
@@ -547,7 +549,7 @@
       { "dimension": "no fragile required capability", "appliesTo": "the 13 required A1 can-dos" },
       { "dimension": "breadth", "appliesTo": "the seven skill families", "note": "recent evidence from at least five of them, so a learner cannot leave the level on one branch" }
     ],
-    "notCriteria": ["every language item at can_use", "any 0-100 score", "episode completion as mastery"],
+    "notCriteria": ["every language item at can_use", "any 0–100 score", "episode completion as mastery"],
     "lastRequiredA1Capability": "arrange_to_meet",
     "firstA2Capability": "talk_about_what_you_did"
   },
@@ -607,22 +609,22 @@
   "explicitExclusions": {
     "deferredToA2": [
       { "id": "talk_about_what_you_did", "why": "A second tense doubles every pattern the level owns. It is the first A2 capability precisely because it is the obvious next unlock.", "firstA2": true },
-      { "id": "talk_about_future_plans_with_going_to", "why": "A present tense with a time word already arranges things. going_to adds a form without adding a function A1 needs." },
-      { "id": "explain_a_reason", "why": "because turns one clause into two. Choice and preference work without it at this level." },
+      { "id": "talk_about_future_plans_with_going_to", "why": "A present tense with a time word already arranges things. `going to` adds a form without adding a function A1 needs." },
+      { "id": "explain_a_reason", "why": "`because` turns one clause into two. Choice and preference work without it at this level." },
       { "id": "follow_multi_step_directions", "why": "Asking where something is and understanding a short answer is the autonomy; left/right/straight sequences are a comprehension load of their own." },
-      { "id": "describe_people_and_places", "why": "One attribute is enough for A1 (She's a student). Adjective order, plurals and there is/are belong together, later." },
-      { "id": "third_person_s_productive", "why": "Heard throughout A1, produced in A2. The morphology costs more than the capability it adds while is covers most needs." },
+      { "id": "describe_people_and_places", "why": "One attribute is enough for A1 (`She's a student`). Adjective order, plurals and `there is/are` belong together, later." },
+      { "id": "third_person_s_productive", "why": "Heard throughout A1, produced in A2. The morphology costs more than the capability it adds while `is` covers most needs." },
       { "id": "dates_and_months", "why": "Days of the week serve arrangements. Dates need ordinals and a second number system." },
       { "id": "spell_aloud", "why": "The alphabet is a system, not a phrase, and it pays off mainly with contact details this product does not collect." },
       { "id": "accommodation_and_travel_booking", "why": "A new context with its own vocabulary, when the transactional muscle A1 builds is already exercised by a shop and a counter." },
-      { "id": "comparatives", "why": "Choosing works with this one at A1. Comparison is a structure with no A1 function." },
+      { "id": "comparatives", "why": "Choosing works with `this one` at A1. Comparison is a structure with no A1 function." },
       { "id": "frequency_full_set", "why": "Two adverbs make a routine truthful. Four make a grammar exercise." },
       { "id": "give_personal_contact_details", "why": "Deliberate product decision: the curriculum never trains a learner to type real personal data." }
     ],
     "optionalOrNotTaken": [
       { "id": "say_your_age", "scope": "optional", "why": "Cheap to say and rarely needed to act. Available as receptive input inside personal exchanges; not a required production." },
-      { "id": "describe_someone_simply", "scope": "optional", "why": "Trimmed from the required set in review: He's a student already carries the function, and adjectives invite a catalogue." },
-      { "id": "colours", "scope": "not_taken", "why": "A vocabulary set looking for a capability. If choosing ever needs it, this one is doing the work." },
+      { "id": "describe_someone_simply", "scope": "optional", "why": "Trimmed from the required set in review: `He's a student` already carries the function, and adjectives invite a catalogue." },
+      { "id": "colours", "scope": "not_taken", "why": "A vocabulary set looking for a capability. If choosing ever needs it, `this one` is doing the work." },
       { "id": "understand_simple_written_instructions", "scope": "not_taken", "why": "Mostly interface language, which the product already localises." }
     ]
   },
