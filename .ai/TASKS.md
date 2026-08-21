@@ -21,22 +21,13 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-QA-001] Extend check:i18n into a real linter
-  owner:  claude-action
-  branch: qa/lc-qa-001-i18n-linter
-  why:    the current check proves key parity only and missed every material defect found in LC-I18N-001.
-  done:   detect hardcoded visible auxiliary strings, placeholder mismatches,
-          duplicate locale keys, unsupported-language claims, raw-key/silent fallback
-          cases that can be proved statically or through a harness, plural-category
-          contract violations, and user_language divergence without absurd false
-          positives for product names, URLs, codes or intentional target English.
+_(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-SEC-001] Audit and safely resolve the current frontend dependency vulnerabilities
   owner:  unclaimed
   branch: none
-  blocked-on: LC-QA-001
   why:    `npm ci` reports 1 moderate and 3 high vulnerabilities; severity alone is not enough to justify a forced upgrade.
   done:   record exact advisory/package/dependency paths and runtime-vs-build exposure;
           upgrade only through compatible safe ranges or document why an advisory is
@@ -99,6 +90,50 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## DONE
 
+- [LC-QA-001] Extend check:i18n into a real linter — PR #31: new
+  `check-i18n-lint.mjs` (wired into `check:all` right after `check-i18n.mjs`)
+  builds the real import graph from `src/main.jsx` and walks every reachable
+  file with `@babel/parser`/`@babel/traverse` (JSX-aware AST, not regex) for
+  two defect classes a dictionary-diff can never see: a literal `t('key')`
+  call whose key is not in the base dictionary (raw-key/silent-fallback — the
+  literal key string renders to every learner in every locale while coverage
+  still reads 100%), and a JSXText/`aria-label`/`placeholder`/`title`/`alt`
+  string literal that looks like real prose instead of a code/product token
+  (hardcoded visible auxiliary string) — excluding the codebase's own
+  established `lang="en"` wrapper convention for intentional target-English
+  content. Unreachable `.jsx` files (found: `OnboardingFlow.jsx`, zero
+  importers) are reported for visibility, never scanned/gated, so dead code
+  can't produce false positives. `check-i18n.mjs` gains a **duplicate-key
+  gate** (a repeated `key:` in one dictionary literal silently keeps only the
+  last value — invisible to coverage/placeholder diffs either way); both
+  scripts now share `scripts/lib/i18nSource.mjs` instead of drifting two
+  parsers. `check:language-support` (LC-I18N-002) and `check:user-language`
+  (LC-I18N-003) already gated unsupported-language claims and `user_language`
+  divergence, so combined with this PR every defect class this task's `done`
+  criteria named is now a real regression gate, not prose. One real defect
+  found and fixed (not baselined): `ConversationArchive.jsx`'s `"+N
+  confidence pts"` was a hardcoded English string never routed through `t()`
+  — now `confidencePtsGained`, translated in all 7 locales. Each of the three
+  gates (duplicate-key, raw-key, hardcoded-string) was verified live by
+  injecting a synthetic defect and confirming the exact gate fails with the
+  right file/line, then restoring and confirming clean again — not just
+  "the code looks right". No pre-existing debt found otherwise, so this gate
+  starts at zero with no baseline/allowlist file to carry forward.
+  `check:all` **57/57** (was 56), two consecutive clean cycles; `check:i18n`
+  base grows to 1727 keys (the new key), 100% coverage es/pt/fr/it/de/ja/ar
+  unchanged; build entry 447.85 kB / bundle-boundaries entry 438.6 kB, two
+  consecutive clean cycles; backend `compileall` clean + 444 pytest passed,
+  two consecutive clean cycles, unchanged (one pre-existing Pydantic V1
+  `@validator` warning, tracked as `LC-BE-001`, not touched here). Real
+  browser proof (Playwright/Chromium, installed ad hoc with `--no-save` and
+  removed afterward) at 390px/1440px for es/ja/ar (6 runs): a seeded
+  authenticated learner with one real archived session opens Chats →
+  Conversation archive and sees the fixed `confidencePtsGained` string render
+  correctly localized — "+5 puntos de confianza" (es), "自信ポイント +5" (ja),
+  "+5 نقطة ثقة" (ar) — proving the one real defect this linter found is
+  actually fixed end to end, not just present in a dictionary; no console/
+  page errors, no horizontal overflow, no raw key leaks; Arabic renders
+  `dir="rtl"` end to end (mirrored sidebar/nav) at both viewports.
 - [LC-I18N-002] Stop advertising languages that only fall back to English
   (phase B) — PR #30: `services/language.js`'s `LANGUAGE_OPTIONS` now carries
   a `supported` flag computed from `SUPPORTED_LOCALES` (the one real source of

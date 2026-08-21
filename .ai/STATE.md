@@ -11,8 +11,10 @@ research/first-launch/Supabase-beta contracts) is merged, LC-I18N-004
 PR #22, LC-I18N-005 (honest first-launch device-language detection) is complete
 in PR #24, LC-PROD-001 (honest placement/profile/Home curriculum agreement) is
 complete in PR #25, LC-PED-001 (per-arc learner-journey pedagogical stress
-test) is complete in PR #26, and LC-I18N-002 (honest language-support catalog —
-only the 8 implemented bases are selectable anywhere) is complete in PR #30._
+test) is complete in PR #26, LC-I18N-002 (honest language-support catalog —
+only the 8 implemented bases are selectable anywhere) is complete in PR #30,
+and LC-QA-001 (a real i18n linter over reachable source, not just dictionary
+parity) is complete in PR #31._
 
 ## Product / repository
 
@@ -100,6 +102,42 @@ Full detail in `.ai/TASKS.md` DONE entry for `LC-PROD-001` (prior baseline:
   persists `ja` end to end; no overflow, no console errors, no raw `{key}`
   leaks; Arabic `dir="rtl"`, Spanish/Japanese `dir="ltr"`, all six runs.
 
+`LC-QA-001` (PR #31), latest measured baseline on top of that:
+
+- new `check-i18n-lint.mjs` (wired into `check:all` right after `check-i18n.mjs`)
+  walks the real import graph from `src/main.jsx` with `@babel/parser`/
+  `@babel/traverse` and gates two defect classes a dictionary-diff can never
+  see: raw-key/silent-fallback (`t('typoedKey')` — every locale "has" it,
+  every learner sees the literal key) and hardcoded visible auxiliary strings
+  (JSXText/`aria-label`/`placeholder`/`title`/`alt` prose that was never a
+  key), excluding the codebase's own `lang="en"` target-English convention;
+  unreachable `.jsx` (found: `OnboardingFlow.jsx`, dead code) is reported, not
+  gated;
+- `check-i18n.mjs` gains a duplicate-key gate (a repeated `key:` in one
+  dictionary literal silently keeps only the last value); both scripts share
+  new `scripts/lib/i18nSource.mjs`;
+- combined with `check:language-support` (LC-I18N-002) and `check:user-language`
+  (LC-I18N-003), every defect class this task's `done` criteria named is now a
+  real regression gate;
+- one real defect found and fixed (not baselined): `ConversationArchive.jsx`'s
+  `"+N confidence pts"` hardcoded string is now `confidencePtsGained`,
+  translated in all 7 locales;
+- each of the three gates (duplicate-key, raw-key, hardcoded-string) verified
+  live by injecting a synthetic defect and confirming the exact gate fails
+  with the right file/line, then restoring clean;
+- `check:all` **57/57** (was 56), two consecutive clean cycles; `check:i18n`
+  base grows to 1727 keys, 100% coverage es/pt/fr/it/de/ja/ar unchanged;
+- build entry 447.85 kB, `check-bundle-boundaries` entry 438.6 kB, two
+  consecutive clean cycles; backend `compileall` clean + 444 pytest passed,
+  two consecutive clean cycles, unchanged;
+- real browser proof (Playwright/Chromium, installed ad hoc and removed after
+  use) at 390px/1440px in es/ja/ar (6 runs): a seeded learner with one real
+  archived session opens Chats → Conversation archive and sees the fixed
+  `confidencePtsGained` string render correctly localized ("+5 puntos de
+  confianza" / "自信ポイント +5" / "+5 نقطة ثقة"); no console/page errors, no
+  horizontal overflow, no raw key leaks; Arabic `dir="rtl"` end to end at both
+  viewports.
+
 ## Curriculum truth
 
 | level | state |
@@ -160,10 +198,14 @@ persisted `user_language` anywhere in the product — the other 26 render
 disabled with a "coming soon" badge instead of silently falling back to
 English under a false language label; see `.ai/TRANSLATIONS.md`.
 
-Still open before further language expansion:
-
-- current `check:i18n` still cannot detect most semantic/claim defects beyond key
-  parity and plural-category completeness (`LC-QA-001` addresses this).
+`LC-QA-001` (PR #31) then closed the remaining gap: `check:i18n` still only
+proved dictionary parity, not that the reachable code actually calls real
+keys or never hardcodes visible auxiliary prose. New `check-i18n-lint.mjs`
+(AST-based, walks the real `src/main.jsx` import graph) plus a duplicate-key
+gate in `check-i18n.mjs` now cover raw-key/silent-fallback, hardcoded visible
+strings and duplicate locale keys as real regression gates, alongside the
+unsupported-language (LC-I18N-002) and `user_language`-divergence
+(LC-I18N-003) gates already in place.
 
 ## First-launch language detection — implemented (LC-I18N-005)
 
@@ -237,12 +279,11 @@ Initial cloud scope when unblocked:
 No raw audio/video, indefinite chat/event logs, pgvector, Edge Functions or Storage
 in the first cloud milestone.
 
-## Ordered quality queue after LC-I18N-002
+## Ordered quality queue after LC-QA-001
 
-1. `LC-QA-001` — real i18n lint/regression gates.
-2. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
-3. `LC-BE-001` — migrate Pydantic V1 validator.
-4. `LC-DOC-001` — stale README / proven-unused historical debris.
+1. `LC-SEC-001` — investigate 1 moderate + 3 high npm advisories safely.
+2. `LC-BE-001` — migrate Pydantic V1 validator.
+3. `LC-DOC-001` — stale README / proven-unused historical debris.
 
 `LC-CLOUD-001` is blocked only on project identity/creation, not on owner intent.
 Arc 6/7 are seeded only after the language/product/pedagogical foundation is stable.
