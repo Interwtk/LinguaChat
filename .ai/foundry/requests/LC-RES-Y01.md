@@ -109,3 +109,34 @@ contract.) PR #50's per-commit checks remain green; branch is even with
 `origin/main` (0 commits behind), so no rebase was needed. No content changes
 were made — nothing here requires re-running the two-clean-cycle QA cycle,
 since QA cycles are keyed to code/content changes and none occurred.
+
+## Update (2026-08-21, resumed session): bug confirmed repo-wide, hit a sibling PR live
+
+Re-verified independently on this branch's current head (`d323a3f`, unchanged
+content): both `check-foundry-scope.mjs --branch foundry/research-psy/lc-res-y01
+--base origin/main --head HEAD` and `check-supervisor-evidence.mjs --partial
+psychology` still exit 0 (30 studies, 12 topics). PR #50 remains `OPEN`/draft,
+`mergeable`, all per-commit checks green. Left in draft — marking it ready
+would just trigger the same false-negative bump documented below rather than
+merge, per the orchestrator log evidence just gathered.
+
+New evidence that this is a **repo-wide, still-unfixed** bug and not specific
+to this branch: orchestrator run `32507266052` (2026-08-21T17:16:19Z, minutes
+before this update) bumped PR **#53** (`LC-RES-P01`, the sibling
+`research-ped` batch-1 task) from ready back to draft with the identical
+failure signature:
+
+```
+pedagogical: 0 unique primary studies; 0 topics
+- missing /home/runner/work/LinguaChat/LinguaChat/docs/research/supervisors/pedagogical-primary.json
+Foundry PR #53 (foundry/research-ped/lc-res-p01): merge gate=scope-or-quality; returned to draft.
+```
+
+This is the exact same class of failure as LC-RES-Y01's blocker (missing
+corpus file because the evidence-gate subprocess reads the live working tree,
+which `run-foundry-cycle.sh` had reset to `origin/main`, not the PR head),
+hitting a different lane/task/file (`pedagogical-primary.json` vs.
+`psychology-primary.json`) on the same day. This corroborates the original
+root-cause diagnosis and suggested fix above with a second, independent,
+live production instance — whichever lane owns `.github/scripts/**` should
+treat this as confirmed and not branch-specific.
