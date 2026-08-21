@@ -1,0 +1,17 @@
+{
+  "taskId": "LC-RES-Y01",
+  "lane": "research-psy",
+  "status": "complete",
+  "cleanCycles": 2,
+  "summary": "Added 30 unique, DOI/Crossref-verified primary empirical studies to docs/research/supervisors/psychology-primary.json spanning retrieval practice/testing effect, distributed/spaced practice, interleaving/desirable difficulty, cognitive load/working memory, feedback timing, metacognition/self-regulation, motivation/autonomy/competence, anxiety/frustration/confidence, transfer/generalization, mastery criteria/delayed assessment and age-sensitive learning. Every record was verified against the Crossref API plus a second distinct HTTPS source (PubMed, ERIC, doi.org, or a publisher/university repository) before inclusion; two candidate records with unverifiable identifiers were dropped rather than filled in, and two verificationSources entries (one invented PMID, one non-HTTPS link) were caught and corrected during self-review before finalizing.",
+  "writeScopeRespected": [
+    "docs/research/supervisors/psychology-primary.json",
+    "docs/research/supervisors/batches/psy-01.md"
+  ],
+  "evidence": {
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n — exit 0, run twice consecutively clean after rebase onto origin/main",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q — exit 0 (444 passed), run twice consecutively clean after rebase onto origin/main",
+    "evidenceGatePartial": "node .github/scripts/check-supervisor-evidence.mjs --partial psychology — psychology: 30 unique primary studies; 11 topics; partial gate passed",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/research-psy/lc-res-y01 --base origin/main --head HEAD — OK, 2 changed files, both inside allowed write scope"
+  }
+}
