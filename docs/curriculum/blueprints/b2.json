@@ -1,0 +1,1767 @@
+{
+  "blueprintVersion": "b2.blueprint.v1",
+  "level": "b2",
+  "status": "planned",
+  "designedAgainst": {
+    "masterContract": "docs/curriculum/curriculum-master-a1-c2.md",
+    "template": "docs/curriculum/level-blueprint-template.md",
+    "prerequisiteLevel": "b1",
+    "prerequisiteLevelStatus": "provisional — b1.md/b1.json not yet merged when this blueprint was authored; every b1.* id below is a placeholder pending LC-AUD-001",
+    "learningScienceFoundation": "docs/research/learning-science-foundation.md",
+    "note": "Design only. No runtime module imports this file; nothing here is available to a learner."
+  },
+  "definition": {
+    "canDo": [
+      "develop and defend an opinion on an everyday-but-real issue, with reasons, and hold it under a genuine counter-argument",
+      "weigh several options against each other and recommend one, stating the trade-offs",
+      "handle something going wrong by explaining the problem, justifying a request, and negotiating a resolution, including under pushback",
+      "reason about the unreal: hypothesize about a different present/future, speculate about cause and effect, express regret about a past decision",
+      "mediate language for somebody else: summarize a conversation or text, reformulate for clarity, report a third person's opinion",
+      "read and use register: adjust formality, soften or strengthen a statement on purpose, catch an implied meaning",
+      "sustain a long, multi-topic conversation, follow a topic change, and reach an agreement after more than one objection"
+    ],
+    "cannotYet": [
+      "produce a structured, sustained monologue (a prepared presentation) as a primary skill",
+      "argue academic or highly abstract positions rather than concrete everyday-real issues",
+      "use idiom as a first-class productive skill (recognition and light use only)",
+      "reformulate with stylistic nuance rather than clarity as the goal",
+      "have pragmatic appropriateness graded as the primary criterion for every capability, rather than only where arc 5/6 specifically need it",
+      "produce or receive formal written correspondence (letters/emails) as its own genre"
+    ],
+    "interactionCeiling": "single-topic exchanges of 9-12 meaningful turns per arc 1-5, rising to a 16-20 turn multi-topic capstone conversation in arc 6, with repair available throughout and support fading by evidence"
+  },
+  "b1Inheritance": {
+    "note": "Provisional — namespaced b1.* — pending the real B1 blueprint. Derived from curriculum-master-a1-c2.md section 4's B1 progression description, not invented from unrelated memory.",
+    "assumedCapabilities": [
+      "b1.narrate_past_events",
+      "b1.explain_and_justify_a_choice",
+      "b1.compare_two_options",
+      "b1.handle_a_common_unexpected_problem",
+      "b1.sustain_a_conversation_over_a_topic_change",
+      "b1.express_opinion_with_reason",
+      "b1.describe_future_plans_and_intentions"
+    ],
+    "reconciliationRequiredBy": "LC-AUD-001"
+  },
+  "skillFamilies": [
+    {
+      "id": "argument",
+      "label": "Making the case",
+      "canDos": [
+        "develop_and_defend_opinion",
+        "weigh_advantages_and_disadvantages",
+        "concede_a_point_and_counter"
+      ]
+    },
+    {
+      "id": "negotiation",
+      "label": "When plans go wrong",
+      "canDos": [
+        "justify_a_request_for_change",
+        "negotiate_a_resolution",
+        "express_frustration_diplomatically"
+      ]
+    },
+    {
+      "id": "hypothesis",
+      "label": "What if",
+      "canDos": [
+        "hypothesize_about_unreal_situations",
+        "speculate_about_cause_and_effect",
+        "express_regret_about_a_past_decision"
+      ]
+    },
+    {
+      "id": "mediation",
+      "label": "Talking around a subject",
+      "canDos": [
+        "summarize_for_someone_else",
+        "reformulate_to_clarify",
+        "report_someone_elses_opinion"
+      ]
+    },
+    {
+      "id": "register",
+      "label": "Reading between the lines",
+      "canDos": [
+        "adjust_register_to_context",
+        "soften_or_strengthen_a_statement",
+        "infer_implied_meaning"
+      ]
+    },
+    {
+      "id": "sustained_discourse",
+      "label": "The long conversation",
+      "canDos": [
+        "sustain_a_multi_topic_conversation",
+        "handle_a_topic_shift_gracefully",
+        "negotiate_an_agreement_under_pushback",
+        "use_idiomatic_expressions_naturally"
+      ]
+    }
+  ],
+  "canDos": [
+    {
+      "id": "develop_and_defend_opinion",
+      "family": "argument",
+      "scope": "required",
+      "cefrRefs": [
+        "Sustained monologue: putting a case (B2)"
+      ],
+      "why": "The next step past b1.express_opinion_with_reason: not just stating a reason, but sustaining the position under a genuine counter-argument, which is the discourse-level demand B2 must add.",
+      "prerequisites": [
+        "b1.express_opinion_with_reason"
+      ],
+      "semanticNeeds": [
+        "stance"
+      ],
+      "patterns": [
+        "opinion_stance_pattern"
+      ],
+      "firstContext": "making_the_case",
+      "reuseContexts": [
+        "when_plans_go_wrong",
+        "reading_between_the_lines",
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "a novel everyday issue not used during teaching"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "required",
+      "evaluation": "hybrid_provider_preferred"
+    },
+    {
+      "id": "weigh_advantages_and_disadvantages",
+      "family": "argument",
+      "scope": "required",
+      "cefrRefs": [
+        "Sustained monologue: putting a case (B2)"
+      ],
+      "why": "b1.compare_two_options stops at picking one; B2 needs the trade-off stated explicitly, which is what a real recommendation requires.",
+      "prerequisites": [
+        "b1.compare_two_options",
+        "develop_and_defend_opinion"
+      ],
+      "semanticNeeds": [
+        "stance"
+      ],
+      "patterns": [
+        "contrast_connector_pattern",
+        "advantage_disadvantage_frame"
+      ],
+      "firstContext": "making_the_case",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "comparing options never used during teaching"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "required",
+      "evaluation": "hybrid_provider_preferred"
+    },
+    {
+      "id": "concede_a_point_and_counter",
+      "family": "argument",
+      "scope": "should",
+      "cefrRefs": [
+        "Informal discussion (with friends) (B2)"
+      ],
+      "why": "Turns a one-sided defense into a real discussion; cheap to add once develop_and_defend_opinion exists, and it multiplies naturally into the capstone's pushback capability.",
+      "prerequisites": [
+        "develop_and_defend_opinion"
+      ],
+      "semanticNeeds": [
+        "stance"
+      ],
+      "patterns": [
+        "concession_counter_pattern"
+      ],
+      "firstContext": "making_the_case",
+      "reuseContexts": [
+        "when_plans_go_wrong",
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "conceding a point in a novel argument"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 1,
+        "transfer": 0,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "should",
+      "evaluation": "hybrid_provider_preferred"
+    },
+    {
+      "id": "justify_a_request_for_change",
+      "family": "negotiation",
+      "scope": "required",
+      "cefrRefs": [
+        "Goal-oriented co-operation (B2)"
+      ],
+      "why": "The reasoning half of a complaint: explaining why a change is warranted, before proposing what the change should be.",
+      "prerequisites": [
+        "b1.explain_and_justify_a_choice"
+      ],
+      "semanticNeeds": [
+        "problem_type"
+      ],
+      "patterns": [
+        "justification_pattern"
+      ],
+      "firstContext": "when_plans_go_wrong",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "justifying a request for a problem type not used during teaching"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "required",
+      "evaluation": "hybrid_provider_preferred"
+    },
+    {
+      "id": "negotiate_a_resolution",
+      "family": "negotiation",
+      "scope": "required",
+      "cefrRefs": [
+        "Goal-oriented co-operation (B2)"
+      ],
+      "why": "The level's core transaction of the negotiation family: propose, adjust, and reach a resolution with another party, not just state a complaint.",
+      "prerequisites": [
+        "b1.handle_a_common_unexpected_problem",
+        "justify_a_request_for_change"
+      ],
+      "semanticNeeds": [
+        "problem_type"
+      ],
+      "patterns": [
+        "negotiation_proposal_pattern"
+      ],
+      "firstContext": "when_plans_go_wrong",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "negotiating a resolution for a problem type not used during teaching"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "required",
+      "evaluation": "hybrid_provider_preferred"
+    },
+    {
+      "id": "express_frustration_diplomatically",
+      "family": "negotiation",
+      "scope": "should",
+      "cefrRefs": [
+        "Goal-oriented co-operation (B2)"
+      ],
+      "why": "Completes the negotiation family with the affective half: dissatisfaction expressed without hostility, which is what keeps a real negotiation productive.",
+      "prerequisites": [
+        "justify_a_request_for_change"
+      ],
+      "semanticNeeds": [
+        "problem_type"
+      ],
+      "patterns": [
+        "diplomatic_hedge_pattern"
+      ],
+      "firstContext": "when_plans_go_wrong",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "expressing frustration about a novel problem"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 1,
+        "transfer": 0,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "should",
+      "evaluation": "hybrid_provider_preferred"
+    },
+    {
+      "id": "hypothesize_about_unreal_situations",
+      "family": "hypothesis",
+      "scope": "required",
+      "cefrRefs": [
+        "Conversation (B2)"
+      ],
+      "why": "The level's core new grammar-as-thinking-tool capability: reasoning about a different present/future or an unreal past, which every later hypothesis/regret capability builds on.",
+      "prerequisites": [
+        "b1.describe_future_plans_and_intentions"
+      ],
+      "semanticNeeds": [],
+      "patterns": [
+        "second_conditional_pattern",
+        "third_conditional_pattern",
+        "mixed_conditional_pattern"
+      ],
+      "firstContext": "what_if",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "a hypothetical scenario not used during teaching"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "required",
+      "evaluation": "deterministic_local_with_hybrid_escalation"
+    },
+    {
+      "id": "speculate_about_cause_and_effect",
+      "family": "hypothesis",
+      "scope": "required",
+      "cefrRefs": [
+        "Conversation (B2)"
+      ],
+      "why": "Reasoning about why something happened or must be true, with calibrated certainty, is the everyday-reasoning complement to explicit hypothesis.",
+      "prerequisites": [
+        "hypothesize_about_unreal_situations"
+      ],
+      "semanticNeeds": [],
+      "patterns": [
+        "modal_deduction_present_pattern",
+        "modal_deduction_past_pattern"
+      ],
+      "firstContext": "what_if",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "speculating about a novel everyday mystery"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "required",
+      "evaluation": "deterministic_local_with_hybrid_escalation"
+    },
+    {
+      "id": "express_regret_about_a_past_decision",
+      "family": "hypothesis",
+      "scope": "should",
+      "cefrRefs": [
+        "Conversation (B2)"
+      ],
+      "why": "The affective, past-facing sibling of hypothesis: saying what they would have done differently, reusing the third-conditional machinery for a genuinely different function.",
+      "prerequisites": [
+        "b1.narrate_past_events",
+        "hypothesize_about_unreal_situations"
+      ],
+      "semanticNeeds": [],
+      "patterns": [
+        "wish_past_perfect_pattern"
+      ],
+      "firstContext": "what_if",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "expressing regret about a novel past decision"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 1,
+        "transfer": 0,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "should",
+      "evaluation": "deterministic_local_with_hybrid_escalation"
+    },
+    {
+      "id": "summarize_for_someone_else",
+      "family": "mediation",
+      "scope": "required",
+      "cefrRefs": [
+        "Mediating a text — Processing text (B2)"
+      ],
+      "why": "The first capability in the curriculum where mediation — acting as the bridge between a source and a person who was not there — is itself the required skill, not a side effect.",
+      "prerequisites": [
+        "b1.narrate_past_events",
+        "b1.sustain_a_conversation_over_a_topic_change"
+      ],
+      "semanticNeeds": [],
+      "patterns": [
+        "reported_speech_pattern",
+        "summary_connector_pattern"
+      ],
+      "firstContext": "talking_around_a_subject",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "summarizing a source text/conversation not used during teaching"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "required",
+      "evaluation": "provider_preferred_meaning_equivalence"
+    },
+    {
+      "id": "reformulate_to_clarify",
+      "family": "mediation",
+      "scope": "required",
+      "cefrRefs": [
+        "Mediating a text — Processing text (B2)"
+      ],
+      "why": "Rewording something confusing so a listener actually understands it — the clarity half of mediation, distinct from condensing.",
+      "prerequisites": [
+        "summarize_for_someone_else"
+      ],
+      "semanticNeeds": [],
+      "patterns": [
+        "reformulation_marker_pattern"
+      ],
+      "firstContext": "talking_around_a_subject",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "reformulating a passage not used during teaching"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "required",
+      "evaluation": "provider_preferred_meaning_equivalence"
+    },
+    {
+      "id": "report_someone_elses_opinion",
+      "family": "mediation",
+      "scope": "should",
+      "cefrRefs": [
+        "Mediating a text — Processing text (B2)"
+      ],
+      "why": "Reporting a third person's stance accurately, combining reported speech with recognizing an opinion well enough to relay it.",
+      "prerequisites": [
+        "summarize_for_someone_else",
+        "b1.express_opinion_with_reason"
+      ],
+      "semanticNeeds": [
+        "stance"
+      ],
+      "patterns": [
+        "reported_speech_pattern"
+      ],
+      "firstContext": "talking_around_a_subject",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "reporting an opinion not used during teaching"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 1,
+        "transfer": 0,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "should",
+      "evaluation": "provider_preferred_meaning_equivalence"
+    },
+    {
+      "id": "adjust_register_to_context",
+      "family": "register",
+      "scope": "required",
+      "cefrRefs": [
+        "Sociolinguistic appropriateness (B2)"
+      ],
+      "why": "The level's first capability where register/pragmatics is itself the evaluated skill, not incidental — noticing and switching formality to match the relationship and situation.",
+      "prerequisites": [
+        "b1.sustain_a_conversation_over_a_topic_change"
+      ],
+      "semanticNeeds": [
+        "register"
+      ],
+      "patterns": [
+        "register_marker_pattern"
+      ],
+      "firstContext": "reading_between_the_lines",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "a register shift not used during teaching"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "required",
+      "evaluation": "register_dimension_plus_semantic"
+    },
+    {
+      "id": "soften_or_strengthen_a_statement",
+      "family": "register",
+      "scope": "required",
+      "cefrRefs": [
+        "Sociolinguistic appropriateness (B2)"
+      ],
+      "why": "Deliberately modulating a claim's force is the productive complement to noticing register; it reuses the opinion frame from arc 1 under a new lens.",
+      "prerequisites": [
+        "adjust_register_to_context",
+        "develop_and_defend_opinion"
+      ],
+      "semanticNeeds": [
+        "register"
+      ],
+      "patterns": [
+        "hedging_pattern",
+        "intensifying_pattern"
+      ],
+      "firstContext": "reading_between_the_lines",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "softening/strengthening a claim not used during teaching"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "required",
+      "evaluation": "register_dimension_plus_semantic"
+    },
+    {
+      "id": "infer_implied_meaning",
+      "family": "register",
+      "scope": "should",
+      "cefrRefs": [
+        "Sociolinguistic appropriateness (B2)"
+      ],
+      "why": "The receptive complement to register production: catching a meaning that was implied, not stated, which real conversations constantly require.",
+      "prerequisites": [
+        "adjust_register_to_context"
+      ],
+      "semanticNeeds": [
+        "register"
+      ],
+      "patterns": [],
+      "firstContext": "reading_between_the_lines",
+      "reuseContexts": [
+        "the_long_conversation"
+      ],
+      "transferContexts": [
+        "an implication not used during teaching"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": false,
+        "independent": 1,
+        "transfer": 0,
+        "delayedRetrieval": true
+      },
+      "graduationRelevance": "should",
+      "evaluation": "comprehension_only"
+    },
+    {
+      "id": "sustain_a_multi_topic_conversation",
+      "family": "sustained_discourse",
+      "scope": "required",
+      "cefrRefs": [
+        "Conversation (B2)",
+        "Overall Spoken Interaction (B2)"
+      ],
+      "why": "The capstone's first new capability: keeping a conversation going across more than one subject, at the length a real B2 exchange needs.",
+      "prerequisites": [
+        "b1.sustain_a_conversation_over_a_topic_change",
+        "adjust_register_to_context"
+      ],
+      "semanticNeeds": [],
+      "patterns": [
+        "topic_shift_marker_pattern"
+      ],
+      "firstContext": "the_long_conversation",
+      "reuseContexts": [],
+      "transferContexts": [
+        "the entire capstone conversation, by construction"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": false
+      },
+      "graduationRelevance": "required",
+      "evaluation": "discourse_coherence_plus_semantic"
+    },
+    {
+      "id": "handle_a_topic_shift_gracefully",
+      "family": "sustained_discourse",
+      "scope": "required",
+      "cefrRefs": [
+        "Conversation (B2)"
+      ],
+      "why": "Following and contributing to a topic change instead of forcing the old subject to continue — the specific skill A1 explicitly excludes and B2 must own.",
+      "prerequisites": [
+        "sustain_a_multi_topic_conversation"
+      ],
+      "semanticNeeds": [],
+      "patterns": [
+        "topic_shift_marker_pattern"
+      ],
+      "firstContext": "the_long_conversation",
+      "reuseContexts": [],
+      "transferContexts": [
+        "the entire capstone conversation, by construction"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": false
+      },
+      "graduationRelevance": "required",
+      "evaluation": "discourse_coherence_plus_semantic"
+    },
+    {
+      "id": "negotiate_an_agreement_under_pushback",
+      "family": "sustained_discourse",
+      "scope": "required",
+      "cefrRefs": [
+        "Goal-oriented co-operation (B2)"
+      ],
+      "why": "The level's integrating capability: recombining concession, negotiation and register-softening under repeated objection, proving recombination rather than new material.",
+      "prerequisites": [
+        "negotiate_a_resolution",
+        "soften_or_strengthen_a_statement",
+        "handle_a_topic_shift_gracefully"
+      ],
+      "semanticNeeds": [
+        "stance",
+        "problem_type"
+      ],
+      "patterns": [],
+      "firstContext": "the_long_conversation",
+      "reuseContexts": [],
+      "transferContexts": [
+        "the entire capstone conversation, by construction"
+      ],
+      "evidence": {
+        "recognition": true,
+        "guided": true,
+        "assistedOpen": true,
+        "independent": 2,
+        "transfer": 1,
+        "delayedRetrieval": false
+      },
+      "graduationRelevance": "required",
+      "evaluation": "discourse_coherence_plus_semantic",
+      "architecturalNote": "pushback_response_pattern is deliberately not a new pattern group — it recombines concession_counter_pattern, negotiation_proposal_pattern and diplomatic_hedge_pattern."
+    },
+    {
+      "id": "use_idiomatic_expressions_naturally",
+      "family": "sustained_discourse",
+      "scope": "optional",
+      "cefrRefs": [
+        "Overall Spoken Interaction (B2)"
+      ],
+      "why": "Recognition-level idiom exposure inside the capstone, without making idiomatic fluency a required B2 outcome — that is C1/C2 territory.",
+      "prerequisites": [
+        "sustain_a_multi_topic_conversation"
+      ],
+      "semanticNeeds": [],
+      "patterns": [],
+      "firstContext": "the_long_conversation",
+      "reuseContexts": [],
+      "transferContexts": [],
+      "evidence": {
+        "recognition": true,
+        "guided": false,
+        "assistedOpen": false,
+        "independent": 0,
+        "transfer": 0,
+        "delayedRetrieval": false
+      },
+      "graduationRelevance": "optional",
+      "evaluation": "comprehension_only"
+    }
+  ],
+  "patterns": [
+    {
+      "id": "opinion_stance_pattern",
+      "form": "In my view / I'd argue that / As I see it",
+      "enables": [
+        "develop_and_defend_opinion"
+      ],
+      "prerequisite": null,
+      "reaches": "independent",
+      "firstArc": "making_the_case",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "contrast_connector_pattern",
+      "form": "whereas / on the other hand / by contrast",
+      "enables": [
+        "weigh_advantages_and_disadvantages"
+      ],
+      "prerequisite": "opinion_stance_pattern",
+      "reaches": "independent",
+      "firstArc": "making_the_case",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "advantage_disadvantage_frame",
+      "form": "the main advantage/drawback of X is that…",
+      "enables": [
+        "weigh_advantages_and_disadvantages"
+      ],
+      "prerequisite": "contrast_connector_pattern",
+      "reaches": "independent",
+      "firstArc": "making_the_case",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "concession_counter_pattern",
+      "form": "that's true, but / I take your point, however",
+      "enables": [
+        "concede_a_point_and_counter"
+      ],
+      "prerequisite": "opinion_stance_pattern",
+      "reaches": "guided_production",
+      "firstArc": "making_the_case",
+      "reuseArcs": [
+        "when_plans_go_wrong",
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "justification_pattern",
+      "form": "given that / since / the reason I'm asking is that",
+      "enables": [
+        "justify_a_request_for_change"
+      ],
+      "prerequisite": null,
+      "reaches": "independent",
+      "firstArc": "when_plans_go_wrong",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "negotiation_proposal_pattern",
+      "form": "would you be willing to / what if we / I'd suggest that",
+      "enables": [
+        "negotiate_a_resolution"
+      ],
+      "prerequisite": "justification_pattern",
+      "reaches": "independent",
+      "firstArc": "when_plans_go_wrong",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "diplomatic_hedge_pattern",
+      "form": "I understand, but / I don't want to make a fuss, but",
+      "enables": [
+        "express_frustration_diplomatically"
+      ],
+      "prerequisite": "negotiation_proposal_pattern",
+      "reaches": "guided_production",
+      "firstArc": "when_plans_go_wrong",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "second_conditional_pattern",
+      "form": "If I were…, I would…",
+      "enables": [
+        "hypothesize_about_unreal_situations"
+      ],
+      "prerequisite": null,
+      "reaches": "independent",
+      "firstArc": "what_if",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "third_conditional_pattern",
+      "form": "If I had…, I would have…",
+      "enables": [
+        "hypothesize_about_unreal_situations"
+      ],
+      "prerequisite": "second_conditional_pattern",
+      "reaches": "independent",
+      "firstArc": "what_if",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "mixed_conditional_pattern",
+      "form": "If I had…, I would… [now]",
+      "enables": [
+        "hypothesize_about_unreal_situations"
+      ],
+      "prerequisite": "third_conditional_pattern",
+      "reaches": "guided_production",
+      "firstArc": "what_if",
+      "reuseArcs": []
+    },
+    {
+      "id": "modal_deduction_present_pattern",
+      "form": "must be / might be / can't be",
+      "enables": [
+        "speculate_about_cause_and_effect"
+      ],
+      "prerequisite": "second_conditional_pattern",
+      "reaches": "independent",
+      "firstArc": "what_if",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "modal_deduction_past_pattern",
+      "form": "must have / might have / could have",
+      "enables": [
+        "speculate_about_cause_and_effect"
+      ],
+      "prerequisite": "modal_deduction_present_pattern",
+      "reaches": "independent",
+      "firstArc": "what_if",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "wish_past_perfect_pattern",
+      "form": "I wish I had… / if only I'd…",
+      "enables": [
+        "express_regret_about_a_past_decision"
+      ],
+      "prerequisite": "third_conditional_pattern",
+      "reaches": "guided_production",
+      "firstArc": "what_if",
+      "reuseArcs": []
+    },
+    {
+      "id": "reported_speech_pattern",
+      "form": "tense back-shift + claim/mention/point out/suggest",
+      "enables": [
+        "summarize_for_someone_else",
+        "report_someone_elses_opinion"
+      ],
+      "prerequisite": null,
+      "reaches": "independent",
+      "firstArc": "talking_around_a_subject",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "summary_connector_pattern",
+      "form": "basically / the main point was / to sum up",
+      "enables": [
+        "summarize_for_someone_else"
+      ],
+      "prerequisite": "reported_speech_pattern",
+      "reaches": "independent",
+      "firstArc": "talking_around_a_subject",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "reformulation_marker_pattern",
+      "form": "in other words / what I mean is / put simply",
+      "enables": [
+        "reformulate_to_clarify"
+      ],
+      "prerequisite": "summary_connector_pattern",
+      "reaches": "independent",
+      "firstArc": "talking_around_a_subject",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "register_marker_pattern",
+      "form": "could you possibly (formal) vs can you (informal)",
+      "enables": [
+        "adjust_register_to_context"
+      ],
+      "prerequisite": null,
+      "reaches": "independent",
+      "firstArc": "reading_between_the_lines",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "hedging_pattern",
+      "form": "sort of / tend to / I'd say / more or less",
+      "enables": [
+        "soften_or_strengthen_a_statement"
+      ],
+      "prerequisite": "register_marker_pattern",
+      "reaches": "independent",
+      "firstArc": "reading_between_the_lines",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "intensifying_pattern",
+      "form": "absolutely / without a doubt / I'm convinced that",
+      "enables": [
+        "soften_or_strengthen_a_statement"
+      ],
+      "prerequisite": "register_marker_pattern",
+      "reaches": "independent",
+      "firstArc": "reading_between_the_lines",
+      "reuseArcs": [
+        "the_long_conversation"
+      ]
+    },
+    {
+      "id": "topic_shift_marker_pattern",
+      "form": "anyway / speaking of which / that reminds me / before I forget",
+      "enables": [
+        "sustain_a_multi_topic_conversation",
+        "handle_a_topic_shift_gracefully"
+      ],
+      "prerequisite": "register_marker_pattern",
+      "reaches": "independent",
+      "firstArc": "the_long_conversation",
+      "reuseArcs": []
+    }
+  ],
+  "semanticTypes": {
+    "existing": [
+      "interest",
+      "activity",
+      "drink",
+      "food",
+      "consumable",
+      "place",
+      "feeling",
+      "person",
+      "generic_object",
+      "time_point",
+      "day",
+      "relation",
+      "transport_mode"
+    ],
+    "proposed": [
+      {
+        "id": "stance",
+        "requiredBy": [
+          "develop_and_defend_opinion",
+          "weigh_advantages_and_disadvantages",
+          "concede_a_point_and_counter",
+          "report_someone_elses_opinion",
+          "soften_or_strengthen_a_statement",
+          "negotiate_an_agreement_under_pushback"
+        ],
+        "examples": [
+          "for",
+          "against",
+          "neutral/undecided"
+        ],
+        "incompatibleWith": [
+          "place",
+          "food",
+          "drink"
+        ],
+        "whyNotExisting": "No existing type carries an opinionated position on an issue; a slot that accepts a stance must reject a concrete noun."
+      },
+      {
+        "id": "problem_type",
+        "requiredBy": [
+          "justify_a_request_for_change",
+          "negotiate_a_resolution",
+          "express_frustration_diplomatically",
+          "negotiate_an_agreement_under_pushback"
+        ],
+        "examples": [
+          "delay",
+          "damage",
+          "wrong_item",
+          "missed_appointment"
+        ],
+        "incompatibleWith": [
+          "person",
+          "feeling"
+        ],
+        "whyNotExisting": "A service/plan failure is a categorized situation, not a place, object or feeling; existing types would force an inaccurate substitution."
+      },
+      {
+        "id": "register",
+        "requiredBy": [
+          "adjust_register_to_context",
+          "soften_or_strengthen_a_statement",
+          "infer_implied_meaning"
+        ],
+        "examples": [
+          "formal",
+          "informal",
+          "neutral"
+        ],
+        "incompatibleWith": [
+          "place",
+          "activity"
+        ],
+        "whyNotExisting": "Register is a property of the relationship/situation's formality, not a concrete slot filler any existing type carries."
+      }
+    ],
+    "explicitlyNotNeeded": [
+      {
+        "id": "issue",
+        "why": "A debated topic is a context, not a capability or a semantic type — the master contract's rule that topics are contexts, not curriculum (section 6)."
+      },
+      {
+        "id": "idiom",
+        "why": "Idiomatic expressions are vocabulary items tracked as multiword Garden units, not a slot type; use_idiomatic_expressions_naturally has no productive slot."
+      }
+    ]
+  },
+  "intentStrategy": {
+    "rule": "One intent per communicative function; variants travel as a subtype on the step payload, following the rule already applied in A1 (a1-blueprint.json intentStrategy) rather than being reinvented here.",
+    "newIntents": [
+      "state_opinion_with_reason",
+      "weigh_options",
+      "concede_and_counter",
+      "justify_a_request",
+      "propose_a_resolution",
+      "express_diplomatic_frustration",
+      "state_unreal_hypothesis",
+      "speculate_cause_or_effect",
+      "express_past_regret",
+      "summarize_for_third_party",
+      "reformulate_for_clarity",
+      "report_third_party_opinion",
+      "shift_register",
+      "soften_or_intensify_claim"
+    ],
+    "newSubtypesOnExistingIntents": [
+      {
+        "intent": "shift_register",
+        "newRegisterKinds": [
+          "soften",
+          "intensify",
+          "formal_shift",
+          "informal_shift"
+        ]
+      },
+      {
+        "intent": "propose_a_resolution",
+        "change": "pushback subtype used only inside the_long_conversation, where the same intent must be judged across repeated objection rounds rather than once"
+      }
+    ],
+    "counts": {
+      "newB2Intents": 14,
+      "explosionGuard": "If an arc's design needs more than three new intents, the arc is teaching phrases rather than a capability — same rule A1 applied."
+    }
+  },
+  "evaluationStrategy": {
+    "deterministic_local_with_hybrid_escalation": [
+      "state_unreal_hypothesis",
+      "speculate_cause_or_effect",
+      "express_past_regret"
+    ],
+    "hybrid_provider_preferred": [
+      "state_opinion_with_reason",
+      "weigh_options",
+      "concede_and_counter",
+      "justify_a_request",
+      "propose_a_resolution",
+      "express_diplomatic_frustration"
+    ],
+    "provider_preferred_meaning_equivalence": [
+      "summarize_for_third_party",
+      "reformulate_for_clarity",
+      "report_third_party_opinion"
+    ],
+    "register_dimension_plus_semantic": [
+      "shift_register",
+      "soften_or_intensify_claim"
+    ],
+    "discourse_coherence_plus_semantic": [
+      "propose_a_resolution (capstone pushback subtype)",
+      "shift_register (capstone topic-shift subtype)"
+    ],
+    "comprehension_only": [
+      "infer_implied_meaning",
+      "use_idiomatic_expressions_naturally (both receptive-only, no production intent)"
+    ],
+    "rule": "Unlike A1, B2 does not claim every capability is designed to require no reachable provider. Open, paragraph-length argumentative and mediation turns are the median case here, not the exception, so the honest three-tier fallback in b2.md section 15.3/15.4 applies: provider-graded when reachable, a declared structural floor when not, with the degraded state surfaced honestly rather than silently accepted or silently downgraded."
+  },
+  "arcs": [
+    {
+      "id": "making_the_case",
+      "order": 1,
+      "titleConcept": "Making the case",
+      "communicativeProblem": "The learner can state an opinion with a reason (B1) but cannot sustain it against a real counter-argument, or weigh several options against each other rather than just picking a favorite.",
+      "whyNow": "The smallest step from B1's opinion-with-reason, and it introduces the stance/contrast machinery every later arc reuses.",
+      "prerequisiteArcs": [],
+      "b1Reuse": [
+        "b1.express_opinion_with_reason",
+        "b1.compare_two_options"
+      ],
+      "b2Reuse": [],
+      "newCanDos": [
+        "develop_and_defend_opinion",
+        "weigh_advantages_and_disadvantages",
+        "concede_a_point_and_counter"
+      ],
+      "reinforcedCanDos": [],
+      "newPatterns": [
+        "opinion_stance_pattern",
+        "contrast_connector_pattern",
+        "advantage_disadvantage_frame",
+        "concession_counter_pattern"
+      ],
+      "vocabularyBudget": {
+        "newProductive": 18,
+        "newReceptive": 10
+      },
+      "semanticNeeds": [
+        "stance"
+      ],
+      "likelyFormats": [
+        "scene",
+        "model",
+        "comprehension",
+        "guided_reply",
+        "free_reply",
+        "roleplay",
+        "recall"
+      ],
+      "miniStory": {
+        "use": false,
+        "why": "The arc's value is a genuine two-sided discussion, which roleplay carries better than a narrated scene."
+      },
+      "conversationTarget": {
+        "meaningfulTurns": 11,
+        "learnerOpenTurns": 5,
+        "learnerInitiatedQuestions": 1
+      },
+      "autonomyTarget": "early: frame/connector list visible while stance language is new, withheld on the arc's integrated episode",
+      "evidenceTarget": "two unaided opinion defenses and one unaided trade-off recommendation",
+      "risk": "Debate-style content can drift into abstract/academic topics; the budget is spent on concrete, everyday-real issues only.",
+      "episodes": "planned, not yet numbered — B2 episode numbering is content-authoring scope"
+    },
+    {
+      "id": "when_plans_go_wrong",
+      "order": 2,
+      "titleConcept": "When plans go wrong",
+      "communicativeProblem": "The learner can describe a problem (B1) but cannot justify a request for a specific change or negotiate toward a resolution with the person responsible.",
+      "whyNow": "Reuses arc 1's stance/concession machinery, redirected at a real complaint rather than an abstract opinion.",
+      "prerequisiteArcs": [
+        "making_the_case"
+      ],
+      "b1Reuse": [
+        "b1.handle_a_common_unexpected_problem",
+        "b1.explain_and_justify_a_choice"
+      ],
+      "b2Reuse": [
+        "develop_and_defend_opinion",
+        "concede_a_point_and_counter"
+      ],
+      "newCanDos": [
+        "justify_a_request_for_change",
+        "negotiate_a_resolution",
+        "express_frustration_diplomatically"
+      ],
+      "reinforcedCanDos": [
+        "develop_and_defend_opinion",
+        "concede_a_point_and_counter"
+      ],
+      "newPatterns": [
+        "justification_pattern",
+        "negotiation_proposal_pattern",
+        "diplomatic_hedge_pattern"
+      ],
+      "vocabularyBudget": {
+        "newProductive": 17,
+        "newReceptive": 10
+      },
+      "semanticNeeds": [
+        "problem_type"
+      ],
+      "likelyFormats": [
+        "scene",
+        "model",
+        "comprehension",
+        "guided_reply",
+        "free_reply",
+        "roleplay",
+        "recall"
+      ],
+      "miniStory": {
+        "use": true,
+        "why": "A negotiation has a beginning, an obstacle and a resolution — a hosted scene can carry the other party's turns while the learner keeps the decisions."
+      },
+      "conversationTarget": {
+        "meaningfulTurns": 11,
+        "learnerOpenTurns": 5,
+        "learnerInitiatedQuestions": 2
+      },
+      "autonomyTarget": "early-to-mid: proposal frame visible while new, withheld once negotiation is reused in the arc's integrated episode",
+      "evidenceTarget": "two unaided negotiation proposals and one unaided justified request, transferred to a problem type not taught",
+      "risk": "Negotiation content can read as scripted haggling; the risk mitigation is grounding every scenario in a real service/booking/order failure.",
+      "episodes": "planned, not yet numbered — B2 episode numbering is content-authoring scope"
+    },
+    {
+      "id": "what_if",
+      "order": 3,
+      "titleConcept": "What if",
+      "communicativeProblem": "The learner cannot yet reason about an unreal present/future, speculate about cause and effect with calibrated certainty, or express regret about a past decision.",
+      "whyNow": "Independent of arcs 1-2 (only needs B1 exit); the level's steepest new grammar earns its own arc rather than being folded into another.",
+      "prerequisiteArcs": [],
+      "b1Reuse": [
+        "b1.describe_future_plans_and_intentions",
+        "b1.narrate_past_events"
+      ],
+      "b2Reuse": [],
+      "newCanDos": [
+        "hypothesize_about_unreal_situations",
+        "speculate_about_cause_and_effect",
+        "express_regret_about_a_past_decision"
+      ],
+      "reinforcedCanDos": [],
+      "newPatterns": [
+        "second_conditional_pattern",
+        "third_conditional_pattern",
+        "mixed_conditional_pattern",
+        "modal_deduction_present_pattern",
+        "modal_deduction_past_pattern",
+        "wish_past_perfect_pattern"
+      ],
+      "vocabularyBudget": {
+        "newProductive": 15,
+        "newReceptive": 9
+      },
+      "semanticNeeds": [],
+      "likelyFormats": [
+        "scene",
+        "model",
+        "comprehension",
+        "choice",
+        "guided_reply",
+        "free_reply",
+        "recall"
+      ],
+      "miniStory": {
+        "use": true,
+        "why": "An everyday mystery (a missing package, a locked door) gives speculation a genuine reason to happen rather than being an isolated grammar drill."
+      },
+      "conversationTarget": {
+        "meaningfulTurns": 10,
+        "learnerOpenTurns": 4,
+        "learnerInitiatedQuestions": 1
+      },
+      "autonomyTarget": "early: heaviest support of any arc given six new pattern groups; fades only after each conditional form is independently produced once",
+      "evidenceTarget": "two unaided hypotheses, two unaided speculations, one unaided expression of regret",
+      "risk": "The level's densest arc: six new pattern groups. Mitigated by teaching second-conditional before third-conditional before mixed, each reusing the last.",
+      "episodes": "planned, not yet numbered — B2 episode numbering is content-authoring scope"
+    },
+    {
+      "id": "talking_around_a_subject",
+      "order": 4,
+      "titleConcept": "Talking around a subject",
+      "communicativeProblem": "The learner cannot summarize a conversation or text for somebody who was not there, reword something confusing into something clear, or report a third person's opinion accurately.",
+      "whyNow": "Independent of arcs 1-3 (only needs B1 exit); mediation is the first capability family in the curriculum where processing someone else's language for a third party is itself the required skill.",
+      "prerequisiteArcs": [],
+      "b1Reuse": [
+        "b1.narrate_past_events",
+        "b1.sustain_a_conversation_over_a_topic_change"
+      ],
+      "b2Reuse": [
+        "develop_and_defend_opinion"
+      ],
+      "newCanDos": [
+        "summarize_for_someone_else",
+        "reformulate_to_clarify",
+        "report_someone_elses_opinion"
+      ],
+      "reinforcedCanDos": [
+        "develop_and_defend_opinion"
+      ],
+      "newPatterns": [
+        "reported_speech_pattern",
+        "summary_connector_pattern",
+        "reformulation_marker_pattern"
+      ],
+      "vocabularyBudget": {
+        "newProductive": 16,
+        "newReceptive": 13
+      },
+      "semanticNeeds": [],
+      "likelyFormats": [
+        "scene",
+        "comprehension",
+        "guided_reply",
+        "free_reply",
+        "recall"
+      ],
+      "miniStory": {
+        "use": true,
+        "why": "Mediation needs authentic-feeling source material (a conversation or short text) to process, which a hosted scene supplies better than a roleplay alone."
+      },
+      "conversationTarget": {
+        "meaningfulTurns": 10,
+        "learnerOpenTurns": 4,
+        "learnerInitiatedQuestions": 1
+      },
+      "autonomyTarget": "mid: connector list visible while reformulating is new; withheld once summarizing is reused for reporting",
+      "evidenceTarget": "two unaided summaries, two unaided reformulations, one unaided accurate report of an opinion",
+      "risk": "Meaning-preservation is the hardest thing to grade honestly offline (section 15.4); the arc's design leans on provider-preferred evaluation with a declared structural floor, never a false claim of verified accuracy.",
+      "episodes": "planned, not yet numbered — B2 episode numbering is content-authoring scope"
+    },
+    {
+      "id": "reading_between_the_lines",
+      "order": 5,
+      "titleConcept": "Reading between the lines",
+      "communicativeProblem": "The learner cannot yet notice or switch register to match a relationship/situation, deliberately soften or strengthen a claim, or catch an implication that was not stated outright.",
+      "whyNow": "Needs an opinion to modulate, so it follows making_the_case; register work is meaningless without something to say more or less formally.",
+      "prerequisiteArcs": [
+        "making_the_case"
+      ],
+      "b1Reuse": [
+        "b1.sustain_a_conversation_over_a_topic_change"
+      ],
+      "b2Reuse": [
+        "develop_and_defend_opinion"
+      ],
+      "newCanDos": [
+        "adjust_register_to_context",
+        "soften_or_strengthen_a_statement",
+        "infer_implied_meaning"
+      ],
+      "reinforcedCanDos": [
+        "develop_and_defend_opinion"
+      ],
+      "newPatterns": [
+        "register_marker_pattern",
+        "hedging_pattern",
+        "intensifying_pattern"
+      ],
+      "vocabularyBudget": {
+        "newProductive": 12,
+        "newReceptive": 15
+      },
+      "semanticNeeds": [
+        "register"
+      ],
+      "likelyFormats": [
+        "scene",
+        "comprehension",
+        "choice",
+        "guided_reply",
+        "free_reply",
+        "recall"
+      ],
+      "miniStory": {
+        "use": true,
+        "why": "The same problem told to a landlord and to a flatmate is best shown as two parallel short scenes, so the register contrast is directly comparable."
+      },
+      "conversationTarget": {
+        "meaningfulTurns": 10,
+        "learnerOpenTurns": 4,
+        "learnerInitiatedQuestions": 1
+      },
+      "autonomyTarget": "mid: register markers visible while new; the arc's integrated episode withholds them and requires a self-initiated register choice",
+      "evidenceTarget": "two unaided register adjustments, two unaided hedge/intensify productions, one unaided correct inference of implied meaning",
+      "risk": "Register is the level's most invisible skill to a learner who does not ask for help; scaffolding must surface it explicitly rather than assuming it will be noticed.",
+      "episodes": "planned, not yet numbered — B2 episode numbering is content-authoring scope"
+    },
+    {
+      "id": "the_long_conversation",
+      "order": 6,
+      "titleConcept": "The long conversation",
+      "communicativeProblem": "The learner can do each B2 function alone but has not yet sustained all of them together across a long, multi-topic, spontaneous exchange that ends in a real agreement.",
+      "whyNow": "Last, because it needs every preceding arc at once and introduces almost nothing of its own — the same design logic as A1's closing arrangement arc.",
+      "prerequisiteArcs": [
+        "making_the_case",
+        "when_plans_go_wrong",
+        "what_if",
+        "talking_around_a_subject",
+        "reading_between_the_lines"
+      ],
+      "b1Reuse": [
+        "b1.sustain_a_conversation_over_a_topic_change"
+      ],
+      "b2Reuse": [
+        "develop_and_defend_opinion",
+        "weigh_advantages_and_disadvantages",
+        "concede_a_point_and_counter",
+        "justify_a_request_for_change",
+        "negotiate_a_resolution",
+        "express_frustration_diplomatically",
+        "hypothesize_about_unreal_situations",
+        "speculate_about_cause_and_effect",
+        "express_regret_about_a_past_decision",
+        "summarize_for_someone_else",
+        "reformulate_to_clarify",
+        "report_someone_elses_opinion",
+        "adjust_register_to_context",
+        "soften_or_strengthen_a_statement",
+        "infer_implied_meaning"
+      ],
+      "newCanDos": [
+        "sustain_a_multi_topic_conversation",
+        "handle_a_topic_shift_gracefully",
+        "negotiate_an_agreement_under_pushback"
+      ],
+      "reinforcedCanDos": [
+        "develop_and_defend_opinion",
+        "negotiate_a_resolution",
+        "adjust_register_to_context"
+      ],
+      "newPatterns": [
+        "topic_shift_marker_pattern"
+      ],
+      "vocabularyBudget": {
+        "newProductive": 10,
+        "newReceptive": 10
+      },
+      "semanticNeeds": [
+        "stance",
+        "problem_type",
+        "register"
+      ],
+      "personalizationMode": "themed",
+      "neutralFallback": "a shared-flat dispute requiring a plan, a complaint, a compromise and a topic change to logistics",
+      "likelyFormats": [
+        "scene",
+        "roleplay",
+        "free_reply",
+        "recall"
+      ],
+      "miniStory": {
+        "use": true,
+        "why": "The level's closing situation: an extended, realistic negotiation with genuine topic changes, functioning as the level's delayed-retrieval instrument for every prior arc."
+      },
+      "conversationTarget": {
+        "meaningfulTurns": 18,
+        "learnerOpenTurns": 8,
+        "learnerInitiatedQuestions": 3
+      },
+      "autonomyTarget": "late: unaided by default; support returns only after a strained turn",
+      "evidenceTarget": "the three new capstone capabilities each produced twice unaided, plus at least one delayed-retrieval instance of every arc 1-5 required capability",
+      "risk": "Could become a review episode with a new label. It earns its place only if the learner leaves able to hold a real, unscripted, multi-topic negotiation nobody rehearsed verbatim.",
+      "episodes": "planned, not yet numbered — B2 episode numbering is content-authoring scope"
+    }
+  ],
+  "counts": {
+    "arcs": 6,
+    "canDosRequired": 13,
+    "canDosShould": 5,
+    "canDosOptional": 1,
+    "newPatterns": 20,
+    "newIntents": 14,
+    "newSemanticTypesRequired": 3,
+    "newProductiveVocabularyBudget": 88,
+    "newReceptiveVocabularyBudget": 67
+  },
+  "reuseMatrix": {
+    "legend": {
+      "I": "introduced",
+      "G": "guided reuse",
+      "R": "open retrieval",
+      "T": "transfer",
+      "F": "fluency",
+      "D": "delayed retrieval",
+      "C": "consolidated in an integrated/capstone conversation"
+    },
+    "arcOrder": [
+      "making_the_case",
+      "when_plans_go_wrong",
+      "what_if",
+      "talking_around_a_subject",
+      "reading_between_the_lines",
+      "the_long_conversation"
+    ],
+    "rows": {
+      "develop_and_defend_opinion": [
+        "I",
+        "R",
+        "-",
+        "R",
+        "R",
+        "D"
+      ],
+      "weigh_advantages_and_disadvantages": [
+        "I",
+        "R",
+        "-",
+        "-",
+        "-",
+        "D"
+      ],
+      "concede_a_point_and_counter": [
+        "I",
+        "R",
+        "-",
+        "-",
+        "-",
+        "R"
+      ],
+      "justify_a_request_for_change": [
+        "-",
+        "I",
+        "-",
+        "-",
+        "-",
+        "R"
+      ],
+      "negotiate_a_resolution": [
+        "-",
+        "I",
+        "-",
+        "-",
+        "-",
+        "D"
+      ],
+      "express_frustration_diplomatically": [
+        "-",
+        "I",
+        "-",
+        "-",
+        "-",
+        "R"
+      ],
+      "hypothesize_about_unreal_situations": [
+        "-",
+        "-",
+        "I",
+        "-",
+        "-",
+        "D"
+      ],
+      "speculate_about_cause_and_effect": [
+        "-",
+        "-",
+        "I",
+        "-",
+        "-",
+        "R"
+      ],
+      "express_regret_about_a_past_decision": [
+        "-",
+        "-",
+        "I",
+        "-",
+        "-",
+        "R"
+      ],
+      "summarize_for_someone_else": [
+        "-",
+        "-",
+        "-",
+        "I",
+        "-",
+        "D"
+      ],
+      "reformulate_to_clarify": [
+        "-",
+        "-",
+        "-",
+        "I",
+        "-",
+        "R"
+      ],
+      "report_someone_elses_opinion": [
+        "-",
+        "-",
+        "-",
+        "I",
+        "-",
+        "R"
+      ],
+      "adjust_register_to_context": [
+        "-",
+        "-",
+        "-",
+        "-",
+        "I",
+        "D"
+      ],
+      "soften_or_strengthen_a_statement": [
+        "-",
+        "-",
+        "-",
+        "-",
+        "I",
+        "D"
+      ],
+      "infer_implied_meaning": [
+        "-",
+        "-",
+        "-",
+        "-",
+        "I",
+        "R"
+      ],
+      "sustain_a_multi_topic_conversation": [
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "C"
+      ],
+      "handle_a_topic_shift_gracefully": [
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "C"
+      ],
+      "negotiate_an_agreement_under_pushback": [
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "C"
+      ],
+      "use_idiomatic_expressions_naturally": [
+        "-",
+        "-",
+        "-",
+        "-",
+        "-",
+        "I"
+      ]
+    },
+    "b1RowsNote": "b1.* prerequisite reuse (express_opinion_with_reason, compare_two_options, handle_a_common_unexpected_problem, sustain_a_conversation_over_a_topic_change, narrate_past_events, explain_and_justify_a_choice, describe_future_plans_and_intentions) is not tabulated here because their arc-by-arc B1 reuse pattern is owned by b1.md/b1.json, not by this file — cross-checked in LC-AUD-001."
+  },
+  "coreEngineRequirements": [
+    {
+      "id": "discourse_coherence_evaluation",
+      "problem": "Judge whether a turn coherently continues a multi-turn exchange, not only whether it matches a canonical per-turn intent frame.",
+      "earliestLevel": "b1 (light version arguably needed already); b2 is first to require actual evaluation of it",
+      "affectedCanDos": [
+        "sustain_a_multi_topic_conversation",
+        "handle_a_topic_shift_gracefully",
+        "negotiate_an_agreement_under_pushback"
+      ],
+      "regressionRisk": "low for A1/Pre-A1/B1 single-topic short exchanges"
+    },
+    {
+      "id": "register_appropriateness_dimension",
+      "problem": "Grade a semantically/grammatically correct reply as register-inappropriate for its context, as a separate verdict from the semantic one.",
+      "earliestLevel": "b2 (arc 5, the capstone); c1 generalizes it per the master contract",
+      "affectedCanDos": [
+        "adjust_register_to_context",
+        "soften_or_strengthen_a_statement",
+        "negotiate_an_agreement_under_pushback"
+      ],
+      "regressionRisk": "none if additive and defaulting to not_applicable"
+    },
+    {
+      "id": "honest_open_turn_fallback",
+      "problem": "Grade open, paragraph-length argumentative/negotiation turns honestly when the provider is unreachable, without silently downgrading the task or silently accepting anything.",
+      "earliestLevel": "b2 (first level where such turns are the median case, not the exception)",
+      "affectedCanDos": [
+        "develop_and_defend_opinion",
+        "weigh_advantages_and_disadvantages",
+        "negotiate_an_agreement_under_pushback"
+      ],
+      "regressionRisk": "none to earlier levels, which keep fully local evaluation"
+    },
+    {
+      "id": "meaning_preserved_reformulation_check",
+      "problem": "Judge whether a reworded sentence/summary preserves a source text's meaning, distinct from matching a canonical target frame.",
+      "earliestLevel": "b2 (arc 4, first mediation-as-capability arc in the curriculum)",
+      "affectedCanDos": [
+        "summarize_for_someone_else",
+        "reformulate_to_clarify",
+        "report_someone_elses_opinion"
+      ],
+      "regressionRisk": "none to earlier levels"
+    }
+  ]
+}
