@@ -1,0 +1,8 @@
+{
+  "taskId": "LC-RES-P02",
+  "lane": "research-ped",
+  "status": "complete",
+  "cleanCycles": 2,
+  "summary": "Pedagogy primary-evidence batch 2/4: 28 unique, verified, deduplicated primary SLA studies added to docs/research/supervisors/pedagogical-primary.json, bringing the corpus to 63 unique records across all 14 mandatory pedagogical-coverage topics.",
+  "partialGate": "pedagogical: 63 unique primary studies; 14 topics"
+}
