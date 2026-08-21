@@ -367,3 +367,34 @@ merge gate=scope-or-quality; returned to draft.` — same signature, same
 sibling PR, consistent with every prior observation. No content or code
 changed; correct action unchanged: stay in draft until `LC-OPS-015` lands,
 then rebase and rerun #50's final-head QA/evidence contract.
+
+## Resolved (2026-08-21, new session): LC-OPS-015 landed via PR #56, blocker cleared
+
+PR #56 (`ops/lc-ops-016-shared-automation-fixes`) merged to `main`. Verified the
+actual fix independently by reading `main`'s current scripts rather than trusting
+the PR description:
+
+- `check-foundry-scope.mjs`'s `--require-complete` branch now calls
+  `check-supervisor-evidence.mjs --partial <domain> --ref <head>` (and
+  `--ref <head>` with no `--partial` for the full `requiresEvidenceReady` gate),
+  passing the candidate head through explicitly.
+- `check-supervisor-evidence.mjs` now accepts `--ref` and, when given one, reads
+  each corpus file via `git show <ref>:<path>` instead of the live working tree.
+
+This is exactly the fix this file has been describing since the first update.
+
+Rebased this branch onto the new `origin/main` (clean, no conflicts — content
+diff vs. main is unchanged: 4 files, all in scope). Re-ran the full completion
+contract on the rebased head:
+
+- `node .github/scripts/check-foundry-scope.mjs --branch foundry/research-psy/lc-res-y01 --base origin/main --head HEAD --require-complete`
+  → `Foundry scope OK for LC-RES-Y01: 4 changed files.` / `psychology: 30 unique
+  primary studies; 12 topics` — exit 0, using the fixed `--ref`-aware gate.
+- `node .github/scripts/check-supervisor-evidence.mjs --partial psychology --ref HEAD`
+  → same result directly, exit 0.
+- Frontend (`npm run check:all && npm run build && npm run check:i18n`) — exit 0,
+  two consecutive clean cycles on the rebased head.
+- Backend (`python -m compileall . && python -m pytest -q`) — exit 0, 444
+  passed, two consecutive clean cycles on the rebased head.
+
+This blocker is now resolved. PR #50 is being marked ready.

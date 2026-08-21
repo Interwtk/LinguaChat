@@ -9,9 +9,9 @@
     "docs/research/supervisors/batches/psy-01.md"
   ],
   "evidence": {
-    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n — exit 0, run twice consecutively clean on the final head (after the PSY-Y01-028 topic reclassification)",
-    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q — exit 0 (444 passed), run twice consecutively clean on the final head (after the PSY-Y01-028 topic reclassification)",
-    "evidenceGatePartial": "node .github/scripts/check-supervisor-evidence.mjs --partial psychology — psychology: 30 unique primary studies; 12 topics; partial gate passed",
-    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/research-psy/lc-res-y01 --base origin/main --head HEAD — OK, 3 changed files, all inside allowed write scope"
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n — exit 0, run twice consecutively clean after rebasing onto origin/main (LC-OPS-015 evidence-gate fix, PR #56, merged)",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q — exit 0 (444 passed), run twice consecutively clean after rebasing onto origin/main",
+    "evidenceGatePartial": "node .github/scripts/check-supervisor-evidence.mjs --partial psychology --ref HEAD — psychology: 30 unique primary studies; 12 topics; partial gate passed",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/research-psy/lc-res-y01 --base origin/main --head HEAD --require-complete — OK, 4 changed files (corpus json, batch doc, request note, completion marker), all inside allowed write scope; evidence gate now reads the candidate head correctly"
   }
 }
