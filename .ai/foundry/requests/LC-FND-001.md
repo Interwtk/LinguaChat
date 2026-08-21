@@ -79,3 +79,28 @@ PR #37 is left in draft, as the coordination contract requires when a completion
 blocker is outside the task's own write scope. Its content is finished and
 evidence-backed; it is waiting on the automation fix above (or a manual merge)
 rather than on further curriculum/contract work.
+
+## Re-verified 2026-08-21 (resumed session)
+
+Resumed this branch and re-checked before making any further change:
+
+- `.github/scripts/check-foundry-scope.mjs` on current `origin/main` still uses
+  `existsSync(marker)` / `readFileSync(marker)` (filesystem-based, not ref-based)
+  in the `--require-complete` block — the bug described above is unpatched and no
+  `.ai/TASKS.md` entry currently targets it.
+- Reproduced the orchestrator's exact failure mode from a separate worktree checked
+  out to `origin/main`, running
+  `check-foundry-scope.mjs --branch foundry/core/lc-fnd-001-master --base origin/main --head origin/foundry/core/lc-fnd-001-master --require-complete`:
+  it prints `Foundry scope OK for LC-FND-001: 6 changed files.` followed by
+  `Ready PR must add .ai/foundry/completed/LC-FND-001.json` and exits 1, even
+  though the marker is present and correct on the branch tip.
+- Merged current `main` into `foundry/core/lc-fnd-001-master` (fast, no conflicts —
+  `main`'s only change in range was to `.ai/TASKS.md`, outside this task's scope)
+  and re-ran the full completion contract from the branch's own checkout:
+  `check:all`, `build`, `check:i18n` (frontend) and `compileall`, `pytest -q`
+  (backend), two consecutive clean cycles, all exit 0; `check-foundry-scope.mjs
+  --require-complete` from the branch checkout still reports OK with the marker
+  validated (`status=complete`, `cleanCycles=2`).
+
+No content or scope change was needed this session. This task remains genuinely
+done and still blocked only by the shared-automation bug above.
