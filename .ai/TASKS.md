@@ -27,8 +27,6 @@ _(none — the queue is open)_
 
 _(none — the queue is open)_
 
-_(none — the queue is open)_
-
 ## BLOCKED
 
 - [LC-CLOUD-001] Introduce size-capped Supabase beta accounts and compact learner progress
