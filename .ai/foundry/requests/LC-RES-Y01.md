@@ -67,3 +67,45 @@ e.g. `git worktree add`/`git show head:<path>` into a temp file/dir and point
 - Did not touch `.ai/TASKS.md`, `.ai/STATE.md`, `.ai/HANDOFF.md`.
 - Left PR #50 in draft; the branch/content are otherwise ready to merge once the
   orchestrator gate is fixed.
+
+## Update (2026-08-21, later run): partial fix landed, blocker still open
+
+Commit `576f8a9` (`fix(ops): validate Foundry completion marker from candidate
+head`) landed on `main` and fixed *half* of this: the completion-marker read in
+`check-foundry-scope.mjs` now uses `git show ${head}:${marker}` instead of
+`readFileSync(marker)`, so the marker check itself is now ref-correct.
+
+It did **not** touch the evidence-gate subprocess call. `check-foundry-scope.mjs`
+(current `main`, lines ~73-82) still does:
+
+```js
+const evidenceScript = new URL('./check-supervisor-evidence.mjs', import.meta.url).pathname
+const gate = spawnSync(process.execPath, [evidenceScript, '--partial', domain], { stdio:'inherit' })
+```
+
+and `check-supervisor-evidence.mjs` still resolves the corpus file via
+`new URL('../../docs/research/supervisors/psychology-primary.json', import.meta.url)`
+— i.e. off the live working tree, with no `--path`/`--root`/ref argument of any
+kind. Re-verified directly against current `check-supervisor-evidence.mjs`
+source: no such argument exists. Because `merge-foundry-pr.sh` never checks out
+`origin/$BRANCH` before invoking `check-foundry-scope.mjs --require-complete`,
+this subprocess will still read whatever `psychology-primary.json` happens to be
+on disk at merge time (missing on `main` until an `LC-RES-Y0x` batch merges),
+not the PR head's content. The original root cause and suggested fix above are
+unchanged and still needed.
+
+Re-verified on this branch's current head (content unchanged since `8727df9`):
+
+```
+node .github/scripts/check-foundry-scope.mjs --branch foundry/research-psy/lc-res-y01 --base origin/main --head HEAD --require-complete
+Foundry scope OK for LC-RES-Y01: 4 changed files.
+psychology: 30 unique primary studies; 12 topics
+Supervisor evidence partial gate: every present primary-study record is structurally verifiable and deduplicated.
+```
+
+(4 changed files now, vs. 3 previously, because this update itself added to
+`.ai/foundry/requests/LC-RES-Y01.md`, which is in scope per the coordination
+contract.) PR #50's per-commit checks remain green; branch is even with
+`origin/main` (0 commits behind), so no rebase was needed. No content changes
+were made — nothing here requires re-running the two-clean-cycle QA cycle,
+since QA cycles are keyed to code/content changes and none occurred.
