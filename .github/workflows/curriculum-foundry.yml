@@ -33,89 +33,12 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - name: Refresh main
-        run: |
-          git fetch origin main --quiet
-          git reset --hard origin/main
-
-      - name: Heal and merge foundry PRs
+      - name: Run one self-healing Foundry cycle
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          gh pr list --state open --limit 100 --json number,headRefName,isDraft \
-            --jq '.[] | select(.headRefName | startswith("foundry/")) | [.number,.headRefName,.isDraft] | @tsv' |
-          while IFS=$'\t' read -r NUMBER BRANCH DRAFT; do
-            [ -n "${NUMBER:-}" ] || continue
-            if [ "$DRAFT" = "true" ]; then
-              continue
-            fi
-
-            CHECKS=$(gh pr checks "$NUMBER" 2>&1 || true)
-            if printf '%s\n' "$CHECKS" | grep -qiE 'fail|cancel'; then
-              gh pr ready "$NUMBER" --undo || true
-              gh pr comment "$NUMBER" --body "Foundry recovery: final QA is red/cancelled. Returned to draft; the same task will be resumed automatically."
-              continue
-            fi
-            if printf '%s\n' "$CHECKS" | grep -qi 'pending'; then
-              continue
-            fi
-
-            TMP=$(mktemp)
-            GITHUB_OUTPUT="$TMP" bash .github/scripts/merge-foundry-pr.sh "$BRANCH" || true
-            MERGED=$(awk -F= '$1=="merged"{v=$2} END{print v}' "$TMP")
-            REASON=$(awk -F= '$1=="reason"{v=$2} END{print v}' "$TMP")
-            rm -f "$TMP"
-            if [ "$MERGED" = "true" ]; then
-              git fetch origin main --quiet
-              git reset --hard origin/main
-            elif [ "$REASON" = "merge-failed" ] || [ "$REASON" = "scope-or-quality" ] || [ "$REASON" = "missing-marker" ] || [ "$REASON" = "missing-evidence" ]; then
-              gh pr ready "$NUMBER" --undo || true
-              gh pr comment "$NUMBER" --body "Foundry recovery: merge gate returned \`$REASON\`. Returned to draft so the same branch can repair itself."
-            fi
-          done
-
-      - name: Refresh completion markers after merges
-        run: |
-          git fetch origin main --quiet
-          git reset --hard origin/main
-
-      - name: Dispatch every ready independent lane
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          READY=$(node .github/scripts/foundry-next.mjs --all)
-          COUNT=$(printf '%s' "$READY" | jq 'length')
-          echo "Ready lane tasks: $COUNT" >> "$GITHUB_STEP_SUMMARY"
-          [ "$COUNT" -gt 0 ] || exit 0
-
-          printf '%s' "$READY" | jq -c '.[]' | while read -r TASK; do
-            ID=$(printf '%s' "$TASK" | jq -r .id)
-            LANE=$(printf '%s' "$TASK" | jq -r .lane)
-            BRANCH=$(printf '%s' "$TASK" | jq -r .branch)
-
-            PR=$(gh pr list --head "$BRANCH" --state open --json number,isDraft --jq '.[0] // empty')
-            if [ -n "$PR" ]; then
-              IS_DRAFT=$(printf '%s' "$PR" | jq -r .isDraft)
-              if [ "$IS_DRAFT" = "false" ]; then
-                echo "$ID has a ready PR; waiting for QA/merge." >> "$GITHUB_STEP_SUMMARY"
-                continue
-              fi
-            fi
-
-            ACTIVE=$(gh run list --workflow=claude-foundry-worker.yml --limit 100 \
-              --json status,displayTitle \
-              --jq "[.[] | select((.status == \"in_progress\" or .status == \"queued\") and (.displayTitle | contains(\"$ID\")))] | length")
-            if [ "$ACTIVE" != "0" ]; then
-              echo "$ID already has an active worker." >> "$GITHUB_STEP_SUMMARY"
-              continue
-            fi
-
-            gh workflow run claude-foundry-worker.yml --ref main -f task_id="$ID" -f lane="$LANE"
-            echo "Dispatched $ID on lane $LANE." >> "$GITHUB_STEP_SUMMARY"
-          done
+        run: bash .github/scripts/run-foundry-cycle.sh
