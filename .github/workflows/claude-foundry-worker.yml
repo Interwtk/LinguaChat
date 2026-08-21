@@ -80,9 +80,11 @@ jobs:
 
           OPEN=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
           if [ "$OPEN" = "0" ]; then
-            gh pr create --draft --base main --head "$BRANCH" \
+            if ! gh pr create --draft --base main --head "$BRANCH" \
               --title "WIP: $TASK_ID" \
-              --body $'## Summary\nAutomatic bootstrap draft. Resume this exact task/branch.\n\n## Evidence\nIncomplete — do not merge.'
+              --body $'## Summary\nAutomatic bootstrap draft. Resume this exact task/branch.\n\n## Evidence\nIncomplete — do not merge.'; then
+              echo "::warning::Could not create bootstrap Draft PR with GITHUB_TOKEN; branch is safely published and Claude must create/preserve the Draft PR."
+            fi
           fi
 
       - name: Refuse clearly if the Claude token is absent
@@ -135,9 +137,10 @@ jobs:
             - Never edit .ai/TASKS.md, .ai/STATE.md or .ai/HANDOFF.md. The serial product queue remains independent.
             - Work only inside this task's writeScopes from .ai/foundry/tasks.json, plus its own
               .ai/foundry/completed/<TASK>.json and .ai/foundry/requests/<TASK>.md.
-            - The exact branch above is already checked out and has a Draft PR before you start. Resume it; do not restart.
+            - The exact branch above is already checked out and published. Resume it; do not restart.
+            - If no Draft PR exists yet, create it immediately on this exact branch before substantive work; then preserve it while working.
             - Rebase/merge current main before final validation. Resolve only conflicts inside your allowed scope.
-            - Preserve the DRAFT PR while working. Push checkpoints. Never claim work or tests that did not happen.
+            - Push checkpoints. Never claim work or tests that did not happen.
             - If a required change is outside your scope, do not make it secretly. Record the exact blocker in the PR
               and .ai/foundry/requests/<TASK>.md. Keep the PR draft.
 
@@ -214,9 +217,11 @@ jobs:
           fi
           OPEN=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
           if [ "$OPEN" = "0" ]; then
-            gh pr create --draft --base main --head "$BRANCH" \
+            if ! gh pr create --draft --base main --head "$BRANCH" \
               --title "WIP: $TASK_ID" \
-              --body $'## Summary\nAutomatic recovery draft. Resume this exact task/branch.\n\n## Evidence\nIncomplete — do not merge.'
+              --body $'## Summary\nAutomatic recovery draft. Resume this exact task/branch.\n\n## Evidence\nIncomplete — do not merge.'; then
+              echo "::warning::Could not create recovery Draft PR with GITHUB_TOKEN; branch remains resumable for the next worker cycle."
+            fi
           fi
 
       - name: Clean no-op
