@@ -21,17 +21,19 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
+_(none — the queue is open)_
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
+
 - [LC-QA-001] Extend check:i18n into a real linter
-  owner:  claude-action
-  branch: qa/lc-qa-001-i18n-linter
+  owner:  unclaimed
+  branch: none
   why:    the current check proves key parity only and missed every material defect found in LC-I18N-001.
   done:   detect hardcoded visible auxiliary strings, placeholder mismatches,
           duplicate locale keys, unsupported-language claims, raw-key/silent fallback
           cases that can be proved statically or through a harness, plural-category
           contract violations, and user_language divergence without absurd false
           positives for product names, URLs, codes or intentional target English.
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-SEC-001] Audit and safely resolve the current frontend dependency vulnerabilities
   owner:  unclaimed
