@@ -275,3 +275,24 @@ issue #52's explicit instruction), and once it lands, rebase this branch and
 rerun PR #50's final-head evidence/QA contract before marking ready. No
 content or code changed on this branch this session; the two-clean-cycle QA
 count is unaffected.
+
+## Update (2026-08-21, new session): still blocked, no material change — keeping this note brief
+
+Fresh session. Re-verified independently rather than trusting the above: branch
+still even with `origin/main`; content diff unchanged (30 studies, 12 topics via
+`check-supervisor-evidence.mjs --partial psychology`, exit 0; `check-foundry-scope.mjs`
+exit 0, 4 files, all in scope). PR #50 unchanged (`OPEN`/draft/mergeable, per-commit
+checks green). Issue #52 still `OPEN`. PR #57 (the `LC-OPS-015` fix) is still
+`OPEN`/draft/`mergeable`, CI green at HEAD `2cff3ec`, but unmerged. PR #56 also
+still open/draft. Watched the bug reproduce live one more time in the newest
+orchestrator run (`32515237227`, 2026-08-21T18:48:52Z): sibling PR #53 bumped to
+draft again with the identical `pedagogical: 0 unique primary studies; 0 topics`
+signature; this run recognized this branch's worker as already queued/running and
+skipped re-evaluating PR #50, consistent with all prior observations.
+
+Given several consecutive sessions have now reconfirmed the identical blocker with
+no change, further per-session re-verification notes add little beyond a
+timestamp. Deliberately keeping this update short rather than repeating the full
+history again. No content or code changed; correct action is unchanged: stay in
+draft until `LC-OPS-015` (PR #57) merges, then rebase and rerun #50's final-head
+QA/evidence contract.
