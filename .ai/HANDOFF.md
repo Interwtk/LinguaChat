@@ -3,7 +3,7 @@
 Keep this file current: what just happened, what is proved, what comes next, and
 what will bite the next operator.
 
-_Written for LC-I18N-002 on 2026-08-20. Live main/TASKS wins if it changes after
+_Written for LC-QA-001 on 2026-08-21. Live main/TASKS wins if it changes after
 this branch was cut._
 
 ## What just happened
@@ -158,6 +158,72 @@ merely visually unaffected; no overflow, no console errors, no raw `{key}`
 leaks; Arabic `dir="rtl"`, Spanish/Japanese `dir="ltr"`, all six runs. Full
 detail in `.ai/TRANSLATIONS.md` under "LC-I18N-002".
 
+LC-QA-001 (PR #31) then closed the gap this queue had pointed at since
+LC-I18N-001 finding A9: `check:i18n` only ever diffed the two dictionaries
+against each other (missing/extra keys, placeholder parity, plural grammar),
+so it could never see a component calling a typoed `t('key')` (every locale
+"has" the key nobody uses; the raw key renders to every learner at runtime)
+or a plain hardcoded JSX string that was never a key at all — the two defect
+classes LC-I18N-001 could only find by hand-reading the source. New
+`check-i18n-lint.mjs` (wired into `check:all` right after `check-i18n.mjs`)
+builds the real import graph from `src/main.jsx` and walks every reachable
+file with `@babel/parser`/`@babel/traverse` (JSX-aware AST, not regex) for
+both: literal `t('key')` calls not present in the base dictionary (raw-key/
+silent-fallback), and JSXText/`aria-label`/`placeholder`/`title`/`alt` string
+literals that look like real auxiliary prose (>=2 words, has a lowercase
+letter, not a URL/number/symbol run) rather than a code/product token
+(hardcoded visible string) — except inside the codebase's own established
+`lang="en"` wrapper convention, which is real intentional target-English
+content, already relied on and browser-proved by LC-PED-001/LC-PROD-001, not
+a defect. Unreachable `.jsx` files (found: `components/onboarding/
+OnboardingFlow.jsx`, zero importers anywhere) are reported for visibility but
+never scanned/gated, so dead code can't produce false positives or silently
+rot. `check-i18n.mjs` itself gained a duplicate-key gate: the same key twice
+in one dictionary object literal silently keeps only the last value, which a
+coverage/placeholder diff can never see either way (the key "exists"); both
+scripts now share a small `scripts/lib/i18nSource.mjs` extraction module
+instead of drifting two slightly different dictionary parsers. Combined with
+`check:language-support` (LC-I18N-002, unsupported-language claims) and
+`check:user-language` (LC-I18N-003, `user_language` divergence), every defect
+class this task's `done` criteria named is now a real regression gate, not
+prose.
+
+Running the new linter against the real tree found one real, small,
+not-previously-baselined defect, fixed in this PR: `ConversationArchive.jsx`'s
+`"+N confidence pts"` was a hardcoded English string never routed through
+`t()` — now `confidencePtsGained`, translated in all 7 locales. (The
+linter's own first draft also mis-flagged three legitimate plural-stem calls
+as raw-key hits, because a pluralisable key has no *bare* base entry by
+design — only `<key>_other` etc.; that was fixed in the checker's lookup, not
+the source, after confirming the real behaviour by reading `resolveKey()` in
+`src/i18n/translations.js`.) No other pre-existing hardcoded-string/raw-key
+debt was found in the reachable tree, so this gate starts at zero debt with
+no baseline/allowlist file to carry forward — the `ALLOWLIST` in
+`check-i18n-lint.mjs` is empty by design, for future reviewed exceptions only.
+
+This PR had real work sitting in a draft branch/PR (`qa/lc-qa-001-i18n-linter`,
+PR #31) from a prior run that had implemented and QA-passed the linter but
+not yet written measured evidence or done final bookkeeping; this run
+resumed that exact branch (merged `main` in for the intervening LC-I18N-002
+close-out, no conflicts) rather than re-implementing it. Each of the three
+new gates (duplicate-key, raw-key, hardcoded-string) was verified live in
+this run by injecting a synthetic defect into the tree and confirming the
+exact check fails naming the right file/line, then restoring the tree and
+confirming it passes clean again — proof the checks actually detect what
+they claim, not just that the code compiles. `check:all` 57/57 (was 56), two
+consecutive clean cycles; build entry 447.85 kB / bundle-boundaries entry
+438.6 kB, two consecutive clean cycles; backend `compileall` clean + 444
+pytest passed, two consecutive clean cycles, unchanged. Real browser proof
+(Playwright/Chromium, installed ad hoc with `--no-save` and removed
+afterward — `package.json`/lockfile unchanged) at 390px/1440px in es/ja/ar
+(6 runs): a seeded authenticated learner with one real archived session
+opens Chats → Conversation archive and sees the fixed `confidencePtsGained`
+string render correctly localized — "+5 puntos de confianza" (es), "自信ポイ
+ント +5" (ja), "+5 نقطة ثقة" (ar) — proving the one real defect this linter
+found is actually fixed end to end, not merely present in a dictionary; no
+console/page errors, no horizontal overflow, no raw key leaks; Arabic
+renders `dir="rtl"` end to end (mirrored sidebar/nav) at both viewports.
+
 ## The 40-turn failure — what it actually means now
 
 Run `32331959420` was an interactive `Claude — mention` run. It authenticated on a
@@ -251,10 +317,17 @@ supported locales may be selected — this is now enforced in code, not just pol
 ## Current i18n path
 
 `LC-I18N-005` is DONE (PR #24), `LC-PROD-001` is DONE (PR #25), `LC-PED-001` is
-DONE (PR #26), and `LC-I18N-002` is DONE (PR #30, merged into main's
-`.ai/TASKS.md` DONE section in this same PR). The next language/quality task is:
+DONE (PR #26), `LC-I18N-002` is DONE (PR #30), and `LC-QA-001` is DONE (PR #31,
+merged into main's `.ai/TASKS.md` DONE section in this same PR): `check:i18n`
+plus the new `check-i18n-lint.mjs` now gate every i18n failure class this
+queue had open — duplicate keys, raw-key/silent-fallback, hardcoded visible
+strings, unsupported-language claims (`LC-I18N-002`) and `user_language`
+divergence (`LC-I18N-003`). The next quality tasks are the general engineering
+queue, in order:
 
-1. `LC-QA-001` — turn remaining i18n failure classes into regression gates.
+1. `LC-SEC-001` — audit the 1 moderate + 3 high npm advisories safely.
+2. `LC-BE-001` — migrate the Pydantic V1 validator.
+3. `LC-DOC-001` — reconcile the stale README / proven-unused historical debris.
 
 Do not mass-add Hindi/Korean/etc. as selector labels first. A language becomes
 supported only after login/onboarding/UI + explanations/hints/corrections/meanings
