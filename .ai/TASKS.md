@@ -21,19 +21,19 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-_(none — the queue is open)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-DOC-001] Reconcile README and historical repository debris with the real product
-  owner:  unclaimed
-  branch: none
+  owner:  claude-action
+  branch: docs/lc-doc-001-readme-cleanup
   why:    README still describes legacy Practice/Journey/mock/B1 behaviour and old root/frontend artifacts can mislead future agents.
   done:   README describes the current architecture and explicit local-only/deferred
           boundaries; prove whether `linguachat-frontend-old/`, `pacientes.txt` and
           `procedimientos.txt` are unused before removing anything; no owner archive
           or secret is touched; docs cannot claim A2+ curriculum, real auth, voice or
           other unavailable functionality.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
+
+_(none — the queue is open)_
 
 ## BLOCKED
 
