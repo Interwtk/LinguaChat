@@ -16,7 +16,7 @@ out pr_number ""
 out reason "not-checked"
 
 case "$BRANCH" in
-  curr/*|i18n/*|qa/*|ops/*|fix/*) ;;
+  curr/*|i18n/*|qa/*|ops/*|docs/*|fix/*) ;;
   *) echo "$BRANCH is not an agent branch."; out reason non-agent; exit 0 ;;
 esac
 
@@ -54,7 +54,7 @@ if ! grep -qi '^##[[:space:]]*Evidence' /tmp/agent-pr-body.md; then
 fi
 
 case "$BRANCH" in
-  curr/*|i18n/*|qa/*|ops/*)
+  curr/*|i18n/*|qa/*|ops/*|docs/*)
     CHANGED=$(gh pr view "$NUMBER" --json files --jq '.files[].path')
     missing=""
     for f in .ai/TASKS.md .ai/STATE.md .ai/HANDOFF.md; do
@@ -80,9 +80,12 @@ case "$BRANCH" in
     ;;
 esac
 
-# A conflict or transient merge refusal is recoverable work, not a reason for the
-# orchestrator job itself to go red and stop healing.
-if ! gh pr merge "$NUMBER" --rebase --delete-branch; then
+# Agent branches deliberately merge current main while they work. Preserve that
+# evidenced final tree with a normal 3-way merge instead of replaying its history
+# through rebase, which can conflict even when the final trees merge cleanly.
+# A conflict or transient merge refusal remains recoverable work, not a reason for
+# the orchestrator job itself to go red and stop healing.
+if ! gh pr merge "$NUMBER" --merge --delete-branch; then
   echo "PR #$NUMBER could not be merged; watchdog will return it to resumable work."
   out reason merge-failed
   exit 0

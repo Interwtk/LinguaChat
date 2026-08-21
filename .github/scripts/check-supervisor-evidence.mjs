@@ -1,10 +1,17 @@
 #!/usr/bin/env node
+import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 
 const FILES = {
-  pedagogical: new URL('../../docs/research/supervisors/pedagogical-primary.json', import.meta.url),
-  psychology: new URL('../../docs/research/supervisors/psychology-primary.json', import.meta.url),
+  pedagogical: {
+    url: new URL('../../docs/research/supervisors/pedagogical-primary.json', import.meta.url),
+    path: 'docs/research/supervisors/pedagogical-primary.json',
+  },
+  psychology: {
+    url: new URL('../../docs/research/supervisors/psychology-primary.json', import.meta.url),
+    path: 'docs/research/supervisors/psychology-primary.json',
+  },
 }
 const MIN = 100
 const required = [
@@ -75,25 +82,44 @@ export function validateCorpus(domain, records, { requireReady = true } = {}) {
   return { domain, records, errors, uniqueCount, topicCounts: Object.fromEntries(topicCounts) }
 }
 
-function load(domain, url, options) {
-  if (!existsSync(url)) return { domain, records: [], errors: [`missing ${url.pathname}`], uniqueCount: 0, topicCounts: {} }
+function readCorpus(spec, ref) {
+  if (!ref) {
+    if (!existsSync(spec.url)) return { error: `missing ${spec.url.pathname}` }
+    try { return { text: readFileSync(spec.url, 'utf8') } } catch (e) { return { error: e.message } }
+  }
+  try {
+    return { text: execFileSync('git', ['show', `${ref}:${spec.path}`], { encoding:'utf8', stdio:['ignore','pipe','pipe'] }) }
+  } catch {
+    return { error: `missing ${spec.path} at ${ref}` }
+  }
+}
+
+function load(domain, spec, options, ref) {
+  const source = readCorpus(spec, ref)
+  if (source.error) return { domain, records: [], errors: [source.error], uniqueCount: 0, topicCounts: {} }
   let records
-  try { records = JSON.parse(readFileSync(url, 'utf8')) } catch (e) { return { domain, records: [], errors: [`invalid JSON: ${e.message}`], uniqueCount: 0, topicCounts: {} } }
+  try { records = JSON.parse(source.text) } catch (e) { return { domain, records: [], errors: [`invalid JSON: ${e.message}`], uniqueCount: 0, topicCounts: {} } }
   return validateCorpus(domain, records, options)
+}
+
+function arg(name) {
+  const i = process.argv.indexOf(name)
+  return i >= 0 ? process.argv[i + 1] : null
 }
 
 function runCli() {
   const partialIndex = process.argv.indexOf('--partial')
   const partial = partialIndex >= 0
   const requestedDomain = partial && process.argv[partialIndex + 1] && !process.argv[partialIndex + 1].startsWith('--') ? process.argv[partialIndex + 1] : null
+  const ref = arg('--ref')
   const entries = requestedDomain ? [[requestedDomain, FILES[requestedDomain]]] : Object.entries(FILES)
   if (requestedDomain && !FILES[requestedDomain]) {
     console.error(`Unknown evidence domain: ${requestedDomain}`)
     process.exit(2)
   }
   let failed = false
-  for (const [domain, url] of entries) {
-    const result = load(domain, url, { requireReady: !partial })
+  for (const [domain, spec] of entries) {
+    const result = load(domain, spec, { requireReady: !partial }, ref)
     console.log(`${domain}: ${result.uniqueCount || 0}${partial ? '' : `/${MIN}`} unique primary studies; ${Object.keys(result.topicCounts || {}).length} topics`)
     if (result.errors.length) {
       failed = true

@@ -73,11 +73,11 @@ if (requireComplete) {
   const evidenceScript = new URL('./check-supervisor-evidence.mjs', import.meta.url).pathname
   if (task.kind === 'research-ped' || task.kind === 'research-psy') {
     const domain = task.kind === 'research-ped' ? 'pedagogical' : 'psychology'
-    const gate = spawnSync(process.execPath, [evidenceScript, '--partial', domain], { stdio:'inherit' })
+    const gate = spawnSync(process.execPath, [evidenceScript, '--partial', domain, '--ref', head], { stdio:'inherit' })
     if (gate.status !== 0) process.exit(gate.status || 1)
   }
   if (task.requiresEvidenceReady) {
-    const gate = spawnSync(process.execPath, [evidenceScript], { stdio:'inherit' })
+    const gate = spawnSync(process.execPath, [evidenceScript, '--ref', head], { stdio:'inherit' })
     if (gate.status !== 0) process.exit(gate.status || 1)
   }
 }
