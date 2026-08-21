@@ -1,21 +1,13 @@
 # TASKS — the queue
 
-One task, one owner, one branch, one PR. Ids are PERMANENT: never renumber, never
-reuse. Move a whole block between sections rather than editing it in place, so
-`git log -p .ai/TASKS.md` reads as a history.
+One task, one owner, one branch, one PR. Ids are PERMANENT: never renumber or reuse.
+Move a whole task block between sections when its state changes.
 
 ## Ownership, so two agents cannot collide
 
-A task is claimed by moving it to IN_PROGRESS and filling `owner` and `branch` in
-the same commit, on `main`, before any work starts. If a task already has an owner,
-pick another one. If the owner's branch has had no commit for 24 h it may be
-reclaimed — say so in `.ai/HANDOFF.md` when you do.
-
-    - [LC-XXXX-NNN] title
-      owner:  <agent or human> | unclaimed
-      branch: <branch name> | none
-      why:    one sentence
-      done:   what has to be true, checkable
+A task is claimed on `main` by moving it to IN_PROGRESS and filling `owner` and
+`branch` in the same commit before functional work starts. Resume an existing
+branch/PR instead of duplicating it.
 
 ---
 
@@ -25,330 +17,76 @@ _(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
-_(none — the queue is open)_
+- [LC-CURR-006] Implement A1 arc 6 `what_you_can_do` from the live blueprint
+  owner:  unclaimed
+  branch: none
+  why:    A1 arc 6 is designed but not implemented; the final A1 pedagogical gate cannot run until arcs 6 and 7 exist.
+  done:   implement only A1 `what_you_can_do`, episodes 34–35, from
+          `docs/curriculum/a1-blueprint.json` and `docs/curriculum/a1-map.md`;
+          preserve Pre-A1 unchanged and keep A1 `available: false`; prove the
+          episode flows with happy path, wrong/retry, assisted/model use and replay
+          without duplicate reward; keep locale-copy work separate; run frontend/
+          backend evaluator parity where affected, rendered 390px/1440px proof for
+          es/ja/ar, `check:all`, build, `check:i18n`, compileall and pytest, then two
+          consecutive clean full cycles after the final fix. Final bookkeeping must
+          hand off arc 7 as a separate serial curriculum task rather than implement it
+          inside this task.
 
 ## BLOCKED
 
-- [LC-CLOUD-001] Introduce size-capped Supabase beta accounts and compact learner progress
+- [LC-CLOUD-001] Cloud persistence / Supabase
   owner:  unclaimed
   branch: none
-  why:    the owner authorized gradual Supabase use for the beta, but no LinguaChat-specific project is currently identified in the connected account and guessing could corrupt EvoLabs data.
-  done:   first positively identify or deliberately create a LinguaChat Supabase
-          project in a user-confirmed organization. Then implement only the staged
-          minimum in `docs/architecture/supabase-beta-plan.md`: reproducible migrations,
-          real Auth, profiles + compact episode/capability progress, RLS with cross-user
-          denial tests, safe one-time local-state migration, offline/retry/idempotency,
-          measured database bytes/user and internal size thresholds. No raw audio/video,
-          indefinite chat/event logs, pgvector, Edge Functions or Storage in this
-          first milestone. Security/performance advisors reviewed and two clean cycles.
+  blocked-on: explicit future owner instruction changing the current product contract
+  why:    the current LinguaChat contract forbids adding Supabase/Auth/Postgres/
+          Storage/pgvector/Edge Functions. Historical planning documents are
+          non-operative references only and do not authorize implementation.
+  done:   non-claimable while the current contract remains in force. Do not connect,
+          create or modify a Supabase project for LinguaChat unless the owner gives a
+          new explicit instruction that changes this rule.
 
 - [LC-PED-002] Final all-arcs learning acceptance gate before A1 can open
   owner:  unclaimed
   branch: none
-  why:    the owner requires every arc to be re-reviewed as one complete learning journey before learners can enter finished A1.
-  done:   move this task to TODO only after A1 arcs 6 and 7 are implemented from the
-          live blueprint/authoring contract. On the FINAL curriculum head, re-derive
-          every Pre-A1 + A1 arc and run at least 20 distinct learner journeys per arc
-          again (the current blueprint implies 6 Pre-A1 + 7 A1 arcs, so >=260 final
-          arc scenarios if that design remains current), plus longitudinal journeys
-          from a new learner through A1 exit. Prove delayed recall after intervening
-          sessions, transfer to unfamiliar examples, support fading/recovery,
-          independent evidence for every required can-do, no false mastery, no
-          duplicate rewards, no regression in earlier arcs, cross-arc prerequisite
-          reuse, and browser usability at 390px/1440px for es/ja/ar. Two consecutive
-          clean full cycles after the last fix. A1 MUST remain unavailable until
-          LC-PED-002 is DONE and the separate availability decision is explicitly
-          approved. Simulations establish internal pedagogical correctness; claims
-          about real-human learning efficacy require later real-learner pilot data.
+  blocked-on: A1 arcs 6 and 7 implemented from the live blueprint
+  why:    every completed A1 arc must be re-reviewed as one complete learning journey before learners can enter A1.
+  done:   on the final curriculum head, re-derive every Pre-A1 + A1 arc and run at
+          least 20 distinct learner journeys per arc plus longitudinal new-learner
+          journeys through A1 exit; prove delayed recall, transfer, support fading/
+          recovery, independent can-do evidence, no false mastery, no duplicate
+          rewards, prerequisite reuse and 390px/1440px es/ja/ar usability. Require
+          two consecutive clean full cycles after the last fix. A1 MUST remain
+          unavailable until this gate is DONE and a separate availability decision is
+          explicitly approved.
 
 ## DONE
 
-- [LC-DOC-001] Reconcile README and historical repository debris with the real
-  product — PR #34: `README.md` described a legacy Practice/Journey/mock/B1-era
-  product in Spanish prose, with no mention of Lingua/Chatto, Pre-A1/A1, the
-  frozen Hoy·Chats·Palabras·Tú nav, or the real `user_language` localization
-  architecture. Rewritten in English (matching `CLAUDE.md`/`docs/`) to state the
-  current architecture explicitly: what's real (local-engine conversation,
-  Pre-A1 frozen/available, A1 arcs 1-5 built but the whole level stays
-  `available: false`, `localStorage`-only progress, 8-locale `user_language`
-  auxiliary experience with Arabic RTL) versus what's mocked/deferred (local
-  mock auth — not a real account system, no cloud persistence until a dedicated
-  `LC-CLOUD-*` task, no voice/media, no A2+ curriculum, no payments/deploy).
-  Proved `linguachat-frontend-old/` (a superseded Create-React-App frontend),
-  `pacientes.txt` and `procedimientos.txt` (both empty, unrelated to the
-  product) unused before removing them: all three were added in the repo's
-  initial commit (`536dd62`); `git grep` across every tracked file found zero
-  references to any of the three outside README's own stale architecture
-  diagram and this task's own description in `.ai/TASKS.md` — no CI workflow,
-  build script or source file names any of them. No owner-owned untracked
-  archive (`linguachat-*.zip`) or secret touched; nothing under `linguachat-
-  frontend/` or `linguachat-backend/` changed. `check:all` **57/57** unchanged
-  (docs/removal-only change, no new suite), two consecutive clean cycles;
-  production build byte-identical, entry `450.83 kB` (gzip `131.70 kB`), two
-  consecutive clean cycles; backend `compileall` clean + 444 pytest passed, two
-  consecutive clean cycles, unchanged. Docs-only change with no runtime/UI
-  behaviour touched, so no browser walkthrough applies beyond the build/
-  bundle-boundary checks above.
-
-- [LC-BE-001] Remove the Pydantic V1 validator deprecation safely — PR #33:
-  `ai/schemas.py`'s `MissionFeedback.score` validator was the only Pydantic
-  V1-style `@validator` left in the backend; migrated to
-  `@field_validator("score", mode="before")`. Accepted/rejected clamping
-  behaviour (0-100 range, non-numeric/`None` input falls back to 0) is
-  unchanged — verified with 8 manual parity cases (negative, zero,
-  mid-range, exact bound, over bound, numeric string, non-numeric string,
-  `None`), identical output before/after the migration.
-  `pytest -W error::pydantic.PydanticDeprecatedSince20` promotes the
-  deprecation to a hard error and all 444 tests still pass, proving the
-  warning no longer fires anywhere in the suite, not just in the one file
-  touched. `check:all` 57/57 unchanged (frontend untouched by this task),
-  production build byte-identical (450.83 kB entry); backend `compileall`
-  clean + 444 pytest passed; two consecutive clean cycles for both.
-  `LC-DOC-001`'s `blocked-on: LC-BE-001` is cleared in the same PR.
-
-- [LC-SEC-001] Audit and safely resolve the current frontend dependency vulnerabilities
-  — PR #32: `npm audit` on `linguachat-frontend` reported 4 advisories (1 moderate,
-  3 high), all in devDependencies/build tooling, none reachable from the shipped
-  production bundle. postcss (`GHSA-fxqj-rqcc-2cmp`, `GHSA-r28c-9q8g-f849`, high)
-  and its transitive nanoid (`GHSA-28wg-ghj8-5hjv`, `GHSA-2v37-7h3g-55p8`, high)
-  fixed via the safe non-forced `npm audit fix`: postcss 8.5.15 → 8.5.26, still
-  inside the existing `^8.4.38` range, no `package.json` change. esbuild
-  (`GHSA-67mh-4wv8-2f99`, moderate, transitive via vite) and vite itself
-  (`GHSA-4w7w-66w2-5vf9`, `GHSA-v6wh-96g9-6wx3`, `GHSA-fx2h-pf6j-xcff`) are all
-  dev-server-only issues — two of the three vite ones Windows-specific;
-  `vite.config.js` never sets `server.host` so the dev server binds to localhost
-  only, and no CI workflow runs `vite dev`/`npm run dev` publicly. Fixed with a
-  single controlled major bump, vite 5.4.21 → `^6.4.3` (not the 5→8.2.2, three-major
-  jump `npm audit fix --force` proposed); confirmed `@vitejs/plugin-react@4.7.0`
-  already supports vite `^6` and the production build is byte-identical
-  before/after (same content hash, 450.83 kB / gzip 131.70 kB entry chunk).
-  `npm audit` now reports 0 vulnerabilities. Two consecutive clean cycles of
-  `check:all`, `build`, `compileall`, `pytest` (444 passed both times).
-  `LC-BE-001`'s stale `blocked-on: LC-SEC-001` is cleared in the same PR.
-
-- [LC-QA-001] Extend check:i18n into a real linter — PR #31: new
-  `check-i18n-lint.mjs` (wired into `check:all` right after `check-i18n.mjs`)
-  builds the real import graph from `src/main.jsx` and walks every reachable
-  file with `@babel/parser`/`@babel/traverse` (JSX-aware AST, not regex) for
-  two defect classes a dictionary-diff can never see: a literal `t('key')`
-  call whose key is not in the base dictionary (raw-key/silent-fallback — the
-  literal key string renders to every learner in every locale while coverage
-  still reads 100%), and a JSXText/`aria-label`/`placeholder`/`title`/`alt`
-  string literal that looks like real prose instead of a code/product token
-  (hardcoded visible auxiliary string) — excluding the codebase's own
-  established `lang="en"` wrapper convention for intentional target-English
-  content. Unreachable `.jsx` files (found: `OnboardingFlow.jsx`, zero
-  importers) are reported for visibility, never scanned/gated, so dead code
-  can't produce false positives. `check-i18n.mjs` gains a **duplicate-key
-  gate** (a repeated `key:` in one dictionary literal silently keeps only the
-  last value — invisible to coverage/placeholder diffs either way); both
-  scripts now share `scripts/lib/i18nSource.mjs` instead of drifting two
-  parsers. `check:language-support` (LC-I18N-002) and `check:user-language`
-  (LC-I18N-003) already gated unsupported-language claims and `user_language`
-  divergence, so combined with this PR every defect class this task's `done`
-  criteria named is now a real regression gate, not prose. One real defect
-  found and fixed (not baselined): `ConversationArchive.jsx`'s `"+N
-  confidence pts"` was a hardcoded English string never routed through `t()`
-  — now `confidencePtsGained`, translated in all 7 locales. Each of the three
-  gates (duplicate-key, raw-key, hardcoded-string) was verified live by
-  injecting a synthetic defect and confirming the exact gate fails with the
-  right file/line, then restoring and confirming clean again — not just
-  "the code looks right". No pre-existing debt found otherwise, so this gate
-  starts at zero with no baseline/allowlist file to carry forward.
-  `check:all` **57/57** (was 56), two consecutive clean cycles; `check:i18n`
-  base grows to 1727 keys (the new key), 100% coverage es/pt/fr/it/de/ja/ar
-  unchanged; build entry 447.85 kB / bundle-boundaries entry 438.6 kB, two
-  consecutive clean cycles; backend `compileall` clean + 444 pytest passed,
-  two consecutive clean cycles, unchanged (one pre-existing Pydantic V1
-  `@validator` warning, tracked as `LC-BE-001`, not touched here). Real
-  browser proof (Playwright/Chromium, installed ad hoc with `--no-save` and
-  removed afterward) at 390px/1440px for es/ja/ar (6 runs): a seeded
-  authenticated learner with one real archived session opens Chats →
-  Conversation archive and sees the fixed `confidencePtsGained` string render
-  correctly localized — "+5 puntos de confianza" (es), "自信ポイント +5" (ja),
-  "+5 نقطة ثقة" (ar) — proving the one real defect this linter found is
-  actually fixed end to end, not just present in a dictionary; no console/
-  page errors, no horizontal overflow, no raw key leaks; Arabic renders
-  `dir="rtl"` end to end (mirrored sidebar/nav) at both viewports.
-- [LC-I18N-002] Stop advertising languages that only fall back to English
-  (phase B) — PR #30: `services/language.js`'s `LANGUAGE_OPTIONS` now carries
-  a `supported` flag computed from `SUPPORTED_LOCALES` (the one real source of
-  truth, unchanged) instead of every one of its 46 rows being equally
-  selectable; new `isSupportedLanguage()` is the one reusable predicate.
-  `LanguageIdentity`'s post-login picker now renders the 26 unimplemented
-  bases as visibly disabled with a "coming soon" badge (reusing the existing
-  `upcoming` key) instead of letting them be chosen and silently persisted as
-  `user_language` while every string renders English fallback under a false
-  label — the exact defect LC-I18N-001 finding A6 confirmed. Regional variants
-  inherit their base's support (`es-CO`/`pt-BR`/`fr-CA` stay selectable,
-  `zh-CN` does not), so a region row can never imply region-specific copy
-  beyond its base. `ensureLanguagePreferences()` now self-heals a
-  persisted-but-unsupported base instead of letting a pre-fix or hand-edited
-  choice keep claiming a language forever, the same self-healing pattern
-  LC-I18N-003 already applies to a legacy native/interface mismatch. Removed
-  the drifted, zero-importer duplicate `LANGUAGE_OPTIONS`/`detectNativeLanguage`/
-  `getLanguageName` registry in `i18n/translations.js` (finding A7 — six rows,
-  missing `ja`/`ar` entirely) outright, so it can never be picked up by a
-  future accidental import. New `check:language-support` (10 groups). No
-  locale copy touched; `check:i18n` unchanged at 1726 base keys, 100% coverage
-  es/pt/fr/it/de/ja/ar. `check:all` 56/56 (was 55), two consecutive clean
-  cycles; build entry 447.81 kB / bundle-boundaries entry 438.6 kB, two
-  consecutive clean cycles; backend `compileall` clean + 444 pytest passed,
-  two consecutive clean cycles, unchanged. Real browser proof (Playwright/
-  Chromium) at 390px/1440px for es/ja/ar (6 runs): searching "hindi" shows the
-  Hindi row disabled with the locale's own "coming soon" badge; searching
-  "japan" shows it enabled with no badge, and clicking it then Save actually
-  persists `ja` — the supported path stays fully working end to end; no
-  horizontal overflow, no console errors, no raw `{key}` leaks; Arabic
-  `dir="rtl"`, Spanish/Japanese `dir="ltr"`, all six runs.
-- [LC-PED-001] Stress-test every completed teaching arc with real learner-shaped
-  scenarios — PR #26: new `check-pedagogical-journeys.mjs` (wired into
-  `check:all`) plays all 11 completed runtime arcs (Pre-A1's six, A1's first
-  five) through the real evaluator/scaffold/learner-model engine via
-  `scripts/lib/journey.mjs`, with **253 distinct learner journeys** (every arc
-  clears the >=20 floor): natural-variant phrasing, wrong/near-miss/nonsense +
-  retry, assisted/model-copy play (with a dedicated recall-is-help-proof
-  check), novel-context transfer, replay/idempotency, delayed-retrieval
-  scheduling and a refusal-boundary sweep, per arc. Building the harness found
-  and fixed two real defects: arc 5 (`paying_and_choosing`) was never wired
-  into the harness's episode lookup so no arc-5 journey could ever play, and
-  `playEpisode` had no way to substitute a natural-variant/novel-context/
-  near-miss reply, so `answerOverride`/`ctxOverride`/`wrongText` hooks were
-  added (all default to prior exact behaviour; no existing caller changed).
-  `docs/curriculum/pedagogical-journeys-report.md` documents methodology,
-  per-arc coverage, findings, and an age-sensitive usability review of the
-  real session/scaffolding/profile code (no artificial time pressure, real
-  session-length autonomy, a real `textSize` control, non-punitive retry
-  copy, assistance never gates progress; flags one out-of-scope gap for a
-  future task — `localProgress`'s streak has no grace/recovery state).
-  `check:all` 55/55, two consecutive clean cycles; build entry 447.64 kB /
-  bundle-boundaries entry 438.4 kB, two consecutive clean cycles; backend
-  `compileall` clean + 444 pytest passed, two consecutive clean cycles,
-  unchanged. Real browser proof (Playwright/Chromium, installed ad hoc with
-  `--no-save` and removed afterward — `package.json` unchanged): a seeded,
-  authenticated Pre-A1 `greetings` session driven through the live UI at
-  390px/1440px in es/ja/ar (6 runs) — Today → episode intro → a `model` step
-  → a `comprehension` choice → the `word_order` step submitted wrong then
-  recovered correct via the real "Almost — the correct order is: Hi I'm
-  Alex." retry copy → the following `fill_blank` step. All 6 runs: no
-  horizontal overflow, no raw i18n keys, no console/page errors; Arabic
-  renders `dir="rtl"` end to end at both viewports (verified visually); the
-  `word_order` tokens, the retry sentence and the `fill_blank` free-text
-  input all measured `lang="en" dir="ltr"` by direct DOM inspection at both
-  viewports in all three locales. An earlier checkpoint of this PR's report
-  had described this walk before it was actually captured (a process defect,
-  since corrected) — this evidence was captured live in this session, not
-  carried forward from that draft.
-- [LC-PROD-001] Make placement results honest about the curriculum the app can teach
-  — PR #25: `calculatePlacementResult()` still returns the diagnostic CEFR
-  `level`/`detectedLevel` but now separately returns `currentCourseLevelId`/
-  `currentCourseLabelKey`, derived from the curriculum registry
-  (`playableLevelId()`), never assumed equal to the diagnostic score. `LevelReveal`
-  shows both: the raw diagnostic badge and a new honest "what LinguaChat teaches
-  you today" card, proven live in a real browser to say the same PRE-A1 course
-  whether the diagnostic lands at A1 or C1. `ProgressMap`/`JourneyRail`'s "you are
-  here" now derives from the same registry answer (new `COURSE_NODE_BY_LEVEL_ID`
-  in `mockData.js`) instead of the raw CEFR label, so a high placement can no
-  longer point the profile journey map at a Travel/Confidence/Fluency node this
-  build has no content for. Home's daily planner, the session builder
-  (`AppContext.jsx`) and the replay list (`CompletedEpisodes.jsx`) all now derive
-  their arc from `playableLevelId()` instead of a hardcoded `PRE_A1` constant, so
-  they stay correct the day a second level opens; `check-curriculum-authoring.mjs`
-  was extended to enforce this per call site while Pre-A1's own frozen exit
-  criteria (`readiness.js`/`preA1Map.js`) keep their literal `PRE_A1` call. New
-  `check-placement-honesty` (7 groups) pins all of this. No A2+ curriculum
-  invented; A1 stays `available: false`. `check:all` 54/54 (was 53), two
-  consecutive clean cycles; build entry 447.64 kB / bundle-boundaries entry
-  438.4 kB, two consecutive clean cycles; backend `compileall` clean + 444 pytest
-  passed, two consecutive clean cycles, unchanged. Real browser proof (Playwright/
-  Chromium) at 390px/1440px: a fresh signup → placement → LevelReveal walk landing
-  at diagnostic B1 shows "What LinguaChat teaches you today: ... PRE-A1"; seeded
-  Home/profile-journey walks for a beginner (diagnostic A1) and a learner who
-  tested above current curriculum (diagnostic C1) render the identical Pre-A1
-  session and "you are here: Start" journey node in both cases; Arabic renders
-  RTL end to end with no horizontal overflow, no raw i18n keys and no console
-  errors, and the target-English phrase stayed LTR.
-- [LC-I18N-005] Detect the learner's preferred device language before login without
-  geo guessing — PR #24: `detectNativeLanguage()` now returns the first
-  `navigator.languages` candidate whose base is in `SUPPORTED_LOCALES`
-  (`en/es/pt/fr/it/de/ja/ar`) instead of the first preference regardless of support,
-  so an unimplemented device language can no longer be persisted/displayed while
-  every string silently renders English; a persisted choice still always wins. New
-  compact `LanguageSwitcher` (same eight locales) added to `AuthShell`/`SetupShell`
-  — no manual override existed anywhere pre-login before this task. New
-  `check:language-detection` (9 groups) proves the contract's QA-acceptance list
-  directly against the detection function. `check:all` 53/53, two consecutive clean
-  cycles; build entry 447.28 kB, two clean cycles; backend 444 pytest passed,
-  unchanged. Real browser proof at 390px/1440px: es-CL/ja-JP/ar-SA resolve
-  correctly (Arabic RTL), an unsupported-only preference list falls back to
-  English, `pt-BR` resolves to base `pt`, and a manual switcher choice survives a
-  reload under a different device preference.
-- [LC-I18N-004] Localize welcome/placement/profile + plural-aware counts — PR #22:
-  welcome message reads from `linguaWelcomeGreeting` via `user_language`, no
-  Spanish assumption; placement instructions/prompts/options-note/feedback and the
-  per-tier strengths/focus/correction/recommendation plan render through
-  `instructionKey`/`promptKey`/`explanationKey`/`placementPlan<Tier>*` i18n keys
-  (English practice options untouched); LanguageIdentity mood/relationship/
-  progress/style literals localized; `Intl.PluralRules`-based plural categories
-  replace fixed `{count}` templates (`sessionDoneCount_one/two/few/many/other`
-  etc.), `check-i18n.mjs` extended to validate per-locale plural-category
-  completeness. `check:i18n` 1724 base keys, es/pt/fr/it/de/ja/ar 100% coverage
-  (ja 1718/ar 1748 keys reflect Japanese's no-plural vs Arabic's 6-way plural
-  grammar, both structurally complete). `check:all` 52/52 scripts green, `build`
-  entry 447.05 kB, two consecutive clean cycles; backend `compileall` clean +
-  444 pytest passed, two consecutive clean cycles. Real browser proof at
-  390px/1440px for es/ja/ar: entry, signup, placement intro/question/feedback,
-  and identity/profile screens — no raw keys, no horizontal overflow, no console
-  errors; Arabic renders RTL end to end (mirrored layout/nav/forms) while English
-  practice content and email placeholders stay LTR.
-- [LC-OPS-010] Resilience + evidence-first product contract — interactive @claude is
-  triage/review only instead of a lossy long-task runner; its old issue-assignment
-  path is removed and its turn ceiling raised to 80 for bounded analysis. Autonomous
-  workers remain the resumable implementation path with early checkpoints. Added
-  authoritative learning-science, first-launch locale-detection and size-capped
-  Supabase-beta design contracts; Supabase implementation stays blocked until the
-  exact LinguaChat project is identified/created.
-- [LC-I18N-003] One canonical `user_language` — PR #19: `services/language.js` has
-  a single storage writer so native/interface can no longer diverge through a
-  supported API; `ensureLanguagePreferences()` reconciles any pre-existing
-  mismatch deterministically on every load; meaning fallback simplified to
-  `user_language -> English`; new `check-user-language` regression (9 groups,
-  wired into `check:all`); es/ja legacy-mismatch + Arabic RTL proved in a real
-  browser at 390px/1440px; backend audited and needed no change
-- [LC-I18N-001] Eight-language phase-A audit — evidence in `.ai/TRANSLATIONS.md`:
-  structural parity is real but hardcoded placement/profile/welcome copy,
-  user_language divergence, plural gaps, support-honesty drift and RTL/fallback
-  risks are not solved by 1580/1580 key counts
-- [LC-OPS-009] Cloud autonomy repair — PR #17: same-run advancement after merge,
-  hourly chain watchdog, one shared task selector, one Claude writer lock, red/draft
-  recovery, atomic final bookkeeping, QA on ready_for_review, corrected user_language
-  worker contract, and `check:cloud-automation` regression coverage
-- [LC-CURR-005d] A1 arc 5 proved against the blueprint — check:a1-arc5 (19 groups),
-  plus a browser walkthrough of all four episodes: happy path, a wrong answer and
-  its retry, the model taken and recorded as assistance, replay without a second
-  reward — PR #15
-- [LC-CURR-005c] A1 arc 5 part 3 — copy in eight languages: 78 step-level
-  keys (episodes 30-33 scene/instruction/model/retry/praise prose plus two
-  new mini-story keys) in the English base and es/pt/fr/it/de/ja/ar,
-  check:i18n at 100 % — PR #14
-- [LC-CURR-005b] A1 arc 5 part 2 — backend ask_price evaluator (parity with the
-  frontend), and a real fix: placeName/relationHint were dropped inside
-  evaluateEpisodeResponse's own local re-evaluation, so ask_location (arc 4)
-  and ask_price/state_location (arc 5) showed the wrong model answer — PR #12
-- [LC-CURR-005a] A1 arc 5 part 1 — content, resolver, skeleton and the
-  ask_price frame check — PR #11
-- [LC-OPS-007] A run that dies leaves its work behind: push early, draft PR
-  enforced by the workflow, a draft never freezes a claim, ceiling back to 150
-- [LC-OPS-006] Lane parity: the i18n lane accepts the input the chain sends,
-  and "one agent at a time" now counts both lanes
-- [LC-OPS-005] Allow the one bot, route i18n to its own lane, true up the queue
-- [LC-OPS-004] The chain heals a stale claim; max-turns 200 — PR #6
-- [LC-OPS-002] Claude workflows enabled — secret, id-token: write and the GitHub
-  App are all in place; OIDC and the app-token exchange both work
-- [LC-OPS-003] Safe chaining: merge on green, verify, dispatch exactly one next task
-- [LC-OPS-001] Autonomous-operations infrastructure — PR #1, merged as `0e5ce9f`
-- [LC-CURR-004] A1 arc 4 finding_your_way (27-29) — 401113a
-- [LC-CURR-003] A1 arc 3 people_around_you (24-26), incl. browser chunk recovery
-- [LC-CURR-002] A1 arc 2 daily_rhythm (21-23)
-- [LC-CURR-001] A1 arc 1 work_and_study (18-20)
-- [LC-UI-001] Visual architecture restored and frozen — nav, Chats, flame, personalization
+- [LC-DOC-001] Reconcile README and historical repository debris with the real product — PR #34; README corrected, proven-unused legacy frontend/text debris removed, no runtime code changed; final coordination seeds LC-CURR-006 and keeps Supabase fail-closed.
+- [LC-BE-001] Remove the Pydantic V1 validator deprecation safely — PR #33; migrated to `field_validator`, behavior preserved, 444 pytest.
+- [LC-SEC-001] Audit and safely resolve frontend dependency vulnerabilities — PR #32; safe compatible upgrades, `npm audit` 0, no forced audit fix.
+- [LC-QA-001] Extend `check:i18n` into a real source linter — PR #31; reachable-source AST linting for raw keys, hardcoded auxiliary copy and duplicate keys.
+- [LC-I18N-002] Stop advertising unsupported languages as supported — PR #30.
+- [LC-PED-001] Stress-test completed teaching arcs — PR #26; 253 distinct journeys across 11 runtime arcs plus real es/ja/ar browser proof.
+- [LC-PROD-001] Make placement/profile/Home honest about currently playable curriculum — PR #25.
+- [LC-I18N-005] Detect preferred device language before login without geo guessing — PR #24.
+- [LC-I18N-004] Localize welcome/placement/profile and plural-aware counts — PR #22.
+- [LC-OPS-010] Resilience + evidence-first product contract — PR #20.
+- [LC-I18N-003] One canonical `user_language` — PR #19.
+- [LC-I18N-001] Eight-language phase-A audit — PR #18.
+- [LC-OPS-009] Cloud autonomy repair — PR #17.
+- [LC-CURR-005d] A1 arc 5 proof against blueprint — PR #15.
+- [LC-CURR-005c] A1 arc 5 locale copy — PR #14.
+- [LC-CURR-005b] A1 arc 5 backend/evaluator parity — PR #12.
+- [LC-CURR-005a] A1 arc 5 content/resolver skeleton — PR #11.
+- [LC-OPS-007] Dead runs leave resumable work behind.
+- [LC-OPS-006] Writer-lane parity and shared lock.
+- [LC-OPS-005] Bot allowlist and i18n routing.
+- [LC-OPS-004] Stale-claim healing.
+- [LC-OPS-002] Claude workflows enabled with OIDC/App token path.
+- [LC-OPS-003] Safe chaining and single-next-task dispatch.
+- [LC-OPS-001] Autonomous-operations infrastructure — PR #1.
+- [LC-CURR-004] A1 arc 4 `finding_your_way`.
+- [LC-CURR-003] A1 arc 3 `people_around_you`.
+- [LC-CURR-002] A1 arc 2 `daily_rhythm`.
+- [LC-CURR-001] A1 arc 1 `work_and_study`.
+- [LC-UI-001] Visual architecture restored and frozen — Hoy/Chats/Palabras/Tú, navigation and personalization.

@@ -1,127 +1,110 @@
 # LinguaChat
 
-A mobile-first app for learning English through conversation and real
-situations. The AI lives behind the product — this is not an AI dashboard.
+LinguaChat is a language-learning product centered on guided conversation and structured practice.
 
-**Lingua teaches. Chatto accompanies.** Lingua is the one and only tutor;
-Chatto is a mascot and emotional companion (visual support only — it never
-teaches grammar, evaluates, or holds its own chat).
+## Product identity
 
-Primary navigation is exactly: **Hoy · Chats · Palabras · Tú**.
+- **Lingua** is the tutor and conversational teaching agent.
+- **Chatto** is the visual mascot only. Chatto does not act as a second tutor or chat agent.
+- The language being learned is **English** (`target_language`).
+- The learner has one auxiliary **`user_language`** for the interface, explanations, hints, corrections, interpretations and meanings.
 
-This README is a practical run/build guide. For product rules, curriculum
-contracts, language architecture and everything an agent must not break, read
-[`CLAUDE.md`](CLAUDE.md) first — it overrides this file wherever they disagree.
+The current implemented auxiliary locales are:
+
+`en`, `es`, `pt`, `fr`, `it`, `de`, `ja`, `ar`.
+
+Unsupported languages must not be presented as fully supported just because the app can fall back to English. Arabic auxiliary UI renders RTL; target-English content and English inputs remain LTR.
+
+## Current curriculum truth
+
+### Pre-A1
+
+Pre-A1 is complete, available and **frozen**. Its curriculum and visual teaching flow are not a place for opportunistic edits.
+
+### A1
+
+A1 is partially implemented and remains **unavailable to learners** (`available: false`). Runtime arcs 1–5 exist. The live curriculum blueprint still has two designed but unimplemented arcs:
+
+- arc 6 — `what_you_can_do`, episodes 34–35;
+- arc 7 — `making_arrangements`, episodes 36–38.
+
+A1 must remain fail-closed until all planned A1 runtime work is complete, the final all-arcs pedagogical acceptance gate passes, and a separate explicit availability decision is made.
+
+Planning or Foundry documents for A2+ do not make A2+ runtime curriculum available.
+
+## Frozen visual architecture
+
+The established product navigation and responsive architecture are frozen around:
+
+**Hoy · Chats · Palabras · Tú**
+
+Existing responsive layouts, navigation behavior, component hierarchy and Chatto presentation should be preserved unless a separately approved visual task changes that contract.
+
+## What is real today
+
+- local guided-conversation and curriculum runtime;
+- Pre-A1 curriculum and A1 arcs 1–5;
+- learner progress stored locally in the browser;
+- one canonical auxiliary `user_language`;
+- eight implemented auxiliary locales including Arabic RTL;
+- placement that distinguishes a diagnostic CEFR result from the curriculum LinguaChat can actually teach today;
+- curriculum/evaluator/learner-model QA, including per-arc learner-journey stress tests;
+- source-level i18n linting for raw keys, hardcoded auxiliary copy and duplicate locale keys.
+
+## What is intentionally not implemented
+
+- no cloud account/persistence backend;
+- no Supabase/Auth/Postgres/Storage/pgvector/Edge Functions under the current product contract;
+- no voice, STT, TTS, pronunciation scoring, WebRTC, calls or video calls;
+- no real paid-provider runtime calls;
+- no A2+ runtime curriculum;
+- no production payments/deployment promise in this repository baseline.
+
+Historical design/research documents may discuss deferred ideas. They are not implementation authorization and do not override `CLAUDE.md`, `.ai/STATE.md`, `.ai/TASKS.md` or the current owner contract.
 
 ## Repository layout
 
-```text
-LinguaChat/
-  linguachat-backend/   # FastAPI pedagogical backend
-  linguachat-frontend/  # Vite + React frontend (the only frontend)
-  docs/                 # curriculum, architecture and product contracts
-  .ai/                  # autonomous-operation queue, state and handoff notes
+- `linguachat-frontend/` — React/Vite frontend, curriculum runtime, local learner state and i18n.
+- `linguachat-backend/` — FastAPI/backend evaluator and provider boundary.
+- `docs/` — product, research, architecture and curriculum contracts.
+- `.ai/` — live queue, state, handoff and coordination decisions.
+- `.github/` — QA and autonomous orchestration.
+
+The old `linguachat-frontend-old/` Create React App tree and unrelated empty root text files were proven unused and removed by `LC-DOC-001` rather than kept as misleading architecture.
+
+## Local development
+
+Frontend:
+
+```bash
+cd linguachat-frontend
+npm ci
+npm run dev
 ```
 
-There is no other frontend and no root-level Node/Python project — install
-and run each side from inside its own directory.
+Frontend validation:
 
-## Backend
+```bash
+npm run check:all
+npm run build
+npm run check:i18n
+```
+
+Backend:
 
 ```bash
 cd linguachat-backend
 python -m pip install -r requirements.txt
-python -m uvicorn main:app --reload
+python -m compileall .
+python -m pytest -q
 ```
 
-The API is served at `http://127.0.0.1:8000`, docs at
-`http://127.0.0.1:8000/docs`.
+The runtime provider contract remains local for repository development and QA; do not introduce real paid-provider calls to make tests pass.
 
-### AI provider
+## Quality contract
 
-One variable decides which engine answers, `LINGUACHAT_PROVIDER`:
+A green structural check is necessary but not sufficient. Changes must prove the flow they affect. Runtime episode work requires happy-path, wrong/retry, assisted/model-use and replay-without-duplicate-reward evidence. UI/i18n changes require rendered checks at 390px and 1440px, including Spanish, Japanese and Arabic where applicable.
 
-| mode | what it does |
-|---|---|
-| `local` (default) | deterministic local engine — real conversation, no network, no cost |
-| `fake` | scripted evaluation scenarios for tests (`LINGUACHAT_FAKE_PROVIDER=success\|timeout\|invalid\|contradictory\|error\|disabled`) |
-| `openai` | the real model; requires `OPENAI_API_KEY` |
+After any fix, validation restarts. A final change needs two consecutive clean full cycles on the exact final head: frontend `check:all`, production build, i18n validation, backend `compileall`, backend pytest and repository guards.
 
-**Having an API key does not enable the real provider by itself.** Enabling
-`openai` is a deliberate decision (`LINGUACHAT_PROVIDER=openai`), enforced in
-`ai/provider_policy.py`. Asking for `openai` without a key makes the server
-refuse to start rather than silently falling back to local answers. An
-unrecognised mode falls back to `local` with a warning. `OPENAI_ENABLED=false`
-is an independent kill switch on real requests only; it never disables `fake`.
-
-QA and CI always run with `LINGUACHAT_PROVIDER=local` — zero real OpenAI
-calls. See `linguachat-backend/.env.example` for every provider variable.
-
-## Frontend
-
-```bash
-cd linguachat-frontend
-npm install
-npm run dev
-```
-
-Vite serves the app at `http://localhost:5173`. Copy `.env.example` to `.env`
-to point it at a non-default backend:
-
-```env
-VITE_API_URL=http://127.0.0.1:8000
-```
-
-## What's real today
-
-- Real conversational practice through the FastAPI backend (`local` engine by
-  default), with a structured curriculum: **Pre-A1** (17 episodes, frozen and
-  available) and the first five arcs of **A1** (episodes 18–33).
-- **A1 stays unavailable to learners** (`contentStatus: partial`,
-  `available: false`) until all seven arcs are implemented and pass their
-  pedagogical and functional gates — see `docs/curriculum/`.
-- The full auxiliary experience (UI/chrome, explanations, hints, corrections,
-  meanings) is localized to one `user_language`, currently `en/es/pt/fr/it/
-  de/ja/ar`; the target language being learned is always English and is never
-  translated. Arabic renders the auxiliary UI RTL; English input/output stays
-  LTR and Chatto is never mirrored.
-- Learner progress, chat history, placement result and preferences persist in
-  the browser's `localStorage` only. There is no backend database and no
-  server-side account storage yet.
-
-## What's mocked or deferred
-
-- **Auth is a local mock.** Login, signup and password recovery run entirely
-  in `localStorage`; there is no real account system, session token or server
-  identity yet. Do not present this as a cloud account.
-- **No cloud persistence yet.** Supabase (Auth + compact learner-progress
-  Postgres) is authorized in principle for a future beta but stays
-  unimplemented until a dedicated `LC-CLOUD-*` task identifies or creates a
-  real LinguaChat Supabase project — see `docs/architecture/supabase-beta-plan.md`.
-- **No voice or media.** Speech recognition/synthesis, pronunciation scoring,
-  live/video calls and WebRTC are out of scope; any related UI must say
-  "coming soon" rather than pretend to work.
-- **No A2+ curriculum.** Placement can diagnose a CEFR level anywhere on the
-  scale, but the app is always honest that it can currently only teach
-  Pre-A1 (and, once finished, A1) content regardless of that diagnostic.
-- Payments and deployment are not implemented.
-
-## Verification
-
-```bash
-cd linguachat-frontend && npm run check:all && npm run build
-cd linguachat-backend  && python -m compileall . && python -m pytest -q
-```
-
-`check:all` runs the full suite of deterministic content/i18n/curriculum/
-regression checks (curriculum authoring, learner-model, pedagogical journeys,
-i18n coverage and lint, bundle boundaries, and more); count it by exit code,
-not by reading its output. See `linguachat-frontend/package.json` for the
-individual `check:*` scripts it runs.
-
-## For agents working in this repository
-
-Read [`CLAUDE.md`](CLAUDE.md), then `.ai/STATE.md`, `.ai/TASKS.md` and
-`.ai/HANDOFF.md` before starting any task — they are the current source of
-truth for what is implemented, what is in progress, and what is permanently
-frozen or blocked.
+See `CLAUDE.md`, `.ai/STATE.md`, `.ai/TASKS.md` and `.ai/HANDOFF.md` for the live operating contract.
