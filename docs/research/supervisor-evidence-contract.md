@@ -19,6 +19,18 @@ Each record must contain: title, authors, year, institution/affiliation when ava
 
 Duplicate samples, duplicate publications, conference-paper/journal duplicates and re-analyses of the same dataset must be linked and must not be counted as independent evidence.
 
+### 1a. Machine-checkable record schema
+
+The primary-study corpora live at `docs/research/supervisors/pedagogical-primary.json` (pedagogical supervisor) and `docs/research/supervisors/psychology-primary.json` (learning-psychology supervisor), each a JSON array of records. `.github/scripts/check-supervisor-evidence.mjs` is the deterministic gate; this schema is that script's contract, stated here so a research lane never has to reverse-engineer it from the source:
+
+Every record requires exactly these fields: `id`, `title`, `authors`, `year`, `design`, `sampleSize` (positive integer), `population`, `venue`, `institution`, `topic`, `outcome`, `limitations`, `sourceUrl` (HTTPS), `persistentId` (a DOI, PMID or ERIC identifier), `verificationSources`, `verifiedAt` (ISO date/date-time), `qualityGrade` (`A` or `B` — Grade C never counts toward the 100-record floor), `qualityRationale`, `sourceType` (must equal `"primary"`), `verified` (must equal `true`).
+
+`verificationSources` must list **at least two distinct HTTPS URLs**, and at least one of them must resolve to an identity authority: `doi.org`, `api.crossref.org` (Crossref), `pubmed.ncbi.nlm.nih.gov` (PubMed/NCBI) or `eric.ed.gov` (ERIC/IES). A publisher or university repository page may satisfy the second source. Do not invent or infer any field — omit the record instead of guessing a DOI, sample size, population, institution, result, limitation or grade that cannot be independently verified.
+
+A record is deduplicated first by `id`, then by `persistentId` (falling back to normalized `title`+`year` when no persistent id is present); either collision is a hard failure, not a warning.
+
+The 100-per-domain floor also requires topic distribution, not just count: at least 6 distinct `topic` values must be present, no single `topic` may exceed 35% of the domain's unique-study count, and at least 5 distinct topics must each carry 8 or more studies. A batch may run the partial gate (`--partial pedagogical` / `--partial psychology`) before the 100-study threshold to catch schema, verification and duplication defects early; only the full run enforces the 100-study and topic-distribution thresholds.
+
 ## 2. What is allowed to count
 
 Priority order:
