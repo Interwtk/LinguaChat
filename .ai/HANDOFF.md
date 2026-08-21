@@ -3,7 +3,7 @@
 Keep this file current: what just happened, what is proved, what comes next, and
 what will bite the next operator.
 
-_Written for LC-SEC-001 on 2026-08-21. Live main/TASKS wins if it changes after
+_Written for LC-BE-001 on 2026-08-21. Live main/TASKS wins if it changes after
 this branch was cut._
 
 ## What just happened
@@ -261,6 +261,21 @@ is `LC-BE-001`'s scope, not this one). `LC-BE-001`'s stale
 `blocked-on: LC-SEC-001` line is cleared in this same PR since its actual
 blocker is gone.
 
+`LC-BE-001` (PR #33) then closed that last standing warning: `ai/schemas.py`'s
+`MissionFeedback.score` validator was the only Pydantic V1-style `@validator`
+left in the backend, deprecated since Pydantic 2.0 and slated for removal in
+V3. Migrated to `@field_validator("score", mode="before")` — same
+before-validation semantics, so no behaviour changes; clamping (0-100 range,
+non-numeric/`None` input falls back to 0) was verified identical across 8
+manual parity cases before and after. Rather than trusting "the import is
+clean" alone, this run promoted the specific deprecation to a hard error
+(`pytest -W error::pydantic.PydanticDeprecatedSince20`) and confirmed all 444
+tests still pass — proof the warning is actually gone from every code path
+the suite exercises, not just suppressed at the one call site. Frontend was
+untouched by this task, so `check:all` 57/57 and the build are unchanged
+from the LC-SEC-001 baseline; two consecutive clean cycles both suites.
+`LC-DOC-001`'s stale `blocked-on: LC-BE-001` is cleared in this same PR.
+
 ## The 40-turn failure — what it actually means now
 
 Run `32331959420` was an interactive `Claude — mention` run. It authenticated on a
@@ -426,7 +441,8 @@ review proves the need.
 
 - `npm audit` on `linguachat-frontend` reports 0 vulnerabilities as of
   `LC-SEC-001` (PR #32).
-- backend has one Pydantic V1 `@validator` deprecation; `LC-BE-001` handles it.
+- backend has no remaining Pydantic V1-style `@validator` usage as of
+  `LC-BE-001` (PR #33).
 - README is stale; `LC-DOC-001` updates it only after proving historical debris is unused.
 - current login/signup remain localStorage mocks until dedicated cloud work proves
   real Auth; never market them as cloud accounts before then.

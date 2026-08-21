@@ -21,20 +21,13 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-- [LC-BE-001] Remove the Pydantic V1 validator deprecation safely
-  owner:  claude-action
-  branch: fix/be-001-pydantic-v2-validator
-  why:    backend tests pass but `ai/schemas.py` emits a V1-style `@validator` deprecation that will matter before Pydantic v3.
-  done:   migrate to the supported Pydantic API without changing accepted/rejected
-          provider verdict semantics; parity/refusal tests pin behaviour; compileall
-          clean and pytest green without that deprecation warning.
+_(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-DOC-001] Reconcile README and historical repository debris with the real product
   owner:  unclaimed
   branch: none
-  blocked-on: LC-BE-001
   why:    README still describes legacy Practice/Journey/mock/B1 behaviour and old root/frontend artifacts can mislead future agents.
   done:   README describes the current architecture and explicit local-only/deferred
           boundaries; prove whether `linguachat-frontend-old/`, `pacientes.txt` and
@@ -77,6 +70,22 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
           about real-human learning efficacy require later real-learner pilot data.
 
 ## DONE
+
+- [LC-BE-001] Remove the Pydantic V1 validator deprecation safely — PR #33:
+  `ai/schemas.py`'s `MissionFeedback.score` validator was the only Pydantic
+  V1-style `@validator` left in the backend; migrated to
+  `@field_validator("score", mode="before")`. Accepted/rejected clamping
+  behaviour (0-100 range, non-numeric/`None` input falls back to 0) is
+  unchanged — verified with 8 manual parity cases (negative, zero,
+  mid-range, exact bound, over bound, numeric string, non-numeric string,
+  `None`), identical output before/after the migration.
+  `pytest -W error::pydantic.PydanticDeprecatedSince20` promotes the
+  deprecation to a hard error and all 444 tests still pass, proving the
+  warning no longer fires anywhere in the suite, not just in the one file
+  touched. `check:all` 57/57 unchanged (frontend untouched by this task),
+  production build byte-identical (450.83 kB entry); backend `compileall`
+  clean + 444 pytest passed; two consecutive clean cycles for both.
+  `LC-DOC-001`'s `blocked-on: LC-BE-001` is cleared in the same PR.
 
 - [LC-SEC-001] Audit and safely resolve the current frontend dependency vulnerabilities
   — PR #32: `npm audit` on `linguachat-frontend` reported 4 advisories (1 moderate,

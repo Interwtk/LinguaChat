@@ -14,8 +14,9 @@ complete in PR #25, LC-PED-001 (per-arc learner-journey pedagogical stress
 test) is complete in PR #26, LC-I18N-002 (honest language-support catalog —
 only the 8 implemented bases are selectable anywhere) is complete in PR #30,
 LC-QA-001 (a real i18n linter over reachable source, not just dictionary
-parity) is complete in PR #31, and LC-SEC-001 (frontend dependency
-vulnerability audit and safe resolution) is complete in PR #32._
+parity) is complete in PR #31, LC-SEC-001 (frontend dependency
+vulnerability audit and safe resolution) is complete in PR #32, and
+LC-BE-001 (Pydantic V2 validator migration) is complete in PR #33._
 
 ## Product / repository
 
@@ -169,6 +170,24 @@ Full detail in `.ai/TASKS.md` DONE entry for `LC-PROD-001` (prior baseline:
   so no browser walkthrough beyond the build/bundle-boundary checks above
   applies.
 
+`LC-BE-001` (PR #33), latest measured baseline on top of that:
+
+- `ai/schemas.py`'s `MissionFeedback.score` validator was the only Pydantic
+  V1-style `@validator` left in the backend; migrated to
+  `@field_validator("score", mode="before")`. Behaviour (clamp to 0-100,
+  non-numeric/`None` falls back to 0) is unchanged — verified with 8 manual
+  parity cases (negative, zero, mid-range, exact bound, over bound, numeric
+  string, non-numeric string, `None`), identical output before/after;
+- `pytest -W error::pydantic.PydanticDeprecatedSince20` — all 444 tests pass
+  with the deprecation promoted to a hard error, proving it no longer fires
+  anywhere in the suite (not just in the one file touched);
+- `check:all` **57/57** unchanged (frontend untouched by this task), two
+  consecutive clean cycles; production build byte-identical, entry
+  `450.83 kB`, two consecutive clean cycles; backend `compileall` clean +
+  444 pytest passed, two consecutive clean cycles;
+- no frontend/UI code changed, so no browser walkthrough applies; this is a
+  backend-only internal API migration with no observable behaviour change.
+
 ## Curriculum truth
 
 | level | state |
@@ -310,10 +329,9 @@ Initial cloud scope when unblocked:
 No raw audio/video, indefinite chat/event logs, pgvector, Edge Functions or Storage
 in the first cloud milestone.
 
-## Ordered quality queue after LC-SEC-001
+## Ordered quality queue after LC-BE-001
 
-1. `LC-BE-001` — migrate Pydantic V1 validator.
-2. `LC-DOC-001` — stale README / proven-unused historical debris.
+1. `LC-DOC-001` — stale README / proven-unused historical debris.
 
 `LC-CLOUD-001` is blocked only on project identity/creation, not on owner intent.
 Arc 6/7 are seeded only after the language/product/pedagogical foundation is stable.
@@ -321,7 +339,10 @@ Arc 6/7 are seeded only after the language/product/pedagogical foundation is sta
 ## Other confirmed quality signals
 
 - `npm ci` / `npm audit`: 0 vulnerabilities (`LC-SEC-001`, PR #32).
-- backend: one Pydantic V1-style `@validator` deprecation warning.
+- backend: `LC-BE-001` (PR #33) migrated `MissionFeedback.score`'s validator to
+  `@field_validator(mode="before")`; `pytest -W error::pydantic.PydanticDeprecatedSince20`
+  passes all 444 tests, confirming the deprecation no longer fires anywhere in
+  the suite. No Pydantic V1-style `@validator` remains in the backend.
 - README is materially stale.
 - current auth/login/signup are localStorage mocks; they must not be marketed as
   real cloud accounts until LC-CLOUD work proves real Auth.
