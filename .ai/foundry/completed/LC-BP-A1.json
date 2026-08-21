@@ -1,0 +1,16 @@
+{
+  "taskId": "LC-BP-A1",
+  "lane": "level-a1",
+  "status": "complete",
+  "cleanCycles": 2,
+  "summary": "Reconciled the live A1 blueprint (a1-blueprint.json, a1-map.md, a1-authoring-contract.md) into the shared A1-C2 template and master contract as docs/curriculum/blueprints/a1.{json,md}. Carried every capability, pattern, episode, vocabulary budget, reuse-matrix row and exclusion verbatim from the live blueprint; added CEFR working-correspondence tags, the master contract's six-category evidence model mapped onto A1's existing evidence primitives, per-arc personalization allowances, a Four Strands audit, a core-engine-requirements list distinguishing resolved vs open items (can-ambiguity still open, blocking only the designed-only arc 6; A1 readiness function still open, deferred to implementation phase 8), cross-level acceptance obligations for LC-BP-A2 and LC-AUD-001, and human-pilot questions. Flagged one genuine open question (arrange_to_meet's CEFR A1/A2 boundary) rather than silently resolving it. Does not touch the live blueprint files, does not change A1 implemented/available/contentStatus, does not touch any runtime code.",
+  "writeScopeRespected": [
+    "docs/curriculum/blueprints/a1.md",
+    "docs/curriculum/blueprints/a1.json"
+  ],
+  "evidence": {
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n — exit 0, run twice consecutively clean",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q — exit 0 (444 passed), run twice consecutively clean",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/level-a1/lc-bp-a1 --base origin/main --head HEAD — OK, 2 changed files, both inside writeScopes"
+  }
+}
