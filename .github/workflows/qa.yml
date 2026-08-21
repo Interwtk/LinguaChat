@@ -73,9 +73,11 @@ jobs:
   guards:
     name: guards — nothing forbidden slipped in
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: A1 must still be closed to learners
         run: |
@@ -86,7 +88,7 @@ jobs:
 
       - name: no Supabase
         run: |
-          if git grep -nE "@supabase/|from ['''\"]supabase" -- linguachat-frontend/src linguachat-backend; then
+          if git grep -nE "@supabase/|from ['\"']supabase" -- linguachat-frontend/src linguachat-backend; then
             echo "Supabase is postponed — see CLAUDE.md"; exit 1
           fi
 
@@ -116,6 +118,24 @@ jobs:
           test "$(grep -c '^## BLOCKED$' .ai/TASKS.md)" -eq 1 || { echo "TASKS.md must contain exactly one BLOCKED heading"; exit 1; }
           test "$(grep -c '^## DONE$' .ai/TASKS.md)" -eq 1 || { echo "TASKS.md must contain exactly one DONE heading"; exit 1; }
           node linguachat-frontend/scripts/check-queue-recovery.mjs
+
+      - name: foundry manifest is internally valid
+        if: hashFiles('.ai/foundry/tasks.json') != ''
+        run: node .github/scripts/foundry-next.mjs --all >/dev/null
+
+      - name: foundry PR stays inside its declared scope
+        if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'foundry/')
+        env:
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          REQUIRE_COMPLETE: ${{ github.event.pull_request.draft == false }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$BASE_SHA" "$HEAD_SHA" --quiet
+          args=(--branch "$BRANCH" --base "$BASE_SHA" --head "$HEAD_SHA")
+          if [ "$REQUIRE_COMPLETE" = "true" ]; then args+=(--require-complete); fi
+          node .github/scripts/check-foundry-scope.mjs "${args[@]}"
 
   evidence:
     name: evidence — the PR shows the QA it ran
