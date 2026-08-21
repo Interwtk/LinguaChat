@@ -4,6 +4,7 @@ import { mkdirSync, mkdtempSync, writeFileSync, rmSync, readFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { readyTasks as foundryReadyTasks } from '../../.github/scripts/foundry-next.mjs'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const read = rel => readFileSync(join(root, rel), 'utf8')
@@ -16,6 +17,8 @@ const qa = read('.github/workflows/qa.yml')
 const mergeScript = read('.github/scripts/merge-agent-pr.sh')
 const foundryScope = read('.github/scripts/check-foundry-scope.mjs')
 const evidenceScript = read('.github/scripts/check-supervisor-evidence.mjs')
+const foundryWorker = read('.github/workflows/claude-foundry-worker.yml')
+const foundryCycle = read('.github/scripts/run-foundry-cycle.sh')
 const evidenceValidator = join(root, '.github/scripts/check-supervisor-evidence.mjs')
 const nextTask = join(root, '.github/scripts/next-task.mjs')
 
@@ -255,6 +258,29 @@ try {
 } finally {
   rmSync(evidenceRepo, { recursive: true, force: true })
 }
+ok()
+
+// 17. Foundry next-batch and bootstrap regression. Once P01/Y01 are complete, the
+// selector must choose P02/Y02 exactly once (one per independent lane), and every
+// dispatched worker must publish a resumable branch + Draft PR before Claude starts.
+const syntheticFoundry = [
+  { id:'LC-RES-P01', lane:'research-ped', branch:'foundry/research-ped/lc-res-p01', dependsOn:[], writeScopes:[] },
+  { id:'LC-RES-P02', lane:'research-ped', branch:'foundry/research-ped/lc-res-p02', dependsOn:['LC-RES-P01'], writeScopes:[] },
+  { id:'LC-RES-P03', lane:'research-ped', branch:'foundry/research-ped/lc-res-p03', dependsOn:['LC-RES-P02'], writeScopes:[] },
+  { id:'LC-RES-Y01', lane:'research-psy', branch:'foundry/research-psy/lc-res-y01', dependsOn:[], writeScopes:[] },
+  { id:'LC-RES-Y02', lane:'research-psy', branch:'foundry/research-psy/lc-res-y02', dependsOn:['LC-RES-Y01'], writeScopes:[] },
+  { id:'LC-RES-Y03', lane:'research-psy', branch:'foundry/research-psy/lc-res-y03', dependsOn:['LC-RES-Y02'], writeScopes:[] },
+]
+const nextBatches = foundryReadyTasks(syntheticFoundry, new Set(['LC-RES-P01', 'LC-RES-Y01']))
+assert.deepEqual(nextBatches.map(t => t.id), ['LC-RES-P02', 'LC-RES-Y02'])
+assert.equal(new Set(nextBatches.map(t => t.lane)).size, nextBatches.length)
+assert.match(foundryCycle, /gh run list --workflow=claude-foundry-worker\.yml/)
+assert.match(foundryCycle, /worker already queued\/running/)
+assert.match(foundryWorker, /Bootstrap exact resumable branch and draft PR/)
+assert.match(foundryWorker, /git commit --allow-empty -m "chore\(foundry\): bootstrap \$TASK_ID"/)
+assert.match(foundryWorker, /git push -u origin "\$BRANCH"/)
+assert.match(foundryWorker, /gh pr create --draft --base main --head "\$BRANCH"/)
+assert.match(foundryWorker, /The exact branch above is already checked out and has a Draft PR before you start/)
 ok()
 
 console.log(`check-cloud-automation — OK (${groups} groups)`)
