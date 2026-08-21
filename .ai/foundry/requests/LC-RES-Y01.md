@@ -214,3 +214,33 @@ identical `scope-or-quality` / `0 unique primary studies` signature,
 reconfirming the bug is still live and repo-wide, not fixed. No code/content
 changed this session, so the two-clean-cycle QA count is unaffected. PR #50
 stays in draft.
+
+## Update (2026-08-21, new session): fresh independent re-verification, no drift
+
+New session, re-derived everything from scratch instead of trusting the notes
+above. Findings match exactly, with one additional live corroboration:
+
+- Branch content unchanged and still correct: `psychology-primary.json` = 30
+  unique studies, 12 topics (`check-supervisor-evidence.mjs --partial
+  psychology`, exit 0); `check-foundry-scope.mjs --branch
+  foundry/research-psy/lc-res-y01 --base origin/main --head HEAD
+  --require-complete` → `Foundry scope OK for LC-RES-Y01: 4 changed files.`,
+  exit 0. Branch is even with `origin/main` (`ff6ee28`), no rebase needed.
+- Issue #52 (`LC-OPS-015`) is still `OPEN`, no comments, unclaimed. Read
+  current `main`'s `check-supervisor-evidence.mjs` directly: it still
+  resolves the corpus via `new URL(..., import.meta.url)` off the live
+  working tree with no ref/path CLI argument (`--partial` is the only flag it
+  parses) — the bug issue #52 describes is unchanged.
+- Watched the bug hit live in the newest orchestrator run
+  (`32511260618`, 2026-08-21T18:02:13Z, i.e. after every prior update in this
+  file): `pedagogical: 0 unique primary studies; 0 topics` →
+  `Foundry PR #53 (foundry/research-ped/lc-res-p01): merge gate=scope-or-quality;
+  returned to draft.` Same run logged `LC-RES-Y01: worker already
+  queued/running` and skipped re-evaluating PR #50 this cycle rather than
+  bumping it — consistent with the bug, not evidence it's fixed.
+
+No content or code changed this session (nothing needed to change), so the
+two-clean-cycle QA count is unaffected and no new QA run was required. Correct
+action remains unchanged from the prior update: stay in draft until
+`LC-OPS-015` lands, then rebase and rerun this PR's final-head evidence/QA
+contract.
