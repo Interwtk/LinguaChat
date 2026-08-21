@@ -21,17 +21,15 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-_(none — the queue is open)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-BE-001] Remove the Pydantic V1 validator deprecation safely
-  owner:  unclaimed
-  branch: none
+  owner:  claude-action
+  branch: fix/be-001-pydantic-v2-validator
   why:    backend tests pass but `ai/schemas.py` emits a V1-style `@validator` deprecation that will matter before Pydantic v3.
   done:   migrate to the supported Pydantic API without changing accepted/rejected
           provider verdict semantics; parity/refusal tests pin behaviour; compileall
           clean and pytest green without that deprecation warning.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-DOC-001] Reconcile README and historical repository debris with the real product
   owner:  unclaimed
