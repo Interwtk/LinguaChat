@@ -262,7 +262,8 @@ ok()
 
 // 17. Foundry next-batch and bootstrap regression. Once P01/Y01 are complete, the
 // selector must choose P02/Y02 exactly once (one per independent lane), and every
-// dispatched worker must publish a resumable branch + Draft PR before Claude starts.
+// dispatched worker must publish a resumable branch before Claude starts. Draft PR
+// bootstrap is attempted early but must never block Claude if GITHUB_TOKEN cannot create it.
 const syntheticFoundry = [
   { id:'LC-RES-P01', lane:'research-ped', branch:'foundry/research-ped/lc-res-p01', dependsOn:[], writeScopes:[] },
   { id:'LC-RES-P02', lane:'research-ped', branch:'foundry/research-ped/lc-res-p02', dependsOn:['LC-RES-P01'], writeScopes:[] },
@@ -279,8 +280,10 @@ assert.match(foundryCycle, /worker already queued\/running/)
 assert.match(foundryWorker, /Bootstrap exact resumable branch and draft PR/)
 assert.match(foundryWorker, /git commit --allow-empty -m "chore\(foundry\): bootstrap \$TASK_ID"/)
 assert.match(foundryWorker, /git push -u origin "\$BRANCH"/)
-assert.match(foundryWorker, /gh pr create --draft --base main --head "\$BRANCH"/)
-assert.match(foundryWorker, /The exact branch above is already checked out and has a Draft PR before you start/)
+assert.match(foundryWorker, /if ! gh pr create --draft --base main --head "\$BRANCH"/)
+assert.match(foundryWorker, /Could not create bootstrap Draft PR with GITHUB_TOKEN/)
+assert.match(foundryWorker, /The exact branch above is already checked out and published/)
+assert.match(foundryWorker, /If no Draft PR exists yet, create it immediately on this exact branch/)
 ok()
 
 console.log(`check-cloud-automation — OK (${groups} groups)`)
