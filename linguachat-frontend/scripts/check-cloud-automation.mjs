@@ -164,8 +164,8 @@ ok()
 
 // 15. Foundry completion and evidence must both be evaluated from the same candidate
 // head. This pins the checkout-vs-ref bug that cycled valid research PRs to Draft.
-assert.match(foundryScope, /\['--partial', domain, '--ref', head\]/)
-assert.match(foundryScope, /\[evidenceScript, '--ref', head\]/)
+assert.match(foundryScope, /evidenceScript, '--partial', domain, '--ref', head/)
+assert.match(foundryScope, /evidenceScript, '--ref', head/)
 assert.match(evidenceScript, /git', \['show', `\$\{ref\}:\$\{spec\.path\}`\]/)
 assert.match(evidenceScript, /missing \$\{spec\.path\} at \$\{ref\}/)
 ok()
