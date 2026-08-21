@@ -1,0 +1,648 @@
+{
+  "blueprintVersion": "a2.blueprint.v1",
+  "level": "a2",
+  "status": "planned",
+  "designedAgainst": {
+    "master": "curriculum-master-a1-c2.md",
+    "template": "level-blueprint-template.md",
+    "prerequisiteLevel": "a1",
+    "prerequisiteBlueprint": "a1-blueprint.json (a1.blueprint.v1)",
+    "prerequisiteBlueprintStatus": "planned; arcs 1-5 (episodes 18-33) have runtime content, arcs 6-7 (34-38) are designed-only",
+    "note": "Design only. No runtime module imports this file; nothing here is available to a learner. A2 stays unavailable regardless of this document's completeness."
+  },
+
+  "definition": {
+    "canDo": [
+      "narrate a short sequence of things that already happened, in a personal or recent context",
+      "ask somebody what they did and understand the answer",
+      "talk about near-future plans and ask about somebody else's",
+      "describe a person or a place using more than one attribute",
+      "compare two things or two options",
+      "explain a simple preference or opinion with a reason introduced by 'because'",
+      "follow or give directions that need more than one step",
+      "ask whether something (a room, a table) is available, on a date, and book it",
+      "spell a name aloud when a booking or a game needs it, without ever handling real personal data",
+      "report a problem in a service situation and ask for help solving it",
+      "invite somebody to do something, and accept or decline with a reason",
+      "keep a conversation going a little longer, changing topic once with a connector"
+    ],
+    "cannotYet": [
+      "use the present perfect ('have you ever', 'I've just') to connect the past to now",
+      "narrate with past continuous or mixed past tenses ('I was walking when...')",
+      "use conditionals or hypothetical language",
+      "use reported speech",
+      "use the passive voice",
+      "give or follow directions that need a map or more than a handful of steps",
+      "use superlatives ('the biggest', 'the most expensive') — only two-way comparison",
+      "explain a reason with more than one subordinate clause, or with 'although'/'even though'",
+      "book multi-leg travel, flights, or anything requiring a real itinerary",
+      "manage register or negotiate — every exchange stays informal and cooperative",
+      "give or receive real personal contact details (never planned; a permanent product decision)"
+    ],
+    "interactionCeiling": "one situation, but the situation may now include one topic change and a light complication (a plan changes, a room is unavailable, a word needs spelling); 14-18 meaningful turns, clauses may connect with because/and/but/so, repair available, support fading as evidence allows"
+  },
+
+  "a1Inheritance": {
+    "reuseFrequently": [
+      "talk_about_daily_routine", "say_when_something_happens", "arrange_to_meet",
+      "ask_what_something_means", "say_where_something_is", "ask_where_something_is",
+      "ask_the_price", "use_bigger_numbers"
+    ],
+    "reuseOccasionally": [
+      "talk_about_work_or_study", "ask_about_work_or_study", "introduce_someone_else",
+      "say_what_you_can_do", "buy_something", "ask_someone_about_ability",
+      "ask_about_getting_somewhere", "ask_how_to_say_something"
+    ],
+    "supportOnly": ["arrange_to_meet full closing sequence (a1 arc 7)"],
+    "resolvesA1Deferral": {
+      "talk_about_what_you_did": "first A2 capability, exactly as a1-blueprint.json#deferredToA2 names it",
+      "talk_about_future_plans_with_going_to": "talk_about_future_plans",
+      "explain_a_reason": "express_an_opinion_with_a_reason and accept_or_decline_with_a_reason",
+      "follow_multi_step_directions": "follow_directions_with_more_than_one_step",
+      "describe_people_and_places": "describe_a_person_or_place",
+      "third_person_s_productive": "produced for the first time inside describe_a_person_or_place and narrate_a_sequence_of_past_events",
+      "dates_and_months": "use_dates_and_months",
+      "spell_aloud": "spell_a_name_for_a_booking, restricted to fictional/roleplay names — never real personal data",
+      "accommodation_and_travel_booking": "ask_about_availability and book_a_room_or_table, scoped to a room or a table, not multi-leg travel",
+      "comparatives": "compare_two_things",
+      "frequency_full_set": "the full adverb set (always/usually/often/sometimes/rarely/never) extends the two A1 adverbs inside describe_a_person_or_place; not a standalone capability",
+      "give_personal_contact_details": "NOT resolved — this was never a deferral, it is a permanent exclusion the A1 blueprint mis-filed under deferredToA2. A2 does not collect it either. See explicitExclusions."
+    },
+    "openA1DesignRisk": "A1's own blueprint proposes a 'day' semantic type for its arc 7 (making_arrangements, episodes 36-38), which is designed but not yet built (master doc: arcs 6-7 remain designed-only). A2's use_dates_and_months capability is the first capability in the whole A1-C2 design that actually needs 'day' as a production slot before arc 7 necessarily exists. See coreEngineRequirements."
+  },
+
+  "skillFamilies": [
+    { "id": "your_past", "label": "What already happened", "canDos": ["talk_about_what_you_did", "ask_about_what_someone_did", "narrate_a_sequence_of_past_events"] },
+    { "id": "your_plans", "label": "What happens next", "canDos": ["talk_about_future_plans", "ask_about_future_plans"] },
+    { "id": "people_and_places", "label": "People and places, described and compared", "canDos": ["describe_a_person_or_place", "compare_two_things", "express_an_opinion_with_a_reason"] },
+    { "id": "getting_around", "label": "Getting somewhere that takes more than one step", "canDos": ["follow_directions_with_more_than_one_step", "give_simple_directions"] },
+    { "id": "booking_a_stay", "label": "Booking a room or a table", "canDos": ["use_dates_and_months", "ask_about_availability", "book_a_room_or_table", "spell_a_name_for_a_booking"] },
+    { "id": "everyday_problems", "label": "When something goes wrong", "canDos": ["report_a_problem", "ask_for_help_solving_a_problem"] },
+    { "id": "lets_do_something", "label": "Inviting, agreeing, keeping the conversation going", "canDos": ["invite_someone_to_do_something", "accept_or_decline_with_a_reason", "keep_a_longer_conversation_going"] }
+  ],
+
+  "canDos": [
+    {
+      "id": "talk_about_what_you_did",
+      "family": "your_past",
+      "scope": "required",
+      "why": "The first tense shift of the whole curriculum. A1 promised this exact capability as its first A2 unlock, and the whole level's 'connect clauses' mandate starts here: nothing else in A2 works without a past.",
+      "prerequisites": ["talk_about_daily_routine"],
+      "patterns": ["simple_past_regular_pattern", "simple_past_irregular_pattern", "past_time_expression_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "ask_about_what_someone_did",
+      "family": "your_past",
+      "scope": "required",
+      "why": "Mirrors A1's own life/ask-about pairing: a learner who can only report their own day is still being interviewed, not conversing.",
+      "prerequisites": ["talk_about_what_you_did", "ask_about_work_or_study"],
+      "patterns": ["did_you_question_pattern", "simple_past_irregular_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "narrate_a_sequence_of_past_events",
+      "family": "your_past",
+      "scope": "required",
+      "why": "A2's 'connect clauses, not just isolated frames' mandate made concrete: two or three past actions held together with a sequencing connector, not three separate answers to three separate questions.",
+      "prerequisites": ["talk_about_what_you_did", "ask_about_what_someone_did"],
+      "patterns": ["sequencing_connector_pattern", "simple_past_irregular_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "talk_about_future_plans",
+      "family": "your_plans",
+      "scope": "required",
+      "why": "A1 could arrange a single meeting with a present tense and a time word. A2 adds genuine future intention independent of any specific arrangement — 'going to' as its own function.",
+      "prerequisites": ["arrange_to_meet", "say_when_something_happens"],
+      "patterns": ["going_to_future_pattern", "future_time_expression_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "ask_about_future_plans",
+      "family": "your_plans",
+      "scope": "should",
+      "why": "Makes the plan mutual, the way A1's do-you-question made work/study mutual. Kept should: the level already carries two required question forms in this arc's neighbourhood.",
+      "prerequisites": ["talk_about_future_plans"],
+      "patterns": ["going_to_question_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 1, "transfer": 1, "delayedRetrieval": false, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "describe_a_person_or_place",
+      "family": "people_and_places",
+      "scope": "required",
+      "why": "A1 deliberately capped description at one attribute ('She's a student'). A2 lifts the cap: several attributes held together, plus 'there is/are' for a place, plus the first productive third-person -s the whole curriculum asks for.",
+      "prerequisites": ["introduce_someone_else", "say_where_something_is"],
+      "patterns": ["multi_attribute_pattern", "there_is_are_pattern", "third_person_s_pattern", "frequency_full_set_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "compare_two_things",
+      "family": "people_and_places",
+      "scope": "required",
+      "why": "A1 could only choose with 'this one'. Comparison is the level's cheapest genuinely new structure with an enormous expressive return — two places, two jobs, two plans.",
+      "prerequisites": ["describe_a_person_or_place"],
+      "patterns": ["comparative_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "express_an_opinion_with_a_reason",
+      "family": "people_and_places",
+      "scope": "required",
+      "why": "'Because' turns one clause into two. A1 deferred it precisely because choice and preference worked without it; A2 needs it the moment a preference has to be justified rather than only stated.",
+      "prerequisites": ["compare_two_things"],
+      "patterns": ["because_reason_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "follow_directions_with_more_than_one_step",
+      "family": "getting_around",
+      "scope": "required",
+      "why": "A1 stopped at where-and-near on purpose. This is the deferred multi-step comprehension load, now that the learner can hold a short sequence together (from your_past's sequencing work).",
+      "prerequisites": ["ask_where_something_is", "narrate_a_sequence_of_past_events"],
+      "patterns": ["multi_step_direction_pattern", "sequencing_connector_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 1, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "give_simple_directions",
+      "family": "getting_around",
+      "scope": "should",
+      "why": "The productive mirror of following directions. Should rather than required: the receptive/comprehension side is the higher-value autonomy skill for a learner who is themselves lost.",
+      "prerequisites": ["follow_directions_with_more_than_one_step", "say_where_something_is"],
+      "patterns": ["multi_step_direction_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 1, "transfer": 0, "delayedRetrieval": false, "integrated": true },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "use_dates_and_months",
+      "family": "booking_a_stay",
+      "scope": "required",
+      "why": "A1 deferred dates because they need ordinals and a second number system. A2 needs them the moment a booking needs a date, and nowhere else — dates arrive inside their function, exactly like A1's numbers arrived inside prices.",
+      "prerequisites": ["use_bigger_numbers", "talk_about_future_plans"],
+      "patterns": ["month_pattern", "ordinal_date_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "ask_about_availability",
+      "family": "booking_a_stay",
+      "scope": "required",
+      "why": "The transactional question A1's shop never needed: not 'how much' but 'do you have one, on this date'. Sets up booking the way A1's price question set up buying.",
+      "prerequisites": ["use_dates_and_months", "ask_the_price"],
+      "patterns": ["availability_question_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "book_a_room_or_table",
+      "family": "booking_a_stay",
+      "scope": "required",
+      "why": "The integrated transaction of the arc, reusing A1's buy_something shape (choose, quantify, confirm) with a date and a party size instead of a price and an item.",
+      "prerequisites": ["ask_about_availability", "arrange_to_meet"],
+      "patterns": ["booking_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "spell_a_name_for_a_booking",
+      "family": "booking_a_stay",
+      "scope": "should",
+      "why": "A1 deferred spelling as 'a system, not a phrase, that pays off mainly with contact details this product does not collect'. A2 gives it a payoff that is not contact details: confirming a booking name, always fictional or the learner's own chosen display name, never a real surname tied to identity data.",
+      "prerequisites": ["book_a_room_or_table"],
+      "patterns": ["spelling_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 1, "transfer": 0, "delayedRetrieval": false, "integrated": true },
+      "evaluation": "hybrid",
+      "privacyNote": "The engine must never persist or request a real legal name; the spelled value is a display name or fictional booking name only, consistent with the never-collect-real-personal-data exclusion carried from A1."
+    },
+    {
+      "id": "report_a_problem",
+      "family": "everyday_problems",
+      "scope": "required",
+      "why": "A1's transactions and arrangements all assume things go right. A2's 'everyday problems' mandate starts here: something is broken, missing, or wrong, and the learner has to say so.",
+      "prerequisites": ["ask_for_repair", "book_a_room_or_table"],
+      "patterns": ["problem_report_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "ask_for_help_solving_a_problem",
+      "family": "everyday_problems",
+      "scope": "required",
+      "why": "Naming a problem is not the same as resolving it. This closes the loop the way A1's ask_the_price closed on buy_something.",
+      "prerequisites": ["report_a_problem"],
+      "patterns": ["help_request_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "invite_someone_to_do_something",
+      "family": "lets_do_something",
+      "scope": "required",
+      "why": "A1's arrange_to_meet assumed both people already wanted to meet. A2 opens the exchange itself: proposing something nobody has agreed to yet, reusing future plans as the thing proposed.",
+      "prerequisites": ["talk_about_future_plans", "arrange_to_meet"],
+      "patterns": ["invitation_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "deterministic_local"
+    },
+    {
+      "id": "accept_or_decline_with_a_reason",
+      "family": "lets_do_something",
+      "scope": "required",
+      "why": "The level's closing proof: a real invitation needs a real answer, and a decline without a reason reads as rude in most contexts a learner will meet. Reuses because from people_and_places.",
+      "prerequisites": ["invite_someone_to_do_something", "express_an_opinion_with_a_reason"],
+      "patterns": ["accept_decline_reason_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 2, "transfer": 1, "delayedRetrieval": true, "integrated": true },
+      "evaluation": "hybrid"
+    },
+    {
+      "id": "keep_a_longer_conversation_going",
+      "family": "lets_do_something",
+      "scope": "should",
+      "why": "A1 could not sustain a conversation that changed topic more than once. This is the level's discourse-management capstone: one topic change, held together with and/but/so, without the exchange falling apart.",
+      "prerequisites": ["accept_or_decline_with_a_reason", "ask_what_something_means"],
+      "patterns": ["clause_connector_pattern"],
+      "evidence": { "comprehension": true, "guided": true, "independent": 1, "transfer": 1, "delayedRetrieval": false, "integrated": true },
+      "evaluation": "hybrid"
+    }
+  ],
+
+  "deferredToB1": [
+    { "id": "talk_about_experiences_with_present_perfect", "why": "Connecting the past to the present ('Have you ever...', 'I've just...') is a second past system on top of one A2 has only just introduced. It is the natural first B1 unlock the way simple past was A2's.", "firstB1": true },
+    { "id": "narrate_with_past_continuous", "why": "'I was walking when the phone rang' needs two past forms interacting. A2's simple sequence (first...then...after that) is the honest ceiling." },
+    { "id": "hypothetical_and_conditional_language", "why": "'If I were you...' or 'I would...' has no A2 function; opinions and reasons work with because alone." },
+    { "id": "reported_speech", "why": "'She said that...' doubles the clause-connection load A2 has just opened with because and sequencing." },
+    { "id": "passive_voice", "why": "No A2 situation needs an unknown or irrelevant agent; every A2 sentence has a clear subject." },
+    { "id": "superlatives", "why": "Two-way comparison (bigger than) is the A2 function; three-or-more-way comparison (the biggest) is a separate structure with no A2 need." },
+    { "id": "multi_leg_travel_booking", "why": "A2's booking stays to a room or a table, reusing the buy_something shape. Itineraries, connections and flights are a new context with their own vocabulary and failure modes." },
+    { "id": "map_reading_and_complex_routes", "why": "A2's directions stay to a short verbal sequence a learner can hold in memory; a map is a different, visual comprehension skill." },
+    { "id": "register_and_negotiation", "why": "Every A2 exchange stays informal and cooperative; managing register deliberately is a B1/B2 concern once the learner has more language to modulate." },
+    { "id": "although_even_though_reason_clauses", "why": "Because is the single reason connector A2 needs; concessive connectors add a second logic without a second function." }
+  ],
+
+  "optionalOrNotTaken": [
+    { "id": "describe_your_weekend", "scope": "optional", "why": "A natural social recap that reuses narrate_a_sequence_of_past_events; not given its own episode because the required capability already carries the evidence, and a dedicated 'weekend' episode would be a topic pretending to be a capability." },
+    { "id": "read_simple_transport_information", "scope": "optional", "why": "Receptive only: understanding a short timetable or platform sign. Kept optional and receptive because production would reopen the transport-booking scope A2 deliberately defers to B1." },
+    { "id": "talk_about_the_weather", "scope": "not_taken", "why": "A vocabulary set with no A2 function of its own; it can appear as incidental scene language inside other arcs without becoming a capability." },
+    { "id": "give_personal_contact_details", "scope": "never", "why": "Permanent product decision carried from A1: the curriculum never trains a learner to type or say a real phone number, address or email." }
+  ],
+
+  "patterns": [
+    { "id": "simple_past_regular_pattern", "form": "verb + -ed", "enables": ["talk_about_what_you_did"], "prerequisite": "i_do_life_pattern", "reaches": "independent", "firstArc": "what_happened", "reuseArcs": ["making_plans", "people_and_places", "getting_around", "booking_a_stay", "everyday_problems", "lets_do_something"] },
+    { "id": "simple_past_irregular_pattern", "form": "closed set: went, had, saw, did, met, ate, got, took, made, said", "enables": ["talk_about_what_you_did", "ask_about_what_someone_did", "narrate_a_sequence_of_past_events"], "prerequisite": "simple_past_regular_pattern", "reaches": "guided_production", "firstArc": "what_happened", "reuseArcs": ["booking_a_stay", "everyday_problems", "lets_do_something"] },
+    { "id": "past_time_expression_pattern", "form": "yesterday / last night / last week / two days ago", "enables": ["talk_about_what_you_did"], "prerequisite": "part_of_day_pattern", "reaches": "independent", "firstArc": "what_happened", "reuseArcs": ["lets_do_something"] },
+    { "id": "did_you_question_pattern", "form": "Did you + verb?", "enables": ["ask_about_what_someone_did"], "prerequisite": "simple_past_regular_pattern", "reaches": "independent", "firstArc": "what_happened", "reuseArcs": ["everyday_problems"] },
+    { "id": "sequencing_connector_pattern", "form": "first / then / after that / later", "enables": ["narrate_a_sequence_of_past_events", "follow_directions_with_more_than_one_step"], "prerequisite": "simple_past_irregular_pattern", "reaches": "independent", "firstArc": "what_happened", "reuseArcs": ["getting_around", "lets_do_something"] },
+    { "id": "going_to_future_pattern", "form": "I'm going to + verb", "enables": ["talk_about_future_plans"], "prerequisite": "time_at_pattern", "reaches": "independent", "firstArc": "making_plans", "reuseArcs": ["booking_a_stay", "lets_do_something"] },
+    { "id": "future_time_expression_pattern", "form": "tomorrow / next week / this weekend", "enables": ["talk_about_future_plans"], "prerequisite": "part_of_day_pattern", "reaches": "independent", "firstArc": "making_plans", "reuseArcs": ["booking_a_stay", "lets_do_something"] },
+    { "id": "going_to_question_pattern", "form": "Are you going to + verb?", "enables": ["ask_about_future_plans"], "prerequisite": "going_to_future_pattern", "reaches": "independent", "firstArc": "making_plans", "reuseArcs": ["lets_do_something"] },
+    { "id": "multi_attribute_pattern", "form": "subject + is + attribute + and + attribute", "enables": ["describe_a_person_or_place"], "prerequisite": "he_she_is_pattern", "reaches": "independent", "firstArc": "people_and_places", "reuseArcs": ["booking_a_stay"] },
+    { "id": "there_is_are_pattern", "form": "There is / There are + noun(s)", "enables": ["describe_a_person_or_place"], "prerequisite": "its_location_pattern", "reaches": "guided_production", "firstArc": "people_and_places", "reuseArcs": ["booking_a_stay"] },
+    { "id": "third_person_s_pattern", "form": "he/she/it + verb + -s", "enables": ["describe_a_person_or_place"], "prerequisite": "i_do_life_pattern", "reaches": "guided_production", "firstArc": "people_and_places", "reuseArcs": ["lets_do_something"] },
+    { "id": "frequency_full_set_pattern", "form": "always / usually / often / sometimes / rarely / never", "enables": ["describe_a_person_or_place"], "prerequisite": "frequency_pattern", "reaches": "guided_production", "firstArc": "people_and_places", "reuseArcs": [] },
+    { "id": "comparative_pattern", "form": "adjective + -er than / more + adjective + than", "enables": ["compare_two_things"], "prerequisite": "multi_attribute_pattern", "reaches": "independent", "firstArc": "people_and_places", "reuseArcs": ["booking_a_stay"] },
+    { "id": "because_reason_pattern", "form": "clause + because + clause", "enables": ["express_an_opinion_with_a_reason", "accept_or_decline_with_a_reason"], "prerequisite": "comparative_pattern", "reaches": "independent", "firstArc": "people_and_places", "reuseArcs": ["lets_do_something"] },
+    { "id": "multi_step_direction_pattern", "form": "go straight, then turn left, it's on the right", "enables": ["follow_directions_with_more_than_one_step", "give_simple_directions"], "prerequisite": "where_is_pattern", "reaches": "guided_production", "firstArc": "getting_around", "reuseArcs": [] },
+    { "id": "month_pattern", "form": "January … December", "enables": ["use_dates_and_months"], "prerequisite": "day_of_week_pattern", "reaches": "independent", "firstArc": "booking_a_stay", "reuseArcs": [] },
+    { "id": "ordinal_date_pattern", "form": "the first / the second / the twentieth + of + month", "enables": ["use_dates_and_months"], "prerequisite": "numbers_11_100", "reaches": "guided_production", "firstArc": "booking_a_stay", "reuseArcs": [] },
+    { "id": "availability_question_pattern", "form": "Do you have a ___ for + date? Is there a ___ free?", "enables": ["ask_about_availability"], "prerequisite": "how_much_pattern", "reaches": "independent", "firstArc": "booking_a_stay", "reuseArcs": [] },
+    { "id": "booking_pattern", "form": "I'd like to book + item + for + date + for + number of people", "enables": ["book_a_room_or_table"], "prerequisite": "availability_question_pattern", "reaches": "guided_production", "firstArc": "booking_a_stay", "reuseArcs": ["everyday_problems"] },
+    { "id": "spelling_pattern", "form": "letter-by-letter production of a short name", "enables": ["spell_a_name_for_a_booking"], "prerequisite": "booking_pattern", "reaches": "guided_production", "firstArc": "booking_a_stay", "reuseArcs": [] },
+    { "id": "problem_report_pattern", "form": "There's a problem with ___ / My ___ doesn't work / I lost my ___", "enables": ["report_a_problem"], "prerequisite": "booking_pattern", "reaches": "independent", "firstArc": "everyday_problems", "reuseArcs": ["lets_do_something"] },
+    { "id": "help_request_pattern", "form": "Can you help me with ___? What should I do?", "enables": ["ask_for_help_solving_a_problem"], "prerequisite": "problem_report_pattern", "reaches": "independent", "firstArc": "everyday_problems", "reuseArcs": [] },
+    { "id": "invitation_pattern", "form": "Would you like to ___? Do you want to ___?", "enables": ["invite_someone_to_do_something"], "prerequisite": "going_to_future_pattern", "reaches": "independent", "firstArc": "lets_do_something", "reuseArcs": [] },
+    { "id": "accept_decline_reason_pattern", "form": "I'd love to, but ___ / Yes, I'd like that / No, sorry, I can't because ___", "enables": ["accept_or_decline_with_a_reason"], "prerequisite": "because_reason_pattern", "reaches": "independent", "firstArc": "lets_do_something", "reuseArcs": [] },
+    { "id": "clause_connector_pattern", "form": "and / but / so / when, linking two clauses across a turn", "enables": ["keep_a_longer_conversation_going"], "prerequisite": "because_reason_pattern", "reaches": "guided_production", "firstArc": "lets_do_something", "reuseArcs": [] }
+  ],
+
+  "semanticTypes": {
+    "existingFromA1": ["interest", "activity", "drink", "food", "consumable", "place", "feeling", "person", "generic_object", "time_point", "relation"],
+    "reusedFromA1Proposal": [
+      { "id": "day", "requiredBy": ["use_dates_and_months", "book_a_room_or_table"], "note": "Proposed by A1 for its designed-only arc 7 (making_arrangements) and not yet built into the engine. A2 is the first level whose implementation would actually need it if arc 7 still has not landed; flagged as coreEngineRequirements rather than silently re-proposing it." }
+    ],
+    "proposed": [
+      { "id": "past_time", "requiredBy": ["talk_about_what_you_did", "narrate_a_sequence_of_past_events"], "examples": ["yesterday", "last week", "two days ago"], "incompatibleWith": ["future_time", "time_point"], "whyNotExisting": "A1's time_point is an hour inside a day that is still happening; a past time anchors a sentence entirely outside the present and takes a different verb form with it." },
+      { "id": "future_time", "requiredBy": ["talk_about_future_plans", "invite_someone_to_do_something"], "examples": ["tomorrow", "next week", "this weekend"], "incompatibleWith": ["past_time", "time_point"], "whyNotExisting": "Symmetric with past_time: 'going to' needs a slot that rejects 'yesterday' the way ability rejects a repair-request reading." },
+      { "id": "month", "requiredBy": ["use_dates_and_months"], "examples": ["January", "March", "December"], "incompatibleWith": ["day"], "whyNotExisting": "A month and a weekday combine ('the third of March') but are not interchangeable; a slot that accepts 'Monday' for a month would let the engine build 'the third of Monday'." },
+      { "id": "date_ordinal", "requiredBy": ["use_dates_and_months"], "examples": ["the first", "the twentieth", "the thirty-first"], "incompatibleWith": ["time_point"], "whyNotExisting": "An ordinal position in a month is not an hour and not a cardinal quantity; 'the three of March' is exactly the error this type exists to block." },
+      { "id": "quality", "requiredBy": ["describe_a_person_or_place", "compare_two_things"], "examples": ["big", "small", "quiet", "expensive", "cheap", "friendly"], "incompatibleWith": ["activity", "place"], "whyNotExisting": "A comparable attribute is neither the place nor the object it describes; the comparative pattern needs a slot it can put '-er than' on, which a place or object type cannot take." },
+      { "id": "problem", "requiredBy": ["report_a_problem", "ask_for_help_solving_a_problem"], "examples": ["broken", "doesn't work", "lost", "the wrong one"], "incompatibleWith": ["feeling"], "whyNotExisting": "A malfunction is not an emotional state, even though both can follow 'it's'; conflating them would let 'I'm broken' pass as a valid problem report." }
+    ],
+    "explicitlyNotNeeded": [
+      { "id": "transport_mode", "why": "A1 proposed this for its should-have transport episode; A2 does not build a transport-booking arc, so the type stays unregistered here too." },
+      { "id": "superlative_quality", "why": "Superlatives are deferred to B1 with the rest of three-or-more-way comparison." },
+      { "id": "address", "why": "The curriculum never collects a real address; a fictional booking name is a string, not a structured address type." }
+    ]
+  },
+
+  "intentStrategy": {
+    "rule": "Unchanged from A1: one intent per communicative function, variants travel as a subtype on the step payload.",
+    "newIntents": [
+      "state_past_event", "ask_past_event", "narrate_past_sequence",
+      "state_future_plan", "ask_future_plan",
+      "describe_person_or_place", "compare_things", "state_opinion_with_reason",
+      "give_multi_step_directions",
+      "ask_availability", "state_availability", "make_booking", "spell_word",
+      "report_problem", "ask_for_help",
+      "invite_someone", "respond_to_invitation"
+    ],
+    "newSubtypesOnExistingIntents": [
+      { "intent": "repair_request", "newRepairKinds": ["ask_to_spell"] },
+      { "intent": "use_quantity", "change": "party-size counts (2 people, a table for 4) reuse the existing quantity intent rather than a new one" }
+    ],
+    "counts": { "a1Intents": 43, "newA2Intents": 17, "wouldBeUnderOnePerPhrase": 43 },
+    "explosionGuard": "Same rule as A1: an arc needing more than three new intents is teaching phrases, not a capability. The densest A2 arc (what_happened) needs three: state_past_event, ask_past_event, narrate_past_sequence."
+  },
+
+  "evaluationStrategy": {
+    "deterministic_local": ["state_past_event", "ask_past_event", "state_future_plan", "ask_future_plan", "compare_things", "use_dates_and_months's underlying quantity/date turns", "ask_availability", "state_availability", "invite_someone"],
+    "hybrid": ["narrate_past_sequence", "describe_person_or_place", "state_opinion_with_reason", "give_multi_step_directions", "make_booking", "spell_word", "ask_for_help", "respond_to_invitation"],
+    "remoteLikely": [],
+    "rule": "Unchanged from A1: the canonical frame is always judged locally; escalation is for a reply that is inconclusive. No A2 capability is designed to require the provider to be reachable. The hybrid share is larger than A1's (roughly half of new intents vs. A1's three of fourteen) because free word order genuinely increases once clauses connect with because/and/but/so and once a description can list attributes in any order — this is flagged, not hidden."
+  },
+
+  "arcs": [
+    {
+      "id": "what_happened",
+      "order": 1,
+      "titleConcept": "What you did",
+      "communicativeProblem": "Everything the learner can say happens in the present. They cannot tell anyone what already occurred, not even 'I worked yesterday'.",
+      "whyNow": "The smallest, highest-value step out of A1: it reuses the i_do_life_pattern frame and only changes the verb form, exactly as A1's own blueprint predicted.",
+      "prerequisiteArcs": [],
+      "a1Reuse": ["talk_about_daily_routine", "ask_about_work_or_study", "ask_for_repair", "use_small_numbers"],
+      "a2Reuse": [],
+      "newCanDos": ["talk_about_what_you_did", "ask_about_what_someone_did", "narrate_a_sequence_of_past_events"],
+      "reinforcedCanDos": ["talk_about_daily_routine"],
+      "newPatterns": ["simple_past_regular_pattern", "simple_past_irregular_pattern", "past_time_expression_pattern", "did_you_question_pattern", "sequencing_connector_pattern"],
+      "vocabularyBudget": { "newProductive": 12, "newReceptive": 8 },
+      "semanticNeeds": ["past_time", "activity"],
+      "factsCaptured": ["recent_activity"],
+      "likelyFormats": ["scene", "model", "comprehension", "word_order", "fill_blank", "guided_reply", "free_reply", "recall"],
+      "miniStory": { "use": true, "why": "A day already lived is a natural narrated sequence; the story carries two irregular verbs the learner has not produced yet, received only." },
+      "conversationTarget": { "meaningfulTurns": 9, "learnerOpenTurns": 4, "learnerInitiatedQuestions": 1 },
+      "autonomyTarget": "early: the model answer is available while the past-tense frame is new; support fades across the arc's three episodes",
+      "evidenceTarget": "two unaided past statements, one unaided past question, one unaided two-action sequence with a connector",
+      "risk": "The level's densest single arc: a new tense, an irregular-verb closed set and a connector all in three-to-four episodes. The verb budget stays at ten irregular forms and the regular pattern is drilled first so the exception set has a rule to be an exception to.",
+      "episodes": [39, 40, 41, 42]
+    },
+    {
+      "id": "making_plans",
+      "order": 2,
+      "titleConcept": "What's next",
+      "communicativeProblem": "A1's arrangement needed somebody to already be arranging something. The learner cannot volunteer a plan of their own, or ask about somebody else's, outside that one frame.",
+      "whyNow": "Symmetric with the past arc it follows: same clause shape, opposite time direction, and it sets up invitations and bookings later in the level.",
+      "prerequisiteArcs": ["what_happened"],
+      "a1Reuse": ["arrange_to_meet", "say_when_something_happens"],
+      "a2Reuse": ["narrate_a_sequence_of_past_events"],
+      "newCanDos": ["talk_about_future_plans", "ask_about_future_plans"],
+      "reinforcedCanDos": ["arrange_to_meet"],
+      "newPatterns": ["going_to_future_pattern", "future_time_expression_pattern", "going_to_question_pattern"],
+      "vocabularyBudget": { "newProductive": 6, "newReceptive": 4 },
+      "semanticNeeds": ["future_time", "activity"],
+      "factsCaptured": ["stated_plan"],
+      "likelyFormats": ["scene", "model", "comprehension", "choice", "guided_reply", "free_reply", "recall"],
+      "miniStory": { "use": false, "why": "Two episodes and a clean symmetric structure; the value is in the learner's own plan, not a narrated one." },
+      "conversationTarget": { "meaningfulTurns": 7, "learnerOpenTurns": 3, "learnerInitiatedQuestions": 1 },
+      "autonomyTarget": "early-to-mid: the contrast with the just-taught past tense is the main support need, not the future form itself",
+      "evidenceTarget": "two unaided plan statements and one unaided plan question",
+      "risk": "Confusing 'going to' with the level's own past tense taught two episodes earlier. Mitigated by contrastive practice: every episode 43 item pairs a past sentence (recap) with a future one (new).",
+      "episodes": [43, 44]
+    },
+    {
+      "id": "people_and_places",
+      "order": 3,
+      "titleConcept": "What they're like",
+      "communicativeProblem": "The learner can say what somebody is (a student) but not what they or a place are LIKE, cannot choose between two things by comparing them, and cannot justify a preference beyond stating it.",
+      "whyNow": "Independent of the past/future branch; reuses A1's he/she-is frame and its own place-description frame, and it is where the level's one required new grammar function (because) has to live.",
+      "prerequisiteArcs": ["what_happened"],
+      "a1Reuse": ["introduce_someone_else", "say_where_something_is", "express_preferences"],
+      "a2Reuse": [],
+      "newCanDos": ["describe_a_person_or_place", "compare_two_things", "express_an_opinion_with_a_reason"],
+      "reinforcedCanDos": ["introduce_someone_else", "say_where_something_is"],
+      "newPatterns": ["multi_attribute_pattern", "there_is_are_pattern", "third_person_s_pattern", "frequency_full_set_pattern", "comparative_pattern", "because_reason_pattern"],
+      "vocabularyBudget": { "newProductive": 14, "newReceptive": 8 },
+      "semanticNeeds": ["quality", "place", "person"],
+      "factsCaptured": [],
+      "likelyFormats": ["scene", "model", "comprehension", "choice", "word_order", "guided_reply", "free_reply", "roleplay", "recall"],
+      "miniStory": { "use": true, "why": "Comparing two real, differently-described places (two cafés, two neighbourhoods) needs both descriptions held in view at once, which a hosted story carries better than two separate exchanges." },
+      "conversationTarget": { "meaningfulTurns": 10, "learnerOpenTurns": 4, "learnerInitiatedQuestions": 1 },
+      "autonomyTarget": "mid: the suggestion is withheld on the arc's integration episode, which asks for a comparison and a justified preference with no model on screen",
+      "evidenceTarget": "two unaided multi-attribute descriptions, two unaided comparisons, two unaided opinions each with a because-clause",
+      "risk": "Three new structures competing for the same episodes. Mitigated the way A1 mitigated its densest arc: description first, comparison built directly on top of the same attribute vocabulary, because saved for the arc's last episode where description and comparison are already fluent enough to be justified.",
+      "episodes": [45, 46, 47, 48]
+    },
+    {
+      "id": "getting_around",
+      "order": 4,
+      "titleConcept": "How to get there",
+      "communicativeProblem": "A1 left the learner able to ask where something is and understand a one-step answer. A real answer is rarely one step, and the learner cannot follow it or give one back.",
+      "whyNow": "Needs the sequencing connector from the past arc to hold a multi-step answer together, which is why it is not built directly after A1.",
+      "prerequisiteArcs": ["what_happened"],
+      "a1Reuse": ["ask_where_something_is", "ask_for_repair", "ask_about_getting_somewhere"],
+      "a2Reuse": ["narrate_a_sequence_of_past_events"],
+      "newCanDos": ["follow_directions_with_more_than_one_step", "give_simple_directions"],
+      "reinforcedCanDos": ["ask_where_something_is", "say_where_something_is"],
+      "newPatterns": ["multi_step_direction_pattern"],
+      "vocabularyBudget": { "newProductive": 8, "newReceptive": 8 },
+      "semanticNeeds": ["place"],
+      "factsCaptured": [],
+      "likelyFormats": ["scene", "model", "comprehension", "choice", "guided_reply", "free_reply", "roleplay", "recall"],
+      "miniStory": { "use": false, "why": "Directions are best felt as an interactive roleplay where a wrong turn has a visible consequence, not as a narrated scene." },
+      "conversationTarget": { "meaningfulTurns": 8, "learnerOpenTurns": 3, "learnerInitiatedQuestions": 1 },
+      "autonomyTarget": "mid: repair is planted deliberately, since a real multi-step answer will always outrun the learner's vocabulary at some point",
+      "evidenceTarget": "one unaided comprehension of a three-step direction with a repair used mid-sequence, one unaided direction given",
+      "risk": "Direction creep into full route-planning or maps. The arc stops at three steps, verbal only, exactly as A1 stopped at where-and-near.",
+      "episodes": [49, 50]
+    },
+    {
+      "id": "booking_a_stay",
+      "order": 5,
+      "titleConcept": "Booking it",
+      "communicativeProblem": "The learner can buy a single item on the spot but cannot reserve something for a future date, cannot say when that date is, and cannot confirm a name for the booking.",
+      "whyNow": "Needs both dates (independent of the other branches) and future time (from making_plans), so it sits after both and reuses A1's whole transaction shape.",
+      "prerequisiteArcs": ["making_plans"],
+      "a1Reuse": ["ask_the_price", "buy_something", "arrange_to_meet", "use_bigger_numbers"],
+      "a2Reuse": ["talk_about_future_plans"],
+      "newCanDos": ["use_dates_and_months", "ask_about_availability", "book_a_room_or_table", "spell_a_name_for_a_booking"],
+      "reinforcedCanDos": ["ask_the_price", "buy_something", "arrange_to_meet"],
+      "newPatterns": ["month_pattern", "ordinal_date_pattern", "availability_question_pattern", "booking_pattern", "spelling_pattern"],
+      "vocabularyBudget": { "newProductive": 14, "newReceptive": 8 },
+      "semanticNeeds": ["month", "date_ordinal", "day"],
+      "factsCaptured": [],
+      "likelyFormats": ["scene", "model", "comprehension", "choice", "word_order", "fill_blank", "guided_reply", "free_reply", "roleplay", "recall"],
+      "miniStory": { "use": true, "why": "A whole booking call — availability, date, party size, name, spelled and confirmed — is the arc's clearest integrated transaction, exactly like A1's purchase story." },
+      "conversationTarget": { "meaningfulTurns": 11, "learnerOpenTurns": 5, "learnerInitiatedQuestions": 2 },
+      "autonomyTarget": "mid-to-late: the integrated booking runs with the suggestion withheld",
+      "evidenceTarget": "two unaided date productions, one unaided availability question, one whole booking held unaided including a spelled name",
+      "risk": "The heaviest arc after what_happened: a date system, an availability question and a transaction with a new closing step (spelling). Four episodes, and dates arrive as booking details, never as a calendar lesson.",
+      "episodes": [51, 52, 53, 54]
+    },
+    {
+      "id": "everyday_problems",
+      "order": 6,
+      "titleConcept": "When something's wrong",
+      "communicativeProblem": "Every A1 and A2 transaction so far assumes success. The learner cannot say that the room is cold, the order is wrong, or the ticket is lost, and cannot ask for it to be fixed.",
+      "whyNow": "Needs something already booked or bought to go wrong with, so it follows the booking arc and deliberately reuses its scene.",
+      "prerequisiteArcs": ["booking_a_stay"],
+      "a1Reuse": ["ask_for_repair", "polite_request"],
+      "a2Reuse": ["book_a_room_or_table"],
+      "newCanDos": ["report_a_problem", "ask_for_help_solving_a_problem"],
+      "reinforcedCanDos": ["ask_for_repair", "book_a_room_or_table"],
+      "newPatterns": ["problem_report_pattern", "help_request_pattern"],
+      "vocabularyBudget": { "newProductive": 8, "newReceptive": 6 },
+      "semanticNeeds": ["problem"],
+      "factsCaptured": [],
+      "likelyFormats": ["scene", "model", "comprehension", "choice", "guided_reply", "free_reply", "roleplay", "recall"],
+      "miniStory": { "use": true, "why": "A problem-and-resolution has a natural beginning, middle and end, and reusing the booking arc's hotel/restaurant scene keeps the situation continuous rather than introducing a new one for its own sake." },
+      "conversationTarget": { "meaningfulTurns": 9, "learnerOpenTurns": 4, "learnerInitiatedQuestions": 2 },
+      "autonomyTarget": "late: unaided by default, support returning after a wrong answer",
+      "evidenceTarget": "two unaided problem reports, one unaided help request, one whole problem-to-resolution exchange held unaided",
+      "risk": "Turning into a complaint-letter register exercise. The arc stays informal and cooperative — the other person always wants to help — because negotiation and register belong to B1/B2.",
+      "episodes": [55, 56, 57]
+    },
+    {
+      "id": "lets_do_something",
+      "order": 7,
+      "titleConcept": "Do you want to...?",
+      "communicativeProblem": "The learner can agree to meet once somebody else proposes it, but cannot open the exchange themselves, cannot decline gracefully, and cannot keep a conversation going once the main business is settled.",
+      "whyNow": "Last, because it needs future plans, a reason clause and a sequencing connector all at once, and it is A2's true convergence point — the same role A1's making_arrangements arc played for A1.",
+      "prerequisiteArcs": ["making_plans", "people_and_places", "everyday_problems"],
+      "a1Reuse": ["arrange_to_meet", "express_preferences", "say_when_something_happens", "say_where_something_is", "close_an_encounter"],
+      "a2Reuse": ["talk_about_future_plans", "express_an_opinion_with_a_reason", "narrate_a_sequence_of_past_events", "report_a_problem"],
+      "newCanDos": ["invite_someone_to_do_something", "accept_or_decline_with_a_reason", "keep_a_longer_conversation_going"],
+      "reinforcedCanDos": ["arrange_to_meet", "talk_about_future_plans", "express_an_opinion_with_a_reason"],
+      "newPatterns": ["invitation_pattern", "accept_decline_reason_pattern", "clause_connector_pattern"],
+      "vocabularyBudget": { "newProductive": 10, "newReceptive": 8 },
+      "semanticNeeds": ["activity", "future_time", "day"],
+      "factsCaptured": ["preferred_activity"],
+      "likelyFormats": ["scene", "model", "comprehension", "guided_reply", "free_reply", "roleplay", "mini_story", "recall"],
+      "miniStory": { "use": true, "why": "The level's closing situation: an invitation, a plan, a complication (the first idea falls through, echoing everyday_problems) and a confirmed alternative, with a branch where accepting the original and proposing a new plan are both correct." },
+      "conversationTarget": { "meaningfulTurns": 16, "learnerOpenTurns": 6, "learnerInitiatedQuestions": 3 },
+      "autonomyTarget": "late: unaided by default; support only after a wrong answer; the closing story withholds the suggestion throughout",
+      "evidenceTarget": "one whole invitation-to-confirmation exchange held unaided, including a decline-with-reason branch and one topic change held together with a connector",
+      "risk": "Could read as a second arrange_to_meet with new vocabulary. It earns its place only if the learner leaves able to open an exchange nobody scripted for them, decline one they genuinely cannot do, and keep talking past the first 'no' — exactly the ceiling A1 could not reach.",
+      "episodes": [58, 59, 60, 61]
+    }
+  ],
+
+  "episodes": [
+    { "plannedNumber": 39, "arc": "what_happened", "role": "primary", "canDo": "talk_about_what_you_did", "titleConcept": "Yesterday", "situation": "Lingua asks what the learner did yesterday; a first past statement", "novelty": "high", "newLanguageBudget": 5, "newPatterns": 2, "reusedLanguage": ["i_do_life_pattern", "part_of_day_pattern"], "productionTarget": "guided then open past statement, regular verbs", "receptiveTarget": "a short past account told back", "likelyFormats": ["scene", "model", "comprehension", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["talk_about_daily_routine"], "prerequisites": [], "evidence": "one guided and one unaided past statement" },
+    { "plannedNumber": 40, "arc": "what_happened", "role": "reinforcement", "canDo": "talk_about_what_you_did", "titleConcept": "I went, I had", "situation": "The same day, now with the ten irregular verbs the level teaches", "novelty": "medium", "newLanguageBudget": 4, "newPatterns": 1, "reusedLanguage": ["simple_past_regular_pattern"], "productionTarget": "two irregular-verb statements, guided then open", "receptiveTarget": "a partner's account mixing regular and irregular forms", "likelyFormats": ["model", "comprehension", "choice", "fill_blank", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["talk_about_daily_routine"], "prerequisites": [39], "evidence": "two unaided statements using an irregular verb" },
+    { "plannedNumber": 41, "arc": "what_happened", "role": "primary", "canDo": "ask_about_what_someone_did", "titleConcept": "What did you do?", "situation": "The learner asks and has to understand an answer with an unfamiliar irregular verb", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["do_you_question_pattern", "ask_for_repair"], "productionTarget": "the question, unaided by the end", "receptiveTarget": "an answer using a verb outside the taught ten, with repair available", "likelyFormats": ["model", "comprehension", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["ask_about_work_or_study", "ask_for_repair"], "prerequisites": [40], "evidence": "one unaided question plus comprehension of the reply, with a repair used at least once across the arc" },
+    { "plannedNumber": 42, "arc": "what_happened", "role": "primary", "canDo": "narrate_a_sequence_of_past_events", "titleConcept": "First I..., then I...", "situation": "A hosted story about somebody's unusual day, then the learner's own two-or-three-action account", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["simple_past_irregular_pattern", "past_time_expression_pattern"], "productionTarget": "a two-action sequence with a connector, unaided once", "receptiveTarget": "a three-action story followed in order", "likelyFormats": ["scene", "mini_story", "comprehension", "guided_reply", "free_reply", "recall"], "openProductions": 3, "integratedReuse": ["talk_about_what_you_did", "ask_about_what_someone_did"], "prerequisites": [41], "evidence": "integrated: two past actions held together with a connector, unaided" },
+    { "plannedNumber": 43, "arc": "making_plans", "role": "primary", "canDo": "talk_about_future_plans", "titleConcept": "I'm going to...", "situation": "Lingua asks what the learner is going to do this weekend, contrasted against yesterday", "novelty": "high", "newLanguageBudget": 4, "newPatterns": 2, "reusedLanguage": ["time_at_pattern", "arrange_to_meet language"], "productionTarget": "guided then open future statement", "receptiveTarget": "a plan told back, distinguished from a past account", "likelyFormats": ["scene", "model", "comprehension", "choice", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["arrange_to_meet"], "prerequisites": [42], "evidence": "two unaided future-plan statements, correctly contrasted with a past recap" },
+    { "plannedNumber": 44, "arc": "making_plans", "role": "primary", "canDo": "ask_about_future_plans", "titleConcept": "Are you going to...?", "situation": "The learner asks about somebody else's weekend plan", "novelty": "low", "newLanguageBudget": 2, "newPatterns": 1, "reusedLanguage": ["going_to_future_pattern", "do_you_question_pattern"], "productionTarget": "the plan question, unaided", "receptiveTarget": "a plan the learner did not expect", "likelyFormats": ["model", "comprehension", "fill_blank", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["talk_about_future_plans"], "prerequisites": [43], "evidence": "one unaided plan question plus comprehension of the reply" },
+    { "plannedNumber": 45, "arc": "people_and_places", "role": "primary", "canDo": "describe_a_person_or_place", "titleConcept": "It's a small, quiet place", "situation": "Describing a café or a neighbourhood with more than one attribute", "novelty": "high", "newLanguageBudget": 6, "newPatterns": 3, "reusedLanguage": ["he_she_is_pattern", "its_location_pattern"], "productionTarget": "two attributes held in one sentence, guided then open", "receptiveTarget": "a three-attribute description", "likelyFormats": ["scene", "model", "comprehension", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["introduce_someone_else", "say_where_something_is"], "prerequisites": [], "evidence": "two unaided multi-attribute descriptions, one of a person and one of a place" },
+    { "plannedNumber": 46, "arc": "people_and_places", "role": "primary", "canDo": "compare_two_things", "titleConcept": "Bigger, quieter, cheaper", "situation": "Choosing between two places or two people using a comparison", "novelty": "medium", "newLanguageBudget": 4, "newPatterns": 1, "reusedLanguage": ["multi_attribute_pattern", "express_preferences language"], "productionTarget": "one comparison, unaided by the end", "receptiveTarget": "two comparisons in a row, one irregular (better, worse)", "likelyFormats": ["model", "comprehension", "choice", "fill_blank", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["describe_a_person_or_place"], "prerequisites": [45], "evidence": "two unaided comparisons" },
+    { "plannedNumber": 47, "arc": "people_and_places", "role": "primary", "canDo": "express_an_opinion_with_a_reason", "titleConcept": "I like it because...", "situation": "Justifying the choice the comparison just made", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["compare_two_things", "express_preferences"], "productionTarget": "an opinion with a because-clause, unaided", "receptiveTarget": "a reason using an attribute not yet met", "likelyFormats": ["model", "comprehension", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["compare_two_things"], "prerequisites": [46], "evidence": "two unaided opinions each with a because-clause" },
+    { "plannedNumber": 48, "arc": "people_and_places", "role": "reinforcement", "canDo": "describe_a_person_or_place", "titleConcept": "Which one would you choose?", "situation": "A hosted story presenting two real options; the learner describes, compares and justifies a choice with no model on screen", "novelty": "low", "newLanguageBudget": 1, "newPatterns": 0, "reusedLanguage": ["multi_attribute_pattern", "comparative_pattern", "because_reason_pattern"], "productionTarget": "the whole describe-compare-justify sequence, unaided", "receptiveTarget": "a partner who disagrees and gives their own reason", "likelyFormats": ["scene", "mini_story", "roleplay", "free_reply", "recall"], "openProductions": 3, "integratedReuse": ["describe_a_person_or_place", "compare_two_things", "express_an_opinion_with_a_reason"], "prerequisites": [47], "evidence": "integrated: description, comparison and a justified opinion held unaided in one exchange" },
+    { "plannedNumber": 49, "arc": "getting_around", "role": "primary", "canDo": "follow_directions_with_more_than_one_step", "titleConcept": "Turn left, then...", "situation": "Asking the way and following a three-step spoken answer", "novelty": "medium", "newLanguageBudget": 5, "newPatterns": 1, "reusedLanguage": ["where_is_pattern", "sequencing_connector_pattern", "ask_for_repair"], "productionTarget": "confirming the route back in the learner's own words", "receptiveTarget": "a three-step direction, deliberately beyond first-pass production", "likelyFormats": ["scene", "model", "comprehension", "choice", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["ask_where_something_is", "ask_for_repair"], "prerequisites": [], "evidence": "one unaided comprehension of a three-step direction, with a repair used when a step is missed" },
+    { "plannedNumber": 50, "arc": "getting_around", "role": "primary", "canDo": "give_simple_directions", "titleConcept": "Go straight, then turn right", "situation": "Somebody asks the learner the way this time", "novelty": "low", "newLanguageBudget": 2, "newPatterns": 0, "reusedLanguage": ["multi_step_direction_pattern", "say_where_something_is"], "productionTarget": "a two-to-three-step direction, unaided", "receptiveTarget": "a follow-up clarifying question", "likelyFormats": ["model", "comprehension", "guided_reply", "free_reply", "roleplay", "recall"], "openProductions": 2, "integratedReuse": ["follow_directions_with_more_than_one_step", "say_where_something_is"], "prerequisites": [49], "evidence": "integrated: one direction given unaided and one followed unaided in the same roleplay" },
+    { "plannedNumber": 51, "arc": "booking_a_stay", "role": "primary", "canDo": "use_dates_and_months", "titleConcept": "The tenth of June", "situation": "Naming and understanding a date, ahead of a booking", "novelty": "high", "newLanguageBudget": 5, "newPatterns": 2, "reusedLanguage": ["numbers_11_100", "day_of_week_pattern"], "productionTarget": "a full date, guided then open", "receptiveTarget": "a date said quickly, requiring repair", "likelyFormats": ["model", "comprehension", "choice", "fill_blank", "guided_reply", "recall"], "openProductions": 2, "integratedReuse": ["use_bigger_numbers", "ask_for_repair"], "prerequisites": [], "evidence": "two unaided full dates in context" },
+    { "plannedNumber": 52, "arc": "booking_a_stay", "role": "primary", "canDo": "ask_about_availability", "titleConcept": "Do you have a room?", "situation": "Calling ahead: is anything free, on this date", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["how_much_pattern", "ordinal_date_pattern"], "productionTarget": "the availability question, unaided", "receptiveTarget": "an answer that offers an alternative date", "likelyFormats": ["scene", "model", "comprehension", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["ask_the_price", "use_dates_and_months"], "prerequisites": [51], "evidence": "two unaided availability questions and comprehension of an alternative offered" },
+    { "plannedNumber": 53, "arc": "booking_a_stay", "role": "primary", "canDo": "book_a_room_or_table", "titleConcept": "I'd like to book...", "situation": "Confirming the booking: date, number of people, done", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["can_i_have", "buy_something language"], "productionTarget": "the booking request with date and party size", "receptiveTarget": "a confirmation with an unexpected detail (a deposit, a time)", "likelyFormats": ["model", "comprehension", "choice", "fill_blank", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["ask_about_availability", "arrange_to_meet"], "prerequisites": [52], "evidence": "one unaided booking held from request to confirmation" },
+    { "plannedNumber": 54, "arc": "booking_a_stay", "role": "reinforcement", "canDo": "spell_a_name_for_a_booking", "titleConcept": "Can you spell that?", "situation": "A hosted story: the whole call, ending with the name spelled letter by letter", "novelty": "low", "newLanguageBudget": 2, "newPatterns": 0, "reusedLanguage": ["booking_pattern", "thank_you", "close_an_encounter"], "productionTarget": "the whole booking with the suggestion withheld, including spelling a short name", "receptiveTarget": "the other side reading the spelled name back to confirm", "likelyFormats": ["scene", "mini_story", "roleplay", "free_reply", "recall"], "openProductions": 4, "integratedReuse": ["book_a_room_or_table", "use_dates_and_months", "polite_request", "close_an_encounter"], "prerequisites": [53], "evidence": "integrated: a booking held unaided from availability to a spelled, confirmed name" },
+    { "plannedNumber": 55, "arc": "everyday_problems", "role": "primary", "canDo": "report_a_problem", "titleConcept": "There's a problem", "situation": "Something about the booking is wrong on arrival", "novelty": "medium", "newLanguageBudget": 4, "newPatterns": 1, "reusedLanguage": ["book_a_room_or_table", "ask_for_repair"], "productionTarget": "the problem statement, guided then open", "receptiveTarget": "an apology and a question back", "likelyFormats": ["scene", "model", "comprehension", "choice", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["book_a_room_or_table"], "prerequisites": [], "evidence": "two unaided problem reports" },
+    { "plannedNumber": 56, "arc": "everyday_problems", "role": "primary", "canDo": "ask_for_help_solving_a_problem", "titleConcept": "What should I do?", "situation": "The problem is acknowledged; the learner asks for it to be fixed", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["polite_request", "report_a_problem"], "productionTarget": "the help request, unaided", "receptiveTarget": "a solution offered that the learner must understand and accept or decline", "likelyFormats": ["model", "comprehension", "guided_reply", "free_reply", "roleplay", "recall"], "openProductions": 2, "integratedReuse": ["report_a_problem", "polite_request"], "prerequisites": [55], "evidence": "one unaided help request plus comprehension of a proposed solution" },
+    { "plannedNumber": 57, "arc": "everyday_problems", "role": "reinforcement", "canDo": "report_a_problem", "titleConcept": "Fixed", "situation": "A hosted story: the whole problem-to-resolution exchange at the hotel from the booking arc", "novelty": "low", "newLanguageBudget": 1, "newPatterns": 0, "reusedLanguage": ["problem_report_pattern", "help_request_pattern", "thank_you"], "productionTarget": "the whole exchange, unaided", "receptiveTarget": "a solution offered on the second try, after the first is declined", "likelyFormats": ["scene", "mini_story", "roleplay", "free_reply", "recall"], "openProductions": 3, "integratedReuse": ["report_a_problem", "ask_for_help_solving_a_problem", "book_a_room_or_table"], "prerequisites": [56], "evidence": "integrated: a problem raised, a first solution declined with a reason, a second solution accepted, all unaided" },
+    { "plannedNumber": 58, "arc": "lets_do_something", "role": "primary", "canDo": "invite_someone_to_do_something", "titleConcept": "Do you want to...?", "situation": "The learner proposes something nobody has agreed to yet", "novelty": "medium", "newLanguageBudget": 4, "newPatterns": 1, "reusedLanguage": ["going_to_future_pattern", "express_preferences"], "productionTarget": "the invitation, guided then open", "receptiveTarget": "a partner who asks a clarifying question back", "likelyFormats": ["scene", "model", "comprehension", "word_order", "guided_reply", "free_reply", "recall"], "openProductions": 2, "integratedReuse": ["talk_about_future_plans"], "prerequisites": [], "evidence": "two unaided invitations" },
+    { "plannedNumber": 59, "arc": "lets_do_something", "role": "primary", "canDo": "accept_or_decline_with_a_reason", "titleConcept": "I'd love to, but...", "situation": "Answering an invitation honestly, including a decline that needs a reason", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["because_reason_pattern", "invitation_pattern"], "productionTarget": "one acceptance and one decline-with-reason, unaided", "receptiveTarget": "an insistence the learner must handle a second time", "likelyFormats": ["model", "comprehension", "choice", "guided_reply", "free_reply", "roleplay", "recall"], "openProductions": 3, "integratedReuse": ["invite_someone_to_do_something", "express_an_opinion_with_a_reason"], "prerequisites": [58], "evidence": "two unaided responses, one acceptance and one decline with a because-clause" },
+    { "plannedNumber": 60, "arc": "lets_do_something", "role": "primary", "canDo": "keep_a_longer_conversation_going", "titleConcept": "And then...", "situation": "The invitation exchange continues past its first resolution: a related topic comes up once, held together with and/but/so", "novelty": "medium", "newLanguageBudget": 3, "newPatterns": 1, "reusedLanguage": ["ask_what_something_means", "narrate_a_sequence_of_past_events"], "productionTarget": "one turn that connects two clauses across a topic shift", "receptiveTarget": "a partner who changes the subject once", "likelyFormats": ["model", "comprehension", "guided_reply", "free_reply", "roleplay", "recall"], "openProductions": 2, "integratedReuse": ["accept_or_decline_with_a_reason"], "prerequisites": [59], "evidence": "one unaided turn holding two connected clauses across a topic change" },
+    { "plannedNumber": 61, "arc": "lets_do_something", "role": "primary", "canDo": "accept_or_decline_with_a_reason", "titleConcept": "Let's do something else", "situation": "The level's closing story: an invitation, a decline with a reason, a complication (the first idea is unavailable, echoing everyday_problems), a new plan, and a confirmation", "novelty": "low", "newLanguageBudget": 1, "newPatterns": 0, "reusedLanguage": ["invitation_pattern", "accept_decline_reason_pattern", "arrange_pattern", "clause_connector_pattern"], "productionTarget": "the whole arrangement, unaided, with a branch", "receptiveTarget": "a partner who postpones and proposes an alternative", "likelyFormats": ["scene", "mini_story", "roleplay", "free_reply", "recall"], "openProductions": 6, "integratedReuse": ["invite_someone_to_do_something", "accept_or_decline_with_a_reason", "keep_a_longer_conversation_going", "talk_about_future_plans", "arrange_to_meet", "report_a_problem"], "prerequisites": [60], "evidence": "integrated: the level's exit conversation, held with support withheld, including one decline-and-repropose branch" }
+  ],
+
+  "counts": {
+    "arcs": 7,
+    "episodes": 23,
+    "episodeRange": "39-61",
+    "canDosRequired": 15,
+    "canDosShould": 4,
+    "canDosOptional": 2,
+    "canDosDeferred": 10,
+    "newPatterns": 25,
+    "newIntents": 17,
+    "newSemanticTypesRequired": 5,
+    "newSemanticTypesReusedFromA1Proposal": 1,
+    "newProductiveVocabularyBudget": 72,
+    "newReceptiveVocabularyBudget": 50,
+    "plannedEpisodeNumbers": [39, 61]
+  },
+
+  "reuseMatrix": {
+    "legend": { "I": "introduced", "R": "reused", "T": "transfer (novel context)", "D": "delayed retrieval", "C": "consolidated in an integrated conversation" },
+    "arcOrder": ["what_happened", "making_plans", "people_and_places", "getting_around", "booking_a_stay", "everyday_problems", "lets_do_something"],
+    "rows": {
+      "talk_about_daily_routine": ["R", "-", "-", "-", "-", "-", "-"],
+      "ask_about_work_or_study": ["R", "-", "-", "-", "-", "-", "-"],
+      "arrange_to_meet": ["-", "R", "-", "-", "R", "-", "C"],
+      "say_when_something_happens": ["-", "R", "-", "-", "-", "-", "-"],
+      "ask_what_something_means": ["-", "-", "-", "-", "-", "-", "R"],
+      "say_where_something_is": ["-", "-", "R", "R", "-", "-", "C"],
+      "ask_where_something_is": ["-", "-", "-", "R", "-", "-", "-"],
+      "introduce_someone_else": ["-", "-", "R", "-", "-", "-", "-"],
+      "ask_the_price": ["-", "-", "-", "-", "R", "-", "-"],
+      "use_bigger_numbers": ["-", "-", "-", "-", "R", "-", "-"],
+      "buy_something": ["-", "-", "-", "-", "R", "-", "-"],
+      "ask_for_repair": ["R", "-", "-", "R", "R", "R", "-"],
+      "express_preferences": ["-", "-", "R", "-", "-", "-", "R"],
+      "talk_about_what_you_did": ["C", "-", "-", "-", "-", "-", "-"],
+      "ask_about_what_someone_did": ["C", "-", "-", "-", "-", "-", "-"],
+      "narrate_a_sequence_of_past_events": ["C", "R", "-", "R", "-", "-", "-"],
+      "talk_about_future_plans": ["-", "C", "-", "-", "R", "-", "R"],
+      "ask_about_future_plans": ["-", "C", "-", "-", "-", "-", "-"],
+      "describe_a_person_or_place": ["-", "-", "C", "-", "R", "-", "-"],
+      "compare_two_things": ["-", "-", "C", "-", "-", "-", "-"],
+      "express_an_opinion_with_a_reason": ["-", "-", "C", "-", "-", "-", "R"],
+      "follow_directions_with_more_than_one_step": ["-", "-", "-", "C", "-", "-", "-"],
+      "give_simple_directions": ["-", "-", "-", "C", "-", "-", "-"],
+      "use_dates_and_months": ["-", "-", "-", "-", "C", "-", "-"],
+      "ask_about_availability": ["-", "-", "-", "-", "C", "-", "-"],
+      "book_a_room_or_table": ["-", "-", "-", "-", "C", "R", "-"],
+      "spell_a_name_for_a_booking": ["-", "-", "-", "-", "C", "-", "-"],
+      "report_a_problem": ["-", "-", "-", "-", "-", "C", "R"],
+      "ask_for_help_solving_a_problem": ["-", "-", "-", "-", "-", "C", "-"],
+      "invite_someone_to_do_something": ["-", "-", "-", "-", "-", "-", "C"],
+      "accept_or_decline_with_a_reason": ["-", "-", "-", "-", "-", "-", "C"],
+      "keep_a_longer_conversation_going": ["-", "-", "-", "-", "-", "-", "C"]
+    },
+    "quietRows": {
+      "give_simple_directions": "no reuse arc after getting_around; carried by the review scheduler and by delayed retrieval, exactly like A1's transport should-have. First cut candidate if the level needs trimming.",
+      "spell_a_name_for_a_booking": "no reuse arc after booking_a_stay; a should-have capability whose evidence target is deliberately light (independent: 1, no transfer required)."
+    }
+  },
+
+  "coreEngineRequirements": [
+    {
+      "problem": "use_dates_and_months and book_a_room_or_table need a 'day' (weekday) semantic type as a production slot. A1's own blueprint proposed exactly this type for its arc 7 (making_arrangements), but that arc is designed-only and not yet built (master doc: arcs 6-7 remain designed-only).",
+      "whyCurrentEngineCannotExpressIt": "No semantic type named 'day' exists in the runtime engine today; only A1's blueprint prose proposes it.",
+      "earliestLevelThatNeedsIt": "a1 (arc 7, if built first) or a2 (booking_a_stay), whichever lane implements it first",
+      "proposedSharedBehaviour": "Register 'day' once, in the shared semantic type system, with the incompatibilities A1 already specified (rejects time_point, relation). Whichever lane (A1's remaining arcs or A2's content lane) reaches implementation first should register it; the other lane then only reuses it. This must be coordinated as a CORE task rather than let either lane register a conflicting private version.",
+      "regressionRisk": "Low if registered once with A1's already-published incompatibility rules; medium if two lanes each register their own version with different incompatibilities, which would silently fork the type system.",
+      "testsRequired": "A shared semantic-type registration test asserting 'day' rejects time_point and relation, plus a build-order guard so a second registration attempt fails loudly instead of silently overwriting the first."
+    },
+    {
+      "problem": "Several A2 hybrid intents (narrate_past_sequence, describe_person_or_place, state_opinion_with_reason, make_booking) need the evaluator to judge sentences containing two connected clauses (because/and/but/so/sequencing connectors) rather than a single frame.",
+      "whyCurrentEngineCannotExpressIt": "A1's evaluator judges single-clause canonical frames locally and escalates only for genuinely inconclusive replies; nothing in A1 needed to parse or score a two-clause sentence.",
+      "earliestLevelThatNeedsIt": "a2 (what_happened arc, episode 42, is the first consumer)",
+      "proposedSharedBehaviour": "Extend the shared local evaluator to accept a declared two-clause canonical shape (clause + connector + clause) per intent, scored as: first clause matches its own frame, connector is from the taught closed set, second clause matches its own frame. This stays local-first and provider-escalation-only-when-inconclusive, exactly as A1's evaluationStrategy requires.",
+      "regressionRisk": "Medium: a naive implementation could accidentally accept a correct first clause with a nonsense second clause. Requires explicit nonsense-in-second-clause refusal tests before any A2 hybrid intent ships.",
+      "testsRequired": "Refusal tests: correct-clause-1 + nonsense-clause-2 (must fail), nonsense-clause-1 + correct-clause-2 (must fail), correct clauses with an untaught connector (must fail or escalate, never silently pass), correct clauses with a taught connector (must pass locally)."
+    },
+    {
+      "problem": "spell_a_name_for_a_booking risks the engine treating a spelled string as if it were captured personal data, the way work_or_study or usual_time are captured facts in A1.",
+      "whyCurrentEngineCannotExpressIt": "A1's fact-capture pipeline (captureStatedLifeFact, captureStatedUsualTime) captures learner-volunteered values by design. Nothing currently distinguishes 'a fact worth remembering' from 'a string that must never be persisted as if it were real identity data'.",
+      "earliestLevelThatNeedsIt": "a2 (booking_a_stay arc)",
+      "proposedSharedBehaviour": "spell_a_name_for_a_booking must NOT register a new FACT_TYPES entry, and the shared fact-capture pipeline needs an explicit denylist/allowlist boundary so a future author cannot accidentally wire a spelled name into persistent storage the way a routine or a plan is. This is a CORE policy decision (privacy boundary), not a per-level content choice.",
+      "regressionRisk": "High if unaddressed: a well-meaning later contributor could 'improve personalization' by remembering the spelled name, silently violating the never-collect-real-personal-data exclusion.",
+      "testsRequired": "A negative test asserting no FACT_TYPES entry is ever created for spelling turns, and a check (parallel to check:a1-arc1's fact-capture assertions) that fails if any future PR adds one."
+    }
+  ]
+}

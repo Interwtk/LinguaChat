@@ -1,0 +1,18 @@
+{
+  "taskId": "LC-BP-A2",
+  "lane": "level-a2",
+  "status": "complete",
+  "cleanCycles": 2,
+  "summary": "Authored the A2 level blueprint (docs/curriculum/blueprints/a2.json + a2.md) against curriculum-master-a1-c2.md and level-blueprint-template.md, reconciled against A1's full design (a1-blueprint.json/a1-map.md), not only its built arcs. 19 capabilities (15 required, 4 should) across 7 arcs and 23 planned episodes (39-61), covering past narration, near-future plans, description/comparison with reason clauses, multi-step directions, room/table booking with dates and spelling, everyday problems, and invitations. All 12 of A1's deferredToA2 items are explicitly resolved except the one permanent exclusion (real personal contact details), verified by script against a1-blueprint.json#deferredToA2. Cross-level prerequisites reference only A1's required capability ids, never should-have/optional ones. Three shared-core requirements were discovered and raised rather than privately implemented: the 'day' semantic type A1 already proposed, two-clause evaluator judgment for hybrid intents, and a privacy boundary so a spelled booking name can never become persisted fact data.",
+  "writeScopeRespected": [
+    "docs/curriculum/blueprints/a2.md",
+    "docs/curriculum/blueprints/a2.json"
+  ],
+  "evidence": {
+    "selfConsistency": "node one-off script validated: 19 unique canDo ids, 7 unique arc ids, 25 unique pattern ids, 23 unique episode numbers (39-61), zero unresolved prerequisites, zero canDos not introduced by any arc, zero episodes with unknown canDo/arc, zero episode prerequisites pointing nowhere, zero reuseMatrix rows with wrong length, zero deferredToB1/canDos id collisions, zero arc prerequisites pointing nowhere, all 12 of A1's deferredToA2 ids addressed in a1Inheritance.resolvesA1Deferral",
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n — exit 0, run twice consecutively clean with no changes between runs",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q — exit 0 (444 passed), run twice consecutively clean with no changes between runs",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/level-a2/lc-bp-a2 --base origin/main --head HEAD --require-complete — OK, 3 changed files (2 write-scope docs + completion marker), all inside allowed scope, marker validated"
+  },
+  "designOnly": "This blueprint is a design artifact. No runtime module imports docs/curriculum/blueprints/a2.*, no episode, arc, intent or vocabulary item exists in the product, and A2 remains unavailable regardless of this document's completeness. A level-specific structural validation check (parallel to check:a1-blueprint) and runtime content are future work, out of this task's write scope."
+}
