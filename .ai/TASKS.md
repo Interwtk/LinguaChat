@@ -21,18 +21,16 @@ reclaimed — say so in `.ai/HANDOFF.md` when you do.
 
 ## IN_PROGRESS
 
-_(none — the queue is open)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-SEC-001] Audit and safely resolve the current frontend dependency vulnerabilities
-  owner:  unclaimed
-  branch: none
+  owner:  claude-action
+  branch: qa/lc-sec-001-frontend-deps
   why:    `npm ci` reports 1 moderate and 3 high vulnerabilities; severity alone is not enough to justify a forced upgrade.
   done:   record exact advisory/package/dependency paths and runtime-vs-build exposure;
           upgrade only through compatible safe ranges or document why an advisory is
           not reachable; never use `npm audit fix --force` blindly; full frontend,
           backend and rendered smoke QA remains green with no bundle regression.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-BE-001] Remove the Pydantic V1 validator deprecation safely
   owner:  unclaimed
