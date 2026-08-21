@@ -119,9 +119,11 @@ jobs:
           test "$(grep -c '^## DONE$' .ai/TASKS.md)" -eq 1 || { echo "TASKS.md must contain exactly one DONE heading"; exit 1; }
           node linguachat-frontend/scripts/check-queue-recovery.mjs
 
-      - name: foundry manifest is internally valid
+      - name: foundry automation contract is internally valid
         if: hashFiles('.ai/foundry/tasks.json') != ''
-        run: node .github/scripts/foundry-next.mjs --all >/dev/null
+        run: |
+          node .github/scripts/foundry-next.mjs --all >/dev/null
+          node .github/scripts/check-foundry-automation.mjs
 
       - name: foundry PR stays inside its declared scope
         if: github.event_name == 'pull_request' && startsWith(github.event.pull_request.head.ref, 'foundry/')
