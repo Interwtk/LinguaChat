@@ -63,8 +63,15 @@ if (requireComplete) {
     console.error(`Completion marker must contain taskId=${task.id}, status=complete, cleanCycles>=2`)
     process.exit(1)
   }
+
+  const evidenceScript = new URL('./check-supervisor-evidence.mjs', import.meta.url).pathname
+  if (task.kind === 'research-ped' || task.kind === 'research-psy') {
+    const domain = task.kind === 'research-ped' ? 'pedagogical' : 'psychology'
+    const gate = spawnSync(process.execPath, [evidenceScript, '--partial', domain], { stdio:'inherit' })
+    if (gate.status !== 0) process.exit(gate.status || 1)
+  }
   if (task.requiresEvidenceReady) {
-    const gate = spawnSync(process.execPath, [new URL('./check-supervisor-evidence.mjs', import.meta.url).pathname], { stdio:'inherit' })
+    const gate = spawnSync(process.execPath, [evidenceScript], { stdio:'inherit' })
     if (gate.status !== 0) process.exit(gate.status || 1)
   }
 }
