@@ -296,3 +296,15 @@ timestamp. Deliberately keeping this update short rather than repeating the full
 history again. No content or code changed; correct action is unchanged: stay in
 draft until `LC-OPS-015` (PR #57) merges, then rebase and rerun #50's final-head
 QA/evidence contract.
+
+## Update (2026-08-21, new session): still blocked, no material change
+
+Fresh session, re-verified independently: branch even with `origin/main`
+(`ff6ee28`, 0 behind); gates still pass on this branch's own head
+(`check-supervisor-evidence.mjs --partial psychology` → 30 studies/12 topics,
+exit 0; `check-foundry-scope.mjs --require-complete` → `Foundry scope OK for
+LC-RES-Y01: 4 changed files.`, exit 0). Issue #52 still `OPEN`. PR #57
+(`LC-OPS-015` fix) and PR #56 both still `OPEN`/draft/`mergeable`, unmerged.
+No content or code changed; correct action unchanged: stay in draft until
+`LC-OPS-015` lands, then rebase and rerun #50's final-head QA/evidence
+contract.
