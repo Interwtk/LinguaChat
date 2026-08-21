@@ -129,6 +129,25 @@ Still no content or scope change needed. The deliverable has been complete and
 evidence-backed across three sessions now; the only blocker remains the
 ref-unaware marker check in shared automation, outside this task's `writeScopes`.
 
+## Resynced 2026-08-21 (main moved again, trivial and out of scope, third time)
+
+`main` advanced by two more commits (`chore(ops): release LC-DOC-001 so its
+existing work can resume`, `chore(docs): claim LC-DOC-001 to finish existing
+PR #34` — both `.ai/TASKS.md`-only, the same claim/release churn already seen
+in the two entries above) — outside this task's `writeScopes`. Verified
+`.github/scripts/check-foundry-scope.mjs` `--require-complete` block is still
+byte-for-byte the version diagnosed and owner-confirmed at 07:17:38Z
+(`existsSync(marker)` / `readFileSync(marker)`, filesystem-based, not
+ref-aware). No new PR feedback since that confirmation. Merged `main` in (no
+conflicts; only `.ai/TASKS.md` changed) and re-ran `check-foundry-scope.mjs
+--require-complete` from this branch's own checkout: `Foundry scope OK for
+LC-FND-001: 6 changed files`, marker still validated. Did not re-run the full
+frontend/backend QA cycles — none of the four in-scope documents or the
+completion marker changed, so the prior two clean cycles still stand. This
+task remains done and blocked only on the shared-automation fix described
+above; per the owner's direction, PR #37 stays Draft and this branch does not
+touch `check-foundry-scope.mjs`.
+
 ## Owner-confirmed 2026-08-21T07:17:38Z
 
 The repo owner reviewed PR #37 and confirmed this diagnosis directly (see PR
