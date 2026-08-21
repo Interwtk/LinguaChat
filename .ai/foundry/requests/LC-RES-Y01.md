@@ -179,3 +179,38 @@ PR #53). Left in draft. This task's own deliverable (25+ new unique verified
 primary psychology studies, batch 1/4) remains complete and unchanged; nothing
 here required re-running the two-clean-cycle QA cycle since no code/content
 changed.
+
+## Update (2026-08-21, resumed session): ownership gap resolved — GH issue #52 already tracks the fix
+
+Fresh session. The prior update above (17:26:10Z) flagged that no `tasks.json`
+entry owns `.github/scripts/**` and asked for a human/product-queue decision.
+That check only looked at `tasks.json`; it missed that a GitHub issue for
+exactly this fix already existed one commit earlier in wall-clock time
+(**issue #52, "LC-OPS-015 — make Foundry evidence gates validate the candidate
+head"**, opened 2026-08-21T17:14:21Z, before the 17:26:10Z update that raised
+the gap). Issue #52's body independently reaches the same root cause as this
+file (evidence gate resolves the corpus path via `import.meta.url` off the
+live working tree, not `--head`) and specifies the required fix (materialize
+candidate-head corpus content via `git show <head>:<path>` or an isolated
+worktree at candidate head), required regressions, and explicitly directs:
+"Do not implement this fix from #50's scope-limited research branch." So the
+ownership gap is resolved — this is not an orphaned bug, it has a filed,
+scoped, unassigned task waiting for whichever lane picks up `LC-OPS-015`.
+Nothing for this research-psy branch to do differently: correct action
+remains staying in draft until `LC-OPS-015` lands, then rebasing and
+rerunning #50's final-head evidence/QA contract, exactly as issue #52's last
+paragraph specifies.
+
+Re-verified fresh, no drift: branch even with `origin/main` (`4efaf22`, 0
+commits behind); content unchanged (`psychology-primary.json`: 30 unique
+studies / 12 topics via `check-supervisor-evidence.mjs --partial psychology`,
+exit 0; `check-foundry-scope.mjs --branch foundry/research-psy/lc-res-y01
+--base origin/main --head HEAD`: `Foundry scope OK for LC-RES-Y01: 4 changed
+files.`, exit 0). Latest orchestrator run (`32509614636`,
+2026-08-21T17:43:15Z) recognized this branch's worker as already
+queued/running and did not attempt a merge cycle against PR #50; sibling PR
+#53 (`LC-RES-P01`) was bumped back to draft in that same run with the
+identical `scope-or-quality` / `0 unique primary studies` signature,
+reconfirming the bug is still live and repo-wide, not fixed. No code/content
+changed this session, so the two-clean-cycle QA count is unaffected. PR #50
+stays in draft.
