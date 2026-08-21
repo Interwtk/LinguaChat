@@ -24,14 +24,25 @@ Topic distribution in this batch:
 | motivation / autonomy / competence | 3 |
 | anxiety, frustration and confidence in learning | 3 |
 | transfer / generalization | 2 |
-| mastery criteria and delayed assessment | 2 |
+| memory retention and forgetting | 1 |
+| mastery criteria and delayed assessment | 1 |
 | age-sensitive learning and accessibility | 2 |
 
-11 of the 14 mandatory-coverage topics listed in
+12 of the 14 mandatory-coverage topics listed in
 `docs/research/supervisor-evidence-contract.md` §7 have at least one study in this
-batch. Not yet covered by this batch: **goal setting and progress feedback** and
-**habit/return behavior**. These are deferred to a later `LC-RES-Y0x` batch rather
-than filled with a weak or borderline record here.
+batch. `PSY-Y01-028` (Bahrick & Phelps, 1987 — an 8-year delayed retest of Spanish
+vocabulary retention) is classified as **memory retention and forgetting**, not
+mastery criteria, because its design (a longitudinal delayed retest measuring
+retention decay over 8 years) and outcome (recall-probability decay predicted by
+original spacing) are a direct empirical test of retention/forgetting, not of a
+mastery threshold. `PSY-Y01-027` (Roediger & Karpicke, 2006) remains classified as
+mastery criteria and delayed assessment: its design directly compares performance
+on an immediate test against delayed tests days/a week later to show that
+immediate performance is a poor proxy for durable learning, which is the mastery/
+delayed-assessment question, not primarily a forgetting-curve study. Not yet
+covered by this batch: **goal setting and progress feedback** and **habit/return
+behavior**. These are deferred to a later `LC-RES-Y0x` batch rather than filled
+with a weak or borderline record here.
 
 ## Verification method
 
@@ -64,7 +75,7 @@ Each candidate study was independently researched and checked before inclusion:
 
 ```
 node .github/scripts/check-supervisor-evidence.mjs --partial psychology
-psychology: 30 unique primary studies; 11 topics
+psychology: 30 unique primary studies; 12 topics
 Supervisor evidence partial gate: every present primary-study record is structurally verifiable and deduplicated.
 ```
 
