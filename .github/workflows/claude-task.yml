@@ -21,7 +21,6 @@ permissions:
   issues: write
   id-token: write
 
-# Every Claude workflow that can mutate the repository shares this one lock.
 concurrency:
   group: linguachat-claude-writer
   cancel-in-progress: false
@@ -90,14 +89,12 @@ jobs:
           npm ci --prefix linguachat-frontend
           pip install -r linguachat-backend/requirements.txt
 
-      - uses: anthropics/claude-code-action@v1
+      - id: claude
+        uses: anthropics/claude-code-action@v1
         if: steps.queue.outputs.claimable == 'true'
+        continue-on-error: true
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # TEMPORARY OPS DIAGNOSTIC: the action normally hides the `result`
-          # field when Claude exits with is_error:true. Keep this only long
-          # enough to identify the turn-1 failure, then remove it in the fix.
-          show_full_output: true
           prompt: |
             You are the autonomous operator of LinguaChat.
 
@@ -161,8 +158,43 @@ jobs:
             --max-turns 150
             --allowedTools Read,Write,Edit,Glob,Grep,Bash,TodoWrite
 
-      # If an agent dies before pushing anything, its claim must not poison the queue.
-      # If it pushed work, ensure an open draft exists so the next run can resume it.
+      - name: Surface sanitized Claude failure
+        if: steps.queue.outputs.claimable == 'true' && steps.claude.outcome == 'failure'
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const p = process.env.EXECUTION_FILE
+          const redact = (v) => String(v ?? '')
+            .replace(/sk-ant-[A-Za-z0-9_-]+/g, '[REDACTED]')
+            .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, 'Bearer [REDACTED]')
+            .replace(/[A-Za-z0-9_-]{48,}/g, '[REDACTED-LONG-TOKEN]')
+            .slice(0, 1000)
+          let safe = { error: 'Claude action failed without a readable execution_file' }
+          try {
+            if (p && fs.existsSync(p)) {
+              const raw = JSON.parse(fs.readFileSync(p, 'utf8'))
+              const events = Array.isArray(raw) ? raw : [raw]
+              const r = [...events].reverse().find(e => e && e.type === 'result') || {}
+              safe = {
+                type: r.type || null,
+                subtype: r.subtype || null,
+                is_error: r.is_error ?? null,
+                api_error_status: r.api_error_status ?? null,
+                error_status: r.error_status ?? null,
+                terminal_reason: r.terminal_reason || null,
+                stop_reason: r.stop_reason || null,
+                result: redact(r.result),
+              }
+            }
+          } catch (e) {
+            safe = { error: `Could not parse Claude execution file: ${redact(e.message)}` }
+          }
+          console.error('Sanitized Claude failure: ' + JSON.stringify(safe, null, 2))
+          process.exit(1)
+          NODE
+
       - name: Leave the repository honest, whatever happened
         if: always() && steps.queue.outputs.claimable == 'true'
         env:
