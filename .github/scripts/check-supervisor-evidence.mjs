@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { existsSync, readFileSync } from 'node:fs'
+import { pathToFileURL } from 'node:url'
 
 const FILES = {
   pedagogical: new URL('../../docs/research/supervisors/pedagogical-primary.json', import.meta.url),
@@ -79,15 +80,19 @@ function load(domain, url) {
   return validateCorpus(domain, records)
 }
 
-let failed = false
-for (const [domain, url] of Object.entries(FILES)) {
-  const result = load(domain, url)
-  console.log(`${domain}: ${result.uniqueCount || 0}/${MIN} unique primary studies; ${Object.keys(result.topicCounts || {}).length} topics`)
-  if (result.errors.length) {
-    failed = true
-    for (const e of result.errors.slice(0, 80)) console.error(`- ${e}`)
-    if (result.errors.length > 80) console.error(`- ... ${result.errors.length - 80} more`)
+function runCli() {
+  let failed = false
+  for (const [domain, url] of Object.entries(FILES)) {
+    const result = load(domain, url)
+    console.log(`${domain}: ${result.uniqueCount || 0}/${MIN} unique primary studies; ${Object.keys(result.topicCounts || {}).length} topics`)
+    if (result.errors.length) {
+      failed = true
+      for (const e of result.errors.slice(0, 80)) console.error(`- ${e}`)
+      if (result.errors.length > 80) console.error(`- ... ${result.errors.length - 80} more`)
+    }
   }
+  if (failed) process.exit(1)
+  console.log('Supervisor evidence gate: READY (100+100 unique, identity-verified, primary empirical studies).')
 }
-if (failed) process.exit(1)
-console.log('Supervisor evidence gate: READY (100+100 unique, identity-verified, primary empirical studies).')
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) runCli()
