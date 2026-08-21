@@ -1,0 +1,17 @@
+{
+  "taskId": "LC-BP-C2",
+  "lane": "level-c2",
+  "status": "complete",
+  "cleanCycles": 2,
+  "summary": "Authored the C2 level blueprint (docs/curriculum/blueprints/c2.md + c2.json) against the shared A1-C2 curriculum master and blueprint template: 22 capabilities across 8 arcs (dense-input synthesis, precise reformulation, implication/subtext, register/pragmatics, argument, discourse flexibility, stylistic control, and an integrated mediation capstone), evidence/mastery rules, personalization plan, reuse matrix, evaluator requirements, Four Strands audit and explicit exclusions. Assumed-C1 prerequisites are placeholders quoting the master contract's C1 progression prose, flagged pending LC-AUD-001 reconciliation against the real C1 blueprint. Four CORE requirements (multi-turn evaluation span, provider-free nuance-judgment fixtures, source_text/audience_profile content objects, multi-capability delayed retrieval per task) are raised rather than worked around locally.",
+  "writeScopeRespected": [
+    "docs/curriculum/blueprints/c2.md",
+    "docs/curriculum/blueprints/c2.json"
+  ],
+  "evidence": {
+    "structural": "python3 consistency checks on c2.json: 22 unique canDo ids, no missing prerequisites, no dangling infrastructure/pattern refs, no prerequisite cycles, every canDo introduced by exactly one arc, no bad reuseMap references — all clean",
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n — exit 0, run twice consecutively clean (docs-only change; no runtime scripts reference blueprints/c2.*)",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q — exit 0 (444 passed), run twice consecutively clean",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/level-c2/lc-bp-c2 --base origin/main --head HEAD — Foundry scope OK for LC-BP-C2: 2 changed files"
+  }
+}
