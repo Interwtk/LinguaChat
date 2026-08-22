@@ -520,7 +520,11 @@ def _cafe_order(text: str, thing: str) -> dict:
 # frontend passes it as `meaning_word` so both sides describe the same turn. Parity
 # matters here because an inconclusive repair may escalate, and a strategy this side
 # does not know would be judged against the wrong sentence.
-_REPAIR_KINDS = ("signal_nonunderstanding", "repeat", "slow_down", "ask_meaning")
+#
+# `ask_how_to_say` is A1 arc 6's fifth strategy (`ask_how_to_say_something`'s
+# own `intentReuse`), mirroring `src/learning/engine/responseEvaluation.js`'s
+# identical addition.
+_REPAIR_KINDS = ("signal_nonunderstanding", "repeat", "slow_down", "ask_meaning", "ask_how_to_say")
 _NOT_UNDERSTAND = re.compile(
     r"\b(i (really )?(don'?t|do not) understand|i (don'?t|do not) get (it|that)"
     r"|i'?m (not sure|lost)|i didn'?t (understand|catch|get) (that|it))\b")
@@ -540,6 +544,10 @@ _ASK_SLOW_LOOSE = re.compile(r"\b(slow(ly)?|slow down)\b")
 _ASK_MEANING = re.compile(r"\bwhat\s+(does|do)\s+.{1,30}?\s*mean\b")
 _ASK_MEANING_VARIANT = re.compile(r"\b(what\s+(is|are)|what'?s)\s+[^\s]+\s*$")
 _ASK_MEANING_LOOSE = re.compile(r"\b(mean|means|meaning)\b")
+# "How do you say ___?", requiring a complement after "say" — a bare "how do
+# you say" falls through to the loose check, same as `_ASK_MEANING`/`_VARIANT`.
+_ASK_HOW_TO_SAY = re.compile(r"\bhow\s+do\s+(you|i)\s+say\s+\S+")
+_ASK_HOW_TO_SAY_LOOSE = re.compile(r"\bhow\s+(do\s+you\s+)?(say|spell)\b")
 _DONT_KNOW = re.compile(r"\b(i (don'?t|do not) know|no idea|dunno)\b")
 _BARE_CONFUSION = re.compile(r"^(what|sorry|huh|eh|again|pardon|excuse me)[?!.]*$")
 _SORRY = re.compile(r"\b(sorry|excuse me|pardon)\b")
@@ -551,6 +559,7 @@ _REPAIR_TARGET = {
     "repeat": "Can you repeat, please?",
     "slow_down": "Please speak slowly.",
     "ask_meaning": "What does “{word}” mean?",
+    "ask_how_to_say": "How do you say that in English?",
 }
 
 
@@ -567,9 +576,11 @@ def _repair_request(text: str, repair_kind: str, meaning_word: str = "") -> dict
     asked_repeat = bool(_ASK_REPEAT.search(n))
     asked_slow = bool(_ASK_SLOW.search(n))
     asked_meaning = bool(_ASK_MEANING.search(n)) or bool(_ASK_MEANING_VARIANT.search(n))
+    asked_how_to_say = bool(_ASK_HOW_TO_SAY.search(n))
     done = (signalled if kind == "signal_nonunderstanding"
             else asked_repeat if kind == "repeat"
-            else asked_slow if kind == "slow_down" else asked_meaning)
+            else asked_slow if kind == "slow_down"
+            else asked_meaning if kind == "ask_meaning" else asked_how_to_say)
     if done:
         return _base(completed_objective=True, natural_version=natural,
                      accepted_variant=normalize(natural) != n, confidence=0.95)
@@ -580,8 +591,13 @@ def _repair_request(text: str, repair_kind: str, meaning_word: str = "") -> dict
         return _base(error_type="incomplete_meaning_question", retry_required=True,
                      natural_version=natural, confidence=0.85)
 
+    # same idea, arc 6's how-to-say question with nothing named yet
+    if kind == "ask_how_to_say" and _ASK_HOW_TO_SAY_LOOSE.search(n):
+        return _base(error_type="incomplete_how_to_say", retry_required=True,
+                     natural_version=natural, confidence=0.7)
+
     # a different repair: the conversation was kept alive, which is the skill
-    if signalled or asked_repeat or asked_slow or asked_meaning:
+    if signalled or asked_repeat or asked_slow or asked_meaning or asked_how_to_say:
         return _base(error_type="other_repair", retry_required=True, natural_version=natural, confidence=0.9)
 
     # "I don't know." answers a question instead of reporting a breakdown

@@ -432,12 +432,15 @@ const ok = () => { groups++ }
   ok()
 }
 
-/* ---- 17) beyond arc 5 remains impossible ---- */
+/*
+ * ---- 17) beyond arc 5 remains impossible — until it isn't ----
+ *
+ * Arcs 6-7 are now built too (`LC-INT-001`), so `unbuilt` is legitimately
+ * empty — see check-a1-arc4.mjs's identical group for the full reasoning.
+ */
 {
   const unbuilt = BLUEPRINT.arcs.filter(arc => !A1_RUNTIME_ARCS.includes(arc.id))
-  assert.ok(!unbuilt.some(a => a.id === 'paying_and_choosing'), 'arc 5 must not read as unbuilt from its own check')
-  assert.ok(unbuilt.some(a => a.id === 'what_you_can_do') && unbuilt.some(a => a.id === 'making_arrangements'),
-    'the two arcs after arc 5 remain unbuilt')
+  assert.equal(unbuilt.length, 0, 'A1 is fully built: no blueprint arc remains unauthorised')
   for (const arc of unbuilt) {
     assert.equal(hasContentLoader(A1, arc.id), false, `${arc.id} must have no loader`)
     for (const canDo of arc.newCanDos || []) {

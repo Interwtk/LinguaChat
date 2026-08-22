@@ -529,7 +529,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
      * the sentence it offered as correct.
      */
     const aboutPerson = step.personName || partner
-    const evalCtx = { name, independent, turnContext, place, partner: aboutPerson, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(step.timeForm ? { timeForm: step.timeForm } : {}), ...(usualTime ? { usualTime } : {}), ...(stepCount ? { targetCount: stepCount } : {}), /* arc 4: which public place the turn asks about, and which relation its situation implies */ ...(step.placeName ? { placeName: step.placeName } : {}), ...(step.relationHint ? { relationHint: step.relationHint } : {}) }
+    const evalCtx = { name, independent, turnContext, place, partner: aboutPerson, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(step.timeForm ? { timeForm: step.timeForm } : {}), ...(usualTime ? { usualTime } : {}), ...(stepCount ? { targetCount: stepCount } : {}), /* arc 4: which public place the turn asks about, and which relation its situation implies */ ...(step.placeName ? { placeName: step.placeName } : {}), ...(step.relationHint ? { relationHint: step.relationHint } : {}), /* arc 6/7: ability polarity, arrangement stage, and which episode's confirm-stage praise applies */ ...(step.abilityForm ? { abilityForm: step.abilityForm } : {}), ...(step.arrangeStage ? { arrangeStage: step.arrangeStage } : {}), ...(step.praisePrefix ? { praisePrefix: step.praisePrefix } : {}) }
     const preview = evaluateFree(evalKind, text, evalCtx)
     const willEscalate = shouldEscalate(preview)
 
@@ -550,6 +550,9 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
         relationHint: step.relationHint || undefined,
         quantityForm: step.quantityForm || undefined,
         targetCount: stepCount || undefined,
+        abilityForm: step.abilityForm || undefined,
+        arrangeStage: step.arrangeStage || undefined,
+        praisePrefix: step.praisePrefix || undefined,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion, independent,
         previousAttempts: attemptsRef.current, turnContext,

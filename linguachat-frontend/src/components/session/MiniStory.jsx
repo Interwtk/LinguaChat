@@ -168,6 +168,10 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
     ...(turn?.relationHint ? { relationHint: turn.relationHint } : {}),
     ...(turn?.timeForm ? { timeForm: turn.timeForm } : {}),
     ...(turn?.personName ? { partner: turn.personName } : {}),
+    /* arc 6/7's own subtype fields — see EpisodeShell.jsx's identical addition */
+    ...(turn?.abilityForm ? { abilityForm: turn.abilityForm } : {}),
+    ...(turn?.arrangeStage ? { arrangeStage: turn.arrangeStage } : {}),
+    ...(turn?.praisePrefix ? { praisePrefix: turn.praisePrefix } : {}),
   })
 
 

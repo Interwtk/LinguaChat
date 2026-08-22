@@ -110,6 +110,15 @@ const MODEL_ANSWER = {
     return typeof target === 'function' ? target(v) : target
   },
   close_encounter: () => 'Bye.',
+  /*
+   * A1 arc 6/7, the level's last two arcs — added for the same reason the
+   * sixth-arc comment above names: an unlisted intent falls back to the
+   * introduction answer, and these three would have been graded against "Hi,
+   * I'm ___" instead of an ability statement or a proposal.
+   */
+  state_ability: () => 'I can swim.',
+  ask_ability: () => 'Can you swim?',
+  arrange_meeting: () => 'Let’s meet on Friday at seven.',
 }
 
 /* The three ways out, and what a turn practising each one asks for. */
@@ -119,6 +128,8 @@ const REPAIR_TARGET = {
   slow_down: 'Please speak slowly.',
   /* arc 2's: the repair that learns rather than pauses */
   ask_meaning: (v) => `What does “${v.meaningWord || 'that'}” mean?`,
+  /* arc 6's fifth repair kind: a word known in another language, not in English */
+  ask_how_to_say: () => 'How do you say that in English?',
 }
 const REPAIR_PROMPT = {
   signal_nonunderstanding: (v) => `So, mmm… mmm… ${v.noun}?`,
@@ -130,6 +141,7 @@ const REPAIR_PROMPT = {
    * cannot drift apart.
    */
   ask_meaning: (v) => `I usually finish ${v.meaningWord || 'late'}.`,
+  ask_how_to_say: () => 'You know a word in your language, but not in English. What do you ask me?',
 }
 // What Lingua says to open the practice turn, so the reply has a real context.
 const PROMPT = {
@@ -179,6 +191,10 @@ const PROMPT = {
   ask_what_thing: () => 'Look — I have something here.',
   identify_thing: () => 'Now you show me one. What’s this?',
   use_quantity: (v) => `I have some ${v.thingPlural} for you. How many?`,
+  // arc 6/7 — an invitation to answer, a hobby to ask about, a week to plan
+  state_ability: () => 'We’re going to the pool later. Can you come?',
+  ask_ability: () => 'I have a hobby you don’t know about yet.',
+  arrange_meeting: () => 'I’d like to see you this week. When are you free?',
 }
 
 /*

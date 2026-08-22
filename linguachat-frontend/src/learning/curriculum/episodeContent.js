@@ -64,14 +64,19 @@ const CONTENT_LOADERS = {
      * A1 is loaded ARC BY ARC, and there is no `default` here on purpose: a
      * partially built level must refuse the arcs it does not have rather than
      * hand back one it does. Each arc sprint has added exactly one line here and
-     * nothing else had to change, which was the point of building it this way; the
-     * two arcs still missing cannot resolve to any of these five.
+     * nothing else had to change, which was the point of building it this way.
+     * All seven of A1's designed arcs now resolve; the level itself still stays
+     * closed to learners via `levels.js`'s `available: false` — content existing
+     * and a level being open are different questions, per that file's own
+     * comment.
      */
     work_and_study: () => import('../episodes/a1Arc1Content.js'),
     daily_rhythm: () => import('../episodes/a1Arc2Content.js'),
     people_around_you: () => import('../episodes/a1Arc3Content.js'),
     finding_your_way: () => import('../episodes/a1Arc4Content.js'),
     paying_and_choosing: () => import('../episodes/a1Arc5Content.js'),
+    what_you_can_do: () => import('../episodes/a1Arc6Content.js'),
+    making_arrangements: () => import('../episodes/a1Arc7Content.js'),
   },
 }
 

@@ -321,6 +321,52 @@ const STORIES = {
       { kind: 'close', textEn: 'Thank you — safe travels!', noteKey: 'storyNoteClose' },
     ],
   },
+  /*
+   * A1 arc 7's closing episode (38, `see_you_on_friday`), the level's own
+   * closing arrangement. `home: 'episode'`, like `repair_request` above: this
+   * story belongs to episode 38 (its `story.branchStep` names this exact step)
+   * and must never also be offered as a loose daily-session block —
+   * `OBJECTIVE_FORMATS['arrange_meeting']` stays without `mini_story` for
+   * exactly that reason. `branches`/the `line` turn's `byBranch` text mirror
+   * episode 38's own top-level `story.branches`/`branchLines` verbatim, the
+   * same way `repair_request`'s story mirrors Pre-A1 episode 15's.
+   */
+  arrange_meeting: {
+    storyId: 'see_you_on_friday',
+    objective: 'arrange_meeting',
+    home: 'episode',
+    branches: ['accept', 'postpone'],
+    turns: [
+      { kind: 'scene', textEn: 'You want to see {partner} this week. Time to fix a day.', noteKey: 'storyNoteScene' },
+      {
+        kind: 'reply', evalKind: 'arrange_meeting', arrangeStage: 'propose',
+        instructionKey: 'storyReplyArrangePropose', suggestionEn: 'Let’s meet on Friday at seven.',
+        itemIds: ['day_of_week_pattern', 'arrange_pattern'],
+      },
+      {
+        kind: 'choose',
+        promptKey: 'storyChooseArrange',
+        options: [
+          { branch: 'accept', textEn: 'Great, see you then.' },
+          { branch: 'postpone', textEn: 'Could we make it Saturday?' },
+        ],
+      },
+      {
+        kind: 'line',
+        speaker: 'partner',
+        byBranch: {
+          accept: 'Great, Friday it is!',
+          postpone: 'No problem — how about Saturday instead?',
+        },
+      },
+      {
+        kind: 'reply', evalKind: 'arrange_meeting', arrangeStage: 'confirm', praisePrefix: 'ep38',
+        instructionKey: 'storyReplyArrangeConfirm', suggestionEn: 'So, Friday at seven, at the station.',
+        itemIds: ['day_of_week_pattern', 'arrange_pattern', 'its_location_pattern'],
+      },
+      { kind: 'close', textEn: 'Perfect. See you then!', noteKey: 'storyNoteClose' },
+    ],
+  },
 }
 
 export const STORY_OBJECTIVES = Object.keys(STORIES)

@@ -376,21 +376,24 @@ const deferredIds = new Set(blueprint.deferredToA2.map(d => d.id))
      */
     if (/^src\/(learning\/episodes|data\/vocabulary)/.test(path)) {
       const declaresA1 = /level:\s*['"]A1['"]/i.test(code)
-      const isBuiltArcFile = /^src\/learning\/episodes\/a1Arc[12345](Content)?\.js$/.test(path)
+      const isBuiltArcFile = /^src\/learning\/episodes\/a1Arc[1234567](Content)?\.js$/.test(path)
       assert.ok(!declaresA1 || isBuiltArcFile,
         `${path} declares A1 curriculum content outside the implemented arcs`)
     }
     /*
      * A PLANNED arc must not appear in runtime data — except the ones that are no
-     * longer planned. Five arcs are implemented, so the other TWO stay impossible
-     * until each is authorised. This list shrinks by exactly one per arc sprint,
-     * which is how a sixth arc cannot arrive without somebody editing this line on
-     * purpose.
+     * longer planned. This denylist used to name `what_you_can_do` and
+     * `making_arrangements` explicitly, "so a sixth [and seventh] arc cannot
+     * arrive without somebody editing this line on purpose". `LC-INT-001` is that
+     * edit: it wires the content `LC-CONT-A1` authored in isolation under
+     * `src/learning/levels/a1/**` into the shared runtime engine (episode
+     * registry, evaluator dispatch, i18n, semantic types, mini-story), so both
+     * arcs now exist for real and the denylist is empty — A1 is designed as
+     * exactly seven arcs (`docs/curriculum/a1-blueprint.json`), so there is no
+     * eighth to guard against. Nothing here touches A1's `available: false` gate
+     * (checked below): a level having content and a level being open remain
+     * different questions, and this task changes only the first.
      */
-    if (/^src\/(learning|data)/.test(path)) {
-      assert.ok(!/arc:\s*['"](what_you_can_do|making_arrangements)['"]/.test(code),
-        `${path} declares a planned A1 arc as if it existed`)
-    }
   }
   /*
    * Exactly two places may name the level, and both are named here so a third
