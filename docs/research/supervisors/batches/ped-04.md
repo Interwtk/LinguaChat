@@ -100,8 +100,58 @@ node .github/scripts/check-supervisor-evidence.mjs --partial pedagogical
 Run and confirmed green (110 unique primary studies; 14 topics; no
 structural errors) before continuing.
 
-## Remaining work
+## Checkpoint 3 (PED-P04-018 .. PED-P04-027, 10 records)
 
-This batch's own requirement is >=25 NEW unique verified primary studies
-(currently at 17). Continue toward that floor, checkpointing (commit +
-push) at least every 5 additional verified records.
+Added 10 more verified primary studies, again cross-checked DOI-by-DOI
+against the full existing-corpus exclusion list before appending (one
+candidate proposed by a research agent, Ammar & Spada 2006, turned out to
+already be `PED-P01-005` — caught and dropped before entering the
+corpus):
+
+- `PED-P04-018` Loewen & Philp (2006), *MLJ* — corrective feedback,
+  DOI `10.1111/j.1540-4781.2006.00465.x`.
+- `PED-P04-019` Egi (2010), *MLJ* — corrective feedback,
+  DOI `10.1111/j.1540-4781.2009.00980.x`.
+- `PED-P04-020` Sato & Lyster (2012), *SSLA* — corrective feedback,
+  DOI `10.1017/S0272263112000356`.
+- `PED-P04-021` Yang & Lyster (2010), *SSLA* — grammar and form learning,
+  DOI `10.1017/S0272263109990519`.
+- `PED-P04-022` Suzuki (2018), *SSLA* — grammar and form learning,
+  DOI `10.1017/S0272263117000249`.
+- `PED-P04-023` Suzuki & Hanzawa (2022), *SSLA* — fluency development
+  and task repetition, DOI `10.1017/S0272263121000358`.
+- `PED-P04-024` Róg (2025), *Language Teaching* — fluency development
+  and task repetition, DOI `10.1017/S0261444825100840`.
+- `PED-P04-025` Van der Zwaard & Bannink (2020), *TESOL Quarterly* —
+  task-based language teaching and interaction, DOI `10.1002/tesq.537`.
+- `PED-P04-026` Gurzynski-Weiss & Baralt (2014), *SSLA* — task-based
+  language teaching and interaction, DOI `10.1017/S0272263113000363`.
+- `PED-P04-027` Kim, Kang, D'Arienzo & Taguchi (2023), *Language
+  Teaching Research* — pragmatics/mediation/interaction,
+  DOI `10.1177/13621688231195876`.
+
+Two candidates researched for this checkpoint were dropped for lacking a
+directly-fetchable quoted sample size (Sheen 2004, Nassaji 2009) rather
+than estimated from search-engine synthesis.
+
+Running total: 27 new unique verified records (1 + 16 + 10). Corpus at
+120/100. Independent spot-checks re-fetched two records' cited sources
+(Sato & Lyster 2012 N=167 via ERIC EJ989384; Suzuki & Hanzawa 2022 N=79
+via Cambridge Core) and confirmed the quoted figures.
+
+## Gate check after checkpoint 3
+
+```
+node .github/scripts/check-supervisor-evidence.mjs --partial pedagogical
+node .github/scripts/check-supervisor-evidence.mjs
+```
+
+Both green: `pedagogical: 120 unique primary studies; 14 topics` (partial)
+and the full gate reports `READY (100+100 unique, identity-verified,
+primary empirical studies)` since psychology already stands at 127/100
+from LC-RES-Y04.
+
+## Batch complete
+
+This batch's requirement of >=25 NEW unique verified primary studies is
+met (27 added). Final QA and completion marker follow.
