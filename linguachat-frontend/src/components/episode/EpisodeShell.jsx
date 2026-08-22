@@ -529,7 +529,27 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
      * the sentence it offered as correct.
      */
     const aboutPerson = step.personName || partner
-    const evalCtx = { name, independent, turnContext, place, partner: aboutPerson, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(step.timeForm ? { timeForm: step.timeForm } : {}), ...(usualTime ? { usualTime } : {}), ...(stepCount ? { targetCount: stepCount } : {}), /* arc 4: which public place the turn asks about, and which relation its situation implies */ ...(step.placeName ? { placeName: step.placeName } : {}), ...(step.relationHint ? { relationHint: step.relationHint } : {}), /* arc 6/7: ability polarity, arrangement stage, and which episode's confirm-stage praise applies */ ...(step.abilityForm ? { abilityForm: step.abilityForm } : {}), ...(step.arrangeStage ? { arrangeStage: step.arrangeStage } : {}), ...(step.praisePrefix ? { praisePrefix: step.praisePrefix } : {}), /* A2 arc 5: the name a spell_word turn asks the learner to spell */ ...(step.expectedSpelling ? { expected: step.expectedSpelling } : {}), /* B1: narrative form, problem tone, future-intent situation, and conversational role — see hybridEvaluation.js's own comment on these four fields */ ...(step.narrativeForm ? { narrativeForm: step.narrativeForm } : {}), ...(step.tone ? { tone: step.tone } : {}), ...(step.situationForm ? { situationForm: step.situationForm } : {}), ...(step.role ? { role: step.role } : {}) }
+    /*
+     * B2 arc 4/6's mediation turns (`summarize_for_third_party`/
+     * `reformulate_for_clarity`/`report_third_party_opinion`) carry
+     * `sourceRef: true` rather than the source text itself — the text lives
+     * on the nearest PRECEDING `scene` step's own `sourceTextEn` (the thing
+     * being summarized/reformulated/reported). Resolved here, once, by
+     * walking back from this step's real position in the episode, so the
+     * meaning-preservation structural floor (`levels/b2/evaluators.js`'s
+     * `isVerbatimCopy`) has something real to compare against instead of
+     * silently checking nothing.
+     */
+    const sourceText = (() => {
+      if (!step.sourceRef || !ep?.steps) return ''
+      const idx = ep.steps.indexOf(step)
+      if (idx < 0) return ''
+      for (let i = idx - 1; i >= 0; i--) {
+        if (ep.steps[i]?.sourceTextEn) return ep.steps[i].sourceTextEn
+      }
+      return ''
+    })()
+    const evalCtx = { name, independent, turnContext, place, partner: aboutPerson, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(step.timeForm ? { timeForm: step.timeForm } : {}), ...(usualTime ? { usualTime } : {}), ...(stepCount ? { targetCount: stepCount } : {}), /* arc 4: which public place the turn asks about, and which relation its situation implies */ ...(step.placeName ? { placeName: step.placeName } : {}), ...(step.relationHint ? { relationHint: step.relationHint } : {}), /* arc 6/7: ability polarity, arrangement stage, and which episode's confirm-stage praise applies */ ...(step.abilityForm ? { abilityForm: step.abilityForm } : {}), ...(step.arrangeStage ? { arrangeStage: step.arrangeStage } : {}), ...(step.praisePrefix ? { praisePrefix: step.praisePrefix } : {}), /* A2 arc 5: the name a spell_word turn asks the learner to spell */ ...(step.expectedSpelling ? { expected: step.expectedSpelling } : {}), /* B1: narrative form, problem tone, future-intent situation, and conversational role — see hybridEvaluation.js's own comment on these four fields */ ...(step.narrativeForm ? { narrativeForm: step.narrativeForm } : {}), ...(step.tone ? { tone: step.tone } : {}), ...(step.situationForm ? { situationForm: step.situationForm } : {}), ...(step.role ? { role: step.role } : {}), /* B2: capstone/register subtype, register-check target, discourse-coherence opt-in and the resolved mediation source text — see hybridEvaluation.js's own comment on these fields */ ...(step.subtype ? { subtype: step.subtype } : {}), ...(step.registerCheck ? { registerCheck: step.registerCheck } : {}), ...(step.expectedRegister ? { expectedRegister: step.expectedRegister } : {}), ...(step.discourseCoherenceCheck ? { discourseCoherenceCheck: step.discourseCoherenceCheck } : {}), ...(sourceText ? { sourceText } : {}) }
     const preview = evaluateFree(evalKind, text, evalCtx)
     const willEscalate = shouldEscalate(preview)
 
@@ -558,6 +578,11 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
         tone: step.tone || undefined,
         situationForm: step.situationForm || undefined,
         role: step.role || undefined,
+        subtype: step.subtype || undefined,
+        registerCheck: step.registerCheck || undefined,
+        expectedRegister: step.expectedRegister || undefined,
+        discourseCoherenceCheck: step.discourseCoherenceCheck || undefined,
+        sourceText: sourceText || undefined,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion, independent,
         previousAttempts: attemptsRef.current, turnContext,

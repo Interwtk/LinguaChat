@@ -23,7 +23,13 @@
 
 export const B2_INTENTS = [
   {
-    id: 'state_opinion_with_reason',
+    /*
+     * Runtime-renamed at `LC-INT-001` integration time from `state_opinion_with_reason`
+     * to resolve a real collision with A2's own, much simpler intent of that
+     * exact bare id (`levels/a2/evaluators.js`) — see `b2Capabilities.js`'s
+     * `B2_CAN_DO_INTENT` comment for the full account.
+     */
+    id: 'argue_opinion_with_reason',
     capabilityId: 'develop_and_defend_opinion',
     evaluationBucket: 'hybrid_provider_preferred',
     examples: {

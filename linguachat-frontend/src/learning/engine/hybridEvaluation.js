@@ -112,6 +112,27 @@ const PRAISE = {
   change_topic: { independent: 'b1PraiseTopicChangeIndependent', helped: 'b1PraiseTopicChangeHelped' },
   ask_follow_up: { independent: 'b1PraiseFollowUpIndependent', helped: 'b1PraiseFollowUpHelped' },
   summarize_other: { independent: 'b1PraiseSummaryIndependent', helped: 'b1PraiseSummaryHelped' },
+  /*
+   * B2's 14 new intents. Same reason as every level above — reached ONLY on
+   * the remote-escalation path, where `levels/b2/evaluators.js`'s own
+   * `praiseKey` (set on every conclusive local accept) was not set.
+   * `argue_opinion_with_reason` is B2's runtime-renamed dispatch key for
+   * `develop_and_defend_opinion` — see `responseEvaluation.js`'s own comment.
+   */
+  argue_opinion_with_reason: { independent: 'b2PraiseOpinionIndependent', helped: 'b2PraiseOpinionHelped' },
+  weigh_options: { independent: 'b2PraiseWeighIndependent', helped: 'b2PraiseWeighHelped' },
+  concede_and_counter: { independent: 'b2PraiseConcedeIndependent', helped: 'b2PraiseConcedeHelped' },
+  justify_a_request: { independent: 'b2PraiseJustifyIndependent', helped: 'b2PraiseJustifyHelped' },
+  propose_a_resolution: { independent: 'b2PraiseProposeIndependent', helped: 'b2PraiseProposeHelped' },
+  express_diplomatic_frustration: { independent: 'b2PraiseFrustrationIndependent', helped: 'b2PraiseFrustrationHelped' },
+  state_unreal_hypothesis: { independent: 'b2PraiseHypothesisIndependent', helped: 'b2PraiseHypothesisHelped' },
+  speculate_cause_or_effect: { independent: 'b2PraiseSpeculateIndependent', helped: 'b2PraiseSpeculateHelped' },
+  express_past_regret: { independent: 'b2PraiseRegretIndependent', helped: 'b2PraiseRegretHelped' },
+  summarize_for_third_party: { independent: 'b2PraiseSummaryIndependent', helped: 'b2PraiseSummaryHelped' },
+  reformulate_for_clarity: { independent: 'b2PraiseReformulateIndependent', helped: 'b2PraiseReformulateHelped' },
+  report_third_party_opinion: { independent: 'b2PraiseReportIndependent', helped: 'b2PraiseReportHelped' },
+  shift_register: { independent: 'b2PraiseRegisterIndependent', helped: 'b2PraiseRegisterHelped' },
+  soften_or_intensify_claim: { independent: 'b2PraiseSoftenIndependent', helped: 'b2PraiseSoftenHelped' },
 }
 
 /*
@@ -223,6 +244,22 @@ function buildRemotePayload(params, kind) {
     tone: params.tone ?? '',
     situation_form: params.situationForm ?? '',
     conversational_role: params.role ?? '',
+    /*
+     * B2's own subtype/context fields, same bug class as the fields above
+     * them: without `subtype` a remote judge cannot tell a capstone
+     * `shift_register` topic-shift turn from a plain register-formality one;
+     * without `register_check`/`expected_register` it cannot tell which
+     * register the turn actually asked for; without `source_text` a
+     * mediation turn (`summarize_for_third_party`/`reformulate_for_clarity`/
+     * `report_third_party_opinion`) cannot be judged for meaning-preservation
+     * against anything, and a verbatim copy would look indistinguishable
+     * from a real summary.
+     */
+    subtype: params.subtype ?? '',
+    register_check: Boolean(params.registerCheck),
+    expected_register: params.expectedRegister ?? '',
+    discourse_coherence_check: Boolean(params.discourseCoherenceCheck),
+    source_text: params.sourceText ?? '',
     interest_id: params.interestId ?? null,
     native_language: params.nativeLanguage ?? 'en',
     interface_language: params.interfaceLanguage ?? 'en',
@@ -235,7 +272,7 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', abilityForm = '', arrangeStage = '', praisePrefix = '', expected = '', narrativeForm = '', tone = '', situationForm = '', role = '', signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', abilityForm = '', arrangeStage = '', praisePrefix = '', expected = '', narrativeForm = '', tone = '', situationForm = '', role = '', subtype = '', registerCheck = false, expectedRegister = '', discourseCoherenceCheck = false, sourceText = '', signal, remote } = params
   const kind = step?.evalKind
   /*
    * Whether this counts as unaided production, used only to choose the wording
@@ -310,6 +347,20 @@ export async function evaluateEpisodeResponse(params) {
     ...(tone ? { tone } : {}),
     ...(situationForm ? { situationForm } : {}),
     ...(role ? { role } : {}),
+    /*
+     * B2's own subtype/context fields — same bug class as every field above:
+     * without `subtype`, `shift_register`/`propose_a_resolution` default to
+     * their base (no-subtype) judgment even on a capstone topic-shift/
+     * pushback turn; without `registerCheck`/`expectedRegister`, a register
+     * turn is graded with no target register to hold it to; without
+     * `sourceText`, a mediation turn's meaning-preservation floor cannot
+     * tell a reformulation from a verbatim copy.
+     */
+    ...(subtype ? { subtype } : {}),
+    ...(registerCheck ? { registerCheck } : {}),
+    ...(expectedRegister ? { expectedRegister } : {}),
+    ...(discourseCoherenceCheck ? { discourseCoherenceCheck } : {}),
+    ...(sourceText ? { sourceText } : {}),
   })
 
   // Conclusive local verdict (closed step, clear accept, empty, clear failure).

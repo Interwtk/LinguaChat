@@ -60,8 +60,21 @@ import { B1_ARC5, getB1Arc5Episode } from '../src/learning/episodes/b1Arc5Conten
 import { B1_ARC6, getB1Arc6Episode } from '../src/learning/episodes/b1Arc6Content.js'
 import { B1_ARC_SEVEN, getB1ArcSevenEpisode } from '../src/learning/episodes/b1Arc7Content.js'
 import { B1_RUNTIME_ARCS, B1_CAN_DO_INTENT } from '../src/learning/curriculum/b1Map.js'
+/*
+ * B2's arcs are imported straight from `levels/b2/arcs/**` — that is already
+ * the chunk-naming wrapper location for this level (see
+ * `curriculum/episodeContent.js`'s own comment), so there is no second,
+ * redundant top-level `episodes/b2Arc{N}Content.js` file to import instead.
+ */
+import { B2_ARC1, getB2Arc1Episode } from '../src/learning/levels/b2/arcs/b2Arc1MakingTheCaseContent.js'
+import { B2_ARC2, getB2Arc2Episode } from '../src/learning/levels/b2/arcs/b2Arc2WhenPlansGoWrongContent.js'
+import { B2_ARC3, getB2Arc3Episode } from '../src/learning/levels/b2/arcs/b2Arc3WhatIfContent.js'
+import { B2_ARC4, getB2Arc4Episode } from '../src/learning/levels/b2/arcs/b2Arc4TalkingAroundASubjectContent.js'
+import { B2_ARC5, getB2Arc5Episode } from '../src/learning/levels/b2/arcs/b2Arc5ReadingBetweenTheLinesContent.js'
+import { B2_ARC6, getB2Arc6Episode } from '../src/learning/levels/b2/arcs/b2Arc6TheLongConversationContent.js'
+import { B2_RUNTIME_ARCS, B2_CAN_DO_INTENT } from '../src/learning/curriculum/b2Map.js'
 import {
-  PRE_A1, A1, A2, B1, LEVELS, getLevel, episodesOfLevel, runtimeEpisodeCount, isLevelComplete,
+  PRE_A1, A1, A2, B1, B2, LEVELS, getLevel, episodesOfLevel, runtimeEpisodeCount, isLevelComplete,
   levelIdOfEpisode, levelIdOfEpisodeId, playableLevelId, availableLevelIds, isKnownLevel,
 } from '../src/learning/curriculum/levels.js'
 import { episodeRequest, loadEpisodeContent, hasContentLoader, REFUSED } from '../src/learning/curriculum/episodeContent.js'
@@ -77,13 +90,15 @@ import { BLOCK_CANDIDATES } from '../src/learning/engine/formatChoice.js'
 let groups = 0
 const ok = () => { groups += 1 }
 
-/* Every episode with runtime content, in curriculum order: Pre-A1, then A1 arc by arc, then A2, then B1. */
+/* Every episode with runtime content, in curriculum order: Pre-A1, then A1 arc by arc, then A2, then B1, then B2. */
 const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7,
   ...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7,
-  ...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN]
+  ...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN,
+  ...B2_ARC1, ...B2_ARC2, ...B2_ARC3, ...B2_ARC4, ...B2_ARC5, ...B2_ARC6]
 const A1_EPISODES = [...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7]
 const A2_EPISODES = [...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7]
 const B1_EPISODES = [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN]
+const B2_EPISODES = [...B2_ARC1, ...B2_ARC2, ...B2_ARC3, ...B2_ARC4, ...B2_ARC5, ...B2_ARC6]
 const runtimeEpisode = (id) =>
   getEpisode(id) || getA1Arc1Episode(id) || getA1Arc2Episode(id) || getA1Arc3Episode(id) || getA1Arc4Episode(id) || getA1Arc5Episode(id)
     || getA1Arc6Episode(id) || getA1Arc7Episode(id)
@@ -91,17 +106,41 @@ const runtimeEpisode = (id) =>
     || getA2Arc6Episode(id) || getA2Arc7Episode(id)
     || getB1Arc1Episode(id) || getB1Arc2Episode(id) || getB1Arc3Episode(id) || getB1Arc4Episode(id) || getB1Arc5Episode(id)
     || getB1Arc6Episode(id) || getB1ArcSevenEpisode(id)
+    || getB2Arc1Episode(id) || getB2Arc2Episode(id) || getB2Arc3Episode(id) || getB2Arc4Episode(id) || getB2Arc5Episode(id)
+    || getB2Arc6Episode(id)
 
 /*
  * Which intent evidences a can-do, asked of the map that owns the level. A
  * shared map would have let one level's capability satisfy another's coverage,
  * which is the mistake this architecture keeps refusing to make.
+ *
+ * B2's own map may declare a capstone-reuse entry as `{ intent, subtype }`
+ * rather than a bare string (`curriculum/levelMaps.js`'s own comment on
+ * `B2_CAN_DO_INTENT`) — `intentOf()` reads either shape, so this function's
+ * callers never have to know which capabilities reuse an intent.
  */
-const canDoIntentOf = (episode) =>
+const intentOf = (value) => (typeof value === 'string' ? value : value?.intent ?? null)
+const canDoIntentMapOf = (episode) =>
   (episode?.level === 'A1' ? A1_CAN_DO_INTENT
     : episode?.level === 'A2' ? A2_CAN_DO_INTENT
       : episode?.level === 'B1' ? B1_CAN_DO_INTENT
-        : CAN_DO_INTENT)[episode?.canDoId]
+        : episode?.level === 'B2' ? B2_CAN_DO_INTENT
+          : CAN_DO_INTENT)
+const canDoIntentOf = (episode) => intentOf(canDoIntentMapOf(episode)[episode?.canDoId])
+/*
+ * Is this can-do id one the level's map actually KNOWS about — as opposed to
+ * "does it have a production intent"? B2 is the first level with a genuinely
+ * comprehension-only capability as an episode's own PRIMARY canDoId
+ * (`infer_implied_meaning`, `B2_CAN_DO_INTENT` maps it to an explicit `null`
+ * — no production intent, read via plain comprehension/choice steps, the
+ * same convention A1's receptive-only items already use). An explicit `null`
+ * is a real, declared answer; an id the map's `Object.keys` never mentions at
+ * all is the actual defect this check exists to catch — those are different
+ * questions, and collapsing them would refuse legitimate comprehension-only
+ * content.
+ */
+const canDoKnownFor = (episode) =>
+  Boolean(episode?.canDoId) && Object.prototype.hasOwnProperty.call(canDoIntentMapOf(episode), episode.canDoId)
 
 const receptiveFor = (episode) =>
   (episode?.level === 'A1' ? A1_RECEPTIVE_ITEMS : RECEPTIVE_ITEMS)
@@ -142,14 +181,15 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
 
   const levelId = levelIdOfEpisode(episode)
   if (!levelId) say(`declares level "${episode.level}", which the level registry does not know`)
-  /* the arcs OF THIS LEVEL: `ARCS` is Pre-A1's list and A1/A2/B1 each declare their own */
+  /* the arcs OF THIS LEVEL: `ARCS` is Pre-A1's list and A1/A2/B1/B2 each declare their own */
   const declaredArcs = episode.level === 'A1' ? A1_RUNTIME_ARCS
     : episode.level === 'A2' ? A2_RUNTIME_ARCS
       : episode.level === 'B1' ? B1_RUNTIME_ARCS
-        : ARCS
+        : episode.level === 'B2' ? B2_RUNTIME_ARCS
+          : ARCS
   if (!declaredArcs.includes(episode.arc)) say(`belongs to arc "${episode.arc}", which is not a declared arc`)
   if (!episode.canDoId) say('teaches no capability')
-  else if (!canDoIntentOf(episode)) say(`teaches "${episode.canDoId}", which the curriculum map does not know`)
+  else if (!canDoKnownFor(episode)) say(`teaches "${episode.canDoId}", which the curriculum map does not know`)
   if (episode.reinforces !== undefined && episode.reinforces !== true) say('`reinforces` may only be true when present')
 
   for (const prerequisite of getPrerequisites(episode.id)) {
@@ -236,10 +276,12 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
   assert.equal(A1_EPISODES.length, runtimeEpisodeCount(A1), 'and so is A1')
   assert.equal(A2_EPISODES.length, runtimeEpisodeCount(A2), 'and so is A2')
   assert.equal(B1_EPISODES.length, runtimeEpisodeCount(B1), 'and so is B1')
+  assert.equal(B2_EPISODES.length, runtimeEpisodeCount(B2), 'and so is B2')
   console.log(`\n  ${RUNTIME_EPISODES.length} runtime episodes satisfy the authoring contract`
     + ` (${ARC.length} Pre-A1, ${A1_EPISODES.length} A1 across ${A1_RUNTIME_ARCS.length} arcs,`
     + ` ${A2_EPISODES.length} A2 across ${A2_RUNTIME_ARCS.length} arcs,`
-    + ` ${B1_EPISODES.length} B1 across ${B1_RUNTIME_ARCS.length} arcs)`)
+    + ` ${B1_EPISODES.length} B1 across ${B1_RUNTIME_ARCS.length} arcs,`
+    + ` ${B2_EPISODES.length} B2 across ${B2_RUNTIME_ARCS.length} arcs)`)
   ok()
 }
 
@@ -249,7 +291,15 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
   const broken = (patch) => ({ ...JSON.parse(JSON.stringify(valid)), ...patch })
   const cases = [
     ['a duplicate id', broken({}), { allEpisodes: [...ARC, valid] }, /more than one episode/],
-    ['an unknown level', broken({ level: 'B2' }), {}, /level registry does not know/],
+    /*
+     * A fabricated, still-unregistered level id — `B2` itself was this
+     * placeholder until this very task registered it, the same transition
+     * `A2`/`B1` each made in their own turn. `C1` is the next level in
+     * sequence and genuinely unregistered as of this task; when C1 is wired,
+     * whoever does it must move this placeholder again — same "edit on
+     * purpose" precedent as every level before it.
+     */
+    ['an unknown level', broken({ level: 'C1' }), {}, /level registry does not know/],
     ['an unknown arc', broken({ arc: 'arc7' }), {}, /not a declared arc/],
     ['no capability', broken({ canDoId: undefined }), {}, /teaches no capability/],
     ['an unknown capability', broken({ canDoId: 'talk_about_daily_routine' }), {}, /curriculum map does not know/],
@@ -288,7 +338,7 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
 
 /* ---- 3) the level registry says what it means ---- */
 {
-  assert.deepEqual(LEVELS.map(l => l.id), [PRE_A1, A1, A2, B1], 'the registry knows Pre-A1, A1, A2 and B1, in order')
+  assert.deepEqual(LEVELS.map(l => l.id), [PRE_A1, A1, A2, B1, B2], 'the registry knows Pre-A1, A1, A2, B1 and B2, in order')
   /*
    * `implemented` became `contentStatus` when A1's first arc landed: a boolean
    * could not distinguish "has content" from "is finished", and A1 is now the
@@ -306,6 +356,9 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
   assert.equal(getLevel(B1).contentStatus, 'partial', 'B1 has runtime content for all seven designed arcs, and is still not complete/available until its own completion gate says so')
   assert.equal(isLevelComplete(B1), false, 'a partially built level is never complete')
   assert.equal(getLevel(B1).available, false, 'B1 may not be opened')
+  assert.equal(getLevel(B2).contentStatus, 'partial', 'B2 has runtime content for all six designed arcs, and is still not complete/available until its own completion gate says so')
+  assert.equal(isLevelComplete(B2), false, 'a partially built level is never complete')
+  assert.equal(getLevel(B2).available, false, 'B2 may not be opened')
   assert.deepEqual(availableLevelIds(), [PRE_A1], 'exactly one level is available today')
   assert.equal(playableLevelId(), PRE_A1)
 
@@ -327,6 +380,9 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
     'and the arcs it holds are exactly the ones declared as implemented, in order')
   assert.equal(runtimeEpisodeCount(B1), B1_EPISODES.length, 'B1 holds exactly its implemented arcs')
   assert.deepEqual([...new Set(B1_EPISODES.map(ep => ep.arc))], B1_RUNTIME_ARCS,
+    'and the arcs it holds are exactly the ones declared as implemented, in order')
+  assert.equal(runtimeEpisodeCount(B2), B2_EPISODES.length, 'B2 holds exactly its implemented arcs')
+  assert.deepEqual([...new Set(B2_EPISODES.map(ep => ep.arc))], B2_RUNTIME_ARCS,
     'and the arcs it holds are exactly the ones declared as implemented, in order')
   assert.equal(runtimeEpisodeCount(PRE_A1), 17, 'Pre-A1 is seventeen episodes')
   ok()
@@ -423,6 +479,12 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
   assert.equal(A1_RUNTIME_ARCS.includes(unplannedArc), false, `${unplannedArc} is not a real arc`)
   assert.equal(hasContentLoader(A1, unplannedArc), false, 'an undeclared arc must not resolve')
   assert.equal(hasContentLoader('a2'), false)
+  /* B2's six arcs, same completeness proof as A1's own above */
+  for (const arc of B2_RUNTIME_ARCS) {
+    assert.equal(hasContentLoader(B2, arc), true, `${arc} is implemented and must be loadable`)
+  }
+  assert.equal(hasContentLoader(B2), false, 'and the level must not have a catch-all loader')
+  assert.equal(hasContentLoader(B2, unplannedArc), false, 'an undeclared arc must not resolve')
   ok()
 }
 

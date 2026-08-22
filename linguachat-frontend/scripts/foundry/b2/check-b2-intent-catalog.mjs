@@ -16,10 +16,25 @@ const blueprint = JSON.parse(readFileSync(new URL('../../../../docs/curriculum/b
 let groups = 0
 const ok = () => { groups += 1 }
 
+/*
+ * `state_opinion_with_reason` -> `argue_opinion_with_reason`: b2.json's own
+ * `intentStrategy.newIntents` still names the blueprint's original id.
+ * LC-INT-001 renamed only the RUNTIME dispatch key to resolve a real
+ * collision with A2's own, unrelated `state_opinion_with_reason` intent
+ * (`levels/a2/evaluators.js`) — see `b2Capabilities.js`'s `B2_CAN_DO_INTENT`
+ * comment for the full account, and `b1Map.js`'s `report_problem` ->
+ * `escalate_problem` rename for the identical precedent. The blueprint
+ * itself is not edited for an integration-time collision fix, so the
+ * comparison below reconciles the one documented rename rather than
+ * silently drifting or weakening the count check.
+ */
+const RUNTIME_RENAMES = { state_opinion_with_reason: 'argue_opinion_with_reason' }
+
 /* ---- 1) catalog size matches the blueprint's declared new-intent count ---- */
 {
   assert.equal(B2_NEW_INTENT_COUNT, blueprint.intentStrategy.counts.newB2Intents)
-  assert.deepEqual([...B2_INTENTS.map((i) => i.id)].sort(), [...blueprint.intentStrategy.newIntents].sort())
+  const blueprintIds = blueprint.intentStrategy.newIntents.map((id) => RUNTIME_RENAMES[id] || id)
+  assert.deepEqual([...B2_INTENTS.map((i) => i.id)].sort(), [...blueprintIds].sort())
   ok()
 }
 
@@ -45,14 +60,22 @@ const ok = () => { groups += 1 }
 
 /* ---- 4) B2_CAN_DO_INTENT is internally consistent with the intent catalog:
     every non-null value is either a real intent id, or explicitly one of the
-    comprehension-only capabilities (which carry no production intent) ---- */
+    comprehension-only capabilities (which carry no production intent).
+    A capstone-reuse entry is `{ intent, subtype }` rather than a bare
+    string — see b2Capabilities.js's own comment on why (LC-INT-001's
+    subtype-aware canDoForIntent fix) — so the intent id is read off either
+    shape here rather than assuming a string. ---- */
 {
   const intentIds = new Set(B2_INTENTS.map((i) => i.id))
-  for (const [canDoId, intentId] of Object.entries(B2_CAN_DO_INTENT)) {
-    if (intentId === null) {
+  for (const [canDoId, value] of Object.entries(B2_CAN_DO_INTENT)) {
+    if (value === null) {
       assert.ok(B2_COMPREHENSION_ONLY_CAN_DOS.includes(canDoId) || canDoId === 'use_idiomatic_expressions_naturally', `${canDoId} maps to null but is not declared comprehension-only`)
-    } else {
-      assert.ok(intentIds.has(intentId), `${canDoId} maps to unresolvable intent ${intentId}`)
+      continue
+    }
+    const intentId = typeof value === 'string' ? value : value.intent
+    assert.ok(intentIds.has(intentId), `${canDoId} maps to unresolvable intent ${intentId}`)
+    if (typeof value !== 'string') {
+      assert.ok(value.subtype, `${canDoId} declares a structured intent value with no subtype`)
     }
   }
   ok()

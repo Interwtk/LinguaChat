@@ -61,7 +61,7 @@ function buildLongConversationSteps(t) {
     step({ type: 'scene', mood: 'welcoming', titleKey: 'b2ep21SceneTitle', bodyKey: t.openingSceneBodyKey, showGoal: true, ctaKey: 'b2ep21Start', sceneEn: t.openingSceneEn }),
 
     // Topic 1: argument + weighing options (delayed retrieval for arc 1's required capabilities)
-    step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.openOpinionPromptEn, instructionKey: 'b2ep21OpinionInstruction', evalKind: 'state_opinion_with_reason', canDoId: 'develop_and_defend_opinion', itemIds: ['opinion_stance_pattern'], evidenceType: 'delayedRetrieval' }),
+    step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.openOpinionPromptEn, instructionKey: 'b2ep21OpinionInstruction', evalKind: 'argue_opinion_with_reason', canDoId: 'develop_and_defend_opinion', itemIds: ['opinion_stance_pattern'], evidenceType: 'delayedRetrieval' }),
     step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.weighPromptEn, instructionKey: 'b2ep21WeighInstruction', evalKind: 'weigh_options', canDoId: 'weigh_advantages_and_disadvantages', itemIds: ['contrast_connector_pattern', 'advantage_disadvantage_frame'], evidenceType: 'delayedRetrieval' }),
     /*
      * concede_a_point_and_counter already reaches its full evidence target

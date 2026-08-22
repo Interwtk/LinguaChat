@@ -87,6 +87,25 @@ import {
   evaluateAskFollowUp as evaluateAskFollowUpB1,
   evaluateSummarizeOther as evaluateSummarizeOtherB1,
 } from '../levels/b1/evaluators.js'
+/*
+ * B2's 14 new intents were authored the same way, against the same `base()`
+ * contract, in `levels/b2/evaluators.js` — see that file's own header for
+ * the two real scoring dimensions it implements (`registerAppropriateness`,
+ * `discourseCoherence`) and the three-tier structural-floor fallback.
+ * `argue_opinion_with_reason` is B2's runtime-renamed dispatch key for
+ * `develop_and_defend_opinion` — b2.json's own `state_opinion_with_reason`
+ * collides with A2's own, unrelated intent of that exact bare id (see
+ * `levels/b2/b2Capabilities.js`'s `B2_CAN_DO_INTENT` comment for the full
+ * account, the same collision class B1's `escalate_problem` rename resolved
+ * against A2 above).
+ */
+import {
+  evaluateArgueOpinionWithReason, evaluateWeighOptions, evaluateConcedeAndCounter,
+  evaluateJustifyARequest, evaluateProposeAResolution, evaluateExpressDiplomaticFrustration,
+  evaluateStateUnrealHypothesis, evaluateSpeculateCauseOrEffect, evaluateExpressPastRegret,
+  evaluateSummarizeForThirdParty, evaluateReformulateForClarity, evaluateReportThirdPartyOpinion,
+  evaluateShiftRegister, evaluateSoftenOrIntensifyClaim,
+} from '../levels/b2/evaluators.js'
 
 // Normalize: lowercase, unify apostrophes, drop emojis/symbols, keep letters
 // (incl. accents) + digits + spaces + apostrophes, collapse spaces.
@@ -1631,6 +1650,21 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'change_topic': return evaluateChangeTopicB1(text, ctx)
     case 'ask_follow_up': return evaluateAskFollowUpB1(text, ctx)
     case 'summarize_other': return evaluateSummarizeOtherB1(text, ctx)
+    /* B2 — implementations authored in `levels/b2/evaluators.js` */
+    case 'argue_opinion_with_reason': return evaluateArgueOpinionWithReason(text, ctx)
+    case 'weigh_options': return evaluateWeighOptions(text, ctx)
+    case 'concede_and_counter': return evaluateConcedeAndCounter(text, ctx)
+    case 'justify_a_request': return evaluateJustifyARequest(text, ctx)
+    case 'propose_a_resolution': return evaluateProposeAResolution(text, ctx)
+    case 'express_diplomatic_frustration': return evaluateExpressDiplomaticFrustration(text, ctx)
+    case 'state_unreal_hypothesis': return evaluateStateUnrealHypothesis(text, ctx)
+    case 'speculate_cause_or_effect': return evaluateSpeculateCauseOrEffect(text, ctx)
+    case 'express_past_regret': return evaluateExpressPastRegret(text, ctx)
+    case 'summarize_for_third_party': return evaluateSummarizeForThirdParty(text, ctx)
+    case 'reformulate_for_clarity': return evaluateReformulateForClarity(text, ctx)
+    case 'report_third_party_opinion': return evaluateReportThirdPartyOpinion(text, ctx)
+    case 'shift_register': return evaluateShiftRegister(text, ctx)
+    case 'soften_or_intensify_claim': return evaluateSoftenOrIntensifyClaim(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }

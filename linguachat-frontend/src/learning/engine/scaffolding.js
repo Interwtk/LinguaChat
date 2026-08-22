@@ -46,7 +46,7 @@
 import { EPISODE_SKELETON as ARC, SKELETON_BY_ID } from '../curriculum/preA1Skeleton.generated.js'
 
 const getEpisode = (id) => SKELETON_BY_ID[id] || null
-import { intentsForEpisode, skillPrerequisitesOf, targetsOf } from '../curriculum/preA1Map.js'
+import { intentSubtypesForEpisode, skillPrerequisitesOf, targetsOf } from '../curriculum/preA1Map.js'
 import { canDoForIntent } from '../curriculum/levelMaps.js'
 
 /*
@@ -249,8 +249,17 @@ export function noveltyOf(model, episode) {
       if (!it || it.status === 'new') newPattern = true
     }
   }
-  const newIntent = intentsForEpisode(episode.id).some(intent => {
-    const canDo = canDoForIntent(intent)
+  /*
+   * `intentSubtypesForEpisode` (not the deduplicated `intentsForEpisode`)
+   * because a subtype changes which can-do this actually is — B2's
+   * capstone reuses `shift_register` for three different can-dos and
+   * `propose_a_resolution` for two, distinguished only by `subtype`. Passing
+   * it through to `canDoForIntent` is what resolves each step to its real
+   * can-do instead of always the intent's base (no-subtype) one; see that
+   * function's own comment in `curriculum/levelMaps.js`.
+   */
+  const newIntent = intentSubtypesForEpisode(episode.id).some(({ intent, subtype }) => {
+    const canDo = canDoForIntent(intent, subtype)
     if (!canDo) return false
     return !canDoState(model, canDo)?.attempts
   })
