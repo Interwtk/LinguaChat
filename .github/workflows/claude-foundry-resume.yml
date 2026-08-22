@@ -101,7 +101,7 @@ jobs:
             - Never edit .ai/TASKS.md, .ai/STATE.md or .ai/HANDOFF.md.
             - Work only inside this task's writeScopes plus its own .ai/foundry/completed/<TASK>.json and .ai/foundry/requests/<TASK>.md.
             - Incorporate current origin/main before final validation, resolving only conflicts inside allowed scope.
-            - NEVER spend the whole run researching without saving progress. For research tasks, after each 5 NEW fully verified usable studies, immediately update the corpus/batch notes, commit, and push a checkpoint to THIS branch before continuing. If fewer than 5 can be verified before the run ends, push every verified usable record you do have rather than losing the work. Do not push malformed or guessed records.
+            - NEVER spend the whole run researching without saving progress. For a research task, the FIRST fully verified usable study found in this run must be written to the corpus/batch notes, committed, and pushed immediately to THIS branch. Continue checkpointing each verified study until at least 5 new durable records exist on the branch; after that, commit and push at least every additional 5 verified studies. If the run is ending, push every verified usable record already completed instead of losing it. Never push malformed, partial or guessed records.
             - Each full research batch still requires at least 25 NEW unique PRIMARY empirical studies after deduplication. Reviews/meta-analyses/theory do not count. Every counted record must satisfy the repository evidence contract, including two distinct HTTPS verification sources and no invented DOI/sample/population/result/limitation/quality data.
             - Pedagogy stays on second-language acquisition/teaching/assessment. Psychology stays on learning psychology, not diagnosis or therapy.
             - Keep the PR Draft until truly complete.
@@ -117,7 +117,7 @@ jobs:
           allowed_bots: github-actions
           claude_args: |
             --model claude-sonnet-5
-            --max-turns 180
+            --max-turns 500
             --allowedTools Read,Write,Edit,Glob,Grep,Bash,TodoWrite,WebSearch,WebFetch
 
       - name: Verify resume produced durable progress
