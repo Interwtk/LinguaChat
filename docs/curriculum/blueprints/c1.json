@@ -837,7 +837,8 @@
       "earliestLevelNeeded": "c1",
       "proposedSharedBehaviour": "hybrid evaluator gains a register-appropriateness signal scored independently of intent-match correctness",
       "regressionRisk": "low if the new dimension defaults to not-scored below C1",
-      "testsRequired": "register-mismatch fixtures per intent; confirm lower levels unaffected"
+      "testsRequired": "register-mismatch fixtures per intent; confirm lower levels unaffected",
+      "note": "RESOLVED by LC-AUD-001 F8 and LC-FND-002: consolidated with B2's register_appropriateness_dimension ask into one shared evaluator dimension rather than two independent implementations. See docs/curriculum/core-engine-requirements.md section 2."
     },
     {
       "id": "discourse_coherence_scoring",
@@ -846,7 +847,8 @@
       "earliestLevelNeeded": "c1",
       "proposedSharedBehaviour": "an evaluator path that accepts a multi-sentence turn and returns an overall coherence signal plus per-capability credit",
       "regressionRisk": "moderate: touches shared evaluator plumbing; must not change scoring for existing single-utterance step types",
-      "testsRequired": "coherent vs flat-list vs contradictory multi-sentence fixtures"
+      "testsRequired": "coherent vs flat-list vs contradictory multi-sentence fixtures",
+      "note": "RESOLVED by LC-AUD-001 F8 and LC-FND-002: consolidated with B2's discourse_coherence_evaluation ask into one shared evaluator path rather than two independent implementations. See docs/curriculum/core-engine-requirements.md section 3."
     },
     {
       "id": "conversation_state_tracking",

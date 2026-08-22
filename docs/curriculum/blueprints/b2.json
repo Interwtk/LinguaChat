@@ -1738,7 +1738,8 @@
         "handle_a_topic_shift_gracefully",
         "negotiate_an_agreement_under_pushback"
       ],
-      "regressionRisk": "low for A1/Pre-A1/B1 single-topic short exchanges"
+      "regressionRisk": "low for A1/Pre-A1/B1 single-topic short exchanges",
+      "note": "RESOLVED by LC-AUD-001 F8 and LC-FND-002: consolidated with C1's discourse_coherence_scoring ask into one shared evaluator path rather than two independent implementations. See docs/curriculum/core-engine-requirements.md section 3."
     },
     {
       "id": "register_appropriateness_dimension",
@@ -1749,7 +1750,8 @@
         "soften_or_strengthen_a_statement",
         "negotiate_an_agreement_under_pushback"
       ],
-      "regressionRisk": "none if additive and defaulting to not_applicable"
+      "regressionRisk": "none if additive and defaulting to not_applicable",
+      "note": "RESOLVED by LC-AUD-001 F8 and LC-FND-002: consolidated with C1's register_appropriateness_scoring ask into one shared evaluator dimension rather than two independent implementations. See docs/curriculum/core-engine-requirements.md section 2."
     },
     {
       "id": "honest_open_turn_fallback",
