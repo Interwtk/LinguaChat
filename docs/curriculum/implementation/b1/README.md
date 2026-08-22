@@ -59,4 +59,18 @@ Tracked per arc as it lands. An arc listed here has real runtime modules under
   intent with no subtype, alongside arc 1's existing subtype-keyed shape — a
   non-breaking extension inside this task's own write scope). Delayed-retrieval
   proof again explicitly deferred to arc 7.
-- Arcs 3-7: not yet started (design-only content-plan specs to follow).
+- **Arc 3 — `which_one`** (`compare_options_with_reasons`, `describe_an_experience`,
+  `recommend_or_warn` [should]): **done.** 4 episodes (`episodes/b1Arc3.js`), the
+  mini-story (b1.json arc 3 `miniStory.use: true`) implemented as ordinary
+  `scene`/`model` steps inside episode 2, exactly like arc 1's episode 3.
+  `recommend_or_warn` is `scope: should` — implemented, taught and evaluated,
+  but deliberately excluded from `B1_REQUIRED_CAN_DOS` (tracked separately in
+  the new `B1_SHOULD_CAN_DOS`). Vocabulary in `B1_ARC3_VOCAB` (17 productive /
+  12 receptive, matches b1.json exactly). Proven by
+  `scripts/foundry/b1/check-b1-arc3.mjs` (16 groups, 35 pedagogical journeys).
+  One evaluator bug caught and fixed during authoring: the multi-attribute
+  description regex originally assumed literal commas survive the shared
+  `normalize()` helper, but `normalize()` strips punctuation — the regex now
+  matches on word-boundary structure instead. Delayed-retrieval proof again
+  explicitly deferred to arc 7.
+- Arcs 4-7: not yet started (design-only content-plan specs to follow).

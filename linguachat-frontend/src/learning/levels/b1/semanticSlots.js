@@ -17,6 +17,11 @@ export const B1_INTENT_SLOTS = {
   // arc 2 — give_an_opinion ∪ agree_or_disagree semanticNeeds (b1.json arc 2)
   state_opinion: ['activity', 'place', 'interest'],
   agree_or_disagree: ['activity', 'place', 'interest'],
+  // arc 3 — compare_options_with_reasons ∪ describe_an_experience ∪
+  // recommend_or_warn semanticNeeds (b1.json arc 3)
+  compare_and_choose: ['place', 'activity', 'generic_object'],
+  describe_experience: ['place', 'activity', 'feeling'],
+  recommend_or_warn: ['place', 'activity'],
 }
 
 export const b1SlotsFor = (intent) => B1_INTENT_SLOTS[intent] || []

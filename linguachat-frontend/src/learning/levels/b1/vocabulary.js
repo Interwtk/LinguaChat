@@ -62,9 +62,49 @@ export const B1_ARC2_VOCAB = {
   b1_not_really: { en: 'not really', type: 'connector' },
 }
 
+/* ---- Arc 3 — which_one (17 productive / 12 receptive, per b1.json) ---- */
+export const B1_ARC3_VOCAB = {
+  // compare_options_with_reasons — 6 productive
+  b1_more_than: { en: 'more ... than', type: 'pattern' },
+  b1_less_than: { en: 'less ... than', type: 'pattern' },
+  b1_the_most: { en: 'the most', type: 'connector' },
+  b1_of_the_three: { en: 'of the three / of all', type: 'connector' },
+  b1_comparative_superlative_pattern: { en: 'more/less + adj + than / the most + adj', type: 'pattern' },
+  b1_multi_attribute_compare_pattern: { en: 'X is + adj, and + adj, but Y is + adj', type: 'pattern' },
+  // compare_options_with_reasons — 4 receptive
+  b1_by_far: { en: 'by far', type: 'connector' },
+  b1_on_the_other_hand: { en: 'on the other hand', type: 'connector' },
+  b1_compared_to: { en: 'compared to', type: 'connector' },
+  b1_overall: { en: 'overall', type: 'connector' },
+  // describe_an_experience — 7 productive
+  b1_multi_attribute_description_pattern: { en: 'it was + adj, adj, and adj', type: 'pattern' },
+  b1_feeling_reaction_pattern: { en: 'it made me feel / I felt + adj', type: 'pattern' },
+  b1_it_made_me_feel: { en: 'it made me feel', type: 'connector' },
+  b1_i_felt: { en: 'I felt', type: 'connector' },
+  b1_peaceful: { en: 'peaceful', type: 'feeling' },
+  b1_exhausting: { en: 'exhausting', type: 'feeling' },
+  b1_unforgettable: { en: 'unforgettable', type: 'feeling' },
+  // describe_an_experience — 5 receptive
+  b1_breathtaking: { en: 'breathtaking', type: 'feeling' },
+  b1_overwhelming: { en: 'overwhelming', type: 'feeling' },
+  b1_underwhelming: { en: 'underwhelming', type: 'feeling' },
+  b1_worth_it: { en: 'worth it', type: 'connector' },
+  b1_a_bit_disappointing: { en: 'a bit disappointing', type: 'feeling' },
+  // recommend_or_warn — 4 productive
+  b1_id_recommend: { en: "I'd recommend", type: 'connector' },
+  b1_i_wouldnt_recommend: { en: "I wouldn't recommend", type: 'connector' },
+  b1_recommend_warn_pattern: { en: "I'd recommend / I wouldn't ..., because ...", type: 'pattern' },
+  b1_id_avoid: { en: "I'd avoid", type: 'connector' },
+  // recommend_or_warn — 3 receptive
+  b1_highly_recommend: { en: 'highly recommend', type: 'connector' },
+  b1_give_it_a_miss: { en: 'give it a miss', type: 'connector' },
+  b1_not_worth_it: { en: "not worth it", type: 'connector' },
+}
+
 export const B1_VOCAB_BY_ID = {
   ...B1_ARC1_VOCAB,
   ...B1_ARC2_VOCAB,
+  ...B1_ARC3_VOCAB,
 }
 
 export const b1ProductiveIds = (ids) => ids.filter(id => B1_VOCAB_BY_ID[id])
