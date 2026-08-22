@@ -97,4 +97,26 @@ Tracked per arc as it lands. An arc listed here has real runtime modules under
   double room, but I got a single one" (used in the novel-context transfer
   check) was wrongly rejected — generalized to a small set of request verbs
   (ordered/booked/asked for/wanted/paid for).
-- Arcs 5-7: not yet started (design-only content-plan specs to follow).
+- **Arc 5 — `looking_ahead`** (`talk_about_plans_and_intentions`,
+  `talk_about_hopes_and_ambitions`, `talk_about_real_conditions` [should],
+  `imagine_a_hypothetical` [optional]): **done.** 4 episodes
+  (`episodes/b1Arc5.js`), one per can-do — this is the first arc with no
+  separate reinforcement episode (`episodesInArc === newCanDos.length`).
+  `state_future_intent`'s `intentForm` subtype carries
+  `talk_about_plans_and_intentions` vs `talk_about_hopes_and_ambitions`; a
+  second, evaluator-only `situationForm` field (`decision`/`plan`/
+  `prediction`/`hope`) carries b1.json's stated architectural risk for this
+  arc — judging *function*, not surface form, adapted from the draft
+  evaluator that resolved b1.md §15.1. New `B1_OPTIONAL_CAN_DOS` bucket added
+  alongside `B1_REQUIRED_CAN_DOS`/`B1_SHOULD_CAN_DOS`. No mini-story (b1.json
+  arc 5 `miniStory.use: false`). Vocabulary in `B1_ARC5_VOCAB` (18 productive
+  / 10 receptive, matches b1.json exactly). Proven by
+  `scripts/foundry/b1/check-b1-arc5.mjs` (16 groups, 43 pedagogical
+  journeys). Three evaluator bugs caught and fixed during authoring: (1) the
+  first-conditional regex only matched *if-clause-then-will-clause* order,
+  rejecting the equally valid "I won't go if it's too cold." — added the
+  reverse order; (2) the real-condition-vs-hypothetical guard checked only
+  the literal word "would", missing the far more natural "I'd" contraction;
+  (3) the future-decision/plan verb allowlist was too narrow (rejected "I'm
+  going to start a new course" — "start" wasn't listed) — broadened it.
+- Arcs 6-7: not yet started (design-only content-plan specs to follow).

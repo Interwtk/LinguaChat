@@ -36,6 +36,11 @@ export const B1_INTENT_SLOTS = {
   // express_frustration_politely semanticNeeds (b1.json arc 4)
   report_problem: ['problem', 'generic_object', 'place'],
   negotiate_solution: ['problem', 'generic_object'],
+  // arc 5 — talk_about_plans_and_intentions ∪ talk_about_hopes_and_ambitions
+  // ∪ talk_about_real_conditions ∪ imagine_a_hypothetical semanticNeeds (b1.json arc 5)
+  state_future_intent: ['activity', 'time_point', 'day'],
+  state_real_condition: ['activity', 'time_point'],
+  state_hypothetical: ['activity'],
 }
 
 export const b1SlotsFor = (intent) => B1_INTENT_SLOTS[intent] || []

@@ -55,13 +55,21 @@ const ANSWERS = {
     frustrated: "This isn't ideal — I ordered this three days ago, but I understand these things happen.",
   },
   negotiate_solution: 'Would it be possible to get a replacement instead?',
+  state_future_intent: {
+    decision: "I'll have the pasta, thanks.",
+    plan: "I'm going to visit my sister next week.",
+    prediction: 'It will probably rain later.',
+    hope: 'I hope to travel more one day.',
+  },
+  state_real_condition: "If it rains tomorrow, I'll stay home.",
+  state_hypothetical: "If I were you, I'd ask for more details before deciding.",
 }
 
 export function answerFor(step) {
   const entry = ANSWERS[step.evalKind]
   if (entry === undefined) throw new Error(`b1 journey: no answer for ${step.evalKind}`)
   if (typeof entry === 'string') return entry
-  const subtypeKey = step.narrativeForm || step.intentForm || step.tone
+  const subtypeKey = step.situationForm || step.narrativeForm || step.intentForm || step.tone
   const answer = entry[subtypeKey]
   if (!answer) throw new Error(`b1 journey: no answer for ${step.evalKind}/${subtypeKey}`)
   return answer
@@ -75,6 +83,7 @@ function ctxFor(step, independent) {
     narrativeForm: step.narrativeForm,
     intentForm: step.intentForm,
     tone: step.tone,
+    situationForm: step.situationForm,
   }
 }
 
