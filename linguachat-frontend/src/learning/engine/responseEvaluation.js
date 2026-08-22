@@ -54,6 +54,39 @@ import {
   evaluateReportProblem, evaluateAskForHelp,
   evaluateInviteSomeone, evaluateRespondToInvitation,
 } from '../levels/a2/evaluators.js'
+/*
+ * B1's 14 new intents were authored the same way, against the same `base()`
+ * contract, in `levels/b1/evaluators.js` — see that file's own header and
+ * `docs/curriculum/implementation/b1/README.md`.
+ *
+ * `evaluateReportProblem` is imported ALIASED as `evaluateEscalateProblemB1`:
+ * B1's own `levels/b1/evaluators.js` exports a function with the exact same
+ * name as A2's `levels/a2/evaluators.js` one immediately above — two
+ * different modules, so no JS collision on its own, but this file already
+ * imports A2's `evaluateReportProblem` into this same scope, so a second,
+ * un-aliased import of the same name here would be a real `SyntaxError`
+ * (duplicate binding), not just a style question. The alias also keeps the
+ * dispatcher below honest about which evaluator answers which intent: B1's
+ * function is dispatched under `escalate_problem`, never `report_problem` —
+ * see `curriculum/b1Map.js`'s `B1_CAN_DO_INTENT` comment for the full
+ * account of the collision this avoids.
+ */
+import {
+  evaluateNarratePastEvent as evaluateNarratePastEventB1,
+  evaluateStateOpinion as evaluateStateOpinionB1,
+  evaluateAgreeOrDisagree as evaluateAgreeOrDisagreeB1,
+  evaluateCompareAndChoose as evaluateCompareAndChooseB1,
+  evaluateDescribeExperience as evaluateDescribeExperienceB1,
+  evaluateRecommendOrWarn as evaluateRecommendOrWarnB1,
+  evaluateReportProblem as evaluateEscalateProblemB1,
+  evaluateNegotiateSolution as evaluateNegotiateSolutionB1,
+  evaluateStateFutureIntent as evaluateStateFutureIntentB1,
+  evaluateStateRealCondition as evaluateStateRealConditionB1,
+  evaluateStateHypothetical as evaluateStateHypotheticalB1,
+  evaluateChangeTopic as evaluateChangeTopicB1,
+  evaluateAskFollowUp as evaluateAskFollowUpB1,
+  evaluateSummarizeOther as evaluateSummarizeOtherB1,
+} from '../levels/b1/evaluators.js'
 
 // Normalize: lowercase, unify apostrophes, drop emojis/symbols, keep letters
 // (incl. accents) + digits + spaces + apostrophes, collapse spaces.
@@ -1578,6 +1611,26 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'ask_for_help': return evaluateAskForHelp(text, ctx)
     case 'invite_someone': return evaluateInviteSomeone(text, ctx)
     case 'respond_to_invitation': return evaluateRespondToInvitation(text, ctx)
+    /*
+     * B1 — implementations authored in `levels/b1/evaluators.js`.
+     * `escalate_problem` (not b1.json's own `report_problem`, which A2
+     * already occupies here) is the level's runtime-renamed dispatch key —
+     * see `curriculum/b1Map.js`'s `B1_CAN_DO_INTENT` comment.
+     */
+    case 'narrate_past_event': return evaluateNarratePastEventB1(text, ctx)
+    case 'state_opinion': return evaluateStateOpinionB1(text, ctx)
+    case 'agree_or_disagree': return evaluateAgreeOrDisagreeB1(text, ctx)
+    case 'compare_and_choose': return evaluateCompareAndChooseB1(text, ctx)
+    case 'describe_experience': return evaluateDescribeExperienceB1(text, ctx)
+    case 'recommend_or_warn': return evaluateRecommendOrWarnB1(text, ctx)
+    case 'escalate_problem': return evaluateEscalateProblemB1(text, ctx)
+    case 'negotiate_solution': return evaluateNegotiateSolutionB1(text, ctx)
+    case 'state_future_intent': return evaluateStateFutureIntentB1(text, ctx)
+    case 'state_real_condition': return evaluateStateRealConditionB1(text, ctx)
+    case 'state_hypothetical': return evaluateStateHypotheticalB1(text, ctx)
+    case 'change_topic': return evaluateChangeTopicB1(text, ctx)
+    case 'ask_follow_up': return evaluateAskFollowUpB1(text, ctx)
+    case 'summarize_other': return evaluateSummarizeOtherB1(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }

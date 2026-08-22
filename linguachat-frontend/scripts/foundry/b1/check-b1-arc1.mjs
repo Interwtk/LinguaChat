@@ -63,7 +63,17 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
   const ep1 = getB1Arc1Episode('one_thing_after_another')
   const ep2 = getB1Arc1Episode('when_it_happened')
   assert.deepEqual(ep1.prerequisites, [])
-  assert.deepEqual(ep2.prerequisites, ['narrate_connected_event'])
+  /*
+   * An episode's own `prerequisites` names EPISODE ids, same convention
+   * every other level uses (`a1Arc2.js`'s own `prerequisites: ['my_day']`,
+   * an episode id, never a can-do id) — found and fixed at `LC-INT-001`
+   * integration: this file used to assert `ep2.prerequisites` equalled a
+   * list of CAN-DO ids, which is the can-do GRAPH's shape
+   * (`cdById.*.prerequisites`, checked separately above), not an episode's.
+   * `check-curriculum-authoring.mjs`'s own `authoringProblems` validates a
+   * prerequisite resolves to a real episode id — it caught this for real.
+   */
+  assert.deepEqual(ep2.prerequisites, ['one_thing_after_another'])
   ok()
 }
 

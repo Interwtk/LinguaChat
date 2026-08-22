@@ -90,6 +90,16 @@ export const SEMANTIC_TYPES = [
   'month',           // January, March
   'date_ordinal',    // the first, the twentieth
   'quality',         // big, quiet, expensive
+  /*
+   * `problem` — broken, lost, the wrong one — was proposed independently by
+   * both A2 (`levels/a2/semanticTypes.js`, `report_problem`) and B1
+   * (`levels/b1/semanticSlots.js`'s `B1_NEW_SEMANTIC_TYPES`, reconciled with
+   * B2/C1 in `docs/curriculum/semantic-types.md`), the same "two levels
+   * proposed the identical type" shape `day` resolved above for A1/A2. One
+   * shared entry serves both; B1's own intents personalise nothing through
+   * this pipeline (see the `INTENT_SLOTS` comment below), so it needs no
+   * second registration, only reuse.
+   */
   'problem',         // broken, lost, the wrong one
 ]
 
@@ -263,6 +273,33 @@ export const INTENT_SLOTS = {
   ask_for_help: [],
   invite_someone: [],
   respond_to_invitation: [],
+  /*
+   * B1's 14 new intents. All explicitly empty, for the same reason A1 arc
+   * 6/7's three and A2's seventeen are above: a real grep across
+   * `levels/b1/episodes/**` finds only `{name}` placeholders, already
+   * handled outside this pipeline — no B1 episode drops a personalised value
+   * into these turns. `levels/b1/semanticSlots.js`'s own `B1_INTENT_SLOTS`
+   * describes richer per-intent compatible types (`place`, `activity`,
+   * `feeling`, `problem`, ...) for a FUTURE consumer, the same documented gap
+   * A2's own `A2_ARC_PERSONALIZATION` left; listed here, explicitly empty, so
+   * "this intent takes no value today" reads as a decision, not a gap.
+   * `escalate_problem` is B1's runtime-renamed dispatch key for b1.json's own
+   * `report_problem` — see `curriculum/b1Map.js`'s `B1_CAN_DO_INTENT` comment.
+   */
+  narrate_past_event: [],
+  state_opinion: [],
+  agree_or_disagree: [],
+  compare_and_choose: [],
+  describe_experience: [],
+  recommend_or_warn: [],
+  escalate_problem: [],
+  negotiate_solution: [],
+  state_future_intent: [],
+  state_real_condition: [],
+  state_hypothetical: [],
+  change_topic: [],
+  ask_follow_up: [],
+  summarize_other: [],
 }
 
 export const slotsFor = (intent) => INTENT_SLOTS[intent] || []

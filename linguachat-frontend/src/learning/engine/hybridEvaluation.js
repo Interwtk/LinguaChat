@@ -80,6 +80,38 @@ const PRAISE = {
   ask_for_help: { independent: 'ep56PraiseIndependent', helped: 'ep56PraiseGuided' },
   invite_someone: { independent: 'ep58PraiseIndependent', helped: 'ep58PraiseGuided' },
   respond_to_invitation: { independent: 'ep59PraiseIndependent', helped: 'ep59PraiseGuided' },
+  /*
+   * B1's 14 new intents. Same reason as A1 arc 6/7's and A2's own additions
+   * above — added so an ambiguous, remote-confirmed B1 reply is never
+   * congratulated with an unrelated intent's praise. UNLIKE A2's own
+   * additions (which needed brand new `ep<N>Praise...` keys), B1's own
+   * `levels/b1/evaluators.js` already sets a specific `praiseKey` directly on
+   * every conclusive local accept (mirroring A1 arc 6/7's `withPraise`
+   * pattern) — these entries are reached ONLY on the remote-escalation path,
+   * where no local `praiseKey` was set. Where an intent carries a subtype
+   * with two independently authored praise keys (`narrate_past_event`:
+   * sequence/interruption; `escalate_problem`: neutral/frustrated tone;
+   * `change_topic`: initiate/follow), the primary/neutral variant's own key
+   * is reused rather than inventing a fifteenth key for one fallback path —
+   * every other B1 intent has exactly one praise key already, reused as-is.
+   * `escalate_problem` is B1's runtime-renamed dispatch key for b1.json's
+   * own `report_problem` — see `curriculum/b1Map.js`'s `B1_CAN_DO_INTENT`
+   * comment for why.
+   */
+  narrate_past_event: { independent: 'b1PraiseSequenceIndependent', helped: 'b1PraiseSequenceHelped' },
+  state_opinion: { independent: 'b1PraiseOpinionIndependent', helped: 'b1PraiseOpinionHelped' },
+  agree_or_disagree: { independent: 'b1PraiseAgreeIndependent', helped: 'b1PraiseAgreeHelped' },
+  compare_and_choose: { independent: 'b1PraiseCompareIndependent', helped: 'b1PraiseCompareHelped' },
+  describe_experience: { independent: 'b1PraiseDescribeIndependent', helped: 'b1PraiseDescribeHelped' },
+  recommend_or_warn: { independent: 'b1PraiseRecommendIndependent', helped: 'b1PraiseRecommendHelped' },
+  escalate_problem: { independent: 'b1PraiseProblemIndependent', helped: 'b1PraiseProblemHelped' },
+  negotiate_solution: { independent: 'b1PraiseNegotiateIndependent', helped: 'b1PraiseNegotiateHelped' },
+  state_future_intent: { independent: 'b1PraiseFutureIndependent', helped: 'b1PraiseFutureHelped' },
+  state_real_condition: { independent: 'b1PraiseConditionIndependent', helped: 'b1PraiseConditionHelped' },
+  state_hypothetical: { independent: 'b1PraiseHypotheticalIndependent', helped: 'b1PraiseHypotheticalHelped' },
+  change_topic: { independent: 'b1PraiseTopicChangeIndependent', helped: 'b1PraiseTopicChangeHelped' },
+  ask_follow_up: { independent: 'b1PraiseFollowUpIndependent', helped: 'b1PraiseFollowUpHelped' },
+  summarize_other: { independent: 'b1PraiseSummaryIndependent', helped: 'b1PraiseSummaryHelped' },
 }
 
 /*
@@ -179,6 +211,18 @@ function buildRemotePayload(params, kind) {
      * propose turn from episode 37/38's place/confirm ones.
      */
     arrange_stage: params.arrangeStage ?? '',
+    /*
+     * B1's own subtype fields — the intent's communicative FORM/tone/role,
+     * not its topic. Same bug class as `arrange_stage` above: a remote judge
+     * that does not know a `state_future_intent` turn asked for a `decision`
+     * rather than a `hope` is grading a different question, and a
+     * `change_topic` turn without its `role` cannot tell "start a new topic"
+     * from "engage with one Lingua just raised".
+     */
+    narrative_form: params.narrativeForm ?? '',
+    tone: params.tone ?? '',
+    situation_form: params.situationForm ?? '',
+    conversational_role: params.role ?? '',
     interest_id: params.interestId ?? null,
     native_language: params.nativeLanguage ?? 'en',
     interface_language: params.interfaceLanguage ?? 'en',
@@ -191,7 +235,7 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', abilityForm = '', arrangeStage = '', praisePrefix = '', expected = '', signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', abilityForm = '', arrangeStage = '', praisePrefix = '', expected = '', narrativeForm = '', tone = '', situationForm = '', role = '', signal, remote } = params
   const kind = step?.evalKind
   /*
    * Whether this counts as unaided production, used only to choose the wording
@@ -253,6 +297,19 @@ export async function evaluateEpisodeResponse(params) {
      * forever without it — same bug class as the fields above.
      */
     ...(expected ? { expected } : {}),
+    /*
+     * B1's own subtype fields, same bug class as the fields above them:
+     * without these, `narrate_past_event` defaults to its `sequence` form
+     * regardless of which one the turn asked for, `escalate_problem`
+     * defaults to a neutral tone even on a frustration turn,
+     * `state_future_intent` defaults to `decision` even on a hope/plan/
+     * prediction turn, and `change_topic` defaults to `initiate` even on a
+     * turn asking the learner to follow someone else's change.
+     */
+    ...(narrativeForm ? { narrativeForm } : {}),
+    ...(tone ? { tone } : {}),
+    ...(situationForm ? { situationForm } : {}),
+    ...(role ? { role } : {}),
   })
 
   // Conclusive local verdict (closed step, clear accept, empty, clear failure).

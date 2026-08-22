@@ -33,10 +33,16 @@ if (!existsSync(DIST)) {
  * `check-curriculum-loading.mjs`'s own two-part budget (app code vs curriculum
  * data, checked separately per-episode) already accounts for exactly this
  * growth and stays green; this flat total is what needed to move, the same
- * reason `LOCALE_MAX_KB` below has already moved three times. 550 kB leaves
- * headroom for the same de-minimis growth without another edit.
+ * reason `LOCALE_MAX_KB` below has already moved three times.
+ *
+ * 550 kB held for A2; `LC-INT-001` wiring B1's 23 episodes in the same way
+ * took the entry to 565.9 kB — measured, not guessed — from B1's own arc
+ * metadata in `preA1Skeleton.generated.js` and its 456 new interface/praise
+ * keys landing in the base dictionary, the identical, expected growth shape
+ * A2's own note above describes. 600 kB leaves headroom for the same
+ * de-minimis growth without another edit.
  */
-const ENTRY_BUDGET_KB = 550
+const ENTRY_BUDGET_KB = 600
 /*
  * A locale's own chunk. Sixty was calibrated when the product had one level's
  * worth of strings; A1 arc 1 added seventy-five keys in eight languages and the
@@ -67,10 +73,16 @@ const ENTRY_BUDGET_KB = 550
  * identical across all seven gated locales pending a later translation PR —
  * see that merge's own commit) into every locale file. That took Arabic to
  * 139.1 kB and Japanese to 134.5 kB — both still three-byte-heavy scripts, the
- * same reason this number has already moved twice. Measured, not guessed;
- * 150 kB leaves headroom for the same de-minimis growth.
+ * same reason this number has already moved twice.
+ *
+ * 150 kB held for A2; `LC-INT-001` merging B1's 456 new keys the same way
+ * (draft English, identical across all seven gated locales pending a later
+ * translation PR — see that merge's own commit) took Arabic to 173.7 kB and
+ * Japanese to 168.9 kB — both still three-byte-heavy scripts, the same reason
+ * this number keeps moving. Measured, not guessed; 190 kB leaves headroom for
+ * the same de-minimis growth.
  */
-const LOCALE_MAX_KB = 150
+const LOCALE_MAX_KB = 190
 
 const files = readdirSync(DIST).filter(f => f.endsWith('.js'))
 const sizeKb = (f) => statSync(join(DIST, f)).size / 1024

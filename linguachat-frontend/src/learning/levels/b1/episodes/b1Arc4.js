@@ -11,6 +11,13 @@
  * and reinforcing A2's `report_a_problem`/`polite_request` plus B1's own
  * `describe_an_experience`/`agree_or_disagree` (the arc's `a2Reuse`/`b1Reuse`).
  *
+ * RUNTIME-ONLY RENAME (LC-INT-001 integration): this arc's `evalKind` is
+ * `escalate_problem`, not b1.json's own `report_problem` — A2's own,
+ * different `report_problem` intent already occupies that dispatch string in
+ * the shared `evaluateFree` switch. See `b1Map.js`'s `B1_CAN_DO_INTENT`
+ * comment for the full account; the curricular intent (one B1 speech act,
+ * two can-dos, a `tone` subtype) is unchanged.
+ *
  * Self-contained for the same reason arcs 1-3 are — see arc 1's file header.
  * The new `problem` semantic type this arc needs is registered self-contained
  * in `../semanticSlots.js`'s `B1_NEW_SEMANTIC_TYPES` (already reconciled with
@@ -83,7 +90,7 @@ const B1_EP1 = {
       speaker: 'lingua',
       promptEn: "Tell me about a problem, {name} — something that's wrong and what you expected instead.",
       instructionKey: 'b1Ep11OpenInstruction',
-      evalKind: 'report_problem',
+      evalKind: 'escalate_problem',
       tone: 'neutral',
       suggestionEn: "There's a problem with my order. I ordered a chicken sandwich, but I got a cheese one.",
       itemIds: ['b1_theres_a_problem_with', 'b1_i_ordered_but_i_got', 'b1_problem_statement_pattern'],
@@ -93,7 +100,7 @@ const B1_EP1 = {
       speaker: 'lingua',
       promptEn: 'Now a different problem — something delivered broken or missing. No help this time.',
       instructionKey: 'b1Ep11OpenInstruction2',
-      evalKind: 'report_problem',
+      evalKind: 'escalate_problem',
       tone: 'neutral',
       // no suggestionEn: this arc's evidenceTarget "two unaided problem
       // statements"
@@ -114,7 +121,7 @@ const B1_EP2 = {
   durationKey: 'b1Ep12Duration',
   estimatedMinutes: 9,
   xp: 90,
-  prerequisites: ['escalate_and_resolve_a_problem'],
+  prerequisites: ['somethings_not_right'],
   skillPrerequisites: ['polite_request'],
   gardenItems: [
     'b1_would_it_be_possible', 'b1_could_i_possibly', 'b1_negotiate_pattern',
@@ -188,7 +195,7 @@ const B1_EP3 = {
   durationKey: 'b1Ep13Duration',
   estimatedMinutes: 7,
   xp: 80,
-  prerequisites: ['escalate_and_resolve_a_problem'],
+  prerequisites: ['somethings_not_right'],
   skillPrerequisites: [],
   gardenItems: ['b1_this_isnt_ideal', 'b1_i_understand_but', 'b1_polite_frustration_pattern'],
   reuseSkills: ['escalate_and_resolve_a_problem'],
@@ -230,7 +237,7 @@ const B1_EP3 = {
       speaker: 'lingua',
       promptEn: "This is the second time this has happened, {name}. Tell me how you feel about it — politely.",
       instructionKey: 'b1Ep13OpenInstruction',
-      evalKind: 'report_problem',
+      evalKind: 'escalate_problem',
       tone: 'frustrated',
       suggestionEn: "This isn't ideal — I ordered this three days ago, but I understand these things happen.",
       itemIds: ['b1_this_isnt_ideal', 'b1_polite_frustration_pattern'],
@@ -240,7 +247,7 @@ const B1_EP3 = {
       speaker: 'lingua',
       promptEn: 'One more time — a different delay. Show you are a little frustrated, but stay cooperative. No help this time.',
       instructionKey: 'b1Ep13OpenInstruction2',
-      evalKind: 'report_problem',
+      evalKind: 'escalate_problem',
       tone: 'frustrated',
       // no suggestionEn: this arc's evidenceTarget "one unaided use of a
       // frustration phrase that stays cooperative"
@@ -262,7 +269,7 @@ const B1_EP4 = {
   durationKey: 'b1Ep14Duration',
   estimatedMinutes: 10,
   xp: 100,
-  prerequisites: ['escalate_and_resolve_a_problem', 'negotiate_a_solution'],
+  prerequisites: ['somethings_not_right', 'lets_sort_this_out'],
   skillPrerequisites: [],
   gardenItems: [],
   // integrated mini-story: raise a problem, negotiate a solution, and stay
@@ -287,7 +294,7 @@ const B1_EP4 = {
       speaker: 'lingua',
       promptEn: 'Your turn: raise a problem of your own, from start to finish — what went wrong, and what solution you want. No help this time.',
       instructionKey: 'b1Ep14OpenInstruction',
-      evalKind: 'report_problem',
+      evalKind: 'escalate_problem',
       tone: 'neutral',
       itemIds: ['b1_theres_a_problem_with', 'b1_problem_statement_pattern'],
     },

@@ -50,7 +50,7 @@ const ANSWERS = {
   compare_and_choose: "The city is busier than the countryside, but it's more exciting. Of the three, I think the coast is the most relaxing.",
   describe_experience: 'It was quiet, beautiful, and relaxing. It made me feel really peaceful.',
   recommend_or_warn: "I'd recommend the coast, because it's quiet and relaxing.",
-  report_problem: {
+  escalate_problem: {  // renamed from b1.json's 'report_problem'; see b1Map.js's B1_CAN_DO_INTENT comment
     neutral: "There's a problem with my order. I ordered a chicken sandwich, but I got a cheese one.",
     frustrated: "This isn't ideal — I ordered this three days ago, but I understand these things happen.",
   },

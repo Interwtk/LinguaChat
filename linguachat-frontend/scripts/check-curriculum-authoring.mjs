@@ -52,8 +52,16 @@ import { A2_ARC5, getA2Arc5Episode } from '../src/learning/episodes/a2Arc5Conten
 import { A2_ARC6, getA2Arc6Episode } from '../src/learning/episodes/a2Arc6Content.js'
 import { A2_ARC_7, getA2Arc7Episode } from '../src/learning/episodes/a2Arc7Content.js'
 import { A2_RUNTIME_ARCS, A2_CAN_DO_INTENT } from '../src/learning/curriculum/a2Map.js'
+import { B1_ARC1, getB1Arc1Episode } from '../src/learning/episodes/b1Arc1Content.js'
+import { B1_ARC2, getB1Arc2Episode } from '../src/learning/episodes/b1Arc2Content.js'
+import { B1_ARC3, getB1Arc3Episode } from '../src/learning/episodes/b1Arc3Content.js'
+import { B1_ARC4, getB1Arc4Episode } from '../src/learning/episodes/b1Arc4Content.js'
+import { B1_ARC5, getB1Arc5Episode } from '../src/learning/episodes/b1Arc5Content.js'
+import { B1_ARC6, getB1Arc6Episode } from '../src/learning/episodes/b1Arc6Content.js'
+import { B1_ARC_SEVEN, getB1ArcSevenEpisode } from '../src/learning/episodes/b1Arc7Content.js'
+import { B1_RUNTIME_ARCS, B1_CAN_DO_INTENT } from '../src/learning/curriculum/b1Map.js'
 import {
-  PRE_A1, A1, A2, LEVELS, getLevel, episodesOfLevel, runtimeEpisodeCount, isLevelComplete,
+  PRE_A1, A1, A2, B1, LEVELS, getLevel, episodesOfLevel, runtimeEpisodeCount, isLevelComplete,
   levelIdOfEpisode, levelIdOfEpisodeId, playableLevelId, availableLevelIds, isKnownLevel,
 } from '../src/learning/curriculum/levels.js'
 import { episodeRequest, loadEpisodeContent, hasContentLoader, REFUSED } from '../src/learning/curriculum/episodeContent.js'
@@ -69,16 +77,20 @@ import { BLOCK_CANDIDATES } from '../src/learning/engine/formatChoice.js'
 let groups = 0
 const ok = () => { groups += 1 }
 
-/* Every episode with runtime content, in curriculum order: Pre-A1, then A1 arc by arc, then A2. */
+/* Every episode with runtime content, in curriculum order: Pre-A1, then A1 arc by arc, then A2, then B1. */
 const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7,
-  ...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7]
+  ...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7,
+  ...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN]
 const A1_EPISODES = [...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7]
 const A2_EPISODES = [...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7]
+const B1_EPISODES = [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN]
 const runtimeEpisode = (id) =>
   getEpisode(id) || getA1Arc1Episode(id) || getA1Arc2Episode(id) || getA1Arc3Episode(id) || getA1Arc4Episode(id) || getA1Arc5Episode(id)
     || getA1Arc6Episode(id) || getA1Arc7Episode(id)
     || getA2Arc1Episode(id) || getA2Arc2Episode(id) || getA2Arc3Episode(id) || getA2Arc4Episode(id) || getA2Arc5Episode(id)
     || getA2Arc6Episode(id) || getA2Arc7Episode(id)
+    || getB1Arc1Episode(id) || getB1Arc2Episode(id) || getB1Arc3Episode(id) || getB1Arc4Episode(id) || getB1Arc5Episode(id)
+    || getB1Arc6Episode(id) || getB1ArcSevenEpisode(id)
 
 /*
  * Which intent evidences a can-do, asked of the map that owns the level. A
@@ -86,7 +98,10 @@ const runtimeEpisode = (id) =>
  * which is the mistake this architecture keeps refusing to make.
  */
 const canDoIntentOf = (episode) =>
-  (episode?.level === 'A1' ? A1_CAN_DO_INTENT : episode?.level === 'A2' ? A2_CAN_DO_INTENT : CAN_DO_INTENT)[episode?.canDoId]
+  (episode?.level === 'A1' ? A1_CAN_DO_INTENT
+    : episode?.level === 'A2' ? A2_CAN_DO_INTENT
+      : episode?.level === 'B1' ? B1_CAN_DO_INTENT
+        : CAN_DO_INTENT)[episode?.canDoId]
 
 const receptiveFor = (episode) =>
   (episode?.level === 'A1' ? A1_RECEPTIVE_ITEMS : RECEPTIVE_ITEMS)
@@ -127,8 +142,11 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
 
   const levelId = levelIdOfEpisode(episode)
   if (!levelId) say(`declares level "${episode.level}", which the level registry does not know`)
-  /* the arcs OF THIS LEVEL: `ARCS` is Pre-A1's list and A1/A2 each declare their own */
-  const declaredArcs = episode.level === 'A1' ? A1_RUNTIME_ARCS : episode.level === 'A2' ? A2_RUNTIME_ARCS : ARCS
+  /* the arcs OF THIS LEVEL: `ARCS` is Pre-A1's list and A1/A2/B1 each declare their own */
+  const declaredArcs = episode.level === 'A1' ? A1_RUNTIME_ARCS
+    : episode.level === 'A2' ? A2_RUNTIME_ARCS
+      : episode.level === 'B1' ? B1_RUNTIME_ARCS
+        : ARCS
   if (!declaredArcs.includes(episode.arc)) say(`belongs to arc "${episode.arc}", which is not a declared arc`)
   if (!episode.canDoId) say('teaches no capability')
   else if (!canDoIntentOf(episode)) say(`teaches "${episode.canDoId}", which the curriculum map does not know`)
@@ -217,9 +235,11 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
   assert.equal(ARC.length, runtimeEpisodeCount(PRE_A1), 'Pre-A1 is what the skeleton says it is')
   assert.equal(A1_EPISODES.length, runtimeEpisodeCount(A1), 'and so is A1')
   assert.equal(A2_EPISODES.length, runtimeEpisodeCount(A2), 'and so is A2')
+  assert.equal(B1_EPISODES.length, runtimeEpisodeCount(B1), 'and so is B1')
   console.log(`\n  ${RUNTIME_EPISODES.length} runtime episodes satisfy the authoring contract`
     + ` (${ARC.length} Pre-A1, ${A1_EPISODES.length} A1 across ${A1_RUNTIME_ARCS.length} arcs,`
-    + ` ${A2_EPISODES.length} A2 across ${A2_RUNTIME_ARCS.length} arcs)`)
+    + ` ${A2_EPISODES.length} A2 across ${A2_RUNTIME_ARCS.length} arcs,`
+    + ` ${B1_EPISODES.length} B1 across ${B1_RUNTIME_ARCS.length} arcs)`)
   ok()
 }
 
@@ -268,7 +288,7 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
 
 /* ---- 3) the level registry says what it means ---- */
 {
-  assert.deepEqual(LEVELS.map(l => l.id), [PRE_A1, A1, A2], 'the registry knows Pre-A1, A1 and A2, in order')
+  assert.deepEqual(LEVELS.map(l => l.id), [PRE_A1, A1, A2, B1], 'the registry knows Pre-A1, A1, A2 and B1, in order')
   /*
    * `implemented` became `contentStatus` when A1's first arc landed: a boolean
    * could not distinguish "has content" from "is finished", and A1 is now the
@@ -283,6 +303,9 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
   assert.equal(getLevel(A2).contentStatus, 'partial', 'A2 has runtime content for all seven designed arcs, and is still not complete/available until its own completion gate says so')
   assert.equal(isLevelComplete(A2), false, 'a partially built level is never complete')
   assert.equal(getLevel(A2).available, false, 'A2 may not be opened')
+  assert.equal(getLevel(B1).contentStatus, 'partial', 'B1 has runtime content for all seven designed arcs, and is still not complete/available until its own completion gate says so')
+  assert.equal(isLevelComplete(B1), false, 'a partially built level is never complete')
+  assert.equal(getLevel(B1).available, false, 'B1 may not be opened')
   assert.deepEqual(availableLevelIds(), [PRE_A1], 'exactly one level is available today')
   assert.equal(playableLevelId(), PRE_A1)
 
@@ -301,6 +324,9 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
     'and the arcs it holds are exactly the ones declared as implemented, in order')
   assert.equal(runtimeEpisodeCount(A2), A2_EPISODES.length, 'A2 holds exactly its implemented arcs')
   assert.deepEqual([...new Set(A2_EPISODES.map(ep => ep.arc))], A2_RUNTIME_ARCS,
+    'and the arcs it holds are exactly the ones declared as implemented, in order')
+  assert.equal(runtimeEpisodeCount(B1), B1_EPISODES.length, 'B1 holds exactly its implemented arcs')
+  assert.deepEqual([...new Set(B1_EPISODES.map(ep => ep.arc))], B1_RUNTIME_ARCS,
     'and the arcs it holds are exactly the ones declared as implemented, in order')
   assert.equal(runtimeEpisodeCount(PRE_A1), 17, 'Pre-A1 is seventeen episodes')
   ok()

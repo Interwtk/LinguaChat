@@ -5,13 +5,22 @@
  * slot" rather than omission). `engine/**` is out of this task's write scope;
  * `LC-INT-001` merges these keys into the real `INTENT_SLOTS`.
  *
- * `B1_NEW_SEMANTIC_TYPES` below registers B1's one genuinely new type,
- * `problem` (arc 4, `somethings_wrong`), self-contained the same way — it is
- * NOT `engine/semanticContext.js`'s real `SEMANTIC_TYPES` (out of write
- * scope), but the exact shape `LC-INT-001` needs to merge one in: matches
+ * `B1_NEW_SEMANTIC_TYPES` below records B1's one genuinely new type, `problem`
+ * (arc 4, `somethings_wrong`), self-contained the same way — matching
  * b1.json's own `semanticTypes.proposed[0]` entry, already reconciled with
  * B2's `problem_type`/C1's `negotiated_item` in
  * `docs/curriculum/semantic-types.md`.
+ *
+ * FOUND ALREADY TRUE AT `LC-INT-001` INTEGRATION TIME: `engine/
+ * semanticContext.js`'s real `SEMANTIC_TYPES` already registers `'problem'`
+ * — A2 (`LC-CONT-A2`, a sibling lane this file could not see; wired in by
+ * this same `LC-INT-001`) proposed and registered the identical type name
+ * for its own `report_problem` intent first. `SEMANTIC_TYPES` is a flat
+ * list of type NAMES with no enforced `incompatibleWith`/`requiredBy` (that
+ * detail is documentary only, per that file's own comment), so B1 needs no
+ * second registration — it reuses the existing entry. This object stays for
+ * the design record (`requiredBy`/`incompatibleWith` as B1 itself needs
+ * them); no merge into `SEMANTIC_TYPES` is required or performed.
  */
 export const B1_NEW_SEMANTIC_TYPES = {
   problem: {
@@ -33,8 +42,10 @@ export const B1_INTENT_SLOTS = {
   describe_experience: ['place', 'activity', 'feeling'],
   recommend_or_warn: ['place', 'activity'],
   // arc 4 — escalate_and_resolve_a_problem ∪ negotiate_a_solution ∪
-  // express_frustration_politely semanticNeeds (b1.json arc 4)
-  report_problem: ['problem', 'generic_object', 'place'],
+  // express_frustration_politely semanticNeeds (b1.json arc 4). Key renamed
+  // from b1.json's `report_problem` at LC-INT-001 integration time — see
+  // b1Map.js's B1_CAN_DO_INTENT comment for the collision this resolves.
+  escalate_problem: ['problem', 'generic_object', 'place'],
   negotiate_solution: ['problem', 'generic_object'],
   // arc 5 — talk_about_plans_and_intentions ∪ talk_about_hopes_and_ambitions
   // ∪ talk_about_real_conditions ∪ imagine_a_hypothetical semanticNeeds (b1.json arc 5)
