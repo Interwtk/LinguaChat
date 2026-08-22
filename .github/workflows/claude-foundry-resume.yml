@@ -1,0 +1,146 @@
+name: Claude — curriculum foundry resume
+run-name: Foundry resume ${{ inputs.lane }} — ${{ inputs.task_id }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: 'Exact foundry task id.'
+        required: true
+        type: string
+      lane:
+        description: 'Foundry lane.'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: linguachat-foundry-${{ inputs.lane }}
+  cancel-in-progress: false
+
+jobs:
+  resume:
+    runs-on: ubuntu-latest
+    timeout-minutes: 110
+    env:
+      LINGUACHAT_PROVIDER: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Resolve exact resumable task and branch
+        id: task
+        env:
+          TASK_ID: ${{ inputs.task_id }}
+          LANE: ${{ inputs.lane }}
+        run: |
+          set -euo pipefail
+          JSON=$(node .github/scripts/foundry-next.mjs --task "$TASK_ID")
+          READY=$(printf '%s' "$JSON" | jq -r .ready)
+          EXPECTED_LANE=$(printf '%s' "$JSON" | jq -r .lane)
+          BRANCH=$(printf '%s' "$JSON" | jq -r .branch)
+          [ "$EXPECTED_LANE" = "$LANE" ] || { echo "::error::$TASK_ID belongs to $EXPECTED_LANE, not $LANE"; exit 1; }
+          if [ "$READY" != "true" ]; then
+            echo "claimable=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1 || { echo "::error::Resume requires existing branch $BRANCH"; exit 1; }
+          git fetch origin "$BRANCH" --quiet
+          git switch -C "$BRANCH" "origin/$BRANCH"
+          echo "claimable=true" >> "$GITHUB_OUTPUT"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          echo "start_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Refuse clearly if the Claude token is absent
+        if: steps.task.outputs.claimable == 'true'
+        env:
+          TOKEN_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          [ "$TOKEN_PRESENT" = "true" ] || { echo "::error::CLAUDE_CODE_OAUTH_TOKEN is not configured"; exit 1; }
+
+      - uses: actions/setup-node@v4
+        if: steps.task.outputs.claimable == 'true'
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: linguachat-frontend/package-lock.json
+
+      - uses: actions/setup-python@v5
+        if: steps.task.outputs.claimable == 'true'
+        with:
+          python-version: '3.12'
+
+      - name: Install deterministic product dependencies
+        if: steps.task.outputs.claimable == 'true'
+        run: |
+          npm ci --prefix linguachat-frontend
+          pip install -r linguachat-backend/requirements.txt
+
+      - uses: anthropics/claude-code-action@v1
+        if: steps.task.outputs.claimable == 'true'
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Resume an EXISTING LinguaChat Curriculum Foundry task. Do not restart it and do not create another branch.
+
+            TASK: "${{ inputs.task_id }}"
+            LANE: "${{ inputs.lane }}"
+            EXACT BRANCH: "${{ steps.task.outputs.branch }}"
+
+            Read CLAUDE.md, .ai/foundry/README.md, .ai/foundry/tasks.json, and every evidence/curriculum contract relevant to this exact task before editing.
+
+            RESUME CONTRACT
+            - You are already on the exact published branch. Preserve the existing Draft PR and continue it.
+            - Never edit .ai/TASKS.md, .ai/STATE.md or .ai/HANDOFF.md.
+            - Work only inside this task's writeScopes plus its own .ai/foundry/completed/<TASK>.json and .ai/foundry/requests/<TASK>.md.
+            - Incorporate current origin/main before final validation, resolving only conflicts inside allowed scope.
+            - NEVER spend the whole run researching without saving progress. For research tasks, after each 5 NEW fully verified usable studies, immediately update the corpus/batch notes, commit, and push a checkpoint to THIS branch before continuing. If fewer than 5 can be verified before the run ends, push every verified usable record you do have rather than losing the work. Do not push malformed or guessed records.
+            - Each full research batch still requires at least 25 NEW unique PRIMARY empirical studies after deduplication. Reviews/meta-analyses/theory do not count. Every counted record must satisfy the repository evidence contract, including two distinct HTTPS verification sources and no invented DOI/sample/population/result/limitation/quality data.
+            - Pedagogy stays on second-language acquisition/teaching/assessment. Psychology stays on learning psychology, not diagnosis or therapy.
+            - Keep the PR Draft until truly complete.
+
+            COMPLETION
+            - Run targeted checks while working.
+            - Research tasks must pass the matching partial supervisor evidence gate.
+            - Before completion run TWO consecutive clean full QA cycles after the last edit: frontend check:all + build + check:i18n, backend compileall + pytest, plus the Foundry scope guard. Any edit resets the two-cycle count.
+            - Only when genuinely complete create .ai/foundry/completed/${{ inputs.task_id }}.json with status=complete and cleanCycles=2, fill the PR Evidence section with measured results, self-review the full diff, push, and mark Ready.
+            - If you cannot finish in this run, leave the PR Draft but PUSH SUBSTANTIVE CHECKPOINTS so the next resume starts from real progress.
+
+            Hard product boundaries remain: Lingua tutor / Chatto mascot-only; Pre-A1 frozen; A1 unavailable; one user_language targeting English; no Supabase; no voice/STT/TTS/WebRTC/pronunciation scoring; no paid-provider runtime calls; frozen visual architecture.
+          allowed_bots: github-actions
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 180
+            --allowedTools Read,Write,Edit,Glob,Grep,Bash,TodoWrite,WebSearch,WebFetch
+
+      - name: Verify resume produced durable progress
+        if: always() && steps.task.outputs.claimable == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: ${{ steps.task.outputs.branch }}
+          START_SHA: ${{ steps.task.outputs.start_sha }}
+          TASK_ID: ${{ inputs.task_id }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$BRANCH" --quiet
+          END_SHA=$(git rev-parse "origin/$BRANCH")
+          if [ "$END_SHA" = "$START_SHA" ]; then
+            PR=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+            if [ -n "$PR" ]; then
+              gh pr comment "$PR" --body "Foundry resume watchdog: this worker ended without advancing the branch. The task remains Draft and resumable; the orchestrator will retry the same task/branch, not create a replacement." || true
+            fi
+            echo "::error::$TASK_ID resume produced no durable branch progress"
+            exit 1
+          fi
+          echo "$TASK_ID advanced from $START_SHA to $END_SHA." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Clean no-op
+        if: steps.task.outputs.claimable != 'true'
+        run: echo "Nothing claimable for this exact task." >> "$GITHUB_STEP_SUMMARY"
