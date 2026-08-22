@@ -1,7 +1,10 @@
 /*
  * check-b1-arc4 — B1 arc 4 ("somethings_wrong"), self-contained.
  *
- * Same shape and rigor as arcs 1-3's checks. `report_problem` carries two
+ * Same shape and rigor as arcs 1-3's checks. `escalate_problem` (renamed
+ * from b1.json's own `report_problem` at LC-INT-001 integration time — see
+ * b1Map.js's B1_CAN_DO_INTENT comment for the A2 collision this resolves)
+ * carries two
  * can-dos via its `tone` subtype (neutral -> escalate_and_resolve_a_problem,
  * frustrated -> express_frustration_politely, the latter `scope: should`);
  * `negotiate_solution` is its own distinct intent. This arc also registers
@@ -43,14 +46,14 @@ const arc4 = BLUEPRINT.arcs.find(a => a.order === 4)
 
 /* ---- 2) capability -> intent registration, tone subtype carries two can-dos ---- */
 {
-  assert.equal(B1_CAN_DO_INTENT.escalate_and_resolve_a_problem, 'report_problem')
-  assert.equal(B1_CAN_DO_INTENT.express_frustration_politely, 'report_problem')
+  assert.equal(B1_CAN_DO_INTENT.escalate_and_resolve_a_problem, 'escalate_problem')
+  assert.equal(B1_CAN_DO_INTENT.express_frustration_politely, 'escalate_problem')
   assert.equal(B1_CAN_DO_INTENT.negotiate_a_solution, 'negotiate_solution')
   assert.ok(B1_REQUIRED_CAN_DOS.includes('escalate_and_resolve_a_problem'))
   assert.ok(B1_REQUIRED_CAN_DOS.includes('negotiate_a_solution'))
   assert.ok(!B1_REQUIRED_CAN_DOS.includes('express_frustration_politely'), 'express_frustration_politely is scope=should, not required')
   assert.ok(B1_SHOULD_CAN_DOS.includes('express_frustration_politely'))
-  assert.deepEqual(b1IntentsOf('escalate_and_resolve_a_problem'), ['report_problem'])
+  assert.deepEqual(b1IntentsOf('escalate_and_resolve_a_problem'), ['escalate_problem'])
   assert.deepEqual(b1IntentsOf('negotiate_a_solution'), ['negotiate_solution'])
   ok()
 }
@@ -64,7 +67,8 @@ const arc4 = BLUEPRINT.arcs.find(a => a.order === 4)
   const ep1 = getB1Arc4Episode('somethings_not_right')
   const ep2 = getB1Arc4Episode('lets_sort_this_out')
   assert.deepEqual(ep1.prerequisites, [])
-  assert.deepEqual(ep2.prerequisites, ['escalate_and_resolve_a_problem'])
+  /* episode `prerequisites` names EPISODE ids — see check-b1-arc1.mjs's identical note */
+  assert.deepEqual(ep2.prerequisites, ['somethings_not_right'])
   ok()
 }
 
@@ -83,7 +87,7 @@ const arc4 = BLUEPRINT.arcs.find(a => a.order === 4)
   const blueprintProblem = BLUEPRINT.semanticTypes.proposed.find(t => t.id === 'problem')
   assert.ok(blueprintProblem, 'b1.json must propose the problem semantic type')
   assert.deepEqual(new Set(B1_NEW_SEMANTIC_TYPES.problem.requiredBy), new Set(blueprintProblem.requiredBy))
-  assert.deepEqual(new Set(B1_INTENT_SLOTS.report_problem), new Set(['problem', 'generic_object', 'place']))
+  assert.deepEqual(new Set(B1_INTENT_SLOTS.escalate_problem), new Set(['problem', 'generic_object', 'place']))
   assert.deepEqual(new Set(B1_INTENT_SLOTS.negotiate_solution), new Set(['problem', 'generic_object']))
   ok()
 }
@@ -128,14 +132,14 @@ const NONSENSE = 'purple bicycle Tuesday maybe'
   const negEmpty = evaluateNegotiateSolution('', {})
   assert.equal(negEmpty.understood, false)
 
-  // report_problem (neutral) near misses
+  // escalate_problem (neutral) near misses
   const problemNoExpectation = evaluateReportProblem("There's a problem with my order.", { tone: 'neutral' })
   assert.equal(problemNoExpectation.completedObjective, false)
   assert.equal(problemNoExpectation.errorType, 'missing_expectation')
   const expectationNoProblem = evaluateReportProblem('I ordered fish.', { tone: 'neutral' })
   assert.equal(expectationNoProblem.completedObjective, false)
   assert.equal(expectationNoProblem.errorType, 'missing_problem_statement')
-  // report_problem (frustrated) near misses
+  // escalate_problem (frustrated) near misses
   const frustrationNoDetail = evaluateReportProblem("This isn't ideal, but I understand.", { tone: 'frustrated' })
   assert.equal(frustrationNoDetail.completedObjective, false)
   assert.equal(frustrationNoDetail.errorType, 'missing_problem_detail')
@@ -165,19 +169,19 @@ const NONSENSE = 'purple bicycle Tuesday maybe'
   assert.equal(unknown.understood, false)
   assert.equal(unknown.conclusive, true)
   assert.equal(unknown.retryRequired, true)
-  assert.equal(evaluateB1Free('report_problem', "There's a problem with my bag. I expected it this morning, but it hasn't arrived.", { tone: 'neutral' }).completedObjective, true)
+  assert.equal(evaluateB1Free('escalate_problem', "There's a problem with my bag. I expected it this morning, but it hasn't arrived.", { tone: 'neutral' }).completedObjective, true)
   assert.equal(evaluateB1Free('negotiate_solution', 'Could I possibly get a refund instead?', {}).completedObjective, true)
   ok()
 }
 
 /* ---- 9) MODEL_ANSWER / PROMPT tables cover both of this arc's intents ---- */
 {
-  assert.ok(B1_MODEL_ANSWER.report_problem, 'MODEL_ANSWER must have an entry for report_problem')
+  assert.ok(B1_MODEL_ANSWER.escalate_problem, 'MODEL_ANSWER must have an entry for escalate_problem')
   assert.ok(B1_MODEL_ANSWER.negotiate_solution, 'MODEL_ANSWER must have an entry for negotiate_solution')
-  assert.ok(B1_PROMPT.report_problem, 'PROMPT must have an entry for report_problem')
+  assert.ok(B1_PROMPT.escalate_problem, 'PROMPT must have an entry for escalate_problem')
   assert.ok(B1_PROMPT.negotiate_solution, 'PROMPT must have an entry for negotiate_solution')
-  const neutralAnswer = B1_MODEL_ANSWER.report_problem({ tone: 'neutral' })
-  const frustratedAnswer = B1_MODEL_ANSWER.report_problem({ tone: 'frustrated' })
+  const neutralAnswer = B1_MODEL_ANSWER.escalate_problem({ tone: 'neutral' })
+  const frustratedAnswer = B1_MODEL_ANSWER.escalate_problem({ tone: 'frustrated' })
   assert.notEqual(neutralAnswer, frustratedAnswer, 'the two tones must not share one model answer')
   assert.equal(evaluateReportProblem(neutralAnswer, { tone: 'neutral' }).completedObjective, true, 'MODEL_ANSWER must itself pass its own evaluator')
   assert.equal(evaluateReportProblem(frustratedAnswer, { tone: 'frustrated' }).completedObjective, true)

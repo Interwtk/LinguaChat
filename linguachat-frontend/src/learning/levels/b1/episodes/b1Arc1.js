@@ -122,7 +122,7 @@ const B1_EP2 = {
   durationKey: 'b1Ep2Duration',
   estimatedMinutes: 10,
   xp: 85,
-  prerequisites: ['narrate_connected_event'],
+  prerequisites: ['one_thing_after_another'],
   skillPrerequisites: ['talk_about_what_you_did'],
   gardenItems: [
     'b1_past_continuous_pattern', 'b1_when_while_pattern', 'b1_suddenly', 'b1_just_then',
@@ -205,7 +205,7 @@ const B1_EP3 = {
   durationKey: 'b1Ep3Duration',
   estimatedMinutes: 9,
   xp: 90,
-  prerequisites: ['narrate_connected_event', 'narrate_interrupted_action'],
+  prerequisites: ['one_thing_after_another', 'when_it_happened'],
   skillPrerequisites: ['talk_about_what_you_did'],
   gardenItems: [],
   // combines both of this arc's new can-dos in one longer narration, per

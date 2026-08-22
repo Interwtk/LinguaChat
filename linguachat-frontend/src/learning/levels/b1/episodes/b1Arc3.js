@@ -181,7 +181,7 @@ const B1_EP3 = {
   durationKey: 'b1Ep9Duration',
   estimatedMinutes: 8,
   xp: 85,
-  prerequisites: ['compare_options_with_reasons', 'describe_an_experience'],
+  prerequisites: ['more_than_two', 'the_trip_i_took'],
   skillPrerequisites: [],
   gardenItems: ['b1_id_recommend', 'b1_i_wouldnt_recommend', 'b1_recommend_warn_pattern', 'b1_id_avoid'],
   reuseSkills: ['compare_options_with_reasons', 'describe_an_experience'],
@@ -253,7 +253,7 @@ const B1_EP4 = {
   durationKey: 'b1Ep10Duration',
   estimatedMinutes: 9,
   xp: 95,
-  prerequisites: ['compare_options_with_reasons', 'describe_an_experience', 'recommend_or_warn'],
+  prerequisites: ['more_than_two', 'the_trip_i_took', 'id_recommend'],
   skillPrerequisites: [],
   gardenItems: [],
   // combines all three new can-dos in one exchange, per b1.json arc 3's

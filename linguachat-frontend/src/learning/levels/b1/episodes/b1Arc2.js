@@ -103,7 +103,7 @@ const B1_EP2 = {
   durationKey: 'b1Ep5Duration',
   estimatedMinutes: 9,
   xp: 85,
-  prerequisites: ['give_an_opinion'],
+  prerequisites: ['what_i_think'],
   skillPrerequisites: ['express_an_opinion_with_a_reason'],
   gardenItems: [
     'b1_i_agree', 'b1_i_dont_think_so', 'b1_youre_right',
@@ -178,7 +178,7 @@ const B1_EP3 = {
   durationKey: 'b1Ep6Duration',
   estimatedMinutes: 8,
   xp: 90,
-  prerequisites: ['give_an_opinion', 'agree_or_disagree'],
+  prerequisites: ['what_i_think', 'agree_to_disagree'],
   skillPrerequisites: ['express_an_opinion_with_a_reason'],
   gardenItems: [],
   // combines both new can-dos in one exchange, per b1.json arc 2's shape

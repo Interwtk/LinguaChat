@@ -6236,6 +6236,1501 @@ export const EPISODE_SKELETON = [
         "type": "completion"
       }
     ]
+  },
+  {
+    "id": "one_thing_after_another",
+    "level": "B1",
+    "arc": "what_happened",
+    "titleKey": "b1Ep1Title",
+    "goalKey": "b1Ep1Goal",
+    "canDoId": "narrate_connected_event",
+    "canDoNameKey": "b1Ep1CanDoName",
+    "durationKey": "b1Ep1Duration",
+    "estimatedMinutes": 9,
+    "xp": 80,
+    "gardenItems": [
+      "b1_first",
+      "b1_then",
+      "b1_after_that",
+      "b1_before_that",
+      "b1_finally",
+      "b1_sequence_connectors_pattern"
+    ],
+    "skillPrerequisites": [
+      "talk_about_what_you_did"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "talk_about_what_you_did"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_first",
+          "b1_then",
+          "b1_after_that",
+          "b1_finally"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_then"
+      },
+      {
+        "type": "word_order",
+        "itemId": "b1_after_that"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_then"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "narrate_past_event",
+        "itemIds": [
+          "b1_first",
+          "b1_then",
+          "b1_after_that",
+          "b1_finally",
+          "b1_sequence_connectors_pattern"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "when_it_happened",
+    "level": "B1",
+    "arc": "what_happened",
+    "titleKey": "b1Ep2Title",
+    "goalKey": "b1Ep2Goal",
+    "canDoId": "narrate_interrupted_action",
+    "canDoNameKey": "b1Ep2CanDoName",
+    "durationKey": "b1Ep2Duration",
+    "estimatedMinutes": 10,
+    "xp": 85,
+    "prerequisites": [
+      "one_thing_after_another"
+    ],
+    "gardenItems": [
+      "b1_past_continuous_pattern",
+      "b1_when_while_pattern",
+      "b1_suddenly",
+      "b1_just_then"
+    ],
+    "skillPrerequisites": [
+      "talk_about_what_you_did"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "narrate_connected_event"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_past_continuous_pattern",
+          "b1_when_while_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_when_while_pattern"
+      },
+      {
+        "type": "word_order",
+        "itemId": "b1_past_continuous_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_past_continuous_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "narrate_past_event",
+        "itemIds": [
+          "b1_past_continuous_pattern",
+          "b1_when_while_pattern",
+          "b1_suddenly"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "narrate_past_event",
+        "itemIds": [
+          "b1_past_continuous_pattern",
+          "b1_when_while_pattern",
+          "b1_just_then"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "the_whole_story",
+    "level": "B1",
+    "arc": "what_happened",
+    "titleKey": "b1Ep3Title",
+    "goalKey": "b1Ep3Goal",
+    "canDoId": "narrate_interrupted_action",
+    "canDoNameKey": "b1Ep3CanDoName",
+    "durationKey": "b1Ep3Duration",
+    "estimatedMinutes": 9,
+    "xp": 90,
+    "prerequisites": [
+      "one_thing_after_another",
+      "when_it_happened"
+    ],
+    "reinforces": true,
+    "skillPrerequisites": [
+      "talk_about_what_you_did"
+    ],
+    "role": "reinforcement",
+    "reuseSkills": [
+      "narrate_connected_event",
+      "talk_about_what_you_did"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "narrate_past_event",
+        "itemIds": [
+          "b1_first",
+          "b1_then",
+          "b1_after_that",
+          "b1_finally",
+          "b1_past_continuous_pattern",
+          "b1_when_while_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_when_while_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "narrate_past_event",
+        "itemIds": [
+          "b1_past_continuous_pattern",
+          "b1_when_while_pattern"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "what_i_think",
+    "level": "B1",
+    "arc": "i_think_that",
+    "titleKey": "b1Ep4Title",
+    "goalKey": "b1Ep4Goal",
+    "canDoId": "give_an_opinion",
+    "canDoNameKey": "b1Ep4CanDoName",
+    "durationKey": "b1Ep4Duration",
+    "estimatedMinutes": 8,
+    "xp": 80,
+    "gardenItems": [
+      "b1_i_think_that",
+      "b1_in_my_opinion",
+      "b1_personally",
+      "b1_opinion_frame_pattern",
+      "b1_because_reason_pattern"
+    ],
+    "skillPrerequisites": [
+      "express_an_opinion_with_a_reason"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "express_an_opinion_with_a_reason"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_i_think_that",
+          "b1_in_my_opinion",
+          "b1_opinion_frame_pattern",
+          "b1_because_reason_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_opinion_frame_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_opinion_frame_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_opinion",
+        "itemIds": [
+          "b1_i_think_that",
+          "b1_in_my_opinion",
+          "b1_opinion_frame_pattern",
+          "b1_because_reason_pattern"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_opinion",
+        "itemIds": [
+          "b1_personally",
+          "b1_opinion_frame_pattern",
+          "b1_because_reason_pattern"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "agree_to_disagree",
+    "level": "B1",
+    "arc": "i_think_that",
+    "titleKey": "b1Ep5Title",
+    "goalKey": "b1Ep5Goal",
+    "canDoId": "agree_or_disagree",
+    "canDoNameKey": "b1Ep5CanDoName",
+    "durationKey": "b1Ep5Duration",
+    "estimatedMinutes": 9,
+    "xp": 85,
+    "prerequisites": [
+      "what_i_think"
+    ],
+    "gardenItems": [
+      "b1_i_agree",
+      "b1_i_dont_think_so",
+      "b1_youre_right",
+      "b1_agree_disagree_pattern",
+      "b1_i_see_what_you_mean"
+    ],
+    "skillPrerequisites": [
+      "express_an_opinion_with_a_reason"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "give_an_opinion"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_i_agree",
+          "b1_i_dont_think_so",
+          "b1_agree_disagree_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_agree_disagree_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_i_agree"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "agree_or_disagree",
+        "itemIds": [
+          "b1_i_agree",
+          "b1_agree_disagree_pattern"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "agree_or_disagree",
+        "itemIds": [
+          "b1_i_dont_think_so",
+          "b1_youre_right",
+          "b1_i_see_what_you_mean"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "having_a_real_exchange",
+    "level": "B1",
+    "arc": "i_think_that",
+    "titleKey": "b1Ep6Title",
+    "goalKey": "b1Ep6Goal",
+    "canDoId": "agree_or_disagree",
+    "canDoNameKey": "b1Ep6CanDoName",
+    "durationKey": "b1Ep6Duration",
+    "estimatedMinutes": 8,
+    "xp": 90,
+    "prerequisites": [
+      "what_i_think",
+      "agree_to_disagree"
+    ],
+    "reinforces": true,
+    "skillPrerequisites": [
+      "express_an_opinion_with_a_reason"
+    ],
+    "role": "reinforcement",
+    "reuseSkills": [
+      "give_an_opinion",
+      "agree_or_disagree"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_opinion",
+        "itemIds": [
+          "b1_opinion_frame_pattern",
+          "b1_because_reason_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_agree_disagree_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "agree_or_disagree",
+        "itemIds": [
+          "b1_i_agree",
+          "b1_i_dont_think_so"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "more_than_two",
+    "level": "B1",
+    "arc": "which_one",
+    "titleKey": "b1Ep7Title",
+    "goalKey": "b1Ep7Goal",
+    "canDoId": "compare_options_with_reasons",
+    "canDoNameKey": "b1Ep7CanDoName",
+    "durationKey": "b1Ep7Duration",
+    "estimatedMinutes": 9,
+    "xp": 85,
+    "gardenItems": [
+      "b1_more_than",
+      "b1_less_than",
+      "b1_the_most",
+      "b1_of_the_three",
+      "b1_comparative_superlative_pattern",
+      "b1_multi_attribute_compare_pattern"
+    ],
+    "skillPrerequisites": [
+      "compare_two_things"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "compare_two_things"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_more_than",
+          "b1_the_most",
+          "b1_of_the_three",
+          "b1_comparative_superlative_pattern",
+          "b1_multi_attribute_compare_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_comparative_superlative_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_comparative_superlative_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "compare_and_choose",
+        "itemIds": [
+          "b1_more_than",
+          "b1_the_most",
+          "b1_of_the_three",
+          "b1_comparative_superlative_pattern"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "compare_and_choose",
+        "itemIds": [
+          "b1_less_than",
+          "b1_multi_attribute_compare_pattern"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "the_trip_i_took",
+    "level": "B1",
+    "arc": "which_one",
+    "titleKey": "b1Ep8Title",
+    "goalKey": "b1Ep8Goal",
+    "canDoId": "describe_an_experience",
+    "canDoNameKey": "b1Ep8CanDoName",
+    "durationKey": "b1Ep8Duration",
+    "estimatedMinutes": 10,
+    "xp": 90,
+    "gardenItems": [
+      "b1_multi_attribute_description_pattern",
+      "b1_feeling_reaction_pattern",
+      "b1_it_made_me_feel",
+      "b1_i_felt",
+      "b1_peaceful",
+      "b1_exhausting",
+      "b1_unforgettable"
+    ],
+    "skillPrerequisites": [
+      "describe_a_person_or_place"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "describe_a_person_or_place"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_multi_attribute_description_pattern",
+          "b1_feeling_reaction_pattern",
+          "b1_it_made_me_feel",
+          "b1_peaceful"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_multi_attribute_description_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_it_made_me_feel"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "describe_experience",
+        "itemIds": [
+          "b1_multi_attribute_description_pattern",
+          "b1_feeling_reaction_pattern",
+          "b1_i_felt"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "describe_experience",
+        "itemIds": [
+          "b1_exhausting",
+          "b1_unforgettable"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "id_recommend",
+    "level": "B1",
+    "arc": "which_one",
+    "titleKey": "b1Ep9Title",
+    "goalKey": "b1Ep9Goal",
+    "canDoId": "recommend_or_warn",
+    "canDoNameKey": "b1Ep9CanDoName",
+    "durationKey": "b1Ep9Duration",
+    "estimatedMinutes": 8,
+    "xp": 85,
+    "prerequisites": [
+      "more_than_two",
+      "the_trip_i_took"
+    ],
+    "gardenItems": [
+      "b1_id_recommend",
+      "b1_i_wouldnt_recommend",
+      "b1_recommend_warn_pattern",
+      "b1_id_avoid"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "compare_options_with_reasons",
+      "describe_an_experience"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_id_recommend",
+          "b1_i_wouldnt_recommend",
+          "b1_recommend_warn_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_recommend_warn_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_i_wouldnt_recommend"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recommend_or_warn",
+        "itemIds": [
+          "b1_id_recommend",
+          "b1_recommend_warn_pattern"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recommend_or_warn",
+        "itemIds": [
+          "b1_i_wouldnt_recommend",
+          "b1_id_avoid"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "the_perfect_trip",
+    "level": "B1",
+    "arc": "which_one",
+    "titleKey": "b1Ep10Title",
+    "goalKey": "b1Ep10Goal",
+    "canDoId": "recommend_or_warn",
+    "canDoNameKey": "b1Ep10CanDoName",
+    "durationKey": "b1Ep10Duration",
+    "estimatedMinutes": 9,
+    "xp": 95,
+    "prerequisites": [
+      "more_than_two",
+      "the_trip_i_took",
+      "id_recommend"
+    ],
+    "reinforces": true,
+    "role": "reinforcement",
+    "reuseSkills": [
+      "compare_options_with_reasons",
+      "describe_an_experience",
+      "recommend_or_warn"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "compare_and_choose",
+        "itemIds": [
+          "b1_the_most",
+          "b1_multi_attribute_compare_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "describe_experience",
+        "itemIds": [
+          "b1_multi_attribute_description_pattern",
+          "b1_feeling_reaction_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_recommend_warn_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recommend_or_warn",
+        "itemIds": [
+          "b1_id_recommend",
+          "b1_i_wouldnt_recommend"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "somethings_not_right",
+    "level": "B1",
+    "arc": "somethings_wrong",
+    "titleKey": "b1Ep11Title",
+    "goalKey": "b1Ep11Goal",
+    "canDoId": "escalate_and_resolve_a_problem",
+    "canDoNameKey": "b1Ep11CanDoName",
+    "durationKey": "b1Ep11Duration",
+    "estimatedMinutes": 9,
+    "xp": 85,
+    "gardenItems": [
+      "b1_theres_a_problem_with",
+      "b1_i_ordered_but_i_got",
+      "b1_problem_statement_pattern",
+      "b1_its_supposed_to",
+      "b1_instead_of",
+      "b1_broken"
+    ],
+    "skillPrerequisites": [
+      "report_a_problem"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "report_a_problem"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_theres_a_problem_with",
+          "b1_i_ordered_but_i_got",
+          "b1_problem_statement_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_problem_statement_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_theres_a_problem_with"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "escalate_problem",
+        "itemIds": [
+          "b1_theres_a_problem_with",
+          "b1_i_ordered_but_i_got",
+          "b1_problem_statement_pattern"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "escalate_problem",
+        "itemIds": [
+          "b1_its_supposed_to",
+          "b1_instead_of",
+          "b1_broken"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "lets_sort_this_out",
+    "level": "B1",
+    "arc": "somethings_wrong",
+    "titleKey": "b1Ep12Title",
+    "goalKey": "b1Ep12Goal",
+    "canDoId": "negotiate_a_solution",
+    "canDoNameKey": "b1Ep12CanDoName",
+    "durationKey": "b1Ep12Duration",
+    "estimatedMinutes": 9,
+    "xp": 90,
+    "prerequisites": [
+      "somethings_not_right"
+    ],
+    "gardenItems": [
+      "b1_would_it_be_possible",
+      "b1_could_i_possibly",
+      "b1_negotiate_pattern",
+      "b1_instead",
+      "b1_a_replacement",
+      "b1_a_refund"
+    ],
+    "skillPrerequisites": [
+      "polite_request"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "escalate_and_resolve_a_problem"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_would_it_be_possible",
+          "b1_could_i_possibly",
+          "b1_negotiate_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_negotiate_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_would_it_be_possible"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "negotiate_solution",
+        "itemIds": [
+          "b1_would_it_be_possible",
+          "b1_negotiate_pattern",
+          "b1_a_replacement"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "negotiate_solution",
+        "itemIds": [
+          "b1_could_i_possibly",
+          "b1_instead",
+          "b1_a_refund"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "staying_calm",
+    "level": "B1",
+    "arc": "somethings_wrong",
+    "titleKey": "b1Ep13Title",
+    "goalKey": "b1Ep13Goal",
+    "canDoId": "express_frustration_politely",
+    "canDoNameKey": "b1Ep13CanDoName",
+    "durationKey": "b1Ep13Duration",
+    "estimatedMinutes": 7,
+    "xp": 80,
+    "prerequisites": [
+      "somethings_not_right"
+    ],
+    "gardenItems": [
+      "b1_this_isnt_ideal",
+      "b1_i_understand_but",
+      "b1_polite_frustration_pattern"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "escalate_and_resolve_a_problem"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_this_isnt_ideal",
+          "b1_i_understand_but",
+          "b1_polite_frustration_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_polite_frustration_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_this_isnt_ideal"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "escalate_problem",
+        "itemIds": [
+          "b1_this_isnt_ideal",
+          "b1_polite_frustration_pattern"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "escalate_problem",
+        "itemIds": [
+          "b1_i_understand_but"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "problem_solved",
+    "level": "B1",
+    "arc": "somethings_wrong",
+    "titleKey": "b1Ep14Title",
+    "goalKey": "b1Ep14Goal",
+    "canDoId": "negotiate_a_solution",
+    "canDoNameKey": "b1Ep14CanDoName",
+    "durationKey": "b1Ep14Duration",
+    "estimatedMinutes": 10,
+    "xp": 100,
+    "prerequisites": [
+      "somethings_not_right",
+      "lets_sort_this_out"
+    ],
+    "reinforces": true,
+    "role": "reinforcement",
+    "reuseSkills": [
+      "escalate_and_resolve_a_problem",
+      "negotiate_a_solution",
+      "express_frustration_politely"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_theres_a_problem_with",
+          "b1_would_it_be_possible",
+          "b1_this_isnt_ideal"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "escalate_problem",
+        "itemIds": [
+          "b1_theres_a_problem_with",
+          "b1_problem_statement_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_negotiate_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "negotiate_solution",
+        "itemIds": [
+          "b1_negotiate_pattern",
+          "b1_a_replacement",
+          "b1_a_refund"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "whats_the_plan",
+    "level": "B1",
+    "arc": "looking_ahead",
+    "titleKey": "b1Ep15Title",
+    "goalKey": "b1Ep15Goal",
+    "canDoId": "talk_about_plans_and_intentions",
+    "canDoNameKey": "b1Ep15CanDoName",
+    "durationKey": "b1Ep15Duration",
+    "estimatedMinutes": 10,
+    "xp": 90,
+    "gardenItems": [
+      "b1_ill",
+      "b1_im_going_to",
+      "b1_will_vs_going_to_pattern",
+      "b1_probably",
+      "b1_definitely"
+    ],
+    "skillPrerequisites": [
+      "talk_about_future_plans"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "talk_about_future_plans"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_ill",
+          "b1_im_going_to",
+          "b1_will_vs_going_to_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_will_vs_going_to_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_ill"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_future_intent",
+        "itemIds": [
+          "b1_ill",
+          "b1_will_vs_going_to_pattern"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_future_intent",
+        "itemIds": [
+          "b1_im_going_to",
+          "b1_will_vs_going_to_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_future_intent",
+        "itemIds": [
+          "b1_probably",
+          "b1_definitely"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "someday",
+    "level": "B1",
+    "arc": "looking_ahead",
+    "titleKey": "b1Ep16Title",
+    "goalKey": "b1Ep16Goal",
+    "canDoId": "talk_about_hopes_and_ambitions",
+    "canDoNameKey": "b1Ep16CanDoName",
+    "durationKey": "b1Ep16Duration",
+    "estimatedMinutes": 8,
+    "xp": 85,
+    "prerequisites": [
+      "whats_the_plan"
+    ],
+    "gardenItems": [
+      "b1_i_hope_to",
+      "b1_id_like_to",
+      "b1_one_day_ill",
+      "b1_hope_would_like_pattern",
+      "b1_my_dream_is_to"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "talk_about_plans_and_intentions"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_i_hope_to",
+          "b1_one_day_ill",
+          "b1_hope_would_like_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_hope_would_like_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_i_hope_to"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_future_intent",
+        "itemIds": [
+          "b1_i_hope_to",
+          "b1_hope_would_like_pattern"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_future_intent",
+        "itemIds": [
+          "b1_id_like_to",
+          "b1_my_dream_is_to"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "if_that_happens",
+    "level": "B1",
+    "arc": "looking_ahead",
+    "titleKey": "b1Ep17Title",
+    "goalKey": "b1Ep17Goal",
+    "canDoId": "talk_about_real_conditions",
+    "canDoNameKey": "b1Ep17CanDoName",
+    "durationKey": "b1Ep17Duration",
+    "estimatedMinutes": 7,
+    "xp": 80,
+    "prerequisites": [
+      "whats_the_plan"
+    ],
+    "gardenItems": [
+      "b1_if_present_will",
+      "b1_first_conditional_pattern",
+      "b1_unless",
+      "b1_as_soon_as"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "talk_about_plans_and_intentions"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_if_present_will",
+          "b1_first_conditional_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_first_conditional_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_if_present_will"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_real_condition",
+        "itemIds": [
+          "b1_first_conditional_pattern",
+          "b1_unless"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "if_i_were_you",
+    "level": "B1",
+    "arc": "looking_ahead",
+    "titleKey": "b1Ep18Title",
+    "goalKey": "b1Ep18Goal",
+    "canDoId": "imagine_a_hypothetical",
+    "canDoNameKey": "b1Ep18CanDoName",
+    "durationKey": "b1Ep18Duration",
+    "estimatedMinutes": 7,
+    "xp": 75,
+    "prerequisites": [
+      "if_that_happens"
+    ],
+    "gardenItems": [
+      "b1_if_i_were_you",
+      "b1_if_i_were_pattern",
+      "b1_id_verb",
+      "b1_in_your_position"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "talk_about_real_conditions"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_if_i_were_you",
+          "b1_if_i_were_pattern",
+          "b1_id_verb"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_if_i_were_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_if_i_were_you"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_hypothetical",
+        "itemIds": [
+          "b1_if_i_were_you",
+          "b1_if_i_were_pattern",
+          "b1_id_verb"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "changing_the_subject",
+    "level": "B1",
+    "arc": "keep_talking",
+    "titleKey": "b1Ep19Title",
+    "goalKey": "b1Ep19Goal",
+    "canDoId": "sustain_topic_change",
+    "canDoNameKey": "b1Ep19CanDoName",
+    "durationKey": "b1Ep19Duration",
+    "estimatedMinutes": 9,
+    "xp": 90,
+    "gardenItems": [
+      "b1_by_the_way",
+      "b1_anyway",
+      "b1_speaking_of",
+      "b1_topic_change_pattern"
+    ],
+    "skillPrerequisites": [
+      "keep_a_longer_conversation_going"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "keep_a_longer_conversation_going"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_anyway",
+          "b1_by_the_way",
+          "b1_topic_change_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_topic_change_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_anyway"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "change_topic",
+        "itemIds": [
+          "b1_by_the_way",
+          "b1_anyway",
+          "b1_speaking_of",
+          "b1_topic_change_pattern"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "change_topic",
+        "itemIds": [
+          "b1_speaking_of"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "tell_me_more",
+    "level": "B1",
+    "arc": "keep_talking",
+    "titleKey": "b1Ep20Title",
+    "goalKey": "b1Ep20Goal",
+    "canDoId": "ask_follow_up_questions",
+    "canDoNameKey": "b1Ep20CanDoName",
+    "durationKey": "b1Ep20Duration",
+    "estimatedMinutes": 8,
+    "xp": 85,
+    "prerequisites": [
+      "changing_the_subject"
+    ],
+    "gardenItems": [
+      "b1_really",
+      "b1_why",
+      "b1_what_happened",
+      "b1_follow_up_question_pattern"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "sustain_topic_change"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_really",
+          "b1_what_happened",
+          "b1_follow_up_question_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_follow_up_question_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_really"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_follow_up",
+        "itemIds": [
+          "b1_really",
+          "b1_why",
+          "b1_follow_up_question_pattern"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_follow_up",
+        "itemIds": [
+          "b1_what_happened"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "so_basically",
+    "level": "B1",
+    "arc": "keep_talking",
+    "titleKey": "b1Ep21Title",
+    "goalKey": "b1Ep21Goal",
+    "canDoId": "summarize_what_was_said",
+    "canDoNameKey": "b1Ep21CanDoName",
+    "durationKey": "b1Ep21Duration",
+    "estimatedMinutes": 7,
+    "xp": 80,
+    "prerequisites": [
+      "tell_me_more"
+    ],
+    "gardenItems": [
+      "b1_so_basically",
+      "b1_what_youre_saying_is",
+      "b1_summarize_pattern",
+      "b1_in_other_words"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "ask_follow_up_questions"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "b1_so_basically",
+          "b1_what_youre_saying_is",
+          "b1_summarize_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "b1_summarize_pattern"
+      },
+      {
+        "type": "fill_blank",
+        "itemId": "b1_so_basically"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "summarize_other",
+        "itemIds": [
+          "b1_so_basically",
+          "b1_what_youre_saying_is",
+          "b1_summarize_pattern",
+          "b1_in_other_words"
+        ],
+        "placeholders": [
+          "name"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "the_long_conversation_begins",
+    "level": "B1",
+    "arc": "the_long_conversation",
+    "titleKey": "b1Ep22Title",
+    "goalKey": "b1Ep22Goal",
+    "canDoId": "narrate_connected_event",
+    "canDoNameKey": "b1Ep22CanDoName",
+    "durationKey": "b1Ep22Duration",
+    "estimatedMinutes": 14,
+    "xp": 120,
+    "prerequisites": [
+      "one_thing_after_another",
+      "when_it_happened",
+      "what_i_think",
+      "agree_to_disagree",
+      "changing_the_subject",
+      "tell_me_more"
+    ],
+    "reinforces": true,
+    "role": "reinforcement",
+    "reuseSkills": [
+      "narrate_connected_event",
+      "narrate_interrupted_action",
+      "give_an_opinion",
+      "agree_or_disagree",
+      "sustain_topic_change",
+      "ask_follow_up_questions"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "narrate_past_event",
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "narrate_past_event"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "change_topic",
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_opinion"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "agree_or_disagree"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_follow_up"
+      }
+    ]
+  },
+  {
+    "id": "the_long_conversation_continues",
+    "level": "B1",
+    "arc": "the_long_conversation",
+    "titleKey": "b1Ep23Title",
+    "goalKey": "b1Ep23Goal",
+    "canDoId": "negotiate_a_solution",
+    "canDoNameKey": "b1Ep23CanDoName",
+    "durationKey": "b1Ep23Duration",
+    "estimatedMinutes": 14,
+    "xp": 130,
+    "prerequisites": [
+      "more_than_two",
+      "the_trip_i_took",
+      "whats_the_plan",
+      "someday",
+      "somethings_not_right",
+      "lets_sort_this_out"
+    ],
+    "reinforces": true,
+    "role": "reinforcement",
+    "reuseSkills": [
+      "compare_options_with_reasons",
+      "describe_an_experience",
+      "talk_about_plans_and_intentions",
+      "talk_about_hopes_and_ambitions",
+      "escalate_and_resolve_a_problem",
+      "negotiate_a_solution",
+      "recommend_or_warn",
+      "summarize_what_was_said"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "compare_and_choose"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "describe_experience"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recommend_or_warn"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_future_intent"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_future_intent"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "escalate_problem",
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "negotiate_solution"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "summarize_other"
+      }
+    ]
   }
 ]
 

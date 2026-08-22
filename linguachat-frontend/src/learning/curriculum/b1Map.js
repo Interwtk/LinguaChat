@@ -1,47 +1,56 @@
 /*
- * b1Map — what B1's implemented capabilities are, mirroring `a1Map.js`'s shape
- * exactly (same export names' `B1_` prefix, same derivation functions) so a
- * future merge/registration is mechanical, not a redesign.
+ * b1Map — what B1's implemented capabilities are, and nothing about Pre-A1,
+ * A1 or A2.
  *
- * SELF-CONTAINED DIFFERENCE FROM `a1Map.js`: that file reads episodes via
- * `episodesOfLevel(A1)` (`curriculum/levels.js`, generated skeleton) because
- * A1 is registered there. B1 is not — `curriculum/**` is out of this task's
- * write scope — so `b1Episodes()` reads this level's own arc modules
- * directly. `LC-INT-001` is expected to replace this with the real
- * `episodesOfLevel(B1)` once B1 is registered, at which point this file's
- * derivation functions should need no change, only their episode source.
+ * Same idea as `a1Map.js`/`a2Map.js`, one level up: a SEPARATE file rather
+ * than a section of any level below it, for the identical reason those stay
+ * apart — a registry named after one level must never quietly answer for
+ * another, or a freeze/audit for a level below silently starts counting the
+ * level above's language and capabilities as its own.
+ *
+ * B1 is designed and implemented in full — seven arcs, twenty-three
+ * episodes, authored under `src/learning/levels/b1/**` by `LC-CONT-B1` — but
+ * stays `contentStatus: 'partial'`, `available: false` (`levels.js`) until a
+ * later, deliberate completion gate, exactly the distinction `levels.js`'s
+ * own comment draws between content existing and a level being open.
+ *
+ * `B1_CAN_DO_INTENT` is registered in `levelMaps.js` per that file's own
+ * "A NEW LEVEL'S OWN MAP FILE SHOULD" instructions, so
+ * `check-cross-level-ids.mjs`'s collision detector actually covers B1 rather
+ * than silently skipping it. `B1_INTRODUCED_ITEMS` is what lets
+ * `check-pre-a1-freeze.mjs`'s vocabulary count stay exact as the shared
+ * catalogue grows a third level's worth of language above A1/A2's.
+ *
+ * `B1_CAN_DO_INTENT`'s intent values are NOT a bare copy of
+ * `levels/b1/b1Map.js`'s own `B1_CAN_DO_INTENT`: that file's own
+ * `escalate_and_resolve_a_problem`/`express_frustration_politely` entries
+ * point at `escalate_problem`, not b1.json's own `report_problem` — a real
+ * collision with A2's own, different `report_problem` intent, found and
+ * fixed at this integration. See `levels/b1/b1Map.js`'s own comment on those
+ * two entries for the full account.
  */
-import { B1_ARC1 } from './episodes/b1Arc1.js'
-import { B1_ARC2 } from './episodes/b1Arc2.js'
-import { B1_ARC3 } from './episodes/b1Arc3.js'
-import { B1_ARC4 } from './episodes/b1Arc4.js'
-import { B1_ARC5 } from './episodes/b1Arc5.js'
-import { B1_ARC6 } from './episodes/b1Arc6.js'
-// B1_ARC_SEVEN, not B1_ARC7: check-a1-blueprint.mjs (out of this task's write
-// scope) scans every src/ file for a literal "arc7" substring, to keep A1's
-// own real arcs 6-7 out of the product. It is not path-scoped — it matched
-// this unrelated B1 file purely on the literal string, so the fix lives on
-// this side of the collision, in this task's own naming, not in the guard.
-import { B1_ARC_SEVEN } from './episodes/b1ArcSeven.js'
+import { B1, episodesOfLevel } from './levels.js'
 
-/* A level-local id. NOT `curriculum/levels.js`'s `B1` (that constant does not
- * exist yet) — do not import this into anything that expects the real one. */
-export const B1_LEVEL_ID = 'b1'
-
-/* The arcs of B1 with runtime content today, in the blueprint's order. */
+/* The arcs of B1, in the blueprint's order. */
 export const B1_RUNTIME_ARCS = [
   'what_happened', 'i_think_that', 'which_one', 'somethings_wrong',
   'looking_ahead', 'keep_talking', 'the_long_conversation',
 ]
 
-/* One intent per can-do, same convention as `A1_CAN_DO_INTENT`/`CAN_DO_INTENT`. */
+/*
+ * The capability each B1 can-do is evidenced by, in the same shape Pre-A1/
+ * A1/A2 use: one intent per capability. Derived from `levels/b1/b1Map.js`'s
+ * own `B1_CAN_DO_INTENT` (the source of truth for what each episode's steps
+ * actually use as `evalKind`), with the `escalate_problem` rename applied —
+ * see this file's own header comment.
+ */
 export const B1_CAN_DO_INTENT = {
   // arc 1 — one intent, two forms carried by the `narrativeForm` subtype
   // (b1.json intentStrategy.newSubtypesOnExistingIntents), matching the
-  // "one intent per communicative function" rule A1 already follows.
+  // "one intent per communicative function" rule A1/A2 already follow.
   narrate_connected_event: 'narrate_past_event',
   narrate_interrupted_action: 'narrate_past_event',
-  // arc 2 — two distinct intents, per b1.json intentStrategy.newIntents
+  // arc 2 — two distinct intents
   give_an_opinion: 'state_opinion',
   agree_or_disagree: 'agree_or_disagree',
   // arc 3 — three distinct intents
@@ -51,22 +60,8 @@ export const B1_CAN_DO_INTENT = {
   /*
    * arc 4 — carries both escalate_and_resolve_a_problem (tone: neutral) and
    * express_frustration_politely (tone: frustrated); negotiate_a_solution is
-   * its own distinct intent.
-   *
-   * RUNTIME-ONLY RENAME, found at `LC-INT-001` integration time: b1.json's
-   * own `intentStrategy.newIntents` names this intent `report_problem`
-   * (this file's own header explains why — authored self-contained, with no
-   * visibility into A2's real content). A2 (`LC-CONT-A2`, wired in by this
-   * same `LC-INT-001`) independently registered its OWN, much simpler
-   * `report_problem` intent for `report_a_problem` (`levels/a2/evaluators.js`
-   * — a bare malfunction statement, no `tone` subtype, no expectation
-   * clause). `engine/responseEvaluation.js#evaluateFree` dispatches by this
-   * string in one flat switch shared by every level, so two different
-   * intents cannot both answer to it — the second `case` would be dead code,
-   * and B1 episodes would silently be graded by A2's much weaker evaluator.
-   * The dispatch key is renamed to `escalate_problem` (this can-do's own
-   * name) to resolve the collision without touching A2's write scope; B1's
-   * curricular concept is unchanged, only its runtime dispatch string.
+   * its own distinct intent. Runtime-only rename from b1.json's own
+   * `report_problem` — see this file's own header comment.
    */
   escalate_and_resolve_a_problem: 'escalate_problem',
   express_frustration_politely: 'escalate_problem',
@@ -91,11 +86,7 @@ export const b1IntentsOf = (canDoId) => [
   ...(B1_CAN_DO_EXTRA_INTENTS[canDoId] || []),
 ].filter(Boolean)
 
-/* Required can-dos, `scope: required` in b1.json, arcs 1-5.
- * `recommend_or_warn`/`express_frustration_politely`/`talk_about_real_conditions`
- * are `scope: should` and `imagine_a_hypothetical` is `scope: optional`
- * (b1.json arcs 3-5) — all deliberately excluded; each arc's required
- * independence is already evidenced by its other can-dos. */
+/* Required can-dos, `scope: required` in b1.json, arcs 1-5 (+6's two). */
 export const B1_REQUIRED_CAN_DOS = [
   'narrate_connected_event', 'narrate_interrupted_action',
   'give_an_opinion', 'agree_or_disagree',
@@ -139,59 +130,21 @@ export const B1_RECEPTIVE_ITEMS = [
 
 export const B1_INCIDENTAL_ITEMS = []
 
-export function b1Episodes() {
-  return [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN]
-}
+export const b1Episodes = () => episodesOfLevel(B1)
 
-export const B1_ARC_CAN_DOS = [...new Set(b1Episodes().map(ep => ep.canDoId).filter(Boolean))]
-
+/* Which of B1's own episodes teach a capability — derived, never declared twice. */
 export function b1EpisodesForCanDo(canDoId) {
   return b1Episodes().filter(ep => ep.canDoId === canDoId).map(ep => ep.id)
 }
 
-/* Same structural derivation as `a1ProductiveItemsOf` — items produced by a
- * step whose (or whose turn's) `evalKind` matches one of the capability's
- * intents. `narrativeForm`-only steps still key on `evalKind`, so no change
- * to the matching rule was needed for the new subtype. */
-export function b1ProductiveItemsOf(canDoId) {
-  const intents = b1IntentsOf(canDoId)
-  if (!intents.length) return []
-  const out = new Set()
-  for (const ep of b1Episodes()) {
-    for (const step of ep.steps || []) {
-      const producedHere = intents.includes(step.evalKind)
-        || (step.turns || []).some(turn => intents.includes(turn.evalKind))
-      if (!producedHere) continue
-      ;(step.itemIds || []).forEach(id => out.add(id))
-      for (const turn of step.turns || []) (turn.itemIds || []).forEach(id => out.add(id))
-    }
-  }
-  return [...out]
-}
-
-export function b1RequiredLevelItems() {
-  return [...new Set(B1_REQUIRED_CAN_DOS.flatMap(id => b1ProductiveItemsOf(id)))]
-}
-
-export function b1ImplementationStatus() {
-  const episodes = b1Episodes()
-  return {
-    runtimeArcs: [...new Set(episodes.map(ep => ep.arc))],
-    runtimeEpisodes: episodes.map(ep => ep.id),
-    canDos: B1_ARC_CAN_DOS,
-    // All seven arcs' self-contained content now exists (LC-CONT-B1's own
-    // scope), but `complete` deliberately stays false here: this level is
-    // not wired into the live app (evaluateFree/SessionRunner/levels.js/
-    // semanticContext.js/i18n — all LC-INT-001's job), has not passed a real
-    // in-app browser walkthrough, and has no dedicated pedagogical
-    // all-arcs gate of its own yet — the same A1 precedent CLAUDE.md states
-    // explicitly ("never infer availability from 'all runtime episodes
-    // passed' while runtime is incomplete"). Only a later, dedicated
-    // completion step should ever flip this.
-    complete: false,
-  }
-}
-
+/*
+ * Which catalogue entries THIS LEVEL ADDED. Declared rather than derived —
+ * the same reasoning `a1Map.js`'s `A1_INTRODUCED_ITEMS` states: reuse must
+ * never move an item from one level's budget to another, so what B1 actually
+ * introduces is recorded here once rather than inferred from what its
+ * episodes happen to reference (which would also include language they reuse
+ * from Pre-A1/A1/A2).
+ */
 export const B1_INTRODUCED_ITEMS = [
   // arc 1 — what_happened: connectors, past continuous, when/while, plus receptive time phrases
   'b1_first', 'b1_then', 'b1_after_that', 'b1_before_that', 'b1_finally',
@@ -229,5 +182,3 @@ export const B1_INTRODUCED_ITEMS = [
 export function b1ItemIds() {
   return new Set(B1_INTRODUCED_ITEMS)
 }
-
-export const b1EpisodeById = (id) => b1Episodes().find(ep => ep.id === id) || null

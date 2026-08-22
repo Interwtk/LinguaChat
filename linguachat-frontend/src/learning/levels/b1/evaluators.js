@@ -281,7 +281,12 @@ export function evaluateRecommendOrWarn(text, { independent = false } = {}) {
 }
 
 /* ---------------------------------------------------------------------------
- * arc 4 — report_problem (subtype tone: neutral | frustrated), negotiate_solution
+ * arc 4 — escalate_problem (subtype tone: neutral | frustrated), negotiate_solution
+ *
+ * Named `report_problem` in b1.json's own intentStrategy; renamed to
+ * `escalate_problem` at LC-INT-001 integration time to resolve a real
+ * collision with A2's own, much simpler `report_problem` intent (see
+ * `b1Map.js`'s `B1_CAN_DO_INTENT` comment for the full account).
  * ------------------------------------------------------------------------- */
 
 const PROBLEM_RE = /\bthere'?s\s+a\s+problem\s+with\b|\b(ordered|booked|asked for|wanted|paid for)\b.{0,40}\bbut\b.{0,15}\bgot\b|\bthis\s+is(?:n'?t|\s+not)\s+what\s+i\s+(ordered|expected|booked)\b/
@@ -612,7 +617,7 @@ export function evaluateB1Free(kind, text, ctx = {}) {
     case 'compare_and_choose': return evaluateCompareAndChoose(text, ctx)
     case 'describe_experience': return evaluateDescribeExperience(text, ctx)
     case 'recommend_or_warn': return evaluateRecommendOrWarn(text, ctx)
-    case 'report_problem': return evaluateReportProblem(text, ctx)
+    case 'escalate_problem': return evaluateReportProblem(text, ctx)
     case 'negotiate_solution': return evaluateNegotiateSolution(text, ctx)
     case 'state_future_intent': return evaluateStateFutureIntent(text, ctx)
     case 'state_real_condition': return evaluateStateRealCondition(text, ctx)

@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs'
 import {
   B1_ARC_SEVEN as B1_ARC7, B1_ARC_SEVEN_ID as B1_ARC7_ID, getB1ArcSevenEpisode as getB1Arc7Episode,
 } from '../../../src/learning/levels/b1/episodes/b1ArcSeven.js'
-import { B1_REQUIRED_CAN_DOS, B1_SHOULD_CAN_DOS } from '../../../src/learning/levels/b1/b1Map.js'
+import { B1_REQUIRED_CAN_DOS, B1_SHOULD_CAN_DOS, b1Episodes } from '../../../src/learning/levels/b1/b1Map.js'
 import { evaluateB1Free } from '../../../src/learning/levels/b1/evaluators.js'
 import { B1_ARC_SEVEN_COPY as B1_ARC7_COPY } from '../../../src/learning/levels/b1/i18nDraft.js'
 import { createLearnerModel } from '../../../src/learning/engine/learnerModel.js'
@@ -63,7 +63,7 @@ const REQUIRED_CANDO_MATCHERS = {
   agree_or_disagree: s => s.evalKind === 'agree_or_disagree',
   compare_options_with_reasons: s => s.evalKind === 'compare_and_choose',
   describe_an_experience: s => s.evalKind === 'describe_experience',
-  escalate_and_resolve_a_problem: s => s.evalKind === 'report_problem' && s.tone !== 'frustrated',
+  escalate_and_resolve_a_problem: s => s.evalKind === 'escalate_problem' && s.tone !== 'frustrated',
   negotiate_a_solution: s => s.evalKind === 'negotiate_solution',
   talk_about_plans_and_intentions: s => s.evalKind === 'state_future_intent' && ['decision', 'plan', 'prediction'].includes(s.situationForm),
   talk_about_hopes_and_ambitions: s => s.evalKind === 'state_future_intent' && s.situationForm === 'hope',
@@ -90,7 +90,7 @@ const ALL_STEPS = B1_ARC7.flatMap(ep => ep.steps)
 /* ---- 4) the arc's own evidenceTarget: a real topic change and an unplanned problem ---- */
 {
   assert.ok(ALL_STEPS.some(s => s.evalKind === 'change_topic' && s.role === 'initiate'), 'must include a learner-initiated topic change')
-  const problemStep = ALL_STEPS.find(s => s.evalKind === 'report_problem')
+  const problemStep = ALL_STEPS.find(s => s.evalKind === 'escalate_problem')
   assert.ok(problemStep, 'must surface an unplanned problem')
   assert.ok(problemStep.linguaSaid, 'the problem must be raised inside the conversation itself (a branching partner turn), not out of nowhere')
   ok()
@@ -114,12 +114,21 @@ const ALL_STEPS = B1_ARC7.flatMap(ep => ep.steps)
   ok()
 }
 
-/* ---- 6) prerequisites reference only real, already-built B1 capabilities ---- */
+/* ---- 6) prerequisites reference only real, already-built B1 episodes ---- */
 {
-  const knownCapabilities = new Set([...B1_REQUIRED_CAN_DOS, ...B1_SHOULD_CAN_DOS])
+  /*
+   * An episode's own `prerequisites` names EPISODE ids, same convention
+   * every other level uses — found and fixed at `LC-INT-001` integration:
+   * this check used to assert prerequisites were CAN-DO ids (the shape
+   * `B1_CAN_DO_INTENT`'s own keys use), which is a different graph.
+   * `knownEpisodeIds` reads every real B1 episode across all seven arcs
+   * (`b1Episodes()`), so a prerequisite naming an episode this level does
+   * not actually have still fails loudly.
+   */
+  const knownEpisodeIds = new Set(b1Episodes().map(ep => ep.id))
   for (const ep of B1_ARC7) {
     assert.ok(ep.prerequisites.length > 0, `${ep.id} must declare prerequisites — this arc invents nothing of its own`)
-    for (const p of ep.prerequisites) assert.ok(knownCapabilities.has(p), `${ep.id} prerequisite ${p} must be a real B1 capability`)
+    for (const p of ep.prerequisites) assert.ok(knownEpisodeIds.has(p), `${ep.id} prerequisite ${p} must be a real B1 episode`)
   }
   ok()
 }
@@ -178,7 +187,7 @@ function freshModel() { return createLearnerModel() }
 {
   const model = freshModel()
   playEpisode(model, 'the_long_conversation_continues', {
-    profile: { ...STRONG, retries: ({ step }) => step.evalKind === 'report_problem' },
+    profile: { ...STRONG, retries: ({ step }) => step.evalKind === 'escalate_problem' },
     atMs: START,
     wrongText: () => "There's a problem with my order.", // missing_expectation near miss
   })
@@ -197,7 +206,7 @@ const NOVEL_PROBLEM = "There's a problem with my ticket. I booked seat 14C, but 
   })
   playEpisode(model, 'the_long_conversation_continues', {
     profile: STRONG, atMs: START + DAY, trace,
-    answerOverride: (step) => (step.evalKind === 'report_problem' ? NOVEL_PROBLEM : answerFor(step)),
+    answerOverride: (step) => (step.evalKind === 'escalate_problem' ? NOVEL_PROBLEM : answerFor(step)),
   })
   for (const r of trace) assert.equal(r.independentEvidence, true, `${r.episodeId}: novel phrasing must still be judged structurally`)
   ok()

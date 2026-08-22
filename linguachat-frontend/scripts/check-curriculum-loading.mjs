@@ -38,10 +38,18 @@ import { A2_ARC4 } from '../src/learning/episodes/a2Arc4Content.js'
 import { A2_ARC5 } from '../src/learning/episodes/a2Arc5Content.js'
 import { A2_ARC6 } from '../src/learning/episodes/a2Arc6Content.js'
 import { A2_ARC_7 } from '../src/learning/episodes/a2Arc7Content.js'
+import { B1_ARC1 } from '../src/learning/episodes/b1Arc1Content.js'
+import { B1_ARC2 } from '../src/learning/episodes/b1Arc2Content.js'
+import { B1_ARC3 } from '../src/learning/episodes/b1Arc3Content.js'
+import { B1_ARC4 } from '../src/learning/episodes/b1Arc4Content.js'
+import { B1_ARC5 } from '../src/learning/episodes/b1Arc5Content.js'
+import { B1_ARC6 } from '../src/learning/episodes/b1Arc6Content.js'
+import { B1_ARC_SEVEN } from '../src/learning/episodes/b1Arc7Content.js'
 
 /* A1's runtime episodes, arc by arc — the same order the generator uses. */
 const A1_EPISODES = [...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7]
 const A2_EPISODES = [...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7]
+const B1_EPISODES = [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN]
 import { ARC } from '../src/learning/episodes/index.js'
 import { EPISODE_SKELETON, SKELETON_BY_ID } from '../src/learning/curriculum/preA1Skeleton.generated.js'
 import { intentsForEpisode, productiveItemsOf, itemsOf, personalisesOf } from '../src/learning/curriculum/preA1Map.js'
@@ -105,7 +113,7 @@ const curriculumOnlyProse = (minLength = 14) => {
    * against Pre-A1's list alone, so A1 arc 1 looked like an undescribed extra
    * rather than the second level the skeleton exists to hold.
    */
-  assert.equal(EPISODE_SKELETON.length, ARC.length + A1_EPISODES.length + A2_EPISODES.length, 'every episode must be described')
+  assert.equal(EPISODE_SKELETON.length, ARC.length + A1_EPISODES.length + A2_EPISODES.length + B1_EPISODES.length, 'every episode must be described')
   assert.equal(EPISODE_SKELETON.filter(ep => ep.level === 'Pre-A1').length, ARC.length)
   assert.equal(EPISODE_SKELETON.filter(ep => ep.level === 'A1').length, A1_EPISODES.length)
   for (const ep of ARC) {
@@ -257,7 +265,7 @@ if (!existsSync(DIST)) {
     const appKb = entryKb - dataKb
     assert.ok(appKb < 290, `the entry carries ${appKb.toFixed(1)} kB that is not curriculum data`)
     /* and the data itself stays metadata-shaped, per episode rather than in total */
-    const perEpisodeKb = dataKb / (ARC.length + A1_EPISODES.length + A2_EPISODES.length)
+    const perEpisodeKb = dataKb / (ARC.length + A1_EPISODES.length + A2_EPISODES.length + B1_EPISODES.length)
     assert.ok(perEpisodeKb < 5.5,
       `curriculum data in the entry is ${perEpisodeKb.toFixed(1)} kB per episode`)
     const viteConfig = readFileSync('vite.config.js', 'utf8')

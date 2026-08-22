@@ -276,6 +276,35 @@ const OBJECTIVE_FORMATS = {
   invite_someone: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
   // accept/decline, the same shape as accept_offer/decline_offer above
   respond_to_invitation: ['guided_reply', 'choice', 'free_reply', 'recall', 'roleplay'],
+  /*
+   * B1's 14 new intents. `word_order` appears only for `narrate_past_event`:
+   * a real grep across `levels/b1/episodes/**` finds `word_order` steps only
+   * in arc 1 (short, linear connector sentences), never in arcs 2-6, whose
+   * canonical answers are two-clause reason/comparison/negotiation frames —
+   * not a good fit for word-order/choice, the same judgment A2's own
+   * `compare_things`/`state_opinion_with_reason` make above. `fill_blank` is
+   * authored for every one of the 14 (one per episode), so it stays everywhere.
+   * `mini_story` is absent from all fourteen on purpose: B1 never hosts a
+   * step through the shared `engine/miniStory.js` STORIES table (every arc's
+   * own header comment says so explicitly — `home: 'episode'`-shaped content
+   * is written as ordinary steps instead), so there is no story for a daily
+   * block to plan.
+   */
+  narrate_past_event: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  state_opinion: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  agree_or_disagree: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  compare_and_choose: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  describe_experience: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  recommend_or_warn: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  // renamed from b1.json's `report_problem` — see responseEvaluation.js's own comment
+  escalate_problem: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  negotiate_solution: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  state_future_intent: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  state_real_condition: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  state_hypothetical: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  change_topic: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  ask_follow_up: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  summarize_other: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
 }
 
 /*

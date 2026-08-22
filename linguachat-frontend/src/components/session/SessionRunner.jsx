@@ -142,6 +142,28 @@ const MODEL_ANSWER = {
   ask_for_help: () => 'Can you help me, please?',
   invite_someone: () => 'Would you like to go to the cinema?',
   respond_to_invitation: () => "I'd love to, but I'm busy.",
+  /*
+   * B1. Added for the same reason the A2 block above states: an unlisted
+   * objective falls back to the introduction answer, so a review block for
+   * one of these fourteen would have been graded against "Hi, I'm ___"
+   * instead of a narrated story, an opinion or a negotiated solution.
+   * `escalate_problem` is B1's runtime-renamed dispatch key for b1.json's
+   * own `report_problem` — see `responseEvaluation.js`'s own comment.
+   */
+  narrate_past_event: () => 'First I got up. Then I had breakfast. After that I went to work.',
+  state_opinion: () => 'I think that weekend trips are great, because they help you relax.',
+  agree_or_disagree: () => "I agree, because there's more to do in a city.",
+  compare_and_choose: () => "The city is busier than the countryside, and I think the coast is the most relaxing.",
+  describe_experience: () => 'It was quiet, beautiful, and relaxing. It made me feel really peaceful.',
+  recommend_or_warn: () => "I'd recommend the coast, because it's quiet and relaxing.",
+  escalate_problem: () => "There's a problem with my order. I ordered a sandwich, but I got soup.",
+  negotiate_solution: () => 'Would it be possible to get a replacement instead?',
+  state_future_intent: () => "I'll have the pasta, thanks.",
+  state_real_condition: () => "If it rains tomorrow, I'll stay home.",
+  state_hypothetical: () => "If I were you, I'd ask for more details before deciding.",
+  change_topic: () => 'Anyway, have you tried the new café downtown?',
+  ask_follow_up: () => 'Really? What happened?',
+  summarize_other: () => "So basically, you're saying the flight got delayed.",
 }
 
 /* The three ways out, and what a turn practising each one asks for. */
@@ -238,6 +260,21 @@ const PROMPT = {
   ask_for_help: () => 'The room is cold and the heating doesn’t work.',
   invite_someone: () => 'Is there something you’d like to do this week?',
   respond_to_invitation: () => 'Would you like to go to the cinema?',
+  // B1 — a story to tell, an opinion to give, a problem to raise, a topic to change
+  narrate_past_event: () => 'Tell me about yesterday, in order.',
+  state_opinion: () => "What's your opinion about that? Tell me why.",
+  agree_or_disagree: () => 'Do you agree with that? Why or why not?',
+  compare_and_choose: () => 'Compare a few options — which do you prefer, and why?',
+  describe_experience: () => 'Describe a place or event you experienced — what was it like?',
+  recommend_or_warn: () => 'Would you recommend it or warn me away? Why?',
+  escalate_problem: () => "What's wrong? Tell me what happened and what you expected instead.",
+  negotiate_solution: () => 'What solution would you like?',
+  state_future_intent: () => 'What will you have?',
+  state_real_condition: () => 'What will you do if that happens?',
+  state_hypothetical: () => 'A friend can’t decide what to do. What would you tell them?',
+  change_topic: () => "I finally finished that book I told you about. Anyway, change the subject.",
+  ask_follow_up: () => 'I moved to a new city last year. Ask me a follow-up question.',
+  summarize_other: () => "I applied for a new job and had the interview yesterday. Can you summarize what I told you?",
 }
 
 /*
@@ -491,7 +528,20 @@ function PracticeTurn({ block, topic = null, onDone }) {
      * uses.
      */
     const spellContext = kind === 'spell_word' ? { expected: 'Sam' } : {}
-    const evalCtx = { name, independent, turnContext, place: vars.place, targetNoun: vars.noun, partner: vars.partner, ...thingContext, ...spellContext, ...(repairKind ? { repairKind } : {}) }
+    /*
+     * B1's own subtype fields have no default either — `narrate_past_event`
+     * defaults to `sequence`, `escalate_problem` to a neutral tone,
+     * `state_future_intent` to a spontaneous `decision`, and `change_topic`
+     * to `initiate`, the same first-taught form each intent's own episode 1
+     * teaches — a review block never grades a form the learner was not
+     * asked to produce, same bug class as `spellContext` above.
+     */
+    const subtypeContext = kind === 'narrate_past_event' ? { narrativeForm: 'sequence' }
+      : kind === 'escalate_problem' ? { tone: 'neutral' }
+        : kind === 'state_future_intent' ? { situationForm: 'decision' }
+          : kind === 'change_topic' ? { role: 'initiate' }
+            : {}
+    const evalCtx = { name, independent, turnContext, place: vars.place, targetNoun: vars.noun, partner: vars.partner, ...thingContext, ...spellContext, ...subtypeContext, ...(repairKind ? { repairKind } : {}) }
     const preview = evaluateFree(kind, text, evalCtx)
     const controller = new AbortController()
     abortRef.current = controller
@@ -506,6 +556,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
         // the strategy travels to Lingua too, or the remote grades another question
         ...(repairKind ? { repairKind } : {}),
         ...spellContext,
+        ...subtypeContext,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
         previousAttempts: 0, turnContext, signal: controller.signal,

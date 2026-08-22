@@ -55,7 +55,8 @@ const arc2 = BLUEPRINT.arcs.find(a => a.order === 2)
   const ep1 = getB1Arc2Episode('what_i_think')
   const ep2 = getB1Arc2Episode('agree_to_disagree')
   assert.deepEqual(ep1.prerequisites, [])
-  assert.deepEqual(ep2.prerequisites, ['give_an_opinion'])
+  /* episode `prerequisites` names EPISODE ids — see check-b1-arc1.mjs's identical note */
+  assert.deepEqual(ep2.prerequisites, ['what_i_think'])
   ok()
 }
 

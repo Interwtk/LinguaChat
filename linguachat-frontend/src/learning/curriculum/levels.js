@@ -38,6 +38,7 @@ import { EPISODE_SKELETON } from './preA1Skeleton.generated.js'
 export const PRE_A1 = 'pre_a1'
 export const A1 = 'a1'
 export const A2 = 'a2'
+export const B1 = 'b1'
 
 /*
  * `episodeLevel` is the string an episode definition carries in its own
@@ -66,6 +67,11 @@ export const LEVELS = [
    * and the level is not open — same distinction as A1's own comment above.
    */
   { id: A2, order: 3, contentStatus: 'partial', available: false, episodeLevel: 'A2' },
+  /*
+   * B1: all seven arcs are implemented (`LC-CONT-B1`, wired in by `LC-INT-001`)
+   * and the level is not open — same distinction as A1/A2's own comments above.
+   */
+  { id: B1, order: 4, contentStatus: 'partial', available: false, episodeLevel: 'B1' },
 ]
 
 export const LEVEL_IDS = LEVELS.map(l => l.id)
