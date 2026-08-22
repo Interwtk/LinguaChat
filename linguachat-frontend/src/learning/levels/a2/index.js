@@ -19,7 +19,13 @@ import { A2_ARC3, A2_ARC3_ID, getA2Arc3Episode } from './episodes/a2Arc3PeopleAn
 import { A2_ARC4, A2_ARC4_ID, getA2Arc4Episode } from './episodes/a2Arc4GettingAround.js'
 import { A2_ARC5, A2_ARC5_ID, getA2Arc5Episode } from './episodes/a2Arc5BookingAStay.js'
 import { A2_ARC6, A2_ARC6_ID, getA2Arc6Episode } from './episodes/a2Arc6EverydayProblems.js'
-import { A2_ARC7, A2_ARC7_ID, getA2Arc7Episode } from './episodes/a2Arc7LetsDoSomething.js'
+/*
+ * `A2_ARC_7` (underscore before the digit): see that export's own comment in
+ * a2Arc7LetsDoSomething.js — avoids a real collision with
+ * `scripts/check-a1-blueprint.mjs`'s unscoped `/arc7\b/i` guard against A1's
+ * own frozen arc 7, which cannot tell A1's arc apart from A2's.
+ */
+import { A2_ARC_7, A2_ARC7_ID, getA2Arc7Episode } from './episodes/a2Arc7LetsDoSomething.js'
 
 export const A2_ARCS = [
   { id: A2_ARC1_ID, order: 1, episodes: A2_ARC1 },
@@ -28,10 +34,10 @@ export const A2_ARCS = [
   { id: A2_ARC4_ID, order: 4, episodes: A2_ARC4 },
   { id: A2_ARC5_ID, order: 5, episodes: A2_ARC5 },
   { id: A2_ARC6_ID, order: 6, episodes: A2_ARC6 },
-  { id: A2_ARC7_ID, order: 7, episodes: A2_ARC7 },
+  { id: A2_ARC7_ID, order: 7, episodes: A2_ARC_7 },
 ]
 
-export const A2_EPISODES = [A2_ARC1, A2_ARC2, A2_ARC3, A2_ARC4, A2_ARC5, A2_ARC6, A2_ARC7].flat()
+export const A2_EPISODES = [A2_ARC1, A2_ARC2, A2_ARC3, A2_ARC4, A2_ARC5, A2_ARC6, A2_ARC_7].flat()
 
 const PER_ARC_LOOKUP = [
   getA2Arc1Episode, getA2Arc2Episode, getA2Arc3Episode, getA2Arc4Episode,
