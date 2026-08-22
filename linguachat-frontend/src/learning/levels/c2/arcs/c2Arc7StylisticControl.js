@@ -111,6 +111,18 @@ const EDIT_01 = {
   gardenItems: ['lexical_precision_substitution_pattern', 'precision', 'notice', 'revise'],
   reuseSkills: ['shift_register_deliberately', 'reformulate_dense_source_for_a_new_audience'],
   steps: [
+    {
+      type: 'recall', review: true, instructionKey: 'c2ep25GuidedReuseInstructionShift',
+      evalKind: 'shift_register', canDoId: 'shift_register_deliberately',
+      itemIds: ['register_shift_lexis_pattern'],
+      note: "reinforcement (marker 'R') per c2.json arc stylistic_control's own reuseMap — editing for tone is register shifting applied to your own draft, so this arc briefly reactivates arc 4's skill first",
+    },
+    {
+      type: 'recall', review: true, instructionKey: 'c2ep25GuidedReuseInstructionReformulate',
+      evalKind: 'reformulate_for_audience', canDoId: 'reformulate_dense_source_for_a_new_audience',
+      itemIds: ['reformulation_connector_pattern'],
+      note: "reinforcement (marker 'R') per c2.json arc stylistic_control's own reuseMap — precision editing reuses arc 2's audience-reformulation skill",
+    },
     { type: 'scene', mood: 'focused', titleKey: 'c2ep25SceneTitle', bodyKey: 'c2ep25SceneBody', showGoal: true, ctaKey: 'c2ep25Start',
       sourceTextEn: "Hey everyone, just a heads up, the elevator's gonna be broken next week lol, so yeah, use the stairs I guess." },
     {

@@ -1,18 +1,19 @@
 /*
  * check-c2-content-plan — structural fidelity gate for the C2 content plan.
  *
- * LC-CONT-C2 is blocked from authoring runtime content: every one of C2's
- * new evaluator intents needs registration in shared engine/component/i18n
- * files this task has no write access to (see
- * .ai/foundry/requests/LC-CONT-C2.md for the full, re-verified finding).
- * `docs/curriculum/implementation/c2/content-plan.json` is the design
- * artifact this task CAN produce inside its own write scope: a faithful,
- * episode/step-level expansion of `docs/curriculum/blueprints/c2.json`.
- *
- * This script proves the content plan is internally faithful to the frozen
- * blueprint. It does NOT prove the content is playable, pedagogically
- * effective, or evaluatable by any real evaluator, because no runtime
- * module exists yet to check that against.
+ * `docs/curriculum/implementation/c2/content-plan.json` was authored as the
+ * design starting point before this task's runtime content
+ * (`levels/c2/**`) existed. Per the supervisor correction on PR #76
+ * (2026-08-22): LC-INT-001, not an invented LC-FND-003, is the shared-core
+ * integration lane, so this task went on to author complete level-owned
+ * runtime content directly — see `check-c2-arc-content.mjs` and
+ * `run-all.mjs` for the checks that cover it. This script's job is
+ * narrower and still worth keeping: it proves the ORIGINAL design plan
+ * stayed internally faithful to the frozen blueprint, since several arc
+ * authors used it as their source of source-texts/test-cases. It does NOT
+ * prove the runtime content is playable, pedagogically effective, or
+ * evaluatable by any real evaluator, because no shared-core evaluator
+ * dispatch exists yet to check that against (LC-INT-001 work).
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'

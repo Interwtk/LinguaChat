@@ -126,6 +126,12 @@ const REFORMULATE_01 = {
   gardenItems: ['reformulation_connector_pattern', 'in other words', 'to put it another way', 'justification', 'reimbursement'],
   reuseSkills: ['extract_key_argument_from_dense_text'],
   steps: [
+    {
+      type: 'recall', review: true, instructionKey: 'c2ep5GuidedReuseInstruction',
+      evalKind: 'extract_argument', canDoId: 'extract_key_argument_from_dense_text',
+      itemIds: ['evidentiality_stance_pattern'],
+      note: "guided reuse (marker 'G') per c2.json arc precise_reformulation's own reuseMap — before reformulating the memo, briefly re-extract its claim/support, the arc 1 skill this arc's whole task depends on",
+    },
     { type: 'scene', mood: 'focused', titleKey: 'c2ep5SceneTitle', bodyKey: 'c2ep5SceneBody', showGoal: true, ctaKey: 'c2ep5Start',
       sourceTextEn: EXPENSE_POLICY_MEMO },
     {
