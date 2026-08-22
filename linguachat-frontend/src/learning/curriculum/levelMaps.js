@@ -16,7 +16,10 @@
  *
  * A NEW LEVEL'S OWN MAP FILE (e.g. `a2Map.js`) SHOULD:
  *   1. export its own `<LEVEL>_CAN_DO_INTENT` object, one intent per can-do,
- *      exactly like `preA1Map.js` and `a1Map.js` already do;
+ *      exactly like `preA1Map.js` and `a1Map.js` already do — a value is
+ *      normally a bare intent-id string, or `{ intent, subtype }` for a
+ *      can-do that reuses another can-do's intent under a subtype (see
+ *      `canDoForIntent()`'s own comment below);
  *   2. add one entry to `LEVEL_CAN_DO_INTENT_MAPS` below, `{ levelId, canDoIntent }`.
  * Nothing else in this file, or in any shared consumer, needs to change.
  *
@@ -28,36 +31,77 @@
  * dedicated collision detector; it imports this same registry so the two
  * never drift apart.
  */
-import { PRE_A1, A1, A2, B1 } from './levels.js'
+import { PRE_A1, A1, A2, B1, B2 } from './levels.js'
 import { CAN_DO_INTENT as PRE_A1_CAN_DO_INTENT } from './preA1Map.js'
 import { A1_CAN_DO_INTENT } from './a1Map.js'
 import { A2_CAN_DO_INTENT } from './a2Map.js'
 import { B1_CAN_DO_INTENT } from './b1Map.js'
+import { B2_CAN_DO_INTENT } from './b2Map.js'
 
 export const LEVEL_CAN_DO_INTENT_MAPS = [
   { levelId: PRE_A1, canDoIntent: PRE_A1_CAN_DO_INTENT },
   { levelId: A1, canDoIntent: A1_CAN_DO_INTENT },
   { levelId: A2, canDoIntent: A2_CAN_DO_INTENT },
   { levelId: B1, canDoIntent: B1_CAN_DO_INTENT },
+  { levelId: B2, canDoIntent: B2_CAN_DO_INTENT },
 ]
 
 /*
- * Every {canDoId, intent, levelId} triple across every registered level, in
- * registration order. Built once at module load, not per call, since the
- * source maps are static imports.
+ * A map entry's value is either a bare intent-id string (the common case —
+ * one intent, one can-do) or `{ intent, subtype }` (a can-do that reuses
+ * another can-do's intent for a genuinely different communicative function,
+ * distinguished only by subtype — B2's capstone is the first real case, see
+ * `levels/b2/b2Capabilities.js`'s own comment on `B2_CAN_DO_INTENT`).
+ */
+const intentOf = (value) => (typeof value === 'string' ? value : value?.intent ?? null)
+const subtypeOf = (value) => (typeof value === 'string' ? null : value?.subtype ?? null)
+
+/*
+ * Every {canDoId, intent, subtype, levelId} quadruple across every
+ * registered level, in registration order. Built once at module load, not
+ * per call, since the source maps are static imports.
  */
 const ALL_ENTRIES = LEVEL_CAN_DO_INTENT_MAPS.flatMap(({ levelId, canDoIntent }) =>
-  Object.entries(canDoIntent).map(([canDoId, intent]) => ({ canDoId, intent, levelId })))
+  Object.entries(canDoIntent).map(([canDoId, value]) =>
+    ({ canDoId, intent: intentOf(value), subtype: subtypeOf(value), levelId })))
 
 /*
  * The can-do that carries an intent, searched across every registered level.
- * First match wins by registration order — today that is curricular order
- * (Pre-A1 before A1), which only matters if two levels ever reused the same
- * intent for two different can-dos, and that is exactly the shape of defect
- * `check-cross-level-ids.mjs` refuses to let land.
+ *
+ * Until B2's capstone, one intent always mapped to exactly one can-do, and
+ * "first match wins by registration order" was a safe simplification. B2
+ * breaks that: `shift_register` alone now names THREE different can-dos
+ * (`adjust_register_to_context` with no subtype, plus
+ * `sustain_a_multi_topic_conversation`/`handle_a_topic_shift_gracefully`
+ * both under subtype `topic_shift`), and `propose_a_resolution` names two
+ * (`negotiate_a_resolution` with no subtype, `negotiate_an_agreement_under_pushback`
+ * under subtype `pushback`). A naive first-match lookup would silently
+ * resolve every capstone reuse to the base (no-subtype) can-do, which is
+ * exactly the defect this optional second argument fixes.
+ *
+ * Resolution order, called with a `subtype`:
+ *   1. an entry matching BOTH `intent` and `subtype` exactly;
+ *   2. falling back to the base (no-subtype) entry for that intent, so
+ *      every existing subtype-unaware call site keeps its old answer;
+ *   3. falling back to the first entry for that intent at all, so a
+ *      capstone-only intent with no base entry still resolves to something
+ *      rather than null.
+ * Called with no subtype (every pre-B2 call site), behaviour is byte-for-byte
+ * identical to before: every existing level's values are bare strings, so
+ * every entry's `subtype` is `null` and step 2 always wins on the first
+ * registered (no-subtype) match — still `check-cross-level-ids.mjs`'s job to
+ * refuse two DIFFERENT can-dos of the SAME level sharing one intent+subtype
+ * pair, an id collision this function does not itself judge.
  */
-export const canDoForIntent = (intent) =>
-  ALL_ENTRIES.find(e => e.intent === intent)?.canDoId || null
+export const canDoForIntent = (intent, subtype = null) => {
+  if (subtype) {
+    const withSubtype = ALL_ENTRIES.find(e => e.intent === intent && e.subtype === subtype)
+    if (withSubtype) return withSubtype.canDoId
+  }
+  return ALL_ENTRIES.find(e => e.intent === intent && !e.subtype)?.canDoId
+    ?? ALL_ENTRIES.find(e => e.intent === intent)?.canDoId
+    ?? null
+}
 
 /* The level a given can-do id is registered under, or null if none owns it. */
 export const levelOfCanDo = (canDoId) =>

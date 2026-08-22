@@ -79,16 +79,16 @@ const OPINION_01 = {
     },
     {
       type: 'free_reply', speaker: 'lingua', promptEn: "We're deciding whether to move team lunch to Fridays. What do you think?",
-      instructionKey: 'b2ep1AssistedInstruction', evalKind: 'state_opinion_with_reason', canDoId: 'develop_and_defend_opinion',
+      instructionKey: 'b2ep1AssistedInstruction', evalKind: 'argue_opinion_with_reason', canDoId: 'develop_and_defend_opinion',
       suggestionEn: 'In my view, Fridays would work better, because people are more relaxed by then.',
       itemIds: ['opinion_stance_pattern', 'the_way_i_see_it'], evidenceType: 'assistedOpen',
     },
     {
       type: 'free_reply', speaker: 'lingua', promptEn: 'Some people say the office should switch to a four-day week. What do you think, and why?',
-      instructionKey: 'b2ep1IndependentInstruction', evalKind: 'state_opinion_with_reason', canDoId: 'develop_and_defend_opinion',
+      instructionKey: 'b2ep1IndependentInstruction', evalKind: 'argue_opinion_with_reason', canDoId: 'develop_and_defend_opinion',
       itemIds: ['opinion_stance_pattern'], evidenceType: 'independent',
     },
-    { type: 'recall', instructionKey: 'b2ep1FinalInstruction', evalKind: 'state_opinion_with_reason', canDoId: 'develop_and_defend_opinion', itemIds: ['opinion_stance_pattern'] },
+    { type: 'recall', instructionKey: 'b2ep1FinalInstruction', evalKind: 'argue_opinion_with_reason', canDoId: 'develop_and_defend_opinion', itemIds: ['opinion_stance_pattern'] },
     { type: 'completion', canDoNameKey: 'b2ep1CanDoName', titleKey: 'b2ep1CloseTitle', bodyKey: 'b2ep1CloseBody', ctaKey: 'b2ep1CloseCta' },
   ],
 }
@@ -110,7 +110,7 @@ const OPTIONS_02 = {
   gardenItems: ['contrast_connector_pattern', 'advantage_disadvantage_frame', 'when_it_comes_to', 'on_balance', 'all_things_considered', 'the_bottom_line_is'],
   reuseSkills: ['develop_and_defend_opinion'],
   steps: [
-    { type: 'recall', review: true, instructionKey: 'b2ep2RecallInstruction', evalKind: 'state_opinion_with_reason', canDoId: 'develop_and_defend_opinion', itemIds: ['opinion_stance_pattern'] },
+    { type: 'recall', review: true, instructionKey: 'b2ep2RecallInstruction', evalKind: 'argue_opinion_with_reason', canDoId: 'develop_and_defend_opinion', itemIds: ['opinion_stance_pattern'] },
     { type: 'scene', mood: 'thoughtful', titleKey: 'b2ep2SceneTitle', bodyKey: 'b2ep2SceneBody', ctaKey: 'b2ep2Start' },
     {
       type: 'model',
@@ -212,7 +212,7 @@ const INTEGRATED_04 = {
     { type: 'scene', mood: 'welcoming', titleKey: 'b2ep4SceneTitle', bodyKey: 'b2ep4SceneBody', showGoal: true, ctaKey: 'b2ep4Start' },
     {
       type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: "Okay, so — how should we split the chores this month? I think whoever cooks shouldn't also have to clean up.",
-      instructionKey: 'b2ep4OpinionInstruction', evalKind: 'state_opinion_with_reason', canDoId: 'develop_and_defend_opinion',
+      instructionKey: 'b2ep4OpinionInstruction', evalKind: 'argue_opinion_with_reason', canDoId: 'develop_and_defend_opinion',
       itemIds: ['opinion_stance_pattern'], evidenceType: 'independent', transfer: true,
     },
     {
@@ -227,7 +227,7 @@ const INTEGRATED_04 = {
     },
     {
       type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: "Okay, let's go with your idea. Anything else before we agree on this?",
-      instructionKey: 'b2ep4CloseInstruction', evalKind: 'state_opinion_with_reason', canDoId: 'develop_and_defend_opinion',
+      instructionKey: 'b2ep4CloseInstruction', evalKind: 'argue_opinion_with_reason', canDoId: 'develop_and_defend_opinion',
       suggestionEn: "No, I think that covers it — I'm glad we found something that works for both of us.",
       itemIds: ['opinion_stance_pattern'], evidenceType: 'assistedOpen',
     },

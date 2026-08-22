@@ -164,6 +164,29 @@ const MODEL_ANSWER = {
   change_topic: () => 'Anyway, have you tried the new café downtown?',
   ask_follow_up: () => 'Really? What happened?',
   summarize_other: () => "So basically, you're saying the flight got delayed.",
+  /*
+   * B2. Added for the same reason A2/B1's own blocks above state: an
+   * unlisted objective falls back to the introduction answer, so a review
+   * block for one of these fourteen would have been graded against
+   * "Hi, I'm ___" instead of an argued opinion, a proposal or a
+   * reformulation. `argue_opinion_with_reason` is B2's runtime-renamed
+   * dispatch key for `develop_and_defend_opinion` — see
+   * `responseEvaluation.js`'s own comment.
+   */
+  argue_opinion_with_reason: () => "In my view, we should move team lunch to Fridays, because people are more relaxed by the end of the week.",
+  weigh_options: () => "The main advantage of the morning slot is that it's quieter, whereas the afternoon slot is more convenient.",
+  concede_and_counter: () => "That's true, the later slot is more convenient — but I still think mornings work better for the team.",
+  justify_a_request: () => "The issue is that the item I received was the wrong size — since I need it this week, could you send the right one?",
+  propose_a_resolution: () => 'Would it be possible to reschedule for Thursday morning instead?',
+  express_diplomatic_frustration: () => "I understand things get busy, but this is the second time it's happened, and I need it sorted this week.",
+  state_unreal_hypothesis: () => "If I were in your position, I'd ask for more time before deciding.",
+  speculate_cause_or_effect: () => "The lights are off and the car's gone — they must have left early.",
+  express_past_regret: () => 'I wish I had checked the reviews before booking — I would have chosen somewhere else.',
+  summarize_for_third_party: () => "Basically, the delivery's delayed until next week because of a supplier issue.",
+  reformulate_for_clarity: () => "In other words, the account is on hold until it's verified.",
+  report_third_party_opinion: () => 'She said she thought the later time would work better for everyone.',
+  shift_register: () => 'Could you possibly let me know when the report will be ready?',
+  soften_or_intensify_claim: () => "It's sort of a problem, to be honest — I'd say it needs looking at soon.",
 }
 
 /* The three ways out, and what a turn practising each one asks for. */
@@ -275,6 +298,21 @@ const PROMPT = {
   change_topic: () => "I finally finished that book I told you about. Anyway, change the subject.",
   ask_follow_up: () => 'I moved to a new city last year. Ask me a follow-up question.',
   summarize_other: () => "I applied for a new job and had the interview yesterday. Can you summarize what I told you?",
+  // B2 — an opinion to defend, options to weigh, a request to justify, a register to match
+  argue_opinion_with_reason: () => "We're deciding whether to move team lunch to Fridays. What do you think, and why?",
+  weigh_options: () => 'One option is quieter, the other is more convenient. Which would you recommend?',
+  concede_and_counter: () => "I still think the later slot is worth it. What's your honest reaction to that?",
+  justify_a_request: () => "What's the issue, and what would you like us to do about it?",
+  propose_a_resolution: () => 'What would you like us to do about it?',
+  express_diplomatic_frustration: () => 'This is the second time this has happened. What would you like to say about that?',
+  state_unreal_hypothesis: () => 'A friend is stuck in your exact situation. What would you tell them to do?',
+  speculate_cause_or_effect: () => "The lights are off and nobody's answering. What do you think happened?",
+  express_past_regret: () => 'Looking back, was there anything you wish you had done differently?',
+  summarize_for_third_party: () => 'A friend just joined the conversation late. Can you catch them up?',
+  reformulate_for_clarity: () => "I don't really understand that. Can you say it more simply?",
+  report_third_party_opinion: () => 'What did the other person think about it?',
+  shift_register: () => 'Could you write a message asking them to fix this?',
+  soften_or_intensify_claim: () => 'That message reads a bit harsh. Can you soften it slightly?',
 }
 
 /*

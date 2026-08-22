@@ -23,7 +23,7 @@
  * switch somewhere else.
  */
 import {
-  PRE_A1, A1, A2, B1, getLevel, isKnownLevel, isLevelAvailable, hasRuntimeContent,
+  PRE_A1, A1, A2, B1, B2, getLevel, isKnownLevel, isLevelAvailable, hasRuntimeContent,
   episodesOfLevel, levelIdOfEpisodeId, playableLevelId,
 } from './levels.js'
 
@@ -106,6 +106,22 @@ const CONTENT_LOADERS = {
     looking_ahead: () => import('../episodes/b1Arc5Content.js'),
     keep_talking: () => import('../episodes/b1Arc6Content.js'),
     the_long_conversation: () => import('../episodes/b1Arc7Content.js'),
+  },
+  [B2]: {
+    /*
+     * B2's six arcs arrived from `LC-CONT-B2` fully authored at once, same
+     * shape as A2/B1's own arrival. Unlike every level above, B2's own
+     * chunk-naming wrapper already lives inside `levels/b2/arcs/**`
+     * (`b2Arc{N}*Content.js`, each re-exporting `getEpisode`), so the loader
+     * points there directly rather than through a second, redundant
+     * top-level `episodes/b2Arc{N}Content.js` wrapper.
+     */
+    making_the_case: () => import('../levels/b2/arcs/b2Arc1MakingTheCaseContent.js'),
+    when_plans_go_wrong: () => import('../levels/b2/arcs/b2Arc2WhenPlansGoWrongContent.js'),
+    what_if: () => import('../levels/b2/arcs/b2Arc3WhatIfContent.js'),
+    talking_around_a_subject: () => import('../levels/b2/arcs/b2Arc4TalkingAroundASubjectContent.js'),
+    reading_between_the_lines: () => import('../levels/b2/arcs/b2Arc5ReadingBetweenTheLinesContent.js'),
+    the_long_conversation: () => import('../levels/b2/arcs/b2Arc6TheLongConversationContent.js'),
   },
 }
 

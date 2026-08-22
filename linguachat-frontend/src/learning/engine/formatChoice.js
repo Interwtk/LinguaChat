@@ -305,6 +305,38 @@ const OBJECTIVE_FORMATS = {
   change_topic: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
   ask_follow_up: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
   summarize_other: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  /*
+   * B2's 14 new intents. `word_order` appears only for the four intents a
+   * real grep across `levels/b2/arcs/**` finds an authored `word_order` step
+   * for (`weigh_options`'s `advantage_disadvantage_frame`,
+   * `propose_a_resolution`'s `negotiation_proposal_pattern`,
+   * `state_unreal_hypothesis`'s `mixed_conditional_pattern`,
+   * `reformulate_for_clarity`'s `reformulation_marker_pattern`) — same
+   * judgment B1's own table above makes for `narrate_past_event`. `choice`
+   * appears for `shift_register`/`soften_or_intensify_claim` (arc 5/6 both
+   * author recognition `choice` steps for register/hedging judgments) and
+   * nowhere else, matching A2's own `state_opinion_with_reason` precedent of
+   * leaving `choice` off a pure open-production objective. `mini_story` is
+   * absent from all fourteen: no B2 arc uses a `mini_story` step (every
+   * arc's own header comment says so explicitly, `docs/curriculum/implementation/b2/README.md`
+   * section 4's "mini_story was not used anywhere" — the richer step type is
+   * an optional future enhancement, not something this content depends on),
+   * so there is no story for a daily block to plan.
+   */
+  argue_opinion_with_reason: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  weigh_options: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  concede_and_counter: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  justify_a_request: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  propose_a_resolution: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  express_diplomatic_frustration: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  state_unreal_hypothesis: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  speculate_cause_or_effect: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  express_past_regret: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  summarize_for_third_party: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  reformulate_for_clarity: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  report_third_party_opinion: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  shift_register: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  soften_or_intensify_claim: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
 }
 
 /*

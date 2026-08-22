@@ -41,8 +41,15 @@ if (!existsSync(DIST)) {
  * keys landing in the base dictionary, the identical, expected growth shape
  * A2's own note above describes. 600 kB leaves headroom for the same
  * de-minimis growth without another edit.
+ *
+ * 600 kB held for B1; `LC-INT-001` wiring B2's 22 episodes in the same way
+ * took the entry to 641.8 kB — measured, not guessed — from B2's own arc
+ * metadata in `preA1Skeleton.generated.js` and its 551-key merge (i18n keys
+ * + vocabulary glosses) landing in the base dictionary, the identical,
+ * expected growth shape A2/B1's own notes above describe. 700 kB leaves
+ * headroom for the same de-minimis growth without another edit.
  */
-const ENTRY_BUDGET_KB = 600
+const ENTRY_BUDGET_KB = 700
 /*
  * A locale's own chunk. Sixty was calibrated when the product had one level's
  * worth of strings; A1 arc 1 added seventy-five keys in eight languages and the
@@ -81,8 +88,16 @@ const ENTRY_BUDGET_KB = 600
  * Japanese to 168.9 kB — both still three-byte-heavy scripts, the same reason
  * this number keeps moving. Measured, not guessed; 190 kB leaves headroom for
  * the same de-minimis growth.
+ *
+ * 190 kB held for B1; `LC-INT-001` merging B2's 551 new keys the same way
+ * (draft English placeholder, mechanically generated from `levels/b2/**`
+ * content and identical across all seven gated locales pending a later
+ * translation PR — see that merge's own commit) took Arabic to 203.0 kB and
+ * Japanese to 198.2 kB — both still three-byte-heavy scripts, the same
+ * reason this number keeps moving. Measured, not guessed; 230 kB leaves
+ * headroom for the same de-minimis growth.
  */
-const LOCALE_MAX_KB = 190
+const LOCALE_MAX_KB = 230
 
 const files = readdirSync(DIST).filter(f => f.endsWith('.js'))
 const sizeKb = (f) => statSync(join(DIST, f)).size / 1024

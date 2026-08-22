@@ -301,18 +301,37 @@ export const B2_OPTIONAL_CAN_DO_IDS = B2_CAN_DOS.filter((c) => c.scope === 'opti
 /*
  * `<LEVEL>_CAN_DO_INTENT`, the exact shape `curriculum/levelMaps.js` asks a
  * new level's own map file to export (see that file's header comment).
- * Registering it into `LEVEL_CAN_DO_INTENT_MAPS` is `curriculum/levelMaps.js`
- * work — out of this task's write scope — so this export exists here as the
- * ready-to-register payload, not yet consumed by anything.
+ * Registered into `LEVEL_CAN_DO_INTENT_MAPS` by `curriculum/b2Map.js`
+ * (`LC-INT-001`), which imports this export directly rather than copying it.
  *
  * One canDo -> one intent, per `b2.json#/intentStrategy`'s rule. The three
  * capstone-only capabilities reuse an existing intent under a subtype rather
  * than mint a new one (`b2Intents.js` documents the subtype); they are NOT
  * listed here as their own intent id, matching the blueprint's explicit
  * "arc 6 introduces zero new intents" design (`intentStrategy.newSubtypesOnExistingIntents`).
+ *
+ * REAL INTEGRATION DEFECT, FOUND AND FIXED AT WIRING TIME (LC-INT-001):
+ * `develop_and_defend_opinion` was authored here (and throughout
+ * `levels/b2/**`) as intent id `state_opinion_with_reason` — the EXACT same
+ * bare intent id A2 already registers, for its own, much simpler
+ * `state_opinion_with_reason` ("I like X because Y", `levels/a2/evaluators.js`).
+ * B2 and A2 were authored in parallel lanes with no cross-reference to each
+ * other, the same collision class B1's `report_problem` hit against A2's own
+ * intent of that name (see `b1Map.js`'s own account). Both cannot share one
+ * case in `engine/responseEvaluation.js`'s flat `evaluateFree` switch — the
+ * loser would be silently graded by the other level's (much weaker)
+ * evaluator. Fixed by renaming B2's runtime dispatch key to
+ * `argue_opinion_with_reason` throughout `levels/b2/**` (this file,
+ * `b2Intents.js`, `b2EvaluationContracts.js`, every arc's `evalKind` usage)
+ * — B2's own `capabilityId`/canDo id (`develop_and_defend_opinion`) is
+ * unaffected, only the runtime evaluator dispatch key changed.
+ *
+ * Every other B2 intent id was checked against every already-registered
+ * level's own intent dispatch keys (Pre-A1/A1/A2/B1) and against B2's own
+ * canDo ids — no further collision exists.
  */
 export const B2_CAN_DO_INTENT = {
-  develop_and_defend_opinion: 'state_opinion_with_reason',
+  develop_and_defend_opinion: 'argue_opinion_with_reason',
   weigh_advantages_and_disadvantages: 'weigh_options',
   concede_a_point_and_counter: 'concede_and_counter',
   justify_a_request_for_change: 'justify_a_request',
@@ -331,20 +350,33 @@ export const B2_CAN_DO_INTENT = {
    * Capstone-only capabilities reuse an existing intent + subtype rather than
    * mint a new one, per b2.json intentStrategy.newSubtypesOnExistingIntents
    * ("arc 6 introduces zero new intents") — see b2Intents.js `B2_INTENT_SUBTYPES`.
+   * The value shape below is `{ intent, subtype }` rather than a bare string
+   * specifically for these three entries: `curriculum/levelMaps.js`'s
+   * `canDoForIntent()` used to assume one intent maps to exactly one canDo
+   * (first-match-wins), which silently resolved every `shift_register` or
+   * `propose_a_resolution` lookup to whichever canDo happened to be listed
+   * first (always `adjust_register_to_context` / `negotiate_a_resolution`,
+   * never the capstone reuse). Fixed at `LC-INT-001` integration time by
+   * generalizing `canDoForIntent(intent, subtype)` to accept an optional
+   * subtype qualifier, matched against this structured shape — see that
+   * file's own comment for the resolution order.
    *
-   * NOTE ON THE shift_register REUSE: b2.json#/evaluationStrategy literally
-   * names `shift_register (capstone topic-shift subtype)` as the intent
-   * behind BOTH sustain_a_multi_topic_conversation and
-   * handle_a_topic_shift_gracefully — the same intent id b2 also uses for
-   * register formality shifts. This is transcribed verbatim, not
-   * reinterpreted (per this task's "no invented curricular detail" rule),
-   * but the name is genuinely confusing for a topic-change judgment and is
-   * flagged as a naming concern worth a human check in
-   * docs/curriculum/implementation/b2/README.md rather than silently
-   * renamed here.
+   * NOTE ON THE shift_register REUSE (RESOLVED, not a copy-paste artifact):
+   * `b2.json#/evaluationStrategy` literally writes "shift_register (capstone
+   * topic-shift subtype)" — a deliberate, self-documenting reuse of the
+   * register-formality intent for topic-shift judgment, confirmed by reading
+   * the blueprint directly at `LC-INT-001` integration time (not merely
+   * transcribed from a comment). The id is genuinely a different
+   * communicative function under one name; `levels/b2/evaluators.js`'s
+   * `evaluateShiftRegister` branches on `subtype` (`formal_shift` /
+   * `informal_shift` vs. `topic_shift`) with entirely different judging logic
+   * per branch, exactly the way every other subtype-carrying intent in this
+   * codebase already works (B1's `narrativeForm`/`tone`, A1's `abilityForm`).
+   * Left as-is; `docs/curriculum/implementation/b2/README.md` section 4 is
+   * updated to record this confirmation.
    */
-  sustain_a_multi_topic_conversation: 'shift_register', // subtype: topic_shift
-  handle_a_topic_shift_gracefully: 'shift_register', // subtype: topic_shift
-  negotiate_an_agreement_under_pushback: 'propose_a_resolution', // subtype: pushback
+  sustain_a_multi_topic_conversation: { intent: 'shift_register', subtype: 'topic_shift' },
+  handle_a_topic_shift_gracefully: { intent: 'shift_register', subtype: 'topic_shift' },
+  negotiate_an_agreement_under_pushback: { intent: 'propose_a_resolution', subtype: 'pushback' },
   use_idiomatic_expressions_naturally: null, // comprehension-only, no production intent (b2.json evaluationStrategy.comprehension_only)
 }

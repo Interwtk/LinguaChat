@@ -39,6 +39,7 @@ export const PRE_A1 = 'pre_a1'
 export const A1 = 'a1'
 export const A2 = 'a2'
 export const B1 = 'b1'
+export const B2 = 'b2'
 
 /*
  * `episodeLevel` is the string an episode definition carries in its own
@@ -72,6 +73,13 @@ export const LEVELS = [
    * and the level is not open — same distinction as A1/A2's own comments above.
    */
   { id: B1, order: 4, contentStatus: 'partial', available: false, episodeLevel: 'B1' },
+  /*
+   * B2: all six arcs are implemented (`LC-CONT-B2`, wired in by `LC-INT-001`)
+   * and the level is not open — same distinction as A1/A2/B1's own comments
+   * above. A separate, deliberate B2 release gate is required before this
+   * changes, exactly like A1's own gate.
+   */
+  { id: B2, order: 5, contentStatus: 'partial', available: false, episodeLevel: 'B2' },
 ]
 
 export const LEVEL_IDS = LEVELS.map(l => l.id)

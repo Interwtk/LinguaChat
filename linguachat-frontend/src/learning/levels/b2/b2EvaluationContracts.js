@@ -53,7 +53,7 @@ export const B2_DISCOURSE_COHERENCE_OPT_IN = [
  */
 export const B2_STRUCTURAL_FLOOR_FALLBACK = [
   {
-    intentId: 'state_opinion_with_reason',
+    intentId: 'argue_opinion_with_reason', // renamed at LC-INT-001 wiring time — see b2Capabilities.js
     structuralFloor: 'response contains a stance marker from opinion_stance_pattern and at least one connector/justification form',
   },
   {

@@ -73,7 +73,7 @@ const JUSTIFY_05 = {
   gardenItems: ['justification_pattern', 'the_issue_is_that', 'could_you_look_into', 'id_appreciate_it_if', 'at_your_earliest_convenience'],
   reuseSkills: ['develop_and_defend_opinion'],
   steps: [
-    { type: 'recall', review: true, instructionKey: 'b2ep5RecallInstruction', evalKind: 'state_opinion_with_reason', canDoId: 'develop_and_defend_opinion', itemIds: ['opinion_stance_pattern'] },
+    { type: 'recall', review: true, instructionKey: 'b2ep5RecallInstruction', evalKind: 'argue_opinion_with_reason', canDoId: 'develop_and_defend_opinion', itemIds: ['opinion_stance_pattern'] },
     { type: 'scene', mood: 'thoughtful', titleKey: 'b2ep5SceneTitle', bodyKey: 'b2ep5SceneBody', showGoal: true, ctaKey: 'b2ep5Start' },
     {
       type: 'model',

@@ -77,6 +77,37 @@ export const intentsForEpisode = (id) =>
     .filter(Boolean))]
 
 /*
+ * The same walk as `intentsForEpisode`, but keeping each step's `subtype`
+ * alongside its intent rather than collapsing to a bare, deduplicated intent
+ * list. Needed because B2's capstone reuses one intent id for several
+ * different can-dos, distinguished only by `subtype`
+ * (`curriculum/levelMaps.js`'s `canDoForIntent(intent, subtype)`) — a caller
+ * that only had the deduplicated intent, like `scaffolding.js`'s own
+ * novelty check, could not tell "this episode's `shift_register` step is
+ * really about `sustain_a_multi_topic_conversation`" from "...is really
+ * about `adjust_register_to_context`", and would silently credit/measure
+ * novelty against the wrong capability. Deduplicated by (intent, subtype)
+ * pair, so a level with no `subtype` field at all produces exactly the same
+ * set `intentsForEpisode` does (each pair's subtype is simply `null`).
+ */
+export const intentSubtypesForEpisode = (id) => {
+  const seen = new Set()
+  const pairs = []
+  const consider = (evalKind, subtype = null) => {
+    if (!evalKind) return
+    const key = `${evalKind}|${subtype || ''}`
+    if (seen.has(key)) return
+    seen.add(key)
+    pairs.push({ intent: evalKind, subtype: subtype || null })
+  }
+  for (const s of (getEpisode(id)?.steps || [])) {
+    consider(s.evalKind, s.subtype)
+    for (const t of innerTurns(s)) consider(t.evalKind, t.subtype)
+  }
+  return pairs
+}
+
+/*
  * Where a language item is PRODUCED, as opposed to merely granted. A free
  * reply or recall records its `itemIds`; a build/gap/choice records its
  * `itemId`. Anything else the learner only has to understand.

@@ -50,6 +50,18 @@ import { B1_ARC4 } from '../src/learning/episodes/b1Arc4Content.js'
 import { B1_ARC5 } from '../src/learning/episodes/b1Arc5Content.js'
 import { B1_ARC6 } from '../src/learning/episodes/b1Arc6Content.js'
 import { B1_ARC_SEVEN } from '../src/learning/episodes/b1Arc7Content.js'
+/*
+ * B2's arcs are imported straight from `levels/b2/arcs/**` — that is already
+ * the chunk-naming wrapper location for this level (see
+ * `curriculum/episodeContent.js`'s own comment), so there is no second,
+ * redundant top-level `episodes/b2Arc{N}Content.js` file to import instead.
+ */
+import { B2_ARC1 } from '../src/learning/levels/b2/arcs/b2Arc1MakingTheCaseContent.js'
+import { B2_ARC2 } from '../src/learning/levels/b2/arcs/b2Arc2WhenPlansGoWrongContent.js'
+import { B2_ARC3 } from '../src/learning/levels/b2/arcs/b2Arc3WhatIfContent.js'
+import { B2_ARC4 } from '../src/learning/levels/b2/arcs/b2Arc4TalkingAroundASubjectContent.js'
+import { B2_ARC5 } from '../src/learning/levels/b2/arcs/b2Arc5ReadingBetweenTheLinesContent.js'
+import { B2_ARC6 } from '../src/learning/levels/b2/arcs/b2Arc6TheLongConversationContent.js'
 import { getStory, storyTurns } from '../src/learning/engine/miniStory.js'
 
 const OUT = 'src/learning/curriculum/preA1Skeleton.generated.js'
@@ -58,7 +70,17 @@ const OUT = 'src/learning/curriculum/preA1Skeleton.generated.js'
 const STEP_FIELDS = ['type', 'evalKind', 'itemId', 'itemIds', 'meaningItems', 'review', 'branchOn',
   'captureFact', 'contextIntent', 'storyObjective', 'variation', 'format', 'personalises',
   /* subtypes: the payload a step carries so one intent can cover several variants */
-  'thingId', 'quantityForm', 'repairKind', 'timeForm', 'count']
+  'thingId', 'quantityForm', 'repairKind', 'timeForm', 'count',
+  /*
+   * B2's own subtype field: a generic `subtype` name (`topic_shift`,
+   * `pushback`, `formal_shift`, `informal_shift`) rather than a bespoke
+   * field per intent like earlier levels used. Carried into the skeleton so
+   * `scaffolding.js`'s `noveltyOf()` can resolve a capstone reuse step to
+   * its REAL can-do (`curriculum/levelMaps.js`'s subtype-aware
+   * `canDoForIntent()`) instead of always resolving to whichever can-do the
+   * base, no-subtype entry happens to name.
+   */
+  'subtype']
 
 /*
  * The one place where the English is an INPUT to a derivation rather than
@@ -118,10 +140,11 @@ const EPISODE_FIELDS = ['id', 'level', 'arc', 'titleKey', 'goalKey', 'canDoId', 
    */
   'secondaryCanDoId']
 
-/* every level's episodes, in curriculum order: Pre-A1, then A1 arc by arc, then A2, then B1 */
+/* every level's episodes, in curriculum order: Pre-A1, then A1 arc by arc, then A2, then B1, then B2 */
 const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7,
   ...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7,
-  ...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN]
+  ...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN,
+  ...B2_ARC1, ...B2_ARC2, ...B2_ARC3, ...B2_ARC4, ...B2_ARC5, ...B2_ARC6]
 
 const skeleton = RUNTIME_EPISODES.map(ep => ({
   ...pick(ep, EPISODE_FIELDS),

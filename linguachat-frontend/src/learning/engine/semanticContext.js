@@ -99,6 +99,20 @@ export const SEMANTIC_TYPES = [
    * shared entry serves both; B1's own intents personalise nothing through
    * this pipeline (see the `INTENT_SLOTS` comment below), so it needs no
    * second registration, only reuse.
+   *
+   * B2 independently proposed `problem_type` (`b2Patterns.js`'s
+   * `B2_SEMANTIC_TYPES`, required by `justify_a_request_for_change`,
+   * `negotiate_a_resolution`, `express_frustration_diplomatically`,
+   * `negotiate_an_agreement_under_pushback`) — a categorized escalation of
+   * this same `problem` family, resolved in
+   * `docs/curriculum/semantic-types.md` section 1: ONE type
+   * (`problem`, owned by B1), with an optional `category` field
+   * (`delay`/`damage`/`wrong_item`/`missed_appointment`) rather than a
+   * second, duplicate `SEMANTIC_TYPES` entry. No B2 evaluator currently
+   * reads a categorized `problem` value through this pipeline either (see
+   * the `INTENT_SLOTS` comment below — B2's problem-related turns are
+   * literal English, not personalised), so this is a design-record
+   * reconciliation rather than a live consumer today.
    */
   'problem',         // broken, lost, the wrong one
 ]
@@ -300,6 +314,35 @@ export const INTENT_SLOTS = {
   change_topic: [],
   ask_follow_up: [],
   summarize_other: [],
+  /*
+   * B2's 14 new intents (`levels/b2/b2Intents.js`). Same reason as every
+   * level above: a grep across `levels/b2/arcs/**` finds no `{placeholder}`
+   * personalization at all (every prompt/target is literal English) — no B2
+   * episode drops a personalised value into these turns through this
+   * pipeline, matching B1's own documented decision. `argue_opinion_with_reason`
+   * is B2's runtime-renamed dispatch key for `develop_and_defend_opinion`
+   * (collides with A2's own, unrelated `state_opinion_with_reason` — see
+   * `levels/b2/b2Capabilities.js`'s `B2_CAN_DO_INTENT` comment). `shift_register`
+   * and `propose_a_resolution` each cover more than one B2 can-do via a
+   * `subtype` field on the step (`topic_shift`/`formal_shift`/`informal_shift`,
+   * `pushback`) rather than through this slot-personalization pipeline —
+   * unrelated mechanisms, so one INTENT_SLOTS entry per intent is still
+   * correct here regardless of how many can-dos reuse it.
+   */
+  argue_opinion_with_reason: [],
+  weigh_options: [],
+  concede_and_counter: [],
+  justify_a_request: [],
+  propose_a_resolution: [],
+  express_diplomatic_frustration: [],
+  state_unreal_hypothesis: [],
+  speculate_cause_or_effect: [],
+  express_past_regret: [],
+  summarize_for_third_party: [],
+  reformulate_for_clarity: [],
+  report_third_party_opinion: [],
+  shift_register: [],
+  soften_or_intensify_claim: [],
 }
 
 export const slotsFor = (intent) => INTENT_SLOTS[intent] || []

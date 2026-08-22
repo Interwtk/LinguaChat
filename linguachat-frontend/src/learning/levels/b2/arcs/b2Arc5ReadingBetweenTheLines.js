@@ -405,7 +405,7 @@ const INTEGRATED_20 = {
     {
       type: 'free_reply', format: 'roleplay', speaker: 'lingua',
       promptEn: "Looking back at today — was switching to the new train timetable actually a good idea, despite all this?",
-      instructionKey: 'b2ep20OpinionInstruction', evalKind: 'state_opinion_with_reason', canDoId: 'develop_and_defend_opinion',
+      instructionKey: 'b2ep20OpinionInstruction', evalKind: 'argue_opinion_with_reason', canDoId: 'develop_and_defend_opinion',
       suggestionEn: "On balance, I'd say it was a good idea — it's sort of a rough first week, but I'm convinced it'll save time once everyone adjusts.",
       itemIds: ['opinion_stance_pattern'], evidenceType: 'guided',
     },
