@@ -865,7 +865,7 @@
       "proposedSharedBehaviour": "a new semantic type with the same neutral-fallback contract as existing personalizable slots",
       "regressionRisk": "low, additive",
       "testsRequired": "personalization-invariant tests per the two-theme proof requirement",
-      "note": "check whether a sibling A2/B1/B2 blueprint already requested an equivalent type before building this twice"
+      "note": "RESOLVED by LC-AUD-001 F9 and LC-FND-002 (docs/curriculum/semantic-types.md): checked against B1's problem and B2's problem_type. negotiated_item is a real, distinct type — C1's negotiation scenarios include problem-free cases (a calendar conflict) that problem must keep rejecting — but it generalizes problem rather than standing as a fourth independent type: every problem value is a valid negotiated_item value, plus C1's own problem-free examples. See docs/curriculum/semantic-types.md section 2 for the full decision record."
     }
   ],
 
