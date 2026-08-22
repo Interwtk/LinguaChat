@@ -12,6 +12,7 @@ on:
       - "Claude — autonomous task"
       - "Claude — translations"
       - "Claude — curriculum foundry worker"
+      - "Claude — curriculum foundry resume"
     types: [completed]
 
 permissions:
@@ -36,7 +37,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ "$SOURCE_WORKFLOW" = "Claude — curriculum foundry worker" ]; then
+          if [ "$SOURCE_WORKFLOW" = "Claude — curriculum foundry worker" ] || [ "$SOURCE_WORKFLOW" = "Claude — curriculum foundry resume" ]; then
             gh workflow run curriculum-foundry.yml \
               --repo "$GITHUB_REPOSITORY" \
               --ref main
