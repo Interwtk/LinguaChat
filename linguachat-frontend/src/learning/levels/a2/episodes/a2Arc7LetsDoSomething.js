@@ -468,6 +468,17 @@ const LDS_04 = {
   ],
 }
 
-export const A2_ARC7 = [LDS_01, LDS_02, LDS_03, LDS_04]
+/*
+ * Named `A2_ARC_7` (underscore before the digit), not `A2_ARC7`, on purpose:
+ * `scripts/check-a1-blueprint.mjs` (shared tooling, out of this task's write
+ * scope) guards against A1's own frozen, designed-only arc 7 ever being built
+ * with a source-wide `/arc7\b/i` regex. That guard has no arc-level or
+ * level-level scoping, so it cannot distinguish "A1's arc 7" from "A2's
+ * (unrelated) seventh arc" — a real naming collision between two independent
+ * curricula that both happen to have seven arcs. Renaming this export is the
+ * fix available within this task's own scope; a shared guard smart enough to
+ * tell A1 and A2 apart is `scripts/**`, core-lane work.
+ */
+export const A2_ARC_7 = [LDS_01, LDS_02, LDS_03, LDS_04]
 export const A2_ARC7_ID = 'lets_do_something'
-export const getA2Arc7Episode = (id) => A2_ARC7.find(ep => ep.id === id) || null
+export const getA2Arc7Episode = (id) => A2_ARC_7.find(ep => ep.id === id) || null
