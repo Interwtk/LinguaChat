@@ -2324,5 +2324,30 @@
     "qualityRationale": "Longitudinal quasi-experimental extensive-reading program study with delayed retention testing but non-random proficiency grouping.",
     "sourceType": "primary",
     "verified": true
+  },
+  {
+    "id": "PED-P04-001",
+    "title": "Reexamining Effects of Form-Focused Instruction on L2 Pronunciation Development: The Role of Explicit Phonetic Information",
+    "authors": "Saito, K.",
+    "year": 2013,
+    "design": "Three-group (control, FFI-only, FFI plus explicit phonetic information) classroom experiment testing whether explicit phonetic information added to form-focused instruction improves L2 pronunciation of English /r/ by Japanese EFL learners, with generalization tests to unfamiliar words.",
+    "sampleSize": 49,
+    "population": "Japanese learners of English in an EFL setting, assigned to a control group (n=14), an FFI-only group (n=18), and an FFI plus explicit-phonetic-information group (n=17).",
+    "venue": "Studies in Second Language Acquisition",
+    "institution": "Waseda University",
+    "topic": "pronunciation/speech learning",
+    "outcome": "The FFI-only group showed moderate pronunciation improvement mainly in familiar contexts, while the FFI plus explicit-phonetic-information group showed considerably larger gains that generalized to unfamiliar lexical contexts beyond the instructional materials.",
+    "limitations": "Group sizes were small (14-18 learners per condition) and all participants were Japanese EFL learners targeting a single phone (English /r/), limiting generalization to other L1 backgrounds or sounds.",
+    "sourceUrl": "https://doi.org/10.1017/S0272263112000666",
+    "persistentId": "10.1017/S0272263112000666",
+    "verificationSources": [
+      "https://api.crossref.org/works/10.1017/S0272263112000666",
+      "https://www.cambridge.org/core/journals/studies-in-second-language-acquisition/article/abs/reexamining-effects-of-formfocused-instruction-on-l2-pronunciation-development/EED4F79800A4865B47B585383FAAAA35"
+    ],
+    "verifiedAt": "2026-08-22",
+    "qualityGrade": "B",
+    "qualityRationale": "Controlled three-group classroom experiment with generalization testing, but small per-group samples and a single L1/single-phone population.",
+    "sourceType": "primary",
+    "verified": true
   }
 ]
