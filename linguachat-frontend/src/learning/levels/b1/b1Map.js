@@ -16,13 +16,14 @@ import { B1_ARC2 } from './episodes/b1Arc2.js'
 import { B1_ARC3 } from './episodes/b1Arc3.js'
 import { B1_ARC4 } from './episodes/b1Arc4.js'
 import { B1_ARC5 } from './episodes/b1Arc5.js'
+import { B1_ARC6 } from './episodes/b1Arc6.js'
 
 /* A level-local id. NOT `curriculum/levels.js`'s `B1` (that constant does not
  * exist yet) — do not import this into anything that expects the real one. */
 export const B1_LEVEL_ID = 'b1'
 
 /* The arcs of B1 with runtime content today, in the blueprint's order. */
-export const B1_RUNTIME_ARCS = ['what_happened', 'i_think_that', 'which_one', 'somethings_wrong', 'looking_ahead']
+export const B1_RUNTIME_ARCS = ['what_happened', 'i_think_that', 'which_one', 'somethings_wrong', 'looking_ahead', 'keep_talking']
 
 /* One intent per can-do, same convention as `A1_CAN_DO_INTENT`/`CAN_DO_INTENT`. */
 export const B1_CAN_DO_INTENT = {
@@ -51,6 +52,10 @@ export const B1_CAN_DO_INTENT = {
   talk_about_hopes_and_ambitions: 'state_future_intent',
   talk_about_real_conditions: 'state_real_condition',
   imagine_a_hypothetical: 'state_hypothetical',
+  // arc 6 — each new can-do is its own distinct intent
+  sustain_topic_change: 'change_topic',
+  ask_follow_up_questions: 'ask_follow_up',
+  summarize_what_was_said: 'summarize_other',
 }
 
 export const B1_CAN_DO_EXTRA_INTENTS = {}
@@ -71,11 +76,15 @@ export const B1_REQUIRED_CAN_DOS = [
   'compare_options_with_reasons', 'describe_an_experience',
   'escalate_and_resolve_a_problem', 'negotiate_a_solution',
   'talk_about_plans_and_intentions', 'talk_about_hopes_and_ambitions',
+  'sustain_topic_change', 'ask_follow_up_questions',
 ]
 
 /* should-have can-dos: implemented, taught and evaluated, but not required
  * for level graduation (b1.json `graduationRelevance: should`). */
-export const B1_SHOULD_CAN_DOS = ['recommend_or_warn', 'express_frustration_politely', 'talk_about_real_conditions']
+export const B1_SHOULD_CAN_DOS = [
+  'recommend_or_warn', 'express_frustration_politely', 'talk_about_real_conditions',
+  'summarize_what_was_said',
+]
 
 /* optional can-dos: implemented, taught and evaluated, but not required for
  * level graduation and never assumed evidenced (b1.json `graduationRelevance:
@@ -97,12 +106,15 @@ export const B1_RECEPTIVE_ITEMS = [
   'b1_im_hoping_to', 'b1_someday', 'b1_my_ambition_is',
   'b1_provided_that', 'b1_in_that_case',
   'b1_if_i_were_in_your_shoes', 'b1_my_advice_would_be',
+  'b1_on_a_different_note', 'b1_changing_the_subject',
+  'b1_how_come', 'b1_what_do_you_mean',
+  'b1_so_what_you_mean_is', 'b1_to_sum_up',
 ]
 
 export const B1_INCIDENTAL_ITEMS = []
 
 export function b1Episodes() {
-  return [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5]
+  return [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6]
 }
 
 export const B1_ARC_CAN_DOS = [...new Set(b1Episodes().map(ep => ep.canDoId).filter(Boolean))]
@@ -172,6 +184,10 @@ export const B1_INTRODUCED_ITEMS = [
   'b1_i_hope_to', 'b1_id_like_to', 'b1_one_day_ill', 'b1_hope_would_like_pattern', 'b1_my_dream_is_to',
   'b1_if_present_will', 'b1_first_conditional_pattern', 'b1_unless', 'b1_as_soon_as',
   'b1_if_i_were_you', 'b1_if_i_were_pattern', 'b1_id_verb', 'b1_in_your_position',
+  // arc 6 — keep_talking: topic change, follow-up questions, summarizing
+  'b1_by_the_way', 'b1_anyway', 'b1_speaking_of', 'b1_topic_change_pattern',
+  'b1_really', 'b1_why', 'b1_what_happened', 'b1_follow_up_question_pattern',
+  'b1_so_basically', 'b1_what_youre_saying_is', 'b1_summarize_pattern', 'b1_in_other_words',
   ...B1_RECEPTIVE_ITEMS,
 ]
 

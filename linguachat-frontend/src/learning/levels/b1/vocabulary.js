@@ -177,12 +177,41 @@ export const B1_ARC5_VOCAB = {
   b1_my_advice_would_be: { en: 'my advice would be', type: 'connector' },
 }
 
+/* ---- Arc 6 — keep_talking (12 productive / 6 receptive, per b1.json) ---- */
+export const B1_ARC6_VOCAB = {
+  // sustain_topic_change — 4 productive
+  b1_by_the_way: { en: 'by the way', type: 'connector' },
+  b1_anyway: { en: 'anyway', type: 'connector' },
+  b1_speaking_of: { en: 'speaking of', type: 'connector' },
+  b1_topic_change_pattern: { en: 'by the way / anyway / speaking of ...', type: 'pattern' },
+  // sustain_topic_change — 2 receptive
+  b1_on_a_different_note: { en: 'on a different note', type: 'connector' },
+  b1_changing_the_subject: { en: 'changing the subject', type: 'connector' },
+  // ask_follow_up_questions — 4 productive
+  b1_really: { en: 'really?', type: 'connector' },
+  b1_why: { en: 'why?', type: 'connector' },
+  b1_what_happened: { en: 'what happened?', type: 'connector' },
+  b1_follow_up_question_pattern: { en: 'really? why? / what happened? / how come?', type: 'pattern' },
+  // ask_follow_up_questions — 2 receptive
+  b1_how_come: { en: 'how come?', type: 'connector' },
+  b1_what_do_you_mean: { en: 'what do you mean?', type: 'connector' },
+  // summarize_what_was_said — 4 productive
+  b1_so_basically: { en: 'so basically', type: 'connector' },
+  b1_what_youre_saying_is: { en: "what you're saying is", type: 'connector' },
+  b1_summarize_pattern: { en: "so basically ... / what you're saying is ...", type: 'pattern' },
+  b1_in_other_words: { en: 'in other words', type: 'connector' },
+  // summarize_what_was_said — 2 receptive
+  b1_so_what_you_mean_is: { en: 'so what you mean is', type: 'connector' },
+  b1_to_sum_up: { en: 'to sum up', type: 'connector' },
+}
+
 export const B1_VOCAB_BY_ID = {
   ...B1_ARC1_VOCAB,
   ...B1_ARC2_VOCAB,
   ...B1_ARC3_VOCAB,
   ...B1_ARC4_VOCAB,
   ...B1_ARC5_VOCAB,
+  ...B1_ARC6_VOCAB,
 }
 
 export const b1ProductiveIds = (ids) => ids.filter(id => B1_VOCAB_BY_ID[id])

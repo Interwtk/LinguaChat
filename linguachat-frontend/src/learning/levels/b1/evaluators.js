@@ -492,6 +492,116 @@ export function evaluateStateHypothetical(text, { independent = false } = {}) {
   return { ...r, errorType: 'no_hypothetical', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptHypotheticalFrame' }
 }
 
+/* ---------------------------------------------------------------------------
+ * arc 6 — change_topic (role: initiate | follow), ask_follow_up, summarize_other
+ *
+ * b1.json arc 6's `risk` flags discourse-level evaluation as needing the
+ * immediately preceding partner turn. Resolved read-only in
+ * core-engine-findings.md §15.2: the runtime already threads a `turnContext`
+ * (`{ linguaSaid }`) through every free-reply evaluation call. These
+ * evaluators read `ctx.turnContext.linguaSaid` the same way any other B1
+ * evaluator reads an ordinary context field — no new mechanism.
+ * ------------------------------------------------------------------------- */
+
+function tooSimilarToPriorTurn(n, turnContext) {
+  if (!turnContext || !turnContext.linguaSaid) return false
+  return normalize(turnContext.linguaSaid) === n
+}
+
+const TOPIC_CHANGE_MARKER_RE = /\bby the way\b|\banyway\b|\bspeaking of\b/
+
+export function evaluateChangeTopic(text, { role = 'initiate', independent = false, turnContext } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'Anyway, have you tried the new café downtown?'
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptTopicEmpty' }
+  if (tooSimilarToPriorTurn(n, turnContext)) {
+    return { ...r, errorType: 'just_repeating_partner', priorityCorrection: 'b1RetryExplainTopicRepeat', explanation: 'b1RetryExplainTopicRepeat', retryRequired: true, retryPrompt: 'b1RetryPromptTopicRepeat' }
+  }
+
+  const hasMarker = TOPIC_CHANGE_MARKER_RE.test(n)
+  // a plain word count is a weak content signal on its own (nonsense text
+  // can easily clear a low bar) — kept intentionally high enough that
+  // genuine nonsense falls through to the inconclusive catch-all rather
+  // than a false-confident "missing marker" reject (see §15.1)
+  const hasContent = wordCount(n) >= 5
+
+  if (role === 'follow') {
+    // following someone else's change: genuine engagement with the new
+    // topic matters more than reusing an initiating marker
+    if (hasContent) {
+      r.completedObjective = true
+      r.confidence = 0.85
+      r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseTopicFollowIndependent' : 'b1PraiseTopicFollowHelped'
+      return r
+    }
+    return { ...r, errorType: 'insufficient_follow', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptTopicFollow' }
+  }
+
+  if (hasMarker && hasContent) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseTopicChangeIndependent' : 'b1PraiseTopicChangeHelped'
+    return r
+  }
+  if (hasMarker && !hasContent) {
+    return { ...r, errorType: 'topic_change_no_content', priorityCorrection: 'b1RetryExplainTopicContent', explanation: 'b1RetryExplainTopicContent', retryRequired: true, retryPrompt: 'b1RetryPromptTopicContent' }
+  }
+  if (!hasMarker && hasContent) {
+    return { ...r, errorType: 'missing_topic_change_marker', priorityCorrection: 'b1RetryExplainTopicMarker', explanation: 'b1RetryExplainTopicMarker', retryRequired: true, retryPrompt: 'b1RetryPromptTopicMarker' }
+  }
+  return { ...r, errorType: 'no_topic_change', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptTopicMarker' }
+}
+
+const FOLLOW_UP_MARKER_RE = /\breally\b|\bwhy\b|\bwhat happened\b|\bhow come\b|\bwhat do you mean\b|\btell me more\b|\bwhat was that like\b/
+
+export function evaluateAskFollowUp(text, { independent = false, turnContext } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'Really? What happened?'
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptFollowUpEmpty' }
+  if (tooSimilarToPriorTurn(n, turnContext)) {
+    return { ...r, errorType: 'just_repeating_partner', priorityCorrection: 'b1RetryExplainFollowUpRepeat', explanation: 'b1RetryExplainFollowUpRepeat', retryRequired: true, retryPrompt: 'b1RetryPromptFollowUpRepeat' }
+  }
+
+  if (FOLLOW_UP_MARKER_RE.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseFollowUpIndependent' : 'b1PraiseFollowUpHelped'
+    return r
+  }
+  if (wordCount(n) <= 1) {
+    return { ...r, errorType: 'insufficient_form', priorityCorrection: 'b1RetryExplainFollowUpForm', explanation: 'b1RetryExplainFollowUpForm', retryRequired: true, retryPrompt: 'b1RetryPromptFollowUpForm' }
+  }
+  return { ...r, errorType: 'no_follow_up_marker', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptFollowUpForm' }
+}
+
+const SUMMARY_MARKER_RE = /\bso basically\b|\bwhat you'?re saying is\b|\bso what you mean is\b|\bin other words\b/
+
+export function evaluateSummarizeOther(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = "So basically, you're saying the flight got delayed."
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptSummaryEmpty' }
+
+  const hasMarker = SUMMARY_MARKER_RE.test(n)
+  const hasContent = wordCount(n) >= 6
+
+  if (hasMarker && hasContent) {
+    r.completedObjective = true
+    r.confidence = 0.88
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseSummaryIndependent' : 'b1PraiseSummaryHelped'
+    return r
+  }
+  if (hasMarker && !hasContent) {
+    return { ...r, errorType: 'summary_too_short', priorityCorrection: 'b1RetryExplainSummaryContent', explanation: 'b1RetryExplainSummaryContent', retryRequired: true, retryPrompt: 'b1RetryPromptSummaryContent' }
+  }
+  if (!hasMarker && hasContent) {
+    return { ...r, errorType: 'missing_summary_marker', priorityCorrection: 'b1RetryExplainSummaryMarker', explanation: 'b1RetryExplainSummaryMarker', retryRequired: true, retryPrompt: 'b1RetryPromptSummaryMarker' }
+  }
+  return { ...r, errorType: 'no_summary', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptSummaryMarker' }
+}
+
 /* Dispatcher for this arc's intents, mirroring `evaluateFree`'s own shape so a
  * future merge is mechanical. Grows as later arcs land. */
 export function evaluateB1Free(kind, text, ctx = {}) {
@@ -507,6 +617,9 @@ export function evaluateB1Free(kind, text, ctx = {}) {
     case 'state_future_intent': return evaluateStateFutureIntent(text, ctx)
     case 'state_real_condition': return evaluateStateRealCondition(text, ctx)
     case 'state_hypothetical': return evaluateStateHypothetical(text, ctx)
+    case 'change_topic': return evaluateChangeTopic(text, ctx)
+    case 'ask_follow_up': return evaluateAskFollowUp(text, ctx)
+    case 'summarize_other': return evaluateSummarizeOther(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }

@@ -31,6 +31,11 @@ export const B1_MODEL_ANSWER = {
   },
   state_real_condition: () => "If it rains tomorrow, I'll stay home.",
   state_hypothetical: () => "If I were you, I'd ask for more details before deciding.",
+  change_topic: (v) => (v.role === 'follow'
+    ? "That sounds interesting — I've always wanted to try that myself."
+    : 'Anyway, have you tried the new café downtown?'),
+  ask_follow_up: () => 'Really? What happened?',
+  summarize_other: () => "So basically, you're saying the flight got delayed.",
 }
 
 export const B1_PROMPT = {
@@ -57,4 +62,9 @@ export const B1_PROMPT = {
   },
   state_real_condition: (v) => `What will you do if that happens, ${v.name || ''}?`,
   state_hypothetical: (v) => `What would you tell them, ${v.name || ''}?`,
+  change_topic: (v) => (v.role === 'follow'
+    ? `What do you think about that, ${v.name || ''}?`
+    : `Change the subject to something else, ${v.name || ''}.`),
+  ask_follow_up: (v) => `Ask me a follow-up question, ${v.name || ''}.`,
+  summarize_other: (v) => `Can you summarize what I just told you, ${v.name || ''}?`,
 }

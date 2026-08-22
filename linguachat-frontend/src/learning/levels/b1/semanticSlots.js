@@ -41,6 +41,11 @@ export const B1_INTENT_SLOTS = {
   state_future_intent: ['activity', 'time_point', 'day'],
   state_real_condition: ['activity', 'time_point'],
   state_hypothetical: ['activity'],
+  // arc 6 — sustain_topic_change ∪ ask_follow_up_questions ∪
+  // summarize_what_was_said semanticNeeds (b1.json arc 6)
+  change_topic: ['activity', 'interest'],
+  ask_follow_up: ['activity', 'interest'],
+  summarize_other: ['activity', 'interest'],
 }
 
 export const b1SlotsFor = (intent) => B1_INTENT_SLOTS[intent] || []
