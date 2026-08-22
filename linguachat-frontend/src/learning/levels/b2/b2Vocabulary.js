@@ -17,8 +17,10 @@
  *
  * `glossKey` is a placeholder i18n key, not a translation: this task's write
  * scope does not include `i18n/**`, so no locale file carries these keys yet.
- * `docs/curriculum/implementation/b2/i18n-keys-needed.md` is the exact
- * manifest LC-INT-001 needs to populate them. See `i18nKeysNeeded.js`.
+ * `scripts/foundry/b2/list-b2-i18n-keys.mjs` mechanically generates the exact
+ * manifest LC-INT-001 needs to populate them (every `*Key` field across every
+ * episode, plus every `glossKey` here) — generated from real content rather
+ * than hand-maintained, so it cannot drift.
  */
 
 const item = (id, arc, kind, form, tiedCanDo, extra = {}) => ({
