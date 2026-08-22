@@ -47,4 +47,16 @@ Tracked per arc as it lands. An arc listed here has real runtime modules under
   self-contained journey harness (`scripts/foundry/b1/lib/journey.mjs`) that reuses the real,
   unedited `scaffolding.js`/`learnerModel.js`/`episodeRuns.js`. Delayed-retrieval proof is
   explicitly deferred (arc 7's capstone does not exist yet), not faked.
-- Arcs 2-7: not yet started (design-only content-plan specs to follow).
+- **Arc 2 — `i_think_that`** (`give_an_opinion`, `agree_or_disagree`): **done.**
+  3 episodes (`episodes/b1Arc2.js`), evaluator functions added to `evaluators.js`,
+  `B1_MODEL_ANSWER`/`B1_PROMPT` entries added to `tables.js`, semantic slots added
+  to `semanticSlots.js`, vocabulary in `vocabulary.js` (`B1_ARC2_VOCAB`, 10
+  productive / 6 receptive, matches b1.json exactly), i18n draft copy in
+  `i18nDraft.js` (`B1_ARC2_COPY`). No mini-story (b1.json arc 2 `miniStory.use:
+  false`). Proven by `scripts/foundry/b1/check-b1-arc2.mjs` (16 groups, 25
+  pedagogical journeys), reusing the same self-contained journey harness (its
+  `answerFor` was generalized to accept a plain-string canonical answer for an
+  intent with no subtype, alongside arc 1's existing subtype-keyed shape — a
+  non-breaking extension inside this task's own write scope). Delayed-retrieval
+  proof again explicitly deferred to arc 7.
+- Arcs 3-7: not yet started (design-only content-plan specs to follow).

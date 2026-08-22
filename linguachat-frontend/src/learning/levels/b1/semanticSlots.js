@@ -14,6 +14,9 @@
 export const B1_INTENT_SLOTS = {
   // arc 1 — narrate_connected_event ∪ narrate_interrupted_action semanticNeeds
   narrate_past_event: ['place', 'activity', 'feeling'],
+  // arc 2 — give_an_opinion ∪ agree_or_disagree semanticNeeds (b1.json arc 2)
+  state_opinion: ['activity', 'place', 'interest'],
+  agree_or_disagree: ['activity', 'place', 'interest'],
 }
 
 export const b1SlotsFor = (intent) => B1_INTENT_SLOTS[intent] || []
