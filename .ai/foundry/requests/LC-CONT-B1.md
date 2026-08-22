@@ -1,16 +1,32 @@
-# LC-CONT-B1 — blocked on shared-core runtime registration; handoff for a CORE task
+# LC-CONT-B1 — confirmed scope boundary; wiring is LC-INT-001's job, not a missing CORE task
 
-## Status
+## Status — corrected on resume
+
+An earlier pass through this branch read the finding below as requiring a brand-new, unscheduled
+serialized CORE task before any content could land, and left the PR blocked with no runtime content.
+On resume, re-reading `.ai/foundry/tasks.json`'s existing task graph and the master contract's own
+parallel-authoring sequence (`curriculum-master-a1-c2.md` section 18: step 5 "author level-owned
+runtime content in parallel," step 7 "integrate levels one at a time through the global gate") shows
+that task already exists: **`LC-INT-001`**, which depends on every `LC-CONT-*` lane and has write
+access to exactly the shared surfaces named below. Sibling lane `LC-CONT-A2` (PR #74) reached the
+same reading independently. The technical finding itself (below) is unchanged and still accurate —
+only the conclusion drawn from it was wrong. See `docs/curriculum/implementation/b1/README.md` for
+what this task does instead: build complete, self-contained, level-owned B1 content and prove it with
+a self-contained journey harness, and leave live in-app wiring plus the full in-app browser
+walkthrough to `LC-INT-001`.
+
+## Original finding (unchanged)
 
 `LC-CONT-B1`'s write scope is exactly `linguachat-frontend/src/learning/levels/b1/**`,
 `linguachat-frontend/scripts/foundry/b1/**` and `docs/curriculum/implementation/b1/**`
 (`.ai/foundry/tasks.json`). None of those paths can make B1 episode content
-*run*, because every one of B1's 14 new evaluator intents (`docs/curriculum/blueprints/b1.json`'s
-`intentStrategy.newIntents`) needs registration in shared files this task has no permission to
-touch. This is confirmed by direct code inspection, not inferred from the blueprint's own
-section 15 alone (which flagged two narrower CORE questions — this finding is broader and harder
-than either of them). Per the coordination contract, a scoped-out required change is recorded
-here instead of being made quietly, and the PR stays draft.
+*run through the live app today*, because every one of B1's 14 new evaluator intents
+(`docs/curriculum/blueprints/b1.json`'s `intentStrategy.newIntents`) needs registration in shared
+files this task has no permission to touch. This is confirmed by direct code inspection, not
+inferred from the blueprint's own section 15 alone (which flagged two narrower CORE questions —
+both resolved without a shared-core change; see `core-engine-findings.md`). This does not block
+authoring self-contained, level-owned content and proving it in isolation, which is what this task
+does instead of quietly working around the boundary or stalling on it.
 
 This is not B1-specific. Every sibling `LC-CONT-*` task (`LC-CONT-A1`'s remaining arcs 6-7,
 `LC-CONT-A2`, `LC-CONT-B2`, `LC-CONT-C1`, `LC-CONT-C2`) has the identical write-scope shape and
@@ -73,53 +89,51 @@ for `scaffolding.js`'s intent lookup (a level's own capabilities silently invisi
 consumer) — except here the shared consumer is the evaluator itself, and the failure mode for a
 learner is total, not degraded.
 
-## What LC-CONT-B1 did instead
+## What LC-CONT-B1 does instead (corrected on resume)
 
-Rather than editing shared-core files outside this task's write scope (which the coordination
-contract and the master's own section 14 both forbid — "a level worker discovers a shared-core
-need, it must raise the requirement instead of quietly implementing a private workaround"), this
-task:
+An earlier pass through this branch stated it had produced a full arc-by-arc content specification at
+`docs/curriculum/implementation/b1/content-plan.md`. **That file was never actually written** — only
+this request file and the directory `README.md` existed on the branch at that point. That claim is
+retracted here rather than left standing.
 
-- confirmed and documented the blocker precisely (this file), so it does not need re-discovery by
-  every sibling `LC-CONT-*` lane;
-- produced the level-owned design artifact the master's section 14 explicitly permits without
-  shared-core access — a full arc-by-arc B1 content specification faithful to `b1.json`/`b1.md`,
-  at `docs/curriculum/implementation/b1/content-plan.md` — so that once a CORE task lands the
-  registration mechanism, authoring the actual runtime episode files is a fast, low-risk transcription
-  rather than a fresh design pass;
-- left `.ai/foundry/completed/LC-CONT-B1.json` **unwritten** and this PR in **draft**, because no
-  runtime content exists and none can be honestly claimed complete.
+What this task actually does, per the corrected reading in the Status section above:
 
-## What a CORE task needs to do
+- keeps this finding (the file:line evidence above) as a durable record, so it does not need
+  re-discovery by every sibling `LC-CONT-*` lane;
+- resolves blueprint section 15's two open core-engine questions by read-only investigation — see
+  `docs/curriculum/implementation/b1/core-engine-findings.md` — rather than deferring them to a future
+  task, since neither needed a shared-core code change;
+- authors real, complete, self-contained B1 runtime content — episodes, evaluators, model-answer/
+  prompt tables, semantic-type usage, journey-simulation QA — entirely inside
+  `linguachat-frontend/src/learning/levels/b1/**` and `linguachat-frontend/scripts/foundry/b1/**`,
+  proceeding arc by arc;
+- writes `.ai/foundry/completed/LC-CONT-B1.json` only once that self-contained content and its own
+  QA gate are genuinely done, explicitly scoped as "level-owned content complete; live in-app wiring
+  and the full in-app browser walkthrough are `LC-INT-001`'s work," not by silently claiming the
+  level QA gate's in-app requirements (browser usability, live end-to-end play) that only
+  `LC-INT-001` can actually produce.
 
-A new task (proposed id `LC-FND-003`, lane `core`, depending on `LC-FND-002`) needs write access to
-`engine/**`, `components/session/SessionRunner.jsx`, `curriculum/**`, `i18n/**` and
-`scripts/**` to build the per-level extension mechanism `curriculum-isolation-plan.md` already
-named as the template (`levelMaps.js`'s "small, additive registry plus a mechanical collision
-guard" pattern), applied to:
+## What LC-INT-001 needs to do (for reference; out of this task's scope to build)
+
+`LC-INT-001` needs write access to `engine/**`, `components/session/SessionRunner.jsx`,
+`curriculum/**`, `i18n/**` and `scripts/**` (it already has this per `.ai/foundry/tasks.json`) to
+wire every content lane's self-contained modules into the shared runtime:
 
 1. a per-level evaluator-function registry so `evaluateFree` can dispatch to a level's own module
-   instead of one shared `switch`;
-2. a per-level `MODEL_ANSWER`/`PROMPT` registry for `SessionRunner.jsx`;
+   instead of one shared `switch` (or a direct merge of B1's `evaluators.js` into the switch, if a
+   registry is judged disproportionate for six levels — an `LC-INT-001` decision, not this task's);
+2. a per-level `MODEL_ANSWER`/`PROMPT` registry for `SessionRunner.jsx`, or a direct merge;
 3. a `b1` (and by extension `a2`/`b2`/`c1`/`c2`) entry in `curriculum/levels.js` and
    `curriculum/episodeContent.js`'s `CONTENT_LOADERS`, plus a skeleton-build path that does not
    require hand-editing `build-curriculum-skeleton.mjs` per level;
-4. a registration point for new semantic types (`problem`) in `semanticContext.js`;
-5. an i18n extension point, or an accepted convention for adding B1's keys directly to the shared
-   locale files (matching how A1 did it) if a full merge-registry is judged out of proportion to
-   the actual gain — this one is more a *decision* than a build, unlike 1-4.
-
-Section 15 of `b1.json`/`b1.md` also still needs answering as part of (or immediately after) this
-CORE task, since both of its findings depend on the same evaluator surface being touched anyway:
-**15.1** (measure the local evaluator's conclusive/inconclusive rate on B1-shaped sentences before
-committing B1's hybrid-heavy intents to the existing escalation rule) and **15.2** (confirm whether
-the evaluator call already receives the prior partner turn as context, needed for
-`sustain_topic_change`/`ask_follow_up_questions` in arc `keep_talking`).
+4. registering B1's new semantic type (`problem`) in `semanticContext.js`;
+5. merging B1's i18n key list into the shared locale files (matching how A1 did it).
 
 ## What this does not resolve
 
-This is a scope/architecture finding, not a pedagogical one. `docs/curriculum/implementation/b1/content-plan.md`
-is a design artifact like the blueprint itself — no runtime module imports it, and it does not make
-B1 available or claim any evidence was produced. The blueprint's own section 15 items are restated
-above but not resolved here; a CORE task must actually resolve or explicitly re-scope them before
-`LC-CONT-B1` (resumed on this same branch) can implement arcs to their stated evidence bar.
+This is a scope/architecture finding, not a pedagogical one, and it does not by itself make B1
+available or claim any evidence was produced. `docs/curriculum/blueprints/b1.md` section 16's QA
+acceptance list includes items only reachable through the live app (representative browser usability,
+an actual in-app end-to-end walkthrough) — those remain `LC-INT-001`'s to produce, honestly, once
+wiring lands; this task's own completion marker states that scope boundary explicitly rather than
+implying the level QA gate was fully satisfied from inside an isolated write scope where it cannot be.
