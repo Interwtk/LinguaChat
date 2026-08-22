@@ -47,6 +47,11 @@ const close = (text) => evaluateCloseEncounter(text, {})
       'What does “late” mean?', 'What does late mean?', 'What does "busy" mean?',
       'Sorry, what does late mean?', 'What is late?', 'What’s busy?',
     ],
+    /* A1 arc 6's fifth strategy: a word known in another language, not English */
+    ask_how_to_say: [
+      'How do you say that in English?', 'How do you say cook in English?',
+      'How do I say that?', 'How do you say “nadar” in English?',
+    ],
   }
   for (const kind of REPAIR_KINDS) {
     assert.ok(accepted[kind], `${kind} has no accepted list`)
@@ -68,12 +73,15 @@ const close = (text) => evaluateCloseEncounter(text, {})
     slow_down: ['Speak slow.', 'Slow, please.', 'Slow down.'],
     /* the reach for the meaning question that did not arrive */
     ask_meaning: ['Mean?', 'Meaning?', 'Late meaning?'],
+    /* the reach for the how-to-say question with nothing named yet */
+    ask_how_to_say: ['How do you say?', 'How do you spell?'],
   }
   /*
-   * The error name differs for arc 2's strategy, and deliberately: the correction a
-   * half-built meaning question needs is the frame, not "that is not a repair".
+   * The error name differs for arc 2's and arc 6's strategies, and
+   * deliberately: the correction a half-built question needs is the frame, not
+   * "that is not a repair".
    */
-  const PARTIAL_ERROR = { ask_meaning: 'incomplete_meaning_question' }
+  const PARTIAL_ERROR = { ask_meaning: 'incomplete_meaning_question', ask_how_to_say: 'incomplete_how_to_say' }
   for (const kind of REPAIR_KINDS) {
     for (const text of partial[kind]) {
       const r = repair(text, kind)

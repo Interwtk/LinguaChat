@@ -356,6 +356,49 @@ export const SEED_VOCAB = [
    */
   { id: 'banana', term: 'banana', kind: 'word', emoji: 'b', example: 'We also have a banana today.',
     meaning: { en: 'a soft yellow fruit', es: 'un plátano', pt: 'uma banana', fr: 'une banane', it: 'una banana', de: 'eine Banane', ja: 'バナナ', ar: 'موزة' } },
+
+  /*
+   * A1 arc 6 — "what you can do". Five productive words/phrases plus the
+   * question form, from `docs/curriculum/a1-blueprint.json` arc `what_you_can_do`
+   * (episodes 34-35): a closed set of five neutral abilities, deliberately never
+   * a job list (see `levels/a1/evaluators.js`'s own `ABILITY_ACTIVITIES` comment).
+   */
+  { id: 'can_ability_pattern', term: 'I can / I can’t + verb', kind: 'pattern', emoji: 'C', example: 'I can swim.',
+    meaning: { en: 'saying what you are or are not able to do', es: 'decir lo que puedes o no puedes hacer', pt: 'dizer o que consegues ou não consegues fazer', fr: 'dire ce que tu peux ou ne peux pas faire', it: 'dire cosa sai o non sai fare', de: 'sagen, was du kannst oder nicht kannst', ja: 'できること・できないことを言う', ar: 'قول ما تستطيع أو لا تستطيع فعله' } },
+  { id: 'swim', term: 'swim', kind: 'word', emoji: 'S', example: 'I can swim.',
+    meaning: { en: 'move through water using your body', es: 'nadar', pt: 'nadar', fr: 'nager', it: 'nuotare', de: 'schwimmen', ja: '泳ぐ', ar: 'يسبح' } },
+  { id: 'cook', term: 'cook', kind: 'word', emoji: 'K', example: 'I can’t cook.',
+    meaning: { en: 'prepare food to eat', es: 'cocinar', pt: 'cozinhar', fr: 'cuisiner', it: 'cucinare', de: 'kochen', ja: '料理する', ar: 'يطبخ' } },
+  { id: 'drive', term: 'drive', kind: 'word', emoji: 'D', example: 'I can drive.',
+    meaning: { en: 'control a car', es: 'conducir', pt: 'conduzir', fr: 'conduire', it: 'guidare', de: 'fahren', ja: '運転する', ar: 'يقود' } },
+  { id: 'dance', term: 'dance', kind: 'word', emoji: 'N', example: 'I can dance.',
+    meaning: { en: 'move your body to music', es: 'bailar', pt: 'dançar', fr: 'danser', it: 'ballare', de: 'tanzen', ja: '踊る', ar: 'يرقص' } },
+  { id: 'can_you_ability_pattern', term: 'Can you + verb?', kind: 'pattern', emoji: '?', example: 'Can you sing?',
+    meaning: { en: 'asking somebody about their ability', es: 'preguntar a alguien sobre su capacidad', pt: 'perguntar a alguém sobre a sua capacidade', fr: 'demander à quelqu’un ce qu’il sait faire', it: 'chiedere a qualcuno cosa sa fare', de: 'jemanden nach seinen Fähigkeiten fragen', ja: '相手のできることをたずねる', ar: 'سؤال شخص عن قدرته' } },
+  { id: 'how_do_you_say_pattern', term: 'How do you say ___?', kind: 'pattern', emoji: '?', example: 'How do you say “nadar” in English?',
+    meaning: { en: 'asking for a word you don’t know in English', es: 'preguntar una palabra que no sabes en inglés', pt: 'perguntar uma palavra que não sabes em inglês', fr: 'demander un mot que tu ne connais pas en anglais', it: 'chiedere una parola che non conosci in inglese', de: 'nach einem Wort fragen, das du auf Englisch nicht kennst', ja: '英語で分からない単語をたずねる', ar: 'السؤال عن كلمة لا تعرفها بالإنجليزية' } },
+  { id: 'sing', term: 'sing', kind: 'word', emoji: 'G', example: 'Can you sing?',
+    meaning: { en: 'make music with your voice', es: 'cantar', pt: 'cantar', fr: 'chanter', it: 'cantare', de: 'singen', ja: '歌う', ar: 'يغني' } },
+
+  /*
+   * A1 arc 7 — "making arrangements", the level's closing arc. From
+   * `docs/curriculum/a1-blueprint.json` arc `making_arrangements` (episodes
+   * 36-38): the day-of-week set, the proposal pattern, and the two neutral
+   * places episode 37 fixes ("the station"/"the cinema"), matching
+   * `levels/a1/evaluators.js`'s own closed `PLACE_WORDS` set exactly.
+   */
+  { id: 'day_of_week_pattern', term: 'Monday, Tuesday, …', kind: 'pattern', emoji: '7', example: 'Are you free on Monday?',
+    meaning: { en: 'naming a day of the week', es: 'decir un día de la semana', pt: 'dizer um dia da semana', fr: 'dire un jour de la semaine', it: 'dire un giorno della settimana', de: 'einen Wochentag nennen', ja: '曜日を言う', ar: 'ذكر يوم من أيام الأسبوع' } },
+  { id: 'arrange_pattern', term: 'Let’s meet on + day at + time', kind: 'pattern', emoji: 'M', example: 'Let’s meet on Friday at seven.',
+    meaning: { en: 'proposing a day and a time together', es: 'proponer un día y una hora juntos', pt: 'propor um dia e uma hora juntos', fr: 'proposer un jour et une heure ensemble', it: 'proporre un giorno e un’ora insieme', de: 'einen Tag und eine Uhrzeit zusammen vorschlagen', ja: '曜日と時刻を一緒に提案する', ar: 'اقتراح يوم ووقت معًا' } },
+  { id: 'monday', term: 'Monday', kind: 'word', emoji: '1', example: 'Are you free on Monday?',
+    meaning: { en: 'the first day of the working week', es: 'lunes', pt: 'segunda-feira', fr: 'lundi', it: 'lunedì', de: 'Montag', ja: '月曜日', ar: 'الاثنين' } },
+  { id: 'friday', term: 'Friday', kind: 'word', emoji: '5', example: 'Let’s meet on Friday.',
+    meaning: { en: 'the last day of the working week', es: 'viernes', pt: 'sexta-feira', fr: 'vendredi', it: 'venerdì', de: 'Freitag', ja: '金曜日', ar: 'الجمعة' } },
+  { id: 'the_station', term: 'the station', kind: 'phrase', emoji: 'T', example: 'Let’s meet at the station.',
+    meaning: { en: 'where trains or buses arrive and leave', es: 'la estación', pt: 'a estação', fr: 'la gare', it: 'la stazione', de: 'der Bahnhof', ja: '駅', ar: 'المحطة' } },
+  { id: 'the_cinema', term: 'the cinema', kind: 'phrase', emoji: 'C', example: 'Let’s meet at the cinema.',
+    meaning: { en: 'where you watch films', es: 'el cine', pt: 'o cinema', fr: 'le cinéma', it: 'il cinema', de: 'das Kino', ja: '映画館', ar: 'السينما' } },
 ]
 
 export const SEED_VOCAB_BY_ID = Object.fromEntries(SEED_VOCAB.map(item => [item.id, item]))

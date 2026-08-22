@@ -5,42 +5,29 @@
  * than in a `.js` module declaring a `level` field of A1 and an `arc` field of
  * `what_you_can_do`/`making_arrangements` as literal object properties, the
  * way arcs 1-5 do
- * (`episodes/a1Arc1.js`...`a1Arc5.js`). That is a deliberate, scope-forced
- * choice, not a style preference — `scripts/check-a1-blueprint.mjs` (shared
- * tooling, out of this task's write scope) walks the whole frontend `src`
- * tree and hard-fails on exactly those two literals outside an explicit
- * five-file allow-list (`a1Arc[12345](Content)?.js`) and outside a two-arc
- * denylist that names arc 6 and arc 7 by id specifically, "so a sixth [and
- * seventh] arc cannot arrive without somebody editing this line on purpose."
- * JSON data is invisible to that scan (it only reads `.jsx?`/`.mjs` files),
- * so this is the one shape that lets arc 6/7 content exist, in full, inside
- * this task's write scope, without silently defeating a guard that is
- * deliberately conservative on purpose. See
- * `docs/curriculum/implementation/a1/core-requirements.md` §2 for the exact
- * ask this discovery leaves for whichever task is authorised to open these
- * two arcs.
+ * (`episodes/a1Arc1.js`...`a1Arc5.js`). That is a deliberate choice `LC-CONT-A1`
+ * made under a narrower write scope than this module now has — see
+ * `docs/curriculum/implementation/a1/core-requirements.md` §0 for the original
+ * reasoning (`scripts/check-a1-blueprint.mjs` used to hard-fail on those two
+ * literals outside a five-file allow-list). This integration task
+ * (`LC-INT-001`) authorises arc 6/7 to exist in the runtime and edits that
+ * guard's allow-list/denylist accordingly — see that file's own updated
+ * comments — so the JSON shape is now kept for its own merit (content as
+ * data, not because a text-scanning guard forces the choice).
  *
- * NOTHING IMPORTS THIS FILE YET. Wiring it into `episodes/index.js`'s
- * resolver — which also requires editing `check-a1-blueprint.mjs`'s
- * allow-list/denylist on purpose, per that file's own stated design — is
- * outside this task's write scope. Until then this module is inert.
+ * Loaded via a static import rather than `node:fs`, so this module is safe to
+ * import from a browser bundle as well as from plain Node (the QA scripts):
+ * Vite/Rollup resolve a `.json` import natively and produce a plain object,
+ * identical in shape to `JSON.parse(readFileSync(...))`.
  *
  * Every level content module answers `getEpisode(id)`, the same contract
  * `episodes/a1Arc1Content.js` documents.
  */
-import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
+import A1_ARC6_DATA from './episodes/whatYouCanDo.json' with { type: 'json' }
+import A1_ARC7_DATA from './episodes/makingArrangements.json' with { type: 'json' }
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
-
-function loadEpisodes(fileName) {
-  const path = join(__dirname, 'episodes', fileName)
-  return JSON.parse(readFileSync(path, 'utf8'))
-}
-
-export const A1_ARC6 = loadEpisodes('whatYouCanDo.json')
-export const A1_ARC_7 = loadEpisodes('makingArrangements.json')
+export const A1_ARC6 = A1_ARC6_DATA
+export const A1_ARC_7 = A1_ARC7_DATA
 
 /*
  * Plain assignment, not an `arc: '...'` object-literal property — safe

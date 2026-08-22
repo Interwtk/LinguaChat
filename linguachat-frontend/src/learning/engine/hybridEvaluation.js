@@ -45,6 +45,17 @@ const PRAISE = {
   respond_anything_else: { independent: 'ep11PraiseIndependent', helped: 'ep11PraiseAnswered' },
   finish_order: { independent: 'ep11PraiseIndependent', helped: 'ep11PraiseClosed' },
   cafe_order_conversation: { independent: 'ep12PraiseIndependent', helped: 'ep12PraiseOrdered' },
+  /*
+   * A1 arc 6/7. Only reached on the remote-escalation path (the common,
+   * locally-conclusive path uses each evaluator's own `praiseKey` directly,
+   * per `levels/a1/evaluators.js`'s `withPraise` helper) — added anyway so an
+   * ambiguous, remote-confirmed reply is never congratulated with an unrelated
+   * episode's praise, the exact gap `docs/curriculum/implementation/a1/
+   * core-requirements.md` §2 names.
+   */
+  state_ability: { independent: 'ep34PraiseIndependent', helped: 'ep34PraiseGuided' },
+  ask_ability: { independent: 'ep35PraiseIndependent', helped: 'ep35PraiseGuided' },
+  arrange_meeting: { independent: 'ep38PraiseIndependent', helped: 'ep38PraiseGuided' },
 }
 
 /*
@@ -138,6 +149,12 @@ function buildRemotePayload(params, kind) {
      */
     place_name: params.placeName ?? '',
     relation_hint: params.relationHint ?? '',
+    /*
+     * `arrange_meeting` is the level's one `hybrid` capability and can reach
+     * this payload; without its stage a remote judge cannot tell episode 36's
+     * propose turn from episode 37/38's place/confirm ones.
+     */
+    arrange_stage: params.arrangeStage ?? '',
     interest_id: params.interestId ?? null,
     native_language: params.nativeLanguage ?? 'en',
     interface_language: params.interfaceLanguage ?? 'en',
@@ -150,7 +167,7 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', abilityForm = '', arrangeStage = '', praisePrefix = '', signal, remote } = params
   const kind = step?.evalKind
   /*
    * Whether this counts as unaided production, used only to choose the wording
@@ -194,6 +211,18 @@ export async function evaluateEpisodeResponse(params) {
      */
     ...(placeName ? { placeName } : {}),
     ...(relationHint ? { relationHint } : {}),
+    /*
+     * A1 arc 6/7's own subtype fields — `abilityForm` (`state_ability`'s
+     * polarity), `arrangeStage` (`arrange_meeting`'s propose/place/confirm) and
+     * `praisePrefix` (which episode's praise copy a shared `confirm` stage
+     * uses). Same bug class as the fields above: without them here the
+     * evaluator falls back to its own default (`arrangeStage`'s default is
+     * `'propose'`), which graded episode 37/38's place/confirm turns as if
+     * they were episode 36's proposal.
+     */
+    ...(abilityForm ? { abilityForm } : {}),
+    ...(arrangeStage ? { arrangeStage } : {}),
+    ...(praisePrefix ? { praisePrefix } : {}),
   })
 
   // Conclusive local verdict (closed step, clear accept, empty, clear failure).

@@ -55,6 +55,25 @@ export const SEMANTIC_TYPES = [
    * `day` remains the one proposed type with no consumer, and stays unregistered.
    */
   'transport_mode',  // bus, train
+  /*
+   * A1 arc 7. Proposed independently, and identically in substance, by both
+   * A1's own blueprint (`a1-blueprint.json#semanticTypes.proposed`, arc
+   * `making_arrangements`) and A2's already-shipped `levels/a2/semanticTypes.js`
+   * ("reused-from-A1-proposal"). The two disagreed on `incompatibleWith`
+   * (A1: `time_point`/`place`; A2: `time_point`/`relation`) — `SEMANTIC_TYPES`
+   * here is a flat list with no `incompatibleWith` enforcement of its own (that
+   * property is documentary, read by neither this file nor any check), so this
+   * registration resolves the mismatch the only way that matters mechanically:
+   * one shared entry, with both proposals' incompatibilities recorded as the
+   * union (`time_point`, `place`, `relation`) rather than picking one and
+   * silently dropping the other. `arrange_meeting`'s own evaluator
+   * (`levels/a1/evaluators.js`) matches day/time/place directly against the
+   * free-text reply rather than through `INTENT_SLOTS`'s personalisation
+   * pipeline — arc 7 declares `personalizationMode: none` — so this type has no
+   * `INTENT_SLOTS` consumer today; it is registered for the design record and
+   * for whichever future level's intent does personalise a day.
+   */
+  'day',             // Monday, Friday
 ]
 
 export const isSemanticType = (type) => SEMANTIC_TYPES.includes(type)
@@ -185,6 +204,18 @@ export const INTENT_SLOTS = {
    * because nothing in this arc's shop scene sells one.
    */
   ask_price: ['generic_object', 'food', 'consumable'],
+  /*
+   * A1 arc 6/7. All three take no personalised value: `state_ability`/
+   * `ask_ability` judge a closed taught-activity set inline
+   * (`levels/a1/evaluators.js`'s `ABILITY_ACTIVITIES`), and `arrange_meeting`
+   * matches day/time/place directly against the reply rather than through this
+   * pipeline — both arcs declare `personalizationMode: none` explicitly. Listed
+   * here, explicitly empty, for the same reason `introduction`/`ask_name` are:
+   * so "this intent takes no value" reads as a decision, not an omission.
+   */
+  state_ability: [],
+  ask_ability: [],
+  arrange_meeting: [],
 }
 
 export const slotsFor = (intent) => INTENT_SLOTS[intent] || []

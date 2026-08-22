@@ -3391,6 +3391,547 @@ export const EPISODE_SKELETON = [
         "type": "completion"
       }
     ]
+  },
+  {
+    "id": "i_can_i_cant",
+    "level": "A1",
+    "arc": "what_you_can_do",
+    "titleKey": "ep34Title",
+    "goalKey": "ep34Goal",
+    "canDoId": "say_what_you_can_do",
+    "canDoNameKey": "ep34CanDoName",
+    "durationKey": "ep34Duration",
+    "estimatedMinutes": 9,
+    "xp": 75,
+    "prerequisites": [
+      "what_does_it_mean"
+    ],
+    "gardenItems": [
+      "can_ability_pattern",
+      "swim",
+      "cook",
+      "drive",
+      "dance"
+    ],
+    "skillPrerequisites": [
+      "express_preferences"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "express_like"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "express_like",
+        "itemIds": [
+          "i_like"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "can_ability_pattern",
+          "swim",
+          "cook"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "can_ability_pattern"
+      },
+      {
+        "type": "word_order",
+        "itemId": "can_ability_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "can_ability_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_ability",
+        "itemIds": [
+          "can_ability_pattern",
+          "swim"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_request",
+        "itemIds": [
+          "can_ability_pattern"
+        ],
+        "repairKind": "ask_meaning"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_ability",
+        "itemIds": [
+          "can_ability_pattern",
+          "dance"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "state_ability",
+        "itemIds": [
+          "can_ability_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "can_you",
+    "level": "A1",
+    "arc": "what_you_can_do",
+    "titleKey": "ep35Title",
+    "goalKey": "ep35Goal",
+    "canDoId": "ask_someone_about_ability",
+    "canDoNameKey": "ep35CanDoName",
+    "durationKey": "ep35Duration",
+    "estimatedMinutes": 9,
+    "xp": 80,
+    "prerequisites": [
+      "i_can_i_cant"
+    ],
+    "gardenItems": [
+      "can_you_ability_pattern",
+      "how_do_you_say_pattern",
+      "sing"
+    ],
+    "skillPrerequisites": [
+      "say_what_you_can_do",
+      "ask_about_work_or_study"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "repair_request"
+    ],
+    "secondaryCanDoId": "ask_how_to_say_something",
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "state_ability",
+        "itemIds": [
+          "can_ability_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "can_you_ability_pattern"
+        ]
+      },
+      {
+        "type": "choice",
+        "itemId": "can_you_ability_pattern"
+      },
+      {
+        "type": "word_order",
+        "itemId": "can_you_ability_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_ability",
+        "itemIds": [
+          "can_you_ability_pattern",
+          "sing"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_request",
+        "itemIds": [
+          "can_you_repeat"
+        ],
+        "repairKind": "repeat"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "how_do_you_say_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_request",
+        "itemIds": [
+          "how_do_you_say_pattern"
+        ],
+        "repairKind": "ask_how_to_say"
+      },
+      {
+        "type": "comprehension",
+        "itemId": "can_ability_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_ability",
+        "itemIds": [
+          "can_you_ability_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "ask_ability",
+        "itemIds": [
+          "can_you_ability_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "when_are_you_free",
+    "level": "A1",
+    "arc": "making_arrangements",
+    "titleKey": "ep36Title",
+    "goalKey": "ep36Goal",
+    "canDoId": "arrange_to_meet",
+    "canDoNameKey": "ep36CanDoName",
+    "durationKey": "ep36Duration",
+    "estimatedMinutes": 10,
+    "xp": 85,
+    "prerequisites": [
+      "can_you"
+    ],
+    "gardenItems": [
+      "day_of_week_pattern",
+      "arrange_pattern",
+      "monday",
+      "friday"
+    ],
+    "skillPrerequisites": [
+      "say_when_something_happens",
+      "make_plan",
+      "say_where_something_is"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "simple_plan_conversation",
+      "state_routine"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "ask_ability",
+        "itemIds": [
+          "can_you_ability_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "day_of_week_pattern",
+          "arrange_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "day_of_week_pattern"
+      },
+      {
+        "type": "word_order",
+        "itemId": "arrange_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "day_of_week_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "arrange_meeting",
+        "itemIds": [
+          "day_of_week_pattern",
+          "arrange_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "state_ability",
+        "itemIds": [
+          "can_ability_pattern",
+          "swim"
+        ]
+      },
+      {
+        "type": "choice",
+        "itemId": "day_of_week_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "arrange_meeting",
+        "itemIds": [
+          "day_of_week_pattern",
+          "arrange_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "arrange_meeting",
+        "itemIds": [
+          "day_of_week_pattern",
+          "arrange_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "where_shall_we_meet",
+    "level": "A1",
+    "arc": "making_arrangements",
+    "titleKey": "ep37Title",
+    "goalKey": "ep37Goal",
+    "canDoId": "arrange_to_meet",
+    "canDoNameKey": "ep37CanDoName",
+    "durationKey": "ep37Duration",
+    "estimatedMinutes": 9,
+    "xp": 80,
+    "prerequisites": [
+      "when_are_you_free"
+    ],
+    "gardenItems": [
+      "the_station",
+      "the_cinema"
+    ],
+    "skillPrerequisites": [
+      "arrange_to_meet",
+      "say_where_something_is"
+    ],
+    "role": "reinforcement",
+    "reuseSkills": [
+      "state_location",
+      "close_encounter"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "arrange_meeting",
+        "itemIds": [
+          "arrange_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "its_location_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "its_location_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "the_station"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "arrange_meeting",
+        "itemIds": [
+          "the_station",
+          "its_location_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "arrange_meeting",
+        "itemIds": [
+          "the_cinema",
+          "see_you"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "close_encounter",
+        "itemIds": [
+          "see_you"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "arrange_meeting",
+        "itemIds": [
+          "day_of_week_pattern",
+          "arrange_pattern",
+          "its_location_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "arrange_meeting",
+        "itemIds": [
+          "arrange_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "see_you_on_friday",
+    "level": "A1",
+    "arc": "making_arrangements",
+    "titleKey": "ep38Title",
+    "goalKey": "ep38Goal",
+    "canDoId": "arrange_to_meet",
+    "canDoNameKey": "ep38CanDoName",
+    "durationKey": "ep38Duration",
+    "estimatedMinutes": 12,
+    "xp": 100,
+    "prerequisites": [
+      "where_shall_we_meet"
+    ],
+    "skillPrerequisites": [
+      "arrange_to_meet",
+      "introduce_self",
+      "ask_wellbeing",
+      "express_preferences",
+      "ask_for_repair",
+      "close_an_encounter"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "introduction",
+      "ask_wellbeing",
+      "express_like",
+      "repair_request",
+      "close_encounter"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "introduction",
+        "itemIds": [
+          "hi",
+          "im"
+        ],
+        "format": "roleplay",
+        "placeholders": [
+          "name"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "ask_wellbeing",
+        "itemIds": [
+          "im_good"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "express_like",
+        "itemIds": [
+          "i_like"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "mini_story",
+        "storyObjective": "arrange_meeting",
+        "turns": [
+          {
+            "kind": "scene"
+          },
+          {
+            "kind": "reply",
+            "evalKind": "arrange_meeting",
+            "itemIds": [
+              "day_of_week_pattern",
+              "arrange_pattern"
+            ],
+            "arrangeStage": "propose"
+          },
+          {
+            "kind": "choose"
+          },
+          {
+            "kind": "line"
+          },
+          {
+            "kind": "reply",
+            "evalKind": "arrange_meeting",
+            "itemIds": [
+              "day_of_week_pattern",
+              "arrange_pattern",
+              "its_location_pattern"
+            ],
+            "arrangeStage": "confirm"
+          },
+          {
+            "kind": "close"
+          }
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_request",
+        "itemIds": [
+          "can_you_repeat"
+        ],
+        "format": "roleplay",
+        "repairKind": "repeat"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "arrange_meeting",
+        "itemIds": [
+          "day_of_week_pattern",
+          "arrange_pattern",
+          "its_location_pattern"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "close_encounter",
+        "itemIds": [
+          "bye",
+          "see_you"
+        ],
+        "format": "roleplay"
+      },
+      {
+        "type": "recall",
+        "evalKind": "arrange_meeting",
+        "itemIds": [
+          "arrange_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
   }
 ]
 

@@ -250,17 +250,19 @@ const ok = () => { groups++ }
   ok()
 }
 
-/* ---- 9) semantic types: `transport_mode` registered, `day` still not ---- */
+/* ---- 9) semantic types: `transport_mode` registered, `day` now arc 7's ---- */
 {
   for (const type of ARC_SPEC.semanticNeeds) {
     assert.ok(SEMANTIC_TYPES.includes(type), `${type} is needed by arc 4 and not registered`)
   }
   assert.deepEqual(ARC_SPEC.semanticNeeds, ['place', 'generic_object', 'transport_mode'])
   /*
-   * `day` is the blueprint's last proposed type with no consumer. Registering a type
-   * before its arc exists makes coverage look real, so it must stay out.
+   * `day` was the blueprint's last proposed type with no consumer, while arc 7
+   * did not exist — registering a type before its arc exists makes coverage
+   * look real. Arc 7 is now built (`LC-INT-001`), so `day` is registered too;
+   * this group only proves arc 4's OWN needs, none of which is `day`.
    */
-  assert.equal(SEMANTIC_TYPES.includes('day'), false, 'day belongs to arc 7 and must not be registered yet')
+  assert.ok(!ARC_SPEC.semanticNeeds.includes('day'), 'day is not one of arc 4\'s own needs')
 
   /* the slots each new intent accepts, and the exclusions that matter */
   assert.deepEqual(INTENT_SLOTS.ask_location, ['place', 'generic_object'])
@@ -453,20 +455,19 @@ const ok = () => { groups++ }
 }
 
 /*
- * ---- 16) beyond arc 4 remains impossible ----
+ * ---- 16) beyond arc 4 remains impossible — until it isn't ----
  *
  * This group asserted arc 5 was impossible until it was built (LC-CURR-005a),
- * at which point hardcoding the exact remaining list here would have been a
- * lie about a fact this file does not own — the same lesson arc 1 and arc 2's
- * own checks already learned. Exactly which arcs remain is `check:a1-
- * blueprint`'s assertion to make precisely; this group only proves arc 4's
- * own neighbour is no longer impossible, and that something still is.
+ * then that arcs 6-7 remained impossible after arc 5 landed — the same lesson
+ * arc 1, 2 and 3's own checks already learned about hardcoding a remaining
+ * list that shrinks. Arcs 6-7 are now built too (`LC-INT-001`), so `unbuilt` is
+ * legitimately empty: every loop below runs vacuously and keeps proving the
+ * same property (no unbuilt arc leaks a loader or a registered capability) for
+ * whichever arc is unbuilt next, whenever that is again true.
  */
 {
   const unbuilt = BLUEPRINT.arcs.filter(arc => !A1_RUNTIME_ARCS.includes(arc.id))
-  assert.ok(!unbuilt.some(a => a.id === 'paying_and_choosing'), 'arc 5 must no longer be unbuilt')
-  assert.ok(unbuilt.some(a => a.id === 'what_you_can_do') && unbuilt.some(a => a.id === 'making_arrangements'),
-    'the two arcs after arc 5 remain unbuilt')
+  assert.equal(unbuilt.length, 0, 'A1 is fully built: no blueprint arc remains unauthorised')
   for (const arc of unbuilt) {
     assert.equal(hasContentLoader(A1, arc.id), false, `${arc.id} must have no loader`)
     for (const canDo of arc.newCanDos || []) {

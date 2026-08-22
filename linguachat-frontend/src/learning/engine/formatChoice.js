@@ -233,6 +233,17 @@ const OBJECTIVE_FORMATS = {
   ask_what_thing: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay', 'choice'],
   identify_thing: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
   use_quantity: ['guided_reply', 'choice', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  /*
+   * A1 arc 6/7, the level's last two arcs. `mini_story` is absent from all
+   * three: `state_ability`/`ask_ability` have no authored story at all, and
+   * `arrange_meeting`'s one story (episode 38, `see_you_on_friday`) is
+   * `home: 'episode'` — the same episode-hosted reason `ask_transport` and
+   * `ask_price` already establish above, so it must never also be offered as a
+   * loose daily-session block.
+   */
+  state_ability: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  ask_ability: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
+  arrange_meeting: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
 }
 
 /*

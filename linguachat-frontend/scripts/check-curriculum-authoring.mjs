@@ -41,6 +41,8 @@ import { A1_ARC2, getA1Arc2Episode } from '../src/learning/episodes/a1Arc2.js'
 import { A1_ARC3, getA1Arc3Episode } from '../src/learning/episodes/a1Arc3.js'
 import { A1_ARC4, getA1Arc4Episode } from '../src/learning/episodes/a1Arc4.js'
 import { A1_ARC5, getA1Arc5Episode } from '../src/learning/episodes/a1Arc5.js'
+import { A1_ARC6, getA1Arc6Episode } from '../src/learning/episodes/a1Arc6Content.js'
+import { A1_ARC_7, getA1Arc7Episode } from '../src/learning/episodes/a1Arc7Content.js'
 import { A1_CAN_DO_INTENT, A1_RECEPTIVE_ITEMS, A1_INCIDENTAL_ITEMS, A1_RUNTIME_ARCS } from '../src/learning/curriculum/a1Map.js'
 import {
   PRE_A1, A1, LEVELS, getLevel, episodesOfLevel, runtimeEpisodeCount, isLevelComplete,
@@ -60,10 +62,11 @@ let groups = 0
 const ok = () => { groups += 1 }
 
 /* Every episode with runtime content, in curriculum order: Pre-A1, then A1 arc by arc. */
-const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5]
-const A1_EPISODES = [...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5]
+const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7]
+const A1_EPISODES = [...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7]
 const runtimeEpisode = (id) =>
   getEpisode(id) || getA1Arc1Episode(id) || getA1Arc2Episode(id) || getA1Arc3Episode(id) || getA1Arc4Episode(id) || getA1Arc5Episode(id)
+    || getA1Arc6Episode(id) || getA1Arc7Episode(id)
 
 /*
  * Which intent evidences a can-do, asked of the map that owns the level. A
@@ -260,7 +263,7 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
    */
   assert.equal(getLevel(PRE_A1).contentStatus, 'complete')
   assert.equal(getLevel(PRE_A1).available, true)
-  assert.equal(getLevel(A1).contentStatus, 'partial', 'A1 has four arcs of seven')
+  assert.equal(getLevel(A1).contentStatus, 'partial', 'A1 has runtime content for all seven designed arcs, and is still not complete/available until its own completion gate says so')
   assert.equal(isLevelComplete(A1), false, 'a partially built level is never complete')
   assert.equal(getLevel(A1).available, false, 'A1 may not be opened')
   assert.deepEqual(availableLevelIds(), [PRE_A1], 'exactly one level is available today')
@@ -363,10 +366,15 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
     assert.equal(hasContentLoader(A1, arc), true, `${arc} is implemented and must be loadable`)
   }
   assert.equal(hasContentLoader(A1), false, 'and the level must not have a catch-all loader')
-  /* named so it stays a real arc id, and derived so implementing it moves the target */
-  const nextPlannedArc = 'what_you_can_do'
-  assert.equal(A1_RUNTIME_ARCS.includes(nextPlannedArc), false, `${nextPlannedArc} is not implemented`)
-  assert.equal(hasContentLoader(A1, nextPlannedArc), false, 'an unimplemented arc must not resolve')
+  /*
+   * All seven of A1's designed arcs now have runtime content (this task's own
+   * work), so there is no longer a "next planned arc" to name for A1 itself —
+   * the check that matters is that a fabricated, never-declared arc id still
+   * cannot resolve to a neighbouring arc's content.
+   */
+  const unplannedArc = 'inventing_excuses'
+  assert.equal(A1_RUNTIME_ARCS.includes(unplannedArc), false, `${unplannedArc} is not a real arc`)
+  assert.equal(hasContentLoader(A1, unplannedArc), false, 'an undeclared arc must not resolve')
   assert.equal(hasContentLoader('a2'), false)
   ok()
 }
