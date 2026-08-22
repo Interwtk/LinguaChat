@@ -18,12 +18,12 @@
   },
   "methodology": "Every level blueprint was loaded and normalized despite each lane using a different JSON schema for the same concepts (requiredCapabilityTable vs canDos vs capabilities; scope vs priority; evidence.transfer vs transferContexts vs independentEvidence). A deterministic resolver then: (1) built the full A1-C2 capability id graph including the Pre-A1 required core, (2) detected same-bare-id collisions across levels, (3) resolved every prerequisite string against same-level, earlier-level and explicitly-prefixed ids (b1.x / b2_x / c1_assumed__x notations), flagging anything that resolves nowhere, (4) ran cycle detection per level's same-level subgraph, (5) checked every required capability for a non-empty independent-evidence target and transfer context, (6) checked CEFR-reference presence per capability, (7) cross-referenced every coreEngineRequirements and semanticTypes.proposed entry across all six blueprints for duplicate/overlapping asks, and (8) cross-referenced pattern ids across levels for silent re-introduction or incompatible reuse. This is a design-time graph and evidence audit, not a runtime test; it changes no runtime code and does not open any level.",
   "levelSummary": {
-    "a1": {"required": 13, "should": 3, "optional": 2, "cyclesFound": 0, "cefrCoverage": "16/16"},
+    "a1": {"required": 13, "should": 3, "optional": 0, "cyclesFound": 0, "cefrCoverage": "16/16"},
     "a2": {"required": 15, "should": 4, "optional": 0, "cyclesFound": 0, "cefrCoverage": "0/19"},
     "b1": {"required": 12, "should": 4, "optional": 1, "cyclesFound": 0, "cefrCoverage": "17/17"},
     "b2": {"required": 13, "should": 5, "optional": 1, "cyclesFound": 0, "cefrCoverage": "19/19"},
     "c1": {"required": 21, "should": 7, "optional": 0, "cyclesFound": 0, "cefrCoverage": "28/28"},
-    "c2": {"required": 17, "should": 4, "optional": 1, "cyclesFound": 0, "cefrCoverage": "22/22"}
+    "c2": {"required": 15, "should": 6, "optional": 1, "cyclesFound": 0, "cefrCoverage": "22/22"}
   },
   "findings": [
     {
