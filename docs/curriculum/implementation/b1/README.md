@@ -39,4 +39,12 @@ Tracked per arc as it lands. An arc listed here has real runtime modules under
 `linguachat-frontend/src/learning/levels/b1/` plus a passing self-contained QA check under
 `linguachat-frontend/scripts/foundry/b1/`; an arc not listed is design-only (or not yet started).
 
-(updated as arcs complete — see the per-arc files in this directory)
+- **Arc 1 — `what_happened`** (`narrate_connected_event`, `narrate_interrupted_action`): **done.**
+  3 episodes (`episodes/b1Arc1.js`), evaluator (`evaluators.js`), draft
+  `MODEL_ANSWER`/`PROMPT` tables (`tables.js`), semantic slots (`semanticSlots.js`), self-contained
+  vocabulary (`vocabulary.js`) and i18n draft copy (`i18nDraft.js`), capability map (`b1Map.js`).
+  Proven by `scripts/foundry/b1/check-b1-arc1.mjs` (16 groups, 25 pedagogical journeys) using a
+  self-contained journey harness (`scripts/foundry/b1/lib/journey.mjs`) that reuses the real,
+  unedited `scaffolding.js`/`learnerModel.js`/`episodeRuns.js`. Delayed-retrieval proof is
+  explicitly deferred (arc 7's capstone does not exist yet), not faked.
+- Arcs 2-7: not yet started (design-only content-plan specs to follow).
