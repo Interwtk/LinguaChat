@@ -86,7 +86,7 @@ export const C2_CAN_DOS = [
     semanticNeeds: ['source_text', 'stance_marker'], patterns: ['evidentiality_stance_pattern'],
     firstContext: 'dense_input_synthesis',
     reuseContexts: [],
-    reuseContextsNote: "arc 3 (implication_and_subtext)'s `reinforcedCanDos` names this capability, but that arc's own `reuseMap` does not carry a matching entry (c2.json disagrees with itself once, same class of issue B2's README documented for its own reuseMatrix). Content authoring follows the arc's own reuseMap, the more specific source, per that precedent — see docs/curriculum/implementation/c2/README.md.",
+    reuseContextsNote: "arc 3 (implication_and_subtext)'s `reinforcedCanDos` names this capability, but that arc's own `reuseMap` does not carry a matching entry (c2.json disagrees with itself once, same class of issue B2's README documented for its own reuseMatrix). Content authoring follows the arc's own reuseMap, the more specific source, per that precedent — see this level's implementation README.",
     transferContexts: ['an unseen source text in an unrelated topic area'],
     evidence: { recognition: true, guided: true, assistedOpen: true, independent: 2, transfer: 1, delayedRetrieval: false },
     graduationRelevance: 'required', evaluation: 'hybrid',
