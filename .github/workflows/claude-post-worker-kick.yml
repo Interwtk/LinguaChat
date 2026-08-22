@@ -1,10 +1,9 @@
-# Close the post-merge race in claude-chain.yml.
+# Close post-worker races for both the serial Claude queue and Curriculum Foundry.
 #
-# The chain can receive pull_request.closed while the worker that just merged is
-# still reported as in_progress. Its shared writer guard correctly refuses to
-# dispatch in that instant, but without a later event the queue waits for the
-# hourly watchdog. This workflow emits that later event only after the worker is
-# fully completed, so the existing chain can immediately re-check the queue.
+# A coordinating workflow can observe a worker as still in_progress at the exact
+# moment another event asks it to advance. This bridge emits a fresh event only
+# after the worker is fully completed, so the appropriate coordinator can
+# immediately re-check its queue instead of waiting for a scheduled watchdog.
 name: Claude — post-worker kick
 
 on:
@@ -12,6 +11,7 @@ on:
     workflows:
       - "Claude — autonomous task"
       - "Claude — translations"
+      - "Claude — curriculum foundry worker"
     types: [completed]
 
 permissions:
@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Dispatch the chain after the worker is fully finished
+      - name: Dispatch the correct coordinator after the worker is fully finished
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SOURCE_WORKFLOW: ${{ github.event.workflow_run.name }}
@@ -35,8 +35,16 @@ jobs:
           SOURCE_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
         run: |
           set -euo pipefail
-          gh workflow run claude-chain.yml \
-            --repo "$GITHUB_REPOSITORY" \
-            --ref main \
-            -f reason="post-worker completion: ${SOURCE_WORKFLOW} run ${SOURCE_RUN_ID} (${SOURCE_CONCLUSION})"
-          echo "Dispatched Claude — chain after ${SOURCE_WORKFLOW} completed (${SOURCE_CONCLUSION})." >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$SOURCE_WORKFLOW" = "Claude — curriculum foundry worker" ]; then
+            gh workflow run curriculum-foundry.yml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref main
+            echo "Dispatched Curriculum Foundry after ${SOURCE_WORKFLOW} run ${SOURCE_RUN_ID} (${SOURCE_CONCLUSION})." >> "$GITHUB_STEP_SUMMARY"
+          else
+            gh workflow run claude-chain.yml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref main \
+              -f reason="post-worker completion: ${SOURCE_WORKFLOW} run ${SOURCE_RUN_ID} (${SOURCE_CONCLUSION})"
+            echo "Dispatched Claude — chain after ${SOURCE_WORKFLOW} run ${SOURCE_RUN_ID} (${SOURCE_CONCLUSION})." >> "$GITHUB_STEP_SUMMARY"
+          fi
