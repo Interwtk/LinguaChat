@@ -64,6 +64,7 @@ const NEGOTIATE_01 = {
   reuseSkills: ['develop_a_structured_argument', 'disagree_diplomatically'],
   steps: [
     { type: 'recall', review: true, instructionKey: 'c1ep26RecallInstruction', evalKind: 'state_structured_argument', canDoId: 'develop_a_structured_argument', itemIds: ['emphatic_cleft_pattern'] },
+    { type: 'recall', instructionKey: 'c1ep26WeighRecallInstruction', evalKind: 'state_structured_argument', canDoId: 'weigh_implications_of_a_position', itemIds: ['it_would_likely_mean_that'] },
     { type: 'scene', mood: 'thoughtful', titleKey: 'c1ep26SceneTitle', bodyKey: 'c1ep26SceneBody', showGoal: true, ctaKey: 'c1ep26Start' },
     {
       type: 'model',
@@ -111,6 +112,7 @@ const CLARIFY_02 = {
   reuseSkills: ['infer_implied_meaning_in_unfamiliar_context'],
   steps: [
     { type: 'recall', review: true, instructionKey: 'c1ep27RecallInstruction', evalKind: 'infer_meaning', canDoId: 'infer_implied_meaning_in_unfamiliar_context', itemIds: ['what_they_probably_mean_is'] },
+    { type: 'recall', instructionKey: 'c1ep27CertaintyRecallInstruction', evalKind: 'qualify_claim', canDoId: 'express_degrees_of_certainty', itemIds: ['certainty_marking_pattern'] },
     { type: 'scene', mood: 'thoughtful', titleKey: 'c1ep27SceneTitle', bodyKey: 'c1ep27SceneBody', ctaKey: 'c1ep27Start' },
     {
       type: 'model',
@@ -126,13 +128,13 @@ const CLARIFY_02 = {
     },
     {
       type: 'free_reply', speaker: 'lingua', promptEn: "A service provider tells you the repair for your booking gone wrong will happen 'sometime this week.' Ask a targeted question that actually resolves the ambiguity.",
-      instructionKey: 'c1ep27AssistedInstruction', evalKind: 'repair_request', canDoId: 'clarify_an_ambiguous_instruction_precisely',
+      instructionKey: 'c1ep27AssistedInstruction', evalKind: 'clarify_ambiguity', canDoId: 'clarify_an_ambiguous_instruction_precisely',
       suggestionEn: "When you say 'this week', do you mean a specific day, or could it genuinely be any day? Could you be more specific about the timing?",
       itemIds: ['when_you_say_x_do_you_mean', 'could_you_be_more_specific_about'], evidenceType: 'assistedOpen',
     },
     {
       type: 'free_reply', speaker: 'lingua', promptEn: "Someone tells you the shared calendar conflict is 'basically sorted, don't worry about it.' Ask a precise question that actually confirms what's sorted.",
-      instructionKey: 'c1ep27IndependentInstruction', evalKind: 'repair_request', canDoId: 'clarify_an_ambiguous_instruction_precisely',
+      instructionKey: 'c1ep27IndependentInstruction', evalKind: 'clarify_ambiguity', canDoId: 'clarify_an_ambiguous_instruction_precisely',
       itemIds: ['just_to_make_sure_i_understood'], evidenceType: 'independent',
     },
     { type: 'completion', canDoNameKey: 'c1ep27CanDoName', titleKey: 'c1ep27CloseTitle', bodyKey: 'c1ep27CloseBody', ctaKey: 'c1ep26CloseCta' },
@@ -203,6 +205,7 @@ const COMPLICATION_04 = {
   reuseSkills: ['propose_and_defend_an_alternative', 'disagree_diplomatically'],
   steps: [
     { type: 'recall', review: true, instructionKey: 'c1ep29RecallInstruction', evalKind: 'hedge_statement', canDoId: 'disagree_diplomatically', itemIds: ['id_push_back_on_that_slightly'] },
+    { type: 'recall', instructionKey: 'c1ep29HedgeRecallInstruction', evalKind: 'hedge_statement', canDoId: 'hedge_and_mitigate_a_statement', itemIds: ['mitigation_device_pattern'] },
     { type: 'scene', mood: 'thoughtful', titleKey: 'c1ep29SceneTitle', bodyKey: 'c1ep29SceneBody', ctaKey: 'c1ep29Start' },
     {
       type: 'model',
@@ -262,7 +265,7 @@ const INTEGRATED_05 = {
     },
     {
       type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: "Your friend says 'I'll just handle it, don't worry.' That's vague. Ask a precise question that actually resolves what 'handle it' means.",
-      instructionKey: 'c1ep30ClarifyInstruction', evalKind: 'repair_request', canDoId: 'clarify_an_ambiguous_instruction_precisely',
+      instructionKey: 'c1ep30ClarifyInstruction', evalKind: 'clarify_ambiguity', canDoId: 'clarify_an_ambiguous_instruction_precisely',
       itemIds: ['when_you_say_x_do_you_mean'], evidenceType: 'independent', transfer: true,
     },
     {
