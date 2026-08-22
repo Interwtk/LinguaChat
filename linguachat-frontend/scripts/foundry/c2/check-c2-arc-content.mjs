@@ -13,7 +13,7 @@ import { C2_ARC3 } from '../../../src/learning/levels/c2/arcs/c2Arc3ImplicationA
 import { C2_ARC4 } from '../../../src/learning/levels/c2/arcs/c2Arc4RegisterAndPragmatics.js'
 import { C2_ARC5 } from '../../../src/learning/levels/c2/arcs/c2Arc5ArgumentAndPosition.js'
 import { C2_ARC6 } from '../../../src/learning/levels/c2/arcs/c2Arc6DiscourseFlexibility.js'
-import { C2_ARC7 } from '../../../src/learning/levels/c2/arcs/c2Arc7StylisticControl.js'
+import { C2_ARC7_EPISODES } from '../../../src/learning/levels/c2/arcs/c2Arc7StylisticControl.js'
 import { C2_ARC8 } from '../../../src/learning/levels/c2/arcs/c2Arc8IntegratedMediation.js'
 import { C2_CAN_DOS } from '../../../src/learning/levels/c2/c2Capabilities.js'
 import { C2_PATTERNS } from '../../../src/learning/levels/c2/c2Patterns.js'
@@ -30,7 +30,7 @@ export const ALL_ARCS = {
   register_and_pragmatics: C2_ARC4,
   argument_and_position: C2_ARC5,
   discourse_flexibility: C2_ARC6,
-  stylistic_control: C2_ARC7,
+  stylistic_control: C2_ARC7_EPISODES,
   integrated_mediation: C2_ARC8,
 }
 export const ALL_EPISODES = Object.values(ALL_ARCS).flat()

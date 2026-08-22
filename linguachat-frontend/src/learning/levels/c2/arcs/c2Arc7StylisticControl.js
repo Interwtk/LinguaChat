@@ -333,6 +333,6 @@ const INTEGRATED_04 = {
   ],
 }
 
-export const C2_ARC7 = [EDIT_01, VARIETY_02, GENRE_03, INTEGRATED_04]
+export const C2_ARC7_EPISODES = [EDIT_01, VARIETY_02, GENRE_03, INTEGRATED_04]
 export const C2_ARC7_ID = 'stylistic_control'
-export const getC2Arc7Episode = (id) => C2_ARC7.find((ep) => ep.id === id) || null
+export const getC2Arc7Episode = (id) => C2_ARC7_EPISODES.find((ep) => ep.id === id) || null

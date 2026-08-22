@@ -37,7 +37,7 @@ export const C2_REUSE_MATRIX = [
       { capabilityId: 'recognize_irony_and_understatement', marker: 'I' },
       { capabilityId: 'respond_appropriately_to_an_indirect_speech_act', marker: 'I' },
     ],
-    knownBlueprintInconsistency: "c2.json's arc-level `reinforcedCanDos` names `identify_authors_stance_and_bias` as reinforced here, but this arc's own `reuseMap` (transcribed above, verbatim) carries no matching entry. Same class of self-disagreement B2's blueprint had for its own reuseMatrix (see docs/curriculum/implementation/b2/README.md section 4) — content authoring follows the arc's own reuseMap, the more specific of the two fields, and documents the discrepancy rather than silently resolving it either way.",
+    knownBlueprintInconsistency: "c2.json's arc-level `reinforcedCanDos` names `identify_authors_stance_and_bias` as reinforced here, but this arc's own `reuseMap` (transcribed above, verbatim) carries no matching entry. Same class of self-disagreement B2's blueprint had for its own reuseMatrix (see B2's implementation README section 4) — content authoring follows the arc's own reuseMap, the more specific of the two fields, and documents the discrepancy rather than silently resolving it either way.",
   },
   {
     arcId: 'register_and_pragmatics',
