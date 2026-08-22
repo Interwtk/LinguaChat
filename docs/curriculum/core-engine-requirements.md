@@ -5,13 +5,17 @@ per `docs/curriculum/cross-level-audit.json` finding F8. Both are shared-core pe
 (`curriculum-master-a1-c2.md` §18, "response evaluation semantics"), so a level worker who discovers
 the need raises it here rather than each lane building its own private evaluator path.
 
-This is a design decision record, not runtime code. `linguachat-frontend/src/learning/engine/`
-implements the decisions below when a level with runtime content actually needs the dimension; no
-evaluator behaviour here is live until then. Today's engine (per the architecture survey done for
-`LC-FND-002`'s code-isolation work) has no register-appropriateness dimension beyond one hardcoded
-special case (`evaluatePoliteRequest`'s `previous_structure` errorType) and no discourse-coherence or
-conversation-state-tracking dimension at all — every evaluator function judges one single-utterance
-`text` against one target frame.
+This is primarily a design decision record. `linguachat-frontend/src/learning/engine/responseEvaluation.js`'s
+shared `base()` result shape now carries the two fields specified below
+(`registerAppropriateness`, `discourseCoherence`), defaulting to `checked: false` for every existing
+Pre-A1/A1 evaluator — this is the shared contract both B2's and C1's eventual evaluators must
+populate, so neither lane invents its own incompatible shape (the exact risk F8 flagged). The
+**scoring logic** itself is not implemented: no Pre-A1/A1 capability sets `checked: true`, and no B2/C1
+runtime intents exist yet to write real scoring against. Before this change, the engine (per the
+architecture survey done for `LC-FND-002`'s code-isolation work) had no register-appropriateness
+dimension beyond one hardcoded special case (`evaluatePoliteRequest`'s `previous_structure` errorType)
+and no discourse-coherence or conversation-state-tracking dimension at all — every evaluator function
+judged one single-utterance `text` against one target frame.
 
 ---
 
