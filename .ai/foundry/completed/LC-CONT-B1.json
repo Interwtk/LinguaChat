@@ -1,0 +1,49 @@
+{
+  "taskId": "LC-CONT-B1",
+  "lane": "level-b1",
+  "status": "complete",
+  "cleanCycles": 2,
+  "artifacts": [
+    "linguachat-frontend/src/learning/levels/b1/index.js",
+    "linguachat-frontend/src/learning/levels/b1/b1Map.js",
+    "linguachat-frontend/src/learning/levels/b1/evaluators.js",
+    "linguachat-frontend/src/learning/levels/b1/tables.js",
+    "linguachat-frontend/src/learning/levels/b1/semanticSlots.js",
+    "linguachat-frontend/src/learning/levels/b1/vocabulary.js",
+    "linguachat-frontend/src/learning/levels/b1/i18nDraft.js",
+    "linguachat-frontend/src/learning/levels/b1/episodes/b1Arc1.js",
+    "linguachat-frontend/src/learning/levels/b1/episodes/b1Arc2.js",
+    "linguachat-frontend/src/learning/levels/b1/episodes/b1Arc3.js",
+    "linguachat-frontend/src/learning/levels/b1/episodes/b1Arc4.js",
+    "linguachat-frontend/src/learning/levels/b1/episodes/b1Arc5.js",
+    "linguachat-frontend/src/learning/levels/b1/episodes/b1Arc6.js",
+    "linguachat-frontend/src/learning/levels/b1/episodes/b1ArcSeven.js",
+    "linguachat-frontend/scripts/foundry/b1/lib/journey.mjs",
+    "linguachat-frontend/scripts/foundry/b1/measure-hybrid-evaluation-density.mjs",
+    "linguachat-frontend/scripts/foundry/b1/check-b1-arc1.mjs",
+    "linguachat-frontend/scripts/foundry/b1/check-b1-arc2.mjs",
+    "linguachat-frontend/scripts/foundry/b1/check-b1-arc3.mjs",
+    "linguachat-frontend/scripts/foundry/b1/check-b1-arc4.mjs",
+    "linguachat-frontend/scripts/foundry/b1/check-b1-arc5.mjs",
+    "linguachat-frontend/scripts/foundry/b1/check-b1-arc6.mjs",
+    "linguachat-frontend/scripts/foundry/b1/check-b1-arc7.mjs",
+    "linguachat-frontend/scripts/foundry/b1/run-all.mjs",
+    "docs/curriculum/implementation/b1/README.md",
+    "docs/curriculum/implementation/b1/core-engine-findings.md",
+    ".ai/foundry/requests/LC-CONT-B1.md"
+  ],
+  "summary": "Implemented a complete, self-contained B1 level content module against docs/curriculum/blueprints/b1.json, entirely inside this task's declared write scope (linguachat-frontend/src/learning/levels/b1/**, linguachat-frontend/scripts/foundry/b1/**, docs/curriculum/implementation/b1/**). All 7 arcs authored: what_happened, i_think_that, which_one, somethings_wrong, looking_ahead, keep_talking, the_long_conversation -- 23 episodes total, matching b1.json's episodesInArc per arc exactly. All 12 required, 4 should-have and 1 optional B1 can-do evaluated by real evaluator functions in evaluators.js (evaluateB1Free dispatcher mirrors evaluateFree's own shape: taught-frame regex match, explicit near-miss/wrong-meaning reject patterns each with an errorType, a catch-all that is always conclusive:false so an unanticipated genuine attempt is never falsely rejected). Registers B1's one new semantic type (problem, semanticSlots.js's B1_NEW_SEMANTIC_TYPES, matching b1.json's own semanticTypes.proposed entry). Vocabulary budgets match b1.json exactly per arc (82 productive / 52 receptive total across arcs 1-6, arc 7 introduces none by design). Two of B1's three intentStrategy.newSubtypesOnExistingIntents resolved as designed: narrate_past_event's narrativeForm (sequence/interruption, arc 1), report_problem's tone (neutral/frustrated, arc 4, carrying both escalate_and_resolve_a_problem and express_frustration_politely); state_future_intent's intentForm (will_going_to/hope_would_like, arc 5) additionally needed a second evaluator-only situationForm field (decision/plan/prediction/hope) to resolve b1.json's own stated architectural risk for that arc -- judging communicative FUNCTION, not surface form, adapted from the draft evaluator that resolved b1.md section 15.1. Arc 6's discourse-level evaluators (change_topic, ask_follow_up) genuinely read ctx.turnContext.linguaSaid, resolving b1.md section 15.2's flagged risk with real code, not a stub. Arc 7 (the_long_conversation, the level's closing capstone) introduces nothing of its own and instead PROVES delayed retrieval, the one claim every earlier arc's check explicitly deferred: statically confirms all 12 required capabilities are exercised by the correct evalKind/subtype somewhere in its two episodes, then behaviorally proves it by playing both episodes end to end with a strong, fully unaided learner (playEpisode throws on any rejected reply, so a clean run means every required capability's canonical answer still passes its unmodified arcs-1-6 evaluator when asked fresh, inside prompts nobody scripted per-arc). Proven throughout by scripts/foundry/b1/check-b1-arc{1..7}.mjs (run together via run-all.mjs), 244 total pedagogical journeys across the 7 arcs (25+25+35+33+43+35+20, each comfortably >=20/arc), reusing a self-contained journey-simulation harness (scripts/foundry/b1/lib/journey.mjs) that calls this level's own evaluateB1Free/b1EpisodeById but the real, unedited engine/scaffolding.js + engine/learnerModel.js + engine/episodeRuns.js -- the same rigor scripts/lib/journey.mjs + check-a1-arc*.mjs apply to A1. Both of b1.md section 15's open core-engine questions were resolved by read-only investigation before content authoring began (docs/curriculum/implementation/b1/core-engine-findings.md): the hybrid-evaluation-density shift (13/14 new intents hybrid) needs no core change, and discourse-level context (turnContext.linguaSaid) is already threaded through the pipeline. Per curriculum-master-a1-c2.md section 18's parallel-authoring sequence (author level-owned content in parallel, integrate one level at a time through a later global gate) and .ai/foundry/requests/LC-CONT-B1.md's own corrected scope-boundary finding, runtime wiring -- registering B1 into evaluateFree's switch, curriculum/levels.js + episodeContent.js, SessionRunner.jsx's MODEL_ANSWER/PROMPT tables, engine/semanticContext.js's SEMANTIC_TYPES/INTENT_SLOTS, and the real i18n locale files -- is out of this task's write scope and belongs to LC-INT-001, which depends on every LC-CONT-* task and has the wider write scope needed. B1 stays unavailable and unwired; this task changes no runtime-visible behaviour. Fixed one real scope-respecting naming collision, the same class of bug LC-CONT-A2 independently hit and fixed the same way: arc 7's bare B1_ARC7 export (and the b1Arc7.js filename) tripped scripts/check-a1-blueprint.mjs's unscoped /arc7\\b/i guard against A1's own frozen, designed-only seventh arc (shared tooling, out of this task's write scope) -- resolved by renaming to B1_ARC_SEVEN / b1ArcSeven.js entirely within this task's own write scope, verified clean by re-running check-a1-blueprint.mjs directly. Six further evaluator-authoring bugs were caught and fixed by this task's own QA loop during authoring (each arc's own README entry has the specific detail): a comma-stripping regex assumption in arc 3's multi-attribute-description evaluator; two arc-4 bugs (frustrated-tone examples paired with no real problem detail; a too-narrow ordered-verb allowlist that rejected a paraphrase used in its own novel-context-transfer check); three arc-5 bugs (first-conditional clause-order assumption; would-vs-'d contraction detection; a too-narrow future-decision-verb allowlist); and one arc-6 bug (a bare word-count near-miss signal that collided with the shared nonsense test string, producing a false-confident reject -- fixed to preserve the zero-false-conclusive-reject invariant from section 15.1).",
+  "writeScopeRespected": [
+    "linguachat-frontend/src/learning/levels/b1/**",
+    "linguachat-frontend/scripts/foundry/b1/**",
+    "docs/curriculum/implementation/b1/**"
+  ],
+  "evidence": {
+    "levelOwnedChecks": "node scripts/foundry/b1/run-all.mjs -- all 7 arc checks OK: check-b1-arc1 (16 groups, 25 journeys), check-b1-arc2 (16 groups, 25 journeys), check-b1-arc3 (16 groups, 35 journeys), check-b1-arc4 (16 groups, 33 journeys), check-b1-arc5 (16 groups, 43 journeys), check-b1-arc6 (16 groups, 35 journeys), check-b1-arc7 (12 groups, 20 journeys; delayed retrieval PROVEN for all 12 required capabilities). 244 total journeys across 7 arcs.",
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n -- all exit 0, run twice consecutively clean with zero edits between runs (1727 base i18n keys unchanged, all 7 gated locales 100% coverage; build produces no B1 chunk, confirming zero bundle impact from unwired level-owned content)",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q -- exit 0 (444 passed), run twice consecutively clean, unchanged (no backend files touched)",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/level-b1/lc-cont-b1 --base origin/main --head HEAD -- OK, 27 changed files, all inside declared write scope, run twice consecutively clean",
+    "evidenceGateFull": "node .github/scripts/check-supervisor-evidence.mjs -- pedagogical 120/100 unique primary studies (14 topics), psychology 127/100 (14 topics); READY (requiresEvidenceReady=true satisfied via the shared, already-verified corpus -- this content task did not itself add primary studies)",
+    "scopeLimitation": "This task cannot produce a live in-app browser walkthrough, a real SessionRunner journey replay, or B1 registration in the real evaluateFree/levels.js/i18n locale files, because all of that is outside this task's write scope and belongs to LC-INT-001 -- stated explicitly in docs/curriculum/implementation/b1/README.md and .ai/foundry/requests/LC-CONT-B1.md, per the master contract's own parallel-authoring rule (curriculum-master-a1-c2.md section 18). b1Map.js's b1ImplementationStatus().complete deliberately stays false for the same reason, matching the CLAUDE.md/A1 precedent of never inferring availability from runtime-episode completeness alone."
+  }
+}
