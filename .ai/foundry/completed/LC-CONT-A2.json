@@ -1,0 +1,39 @@
+{
+  "taskId": "LC-CONT-A2",
+  "lane": "level-a2",
+  "status": "complete",
+  "cleanCycles": 2,
+  "artifacts": [
+    "linguachat-frontend/src/learning/levels/a2/index.js",
+    "linguachat-frontend/src/learning/levels/a2/evaluators.js",
+    "linguachat-frontend/src/learning/levels/a2/semanticTypes.js",
+    "linguachat-frontend/src/learning/levels/a2/i18n/en.js",
+    "linguachat-frontend/src/learning/levels/a2/episodes/a2Arc1WhatHappened.js",
+    "linguachat-frontend/src/learning/levels/a2/episodes/a2Arc2MakingPlans.js",
+    "linguachat-frontend/src/learning/levels/a2/episodes/a2Arc3PeopleAndPlaces.js",
+    "linguachat-frontend/src/learning/levels/a2/episodes/a2Arc4GettingAround.js",
+    "linguachat-frontend/src/learning/levels/a2/episodes/a2Arc5BookingAStay.js",
+    "linguachat-frontend/src/learning/levels/a2/episodes/a2Arc6EverydayProblems.js",
+    "linguachat-frontend/src/learning/levels/a2/episodes/a2Arc7LetsDoSomething.js",
+    "linguachat-frontend/scripts/foundry/a2/check-a2-structure.mjs",
+    "linguachat-frontend/scripts/foundry/a2/check-a2-evaluators.mjs",
+    "linguachat-frontend/scripts/foundry/a2/check-a2-journeys.mjs",
+    "docs/curriculum/implementation/a2/authoring-conventions.md",
+    "docs/curriculum/implementation/a2/core-requirements.md",
+    "docs/curriculum/implementation/a2/status.md"
+  ],
+  "summary": "Implemented a complete, self-contained A2 level content module against docs/curriculum/blueprints/a2.json, entirely inside this task's declared write scope (linguachat-frontend/src/learning/levels/a2/**, linguachat-frontend/scripts/foundry/a2/**, docs/curriculum/implementation/a2/**). Authored all 23 episodes across all 7 arcs (what_happened, making_plans, people_and_places, getting_around, booking_a_stay, everyday_problems, lets_do_something), matching the blueprint's canDos, patterns, vocabulary budgets, evidence targets, personalization plan, autonomy fade and reuse/integration turns exactly -- structurally verified against a2.json by check-a2-structure.mjs (7 arcs, 23 episodes, no prerequisite cycles, no orphan required capability, i18n key completeness). Built a full working reference-evaluator implementation for all 17 new A2 intents (evaluators.js), including a two-clause judgment helper implementing a2.json's proposed CORE two-clause evaluation behaviour as real, tested code (66/66 cases in check-a2-evaluators.mjs, including a refusal battery for near-miss/nonsense/insufficient-form/missing-second-clause per intent). Proposed A2's semantic types (past_time, future_time, month, date_ordinal, quality, problem, and the reused-from-A1-proposal day) with validators and documented incompatibilities (semanticTypes.js). Authored a complete draft English i18n key set for all 476 key references (428 distinct) across the 23 episodes. Simulated 455 varied learner journeys across all 7 arcs against the real content paired with the real evaluators (check-a2-journeys.mjs), each arc well above the 20-journey/arc minimum, covering clearly-correct, near-miss-then-retry, nonsense-then-recovery, natural-variant and transfer personas. Per docs/curriculum/curriculum-isolation-plan.md's own instruction (\"the moment to build the per-level-registry extension... is when the first real type needs it\") and the master contract's parallel-authoring rule (Sec18: level-owned content authored in parallel, integrated one level at a time through a later global gate), runtime wiring -- episode registration in episodes/index.js, the i18n merge into src/i18n/**, evaluator dispatch in engine/responseEvaluation.js, the semantic-type registry in engine/semanticContext.js, fact-capture entries and the spelling privacy denylist in engine/learnerModel.js, and the mini-story STORIES table in engine/miniStory.js -- is out of this task's write scope and belongs to LC-INT-001, which depends on every LC-CONT-* task and has the wider write scope needed; core-requirements.md gives that task a precise, content-informed list of exactly what to do, discovered by writing real A2 content rather than guessed in advance. A2 stays contentStatus: partial, available: false -- this task changes no runtime-visible behaviour and does not open any level. Fixed one real bug found by a parallel authoring pass: evaluators.js's twoClauseJudgment matched a taught connector by array order rather than earliest valid text position, wrongly refusing any reply leading with 'First' (arc 1's own canonical phrasing); reworked to find the earliest connector occurrence with real text on both sides, with a regression case added to check-a2-evaluators.mjs. Fixed one real scope-respecting naming collision: A2's seventh arc's bare A2_ARC7 export tripped scripts/check-a1-blueprint.mjs's unscoped /arc7\\b/i guard against A1's own frozen, designed-only arc 7 (shared tooling, out of this task's write scope) -- resolved by renaming the export to A2_ARC_7 rather than touching the shared guard.",
+  "writeScopeRespected": [
+    "linguachat-frontend/src/learning/levels/a2/**",
+    "linguachat-frontend/scripts/foundry/a2/**",
+    "docs/curriculum/implementation/a2/**"
+  ],
+  "evidence": {
+    "levelOwnedChecks": "check-a2-structure.mjs OK (7 arcs, 23 episodes, 27 distinct evalKinds, 428 distinct i18n keys all present, no cycles, no orphan required capability); check-a2-evaluators.mjs OK (66/66 cases); check-a2-journeys.mjs OK (455 simulated journeys across 7 arcs, each >=20)",
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n -- all exit 0, run twice consecutively clean with zero edits between runs (1727 base i18n keys unchanged, all 7 gated locales 100% coverage; build produces no A2 chunk, confirming zero bundle impact from unwired level-owned content)",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q -- exit 0 (444 passed), run twice consecutively clean, unchanged (no backend files touched)",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/level-a2/lc-cont-a2 --base origin/main --head HEAD -- OK, 17 changed files, all inside declared write scope",
+    "evidenceGateFull": "node .github/scripts/check-supervisor-evidence.mjs -- pedagogical 120/100 unique primary studies (14 topics), psychology 127/100 (14 topics); READY (requiresEvidenceReady=true satisfied)",
+    "scopeLimitation": "This task cannot produce a live in-app browser walkthrough, a real SessionRunner journey replay, or a real check:i18n locale-parity proof for A2's own keys, because episode registration, i18n merge, evaluator dispatch, the semantic-type registry, fact capture and the mini-story table are all outside this task's write scope and belong to LC-INT-001 -- stated in full in docs/curriculum/implementation/a2/status.md Sec3, per the master contract's own parallel-authoring rule (Sec18)."
+  }
+}
