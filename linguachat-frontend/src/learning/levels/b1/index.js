@@ -1,0 +1,17 @@
+/*
+ * levels/b1 — the one entry point a consumer (this task's own QA harness
+ * today; `LC-INT-001`'s registration tomorrow) needs for everything B1 has.
+ */
+export { B1_ARC1, B1_ARC1_ID, getB1Arc1Episode } from './episodes/b1Arc1.js'
+export {
+  B1_LEVEL_ID, B1_RUNTIME_ARCS, B1_CAN_DO_INTENT, B1_CAN_DO_EXTRA_INTENTS,
+  b1IntentsOf, B1_REQUIRED_CAN_DOS, B1_RECEPTIVE_ITEMS, B1_INCIDENTAL_ITEMS,
+  b1Episodes, B1_ARC_CAN_DOS, b1EpisodesForCanDo, b1ProductiveItemsOf,
+  b1RequiredLevelItems, b1ImplementationStatus, B1_INTRODUCED_ITEMS, b1ItemIds,
+  b1EpisodeById,
+} from './b1Map.js'
+export { evaluateB1Free, evaluateNarratePastEvent } from './evaluators.js'
+export { B1_MODEL_ANSWER, B1_PROMPT } from './tables.js'
+export { B1_INTENT_SLOTS, b1SlotsFor } from './semanticSlots.js'
+export { B1_VOCAB_BY_ID, B1_ARC1_VOCAB } from './vocabulary.js'
+export { B1_ARC1_COPY } from './i18nDraft.js'
