@@ -47,14 +47,16 @@ All inside this task's write scope (`linguachat-frontend/src/learning/levels/a2/
 
 See the PR's `## Evidence` section for exact command output. Summary:
 
-- `node scripts/foundry/a2/check-a2-structure.mjs` — PASS
-- `node scripts/foundry/a2/check-a2-evaluators.mjs` — PASS (65/65 cases)
-- `node scripts/foundry/a2/check-a2-journeys.mjs` — PASS (>=20 journeys/arc)
-- `cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n` — PASS, unchanged from pre-task baseline (this task adds no file `check:all`'s lint/type/existing-test suites do not already cover safely — see §3)
-- `cd linguachat-backend && python -m compileall . && python -m pytest -q` — PASS, unchanged (no backend files touched)
-- `node .github/scripts/check-foundry-scope.mjs --branch foundry/level-a2/lc-cont-a2 --base origin/main --head HEAD` — PASS
-- `node .github/scripts/check-supervisor-evidence.mjs` — PASS (pedagogical 120/100, psychology 127/100; required by `requiresEvidenceReady: true`)
-- Two consecutive clean cycles after the last fix.
+- `node scripts/foundry/a2/check-a2-structure.mjs` — PASS (7 arcs, 23 episodes, 27 distinct evalKinds, 428 distinct i18n keys, all present as drafts, no prerequisite cycles, no orphan required capability)
+- `node scripts/foundry/a2/check-a2-evaluators.mjs` — PASS (66/66 cases: correct/near-miss/nonsense/insufficient-form/missing-second-clause per new intent, plus the two-clause connector-position regression)
+- `node scripts/foundry/a2/check-a2-journeys.mjs` — PASS (455 simulated journeys across all 7 arcs, each well above the 20/arc minimum)
+- `cd linguachat-frontend && npm run check:all` — PASS, exit 0 (unchanged baseline: this task's files are additive and unimported by any runtime path)
+- `cd linguachat-frontend && npm run build` — PASS, exit 0 (no A2 chunk in `dist/`, confirming zero bundle impact — nothing imports `levels/a2/**` yet)
+- `cd linguachat-frontend && npm run check:i18n` — PASS, exit 0, 1727 base keys unchanged (A2's draft keys live in a level-owned file, not yet merged into `src/i18n/**`)
+- `cd linguachat-backend && python -m compileall . && python -m pytest -q` — PASS, exit 0, 444 passed (unchanged; no backend files touched)
+- `node .github/scripts/check-foundry-scope.mjs --branch foundry/level-a2/lc-cont-a2 --base origin/main --head HEAD` — PASS, 17 changed files, all inside the declared write scope
+- `node .github/scripts/check-supervisor-evidence.mjs` — PASS (pedagogical 120/100 unique primary studies/14 topics, psychology 127/100/14 topics; required by `requiresEvidenceReady: true`)
+- **Two consecutive fully clean cycles** run after the last fix (a naming collision between A2's seventh arc export and `check-a1-blueprint.mjs`'s unscoped `/arc7\b/i` guard against A1's frozen arc 7 — fixed by renaming the export, not by touching the out-of-scope shared script), with zero edits between the two cycles.
 
 ## 3. What this task could NOT prove, and why
 
