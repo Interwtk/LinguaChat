@@ -63,13 +63,19 @@ const ANSWERS = {
   },
   state_real_condition: "If it rains tomorrow, I'll stay home.",
   state_hypothetical: "If I were you, I'd ask for more details before deciding.",
+  change_topic: {
+    initiate: 'Anyway, have you tried the new café downtown?',
+    follow: "That sounds interesting — I've always wanted to try that myself.",
+  },
+  ask_follow_up: 'Really? What happened?',
+  summarize_other: "So basically, you're saying the flight got delayed, and now you'll miss the connection.",
 }
 
 export function answerFor(step) {
   const entry = ANSWERS[step.evalKind]
   if (entry === undefined) throw new Error(`b1 journey: no answer for ${step.evalKind}`)
   if (typeof entry === 'string') return entry
-  const subtypeKey = step.situationForm || step.narrativeForm || step.intentForm || step.tone
+  const subtypeKey = step.situationForm || step.narrativeForm || step.intentForm || step.tone || step.role
   const answer = entry[subtypeKey]
   if (!answer) throw new Error(`b1 journey: no answer for ${step.evalKind}/${subtypeKey}`)
   return answer
@@ -84,6 +90,8 @@ function ctxFor(step, independent) {
     intentForm: step.intentForm,
     tone: step.tone,
     situationForm: step.situationForm,
+    role: step.role,
+    turnContext: step.linguaSaid ? { linguaSaid: step.linguaSaid } : undefined,
   }
 }
 

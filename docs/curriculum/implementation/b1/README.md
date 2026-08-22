@@ -119,4 +119,26 @@ Tracked per arc as it lands. An arc listed here has real runtime modules under
   the literal word "would", missing the far more natural "I'd" contraction;
   (3) the future-decision/plan verb allowlist was too narrow (rejected "I'm
   going to start a new course" — "start" wasn't listed) — broadened it.
-- Arcs 6-7: not yet started (design-only content-plan specs to follow).
+- **Arc 6 — `keep_talking`** (`sustain_topic_change`, `ask_follow_up_questions`,
+  `summarize_what_was_said` [should]): **done.** 3 episodes
+  (`episodes/b1Arc6.js`), one per can-do (no reinforcement episode, same shape
+  as arc 5). Each new can-do is its own distinct intent; `change_topic`
+  additionally carries a `role` (`initiate`/`follow`) since sustaining a topic
+  change means both raising one and following a partner's. b1.json arc 6's
+  `risk` flags discourse-level evaluation as needing the immediately
+  preceding partner turn — resolved read-only in `core-engine-findings.md`
+  §15.2 (the runtime already threads a `turnContext`); all three evaluators
+  here read `ctx.turnContext.linguaSaid` for real, including a check that a
+  reply is not just repeating the partner's own turn back. No mini-story
+  (b1.json arc 6 `miniStory.use: false`). Vocabulary in `B1_ARC6_VOCAB` (12
+  productive / 6 receptive, matches b1.json exactly). Proven by
+  `scripts/foundry/b1/check-b1-arc6.mjs` (16 groups, 35 pedagogical
+  journeys). One evaluator bug caught and fixed during authoring: the
+  "real content but no discourse marker" near-miss branch used a bare
+  word-count threshold (>=4) as its only signal, which happened to match
+  this file's own 4-word nonsense test string and produced a false
+  *confident* reject — violating the zero-false-conclusive-reject invariant
+  (§15.1). Raised the threshold to 5, since a plain word count is a weak
+  content signal on its own and must stay clearly outside a coincidental
+  nonsense-string collision.
+- Arc 7: not yet started (design-only content-plan spec to follow).
