@@ -80,7 +80,7 @@ In short: this task built the content and the exact interfaces the shared
 engine needs to implement against; it did not — and per its write scope,
 could not — implement those interfaces itself.
 
-## 4. Two honesty notes worth a human read
+## 4. Three honesty notes worth a human read
 
 - **`shift_register` intent reuse for topic-shift judgment.**
   `b2.json#/evaluationStrategy` literally names the `shift_register` intent
@@ -106,6 +106,20 @@ could not — implement those interfaces itself.
   `LC-INT-001` wants the richer `mini_story` presentation, that is an
   additive enhancement on top of already-complete content, not a blocker to
   it — the content does not depend on it.
+- **`b2.json` disagrees with itself once**: the `reuseMatrix` table marks
+  `weigh_advantages_and_disadvantages` as reused ("R") in
+  `when_plans_go_wrong`, but that arc's own `b2Reuse` list names only
+  `develop_and_defend_opinion` and `concede_a_point_and_counter`. Content
+  authoring followed the arc's own explicit `b2Reuse` declaration (the more
+  specific, arc-scoped source) rather than inventing a
+  `weigh_advantages_and_disadvantages` touch the arc's own metadata does not
+  call for. No evidence gap results either way — that capability already
+  reaches its full `independent:2`/`transfer:1` target in arc 1 and arc 6 —
+  but the two blueprint fields should be reconciled by whoever next edits
+  `b2.json` (`docs/curriculum/blueprints/**` is not in this task's write
+  scope). `scripts/foundry/b2/check-b2-reuse-matrix.mjs` records this as one
+  explicit, documented exception rather than silently passing or silently
+  failing.
 
 ## 5. Functional-proof honesty (CLAUDE.md QA protocol)
 
