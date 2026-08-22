@@ -91,7 +91,15 @@ const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8')
   const PRE_A1_REPAIRS = ['signal_nonunderstanding', 'repeat', 'slow_down']
   assert.deepEqual(REPAIR_KINDS.slice(0, PRE_A1_REPAIRS.length), PRE_A1_REPAIRS,
     'Pre-A1 taught three strategies and a level above must append rather than reorder')
-  assert.ok(REPAIR_KINDS.length <= 5,
+  /*
+   * The ceiling moved from 5 to 6 on purpose: A2 arc 5 (`booking_a_stay`,
+   * episode 54) adds `ask_to_spell`, per `spell_a_name_for_a_booking`'s own
+   * `intentReuse` ("repair_request with a new repairKind subtype") — the
+   * identical shape every prior strategy already used, not a new intent. The
+   * guard this assertion protects — repair stays ONE intent, never a family —
+   * still holds; only the count of strategies sharing it grew.
+   */
+  assert.ok(REPAIR_KINDS.length <= 6,
     `${REPAIR_KINDS.length} repair strategies is a phrase list; the guard is one intent per function`)
 
   // every repair step names its strategy; nothing else does

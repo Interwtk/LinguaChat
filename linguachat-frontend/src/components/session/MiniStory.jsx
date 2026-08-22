@@ -172,6 +172,13 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
     ...(turn?.abilityForm ? { abilityForm: turn.abilityForm } : {}),
     ...(turn?.arrangeStage ? { arrangeStage: turn.arrangeStage } : {}),
     ...(turn?.praisePrefix ? { praisePrefix: turn.praisePrefix } : {}),
+    /*
+     * A2 arc 5's `spell_word`: the name a turn asks the learner to spell.
+     * Same bug class as every field above — `evaluateSpellWord` has no
+     * default and a hosted story's `spell_word` turn could never complete
+     * without it.
+     */
+    ...(turn?.expectedSpelling ? { expected: turn.expectedSpelling } : {}),
   })
 
 

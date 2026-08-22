@@ -23,7 +23,7 @@
  * switch somewhere else.
  */
 import {
-  PRE_A1, A1, getLevel, isKnownLevel, isLevelAvailable, hasRuntimeContent,
+  PRE_A1, A1, A2, getLevel, isKnownLevel, isLevelAvailable, hasRuntimeContent,
   episodesOfLevel, levelIdOfEpisodeId, playableLevelId,
 } from './levels.js'
 
@@ -77,6 +77,21 @@ const CONTENT_LOADERS = {
     paying_and_choosing: () => import('../episodes/a1Arc5Content.js'),
     what_you_can_do: () => import('../episodes/a1Arc6Content.js'),
     making_arrangements: () => import('../episodes/a1Arc7Content.js'),
+  },
+  [A2]: {
+    /*
+     * A2's seven arcs arrived from `LC-CONT-A2` fully authored at once, unlike
+     * A1's arc-by-arc build — but the loader stays one entry per arc anyway,
+     * for the same reason: importing one arc must never download another's
+     * prose.
+     */
+    what_happened: () => import('../episodes/a2Arc1Content.js'),
+    making_plans: () => import('../episodes/a2Arc2Content.js'),
+    people_and_places: () => import('../episodes/a2Arc3Content.js'),
+    getting_around: () => import('../episodes/a2Arc4Content.js'),
+    booking_a_stay: () => import('../episodes/a2Arc5Content.js'),
+    everyday_problems: () => import('../episodes/a2Arc6Content.js'),
+    lets_do_something: () => import('../episodes/a2Arc7Content.js'),
   },
 }
 

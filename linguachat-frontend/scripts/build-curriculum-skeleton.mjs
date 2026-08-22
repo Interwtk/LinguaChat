@@ -36,6 +36,13 @@ import { A1_ARC4 } from '../src/learning/episodes/a1Arc4.js'
 import { A1_ARC5 } from '../src/learning/episodes/a1Arc5.js'
 import { A1_ARC6 } from '../src/learning/episodes/a1Arc6Content.js'
 import { A1_ARC_7 } from '../src/learning/episodes/a1Arc7Content.js'
+import { A2_ARC1 } from '../src/learning/episodes/a2Arc1Content.js'
+import { A2_ARC2 } from '../src/learning/episodes/a2Arc2Content.js'
+import { A2_ARC3 } from '../src/learning/episodes/a2Arc3Content.js'
+import { A2_ARC4 } from '../src/learning/episodes/a2Arc4Content.js'
+import { A2_ARC5 } from '../src/learning/episodes/a2Arc5Content.js'
+import { A2_ARC6 } from '../src/learning/episodes/a2Arc6Content.js'
+import { A2_ARC_7 } from '../src/learning/episodes/a2Arc7Content.js'
 import { getStory, storyTurns } from '../src/learning/engine/miniStory.js'
 
 const OUT = 'src/learning/curriculum/preA1Skeleton.generated.js'
@@ -105,7 +112,8 @@ const EPISODE_FIELDS = ['id', 'level', 'arc', 'titleKey', 'goalKey', 'canDoId', 
   'secondaryCanDoId']
 
 /* every level's episodes, in curriculum order: Pre-A1, then A1 arc by arc */
-const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7]
+const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7,
+  ...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7]
 
 const skeleton = RUNTIME_EPISODES.map(ep => ({
   ...pick(ep, EPISODE_FIELDS),

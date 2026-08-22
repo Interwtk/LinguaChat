@@ -22,6 +22,7 @@ import { PRE_A1_EXIT_CRITERIA, CAN_DO_INTENT, LEVEL, prerequisiteChain, intentsF
 import { capabilitiesWithStatus, CAPABILITY_MAP, FIRST_A1_CAPABILITY, LAST_PRE_A1_CAPABILITY } from '../src/learning/curriculum/preA1Audit.js'
 import { SEED_VOCAB, SEED_VOCAB_BY_ID } from '../src/data/vocabulary.js'
 import { a1ItemIds } from '../src/learning/curriculum/a1Map.js'
+import { a2ItemIds } from '../src/learning/curriculum/a2Map.js'
 import { createLearnerModel } from '../src/learning/engine/learnerModel.js'
 import { buildSessionPlan, DURATION_ORDER } from '../src/learning/engine/session.js'
 import { derivePreA1Readiness } from '../src/learning/curriculum/readiness.js'
@@ -103,8 +104,14 @@ const FROZEN = [
    * levels above it, and an A1 item that were not declared in a1Map would be
    * counted here and fail, which is the failure we want.
    */
+  /*
+   * A2's own catalogue share is subtracted the same way A1's is, so a level
+   * added above A1 cannot inflate Pre-A1's count either — the identical bug
+   * class this file's own comment already names for A1.
+   */
   const a1Own = new Set([...a1ItemIds()].filter(id => !preA1Referenced.has(id)))
-  const preA1Vocab = SEED_VOCAB.filter(v => !a1Own.has(v.id))
+  const a2Own = new Set([...a2ItemIds()].filter(id => !preA1Referenced.has(id) && !a1Own.has(id)))
+  const preA1Vocab = SEED_VOCAB.filter(v => !a1Own.has(v.id) && !a2Own.has(v.id))
   assert.equal(preA1Vocab.length, 72, `the level ships 72 entries of language, found ${preA1Vocab.length}`)
   const byKind = preA1Vocab.reduce((acc, v) => ({ ...acc, [v.kind]: (acc[v.kind] || 0) + 1 }), {})
   assert.deepEqual(byKind, { word: 30, pattern: 12, phrase: 30 },

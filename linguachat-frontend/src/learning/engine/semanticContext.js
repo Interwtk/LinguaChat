@@ -74,6 +74,23 @@ export const SEMANTIC_TYPES = [
    * for whichever future level's intent does personalise a day.
    */
   'day',             // Monday, Friday
+  /*
+   * A2. Six more types, proposed and validated in `levels/a2/semanticTypes.js`
+   * (`A2_SEMANTIC_TYPE_DEFS`) and registered here now that A2's content exists.
+   * None of A2's 23 episodes personalise a free-text slot through this
+   * pipeline (only `{name}` appears anywhere in the level's prose, handled
+   * elsewhere) — every `INTENT_SLOTS` entry the new intents get below is
+   * therefore explicitly empty, the same documented decision A1 arc 6/7 made
+   * for `state_ability`/`ask_ability`/`arrange_meeting`. These types are
+   * registered for the design record and so a later level's intent that does
+   * personalise one of them does not have to invent it again.
+   */
+  'past_time',       // yesterday, last week
+  'future_time',     // tomorrow, next week
+  'month',           // January, March
+  'date_ordinal',    // the first, the twentieth
+  'quality',         // big, quiet, expensive
+  'problem',         // broken, lost, the wrong one
 ]
 
 export const isSemanticType = (type) => SEMANTIC_TYPES.includes(type)
@@ -216,6 +233,36 @@ export const INTENT_SLOTS = {
   state_ability: [],
   ask_ability: [],
   arrange_meeting: [],
+  /*
+   * A2's 17 new intents. All explicitly empty, for the same reason A1 arc
+   * 6/7's three are above: none of A2's episodes drop a personalised value
+   * into these turns (`levels/a2/semanticTypes.js`'s `A2_ARC_PERSONALIZATION`
+   * describes per-arc slot compatibility for a FUTURE consumer, but no
+   * episode step actually reads a `{noun}`/`{activity}`-style placeholder for
+   * any of them today — a real grep across `levels/a2/episodes/**` finds only
+   * `{name}`, already handled outside this pipeline). Listed here, explicitly
+   * empty, so "this intent takes no value" reads as a decision, not a gap.
+   */
+  state_past_event: [],
+  ask_past_event: [],
+  narrate_past_sequence: [],
+  state_future_plan: [],
+  ask_future_plan: [],
+  describe_person_or_place: [],
+  compare_things: [],
+  state_opinion_with_reason: [],
+  give_multi_step_directions: [],
+  /*
+   * `state_availability` has no `INTENT_SLOTS` entry: it is not dispatched
+   * (see `responseEvaluation.js`'s own comment) because no A2 episode uses it.
+   */
+  ask_availability: [],
+  make_booking: [],
+  spell_word: [],
+  report_problem: [],
+  ask_for_help: [],
+  invite_someone: [],
+  respond_to_invitation: [],
 }
 
 export const slotsFor = (intent) => INTENT_SLOTS[intent] || []

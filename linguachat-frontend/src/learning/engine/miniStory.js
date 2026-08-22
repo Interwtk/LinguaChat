@@ -367,6 +367,324 @@ const STORIES = {
       { kind: 'close', textEn: 'Perfect. See you then!', noteKey: 'storyNoteClose' },
     ],
   },
+
+  /*
+   * A2 arc 1 (`what_happened`), hosted by episode 42 ("First I..., then I...").
+   * Episode 42's own header comment gives this story's content almost
+   * verbatim: "Somebody's unusual day, three actions in order... `got`
+   * (already familiar) opens it; `made` and `said` are its two never-yet-
+   * produced verbs" and its own `choice` step quotes the exact receptive
+   * target: "First she got up late. Then she made a big breakfast. After
+   * that, she said sorry to her boss." That line is reused verbatim below,
+   * as a partner's account of a friend's day — `made`/`said` stay strictly
+   * receptive here, exactly as the episode file requires (neither is ever
+   * asked for production anywhere in a2Arc1WhatHappened.js).
+   *
+   * `home: 'episode'`, like every other A2/A1 episode-hosted story:
+   * `OBJECTIVE_FORMATS['past_day_story']` must stay without `mini_story`
+   * for the same reason `ask_transport`/`arrange_meeting` give in
+   * miniStory.js's own comments.
+   *
+   * No `branches`: the arc's one planted repair already lives in episode 41
+   * (`bought`, `ask_for_repair`), so this story does not need a second
+   * repair axis — the one real decision here is which follow-up question
+   * the learner asks, and both options are equally valid, ordinary
+   * conversation rather than a graded fork, so it stays a `choose` turn with
+   * no separate `branches` array (the two-branch STORY_BRANCHES default is
+   * unused because this story's `choose` turn does not gate a later `line`'s
+   * wording choice the way `arrange_meeting`'s does — see the `line`
+   * immediately below it, which is `byBranch` anyway to keep the shape
+   * consistent with every other choose-bearing story).
+   */
+  past_day_story: {
+    storyId: 'somebody_had_a_day',
+    objective: 'past_day_story',
+    home: 'episode',
+    branches: ['ask_work', 'ask_boss'],
+    turns: [
+      { kind: 'scene', textEn: '{partner} tells you about a friend who had a very strange day.', noteKey: 'storyNoteScene' },
+      { kind: 'line', speaker: 'partner', textEn: 'She got up late, made breakfast, then said sorry to her boss.' },
+      {
+        kind: 'choose',
+        promptKey: 'storyChooseAskDay',
+        options: [
+          { branch: 'ask_work', textEn: 'Did she go to work today?' },
+          { branch: 'ask_boss', textEn: 'Was her boss angry?' },
+        ],
+      },
+      {
+        kind: 'line',
+        speaker: 'partner',
+        byBranch: {
+          ask_work: 'Yes, she did — very late!',
+          ask_boss: 'A little. But it’s okay now.',
+        },
+      },
+      {
+        kind: 'reply', evalKind: 'narrate_past_sequence', instructionKey: 'storyReplyOwnDay',
+        suggestionEn: 'I went to work. Then I had lunch with a friend.',
+        itemIds: ['sequencing_connector_pattern', 'simple_past_irregular_pattern'],
+      },
+      {
+        kind: 'reply', evalKind: 'state_past_event', instructionKey: 'storyReplyLastThing',
+        itemIds: ['simple_past_regular_pattern', 'past_time_expression_pattern'],
+      },
+      { kind: 'close', textEn: 'Good talk. See you tomorrow!', noteKey: 'storyNoteClose' },
+    ],
+  },
+
+  /*
+   * A2 arc 3 (`people_and_places`), hosted by episode 48 ("Which one would you
+   * choose?"). Episode 48's own header comment (near line 103 of
+   * a2Arc3PeopleAndPlaces.js) names this story's job precisely: "the hosted
+   * story... is what DOES THE DESCRIBING of both places (episode 45's own
+   * capability, already proved)... which is why episode 48's three open
+   * productions are compare / justify / respond-to-disagreement rather than
+   * describe-describe-compare." So this story stays a DESCRIPTION story —
+   * one reply turn reinforcing `describe_person_or_place`, not a comparison
+   * — and leaves compare_things / state_opinion_with_reason entirely to the
+   * three free_reply steps episode 48 already has AFTER the mini_story step.
+   *
+   * The scene's two places reuse the episode's own literal prompt text
+   * verbatim ("one is small and quiet, the other is big and friendly", from
+   * `ep48CompareInstruction`), so the learner's later comparison in the
+   * episode is about the exact pair this story just held in view.
+   *
+   * `home: 'episode'`. NO `suggestionEn` anywhere in this story, honouring
+   * episode 48's own explicit invariant: "No suggestionEn appears anywhere
+   * in this episode: the arc's autonomy target withdraws it here and nowhere
+   * else." The mini_story step is part of that same episode's turn sequence.
+   */
+  compare_two_places_story: {
+    storyId: 'sol_or_luna',
+    objective: 'compare_two_places_story',
+    home: 'episode',
+    branches: ['sol', 'luna'],
+    turns: [
+      { kind: 'scene', textEn: 'You and {partner} are choosing where to meet: Café Sol or Café Luna.', noteKey: 'storyNoteScene' },
+      { kind: 'line', speaker: 'partner', textEn: 'Café Sol is small and quiet. Café Luna is big and friendly.' },
+      {
+        kind: 'choose',
+        promptKey: 'storyChooseWhichPlace',
+        options: [
+          { branch: 'sol', textEn: 'Tell me more about Café Sol.' },
+          { branch: 'luna', textEn: 'Tell me more about Café Luna.' },
+        ],
+      },
+      {
+        kind: 'line',
+        speaker: 'partner',
+        byBranch: {
+          sol: 'There are quiet tables outside, and it’s never noisy.',
+          luna: 'There’s music, and it’s always full of people.',
+        },
+      },
+      {
+        kind: 'reply', evalKind: 'describe_person_or_place', instructionKey: 'storyReplyDescribe',
+        itemIds: ['multi_attribute_pattern'],
+      },
+      { kind: 'line', speaker: 'partner', textEn: 'Good choice! Now, which one is right for you?' },
+      { kind: 'close', textEn: 'Time to decide — the small café, or the big one?', noteKey: 'storyNoteClose' },
+    ],
+  },
+
+  /*
+   * A2 arc 5 (`booking_a_stay`), hosted by episode 54 ("Can you spell that?").
+   * Episode 54 already narrates the whole call across its own free_reply
+   * steps (availability -> booking -> spelling -> repair -> close), so per
+   * this task's brief this story is a SECOND, complete instance of the same
+   * integrated transaction — "exactly like A1's purchase story"
+   * (`cafe_order_conversation`, episode 33) sits ALONGSIDE that episode's own
+   * explicit turns rather than replacing them. A different restaurant name
+   * and a different date/party size keep it a distinct call, not a replay of
+   * episode 54's own scripted lines; the booking name stays "Sam" / "S-A-M",
+   * the same short fictional first name the episode itself uses (never a
+   * real or surname-shaped name, per the arc's privacy note).
+   *
+   * `home: 'episode'`. NO `suggestionEn` anywhere, honouring episode 54's own
+   * explicit invariant: "NO suggestionEn ANYWHERE IN THIS EPISODE... every
+   * free_reply below, new or reused, runs unaided."
+   *
+   * FLAGGED, NOT WORKED AROUND: the `spell_word` reply turn below carries
+   * `expectedSpelling: 'Sam'`, exactly as episode 54's own two `spell_word`
+   * steps do (`evalKind: 'spell_word', expectedSpelling: 'Sam'`). But
+   * `linguachat-frontend/src/components/session/MiniStory.jsx`'s `turnFields`
+   * helper — the story path's equivalent of EpisodeShell.jsx's per-step field
+   * passthrough — does NOT forward `expectedSpelling` into `evalCtx` the way
+   * EpisodeShell.jsx does (`expectedSpelling: step.expectedSpelling ||
+   * undefined`, EpisodeShell.jsx:556). `hybridEvaluation.js`'s own comment on
+   * `spell_word` says the intent "has no default — a spell_word turn wired
+   * with no target could never complete." So as things stand today, a
+   * `spell_word` turn placed inside ANY hosted story (not just this one)
+   * would reach the evaluator with `expectedSpelling: ''` and could never be
+   * marked correct. This is the same class of defect a2Arc1WhatHappened.js's
+   * header already names for `twoClauseJudgment` — a real gap in a sibling
+   * deliverable (`MiniStory.jsx`'s `turnFields`), out of this task's write
+   * scope (I was told not to touch any runtime file), so it is named here
+   * rather than silently avoided by dropping the turn. Whoever wires
+   * `booking_call_story` into `miniStory.js` should add `expectedSpelling` to
+   * `MiniStory.jsx`'s `turnFields` (mirroring `hybridEvaluation.js`'s own
+   * parameter) before this turn can actually complete for a learner.
+   */
+  booking_call_story: {
+    storyId: 'the_blue_door',
+    objective: 'booking_call_story',
+    home: 'episode',
+    branches: ['inside', 'terrace'],
+    turns: [
+      { kind: 'scene', textEn: 'You call The Blue Door to book a table.', noteKey: 'storyNoteScene' },
+      { kind: 'line', speaker: 'partner', textEn: 'Good evening, The Blue Door. How can I help?' },
+      {
+        kind: 'reply', evalKind: 'make_booking', instructionKey: 'storyReplyBooking',
+        itemIds: ['booking_pattern', 'ordinal_date_pattern'],
+      },
+      {
+        kind: 'choose',
+        promptKey: 'storyChooseSeating',
+        options: [
+          { branch: 'inside', textEn: 'Inside, please.' },
+          { branch: 'terrace', textEn: 'On the terrace, please.' },
+        ],
+      },
+      {
+        kind: 'line',
+        speaker: 'partner',
+        byBranch: {
+          inside: 'Perfect, a table inside it is.',
+          terrace: 'Perfect, the terrace it is.',
+        },
+      },
+      {
+        kind: 'reply', evalKind: 'spell_word', expectedSpelling: 'Sam', instructionKey: 'storyReplySpell',
+        itemIds: ['spelling_pattern'],
+      },
+      { kind: 'close', textEn: 'All booked — S-A-M, table for two. See you then!', noteKey: 'storyNoteClose' },
+    ],
+  },
+
+  /*
+   * A2 arc 6 (`everyday_problems`), hosted by episode 57 ("Fixed"). Episode
+   * 57's own header comment says this story is "the hosted retelling... the
+   * engine-rendered whole shape, exactly as a1Arc5.js's cafe_order_
+   * conversation story sits alongside its own episode's explicit turns
+   * rather than replacing them" — so, like booking_call_story above, this is
+   * a second, complete instance of the arc's integrated transaction, using a
+   * DIFFERENT problem (`doesnt_work`, "My TV doesn't work") rather than
+   * replaying episode 55/57's own "the room is cold" example, while staying
+   * inside the arc's bounded, taught `problem` set.
+   *
+   * The `choose` turn is the story's branch, and it deliberately mirrors
+   * episode 57's own "decline and re-propose" ceiling (a2.md §9's "late"
+   * autonomy note): waiting for the fix, or asking to move to a different
+   * room instead, are BOTH cooperative, valid answers — matching how episode
+   * 57's header explains that `ask_for_help_solving_a_problem`'s own
+   * phrasing is folded into the decline-and-repropose turn rather than given
+   * a separate assessed turn ("Can you help me with..." style language sits
+   * inside the `instead` option's own text here, for the same reason).
+   *
+   * `home: 'episode'`. NO `suggestionEn` anywhere, honouring episode 57's own
+   * explicit invariant: "NO suggestionEn ANYWHERE in this episode, on the
+   * blueprint's explicit instruction — this is the arc's fully unaided
+   * closing story."
+   */
+  problem_resolution_story: {
+    storyId: 'the_tv_doesnt_work',
+    objective: 'problem_resolution_story',
+    home: 'episode',
+    branches: ['wait', 'instead'],
+    turns: [
+      { kind: 'scene', textEn: 'Another evening at the hotel. Something is wrong again.', noteKey: 'storyNoteScene' },
+      {
+        kind: 'reply', evalKind: 'report_problem', instructionKey: 'storyReplyProblem',
+        itemIds: ['doesnt_work', 'problem_report_pattern'],
+      },
+      { kind: 'line', speaker: 'partner', textEn: 'I’m sorry! I can send someone, but it will take an hour.' },
+      {
+        kind: 'choose',
+        promptKey: 'storyChooseSolution',
+        options: [
+          { branch: 'wait', textEn: 'Ok, I will wait, thank you.' },
+          { branch: 'instead', textEn: 'Could I move rooms instead?' },
+        ],
+      },
+      {
+        kind: 'line',
+        speaker: 'partner',
+        byBranch: {
+          wait: 'Thank you for waiting — I will come as soon as I can.',
+          instead: 'Of course — room 12 is free and ready now.',
+        },
+      },
+      {
+        kind: 'reply', evalKind: 'thank_service', instructionKey: 'storyReplyThanks',
+        itemIds: ['thank_you'],
+      },
+      { kind: 'close', textEn: 'All sorted. Enjoy the rest of your stay!', noteKey: 'storyNoteClose' },
+    ],
+  },
+
+  /*
+   * A2 arc 7 (`lets_do_something`), hosted by episode 61 ("Let's do something
+   * else") — A2's own closing/convergence episode. Episode 61's header
+   * comment names this story's shape by asking for it explicitly: "an
+   * invitation, a decline with a reason, a complication (the first idea is
+   * unavailable, echoing everyday_problems), a new plan, and a confirmation,
+   * with a branch where accepting the original and proposing a new plan are
+   * both correct" — and episode 61's own `ep61ProposeInstruction` step
+   * comment names the two branch outcomes precisely: re-proposing the
+   * ORIGINAL activity on a different day, and proposing a genuinely
+   * DIFFERENT activity (`go_for_a_walk`). Both are mirrored here as the
+   * story's two branches.
+   *
+   * The mini_story step sits inside episode 61 right after the complication
+   * is introduced receptively (`ep61ComprehensionInstruction`) and before
+   * the episode's own six explicit open-production turns, so — like
+   * `booking_call_story` and `problem_resolution_story` above — this story
+   * is a second, complete pass through the arc's whole integrated shape
+   * (invite -> complication -> decline/adapt with a reason -> branch:
+   * repropose-or-new-plan -> confirmation), giving the learner one hosted
+   * runthrough of the capstone shape before producing their own version
+   * across the rest of the episode.
+   *
+   * `home: 'episode'`. NO `suggestionEn` anywhere, honouring episode 61's own
+   * explicit invariant: "THIS IS THE A2 LEVEL'S FINAL EPISODE. NO
+   * suggestionEn anywhere in it, per the arc's autonomy target."
+   */
+  closing_invitation_story: {
+    storyId: 'the_cinema_is_closed',
+    objective: 'closing_invitation_story',
+    home: 'episode',
+    branches: ['repropose', 'new_activity'],
+    turns: [
+      { kind: 'scene', textEn: 'You want to do something with {partner} this weekend.', noteKey: 'storyNoteScene' },
+      {
+        kind: 'reply', evalKind: 'invite_someone', instructionKey: 'storyReplyInvite',
+        itemIds: ['invitation_pattern', 'go_to_the_cinema'],
+      },
+      { kind: 'line', speaker: 'partner', textEn: 'I’d love to — but the cinema is closed this weekend!' },
+      {
+        kind: 'choose',
+        promptKey: 'storyChooseNewPlan',
+        options: [
+          { branch: 'repropose', textEn: 'Another day, then?' },
+          { branch: 'new_activity', textEn: 'Let’s go for a walk instead.' },
+        ],
+      },
+      {
+        kind: 'line',
+        speaker: 'partner',
+        byBranch: {
+          repropose: 'Great idea — how about Sunday?',
+          new_activity: 'That sounds lovely! I’d like that.',
+        },
+      },
+      {
+        kind: 'reply', evalKind: 'respond_to_invitation', instructionKey: 'storyReplyConfirm',
+        itemIds: ['accept_decline_reason_pattern', 'going_to_future_pattern'],
+      },
+      { kind: 'close', textEn: 'Plan settled! Have a great weekend.', noteKey: 'storyNoteClose' },
+    ],
+  },
 }
 
 export const STORY_OBJECTIVES = Object.keys(STORIES)

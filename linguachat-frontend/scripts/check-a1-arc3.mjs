@@ -218,7 +218,8 @@ const PARTNER = 'Ana'
     assert.equal(result.ok, false, `${ghost} must not resolve`)
     assert.equal(result.reason, REFUSED.UNKNOWN_EPISODE, `${ghost}: wrong reason`)
   }
-  assert.equal(episodeRequest({ levelId: 'a2', episodeId: 'anything', forLearner: false }).reason,
+  /* a fabricated id no level naming scheme would produce — see check-a1-arc1.mjs's identical note */
+  assert.equal(episodeRequest({ levelId: 'zz_unregistered_level', episodeId: 'anything', forLearner: false }).reason,
     REFUSED.UNKNOWN_LEVEL, 'an unknown level fails closed even for tooling')
   ok()
 }

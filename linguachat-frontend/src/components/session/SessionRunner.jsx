@@ -119,6 +119,29 @@ const MODEL_ANSWER = {
   state_ability: () => 'I can swim.',
   ask_ability: () => 'Can you swim?',
   arrange_meeting: () => 'Let’s meet on Friday at seven.',
+  /*
+   * A2. Added for the same reason the block above states: an unlisted
+   * objective falls back to the introduction answer, so a review block for
+   * one of these seventeen would have been graded against "Hi, I'm ___"
+   * instead of a past event, a plan, a comparison or a booking.
+   */
+  state_past_event: () => 'I went to the cinema.',
+  ask_past_event: () => 'Did you go to work yesterday?',
+  narrate_past_sequence: () => 'First I went to work, then I had lunch.',
+  state_future_plan: () => "I'm going to relax this weekend.",
+  ask_future_plan: () => 'Are you going to travel this year?',
+  describe_person_or_place: () => "It's small and quiet, and it's friendly.",
+  compare_things: () => 'This place is bigger than that one.',
+  state_opinion_with_reason: () => 'I like it because it’s quiet.',
+  give_multi_step_directions: () => 'Turn left, then go straight on.',
+  // `state_availability` has no entry: it is not dispatched, see responseEvaluation.js
+  ask_availability: () => 'Do you have a table for the tenth of June?',
+  make_booking: () => "I'd like to book a table for the tenth of June, and there will be two of us.",
+  spell_word: () => "It's Sam.",
+  report_problem: () => "There's a problem — it doesn't work.",
+  ask_for_help: () => 'Can you help me, please?',
+  invite_someone: () => 'Would you like to go to the cinema?',
+  respond_to_invitation: () => "I'd love to, but I'm busy.",
 }
 
 /* The three ways out, and what a turn practising each one asks for. */
@@ -130,6 +153,8 @@ const REPAIR_TARGET = {
   ask_meaning: (v) => `What does “${v.meaningWord || 'that'}” mean?`,
   /* arc 6's fifth repair kind: a word known in another language, not in English */
   ask_how_to_say: () => 'How do you say that in English?',
+  /* A2 arc 5's sixth repair kind: asking the OTHER speaker to spell something */
+  ask_to_spell: () => 'Can you spell that, please?',
 }
 const REPAIR_PROMPT = {
   signal_nonunderstanding: (v) => `So, mmm… mmm… ${v.noun}?`,
@@ -142,6 +167,7 @@ const REPAIR_PROMPT = {
    */
   ask_meaning: (v) => `I usually finish ${v.meaningWord || 'late'}.`,
   ask_how_to_say: () => 'You know a word in your language, but not in English. What do you ask me?',
+  ask_to_spell: () => 'Your confirmation code is J-Q-4-X-7.',
 }
 // What Lingua says to open the practice turn, so the reply has a real context.
 const PROMPT = {
@@ -195,6 +221,23 @@ const PROMPT = {
   state_ability: () => 'We’re going to the pool later. Can you come?',
   ask_ability: () => 'I have a hobby you don’t know about yet.',
   arrange_meeting: () => 'I’d like to see you this week. When are you free?',
+  // A2 — a day gone by, a week ahead, a place to describe, a call to make
+  state_past_event: () => 'What did you do yesterday?',
+  ask_past_event: () => 'I went to the cinema yesterday.',
+  narrate_past_sequence: () => 'Tell me about your day yesterday, from morning to evening.',
+  state_future_plan: () => 'What are you going to do this weekend?',
+  ask_future_plan: () => "I'm going to travel next year.",
+  describe_person_or_place: () => 'Tell me about this place.',
+  compare_things: () => 'How is this place different from the other one?',
+  state_opinion_with_reason: () => 'Do you like it here?',
+  give_multi_step_directions: () => 'How do I get to the station from here?',
+  ask_availability: () => 'You want to book a table. Ask if they have space.',
+  make_booking: () => 'Yes, we have a table free that evening. How can I help?',
+  spell_word: () => 'Can I take a name for the booking, and can you spell that for me, please?',
+  report_problem: () => "What's wrong?",
+  ask_for_help: () => 'The room is cold and the heating doesn’t work.',
+  invite_someone: () => 'Is there something you’d like to do this week?',
+  respond_to_invitation: () => 'Would you like to go to the cinema?',
 }
 
 /*
@@ -440,7 +483,15 @@ function PracticeTurn({ block, topic = null, onDone }) {
     const thingContext = kind === 'use_quantity' || kind === 'identify_thing'
       ? { targetThing: vars.thingId, targetCount: vars.count, quantityForm: 'bare' }
       : { targetThing: vars.item }
-    const evalCtx = { name, independent, turnContext, place: vars.place, targetNoun: vars.noun, partner: vars.partner, ...thingContext, ...(repairKind ? { repairKind } : {}) }
+    /*
+     * A2 arc 5's `spell_word` has no default target — `evaluateSpellWord`
+     * scores the letters against whatever `expected` names, and a review
+     * block that never sets one could never complete. "Sam" is the same
+     * fictional name the episode itself (and `MODEL_ANSWER.spell_word` below)
+     * uses.
+     */
+    const spellContext = kind === 'spell_word' ? { expected: 'Sam' } : {}
+    const evalCtx = { name, independent, turnContext, place: vars.place, targetNoun: vars.noun, partner: vars.partner, ...thingContext, ...spellContext, ...(repairKind ? { repairKind } : {}) }
     const preview = evaluateFree(kind, text, evalCtx)
     const controller = new AbortController()
     abortRef.current = controller
@@ -454,6 +505,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
         targetNoun: vars.noun, ...thingContext, partner: vars.partner,
         // the strategy travels to Lingua too, or the remote grades another question
         ...(repairKind ? { repairKind } : {}),
+        ...spellContext,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
         previousAttempts: 0, turnContext, signal: controller.signal,
