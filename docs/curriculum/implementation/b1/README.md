@@ -73,4 +73,28 @@ Tracked per arc as it lands. An arc listed here has real runtime modules under
   `normalize()` helper, but `normalize()` strips punctuation — the regex now
   matches on word-boundary structure instead. Delayed-retrieval proof again
   explicitly deferred to arc 7.
-- Arcs 4-7: not yet started (design-only content-plan specs to follow).
+- **Arc 4 — `somethings_wrong`** (`escalate_and_resolve_a_problem`, `negotiate_a_solution`,
+  `express_frustration_politely` [should]): **done.** 4 episodes (`episodes/b1Arc4.js`).
+  `report_problem`'s `tone` subtype (`neutral`/`frustrated`) carries both
+  `escalate_and_resolve_a_problem` and `express_frustration_politely`, per
+  b1.json `intentStrategy.newSubtypesOnExistingIntents` — the same convention
+  arc 1's `narrativeForm` established; `negotiate_solution` is its own intent,
+  adapted from the draft evaluator that resolved b1.md §15.1
+  (`core-engine-findings.md`). Registers B1's one new semantic type, `problem`
+  (`semanticSlots.js`'s `B1_NEW_SEMANTIC_TYPES`, matching b1.json's own
+  `semanticTypes.proposed` entry). The mini-story (b1.json arc 4
+  `miniStory.use: true`) is episode 4's integrated capstone, again as ordinary
+  `scene`/`model` steps. Vocabulary in `B1_ARC4_VOCAB` (15 productive / 11
+  receptive, matches b1.json exactly). Proven by
+  `scripts/foundry/b1/check-b1-arc4.mjs` (16 groups, 33 pedagogical journeys).
+  Two evaluator-authoring bugs caught and fixed during authoring: (1) the
+  frustrated-tone model answer/journey-harness/test variants originally
+  paired a frustration marker with no actual problem detail, which the
+  evaluator correctly rejected (`express_frustration_politely` is a tone
+  *layer* on a real problem, not a stand-alone phrase) — fixed by adding
+  problem detail to every frustrated-tone example; (2) the problem/expectation
+  regexes only recognized the verb "ordered", so a paraphrase like "I booked a
+  double room, but I got a single one" (used in the novel-context transfer
+  check) was wrongly rejected — generalized to a small set of request verbs
+  (ordered/booked/asked for/wanted/paid for).
+- Arcs 5-7: not yet started (design-only content-plan specs to follow).

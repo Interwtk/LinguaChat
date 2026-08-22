@@ -16,6 +16,10 @@ export const B1_MODEL_ANSWER = {
   compare_and_choose: () => "The city is busier than the countryside, but it's more exciting. Of the three, I think the coast is the most relaxing.",
   describe_experience: () => 'It was quiet, beautiful, and relaxing. It made me feel really peaceful.',
   recommend_or_warn: () => "I'd recommend the coast, because it's quiet and relaxing.",
+  report_problem: (v) => (v.tone === 'frustrated'
+    ? "This isn't ideal — I ordered this three days ago, but I understand these things happen."
+    : "There's a problem with my order. I ordered a chicken sandwich, but I got a cheese one."),
+  negotiate_solution: () => 'Would it be possible to get a replacement instead?',
 }
 
 export const B1_PROMPT = {
@@ -27,4 +31,8 @@ export const B1_PROMPT = {
   compare_and_choose: (v) => `Compare a few options, ${v.name || ''} — which do you prefer, and why?`,
   describe_experience: (v) => `Describe a place or event you experienced, ${v.name || ''} — what was it like, and how did it make you feel?`,
   recommend_or_warn: (v) => `Would you recommend it or warn me away, ${v.name || ''}? Why?`,
+  report_problem: (v) => (v.tone === 'frustrated'
+    ? `How do you feel about that, ${v.name || ''}? Tell me — politely.`
+    : `What's wrong, ${v.name || ''}? Tell me what happened and what you expected instead.`),
+  negotiate_solution: (v) => `What solution would you like, ${v.name || ''}?`,
 }

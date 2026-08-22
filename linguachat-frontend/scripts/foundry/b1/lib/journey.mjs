@@ -50,6 +50,11 @@ const ANSWERS = {
   compare_and_choose: "The city is busier than the countryside, but it's more exciting. Of the three, I think the coast is the most relaxing.",
   describe_experience: 'It was quiet, beautiful, and relaxing. It made me feel really peaceful.',
   recommend_or_warn: "I'd recommend the coast, because it's quiet and relaxing.",
+  report_problem: {
+    neutral: "There's a problem with my order. I ordered a chicken sandwich, but I got a cheese one.",
+    frustrated: "This isn't ideal — I ordered this three days ago, but I understand these things happen.",
+  },
+  negotiate_solution: 'Would it be possible to get a replacement instead?',
 }
 
 export function answerFor(step) {
@@ -68,6 +73,8 @@ function ctxFor(step, independent) {
     place: PLACE,
     independent,
     narrativeForm: step.narrativeForm,
+    intentForm: step.intentForm,
+    tone: step.tone,
   }
 }
 
