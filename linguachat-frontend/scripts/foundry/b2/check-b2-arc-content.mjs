@@ -87,11 +87,21 @@ const intentIds = new Set(B2_INTENTS.map((i) => i.id))
 }
 
 /* ---- 6) every episode's i18n key namespace (instructionKey/titleKey prefixes)
-    does not collide with another episode's — cheap heuristic: no two
-    episodes share an exact titleKey ---- */
+    does not collide with another episode's — no two episodes share an exact
+    titleKey UNLESS both declare a `variant` field (an intentional
+    personalization pair, e.g. arc 6's themed/neutral capstone, which is one
+    conceptual episode with two content variants and therefore shares its
+    title/goal/duration/xp i18n keys by design) ---- */
 {
-  const titleKeys = ALL_EPISODES.map((ep) => ep.titleKey)
-  assert.equal(new Set(titleKeys).size, titleKeys.length, 'duplicate titleKey across episodes')
+  const byTitleKey = new Map()
+  for (const ep of ALL_EPISODES) {
+    if (!byTitleKey.has(ep.titleKey)) byTitleKey.set(ep.titleKey, [])
+    byTitleKey.get(ep.titleKey).push(ep)
+  }
+  for (const [titleKey, eps] of byTitleKey) {
+    if (eps.length === 1) continue
+    assert.ok(eps.every((ep) => ep.variant), `titleKey ${titleKey} is shared by ${eps.length} episodes (${eps.map((e) => e.id).join(', ')}) that are not all declared personalization variants`)
+  }
   ok()
 }
 
