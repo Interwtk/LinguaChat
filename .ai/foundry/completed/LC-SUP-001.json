@@ -1,0 +1,16 @@
+{
+  "taskId": "LC-SUP-001",
+  "lane": "supervisor",
+  "status": "complete",
+  "cleanCycles": 2,
+  "summary": "Qualified the pedagogical and learning-psychology evidence supervisors now that both primary-study corpora clear their 100-study floors (LC-RES-P04: 120 pedagogical, LC-RES-Y04: 127 psychology, both merged to main). Added docs/research/supervisors/readiness-report.md documenting: (1) the deterministic full evidence gate is READY with zero structural/dedup errors; (2) topic-distribution thresholds from supervisor-evidence-contract.md sec1a are cleared with margin (14 topics each domain, largest share 9.2% pedagogical / 7.9% psychology, 12/14 and 14/14 topics respectively at >=8 studies); (3) every mandatory subfield in contract sec6 (pedagogical, 14/14) and sec7 (psychology, 14/14) is present with at least 5 studies, each mapped to its exact corpus topic and count; (4) source-quality distribution reporting per contract sec8 (grade A/B split, decade spread, 93/98 distinct institutions with no institution over 6.7% share) with one honestly logged limitation -- both corpora skew toward university/young-adult populations (pedagogical has zero explicit older-adult records, psychology has 5), which should route future older-adult-specific product claims to RESEARCH_NEEDED rather than borrowing from the majority population, per the contract's own children-not-generalized-to-adults rule; (5) an 8-claim calibration benchmark required by supervisor-evidence-ledger.md's import-plan step 8, built from real corpus record ids and independently spot-checked against each cited record's actual population/outcome text, showing both supervisors correctly resolve 2 PASS, 2 PASS_WITH_CONDITIONS and 2 BLOCK per domain rather than defaulting to approval -- including catching a would-be evidence overreach that smuggles a CLAUDE.md-banned punitive streak mechanic under real habit-formation research (Y3: BLOCK), and a child-population pronunciation finding wrongly generalized to all ages (P3: BLOCK). Verdict: both supervisors are evidence-qualified; this does not itself approve any level, open A1, or claim human-learner efficacy.",
+  "writeScopeRespected": [
+    "docs/research/supervisors/readiness-report.md"
+  ],
+  "evidence": {
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n — exit 0, run twice consecutively clean (no changes between cycles; i18n 7/7 locales at 100% coverage, 0 missing/extra/phMismatch)",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q — exit 0 (444 passed), run twice consecutively clean",
+    "evidenceGateFull": "node .github/scripts/check-supervisor-evidence.mjs — pedagogical: 120/100 unique primary studies, 14 topics; psychology: 127/100 unique primary studies, 14 topics; gate reports READY (100+100 unique, identity-verified, primary empirical studies)",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/supervisor/lc-sup-001-evidence-ready --base origin/main --head HEAD — OK, 1 changed file (readiness-report.md), inside allowed write scope"
+  }
+}
