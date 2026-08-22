@@ -1,0 +1,22 @@
+{
+  "taskId": "LC-AUD-001",
+  "lane": "supervisor",
+  "status": "complete",
+  "cleanCycles": 2,
+  "artifacts": [
+    "docs/curriculum/cross-level-audit.md",
+    "docs/curriculum/cross-level-audit.json",
+    ".ai/foundry/requests/LC-AUD-001.md"
+  ],
+  "summary": "Deterministic cross-level audit of all six A1-C2 blueprints (a1-c2), resolving the placeholder cross-level prerequisite reconciliations that B1, C1 and C2's own blueprints explicitly asked this task to perform once the real predecessor blueprints existed. Built the full capability id graph (including Pre-A1 required core), normalized six differing per-level JSON schemas, and found: 3 cross-level capability-id collisions with incompatible or duplicated semantics (report_a_problem a2/b1, infer_implied_meaning b2/c1, reformulate_for_a_different_audience c1/c2 -- the last directly contradicting C2's own 'first mediation task' claim); 19 broken/unresolved cross-level prerequisite strings across B1 (6), C1 (6) and C2 (7), each mapped to a concrete real-id replacement at high or medium confidence except one flagged low-confidence row needing human judgment; a full-level CEFR-reference gap in A2 (0/19 capabilities, the only level missing this template-required field); duplicate CORE-engine requirement asks from B2 and C1 for the same register-appropriateness and discourse-coherence evaluator capabilities; a semantic-type fragmentation risk across B1's problem/B2's problem_type/C1's proposed negotiated_item, directly answering C1's own explicit request to check this before building twice; and two pattern-id reuse risks (because_reason_pattern a2/b1, hedging_pattern b2/c2) with genuine false-mastery/spacing implications for the shared retrieval-practice engine, not just naming hygiene. Zero prerequisite cycles found in any level. Confirmed B2's cross-level references (authored after B1 landed) all resolve cleanly -- the target pattern the other four boundaries should match. All six blueprints correctly stay available:false and reaffirm A1's fail-closed state. This task's write scope (docs/curriculum/cross-level-audit.{md,json} only) does not include the blueprint files that need these fixes; every fix is handed to LC-FND-002 (whose write scope covers docs/curriculum/**) via .ai/foundry/requests/LC-AUD-001.md, per the coordination contract's rule against quietly implementing out-of-scope changes. No blueprint edited, no runtime code touched, no level opened. This audit proves design-artifact cross-level consistency only; it does not certify pedagogical approval or real-learner efficacy.",
+  "writeScopeRespected": [
+    "docs/curriculum/cross-level-audit.md",
+    "docs/curriculum/cross-level-audit.json"
+  ],
+  "evidence": {
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n -- exit 0, run twice consecutively clean, no changes between cycles (i18n 7/7 gated locales at 100% coverage, 0 missing/extra/phMismatch; bundle-boundaries OK on both runs once dist/ existed)",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q -- exit 0 (444 passed), run twice consecutively clean",
+    "evidenceGateFull": "node .github/scripts/check-supervisor-evidence.mjs -- pedagogical: 120/100 unique primary studies, 14 topics; psychology: 127/100 unique primary studies, 14 topics; gate reports READY (requiresEvidenceReady=true satisfied)",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/supervisor/lc-aud-001-cross-level --base origin/main --head HEAD -- OK, 3 changed files, all inside allowed write scope"
+  }
+}
