@@ -1,0 +1,7 @@
+{
+  "taskId": "LC-CONT-C1",
+  "lane": "level-c1",
+  "status": "complete",
+  "cleanCycles": 2,
+  "summary": "C1 curriculum content (7 arcs, 36 episodes, 28 capabilities) authored and self-validated against docs/curriculum/blueprints/c1.json under linguachat-frontend/src/learning/levels/c1/**, with eight structural checks in scripts/foundry/c1/** (including C1's own stricter independent:3/transfer:2/delayedRetrieval:1 evidence thresholds) and an itemized core-engine wiring handoff for LC-INT-001 in docs/curriculum/implementation/c1/**, covering the register-appropriateness/discourse-coherence dimensions as required (not should-relevant) plus the new conversation_state_tracking dimension. Design-only: nothing imports this content into the running app, C1 stays unavailable exactly as before this task."
+}
