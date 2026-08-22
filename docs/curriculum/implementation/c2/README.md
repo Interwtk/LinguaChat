@@ -31,9 +31,11 @@ distinction between level-owned content and shared-core semantics.
   evaluator test-case tables, every declared pattern is exemplified, personalization-mode
   constraints are respected (an arc marked `"none"` never carries an interest-flavored example),
   and arc order/prerequisites match the blueprint. This is real, run, and green — see the script's
-  own output and the PR's `## Evidence` section. It does **not** prove the content is playable,
-  pedagogically effective, or evaluatable by any evaluator, because none of that exists at runtime
-  yet.
+  own output and the PR's `## Evidence` section. It is **not** wired into `npm run check:all`,
+  because `linguachat-frontend/package.json` is outside this task's write scope; run it directly
+  with `node scripts/foundry/c2/check-c2-content-plan.mjs` from `linguachat-frontend/`. It does
+  **not** prove the content is playable, pedagogically effective, or evaluatable by any evaluator,
+  because none of that exists at runtime yet.
 - **What is NOT here:** runtime `.js` episode files, evaluator functions, i18n entries, or any
   claim of QA evidence beyond content-plan/blueprint structural consistency.
   `docs/curriculum/blueprints/c2.md` section 16's QA acceptance list (20+ learner-shaped journeys
