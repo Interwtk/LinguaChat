@@ -93,6 +93,7 @@ const SUSTAIN_01 = {
   discourseCoherence: { checked: true, graduationRelevance: 'required' },
   steps: [
     { type: 'recall', review: true, instructionKey: 'c1ep31RecallInstruction', evalKind: 'state_structured_argument', canDoId: 'develop_a_structured_argument', itemIds: ['emphatic_cleft_pattern'] },
+    { type: 'recall', instructionKey: 'c1ep31QualifyRecallInstruction', evalKind: 'qualify_claim', canDoId: 'qualify_a_claim_precisely', itemIds: ['hedging_adverbial_pattern'] },
     { type: 'scene', mood: 'welcoming', titleKey: 'c1ep31SceneTitle', bodyKey: 'c1ep31SceneBody', showGoal: true, ctaKey: 'c1ep31Start' },
     {
       type: 'model',
@@ -373,7 +374,7 @@ const buildCapstoneSteps = (variant) => {
     },
     {
       type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: "I said 'let's just sort it out later' — that's vague. Ask a precise question that actually resolves what that means.",
-      instructionKey: 'c1ep35ClarifyInstruction', evalKind: 'repair_request', canDoId: 'clarify_an_ambiguous_instruction_precisely',
+      instructionKey: 'c1ep35ClarifyInstruction', evalKind: 'clarify_ambiguity', canDoId: 'clarify_an_ambiguous_instruction_precisely',
       itemIds: ['when_you_say_x_do_you_mean'], evidenceType: 'independent', transfer: true,
     },
     {
@@ -443,3 +444,14 @@ const CAPSTONE_NEUTRAL_06 = {
 export const C1_ARC7 = [SUSTAIN_01, REFERBACK_02, SHIFTREGISTER_03, CLOSESUMMARY_04, CAPSTONE_THEMED_05, CAPSTONE_NEUTRAL_06]
 export const C1_ARC7_ID = 'sustained_interaction'
 export const getC1Arc7Episode = (id) => C1_ARC7.find((ep) => ep.id === id) || null
+
+/*
+ * The structural fingerprint `scripts/foundry/c1/check-c1-personalization-invariant.mjs`
+ * diffs between the themed/neutral capstone pair — same idea as
+ * `b2Arc6TheLongConversation.js`'s own `structuralSignature`: personalization
+ * may change what a step is ABOUT, never its canDoId/evalKind/evidenceType/
+ * transfer shape.
+ */
+export const structuralSignature = (episode) => episode.steps
+  .filter((s) => s.type === 'free_reply' || s.type === 'recall')
+  .map((s) => ({ type: s.type, canDoId: s.canDoId || null, evalKind: s.evalKind || null, evidenceType: s.evidenceType || null, transfer: !!s.transfer }))
