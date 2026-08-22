@@ -1,12 +1,17 @@
-# C2 level — write scope for LC-CONT-C2
+# C2 level content — `levels/c2/`
 
-Open the `levels/c2/` write scope with a placeholder pointing at the authoritative
-`docs/curriculum/blueprints/c2.json` / `c2.md` blueprint (`LC-BP-C2`), before content
-authoring begins.
+Status: **content authored, self-validated (LC-CONT-C2)**. Nothing here is
+wired into the running app yet — see
+`docs/curriculum/implementation/c2/README.md` for the full implementation
+status and `docs/curriculum/implementation/c2/core-engine-handoff.md` for
+the explicit handoff this task leaves for `LC-INT-001`.
 
-This directory is level-owned per `docs/curriculum/curriculum-master-a1-c2.md` §14. Nothing
-here is wired into the shared runtime (`curriculum/levels.js`, `curriculum/episodeContent.js`,
-`engine/responseEvaluation.js`, `components/session/SessionRunner.jsx`) — that wiring is
-shared-core and outside this task's write scope. See `.ai/foundry/requests/LC-CONT-C2.md` for
-the confirmed blocker and `docs/curriculum/implementation/c2/` for the design/proof artifacts
-this task produces instead.
+Source of truth for every id, pattern, capability and arc below is
+[`docs/curriculum/blueprints/c2.json`](../../../../../../docs/curriculum/blueprints/c2.json)
+(`c2.blueprint.v1`) and its human-readable companion
+[`c2.md`](../../../../../../docs/curriculum/blueprints/c2.md). This directory
+does not invent curricular detail; it implements what the blueprint already
+decided.
+
+Run `node scripts/foundry/c2/run-all.mjs` from `linguachat-frontend/` to
+self-validate everything in this directory against the blueprint.
