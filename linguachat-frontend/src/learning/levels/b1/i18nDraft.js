@@ -528,3 +528,35 @@ export const B1_ARC6_COPY = {
   b1RetryExplainSummaryMarker: 'Good detail — now start with "so basically" or "what you\'re saying is".',
   b1RetryPromptSummaryMarker: 'Start with "so basically" or "what you\'re saying is".',
 }
+
+export const B1_ARC7_COPY = {
+  // episode 22 — the_long_conversation_begins
+  b1Ep22Title: 'The Long Conversation, Part One',
+  b1Ep22Goal: 'Hold one real conversation that moves through several topics.',
+  b1Ep22CanDoName: 'Hold a long, moving conversation',
+  b1Ep22Duration: '14 min',
+  b1Ep22SceneTitle: 'One conversation, start to finish',
+  b1Ep22SceneBody: "No new grammar this time — just one long, real conversation, using everything you already know.",
+  b1Ep22OpenInstruction1: 'Tell me about your week, in order.',
+  b1Ep22OpenInstruction2: 'Tell me about a moment something else happened while you were doing something.',
+  b1Ep22OpenInstruction3: 'Change the subject to something you\'d like to talk about.',
+  b1Ep22OpenInstruction4: 'Give your opinion, with a reason.',
+  b1Ep22OpenInstruction5: 'Agree or disagree, with a reason.',
+  b1Ep22OpenInstruction6: 'Ask a genuine follow-up question.',
+
+  // episode 23 — the_long_conversation_continues
+  b1Ep23Title: 'The Long Conversation, Part Two',
+  b1Ep23Goal: 'Continue the conversation — a comparison, a plan, an unexpected problem, and a solution.',
+  b1Ep23CanDoName: 'Handle a problem inside a real conversation',
+  b1Ep23Duration: '14 min',
+  b1Ep23SceneTitle: 'Where it gets interesting',
+  b1Ep23SceneBody: "The conversation keeps moving — including a small problem you didn't see coming.",
+  b1Ep23OpenInstruction1: 'Compare a few options, and say which you prefer.',
+  b1Ep23OpenInstruction2: 'Describe an experience that stood out, and how it made you feel.',
+  b1Ep23OpenInstruction3: 'Recommend it, or warn someone away, with a reason.',
+  b1Ep23OpenInstruction4: 'Tell me your plans, and your hopes beyond that.',
+  b1Ep23OpenInstruction5: 'Tell me a hope of yours, with no fixed date.',
+  b1Ep23OpenInstruction6: "Tell me what's wrong with your order.",
+  b1Ep23OpenInstruction7: 'Ask for a solution to the problem.',
+  b1Ep23OpenInstruction8: "Summarize everything we've agreed on.",
+}
