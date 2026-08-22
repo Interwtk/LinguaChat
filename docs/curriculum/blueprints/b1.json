@@ -461,7 +461,7 @@
   "semanticTypes": {
     "existing": ["place", "activity", "feeling", "person", "generic_object", "interest", "time_point", "day"],
     "proposed": [
-      { "id": "problem", "requiredBy": ["escalate_and_resolve_a_problem", "negotiate_a_solution", "express_frustration_politely"], "examples": ["broken item", "wrong order", "delayed delivery", "lost item"], "incompatibleWith": ["drink", "person", "feeling"], "whyNotExisting": "A problem is an issue attached to a thing or event, not the thing itself; a slot that accepts it must refuse a plain object with nothing wrong with it, which generic_object cannot express ('there's a problem with a book' has no content until the book has something wrong with it)." }
+      { "id": "problem", "requiredBy": ["escalate_and_resolve_a_problem", "negotiate_a_solution", "express_frustration_politely"], "examples": ["broken item", "wrong order", "delayed delivery", "lost item"], "incompatibleWith": ["drink", "person", "feeling"], "whyNotExisting": "A problem is an issue attached to a thing or event, not the thing itself; a slot that accepts it must refuse a plain object with nothing wrong with it, which generic_object cannot express ('there's a problem with a book' has no content until the book has something wrong with it)." , "crossLevelNote": "B1 owns this type (LC-AUD-001 F9 / docs/curriculum/semantic-types.md). B2's problem_type and C1's negotiated_item are reconciled against it there rather than declared as separate types." }
     ],
     "explicitlyNotNeeded": [
       { "id": "formal_register_marker", "why": "B1 stays informal throughout; register control is a B2 assessment dimension, not a B1 slot." },

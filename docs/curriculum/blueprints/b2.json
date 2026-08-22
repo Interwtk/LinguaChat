@@ -1081,7 +1081,8 @@
           "person",
           "feeling"
         ],
-        "whyNotExisting": "A service/plan failure is a categorized situation, not a place, object or feeling; existing types would force an inaccurate substitution."
+        "whyNotExisting": "A service/plan failure is a categorized situation, not a place, object or feeling; existing types would force an inaccurate substitution.",
+        "crossLevelNote": "RESOLVED by LC-AUD-001 F9 and LC-FND-002 (docs/curriculum/semantic-types.md section 1): reconciled into B1's problem type family rather than a second independent type. problem_type is B2's escalation of B1's problem — explicit categorization (delay/damage/wrong_item/missed_appointment) instead of B1's implicit free-language naming — not an unrelated concept. The runtime registry should register one problem type with an optional category field, not two SEMANTIC_TYPES entries."
       },
       {
         "id": "register",
