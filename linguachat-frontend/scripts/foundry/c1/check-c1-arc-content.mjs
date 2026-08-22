@@ -13,7 +13,7 @@ import { C1_ARC3 } from '../../../src/learning/levels/c1/arcs/c1Arc3SynthesisAnd
 import { C1_ARC4 } from '../../../src/learning/levels/c1/arcs/c1Arc4NuanceAndImplication.js'
 import { C1_ARC5 } from '../../../src/learning/levels/c1/arcs/c1Arc5ExtendedStructuredDiscourse.js'
 import { C1_ARC6 } from '../../../src/learning/levels/c1/arcs/c1Arc6NegotiationAndComplexity.js'
-import { C1_ARC7 } from '../../../src/learning/levels/c1/arcs/c1Arc7SustainedInteraction.js'
+import { C1_ARC_7 } from '../../../src/learning/levels/c1/arcs/c1Arc7SustainedInteraction.js'
 import { C1_CAPABILITIES } from '../../../src/learning/levels/c1/c1Capabilities.js'
 import { C1_PATTERNS } from '../../../src/learning/levels/c1/c1Patterns.js'
 import { C1_VOCABULARY } from '../../../src/learning/levels/c1/c1Vocabulary.js'
@@ -29,7 +29,7 @@ export const ALL_ARCS = {
   nuance_and_implication: C1_ARC4,
   extended_structured_discourse: C1_ARC5,
   negotiation_and_complexity: C1_ARC6,
-  sustained_interaction: C1_ARC7,
+  sustained_interaction: C1_ARC_7,
 }
 export const ALL_EPISODES = Object.values(ALL_ARCS).flat()
 
