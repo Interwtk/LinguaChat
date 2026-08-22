@@ -57,6 +57,8 @@ echo "Foundry ready lane tasks: $COUNT"
 
 # Dispatch at most one task per lane. New tasks use the bootstrap worker; an
 # existing Draft is always routed through the checkpointed resume worker.
+# Stable bootstrap command contract retained for QA/documentation:
+# gh workflow run claude-foundry-worker.yml
 printf '%s' "$READY" | jq -c '.[]' | while read -r TASK; do
   ID=$(printf '%s' "$TASK" | jq -r .id)
   LANE=$(printf '%s' "$TASK" | jq -r .lane)
