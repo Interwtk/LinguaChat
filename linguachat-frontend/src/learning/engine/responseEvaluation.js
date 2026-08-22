@@ -56,6 +56,17 @@ function hasNameToken(normalized, name) {
   return false
 }
 
+/*
+ * `registerAppropriateness` and `discourseCoherence` are the two shared
+ * evaluator dimensions B2 and C1 each independently requested
+ * (docs/curriculum/core-engine-requirements.md, resolving LC-AUD-001 F8).
+ * Every evaluator gets the same `checked: false` / null-valued default here:
+ * no Pre-A1 or A1 capability exercises either dimension today, and a
+ * capability that needs one sets `checked: true` and the rest of the shape
+ * explicitly when that capability's own evaluator is written. This is the
+ * shared contract, not the scoring logic — see the design doc for how a
+ * future B2/C1 evaluator should populate it.
+ */
 const base = (independent) => ({
   source: 'deterministic',
   understood: true,
@@ -71,6 +82,8 @@ const base = (independent) => ({
   retryPrompt: null,
   praiseKey: null,
   masteryEvidence: { independent: Boolean(independent), scaffoldUsed: !independent },
+  registerAppropriateness: { checked: false, appropriate: null, expectedRegister: null, detectedRegister: null },
+  discourseCoherence: { checked: false, coherent: null, clausesEvaluated: null, incoherenceType: null },
 })
 
 /* ---- Episode 1 & 3: introduce yourself ---- */
