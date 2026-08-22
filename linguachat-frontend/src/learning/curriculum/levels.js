@@ -37,6 +37,7 @@ import { EPISODE_SKELETON } from './preA1Skeleton.generated.js'
 
 export const PRE_A1 = 'pre_a1'
 export const A1 = 'a1'
+export const A2 = 'a2'
 
 /*
  * `episodeLevel` is the string an episode definition carries in its own
@@ -60,6 +61,11 @@ export const LEVELS = [
    * Practice and out of the planner; opening it is a later, deliberate decision.
    */
   { id: A1, order: 2, contentStatus: 'partial', available: false, episodeLevel: 'A1' },
+  /*
+   * A2: all seven arcs are implemented (`LC-CONT-A2`, wired in by `LC-INT-001`)
+   * and the level is not open — same distinction as A1's own comment above.
+   */
+  { id: A2, order: 3, contentStatus: 'partial', available: false, episodeLevel: 'A2' },
 ]
 
 export const LEVEL_IDS = LEVELS.map(l => l.id)

@@ -319,7 +319,7 @@ const LDS_03 = {
      * not as a graded production, exactly matching the blueprint's own
      * distinction between `reusedLanguage` and `integratedReuse`.
      */
-    { type: 'choice', instructionKey: 'ep60MeaningInstruction', promptEn: 'I say, “Let’s meet at the usual spot.” You don’t know “spot.” What do you ask?', itemId: 'ask_what_something_means',
+    { type: 'choice', instructionKey: 'ep60MeaningInstruction', promptEn: 'I say, “Let’s meet at the usual spot.” You don’t know “spot.” What do you ask?', itemId: 'what_does_mean_pattern',
       options: [{ textEn: 'What does “spot” mean?', correct: true }, { textEn: 'Where is the cinema?' }, { textEn: 'What time is it?' }] },
     { type: 'fill_blank', instructionKey: 'ep60BlankInstruction', before: 'Let’s go to the cinema, ', after: ' I need to check the time.',
       expects: 'but', itemId: 'clause_connector_pattern', hintKey: 'ep60BlankHint' },

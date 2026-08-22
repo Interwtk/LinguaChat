@@ -201,7 +201,16 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
     assert.equal(result.ok, false, `${ghost} must not resolve`)
     assert.equal(result.reason, REFUSED.UNKNOWN_EPISODE, `${ghost}: wrong reason`)
   }
-  assert.equal(episodeRequest({ levelId: 'a2', episodeId: 'anything', forLearner: false }).reason,
+  /*
+   * `'a2'` used to be this fabricated id — proving a level nobody had built
+   * yet still failed closed. `LC-INT-001` registered A2 for real
+   * (`levels.js`), so that string now resolves to a known, if unavailable,
+   * level instead of an unknown one. A level id in the same shape as a real
+   * one (`'a2'`, `'b1'`) will keep tripping this the moment that level is
+   * wired in too, so this uses an id no level naming scheme would ever
+   * produce, rather than the next one in line.
+   */
+  assert.equal(episodeRequest({ levelId: 'zz_unregistered_level', episodeId: 'anything', forLearner: false }).reason,
     REFUSED.UNKNOWN_LEVEL, 'an unknown level fails closed even for tooling')
   ok()
 }

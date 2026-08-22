@@ -56,6 +56,30 @@ const PRAISE = {
   state_ability: { independent: 'ep34PraiseIndependent', helped: 'ep34PraiseGuided' },
   ask_ability: { independent: 'ep35PraiseIndependent', helped: 'ep35PraiseGuided' },
   arrange_meeting: { independent: 'ep38PraiseIndependent', helped: 'ep38PraiseGuided' },
+  /*
+   * A2's 17 new intents. Same reason as A1 arc 6/7's three above — added so an
+   * ambiguous, remote-confirmed A2 reply is never congratulated with an
+   * unrelated episode's praise. Keyed to the episode each intent is FIRST
+   * introduced in (per `levels/a2/episodes/**`'s own `evalKind` usage);
+   * `state_availability` has no entry: it is not dispatched (see
+   * `responseEvaluation.js`'s own comment) because no A2 episode uses it.
+   */
+  state_past_event: { independent: 'ep39PraiseIndependent', helped: 'ep39PraiseGuided' },
+  ask_past_event: { independent: 'ep41PraiseIndependent', helped: 'ep41PraiseGuided' },
+  narrate_past_sequence: { independent: 'ep42PraiseIndependent', helped: 'ep42PraiseGuided' },
+  state_future_plan: { independent: 'ep43PraiseIndependent', helped: 'ep43PraiseGuided' },
+  ask_future_plan: { independent: 'ep44PraiseIndependent', helped: 'ep44PraiseGuided' },
+  describe_person_or_place: { independent: 'ep45PraiseIndependent', helped: 'ep45PraiseGuided' },
+  compare_things: { independent: 'ep46PraiseIndependent', helped: 'ep46PraiseGuided' },
+  state_opinion_with_reason: { independent: 'ep47PraiseIndependent', helped: 'ep47PraiseGuided' },
+  give_multi_step_directions: { independent: 'ep49PraiseIndependent', helped: 'ep49PraiseGuided' },
+  ask_availability: { independent: 'ep52PraiseIndependent', helped: 'ep52PraiseGuided' },
+  make_booking: { independent: 'ep53PraiseIndependent', helped: 'ep53PraiseGuided' },
+  spell_word: { independent: 'ep54PraiseIndependent', helped: 'ep54PraiseGuided' },
+  report_problem: { independent: 'ep55PraiseIndependent', helped: 'ep55PraiseGuided' },
+  ask_for_help: { independent: 'ep56PraiseIndependent', helped: 'ep56PraiseGuided' },
+  invite_someone: { independent: 'ep58PraiseIndependent', helped: 'ep58PraiseGuided' },
+  respond_to_invitation: { independent: 'ep59PraiseIndependent', helped: 'ep59PraiseGuided' },
 }
 
 /*
@@ -167,7 +191,7 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', abilityForm = '', arrangeStage = '', praisePrefix = '', signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', abilityForm = '', arrangeStage = '', praisePrefix = '', expected = '', signal, remote } = params
   const kind = step?.evalKind
   /*
    * Whether this counts as unaided production, used only to choose the wording
@@ -223,6 +247,12 @@ export async function evaluateEpisodeResponse(params) {
     ...(abilityForm ? { abilityForm } : {}),
     ...(arrangeStage ? { arrangeStage } : {}),
     ...(praisePrefix ? { praisePrefix } : {}),
+    /*
+     * A2 arc 5's `spell_word`: the name the turn asks the learner to spell.
+     * `evaluateSpellWord` has no default and returns `incomplete_spelling`
+     * forever without it — same bug class as the fields above.
+     */
+    ...(expected ? { expected } : {}),
   })
 
   // Conclusive local verdict (closed step, clear accept, empty, clear failure).
