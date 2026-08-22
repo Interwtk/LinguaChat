@@ -55,30 +55,37 @@ COUNT=$(printf '%s' "$READY" | jq 'length')
 echo "Foundry ready lane tasks: $COUNT"
 [ "$COUNT" -gt 0 ] || exit 0
 
-# Dispatch at most one task per lane. The selector already guarantees one ready
-# task per lane; the run lookup protects against duplicate watchdog/bridge kicks.
+# Dispatch at most one task per lane. New tasks use the bootstrap worker; an
+# existing Draft is always routed through the checkpointed resume worker.
+# Stable bootstrap command contract retained for QA/documentation:
+# gh workflow run claude-foundry-worker.yml
 printf '%s' "$READY" | jq -c '.[]' | while read -r TASK; do
   ID=$(printf '%s' "$TASK" | jq -r .id)
   LANE=$(printf '%s' "$TASK" | jq -r .lane)
   BRANCH=$(printf '%s' "$TASK" | jq -r .branch)
 
   PR=$(gh pr list --head "$BRANCH" --state open --json number,isDraft --jq '.[0] // empty')
+  WORKFLOW=claude-foundry-worker.yml
   if [ -n "$PR" ]; then
     IS_DRAFT=$(printf '%s' "$PR" | jq -r .isDraft)
     if [ "$IS_DRAFT" = "false" ]; then
       echo "$ID: ready PR exists; waiting for QA/merge."
       continue
     fi
+    WORKFLOW=claude-foundry-resume.yml
   fi
 
-  ACTIVE=$(gh run list --workflow=claude-foundry-worker.yml --limit 100 \
+  ACTIVE_BOOTSTRAP=$(gh run list --workflow=claude-foundry-worker.yml --limit 100 \
     --json status,displayTitle \
     --jq "[.[] | select((.status == \"in_progress\" or .status == \"queued\") and (.displayTitle | contains(\"$ID\")))] | length")
-  if [ "$ACTIVE" != "0" ]; then
+  ACTIVE_RESUME=$(gh run list --workflow=claude-foundry-resume.yml --limit 100 \
+    --json status,displayTitle \
+    --jq "[.[] | select((.status == \"in_progress\" or .status == \"queued\") and (.displayTitle | contains(\"$ID\")))] | length")
+  if [ "$ACTIVE_BOOTSTRAP" != "0" ] || [ "$ACTIVE_RESUME" != "0" ]; then
     echo "$ID: worker already queued/running."
     continue
   fi
 
-  gh workflow run claude-foundry-worker.yml --ref main -f task_id="$ID" -f lane="$LANE"
-  echo "$ID: dispatched on lane $LANE."
+  gh workflow run "$WORKFLOW" --ref main -f task_id="$ID" -f lane="$LANE"
+  echo "$ID: dispatched via $WORKFLOW on lane $LANE."
 done
