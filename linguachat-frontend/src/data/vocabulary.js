@@ -356,6 +356,50 @@ export const SEED_VOCAB = [
    */
   { id: 'banana', term: 'banana', kind: 'word', emoji: 'b', example: 'We also have a banana today.',
     meaning: { en: 'a soft yellow fruit', es: 'un plátano', pt: 'uma banana', fr: 'une banane', it: 'una banana', de: 'eine Banane', ja: 'バナナ', ar: 'موزة' } },
+
+  /*
+   * ─── A1 arc 6 — "What you can do" (`what_you_can_do`, episodes 34–35) ───
+   *
+   * Two patterns (can/can't, and asking someone else) carry the arc; four
+   * ability verbs give it something to talk about, and "how do you say"
+   * doubles as the repair strategy episode 35 also teaches.
+   */
+  { id: 'can_ability_pattern', term: 'I can / I can’t + verb', kind: 'pattern', emoji: '+', example: 'I can swim. I can’t cook.',
+    meaning: { en: 'saying what you are able (or not able) to do', es: 'decir lo que puedes (o no puedes) hacer', pt: 'dizer o que você pode (ou não pode) fazer', fr: 'dire ce que l’on peut (ou ne peut pas) faire', it: 'dire cosa puoi (o non puoi) fare', de: 'sagen, was man kann (oder nicht kann)', ja: 'できること（できないこと）を言う', ar: 'قول ما تستطيع (أو لا تستطيع) فعله' } },
+  { id: 'swim', term: 'swim', kind: 'word', emoji: '~', example: 'I can swim.',
+    meaning: { en: 'move through water using your body', es: 'nadar', pt: 'nadar', fr: 'nager', it: 'nuotare', de: 'schwimmen', ja: '泳ぐ', ar: 'يسبح' } },
+  { id: 'cook', term: 'cook', kind: 'word', emoji: 'C', example: 'I can’t cook.',
+    meaning: { en: 'prepare food to eat', es: 'cocinar', pt: 'cozinhar', fr: 'cuisiner', it: 'cucinare', de: 'kochen', ja: '料理する', ar: 'يطبخ' } },
+  { id: 'drive', term: 'drive', kind: 'word', emoji: 'D', example: 'I can drive.',
+    meaning: { en: 'control a car', es: 'conducir', pt: 'dirigir', fr: 'conduire', it: 'guidare', de: 'Auto fahren', ja: '運転する', ar: 'يقود' } },
+  { id: 'dance', term: 'dance', kind: 'word', emoji: '*', example: 'I can dance.',
+    meaning: { en: 'move your body to music', es: 'bailar', pt: 'dançar', fr: 'danser', it: 'ballare', de: 'tanzen', ja: '踊る', ar: 'يرقص' } },
+  { id: 'can_you_ability_pattern', term: 'Can you + verb?', kind: 'pattern', emoji: '?', example: 'Can you swim?',
+    meaning: { en: 'asking someone if they are able to do something', es: 'preguntar a alguien si puede hacer algo', pt: 'perguntar a alguém se consegue fazer algo', fr: 'demander à quelqu’un s’il peut faire quelque chose', it: 'chiedere a qualcuno se sa fare qualcosa', de: 'jemanden fragen, ob er/sie etwas kann', ja: '相手ができるかどうかをたずねる', ar: 'سؤال شخص إن كان يستطيع فعل شيء' } },
+  { id: 'how_do_you_say_pattern', term: 'How do you say … in English?', kind: 'pattern', emoji: 'H', example: 'How do you say “nadar” in English?',
+    meaning: { en: 'asking for the English word for something you know in your own language', es: 'pedir la palabra en inglés para algo que sabes en tu idioma', pt: 'pedir a palavra em inglês para algo que você sabe no seu idioma', fr: 'demander le mot anglais pour quelque chose que l’on connaît dans sa langue', it: 'chiedere la parola inglese per qualcosa che conosci nella tua lingua', de: 'nach dem englischen Wort für etwas fragen, das man in der eigenen Sprache kennt', ja: '自分の言語で知っている言葉の英語を聞く', ar: 'السؤال عن الكلمة الإنجليزية لشيء تعرفه بلغتك' } },
+  { id: 'sing', term: 'sing', kind: 'word', emoji: '♪', example: 'Can you sing?',
+    meaning: { en: 'make music with your voice', es: 'cantar', pt: 'cantar', fr: 'chanter', it: 'cantare', de: 'singen', ja: '歌う', ar: 'يغني' } },
+
+  /*
+   * ─── A1 arc 7 — "Making arrangements" (`making_arrangements`, episodes 36–38) ───
+   *
+   * Three patterns (propose a day/time, agree a place, confirm) carry the
+   * arc; the two named days and two named places are exactly what episodes
+   * 36–37's model turns and free replies need, no wider calendar/place set.
+   */
+  { id: 'day_of_week_pattern', term: 'on + day of the week', kind: 'pattern', emoji: '7', example: 'Are you free on Monday?',
+    meaning: { en: 'naming a day of the week', es: 'nombrar un día de la semana', pt: 'nomear um dia da semana', fr: 'nommer un jour de la semaine', it: 'nominare un giorno della settimana', de: 'einen Wochentag nennen', ja: '曜日を言う', ar: 'ذكر يوم من أيام الأسبوع' } },
+  { id: 'arrange_pattern', term: 'Let’s meet on + day + at + time', kind: 'pattern', emoji: 'M', example: 'Let’s meet on Friday at seven.',
+    meaning: { en: 'proposing when to meet someone', es: 'proponer cuándo verse con alguien', pt: 'propor quando se encontrar com alguém', fr: 'proposer un moment pour rencontrer quelqu’un', it: 'proporre quando incontrarsi con qualcuno', de: 'vorschlagen, wann man sich trifft', ja: '会う日時を提案する', ar: 'اقتراح موعد للقاء شخص' } },
+  { id: 'monday', term: 'Monday', kind: 'word', emoji: '1', example: 'Are you free on Monday?',
+    meaning: { en: 'the first day of the working week', es: 'lunes', pt: 'segunda-feira', fr: 'lundi', it: 'lunedì', de: 'Montag', ja: '月曜日', ar: 'الاثنين' } },
+  { id: 'friday', term: 'Friday', kind: 'word', emoji: '5', example: 'Let’s meet on Friday at seven.',
+    meaning: { en: 'the last day of the working week', es: 'viernes', pt: 'sexta-feira', fr: 'vendredi', it: 'venerdì', de: 'Freitag', ja: '金曜日', ar: 'الجمعة' } },
+  { id: 'the_station', term: 'the station', kind: 'phrase', emoji: 'S', example: 'Let’s meet at the station.',
+    meaning: { en: 'a place to arrange to meet, near where buses or trains stop', es: 'la estación, un lugar para quedar', pt: 'a estação, um lugar para combinar de se encontrar', fr: 'la gare, un lieu de rendez-vous', it: 'la stazione, un luogo per darsi appuntamento', de: 'der Bahnhof, ein Treffpunkt', ja: '駅、待ち合わせ場所', ar: 'المحطة، مكان للقاء' } },
+  { id: 'the_cinema', term: 'the cinema', kind: 'phrase', emoji: 'M', example: 'Let’s meet at the cinema.',
+    meaning: { en: 'a place to arrange to meet, where films are shown', es: 'el cine, un lugar para quedar', pt: 'o cinema, um lugar para combinar de se encontrar', fr: 'le cinéma, un lieu de rendez-vous', it: 'il cinema, un luogo per darsi appuntamento', de: 'das Kino, ein Treffpunkt', ja: '映画館、待ち合わせ場所', ar: 'السينما، مكان للقاء' } },
 ]
 
 export const SEED_VOCAB_BY_ID = Object.fromEntries(SEED_VOCAB.map(item => [item.id, item]))
