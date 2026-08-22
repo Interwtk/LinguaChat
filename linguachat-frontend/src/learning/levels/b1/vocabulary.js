@@ -101,10 +101,47 @@ export const B1_ARC3_VOCAB = {
   b1_not_worth_it: { en: "not worth it", type: 'connector' },
 }
 
+/* ---- Arc 4 — somethings_wrong (15 productive / 11 receptive, per b1.json) ---- */
+export const B1_ARC4_VOCAB = {
+  // escalate_and_resolve_a_problem — 6 productive
+  b1_theres_a_problem_with: { en: "there's a problem with", type: 'connector' },
+  b1_i_ordered_but_i_got: { en: 'I ordered ... but I got ...', type: 'connector' },
+  b1_problem_statement_pattern: { en: "there's a problem with ... / I ordered X but got Y", type: 'pattern' },
+  b1_its_supposed_to: { en: "it's supposed to", type: 'connector' },
+  b1_instead_of: { en: 'instead of', type: 'connector' },
+  b1_broken: { en: 'broken', type: 'problem' },
+  // escalate_and_resolve_a_problem — 4 receptive
+  b1_faulty: { en: 'faulty', type: 'problem' },
+  b1_damaged: { en: 'damaged', type: 'problem' },
+  b1_missing: { en: 'missing', type: 'problem' },
+  b1_delayed: { en: 'delayed', type: 'problem' },
+  // negotiate_a_solution — 6 productive
+  b1_would_it_be_possible: { en: 'would it be possible', type: 'connector' },
+  b1_could_i_possibly: { en: 'could I possibly', type: 'connector' },
+  b1_negotiate_pattern: { en: 'would it be possible to ... / could I get ... instead', type: 'pattern' },
+  b1_instead: { en: 'instead', type: 'connector' },
+  b1_a_replacement: { en: 'a replacement', type: 'generic_object' },
+  b1_a_refund: { en: 'a refund', type: 'generic_object' },
+  // negotiate_a_solution — 4 receptive
+  b1_a_partial_refund: { en: 'a partial refund', type: 'generic_object' },
+  b1_store_credit: { en: 'store credit', type: 'generic_object' },
+  b1_an_exchange: { en: 'an exchange', type: 'generic_object' },
+  b1_a_different_one: { en: 'a different one', type: 'generic_object' },
+  // express_frustration_politely — 3 productive
+  b1_this_isnt_ideal: { en: "this isn't ideal", type: 'connector' },
+  b1_i_understand_but: { en: 'I understand, but', type: 'connector' },
+  b1_polite_frustration_pattern: { en: "this isn't ideal, but ... / I understand, but ...", type: 'pattern' },
+  // express_frustration_politely — 3 receptive
+  b1_thats_a_shame: { en: "that's a shame", type: 'connector' },
+  b1_i_see_the_issue: { en: 'I see the issue', type: 'connector' },
+  b1_lets_sort_it_out: { en: "let's sort it out", type: 'connector' },
+}
+
 export const B1_VOCAB_BY_ID = {
   ...B1_ARC1_VOCAB,
   ...B1_ARC2_VOCAB,
   ...B1_ARC3_VOCAB,
+  ...B1_ARC4_VOCAB,
 }
 
 export const b1ProductiveIds = (ids) => ids.filter(id => B1_VOCAB_BY_ID[id])

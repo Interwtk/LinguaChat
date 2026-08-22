@@ -280,6 +280,104 @@ export function evaluateRecommendOrWarn(text, { independent = false } = {}) {
   return { ...r, errorType: 'no_recommendation', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptRecommendStance' }
 }
 
+/* ---------------------------------------------------------------------------
+ * arc 4 — report_problem (subtype tone: neutral | frustrated), negotiate_solution
+ * ------------------------------------------------------------------------- */
+
+const PROBLEM_RE = /\bthere'?s\s+a\s+problem\s+with\b|\b(ordered|booked|asked for|wanted|paid for)\b.{0,40}\bbut\b.{0,15}\bgot\b|\bthis\s+is(?:n'?t|\s+not)\s+what\s+i\s+(ordered|expected|booked)\b/
+const EXPECTATION_RE = /\bi\s+ordered\b|\bi\s+expected\b|\bi\s+booked\b|\bshould\s+(be|have)\b|\bsupposed\s+to\b|\binstead\s+of\b|\b(ordered|booked|asked for|wanted|paid for)\b.{0,40}\bbut\b.{0,15}\bgot\b/
+const FRUSTRATION_RE = /\bthis\s+isn'?t\s+ideal\b|\bi\s+understand,?\s+but\b|\bi'?m\s+a\s+(little|bit)\s+frustrated\b|\bthis\s+is\s+frustrating,?\s+but\b/
+const UNCOOPERATIVE_RE = /\bthis\s+is\s+ridiculous\b|\bunacceptable\b|\bterrible\s+service\b|\bworst\b/
+
+export function evaluateReportProblem(text, { tone = 'neutral', independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = tone === 'frustrated'
+    ? "This isn't ideal, but I understand these things happen."
+    : "There's a problem with my order. I ordered a chicken sandwich, but I got a cheese one."
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptProblemEmpty' }
+
+  if (UNCOOPERATIVE_RE.test(n)) {
+    // grammatically a real problem statement, but violates the arc's
+    // cooperative-tone ceiling (b1.json arc 4 risk: "every model turn stays
+    // firmly on the polite side") — express_frustration_politely is
+    // evaluated on staying cooperative, not just on using a frustration word
+    return { ...r, errorType: 'too_harsh', priorityCorrection: 'b1RetryExplainProblemHarsh', explanation: 'b1RetryExplainProblemHarsh', retryRequired: true, retryPrompt: 'b1RetryPromptProblemHarsh' }
+  }
+
+  const hasProblem = PROBLEM_RE.test(n)
+  const hasExpectation = EXPECTATION_RE.test(n)
+  const hasFrustration = FRUSTRATION_RE.test(n)
+
+  if (tone === 'frustrated') {
+    if (hasFrustration && (hasProblem || hasExpectation)) {
+      r.completedObjective = true
+      r.confidence = 0.9
+      r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseFrustrationIndependent' : 'b1PraiseFrustrationHelped'
+      return r
+    }
+    if (hasFrustration && !(hasProblem || hasExpectation)) {
+      return { ...r, errorType: 'missing_problem_detail', priorityCorrection: 'b1RetryExplainFrustrationDetail', explanation: 'b1RetryExplainFrustrationDetail', retryRequired: true, retryPrompt: 'b1RetryPromptFrustrationDetail' }
+    }
+    if (!hasFrustration && (hasProblem || hasExpectation)) {
+      return { ...r, errorType: 'missing_frustration_marker', priorityCorrection: 'b1RetryExplainFrustrationMarker', explanation: 'b1RetryExplainFrustrationMarker', retryRequired: true, retryPrompt: 'b1RetryPromptFrustrationMarker' }
+    }
+    return { ...r, errorType: 'no_frustration', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptFrustrationMarker' }
+  }
+
+  if (hasProblem && hasExpectation) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseProblemIndependent' : 'b1PraiseProblemHelped'
+    return r
+  }
+  if (hasProblem && !hasExpectation) {
+    return { ...r, errorType: 'missing_expectation', priorityCorrection: 'b1RetryExplainProblemExpectation', explanation: 'b1RetryExplainProblemExpectation', retryRequired: true, retryPrompt: 'b1RetryPromptProblemExpectation' }
+  }
+  if (!hasProblem && hasExpectation) {
+    return { ...r, errorType: 'missing_problem_statement', priorityCorrection: 'b1RetryExplainProblemStatement', explanation: 'b1RetryExplainProblemStatement', retryRequired: true, retryPrompt: 'b1RetryPromptProblemStatement' }
+  }
+  return { ...r, errorType: 'no_problem', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptProblemStatement' }
+}
+
+// negotiate_solution's canonical/reject frames, adapted from the draft
+// evaluator that resolved b1.md section 15.1 — see
+// docs/curriculum/implementation/b1/core-engine-findings.md and
+// scripts/foundry/b1/measure-hybrid-evaluation-density.mjs.
+const NEGOTIATE_FRAME_RE = /\b(would it be possible|could i (possibly )?(exchange|get|have)|is there any way i could)\b/
+const OFFER_TO_BUY_RE = /\bi'?d like to buy\b/
+const IMPERATIVE_DEMAND_RE = /\b(give me|i need)\b.{0,30}\b(now|right now|immediately)\b/
+const STATES_GOAL_ONLY_RE = /^i want (a|to)\b/
+
+export function evaluateNegotiateSolution(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'Would it be possible to get a replacement instead?'
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptNegotiateEmpty' }
+
+  if (NEGOTIATE_FRAME_RE.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.acceptedVariant = !/would it be possible/.test(n)
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseNegotiateIndependent' : 'b1PraiseNegotiateHelped'
+    return r
+  }
+  if (OFFER_TO_BUY_RE.test(n)) {
+    return { ...r, errorType: 'wrong_speech_act_offer_not_negotiate', priorityCorrection: 'b1RetryExplainNegotiateSpeechAct', explanation: 'b1RetryExplainNegotiateSpeechAct', retryRequired: true, retryPrompt: 'b1RetryPromptNegotiateFrame' }
+  }
+  if (IMPERATIVE_DEMAND_RE.test(n)) {
+    // grammatically fine, but violates the arc's cooperative-negotiation
+    // ceiling — a plain reject with its own errorType, exactly like
+    // `evaluatePoliteRequest`'s existing hardcoded pragmatic special case.
+    // Needs no shared `registerAppropriateness` field (core-engine-findings.md).
+    return { ...r, errorType: 'pragmatically_inappropriate_demand', priorityCorrection: 'b1RetryExplainNegotiateDemand', explanation: 'b1RetryExplainNegotiateDemand', retryRequired: true, retryPrompt: 'b1RetryPromptNegotiateFrame' }
+  }
+  if (STATES_GOAL_ONLY_RE.test(n)) {
+    return { ...r, errorType: 'near_miss_underdeveloped_negotiation', priorityCorrection: 'b1RetryExplainNegotiateUnderdeveloped', explanation: 'b1RetryExplainNegotiateUnderdeveloped', retryRequired: true, retryPrompt: 'b1RetryPromptNegotiateFrame' }
+  }
+  return { ...r, errorType: 'no_negotiation_frame', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptNegotiateFrame' }
+}
+
 /* Dispatcher for this arc's intents, mirroring `evaluateFree`'s own shape so a
  * future merge is mechanical. Grows as later arcs land. */
 export function evaluateB1Free(kind, text, ctx = {}) {
@@ -290,6 +388,8 @@ export function evaluateB1Free(kind, text, ctx = {}) {
     case 'compare_and_choose': return evaluateCompareAndChoose(text, ctx)
     case 'describe_experience': return evaluateDescribeExperience(text, ctx)
     case 'recommend_or_warn': return evaluateRecommendOrWarn(text, ctx)
+    case 'report_problem': return evaluateReportProblem(text, ctx)
+    case 'negotiate_solution': return evaluateNegotiateSolution(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }
