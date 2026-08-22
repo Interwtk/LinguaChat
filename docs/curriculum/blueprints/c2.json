@@ -34,22 +34,22 @@
   },
 
   "c1Inheritance": {
-    "reconciliationStatus": "PENDING — ids below are placeholders quoting the master contract's C1 progression prose (curriculum-master-a1-c2.md §4), not confirmed C1 blueprint ids. LC-AUD-001 must reconcile before LC-CONT-C2 may depend on them.",
+    "reconciliationStatus": "RESOLVED by LC-AUD-001 (docs/curriculum/cross-level-audit.json F3, F6) and applied by LC-FND-002, now that LC-BP-C1 has landed. Six of the seven placeholder ids below were literal, non-resolving prerequisite strings across six C2 required capabilities and are renamed to C1's real ids using C1's own established c1.x dot-notation convention. One row (sustain_coherence_across_topic_shifts) is LC-AUD-001's explicit low-confidence finding and was deliberately left unresolved pending a human curriculum-design decision — see that capability's unresolvedPrerequisiteNote.",
     "assumedExitCapabilities": [
-      { "placeholderId": "c1_assumed__synthesize_information", "quotedFrom": "can synthesize, infer, reformulate, adapt register, communicate nuanced positions, handle abstract topics" },
-      { "placeholderId": "c1_assumed__infer_meaning", "quotedFrom": "can synthesize, infer, reformulate, adapt register, communicate nuanced positions, handle abstract topics" },
-      { "placeholderId": "c1_assumed__reformulate", "quotedFrom": "can synthesize, infer, reformulate, adapt register, communicate nuanced positions, handle abstract topics" },
-      { "placeholderId": "c1_assumed__adapt_register_deliberately", "quotedFrom": "can synthesize, infer, reformulate, adapt register, communicate nuanced positions, handle abstract topics" },
-      { "placeholderId": "c1_assumed__argue_with_reasons", "quotedFrom": "B1: can narrate, explain, justify, compare options ... express opinions with reasons (inherited and strengthened through B2/C1)" },
-      { "placeholderId": "c1_assumed__handle_counterarguments", "quotedFrom": "B2: can develop arguments, weigh advantages/disadvantages, negotiate, hypothesize" },
-      { "placeholderId": "c1_assumed__handle_abstract_topics", "quotedFrom": "can synthesize, infer, reformulate, adapt register, communicate nuanced positions, handle abstract topics" }
+      { "placeholderId": "c1_assumed__synthesize_information", "quotedFrom": "can synthesize, infer, reformulate, adapt register, communicate nuanced positions, handle abstract topics", "resolvedTo": "c1.synthesize_two_conflicting_viewpoints", "confidence": "medium" },
+      { "placeholderId": "c1_assumed__infer_meaning", "quotedFrom": "can synthesize, infer, reformulate, adapt register, communicate nuanced positions, handle abstract topics", "resolvedTo": "c1.infer_implied_meaning_in_unfamiliar_context", "confidence": "high", "note": "this C1 id was itself renamed from infer_implied_meaning by LC-AUD-001 F2/F5 — see c1.json" },
+      { "placeholderId": "c1_assumed__reformulate", "quotedFrom": "can synthesize, infer, reformulate, adapt register, communicate nuanced positions, handle abstract topics", "resolvedTo": "c1.reformulate_for_a_different_audience", "confidence": "high", "note": "strongest F3/F6 signal that C1 and C2 had declared the same capability twice under the same bare id; C2's own capability is renamed to reformulate_dense_source_for_a_new_audience to end the collision" },
+      { "placeholderId": "c1_assumed__adapt_register_deliberately", "quotedFrom": "can synthesize, infer, reformulate, adapt register, communicate nuanced positions, handle abstract topics", "resolvedTo": "c1.adapt_register_to_audience", "confidence": "high" },
+      { "placeholderId": "c1_assumed__argue_with_reasons", "quotedFrom": "B1: can narrate, explain, justify, compare options ... express opinions with reasons (inherited and strengthened through B2/C1)", "resolvedTo": "c1.develop_a_structured_argument", "confidence": "medium", "note": "c1.qualify_a_claim_precisely is a plausible secondary prerequisite per the audit" },
+      { "placeholderId": "c1_assumed__handle_counterarguments", "quotedFrom": "B2: can develop arguments, weigh advantages/disadvantages, negotiate, hypothesize", "resolvedTo": "c1.concede_a_counterpoint_gracefully", "confidence": "medium", "note": "c1.disagree_diplomatically is a plausible secondary prerequisite per the audit" },
+      { "placeholderId": "c1_assumed__handle_abstract_topics", "quotedFrom": "can synthesize, infer, reformulate, adapt register, communicate nuanced positions, handle abstract topics", "resolvedTo": null, "confidence": "low — deliberately not auto-applied; see sustain_coherence_across_topic_shifts.unresolvedPrerequisiteNote" }
     ],
-    "note": "C1's blueprint (LC-BP-C1) is authored in a parallel lane. This list exists so C2's dependency graph is not silently ungrounded; it is not a substitute for the real C1 capability graph."
+    "note": "C1's blueprint (LC-BP-C1) has landed (docs/curriculum/blueprints/c1.json). This list is now a historical record of the original placeholder ids plus their resolution, not a substitute for the real C1 capability graph."
   },
 
   "skillFamilies": [
     { "id": "dense_input_synthesis", "label": "Making sense of dense material", "canDos": ["extract_key_argument_from_dense_text", "synthesize_multiple_viewpoints", "identify_authors_stance_and_bias"] },
-    { "id": "precise_reformulation", "label": "Saying it precisely, for someone else", "canDos": ["reformulate_for_a_different_audience", "summarize_preserving_nuance", "paraphrase_to_avoid_flattening_meaning"] },
+    { "id": "precise_reformulation", "label": "Saying it precisely, for someone else", "canDos": ["reformulate_dense_source_for_a_new_audience", "summarize_preserving_nuance", "paraphrase_to_avoid_flattening_meaning"] },
     { "id": "implication_and_subtext", "label": "Reading between the lines", "canDos": ["recognize_implied_meaning", "recognize_irony_and_understatement", "respond_appropriately_to_an_indirect_speech_act"] },
     { "id": "register_and_pragmatics", "label": "Saying it the right way for the moment", "canDos": ["shift_register_deliberately", "soften_or_intensify_a_claim", "manage_face_in_disagreement"] },
     { "id": "argument_and_position", "label": "Building and defending a nuanced position", "canDos": ["develop_an_extended_qualified_argument", "preempt_and_rebut_a_counterargument", "qualify_a_position_with_precision"] },
@@ -62,7 +62,7 @@
     {
       "id": "extract_key_argument_from_dense_text", "family": "dense_input_synthesis", "scope": "required",
       "why": "Everything else in the level assumes the learner can pull a claim and its support out of a text that does not hand them over plainly. Without this, reformulation, synthesis and rebuttal all have nothing reliable to work from.",
-      "prerequisites": ["c1_assumed__synthesize_information", "c1_assumed__infer_meaning"],
+      "prerequisites": ["c1.synthesize_two_conflicting_viewpoints", "c1.infer_implied_meaning_in_unfamiliar_context"],
       "infrastructure": ["evidentiality_stance_pattern"],
       "semanticNeeds": ["source_text"],
       "evidence": { "recognition": true, "guided": true, "assistedOpen": true, "independent": 2, "transfer": 1, "delayedRetrieval": false },
@@ -88,9 +88,9 @@
     },
 
     {
-      "id": "reformulate_for_a_different_audience", "family": "precise_reformulation", "scope": "required",
-      "why": "The product's first sustained mediation task: carrying meaning across an audience gap without losing or inventing certainty. Everything downstream that needs 'say this again, but for someone else' depends on it.",
-      "prerequisites": ["extract_key_argument_from_dense_text", "c1_assumed__reformulate"],
+      "id": "reformulate_dense_source_for_a_new_audience", "family": "precise_reformulation", "scope": "required",
+      "why": "The product's first task combining dense-text extraction with audience reformulation: carrying meaning across an audience gap without losing or inventing certainty, from a source the learner had to synthesize rather than one already handed to them in conversation. This escalates C1's reformulate_for_a_different_audience (a spoken/conversational reformulation) with source-text density and audience ambiguity C1 does not require; it is reuse and escalation, not a second introduction of the same capability (LC-AUD-001 F3). Everything downstream that needs 'say this again, but for someone else' depends on it.",
+      "prerequisites": ["extract_key_argument_from_dense_text", "c1.reformulate_for_a_different_audience"],
       "infrastructure": ["reformulation_connector_pattern"],
       "semanticNeeds": ["source_text", "audience_profile"],
       "evidence": { "recognition": true, "guided": true, "assistedOpen": true, "independent": 2, "transfer": 1, "delayedRetrieval": false },
@@ -99,7 +99,7 @@
     {
       "id": "summarize_preserving_nuance", "family": "precise_reformulation", "scope": "required",
       "why": "Compression is where nuance is usually lost first. This is the capability that proves a summary can be short and still honest about hedges and disagreement.",
-      "prerequisites": ["reformulate_for_a_different_audience", "synthesize_multiple_viewpoints"],
+      "prerequisites": ["reformulate_dense_source_for_a_new_audience", "synthesize_multiple_viewpoints"],
       "infrastructure": ["reformulation_connector_pattern"],
       "semanticNeeds": ["source_text", "audience_profile"],
       "evidence": { "recognition": true, "guided": true, "assistedOpen": true, "independent": 2, "transfer": 1, "delayedRetrieval": false },
@@ -109,7 +109,7 @@
     {
       "id": "paraphrase_to_avoid_flattening_meaning", "family": "precise_reformulation", "scope": "should",
       "why": "The small-scale sibling of reformulation: restating a single sentence without collapsing its precision. Should rather than required because the level's mediation core is already carried by the two required capabilities above.",
-      "prerequisites": ["reformulate_for_a_different_audience"],
+      "prerequisites": ["reformulate_dense_source_for_a_new_audience"],
       "infrastructure": ["reformulation_connector_pattern"],
       "semanticNeeds": ["source_text"],
       "evidence": { "recognition": true, "guided": true, "assistedOpen": true, "independent": 1, "transfer": 1, "delayedRetrieval": false },
@@ -120,7 +120,7 @@
     {
       "id": "recognize_implied_meaning", "family": "implication_and_subtext", "scope": "required",
       "why": "The level's central pragmatic skill: language that means more than it says. Register control, face-saving disagreement and mediation all assume the learner can already notice this.",
-      "prerequisites": ["c1_assumed__infer_meaning", "identify_authors_stance_and_bias"],
+      "prerequisites": ["c1.infer_implied_meaning_in_unfamiliar_context", "identify_authors_stance_and_bias"],
       "infrastructure": ["irony_understatement_marker_pattern"],
       "semanticNeeds": ["stance_marker"],
       "evidence": { "recognition": true, "guided": true, "assistedOpen": true, "independent": 2, "transfer": 1, "delayedRetrieval": false },
@@ -150,7 +150,7 @@
     {
       "id": "shift_register_deliberately", "family": "register_and_pragmatics", "scope": "required",
       "why": "The level's other central pragmatic skill: choosing form on purpose to fit an audience and purpose, rather than defaulting to one register regardless of who is listening.",
-      "prerequisites": ["c1_assumed__adapt_register_deliberately"],
+      "prerequisites": ["c1.adapt_register_to_audience"],
       "infrastructure": ["register_shift_lexis_pattern"],
       "semanticNeeds": ["register_level", "audience_profile"],
       "evidence": { "recognition": true, "guided": true, "assistedOpen": true, "independent": 2, "transfer": 1, "delayedRetrieval": false },
@@ -180,7 +180,7 @@
     {
       "id": "develop_an_extended_qualified_argument", "family": "argument_and_position", "scope": "required",
       "why": "C1 already argues with reasons; C2 sustains that argument across more ground and qualifies it so it does not overclaim, which is the difference between an opinion and a defensible position.",
-      "prerequisites": ["c1_assumed__argue_with_reasons", "soften_or_intensify_a_claim"],
+      "prerequisites": ["c1.develop_a_structured_argument", "soften_or_intensify_a_claim"],
       "infrastructure": ["hedging_pattern", "boosting_pattern"],
       "semanticNeeds": ["stance_marker"],
       "evidence": { "recognition": true, "guided": true, "assistedOpen": true, "independent": 2, "transfer": 1, "delayedRetrieval": false },
@@ -189,7 +189,7 @@
     {
       "id": "preempt_and_rebut_a_counterargument", "family": "argument_and_position", "scope": "required",
       "why": "A position that never meets its strongest objection is not yet a C2-level argument. This is also the capability the mediation capstone leans on hardest, since mediating means representing the other side's strongest point too.",
-      "prerequisites": ["develop_an_extended_qualified_argument", "c1_assumed__handle_counterarguments"],
+      "prerequisites": ["develop_an_extended_qualified_argument", "c1.concede_a_counterpoint_gracefully"],
       "infrastructure": ["concession_then_position_pattern"],
       "semanticNeeds": ["stance_marker"],
       "evidence": { "recognition": true, "guided": true, "assistedOpen": true, "independent": 2, "transfer": 1, "delayedRetrieval": false },
@@ -210,6 +210,7 @@
       "id": "sustain_coherence_across_topic_shifts", "family": "discourse_flexibility", "scope": "required",
       "why": "The first level where 'the conversation changed subject and the learner kept it coherent' is itself the graded evidence, not incidental. It is what separates C2 fluency from a string of well-formed but disconnected turns.",
       "prerequisites": ["c1_assumed__handle_abstract_topics", "develop_an_extended_qualified_argument"],
+      "unresolvedPrerequisiteNote": "c1_assumed__handle_abstract_topics is LC-AUD-001's F6 low-confidence row: the audit's candidate match is c1.sustain_a_conversation_across_topic_shifts, but that C1 capability itself still rests on an unresolved-at-audit-time B2 placeholder chain, so a mechanical rename was deliberately NOT applied here. This needs an explicit human curriculum-design decision, not an automated fix (LC-AUD-001 openQuestionsForHumanReview). Left as the original placeholder id until that decision is made.",
       "infrastructure": ["paragraph_scale_cohesion_pattern"],
       "semanticNeeds": [],
       "evidence": { "recognition": true, "guided": true, "assistedOpen": true, "independent": 2, "transfer": 1, "delayedRetrieval": false },
@@ -240,7 +241,7 @@
     {
       "id": "edit_own_text_for_precision_and_tone", "family": "stylistic_control", "scope": "required",
       "why": "Every earlier arc produces language; this is the first arc where revising it on purpose — not producing a better first draft, but noticing and fixing a wrong tone or an imprecise word — is itself the tested skill.",
-      "prerequisites": ["shift_register_deliberately", "reformulate_for_a_different_audience"],
+      "prerequisites": ["shift_register_deliberately", "reformulate_dense_source_for_a_new_audience"],
       "infrastructure": ["lexical_precision_substitution_pattern"],
       "semanticNeeds": ["register_level"],
       "evidence": { "recognition": true, "guided": true, "assistedOpen": true, "independent": 2, "transfer": 1, "delayedRetrieval": false },
@@ -294,7 +295,7 @@
     { "id": "boosting_pattern", "form": "undeniably / there is little doubt that / it is clear that", "enables": ["soften_or_intensify_a_claim", "develop_an_extended_qualified_argument", "qualify_a_position_with_precision"], "prerequisite": "hedging_pattern", "reaches": "independent", "firstArc": "register_and_pragmatics", "reuseArcs": ["argument_and_position", "discourse_flexibility", "integrated_mediation"] },
     { "id": "concession_then_position_pattern", "form": "while X has merit, ... / granted that..., nevertheless... / even so", "enables": ["preempt_and_rebut_a_counterargument"], "prerequisite": "hedging_pattern", "reaches": "independent", "firstArc": "argument_and_position", "reuseArcs": ["discourse_flexibility", "integrated_mediation"] },
     { "id": "evidentiality_stance_pattern", "form": "presumably / ostensibly / allegedly / according to X", "enables": ["identify_authors_stance_and_bias", "recognize_implied_meaning"], "prerequisite": null, "reaches": "independent", "firstArc": "dense_input_synthesis", "reuseArcs": ["implication_and_subtext", "integrated_mediation"] },
-    { "id": "reformulation_connector_pattern", "form": "in other words / to put it another way / put simply, for a non-specialist", "enables": ["reformulate_for_a_different_audience", "summarize_preserving_nuance", "paraphrase_to_avoid_flattening_meaning"], "prerequisite": null, "reaches": "independent", "firstArc": "precise_reformulation", "reuseArcs": ["integrated_mediation"] },
+    { "id": "reformulation_connector_pattern", "form": "in other words / to put it another way / put simply, for a non-specialist", "enables": ["reformulate_dense_source_for_a_new_audience", "summarize_preserving_nuance", "paraphrase_to_avoid_flattening_meaning"], "prerequisite": null, "reaches": "independent", "firstArc": "precise_reformulation", "reuseArcs": ["integrated_mediation"] },
     { "id": "register_shift_lexis_pattern", "form": "matched formal/neutral/informal lexical and syntactic pairs for the same proposition", "enables": ["shift_register_deliberately", "adapt_a_text_across_genre_and_register"], "prerequisite": null, "reaches": "independent", "firstArc": "register_and_pragmatics", "reuseArcs": ["stylistic_control", "integrated_mediation"] },
     { "id": "face_saving_disagreement_pattern", "form": "I take your point, but... / that's fair, though I'd push back on...", "enables": ["manage_face_in_disagreement", "repair_a_misunderstanding_at_intention_level"], "prerequisite": "register_shift_lexis_pattern", "reaches": "independent", "firstArc": "register_and_pragmatics", "reuseArcs": ["discourse_flexibility", "integrated_mediation"] },
     { "id": "paragraph_scale_cohesion_pattern", "form": "insofar as / whereby / that said / by the same token", "enables": ["sustain_coherence_across_topic_shifts", "function_inside_an_unfamiliar_high_ambiguity_exchange"], "prerequisite": null, "reaches": "independent", "firstArc": "discourse_flexibility", "reuseArcs": ["integrated_mediation"] },
@@ -305,8 +306,8 @@
   "semanticTypes": {
     "existingReused": ["person", "place", "activity", "feeling", "generic_object"],
     "proposed": [
-      { "id": "source_text", "requiredBy": ["extract_key_argument_from_dense_text", "synthesize_multiple_viewpoints", "identify_authors_stance_and_bias", "reformulate_for_a_different_audience", "summarize_preserving_nuance", "paraphrase_to_avoid_flattening_meaning", "mediate_a_complex_disagreement_for_a_third_party"], "examples": ["a two-paragraph opinion column", "two short conflicting reviews"], "incompatibleWith": ["activity", "person"], "whyNotExisting": "A source text carries a claim and support that must be extracted, not a single named value; no existing slot type holds multi-sentence content with an internal argument structure." },
-      { "id": "audience_profile", "requiredBy": ["reformulate_for_a_different_audience", "summarize_preserving_nuance", "shift_register_deliberately", "adapt_a_text_across_genre_and_register", "mediate_a_complex_disagreement_for_a_third_party"], "examples": ["a colleague outside the field", "a worried customer", "a child"], "incompatibleWith": ["person"], "whyNotExisting": "A person is an interlocutor identity; an audience profile is a target-audience descriptor for a text and must not be substitutable for a conversational partner." },
+      { "id": "source_text", "requiredBy": ["extract_key_argument_from_dense_text", "synthesize_multiple_viewpoints", "identify_authors_stance_and_bias", "reformulate_dense_source_for_a_new_audience", "summarize_preserving_nuance", "paraphrase_to_avoid_flattening_meaning", "mediate_a_complex_disagreement_for_a_third_party"], "examples": ["a two-paragraph opinion column", "two short conflicting reviews"], "incompatibleWith": ["activity", "person"], "whyNotExisting": "A source text carries a claim and support that must be extracted, not a single named value; no existing slot type holds multi-sentence content with an internal argument structure." },
+      { "id": "audience_profile", "requiredBy": ["reformulate_dense_source_for_a_new_audience", "summarize_preserving_nuance", "shift_register_deliberately", "adapt_a_text_across_genre_and_register", "mediate_a_complex_disagreement_for_a_third_party"], "examples": ["a colleague outside the field", "a worried customer", "a child"], "incompatibleWith": ["person"], "whyNotExisting": "A person is an interlocutor identity; an audience profile is a target-audience descriptor for a text and must not be substitutable for a conversational partner." },
       { "id": "register_level", "requiredBy": ["shift_register_deliberately", "manage_face_in_disagreement", "edit_own_text_for_precision_and_tone", "adapt_a_text_across_genre_and_register", "mediate_a_complex_disagreement_for_a_third_party"], "examples": ["formal", "neutral", "informal", "technical"], "incompatibleWith": ["free_text"], "whyNotExisting": "Must be a closed enum so the evaluator can check a requested shift actually occurred, unlike free-text slots elsewhere in the product." },
       { "id": "stance_marker", "requiredBy": ["identify_authors_stance_and_bias", "recognize_implied_meaning", "recognize_irony_and_understatement", "respond_appropriately_to_an_indirect_speech_act", "soften_or_intensify_a_claim", "manage_face_in_disagreement", "repair_a_misunderstanding_at_intention_level", "develop_an_extended_qualified_argument", "preempt_and_rebut_a_counterargument", "qualify_a_position_with_precision", "mediate_a_complex_disagreement_for_a_third_party"], "examples": ["presumably", "undeniably", "to some extent"], "incompatibleWith": ["activity", "place"], "whyNotExisting": "Tracked as its own type so the evaluator can check presence/appropriateness of a hedge or boost independently of the proposition it attaches to." }
     ],
@@ -353,7 +354,7 @@
       "id": "dense_input_synthesis", "order": 1, "titleConcept": "Making sense of dense material",
       "communicativeProblem": "The learner meets an argumentative or abstract text and cannot reliably say what it actually claims, what it uses to support that claim, or what it deliberately leaves unstated.",
       "whyNow": "Every later arc — reformulation, argument, mediation — assumes the learner can already do this on the input side.",
-      "prerequisiteArcs": [], "c1Reuse": ["c1_assumed__synthesize_information", "c1_assumed__infer_meaning"],
+      "prerequisiteArcs": [], "c1Reuse": ["c1.synthesize_two_conflicting_viewpoints", "c1.infer_implied_meaning_in_unfamiliar_context"],
       "newCanDos": ["extract_key_argument_from_dense_text", "synthesize_multiple_viewpoints", "identify_authors_stance_and_bias"],
       "reinforcedCanDos": [], "newInfrastructure": ["evidentiality_stance_pattern"],
       "vocabularyBudget": { "newProductive": 8, "newReceptive": 16 }, "semanticNeeds": ["source_text", "stance_marker"],
@@ -375,8 +376,8 @@
       "id": "precise_reformulation", "order": 2, "titleConcept": "Saying it precisely, for someone else",
       "communicativeProblem": "The learner can extract a claim but cannot yet hand it to somebody else without either dumbing it down past honesty or leaving it too dense for that audience.",
       "whyNow": "Mediation is the level's organizing idea; this arc is its first productive test, directly after the receptive arc that feeds it.",
-      "prerequisiteArcs": ["dense_input_synthesis"], "c1Reuse": ["c1_assumed__reformulate"],
-      "newCanDos": ["reformulate_for_a_different_audience", "summarize_preserving_nuance", "paraphrase_to_avoid_flattening_meaning"],
+      "prerequisiteArcs": ["dense_input_synthesis"], "c1Reuse": ["c1.reformulate_for_a_different_audience"],
+      "newCanDos": ["reformulate_dense_source_for_a_new_audience", "summarize_preserving_nuance", "paraphrase_to_avoid_flattening_meaning"],
       "reinforcedCanDos": ["extract_key_argument_from_dense_text", "synthesize_multiple_viewpoints"], "newInfrastructure": ["reformulation_connector_pattern"],
       "vocabularyBudget": { "newProductive": 8, "newReceptive": 12 }, "semanticNeeds": ["source_text", "audience_profile"],
       "likelyFormats": ["reading", "guided_reply", "free_reply", "recall"],
@@ -388,7 +389,7 @@
       "dominantFourStrand": "meaning_output",
       "risk": "The evaluator must be able to tell 'shorter and still honest' from 'shorter and overconfident' — dropping a hedge is the single most likely near-miss failure mode and must be explicitly tested.",
       "reuseMap": [
-        { "capabilityId": "reformulate_for_a_different_audience", "marker": "I" },
+        { "capabilityId": "reformulate_dense_source_for_a_new_audience", "marker": "I" },
         { "capabilityId": "summarize_preserving_nuance", "marker": "I" },
         { "capabilityId": "paraphrase_to_avoid_flattening_meaning", "marker": "I" },
         { "capabilityId": "extract_key_argument_from_dense_text", "marker": "G" }
@@ -398,7 +399,7 @@
       "id": "implication_and_subtext", "order": 3, "titleConcept": "Reading between the lines",
       "communicativeProblem": "The learner can restate literal content but misses meaning carried by implication, understatement or irony — and cannot yet respond in a way that shows they caught it.",
       "whyNow": "Register control and face-saving disagreement, the next two arcs, both assume the learner can already notice implied meaning.",
-      "prerequisiteArcs": ["dense_input_synthesis"], "c1Reuse": ["c1_assumed__infer_meaning"],
+      "prerequisiteArcs": ["dense_input_synthesis"], "c1Reuse": ["c1.infer_implied_meaning_in_unfamiliar_context"],
       "newCanDos": ["recognize_implied_meaning", "recognize_irony_and_understatement", "respond_appropriately_to_an_indirect_speech_act"],
       "reinforcedCanDos": ["identify_authors_stance_and_bias"], "newInfrastructure": ["irony_understatement_marker_pattern"],
       "vocabularyBudget": { "newProductive": 6, "newReceptive": 14 }, "semanticNeeds": ["stance_marker"],
@@ -420,7 +421,7 @@
       "id": "register_and_pragmatics", "order": 4, "titleConcept": "Saying it the right way for the moment",
       "communicativeProblem": "The learner can be correct and still land wrong for a formal, informal, or professional situation, and cannot yet dial certainty up or down on purpose.",
       "whyNow": "Argument and discourse-flexibility, the next two arcs, both need register and hedge/boost control already in place.",
-      "prerequisiteArcs": ["implication_and_subtext"], "c1Reuse": ["c1_assumed__adapt_register_deliberately"],
+      "prerequisiteArcs": ["implication_and_subtext"], "c1Reuse": ["c1.adapt_register_to_audience"],
       "newCanDos": ["shift_register_deliberately", "soften_or_intensify_a_claim", "manage_face_in_disagreement"],
       "reinforcedCanDos": ["recognize_implied_meaning"], "newInfrastructure": ["hedging_pattern", "boosting_pattern", "register_shift_lexis_pattern", "face_saving_disagreement_pattern"],
       "vocabularyBudget": { "newProductive": 10, "newReceptive": 12 }, "semanticNeeds": ["register_level", "stance_marker", "audience_profile"],
@@ -443,7 +444,7 @@
       "id": "argument_and_position", "order": 5, "titleConcept": "Building and defending a nuanced position",
       "communicativeProblem": "The learner can state an opinion but not yet sustain it across pushback, qualify how far it goes, or concede a real point without abandoning the position.",
       "whyNow": "It needs the hedge/boost control just taught, and it is what the discourse-flexibility arc's coherence-under-topic-shift task will be tested through.",
-      "prerequisiteArcs": ["register_and_pragmatics"], "c1Reuse": ["c1_assumed__argue_with_reasons", "c1_assumed__handle_counterarguments"],
+      "prerequisiteArcs": ["register_and_pragmatics"], "c1Reuse": ["c1.develop_a_structured_argument", "c1.concede_a_counterpoint_gracefully"],
       "newCanDos": ["develop_an_extended_qualified_argument", "preempt_and_rebut_a_counterargument", "qualify_a_position_with_precision"],
       "reinforcedCanDos": ["soften_or_intensify_a_claim"], "newInfrastructure": ["concession_then_position_pattern"],
       "vocabularyBudget": { "newProductive": 8, "newReceptive": 10 }, "semanticNeeds": ["stance_marker"],
@@ -494,7 +495,7 @@
       "whyNow": "It is deliberately placed after register and argument work exist to edit, and right before the capstone, which assumes the learner can self-correct rather than submit a first draft.",
       "prerequisiteArcs": ["register_and_pragmatics", "precise_reformulation"], "c1Reuse": [],
       "newCanDos": ["edit_own_text_for_precision_and_tone", "vary_expression_to_avoid_flattening_meaning", "adapt_a_text_across_genre_and_register"],
-      "reinforcedCanDos": ["shift_register_deliberately", "reformulate_for_a_different_audience"], "newInfrastructure": ["lexical_precision_substitution_pattern"],
+      "reinforcedCanDos": ["shift_register_deliberately", "reformulate_dense_source_for_a_new_audience"], "newInfrastructure": ["lexical_precision_substitution_pattern"],
       "vocabularyBudget": { "newProductive": 8, "newReceptive": 8 }, "semanticNeeds": ["register_level"],
       "likelyFormats": ["free_reply", "recall"],
       "conversationTarget": { "meaningfulTurns": 5, "learnerOpenTurns": 5, "learnerInitiatedQuestions": 0 },
@@ -509,7 +510,7 @@
         { "capabilityId": "vary_expression_to_avoid_flattening_meaning", "marker": "I" },
         { "capabilityId": "adapt_a_text_across_genre_and_register", "marker": "I" },
         { "capabilityId": "shift_register_deliberately", "marker": "R" },
-        { "capabilityId": "reformulate_for_a_different_audience", "marker": "R" }
+        { "capabilityId": "reformulate_dense_source_for_a_new_audience", "marker": "R" }
       ]
     },
     {
