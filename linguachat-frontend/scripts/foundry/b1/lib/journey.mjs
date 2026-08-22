@@ -34,19 +34,28 @@ import {
 export const NAME = 'Sebastian'
 export const PLACE = 'Bogotá'
 
-/* The English a learner types, per (evalKind, narrativeForm). Canonical. */
+/* The English a learner types, per evalKind (a plain string), or per
+ * (evalKind, subtype) when the intent carries a subtype
+ * (`narrativeForm`/`intentForm`/`tone` — b1.json intentStrategy.
+ * newSubtypesOnExistingIntents). The evaluators judge structure, not exact
+ * wording, so one canonical answer per (evalKind[, subtype]) is enough
+ * regardless of the specific prompt/topic a step uses. */
 const ANSWERS = {
   narrate_past_event: {
     sequence: 'First I got up. Then I made coffee. After that I read the news. Finally I left for work.',
     interruption: 'I was cooking dinner when the power went out.',
   },
+  state_opinion: 'I think that weekend trips are great, because they help you relax.',
+  agree_or_disagree: "I agree, because there's more to do in a city.",
 }
 
 export function answerFor(step) {
-  const byForm = ANSWERS[step.evalKind]
-  if (!byForm) throw new Error(`b1 journey: no answer for ${step.evalKind}`)
-  const answer = byForm[step.narrativeForm]
-  if (!answer) throw new Error(`b1 journey: no answer for ${step.evalKind}/${step.narrativeForm}`)
+  const entry = ANSWERS[step.evalKind]
+  if (entry === undefined) throw new Error(`b1 journey: no answer for ${step.evalKind}`)
+  if (typeof entry === 'string') return entry
+  const subtypeKey = step.narrativeForm || step.intentForm || step.tone
+  const answer = entry[subtypeKey]
+  if (!answer) throw new Error(`b1 journey: no answer for ${step.evalKind}/${subtypeKey}`)
   return answer
 }
 

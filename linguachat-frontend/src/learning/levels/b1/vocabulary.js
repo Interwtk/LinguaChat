@@ -38,8 +38,33 @@ export const B1_ARC1_VOCAB = {
   b1_meanwhile: { en: 'meanwhile', type: 'connector' },
 }
 
+/* ---- Arc 2 — i_think_that (10 productive / 6 receptive, per b1.json) ---- */
+export const B1_ARC2_VOCAB = {
+  // give_an_opinion — 5 productive
+  b1_i_think_that: { en: 'I think (that)', type: 'connector' },
+  b1_in_my_opinion: { en: 'in my opinion', type: 'connector' },
+  b1_personally: { en: 'personally', type: 'connector' },
+  b1_opinion_frame_pattern: { en: 'I think (that) / in my opinion', type: 'pattern' },
+  b1_because_reason_pattern: { en: '..., because ...', type: 'pattern' },
+  // give_an_opinion — 3 receptive
+  b1_as_for_me: { en: 'as for me', type: 'connector' },
+  b1_from_my_point_of_view: { en: 'from my point of view', type: 'connector' },
+  b1_if_you_ask_me: { en: 'if you ask me', type: 'connector' },
+  // agree_or_disagree — 5 productive
+  b1_i_agree: { en: 'I agree', type: 'connector' },
+  b1_i_dont_think_so: { en: "I don't think so", type: 'connector' },
+  b1_youre_right: { en: "you're right", type: 'connector' },
+  b1_agree_disagree_pattern: { en: "I agree / I don't think so, because ...", type: 'pattern' },
+  b1_i_see_what_you_mean: { en: 'I see what you mean', type: 'connector' },
+  // agree_or_disagree — 3 receptive
+  b1_thats_true: { en: "that's true", type: 'connector' },
+  b1_i_guess_so: { en: 'I guess so', type: 'connector' },
+  b1_not_really: { en: 'not really', type: 'connector' },
+}
+
 export const B1_VOCAB_BY_ID = {
   ...B1_ARC1_VOCAB,
+  ...B1_ARC2_VOCAB,
 }
 
 export const b1ProductiveIds = (ids) => ids.filter(id => B1_VOCAB_BY_ID[id])

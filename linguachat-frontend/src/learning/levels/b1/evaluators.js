@@ -131,11 +131,73 @@ export function evaluateNarratePastEvent(text, ctx = {}) {
   return ctx.narrativeForm === 'interruption' ? evaluateInterruption(text, ctx) : evaluateSequence(text, ctx)
 }
 
+/* ---------------------------------------------------------------------------
+ * arc 2 — state_opinion, agree_or_disagree
+ * ------------------------------------------------------------------------- */
+
+const OPINION_FRAME_RE = /\b(i think(?:\s+that)?|in my opinion|personally|i believe)\b/
+const REASON_RE = /\bbecause\b/
+const AGREE_RE = /\b(i agree|i think so too|you'?re right|that'?s true)\b/
+const DISAGREE_RE = /\b(i don'?t think so|i disagree|i don'?t agree|i'?m not so sure)\b/
+
+export function evaluateStateOpinion(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'I think that weekend trips are great, because they help you relax.'
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptOpinionEmpty' }
+
+  const hasFrame = OPINION_FRAME_RE.test(n)
+  const hasReason = REASON_RE.test(n)
+
+  if (hasFrame && hasReason) {
+    r.completedObjective = true
+    r.confidence = 0.92
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseOpinionIndependent' : 'b1PraiseOpinionHelped'
+    return r
+  }
+  if (hasFrame && !hasReason) {
+    return { ...r, errorType: 'missing_reason', priorityCorrection: 'b1RetryExplainOpinionReason', explanation: 'b1RetryExplainOpinionReason', retryRequired: true, retryPrompt: 'b1RetryPromptOpinionReason' }
+  }
+  if (!hasFrame && hasReason) {
+    return { ...r, errorType: 'missing_opinion_frame', priorityCorrection: 'b1RetryExplainOpinionFrame', explanation: 'b1RetryExplainOpinionFrame', retryRequired: true, retryPrompt: 'b1RetryPromptOpinionFrame' }
+  }
+  // genuinely unrecognized attempt: never a confident reject (§15.1)
+  return { ...r, errorType: 'no_opinion', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptOpinionFrame' }
+}
+
+export function evaluateAgreeOrDisagree(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = "I agree, because there's more to do in a city."
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptAgreeEmpty' }
+
+  const agrees = AGREE_RE.test(n)
+  const disagrees = DISAGREE_RE.test(n)
+  const hasStance = agrees || disagrees
+  const hasReason = REASON_RE.test(n)
+
+  if (hasStance && hasReason) {
+    r.completedObjective = true
+    r.confidence = 0.92
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseAgreeIndependent' : 'b1PraiseAgreeHelped'
+    return r
+  }
+  if (hasStance && !hasReason) {
+    return { ...r, errorType: 'missing_reason', priorityCorrection: 'b1RetryExplainAgreeReason', explanation: 'b1RetryExplainAgreeReason', retryRequired: true, retryPrompt: 'b1RetryPromptAgreeReason' }
+  }
+  if (!hasStance && hasReason) {
+    return { ...r, errorType: 'missing_stance', priorityCorrection: 'b1RetryExplainAgreeStance', explanation: 'b1RetryExplainAgreeStance', retryRequired: true, retryPrompt: 'b1RetryPromptAgreeStance' }
+  }
+  return { ...r, errorType: 'no_agree_disagree', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptAgreeStance' }
+}
+
 /* Dispatcher for this arc's intents, mirroring `evaluateFree`'s own shape so a
  * future merge is mechanical. Grows as later arcs land. */
 export function evaluateB1Free(kind, text, ctx = {}) {
   switch (kind) {
     case 'narrate_past_event': return evaluateNarratePastEvent(text, ctx)
+    case 'state_opinion': return evaluateStateOpinion(text, ctx)
+    case 'agree_or_disagree': return evaluateAgreeOrDisagree(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }

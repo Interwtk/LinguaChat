@@ -11,10 +11,14 @@ export const B1_MODEL_ANSWER = {
   narrate_past_event: (v) => (v.narrativeForm === 'interruption'
     ? 'I was cooking dinner when the power went out.'
     : 'First I got up. Then I had breakfast. After that I went to work. Finally I came home.'),
+  state_opinion: () => 'I think that weekend trips are great, because they help you relax.',
+  agree_or_disagree: () => "I agree, because there's more to do in a city.",
 }
 
 export const B1_PROMPT = {
   narrate_past_event: (v) => (v.narrativeForm === 'interruption'
     ? `Think of a moment something happened while you were doing something else, ${v.name || ''}. What was happening?`
     : `Tell me about your day, ${v.name || ''} — what did you do, in order?`),
+  state_opinion: (v) => `What's your opinion about that, ${v.name || ''}? Tell me why.`,
+  agree_or_disagree: (v) => `Do you agree with that, ${v.name || ''}? Why or why not?`,
 }

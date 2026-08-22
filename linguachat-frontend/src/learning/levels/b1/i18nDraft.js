@@ -85,3 +85,71 @@ export const B1_ARC1_COPY = {
   b1RetryExplainInterruptionForm: 'For an ongoing action, use "was/were" + "-ing": "I was cooking when...".',
   b1RetryPromptInterruptionForm: 'Try describing what was already happening.',
 }
+
+export const B1_ARC2_COPY = {
+  // episode 4 — what_i_think
+  b1Ep4Title: 'What I Think',
+  b1Ep4Goal: 'State an opinion and give a reason for it.',
+  b1Ep4CanDoName: 'Give an opinion',
+  b1Ep4Duration: '8 min',
+  b1Ep4SceneTitle: 'Not just facts — your view',
+  b1Ep4SceneBody: "You already know how to give a reason for an opinion about yourself. Now let's use that for opinions about anything.",
+  b1Ep4ModelExplain: '"I think that" and "in my opinion" introduce a view; "because" gives the reason behind it.',
+  b1Ep4ComprehensionInstruction: 'Which sentence gives an opinion, not just a fact?',
+  b1Ep4CompOptCorrect: 'I think that weekend trips are a great idea.',
+  b1Ep4CompOptWrong1: 'The train leaves at nine.',
+  b1Ep4CompOptWrong2: 'Weekend trips usually last two days.',
+  b1Ep4BlankInstruction: 'Complete the sentence with an opinion frame.',
+  b1Ep4BlankHint: 'Three words, then the rest of the sentence.',
+  b1Ep4OpenInstruction: 'Give your opinion and a reason.',
+  b1Ep4OpenInstruction2: 'Now a different topic — no model this time, just your own words.',
+
+  // episode 5 — agree_to_disagree
+  b1Ep5Title: 'Agree to Disagree',
+  b1Ep5Goal: "Agree or disagree with someone else's opinion, politely, with a reason.",
+  b1Ep5CanDoName: 'Agree or disagree',
+  b1Ep5Duration: '9 min',
+  b1Ep5SceneTitle: 'A real exchange',
+  b1Ep5SceneBody: "An opinion nobody can respond to is just a monologue. Let's make it a conversation.",
+  b1Ep5ModelExplain: '"I agree" or "I don\'t think so" always come with a reason, the same way your own opinions do.',
+  b1Ep5ComprehensionInstruction: 'Which reply politely disagrees, with a reason?',
+  b1Ep5CompOptCorrect: "I don't think so, because I prefer to go at my own pace.",
+  b1Ep5CompOptWrong1: 'Team sports have eleven players.',
+  b1Ep5CompOptWrong2: 'No.',
+  b1Ep5BlankInstruction: 'Complete the sentence.',
+  b1Ep5BlankHint: 'Two words that show you share the opinion.',
+  b1Ep5OpenInstruction: 'Say whether you agree or disagree, and why.',
+  b1Ep5OpenInstruction2: 'One more — a different opinion, no model this time.',
+
+  // episode 6 — having_a_real_exchange
+  b1Ep6Title: 'Having a Real Exchange',
+  b1Ep6Goal: 'Give an opinion, then respond to someone else\'s, in one exchange.',
+  b1Ep6CanDoName: 'Hold an opinion exchange',
+  b1Ep6Duration: '8 min',
+  b1Ep6SceneTitle: 'Put it all together',
+  b1Ep6SceneBody: "One more exchange — this time, give your own opinion and then respond to someone else's.",
+  b1Ep6OpenInstruction: 'Give your opinion and a reason.',
+  b1Ep6ComprehensionInstruction: 'When someone disagrees politely, what do they always add?',
+  b1Ep6CompOptCorrect: 'A reason for their view',
+  b1Ep6CompOptWrong1: 'Nothing — just "no"',
+  b1Ep6CompOptWrong2: 'A question back',
+  b1Ep6OpenInstruction2: 'Now agree or disagree, completely on your own — no model shown.',
+
+  // evaluator copy — state_opinion
+  b1RetryPromptOpinionEmpty: 'Tell me what you think — start with "I think that..."',
+  b1PraiseOpinionIndependent: "Great — that's a real opinion, with your own reason.",
+  b1PraiseOpinionHelped: 'Nice — you stated an opinion and gave a reason.',
+  b1RetryExplainOpinionReason: 'Good opinion — now add "because" and say why.',
+  b1RetryPromptOpinionReason: 'Add a reason with "because".',
+  b1RetryExplainOpinionFrame: 'You gave a reason, but not the opinion itself — try "I think that... because...".',
+  b1RetryPromptOpinionFrame: 'Start with "I think that" or "in my opinion".',
+
+  // evaluator copy — agree_or_disagree
+  b1RetryPromptAgreeEmpty: 'Tell me if you agree or disagree, and why.',
+  b1PraiseAgreeIndependent: "Perfect — you took a clear position, with a reason.",
+  b1PraiseAgreeHelped: 'Good — that shows agreement or disagreement clearly.',
+  b1RetryExplainAgreeReason: 'Good — now add "because" and say why.',
+  b1RetryPromptAgreeReason: 'Add a reason with "because".',
+  b1RetryExplainAgreeStance: 'You gave a reason, but not whether you agree — try "I agree..." or "I don\'t think so...".',
+  b1RetryPromptAgreeStance: 'Start with "I agree" or "I don\'t think so".',
+}

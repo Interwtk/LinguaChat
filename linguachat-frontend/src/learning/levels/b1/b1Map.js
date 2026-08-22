@@ -12,13 +12,14 @@
  * derivation functions should need no change, only their episode source.
  */
 import { B1_ARC1 } from './episodes/b1Arc1.js'
+import { B1_ARC2 } from './episodes/b1Arc2.js'
 
 /* A level-local id. NOT `curriculum/levels.js`'s `B1` (that constant does not
  * exist yet) — do not import this into anything that expects the real one. */
 export const B1_LEVEL_ID = 'b1'
 
 /* The arcs of B1 with runtime content today, in the blueprint's order. */
-export const B1_RUNTIME_ARCS = ['what_happened']
+export const B1_RUNTIME_ARCS = ['what_happened', 'i_think_that']
 
 /* One intent per can-do, same convention as `A1_CAN_DO_INTENT`/`CAN_DO_INTENT`. */
 export const B1_CAN_DO_INTENT = {
@@ -27,6 +28,9 @@ export const B1_CAN_DO_INTENT = {
   // "one intent per communicative function" rule A1 already follows.
   narrate_connected_event: 'narrate_past_event',
   narrate_interrupted_action: 'narrate_past_event',
+  // arc 2 — two distinct intents, per b1.json intentStrategy.newIntents
+  give_an_opinion: 'state_opinion',
+  agree_or_disagree: 'agree_or_disagree',
 }
 
 export const B1_CAN_DO_EXTRA_INTENTS = {}
@@ -36,20 +40,23 @@ export const b1IntentsOf = (canDoId) => [
   ...(B1_CAN_DO_EXTRA_INTENTS[canDoId] || []),
 ].filter(Boolean)
 
-/* Arc 1's two required can-dos. Both `scope: required` in b1.json. */
+/* Required can-dos, both `scope: required` in b1.json, arcs 1-2. */
 export const B1_REQUIRED_CAN_DOS = [
   'narrate_connected_event', 'narrate_interrupted_action',
+  'give_an_opinion', 'agree_or_disagree',
 ]
 
 export const B1_RECEPTIVE_ITEMS = [
   'b1_that_morning', 'b1_later_that_day', 'b1_eventually', 'b1_in_the_end',
   'b1_at_that_moment', 'b1_right_then', 'b1_meanwhile',
+  'b1_as_for_me', 'b1_from_my_point_of_view', 'b1_if_you_ask_me',
+  'b1_thats_true', 'b1_i_guess_so', 'b1_not_really',
 ]
 
 export const B1_INCIDENTAL_ITEMS = []
 
 export function b1Episodes() {
-  return [...B1_ARC1]
+  return [...B1_ARC1, ...B1_ARC2]
 }
 
 export const B1_ARC_CAN_DOS = [...new Set(b1Episodes().map(ep => ep.canDoId).filter(Boolean))]
@@ -97,6 +104,11 @@ export const B1_INTRODUCED_ITEMS = [
   'b1_first', 'b1_then', 'b1_after_that', 'b1_before_that', 'b1_finally',
   'b1_sequence_connectors_pattern', 'b1_past_continuous_pattern', 'b1_when_while_pattern',
   'b1_suddenly', 'b1_just_then',
+  // arc 2 — i_think_that: opinion frame, reason connector, agree/disagree
+  'b1_i_think_that', 'b1_in_my_opinion', 'b1_personally',
+  'b1_opinion_frame_pattern', 'b1_because_reason_pattern',
+  'b1_i_agree', 'b1_i_dont_think_so', 'b1_youre_right',
+  'b1_agree_disagree_pattern', 'b1_i_see_what_you_mean',
   ...B1_RECEPTIVE_ITEMS,
 ]
 
