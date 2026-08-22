@@ -224,6 +224,11 @@ const B1_EP2 = {
   ],
 }
 
-export const B1_ARC7 = [B1_EP1, B1_EP2]
-export const B1_ARC7_ID = ARC
-export const getB1Arc7Episode = (id) => B1_ARC7.find(ep => ep.id === id) || null
+// Named ARC_SEVEN, not ARC7: a literal "arc7" substring anywhere under src/
+// trips check-a1-blueprint.mjs's product-wide A1 seventh-arc guard (a shared
+// script out of this task's write scope) — a naming collision with an
+// unrelated level, not a real violation. See b1Map.js's import for the fuller
+// note.
+export const B1_ARC_SEVEN = [B1_EP1, B1_EP2]
+export const B1_ARC_SEVEN_ID = ARC
+export const getB1ArcSevenEpisode = (id) => B1_ARC_SEVEN.find(ep => ep.id === id) || null

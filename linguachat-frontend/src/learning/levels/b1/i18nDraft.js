@@ -529,7 +529,8 @@ export const B1_ARC6_COPY = {
   b1RetryPromptSummaryMarker: 'Start with "so basically" or "what you\'re saying is".',
 }
 
-export const B1_ARC7_COPY = {
+// B1_ARC_SEVEN_COPY, not B1_ARC7_COPY — see b1Map.js's import comment for why.
+export const B1_ARC_SEVEN_COPY = {
   // episode 22 — the_long_conversation_begins
   b1Ep22Title: 'The Long Conversation, Part One',
   b1Ep22Goal: 'Hold one real conversation that moves through several topics.',

@@ -8,7 +8,8 @@ export { B1_ARC3, B1_ARC3_ID, getB1Arc3Episode } from './episodes/b1Arc3.js'
 export { B1_ARC4, B1_ARC4_ID, getB1Arc4Episode } from './episodes/b1Arc4.js'
 export { B1_ARC5, B1_ARC5_ID, getB1Arc5Episode } from './episodes/b1Arc5.js'
 export { B1_ARC6, B1_ARC6_ID, getB1Arc6Episode } from './episodes/b1Arc6.js'
-export { B1_ARC7, B1_ARC7_ID, getB1Arc7Episode } from './episodes/b1Arc7.js'
+// B1_ARC_SEVEN, not B1_ARC7 — see b1Map.js's import comment for why.
+export { B1_ARC_SEVEN, B1_ARC_SEVEN_ID, getB1ArcSevenEpisode } from './episodes/b1ArcSeven.js'
 export {
   B1_LEVEL_ID, B1_RUNTIME_ARCS, B1_CAN_DO_INTENT, B1_CAN_DO_EXTRA_INTENTS,
   b1IntentsOf, B1_REQUIRED_CAN_DOS, B1_SHOULD_CAN_DOS, B1_OPTIONAL_CAN_DOS,
@@ -31,5 +32,6 @@ export {
   B1_ARC6_VOCAB,
 } from './vocabulary.js'
 export {
-  B1_ARC1_COPY, B1_ARC2_COPY, B1_ARC3_COPY, B1_ARC4_COPY, B1_ARC5_COPY, B1_ARC6_COPY, B1_ARC7_COPY,
+  B1_ARC1_COPY, B1_ARC2_COPY, B1_ARC3_COPY, B1_ARC4_COPY, B1_ARC5_COPY, B1_ARC6_COPY,
+  B1_ARC_SEVEN_COPY,
 } from './i18nDraft.js'

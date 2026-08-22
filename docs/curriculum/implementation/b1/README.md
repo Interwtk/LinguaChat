@@ -147,7 +147,7 @@ Tracked per arc as it lands. An arc listed here has real runtime modules under
   content signal on its own and must stay clearly outside a coincidental
   nonsense-string collision.
 - **Arc 7 — `the_long_conversation`** (no new can-dos; the level's closing capstone): **done.**
-  2 episodes (`episodes/b1Arc7.js`), no new patterns/vocabulary/evaluators by design
+  2 episodes (`episodes/b1ArcSeven.js`), no new patterns/vocabulary/evaluators by design
   (`vocabularyBudget: 0/0`) — every evalKind it uses was already authored and proven in arcs 1-6.
   This is the arc every earlier arc's check explicitly deferred delayed-retrieval proof to; that
   proof now genuinely exists: `scripts/foundry/b1/check-b1-arc7.mjs` statically confirms every one
@@ -163,7 +163,7 @@ Tracked per arc as it lands. An arc listed here has real runtime modules under
   pedagogical journeys, 12 QA groups. `b1.json`'s own prose ("all thirteen required B1
   capabilities") does not match its own `counts.canDosRequired: 12` or the actual required-scope
   list this task built arc by arc — documented as a minor blueprint-prose inconsistency in
-  `b1Arc7.js`'s header, not treated as a blocker (the capstone is built and proven against the
+  `b1ArcSeven.js`'s header, not treated as a blocker (the capstone is built and proven against the
   authoritative 12-item list).
 
 ## Running the QA suite
