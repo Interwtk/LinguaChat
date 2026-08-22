@@ -106,6 +106,12 @@ const DEVELOP_01 = {
   gardenItems: ['academic_hedging_pattern', 'boosting_pattern', 'on balance', 'that said', 'concede'],
   reuseSkills: ['soften_or_intensify_a_claim'],
   steps: [
+    {
+      type: 'recall', review: true, instructionKey: 'c2ep17GuidedReuseInstruction',
+      evalKind: 'qualify_claim', canDoId: 'soften_or_intensify_a_claim',
+      itemIds: ['academic_hedging_pattern', 'boosting_pattern'],
+      note: "reinforcement (marker 'R') per c2.json arc argument_and_position's own reuseMap — an extended argument is built out of proportionately hedged/boosted claims, so this arc briefly reactivates arc 4's skill before extending it across a whole position",
+    },
     { type: 'scene', mood: 'focused', titleKey: 'c2ep17SceneTitle', bodyKey: 'c2ep17SceneBody', showGoal: true, ctaKey: 'c2ep17Start',
       sourceTextEn: "Debate topic: should city libraries replace physical late fees with an honor system? Counterargument surfaced explicitly: 'But without fees, some people will just never return books.'" },
     {

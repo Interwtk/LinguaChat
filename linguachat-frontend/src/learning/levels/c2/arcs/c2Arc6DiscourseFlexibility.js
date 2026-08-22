@@ -74,6 +74,12 @@ const SUSTAIN_01 = {
   gardenItems: ['paragraph_scale_cohesion_pattern', 'insofar as', 'whereby', 'coherence'],
   reuseSkills: ['develop_an_extended_qualified_argument'],
   steps: [
+    {
+      type: 'recall', review: true, instructionKey: 'c2ep21GuidedReuseInstruction',
+      evalKind: 'develop_argument', canDoId: 'develop_an_extended_qualified_argument',
+      itemIds: ['academic_hedging_pattern', 'boosting_pattern'],
+      note: "reinforcement (marker 'R') per c2.json arc discourse_flexibility's own reuseMap — sustaining coherence across a topic shift still needs the qualified-argument skill underneath it, so this arc briefly reactivates arc 5's skill before putting it under conversational pressure",
+    },
     { type: 'scene', mood: 'thoughtful', titleKey: 'c2ep21SceneTitle', bodyKey: 'c2ep21SceneBody', showGoal: true, ctaKey: 'c2ep21Start',
       turnContext: [{ speaker: 'flatmate', textEn: "Can we talk about the chore schedule? I feel like I'm doing the dishes every night." }] },
     {
@@ -130,6 +136,12 @@ const REPAIR_02 = {
   reuseSkills: ['manage_face_in_disagreement'],
   steps: [
     { type: 'recall', review: true, instructionKey: 'c2ep22RecallInstruction', evalKind: 'sustain_coherence', canDoId: 'sustain_coherence_across_topic_shifts', itemIds: ['paragraph_scale_cohesion_pattern'] },
+    {
+      type: 'recall', review: true, instructionKey: 'c2ep22GuidedReuseInstruction',
+      evalKind: 'shift_register', subtype: 'face_saving_disagreement', canDoId: 'manage_face_in_disagreement',
+      itemIds: ['face_saving_disagreement_pattern'],
+      note: "reinforcement (marker 'R') per c2.json arc discourse_flexibility's own reuseMap — intention-level repair usually follows a face-threatening moment, so this arc briefly reactivates arc 4's face-saving skill right before teaching the harder intention-level repair",
+    },
     { type: 'scene', mood: 'thoughtful', titleKey: 'c2ep22SceneTitle', bodyKey: 'c2ep22SceneBody', ctaKey: 'c2ep22Start',
       turnContext: [
         { speaker: 'flatmate', textEn: "Can we talk about the chore schedule? I feel like I'm doing the dishes every night." },
@@ -190,6 +202,14 @@ const UNFAMILIAR_03 = {
   reuseSkills: ['sustain_coherence_across_topic_shifts', 'repair_a_misunderstanding_at_intention_level'],
   steps: [
     { type: 'recall', review: true, instructionKey: 'c2ep23RecallInstruction', evalKind: 'repair_at_intention_level', canDoId: 'repair_a_misunderstanding_at_intention_level', itemIds: ['face_saving_disagreement_pattern'] },
+    {
+      type: 'free_reply', speaker: 'lingua', promptEn: "Your flatmate adds: 'Well, at least the dishes only take five minutes, so it's not exactly a disaster.' What's really going on there - is it as minor as it sounds?",
+      instructionKey: 'c2ep23DelayedRetrievalInstruction', evalKind: 'recognize_implication', subtype: 'irony', canDoId: 'recognize_irony_and_understatement',
+      turnContext: [{ speaker: 'flatmate', textEn: "Well, at least the dishes only take five minutes, so it's not exactly a disaster." }],
+      suggestionEn: "That sounds like an understatement - dishes every night clearly bothers them more than 'not exactly a disaster' lets on.",
+      itemIds: ['irony_understatement_marker_pattern'], evidenceType: 'delayedRetrieval',
+      note: "delayed retrieval (marker 'D') per c2.json arc discourse_flexibility's own reuseMap — recognize_irony_and_understatement, taught in arc 3, retrieved unaided here without a fresh teaching pass",
+    },
     { type: 'scene', mood: 'thoughtful', titleKey: 'c2ep23SceneTitle', bodyKey: 'c2ep23SceneBody', ctaKey: 'c2ep23Start',
       turnContext: [{ speaker: 'flatmate', textEn: "Well, it's not like it's anyone's fault really - it's probably just uneven by accident, I guess." }] },
     {

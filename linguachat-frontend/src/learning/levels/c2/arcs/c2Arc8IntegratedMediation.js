@@ -99,13 +99,66 @@ const MEDIATE_01 = {
       type: 'free_reply', speaker: 'lingua', promptEn: "Draft a mediation summary of the dispute above. Represent both sides faithfully - don't take a side.",
       instructionKey: 'c2ep29GuidedInstruction', evalKind: 'mediate_disagreement', canDoId: 'mediate_a_complex_disagreement_for_a_third_party',
       evaluationSpan: 'multiTurn', sourceRef: true,
+      turnContext: [
+        { speaker: 'landlord', textEn: "The tenant hasn't paid the increased rent since the notice went out three months ago, and I've been more than patient." },
+        { speaker: 'tenant', textEn: "I never actually received a proper written notice - someone mentioned it in passing, but nothing was posted or mailed, and I'm not going to pay a rate I was never formally told about." },
+      ],
       suggestionEn: "The landlord believes the tenant owes the increased rent because a notice was given; the tenant disputes ever receiving proper written notice. Both sides agree some notice attempt happened, but disagree about whether it counted.",
       itemIds: ['reformulation_connector_pattern', 'concession_then_position_pattern'], evidenceType: 'assistedOpen',
+    },
+    /*
+     * Seven quick delayed-retrieval warm-up checks, one per prerequisite
+     * capability C2_CAPSTONE_DELAYED_RETRIEVAL_CHECKS names — a short
+     * "show me you still have this tool" turn for each, immediately before
+     * the main independent mediation attempt that actually logs
+     * `delayedRetrievalChecks`. This is what makes the reuse matrix's
+     * T/D/F markers for this arc real authored content, not just a
+     * metadata list on the big free_reply step below.
+     */
+    {
+      type: 'free_reply', speaker: 'lingua', promptEn: "Quick check before the full task: summarize this line from the dispute for someone who's never heard of it - 'the tenant hasn't paid since the notice went out' - preserving the actual uncertainty about whether the notice was proper.",
+      instructionKey: 'c2ep29RetrievalSummarize', evalKind: 'reformulate_for_audience', subtype: 'summarize', canDoId: 'summarize_preserving_nuance',
+      itemIds: ['reformulation_connector_pattern'], evidenceType: 'delayedRetrieval', transfer: true,
+    },
+    {
+      type: 'free_reply', speaker: 'lingua', promptEn: "The landlord snaps: 'Are you saying I'm lying about sending notice?' Respond in a face-saving way, without fully agreeing or attacking back.",
+      instructionKey: 'c2ep29RetrievalFace', evalKind: 'shift_register', subtype: 'face_saving_disagreement', canDoId: 'manage_face_in_disagreement',
+      itemIds: ['face_saving_disagreement_pattern'], evidenceType: 'delayedRetrieval',
+    },
+    {
+      type: 'free_reply', speaker: 'lingua', promptEn: "Someone argues: 'The tenant clearly just doesn't want to pay more rent, notice or no notice.' Rebut that counterargument fairly.",
+      instructionKey: 'c2ep29RetrievalRebut', evalKind: 'rebut_counterargument', canDoId: 'preempt_and_rebut_a_counterargument',
+      itemIds: ['concession_then_position_pattern'], evidenceType: 'delayedRetrieval',
+    },
+    {
+      type: 'free_reply', speaker: 'lingua', promptEn: "The tenant says: 'Wait, are you saying this is my fault?' Repair the misunderstanding - you're not blaming them, you're trying to establish the facts.",
+      instructionKey: 'c2ep29RetrievalRepair', evalKind: 'repair_at_intention_level', canDoId: 'repair_a_misunderstanding_at_intention_level',
+      itemIds: ['face_saving_disagreement_pattern'], evidenceType: 'delayedRetrieval',
+    },
+    {
+      type: 'free_reply', speaker: 'lingua', promptEn: "The landlord adds: 'And while we're at it, the tenant's been leaving bikes in the hallway too.' Acknowledge that, then bridge back to the actual rent-notice question at hand.",
+      instructionKey: 'c2ep29RetrievalSustain', evalKind: 'sustain_coherence', canDoId: 'sustain_coherence_across_topic_shifts',
+      evaluationSpan: 'multiTurn', turnContext: [{ speaker: 'landlord', textEn: "And while we're at it, the tenant's been leaving bikes in the hallway too." }],
+      itemIds: ['paragraph_scale_cohesion_pattern'], evidenceType: 'delayedRetrieval',
+    },
+    {
+      type: 'free_reply', speaker: 'lingua', promptEn: "The tenant mutters: 'Oh sure, because landlords always remember to send notices on time.' What's really being communicated there?",
+      instructionKey: 'c2ep29RetrievalIrony', evalKind: 'recognize_implication', subtype: 'irony', canDoId: 'recognize_irony_and_understatement',
+      itemIds: ['irony_understatement_marker_pattern'], evidenceType: 'delayedRetrieval',
+    },
+    {
+      type: 'free_reply', speaker: 'lingua', promptEn: "Your draft opening line was: 'So basically the landlord's mad and the tenant's annoyed too.' Edit it for the precision and tone a real mediation summary needs.",
+      instructionKey: 'c2ep29RetrievalEdit', evalKind: 'edit_for_precision', canDoId: 'edit_own_text_for_precision_and_tone',
+      itemIds: ['lexical_precision_substitution_pattern'], evidenceType: 'delayedRetrieval',
     },
     {
       type: 'free_reply', speaker: 'lingua', promptEn: "Now complete the full mediation task independently: represent both sides faithfully and propose a useful next step.",
       instructionKey: 'c2ep29IndependentInstruction', evalKind: 'mediate_disagreement', canDoId: 'mediate_a_complex_disagreement_for_a_third_party',
       evaluationSpan: 'multiTurn', sourceRef: true,
+      turnContext: [
+        { speaker: 'landlord', textEn: "The tenant hasn't paid the increased rent since the notice went out three months ago, and I've been more than patient." },
+        { speaker: 'tenant', textEn: "I never actually received a proper written notice - someone mentioned it in passing, but nothing was posted or mailed, and I'm not going to pay a rate I was never formally told about." },
+      ],
       itemIds: ['reformulation_connector_pattern', 'face_saving_disagreement_pattern', 'concession_then_position_pattern', 'paragraph_scale_cohesion_pattern'],
       evidenceType: 'independent',
       delayedRetrievalChecks: [
@@ -121,6 +174,10 @@ const MEDIATE_01 = {
       type: 'free_reply', speaker: 'lingua', promptEn: "Transfer: a wholly new dispute never used in any earlier arc. Complete the full mediation task, unaided.",
       instructionKey: 'c2ep29TransferInstruction', evalKind: 'mediate_disagreement', canDoId: 'mediate_a_complex_disagreement_for_a_third_party',
       evaluationSpan: 'multiTurn', sourceRef: true,
+      turnContext: [
+        { speaker: 'neighbor_a', textEn: "The shared fence between our yards blew down in the storm, and I've already paid a contractor half the cost - I think it's only fair we split it evenly." },
+        { speaker: 'neighbor_b', textEn: "I never agreed to hire that specific contractor or that price - if I'd been asked first, I'd have found someone cheaper, so I don't think I should owe half of whatever you already decided to pay." },
+      ],
       itemIds: ['reformulation_connector_pattern', 'face_saving_disagreement_pattern', 'concession_then_position_pattern', 'paragraph_scale_cohesion_pattern'],
       evidenceType: 'independent', transfer: true,
     },

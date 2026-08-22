@@ -91,8 +91,14 @@ const SHIFT_01 = {
   prerequisites: [],
   skillPrerequisites: ['c1.adapt_register_to_audience'],
   gardenItems: ['register_shift_lexis_pattern', 'formality', 'register', 'diplomatic', 'bureaucratic'],
-  reuseSkills: ['c1.adapt_register_to_audience'],
+  reuseSkills: ['c1.adapt_register_to_audience', 'recognize_implied_meaning'],
   steps: [
+    {
+      type: 'recall', review: true, instructionKey: 'c2ep13GuidedReuseInstruction',
+      evalKind: 'recognize_implication', canDoId: 'recognize_implied_meaning',
+      itemIds: ['irony_understatement_marker_pattern'],
+      note: "reinforcement (marker 'R') per c2.json arc register_and_pragmatics' own reuseMap — a register mismatch is itself a kind of implied meaning (the words are fine, the register signals something else), so this arc briefly reactivates arc 3's skill before teaching deliberate register control",
+    },
     { type: 'scene', mood: 'focused', titleKey: 'c2ep13SceneTitle', bodyKey: 'c2ep13SceneBody', showGoal: true, ctaKey: 'c2ep13Start',
       sourceTextEn: "Formal: 'We regret to inform you that the item is currently unavailable.' Neutral: 'Unfortunately, this item isn't available right now.' Informal: 'Sorry, we're out of that one.'" },
     {
