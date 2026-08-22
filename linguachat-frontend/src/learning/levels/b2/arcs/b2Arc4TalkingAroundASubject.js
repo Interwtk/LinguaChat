@@ -200,9 +200,19 @@ const REPORT_OPINION_03 = {
       meaningItems: ['reported_speech_pattern', 'what_they_were_saying_was'], explainKey: 'b2ep15ModelExplain',
     },
     {
+      /*
+       * canDoId here is a deliberate light touch, not new evidence: b2.json
+       * arc.b2Reuse names develop_and_defend_opinion as reused in this arc
+       * ("recognizing an opinion well enough to report it"), and this is
+       * exactly that recognition act — spotting the opinion ("worth the
+       * extra cost") inside someone else's reported speech, the prerequisite
+       * skill report_someone_elses_opinion actually needs. No evidenceType
+       * is set: its own independent/transfer evidence is already met by
+       * arc 1 and reinforced in arc 6, so this is recognition-reuse only.
+       */
       type: 'comprehension', instructionKey: 'b2ep15ComprehensionInstruction',
       target: 'The way I understood it, he thought the earlier flight was worth the extra cost.',
-      itemId: 'reported_speech_pattern',
+      itemId: 'reported_speech_pattern', canDoId: 'develop_and_defend_opinion',
       options: [{ key: 'b2ep15CompOptCorrect', correct: true }, { key: 'b2ep15CompOptWrong1' }, { key: 'b2ep15CompOptWrong2' }],
     },
     {

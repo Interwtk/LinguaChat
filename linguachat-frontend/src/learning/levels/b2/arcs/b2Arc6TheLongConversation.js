@@ -65,12 +65,13 @@ function buildLongConversationSteps(t) {
     step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.weighPromptEn, instructionKey: 'b2ep21WeighInstruction', evalKind: 'weigh_options', canDoId: 'weigh_advantages_and_disadvantages', itemIds: ['contrast_connector_pattern', 'advantage_disadvantage_frame'], evidenceType: 'delayedRetrieval' }),
     /*
      * concede_a_point_and_counter already reaches its full evidence target
-     * (independent:1, transfer:0) in arc 1 — folded into the opinion/weigh
-     * exchange above as a light guided beat (t.concedePromptEn, delivered as
-     * Lingua's own concession inside the scene narration) rather than a
-     * separate scored turn, to keep this arc within the blueprint's
-     * 16-20 meaningfulTurns ceiling.
+     * (independent:1, transfer:0) in arc 1 — this is a recognition-only
+     * touch (a `choice` step, not a scored free_reply turn) so the reuse
+     * matrix's "R" cell for this arc corresponds to real content without
+     * pushing the arc past the blueprint's 16-20 meaningfulTurns ceiling.
      */
+    step({ type: 'choice', instructionKey: 'b2ep21ConcedeRecognizeInstruction', target: t.concedePromptEn, itemId: 'concession_counter_pattern', canDoId: 'concede_a_point_and_counter',
+      options: [{ key: 'b2ep21ConcedeRecognizeOptCorrect', correct: true }, { key: 'b2ep21ConcedeRecognizeOptWrong1' }, { key: 'b2ep21ConcedeRecognizeOptWrong2' }] }),
 
     // Topic shift 1 -> a complication (new capstone capability: sustain_a_multi_topic_conversation)
     step({ type: 'scene', mood: 'thoughtful', titleKey: 'b2ep21ShiftTitle', bodyKey: t.complicationSceneBodyKey, sceneEn: t.complicationSceneEn }),

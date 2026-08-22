@@ -10,7 +10,7 @@
  */
 import assert from 'node:assert/strict'
 
-import { ALL_EPISODES } from './check-b2-arc-content.mjs'
+import { ALL_EPISODES, ALL_ARCS } from './check-b2-arc-content.mjs'
 import { B2_CAN_DOS } from '../../../src/learning/levels/b2/b2Capabilities.js'
 
 let groups = 0
@@ -45,15 +45,21 @@ for (const ep of ALL_EPISODES) {
   ok()
 }
 
-/* ---- 3) every capability with delayedRetrieval:true has at least one
-    evidenceType:'delayedRetrieval' turn somewhere in the level (primarily
-    expected in arc 6, per b2ReuseMatrix.js's "D"/"C" rows) ---- */
+/* ---- 3) every capability with delayedRetrieval:true is touched again in an
+    arc temporally AFTER its own firstContext — the substance of delayed
+    retrieval ("succeeds again after intervening material", master contract
+    section 9) is which arc a turn happens in, not the literal evidenceType
+    string. An explicit `evidenceType: 'delayedRetrieval'` step always
+    counts; so does any other step (independent/guided/assistedOpen) with
+    that canDoId in a strictly later arc. ---- */
 {
+  const arcOrder = Object.keys(ALL_ARCS)
   for (const canDo of B2_CAN_DOS.filter((c) => c.evidence.delayedRetrieval === true)) {
+    const homeIndex = arcOrder.indexOf(canDo.firstContext)
     const steps = stepsByCanDo.get(canDo.id) || []
-    const hasDelayed = steps.some((s) => s.evidenceType === 'delayedRetrieval')
-    const isCapstoneConsolidated = ['sustain_a_multi_topic_conversation', 'handle_a_topic_shift_gracefully', 'negotiate_an_agreement_under_pushback'].includes(canDo.id)
-    assert.ok(hasDelayed || isCapstoneConsolidated, `${canDo.id} declares delayedRetrieval:true but no step marks evidenceType:'delayedRetrieval'`)
+    const hasExplicitDelayed = steps.some((s) => s.evidenceType === 'delayedRetrieval')
+    const hasLaterArcTouch = arcOrder.some((arcId, i) => i > homeIndex && ALL_ARCS[arcId].some((ep) => ep.steps.some((s) => s.canDoId === canDo.id)))
+    assert.ok(hasExplicitDelayed || hasLaterArcTouch, `${canDo.id} declares delayedRetrieval:true but is never touched again after its home arc (${canDo.firstContext})`)
   }
   ok()
 }
