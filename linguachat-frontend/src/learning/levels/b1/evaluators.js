@@ -191,6 +191,95 @@ export function evaluateAgreeOrDisagree(text, { independent = false } = {}) {
   return { ...r, errorType: 'no_agree_disagree', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptAgreeStance' }
 }
 
+/* ---------------------------------------------------------------------------
+ * arc 3 — compare_and_choose, describe_experience, recommend_or_warn
+ * ------------------------------------------------------------------------- */
+
+const COMPARATIVE_RE = /\b(more|less)\s+\w+\s+than\b|\b\w{3,}er\s+than\b/
+const SUPERLATIVE_RE = /\bthe\s+most\s+\w+\b|\b\w{3,}est\b/
+const PREFERENCE_RE = /\bi\s+(think|prefer|choose|would choose|would pick)\b|\bi'?d\s+(choose|pick|go with)\b|\bmy\s+favou?rite\s+is\b/
+
+export function evaluateCompareAndChoose(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = "The city is busier than the countryside, but it's more exciting. Of the three, I think the coast is the most relaxing."
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptCompareEmpty' }
+
+  const hasComparative = COMPARATIVE_RE.test(n)
+  const hasChoice = SUPERLATIVE_RE.test(n) || PREFERENCE_RE.test(n)
+
+  if (hasComparative && hasChoice) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseCompareIndependent' : 'b1PraiseCompareHelped'
+    return r
+  }
+  if (hasComparative && !hasChoice) {
+    return { ...r, errorType: 'missing_choice', priorityCorrection: 'b1RetryExplainCompareChoice', explanation: 'b1RetryExplainCompareChoice', retryRequired: true, retryPrompt: 'b1RetryPromptCompareChoice' }
+  }
+  if (!hasComparative && hasChoice) {
+    return { ...r, errorType: 'missing_comparison', priorityCorrection: 'b1RetryExplainCompareComparison', explanation: 'b1RetryExplainCompareComparison', retryRequired: true, retryPrompt: 'b1RetryPromptCompareComparison' }
+  }
+  return { ...r, errorType: 'no_comparison', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptCompareComparison' }
+}
+
+// normalize() strips commas, so a list like "was quiet, beautiful, and
+// relaxing" arrives as "was quiet beautiful and relaxing" — match "was"
+// followed by one or more attribute words, then "and" + a final attribute.
+const MULTI_ATTR_RE = /\bwas\s+(\w+\s+){1,4}and\s+\w+\b/
+const FEELING_RE = /\bit\s+made\s+me\s+feel\b|\bi\s+felt\b/
+
+export function evaluateDescribeExperience(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = 'It was quiet, beautiful, and relaxing. It made me feel really peaceful.'
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptDescribeEmpty' }
+
+  const hasAttrs = MULTI_ATTR_RE.test(n)
+  const hasFeeling = FEELING_RE.test(n)
+
+  if (hasAttrs && hasFeeling) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseDescribeIndependent' : 'b1PraiseDescribeHelped'
+    return r
+  }
+  if (hasAttrs && !hasFeeling) {
+    return { ...r, errorType: 'missing_feeling', priorityCorrection: 'b1RetryExplainDescribeFeeling', explanation: 'b1RetryExplainDescribeFeeling', retryRequired: true, retryPrompt: 'b1RetryPromptDescribeFeeling' }
+  }
+  if (!hasAttrs && hasFeeling) {
+    return { ...r, errorType: 'missing_attributes', priorityCorrection: 'b1RetryExplainDescribeAttributes', explanation: 'b1RetryExplainDescribeAttributes', retryRequired: true, retryPrompt: 'b1RetryPromptDescribeAttributes' }
+  }
+  return { ...r, errorType: 'no_description', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptDescribeAttributes' }
+}
+
+const RECOMMEND_RE = /\bi'?d\s+recommend\b|\bi\s+would\s+recommend\b/
+const WARN_RE = /\bi\s+wouldn'?t\s+recommend\b|\bi\s+would\s+not\s+recommend\b|\bi'?d\s+avoid\b|\bi\s+would\s+avoid\b/
+
+export function evaluateRecommendOrWarn(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = "I'd recommend the coast, because it's quiet and relaxing."
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptRecommendEmpty' }
+
+  const hasStance = RECOMMEND_RE.test(n) || WARN_RE.test(n)
+  const hasReason = REASON_RE.test(n)
+
+  if (hasStance && hasReason) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseRecommendIndependent' : 'b1PraiseRecommendHelped'
+    return r
+  }
+  if (hasStance && !hasReason) {
+    return { ...r, errorType: 'missing_reason', priorityCorrection: 'b1RetryExplainRecommendReason', explanation: 'b1RetryExplainRecommendReason', retryRequired: true, retryPrompt: 'b1RetryPromptRecommendReason' }
+  }
+  if (!hasStance && hasReason) {
+    return { ...r, errorType: 'missing_recommendation', priorityCorrection: 'b1RetryExplainRecommendStance', explanation: 'b1RetryExplainRecommendStance', retryRequired: true, retryPrompt: 'b1RetryPromptRecommendStance' }
+  }
+  return { ...r, errorType: 'no_recommendation', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptRecommendStance' }
+}
+
 /* Dispatcher for this arc's intents, mirroring `evaluateFree`'s own shape so a
  * future merge is mechanical. Grows as later arcs land. */
 export function evaluateB1Free(kind, text, ctx = {}) {
@@ -198,6 +287,9 @@ export function evaluateB1Free(kind, text, ctx = {}) {
     case 'narrate_past_event': return evaluateNarratePastEvent(text, ctx)
     case 'state_opinion': return evaluateStateOpinion(text, ctx)
     case 'agree_or_disagree': return evaluateAgreeOrDisagree(text, ctx)
+    case 'compare_and_choose': return evaluateCompareAndChoose(text, ctx)
+    case 'describe_experience': return evaluateDescribeExperience(text, ctx)
+    case 'recommend_or_warn': return evaluateRecommendOrWarn(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }

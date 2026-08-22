@@ -13,13 +13,14 @@
  */
 import { B1_ARC1 } from './episodes/b1Arc1.js'
 import { B1_ARC2 } from './episodes/b1Arc2.js'
+import { B1_ARC3 } from './episodes/b1Arc3.js'
 
 /* A level-local id. NOT `curriculum/levels.js`'s `B1` (that constant does not
  * exist yet) — do not import this into anything that expects the real one. */
 export const B1_LEVEL_ID = 'b1'
 
 /* The arcs of B1 with runtime content today, in the blueprint's order. */
-export const B1_RUNTIME_ARCS = ['what_happened', 'i_think_that']
+export const B1_RUNTIME_ARCS = ['what_happened', 'i_think_that', 'which_one']
 
 /* One intent per can-do, same convention as `A1_CAN_DO_INTENT`/`CAN_DO_INTENT`. */
 export const B1_CAN_DO_INTENT = {
@@ -31,6 +32,10 @@ export const B1_CAN_DO_INTENT = {
   // arc 2 — two distinct intents, per b1.json intentStrategy.newIntents
   give_an_opinion: 'state_opinion',
   agree_or_disagree: 'agree_or_disagree',
+  // arc 3 — three distinct intents
+  compare_options_with_reasons: 'compare_and_choose',
+  describe_an_experience: 'describe_experience',
+  recommend_or_warn: 'recommend_or_warn',
 }
 
 export const B1_CAN_DO_EXTRA_INTENTS = {}
@@ -40,23 +45,34 @@ export const b1IntentsOf = (canDoId) => [
   ...(B1_CAN_DO_EXTRA_INTENTS[canDoId] || []),
 ].filter(Boolean)
 
-/* Required can-dos, both `scope: required` in b1.json, arcs 1-2. */
+/* Required can-dos, `scope: required` in b1.json, arcs 1-3.
+ * `recommend_or_warn` is `scope: should` (b1.json arc 3) and deliberately
+ * excluded — the arc's required independence is already evidenced by
+ * compare_options_with_reasons and describe_an_experience. */
 export const B1_REQUIRED_CAN_DOS = [
   'narrate_connected_event', 'narrate_interrupted_action',
   'give_an_opinion', 'agree_or_disagree',
+  'compare_options_with_reasons', 'describe_an_experience',
 ]
+
+/* should-have can-dos: implemented, taught and evaluated, but not required
+ * for level graduation (b1.json `graduationRelevance: should`). */
+export const B1_SHOULD_CAN_DOS = ['recommend_or_warn']
 
 export const B1_RECEPTIVE_ITEMS = [
   'b1_that_morning', 'b1_later_that_day', 'b1_eventually', 'b1_in_the_end',
   'b1_at_that_moment', 'b1_right_then', 'b1_meanwhile',
   'b1_as_for_me', 'b1_from_my_point_of_view', 'b1_if_you_ask_me',
   'b1_thats_true', 'b1_i_guess_so', 'b1_not_really',
+  'b1_by_far', 'b1_on_the_other_hand', 'b1_compared_to', 'b1_overall',
+  'b1_breathtaking', 'b1_overwhelming', 'b1_underwhelming', 'b1_worth_it', 'b1_a_bit_disappointing',
+  'b1_highly_recommend', 'b1_give_it_a_miss', 'b1_not_worth_it',
 ]
 
 export const B1_INCIDENTAL_ITEMS = []
 
 export function b1Episodes() {
-  return [...B1_ARC1, ...B1_ARC2]
+  return [...B1_ARC1, ...B1_ARC2, ...B1_ARC3]
 }
 
 export const B1_ARC_CAN_DOS = [...new Set(b1Episodes().map(ep => ep.canDoId).filter(Boolean))]
@@ -109,6 +125,12 @@ export const B1_INTRODUCED_ITEMS = [
   'b1_opinion_frame_pattern', 'b1_because_reason_pattern',
   'b1_i_agree', 'b1_i_dont_think_so', 'b1_youre_right',
   'b1_agree_disagree_pattern', 'b1_i_see_what_you_mean',
+  // arc 3 — which_one: comparison, description and recommend/warn language
+  'b1_more_than', 'b1_less_than', 'b1_the_most', 'b1_of_the_three',
+  'b1_comparative_superlative_pattern', 'b1_multi_attribute_compare_pattern',
+  'b1_multi_attribute_description_pattern', 'b1_feeling_reaction_pattern',
+  'b1_it_made_me_feel', 'b1_i_felt', 'b1_peaceful', 'b1_exhausting', 'b1_unforgettable',
+  'b1_id_recommend', 'b1_i_wouldnt_recommend', 'b1_recommend_warn_pattern', 'b1_id_avoid',
   ...B1_RECEPTIVE_ITEMS,
 ]
 

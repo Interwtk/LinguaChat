@@ -47,6 +47,9 @@ const ANSWERS = {
   },
   state_opinion: 'I think that weekend trips are great, because they help you relax.',
   agree_or_disagree: "I agree, because there's more to do in a city.",
+  compare_and_choose: "The city is busier than the countryside, but it's more exciting. Of the three, I think the coast is the most relaxing.",
+  describe_experience: 'It was quiet, beautiful, and relaxing. It made me feel really peaceful.',
+  recommend_or_warn: "I'd recommend the coast, because it's quiet and relaxing.",
 }
 
 export function answerFor(step) {
