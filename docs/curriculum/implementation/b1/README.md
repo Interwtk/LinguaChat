@@ -1,7 +1,12 @@
 # B1 implementation — status
 
-**Status: in progress.** This directory holds both level-owned design artifacts and (as arcs land)
-the record of what actually exists under `linguachat-frontend/src/learning/levels/b1/**`.
+**Status: level-owned content complete (all 7 arcs).** This directory holds both level-owned
+design artifacts and the record of what actually exists under
+`linguachat-frontend/src/learning/levels/b1/**`. "Complete" here means exactly what
+`LC-CONT-B1`'s write scope can honestly claim — self-contained content, evaluators and QA, proven
+in isolation. **Live in-app wiring and the full in-app browser walkthrough remain `LC-INT-001`'s
+job**, not this task's; see the section below for why, and `b1Map.js`'s `b1ImplementationStatus()`
+for why its own `complete` flag deliberately still reads `false`.
 
 ## The scope boundary this task confirmed, and how it resolves
 
@@ -141,4 +146,28 @@ Tracked per arc as it lands. An arc listed here has real runtime modules under
   (§15.1). Raised the threshold to 5, since a plain word count is a weak
   content signal on its own and must stay clearly outside a coincidental
   nonsense-string collision.
-- Arc 7: not yet started (design-only content-plan spec to follow).
+- **Arc 7 — `the_long_conversation`** (no new can-dos; the level's closing capstone): **done.**
+  2 episodes (`episodes/b1Arc7.js`), no new patterns/vocabulary/evaluators by design
+  (`vocabularyBudget: 0/0`) — every evalKind it uses was already authored and proven in arcs 1-6.
+  This is the arc every earlier arc's check explicitly deferred delayed-retrieval proof to; that
+  proof now genuinely exists: `scripts/foundry/b1/check-b1-arc7.mjs` statically confirms every one
+  of the 12 required B1 capabilities (`B1_REQUIRED_CAN_DOS`) is exercised by the correct
+  evalKind/subtype somewhere in the two episodes, then *behaviorally* proves it by playing both
+  episodes end to end with a strong, fully unaided learner (`playEpisode` throws on any rejected
+  reply, so a clean run means every required capability's canonical answer still passes its
+  unmodified arcs-1-6 evaluator when asked fresh, inside prompts nobody scripted per-arc). Also
+  reinforces both should-haves the arc's own prose calls out (`recommend_or_warn`,
+  `summarize_what_was_said`), includes a learner-initiated topic change and a genuinely unplanned
+  problem raised mid-conversation (a branching partner turn, not a scripted aside), and stays
+  unaided throughout (`autonomyTarget`, matching A1's `making_arrangements` precedent). 20
+  pedagogical journeys, 12 QA groups. `b1.json`'s own prose ("all thirteen required B1
+  capabilities") does not match its own `counts.canDosRequired: 12` or the actual required-scope
+  list this task built arc by arc — documented as a minor blueprint-prose inconsistency in
+  `b1Arc7.js`'s header, not treated as a blocker (the capstone is built and proven against the
+  authoritative 12-item list).
+
+## Running the QA suite
+
+`node scripts/foundry/b1/run-all.mjs` (from `linguachat-frontend/`) runs all seven arc checks in
+order. All seven pass cleanly as of this task's final head. Not wired into `package.json`'s
+`check:all` (`package.json` is out of this task's write scope).

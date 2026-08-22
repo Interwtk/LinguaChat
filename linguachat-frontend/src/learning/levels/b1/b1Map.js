@@ -17,13 +17,17 @@ import { B1_ARC3 } from './episodes/b1Arc3.js'
 import { B1_ARC4 } from './episodes/b1Arc4.js'
 import { B1_ARC5 } from './episodes/b1Arc5.js'
 import { B1_ARC6 } from './episodes/b1Arc6.js'
+import { B1_ARC7 } from './episodes/b1Arc7.js'
 
 /* A level-local id. NOT `curriculum/levels.js`'s `B1` (that constant does not
  * exist yet) — do not import this into anything that expects the real one. */
 export const B1_LEVEL_ID = 'b1'
 
 /* The arcs of B1 with runtime content today, in the blueprint's order. */
-export const B1_RUNTIME_ARCS = ['what_happened', 'i_think_that', 'which_one', 'somethings_wrong', 'looking_ahead', 'keep_talking']
+export const B1_RUNTIME_ARCS = [
+  'what_happened', 'i_think_that', 'which_one', 'somethings_wrong',
+  'looking_ahead', 'keep_talking', 'the_long_conversation',
+]
 
 /* One intent per can-do, same convention as `A1_CAN_DO_INTENT`/`CAN_DO_INTENT`. */
 export const B1_CAN_DO_INTENT = {
@@ -114,7 +118,7 @@ export const B1_RECEPTIVE_ITEMS = [
 export const B1_INCIDENTAL_ITEMS = []
 
 export function b1Episodes() {
-  return [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6]
+  return [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC7]
 }
 
 export const B1_ARC_CAN_DOS = [...new Set(b1Episodes().map(ep => ep.canDoId).filter(Boolean))]
@@ -153,6 +157,15 @@ export function b1ImplementationStatus() {
     runtimeArcs: [...new Set(episodes.map(ep => ep.arc))],
     runtimeEpisodes: episodes.map(ep => ep.id),
     canDos: B1_ARC_CAN_DOS,
+    // All seven arcs' self-contained content now exists (LC-CONT-B1's own
+    // scope), but `complete` deliberately stays false here: this level is
+    // not wired into the live app (evaluateFree/SessionRunner/levels.js/
+    // semanticContext.js/i18n — all LC-INT-001's job), has not passed a real
+    // in-app browser walkthrough, and has no dedicated pedagogical
+    // all-arcs gate of its own yet — the same A1 precedent CLAUDE.md states
+    // explicitly ("never infer availability from 'all runtime episodes
+    // passed' while runtime is incomplete"). Only a later, dedicated
+    // completion step should ever flip this.
     complete: false,
   }
 }
