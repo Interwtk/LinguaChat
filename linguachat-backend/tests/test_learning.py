@@ -886,7 +886,7 @@ def test_translation_and_meaning_still_work():
 
 
 # ---------- fifth arc: repair and closing ----------
-REPAIR_KINDS = ["signal_nonunderstanding", "repeat", "slow_down", "ask_meaning"]
+REPAIR_KINDS = ["signal_nonunderstanding", "repeat", "slow_down", "ask_meaning", "ask_how_to_say", "ask_to_spell"]
 
 
 def _repair(text, kind="signal_nonunderstanding"):
@@ -991,6 +991,57 @@ def test_a_repetition_request_is_a_different_repair_on_a_meaning_turn():
 
 def test_a_meaning_question_is_a_different_repair_on_a_repetition_turn():
     r = _repair('What does "late" mean?', "repeat")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "other_repair"
+
+
+# ---------- A1 arc 6: a word known in another language, not in English ----------
+def _how_to_say(text):
+    return evaluate_deterministic(_payload(expected_intent="repair_request",
+                                          repair_kind="ask_how_to_say", learner_response=text))
+
+
+@pytest.mark.parametrize("text", ["How do you say that in English?", "How do you say cook in English?",
+                                  "How do I say that?", 'How do you say "nadar" in English?'])
+def test_asking_how_to_say_something_is_accepted(text):
+    assert _how_to_say(text)["completed_objective"] is True, text
+
+
+@pytest.mark.parametrize("text", ["How do you say?", "How do you spell?"])
+def test_a_half_built_how_to_say_question_gets_the_frame(text):
+    r = _how_to_say(text)
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "incomplete_how_to_say"
+
+
+def test_a_repetition_request_is_a_different_repair_on_a_how_to_say_turn():
+    r = _how_to_say("Can you repeat, please?")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "other_repair"
+
+
+# ---------- A2 arc 5: asking the OTHER speaker to spell something ----------
+def _ask_to_spell(text):
+    return evaluate_deterministic(_payload(expected_intent="repair_request",
+                                          repair_kind="ask_to_spell", learner_response=text))
+
+
+@pytest.mark.parametrize("text", ["Can you spell that, please?", "Can you spell that?",
+                                  "Could you spell it, please?", "Please spell that.",
+                                  "Spell that, please."])
+def test_asking_to_spell_something_is_accepted(text):
+    assert _ask_to_spell(text)["completed_objective"] is True, text
+
+
+@pytest.mark.parametrize("text", ["Spell?", "Can you spell"])
+def test_a_half_built_ask_to_spell_question_gets_the_frame(text):
+    r = _ask_to_spell(text)
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "incomplete_ask_to_spell"
+
+
+def test_a_repetition_request_is_a_different_repair_on_an_ask_to_spell_turn():
+    r = _ask_to_spell("Can you repeat, please?")
     assert r["completed_objective"] is False
     assert r["error_type"] == "other_repair"
 

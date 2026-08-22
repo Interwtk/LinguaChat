@@ -351,7 +351,14 @@ const MUSIC = { type: 'like', value: 'music' }
    */
   const { hasStory } = await import('../src/learning/engine/miniStory.js')
   const STRANGERS = ['totally_made_up_objective', 'ask_location', 'state_price',
-    'arrange_meeting', 'introduce_person', '', null, undefined]
+    /*
+     * `arrange_meeting` used to belong here — designed-only, no story. It is now
+     * wired (LC-INT-001) and has a real story (`episode 38`), so it moved out;
+     * `ask_ability`/`state_ability` (arc 6, also newly wired) are real intents
+     * with no authored story, the same shape `ask_location`/`introduce_person`
+     * already establish above.
+     */
+    'ask_ability', 'state_ability', 'introduce_person', '', null, undefined]
   for (const stranger of STRANGERS) {
     assert.equal(formatSupportsObjective('mini_story', stranger), false,
       `${String(stranger)} is not a known objective and must not be given a story`)

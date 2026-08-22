@@ -132,7 +132,13 @@ const PARTNER = 'Ana'
   const plannedOnly = BLUEPRINT.arcs.map(a => a.id).filter(id => !A1_RUNTIME_ARCS.includes(id))
   assert.equal(plannedOnly.length, BLUEPRINT.arcs.length - A1_RUNTIME_ARCS.length,
     'every runtime arc must be one the blueprint designed')
-  assert.ok(plannedOnly.length >= 1, 'A1 is not finished, so something must still be planned')
+  /*
+   * All seven of A1's designed arcs now have runtime content (`LC-INT-001`
+   * wired arcs 6-7 in), so `plannedOnly` is legitimately empty — the loop
+   * below still runs (vacuously, now) and keeps proving what it always
+   * proved for whichever arcs remain unbuilt in the future.
+   */
+  assert.equal(plannedOnly.length, 0, 'A1 is fully built: no blueprint arc remains unauthorised')
   const runtimeArcs = new Set(episodesOfLevel(A1).map(ep => ep.arc))
   for (const arcId of plannedOnly) {
     assert.ok(!runtimeArcs.has(arcId), `${arcId} has runtime content and was not authorised`)
@@ -146,12 +152,16 @@ const PARTNER = 'Ana'
     assert.ok(episodesOfLevel(A1).some(other => other.id === ep.id), `${ep.id} is not in the level`)
     assert.ok(runtimeArcs.has(ep.arc), `${ep.id} lost its arc`)
   }
-  /* and the capabilities of unbuilt arcs are still unregistered */
+  /*
+   * And the capabilities of unbuilt arcs are still unregistered. Arcs 6-7
+   * were the last two unbuilt (`LC-INT-001` wired them in), so this is now
+   * legitimately empty — the loop still runs (vacuously) for whichever arc is
+   * unbuilt next.
+   */
   const futureCanDos = BLUEPRINT.episodes
     .filter(ep => !A1_RUNTIME_ARCS.includes(ep.arc))
     .map(ep => ep.canDo)
-  /* five episodes across arcs 6-7 remain unbuilt; the number shrinks by exactly as many as each arc sprint builds */
-  assert.ok(futureCanDos.length >= 5, 'there should be plenty of unbuilt design left')
+  assert.equal(futureCanDos.length, 0, 'A1 is fully built: every blueprint episode belongs to a runtime arc')
   for (const canDo of new Set(futureCanDos)) {
     assert.ok(!A1_CAN_DO_INTENT[canDo], `${canDo} is registered before its arc exists`)
   }
@@ -160,7 +170,7 @@ const PARTNER = 'Ana'
 
 /* ---- 3) still partially built, still closed, and loaded per arc ---- */
 {
-  assert.equal(getLevel(A1).contentStatus, 'partial', 'three arcs of seven is partial')
+  assert.equal(getLevel(A1).contentStatus, 'partial', 'A1 has runtime content but is not complete/available until its own gate says so')
   assert.equal(getLevel(A1).available, false, 'A1 must stay closed to learners')
   assert.equal(hasRuntimeContent(A1), true, 'and it does have content')
 
@@ -208,7 +218,8 @@ const PARTNER = 'Ana'
     assert.equal(result.ok, false, `${ghost} must not resolve`)
     assert.equal(result.reason, REFUSED.UNKNOWN_EPISODE, `${ghost}: wrong reason`)
   }
-  assert.equal(episodeRequest({ levelId: 'a2', episodeId: 'anything', forLearner: false }).reason,
+  /* a fabricated id no level naming scheme would produce — see check-a1-arc1.mjs's identical note */
+  assert.equal(episodeRequest({ levelId: 'zz_unregistered_level', episodeId: 'anything', forLearner: false }).reason,
     REFUSED.UNKNOWN_LEVEL, 'an unknown level fails closed even for tooling')
   ok()
 }
@@ -466,7 +477,13 @@ const PARTNER = 'Ana'
   const premature = BLUEPRINT.semanticTypes.proposed
     .filter(t => !(t.requiredBy || []).some(canDo => canDosOfBuiltArcs.has(canDo)))
     .map(t => t.id)
-  assert.ok(premature.length >= 1, 'A1 still has types it does not need yet')
+  /*
+   * All seven arcs are now built (`LC-INT-001`), so every proposed type's
+   * `requiredBy` capability has landed and `premature` is legitimately empty —
+   * the loop below still runs (vacuously) for whichever type is premature the
+   * next time this level, or a later one, proposes one ahead of its consumer.
+   */
+  assert.equal(premature.length, 0, 'A1 is fully built: every proposed type has a landed consumer')
   for (const type of premature) {
     assert.ok(!SEMANTIC_TYPES.includes(type), `${type} belongs to an arc that does not exist`)
   }

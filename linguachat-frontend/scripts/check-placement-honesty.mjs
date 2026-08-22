@@ -26,7 +26,7 @@ import { dirname, resolve } from 'node:path'
 
 import { calculatePlacementResult } from '../src/services/placement.js'
 import {
-  PRE_A1, A1, LEVEL_IDS, playableLevelId, labelKeyOfLevel, isLevelAvailable,
+  PRE_A1, A1, A2, LEVEL_IDS, playableLevelId, labelKeyOfLevel, isLevelAvailable,
   availableLevelIds, episodesOfLevel, getLevel,
 } from '../src/learning/curriculum/levels.js'
 import { COURSE_NODE_BY_LEVEL_ID } from '../src/data/mockData.js'
@@ -137,11 +137,14 @@ async function main() {
     ok()
   }
 
-  // 7) No A2+ curriculum was invented by this task: the registry still knows
-  //    exactly Pre-A1 and A1, in that order, and A1 is still not open.
+  // 7) No B1+ curriculum was invented by this task: the registry knows
+  //    exactly Pre-A1, A1 and A2, in that order (A2 wired in by LC-INT-001,
+  //    per its own task description — not an invention this check should
+  //    still be guarding against), and neither A1 nor A2 is open.
   {
-    assert.deepEqual(LEVEL_IDS, [PRE_A1, A1])
+    assert.deepEqual(LEVEL_IDS, [PRE_A1, A1, A2])
     assert.equal(getLevel(A1).available, false)
+    assert.equal(getLevel(A2).available, false)
     ok()
   }
 

@@ -356,6 +356,232 @@ export const SEED_VOCAB = [
    */
   { id: 'banana', term: 'banana', kind: 'word', emoji: 'b', example: 'We also have a banana today.',
     meaning: { en: 'a soft yellow fruit', es: 'un plátano', pt: 'uma banana', fr: 'une banane', it: 'una banana', de: 'eine Banane', ja: 'バナナ', ar: 'موزة' } },
+
+  /*
+   * ─── A1 arc 6 — "What you can do" (`what_you_can_do`, episodes 34–35) ───
+   *
+   * Two patterns (can/can't, and asking someone else) carry the arc; four
+   * ability verbs give it something to talk about, and "how do you say"
+   * doubles as the repair strategy episode 35 also teaches.
+   */
+  { id: 'can_ability_pattern', term: 'I can / I can’t + verb', kind: 'pattern', emoji: '+', example: 'I can swim. I can’t cook.',
+    meaning: { en: 'saying what you are able (or not able) to do', es: 'decir lo que puedes (o no puedes) hacer', pt: 'dizer o que você pode (ou não pode) fazer', fr: 'dire ce que l’on peut (ou ne peut pas) faire', it: 'dire cosa puoi (o non puoi) fare', de: 'sagen, was man kann (oder nicht kann)', ja: 'できること（できないこと）を言う', ar: 'قول ما تستطيع (أو لا تستطيع) فعله' } },
+  { id: 'swim', term: 'swim', kind: 'word', emoji: '~', example: 'I can swim.',
+    meaning: { en: 'move through water using your body', es: 'nadar', pt: 'nadar', fr: 'nager', it: 'nuotare', de: 'schwimmen', ja: '泳ぐ', ar: 'يسبح' } },
+  { id: 'cook', term: 'cook', kind: 'word', emoji: 'C', example: 'I can’t cook.',
+    meaning: { en: 'prepare food to eat', es: 'cocinar', pt: 'cozinhar', fr: 'cuisiner', it: 'cucinare', de: 'kochen', ja: '料理する', ar: 'يطبخ' } },
+  { id: 'drive', term: 'drive', kind: 'word', emoji: 'D', example: 'I can drive.',
+    meaning: { en: 'control a car', es: 'conducir', pt: 'dirigir', fr: 'conduire', it: 'guidare', de: 'Auto fahren', ja: '運転する', ar: 'يقود' } },
+  { id: 'dance', term: 'dance', kind: 'word', emoji: '*', example: 'I can dance.',
+    meaning: { en: 'move your body to music', es: 'bailar', pt: 'dançar', fr: 'danser', it: 'ballare', de: 'tanzen', ja: '踊る', ar: 'يرقص' } },
+  { id: 'can_you_ability_pattern', term: 'Can you + verb?', kind: 'pattern', emoji: '?', example: 'Can you swim?',
+    meaning: { en: 'asking someone if they are able to do something', es: 'preguntar a alguien si puede hacer algo', pt: 'perguntar a alguém se consegue fazer algo', fr: 'demander à quelqu’un s’il peut faire quelque chose', it: 'chiedere a qualcuno se sa fare qualcosa', de: 'jemanden fragen, ob er/sie etwas kann', ja: '相手ができるかどうかをたずねる', ar: 'سؤال شخص إن كان يستطيع فعل شيء' } },
+  { id: 'how_do_you_say_pattern', term: 'How do you say … in English?', kind: 'pattern', emoji: 'H', example: 'How do you say “nadar” in English?',
+    meaning: { en: 'asking for the English word for something you know in your own language', es: 'pedir la palabra en inglés para algo que sabes en tu idioma', pt: 'pedir a palavra em inglês para algo que você sabe no seu idioma', fr: 'demander le mot anglais pour quelque chose que l’on connaît dans sa langue', it: 'chiedere la parola inglese per qualcosa che conosci nella tua lingua', de: 'nach dem englischen Wort für etwas fragen, das man in der eigenen Sprache kennt', ja: '自分の言語で知っている言葉の英語を聞く', ar: 'السؤال عن الكلمة الإنجليزية لشيء تعرفه بلغتك' } },
+  { id: 'sing', term: 'sing', kind: 'word', emoji: '♪', example: 'Can you sing?',
+    meaning: { en: 'make music with your voice', es: 'cantar', pt: 'cantar', fr: 'chanter', it: 'cantare', de: 'singen', ja: '歌う', ar: 'يغني' } },
+
+  /*
+   * ─── A1 arc 7 — "Making arrangements" (`making_arrangements`, episodes 36–38) ───
+   *
+   * Three patterns (propose a day/time, agree a place, confirm) carry the
+   * arc; the two named days and two named places are exactly what episodes
+   * 36–37's model turns and free replies need, no wider calendar/place set.
+   */
+  { id: 'day_of_week_pattern', term: 'on + day of the week', kind: 'pattern', emoji: '7', example: 'Are you free on Monday?',
+    meaning: { en: 'naming a day of the week', es: 'nombrar un día de la semana', pt: 'nomear um dia da semana', fr: 'nommer un jour de la semaine', it: 'nominare un giorno della settimana', de: 'einen Wochentag nennen', ja: '曜日を言う', ar: 'ذكر يوم من أيام الأسبوع' } },
+  { id: 'arrange_pattern', term: 'Let’s meet on + day + at + time', kind: 'pattern', emoji: 'M', example: 'Let’s meet on Friday at seven.',
+    meaning: { en: 'proposing when to meet someone', es: 'proponer cuándo verse con alguien', pt: 'propor quando se encontrar com alguém', fr: 'proposer un moment pour rencontrer quelqu’un', it: 'proporre quando incontrarsi con qualcuno', de: 'vorschlagen, wann man sich trifft', ja: '会う日時を提案する', ar: 'اقتراح موعد للقاء شخص' } },
+  { id: 'monday', term: 'Monday', kind: 'word', emoji: '1', example: 'Are you free on Monday?',
+    meaning: { en: 'the first day of the working week', es: 'lunes', pt: 'segunda-feira', fr: 'lundi', it: 'lunedì', de: 'Montag', ja: '月曜日', ar: 'الاثنين' } },
+  { id: 'friday', term: 'Friday', kind: 'word', emoji: '5', example: 'Let’s meet on Friday at seven.',
+    meaning: { en: 'the last day of the working week', es: 'viernes', pt: 'sexta-feira', fr: 'vendredi', it: 'venerdì', de: 'Freitag', ja: '金曜日', ar: 'الجمعة' } },
+  { id: 'the_station', term: 'the station', kind: 'phrase', emoji: 'S', example: 'Let’s meet at the station.',
+    meaning: { en: 'a place to arrange to meet, near where buses or trains stop', es: 'la estación, un lugar para quedar', pt: 'a estação, um lugar para combinar de se encontrar', fr: 'la gare, un lieu de rendez-vous', it: 'la stazione, un luogo per darsi appuntamento', de: 'der Bahnhof, ein Treffpunkt', ja: '駅、待ち合わせ場所', ar: 'المحطة، مكان للقاء' } },
+  { id: 'the_cinema', term: 'the cinema', kind: 'phrase', emoji: 'M', example: 'Let’s meet at the cinema.',
+    meaning: { en: 'a place to arrange to meet, where films are shown', es: 'el cine, un lugar para quedar', pt: 'o cinema, um lugar para combinar de se encontrar', fr: 'le cinéma, un lieu de rendez-vous', it: 'il cinema, un luogo per darsi appuntamento', de: 'das Kino, ein Treffpunkt', ja: '映画館、待ち合わせ場所', ar: 'السينما، مكان للقاء' } },
+
+  /*
+   * ─── A2 arc 1 — "What you did" (`what_happened`, episodes 39–42) ───
+   */
+  { id: 'simple_past_regular_pattern', term: 'verb + -ed (regular past)', kind: 'pattern', emoji: 'ed', example: 'I worked yesterday. I studied yesterday.',
+    meaning: { en: 'regular verbs in the past — add “-ed”', es: 'verbos regulares en pasado: se añade “-ed”', pt: 'verbos regulares no passado: acrescenta-se “-ed”', fr: 'verbes réguliers au passé : on ajoute « -ed »', it: 'verbi regolari al passato: si aggiunge “-ed”', de: 'regelmäßige Verben in der Vergangenheit: „-ed“ anhängen', ja: '規則動詞の過去形：語尾に「-ed」', ar: 'الأفعال المنتظمة في الماضي: تُضاف “-ed”' } },
+  { id: 'past_time_expression_pattern', term: 'yesterday / two days ago', kind: 'pattern', emoji: '2d', example: 'I cleaned the house two days ago, not yesterday.',
+    meaning: { en: 'when something happened — yesterday, two days ago', es: 'cuándo ocurrió algo: ayer, hace dos días', pt: 'quando algo aconteceu: ontem, há dois dias', fr: 'quand quelque chose est arrivé : hier, il y a deux jours', it: 'quando è successo qualcosa: ieri, due giorni fa', de: 'wann etwas passiert ist: gestern, vor zwei Tagen', ja: 'いつ起きたか：昨日、二日前', ar: 'متى حدث الشيء: أمس، قبل يومين' } },
+  { id: 'watch_tv', term: 'watch TV', kind: 'phrase', emoji: 'TV', example: 'I cooked dinner and watched TV yesterday.',
+    meaning: { en: 'look at programmes on a screen', es: 'ver la tele', pt: 'ver televisão', fr: 'regarder la télé', it: 'guardare la TV', de: 'fernsehen', ja: 'テレビを見る', ar: 'يشاهد التلفاز' } },
+  { id: 'cook_dinner', term: 'cook dinner', kind: 'phrase', emoji: 'Dn', example: 'I cooked dinner and watched TV yesterday.',
+    meaning: { en: 'prepare the evening meal', es: 'cocinar la cena', pt: 'cozinhar o jantar', fr: 'préparer le dîner', it: 'cucinare la cena', de: 'Abendessen kochen', ja: '夕食を作る', ar: 'يطبخ العشاء' } },
+  { id: 'clean_the_house', term: 'clean the house', kind: 'phrase', emoji: 'Cl', example: 'I cleaned the house yesterday.',
+    meaning: { en: 'tidy and clean your home', es: 'limpiar la casa', pt: 'limpar a casa', fr: 'faire le ménage', it: 'pulire la casa', de: 'das Haus putzen', ja: '家を掃除する', ar: 'ينظف المنزل' } },
+  { id: 'simple_past_irregular_pattern', term: 'went / had / saw … (irregular past)', kind: 'pattern', emoji: 'ir', example: 'I went to a party. I had a great time. I saw a good film.',
+    meaning: { en: 'irregular verbs in the past — no “-ed”', es: 'verbos irregulares en pasado: sin “-ed”', pt: 'verbos irregulares no passado: sem “-ed”', fr: 'verbes irréguliers au passé : sans « -ed »', it: 'verbi irregolari al passato: senza “-ed”', de: 'unregelmäßige Verben in der Vergangenheit: ohne „-ed“', ja: '不規則動詞の過去形：「-ed」を付けない', ar: 'الأفعال الشاذة في الماضي: بلا “-ed”' } },
+  { id: 'bought', term: 'bought', kind: 'word', emoji: 'By', example: 'I bought a new bike and it was great.',
+    meaning: { en: 'past of “buy” — got something by paying for it', es: 'compré / compró (pasado de “buy”)', pt: 'comprei / comprou (passado de “buy”)', fr: 'acheté (passé de « buy »)', it: 'comprato (passato di “buy”)', de: 'kaufte (Vergangenheit von „buy“)', ja: 'buy（買う）の過去形', ar: 'اشترى (ماضي buy)' } },
+  { id: 'did_you_question_pattern', term: 'Did you + verb?', kind: 'pattern', emoji: 'D?', example: 'Did you work yesterday? Did you go to the party?',
+    meaning: { en: 'asking about the past with “did”', es: 'preguntar por el pasado con “did”', pt: 'perguntar sobre o passado com “did”', fr: 'poser une question au passé avec « did »', it: 'chiedere del passato con “did”', de: 'über die Vergangenheit fragen mit „did“', ja: '「did」を使って過去について尋ねる', ar: 'السؤال عن الماضي باستخدام “did”' } },
+  { id: 'sequencing_connector_pattern', term: 'first / then / after that / later', kind: 'pattern', emoji: '12', example: 'I went to the shop. Then I saw a friend.',
+    meaning: { en: 'joining two past actions in order', es: 'unir dos acciones pasadas en orden', pt: 'unir duas ações passadas em ordem', fr: 'relier deux actions passées dans l’ordre', it: 'collegare due azioni passate in ordine', de: 'zwei vergangene Handlungen der Reihe nach verbinden', ja: '二つの過去の出来事を順番につなげる', ar: 'ربط حدثين ماضيين بالترتيب' } },
+
+  /*
+   * ─── A2 arc 2 — "What's next" (`making_plans`, episodes 43–44) ───
+   */
+  { id: 'going_to_future_pattern', term: 'I’m going to + verb', kind: 'pattern', emoji: 'gg', example: 'I’m going to relax this weekend.',
+    meaning: { en: 'saying a plan for the future with “going to”', es: 'expresar un plan futuro con “going to”', pt: 'expressar um plano futuro com “going to”', fr: 'exprimer un projet futur avec « going to »', it: 'esprimere un piano futuro con “going to”', de: 'einen Zukunftsplan mit „going to“ ausdrücken', ja: '「going to」を使って将来の予定を言う', ar: 'التعبير عن خطة مستقبلية بـ “going to”' } },
+  { id: 'future_time_expression_pattern', term: 'tomorrow / next week / this weekend', kind: 'pattern', emoji: 'ft', example: 'I’m going to visit my parents next week.',
+    meaning: { en: 'when a plan will happen — tomorrow, next week, this weekend', es: 'cuándo ocurrirá un plan: mañana, la próxima semana, este fin de semana', pt: 'quando um plano vai acontecer: amanhã, na próxima semana, neste fim de semana', fr: 'quand un projet aura lieu : demain, la semaine prochaine, ce week-end', it: 'quando accadrà un piano: domani, la prossima settimana, questo weekend', de: 'wann ein Plan stattfindet: morgen, nächste Woche, dieses Wochenende', ja: '予定がいつ起きるか：明日、来週、今週末', ar: 'متى ستحدث الخطة: غدًا، الأسبوع القادم، نهاية هذا الأسبوع' } },
+  { id: 'relax', term: 'relax', kind: 'word', emoji: 'rx', example: 'I’m going to relax this weekend.',
+    meaning: { en: 'rest and do nothing stressful', es: 'relajarse', pt: 'relaxar', fr: 'se détendre', it: 'rilassarsi', de: 'sich entspannen', ja: 'リラックスする', ar: 'يسترخي' } },
+  { id: 'go_shopping', term: 'go shopping', kind: 'phrase', emoji: '$s', example: 'I’m going to go shopping tomorrow.',
+    meaning: { en: 'go to buy things', es: 'ir de compras', pt: 'ir às compras', fr: 'faire du shopping', it: 'andare a fare shopping', de: 'einkaufen gehen', ja: '買い物に行く', ar: 'يذهب للتسوق' } },
+  { id: 'visit', term: 'visit', kind: 'word', emoji: 'vi', example: 'I’m going to visit my family.',
+    meaning: { en: 'go to see a person or place', es: 'visitar', pt: 'visitar', fr: 'rendre visite / visiter', it: 'visitare', de: 'besuchen', ja: '訪れる', ar: 'يزور' } },
+  { id: 'going_to_question_pattern', term: 'Are you going to + verb?', kind: 'pattern', emoji: 'g?', example: 'Are you going to relax this weekend?',
+    meaning: { en: 'asking about someone’s plan with “Are you going to…?”', es: 'preguntar por el plan de alguien con “Are you going to…?”', pt: 'perguntar sobre o plano de alguém com “Are you going to…?”', fr: 'demander le projet de quelqu’un avec « Are you going to…? »', it: 'chiedere il piano di qualcuno con “Are you going to…?”', de: 'nach jemandes Plan fragen mit „Are you going to…?“', ja: '「Are you going to…?」で相手の予定を尋ねる', ar: 'السؤال عن خطة شخص بـ “Are you going to…?”' } },
+
+  /*
+   * ─── A2 arc 3 — "People and places" (`people_and_places`, episodes 45–48) ───
+   */
+  { id: 'always', term: 'always', kind: 'word', emoji: 'al', example: 'It is never quiet in the morning, and it is always quiet at night.',
+    meaning: { en: 'at every time, 100%', es: 'siempre', pt: 'sempre', fr: 'toujours', it: 'sempre', de: 'immer', ja: 'いつも', ar: 'دائمًا' } },
+  { id: 'because_reason_pattern', term: 'I like it because + reason', kind: 'pattern', emoji: 'bc', example: 'I like it because it’s convenient.',
+    meaning: { en: 'giving a reason with “because”', es: 'dar una razón con “because”', pt: 'dar uma razão com “because”', fr: 'donner une raison avec « because »', it: 'dare una ragione con “because”', de: 'einen Grund mit „because“ angeben', ja: '「because」で理由を言う', ar: 'إعطاء سبب بـ “because”' } },
+  { id: 'big', term: 'big', kind: 'word', emoji: 'Bg', example: 'The other café is big and friendly.',
+    meaning: { en: 'large in size', es: 'grande', pt: 'grande', fr: 'grand(e)', it: 'grande', de: 'groß', ja: '大きい', ar: 'كبير' } },
+  { id: 'comparative_pattern', term: 'bigger / more expensive + than', kind: 'pattern', emoji: 'er', example: 'This café is bigger than that one.',
+    meaning: { en: 'comparing two things — “-er than” / “more … than”', es: 'comparar dos cosas: “-er than” / “more … than”', pt: 'comparar duas coisas: “-er than” / “more … than”', fr: 'comparer deux choses : « -er than » / « more … than »', it: 'confrontare due cose: “-er than” / “more … than”', de: 'zwei Dinge vergleichen: „-er than“ / „more … than“', ja: '二つのものを比較する：「-er than」／「more … than」', ar: 'مقارنة شيئين: “-er than” / “more … than”' } },
+  { id: 'convenient', term: 'convenient', kind: 'word', emoji: 'cv', example: 'I like it because it’s convenient.',
+    meaning: { en: 'practical, easy to use or reach', es: 'conveniente / práctico', pt: 'conveniente / prático', fr: 'pratique', it: 'conveniente / comodo', de: 'praktisch / günstig gelegen', ja: '便利な', ar: 'مناسب / عملي' } },
+  { id: 'expensive', term: 'expensive', kind: 'word', emoji: 'ex', example: 'This neighbourhood is more expensive than that one.',
+    meaning: { en: 'costing a lot', es: 'caro', pt: 'caro', fr: 'cher', it: 'costoso', de: 'teuer', ja: '高い（値段）', ar: 'غالي' } },
+  { id: 'cheap', term: 'cheap', kind: 'word', emoji: 'ch', example: 'This café is cheaper than that one.',
+    meaning: { en: 'costing little', es: 'barato', pt: 'barato', fr: 'pas cher', it: 'economico', de: 'billig', ja: '安い', ar: 'رخيص' } },
+  { id: 'friendly', term: 'friendly', kind: 'word', emoji: 'fr', example: 'The other café is big and friendly.',
+    meaning: { en: 'warm and welcoming', es: 'amigable', pt: 'amigável', fr: 'amical(e)', it: 'amichevole', de: 'freundlich', ja: 'フレンドリーな', ar: 'ودود' } },
+  { id: 'frequency_full_set_pattern', term: 'always / usually / sometimes / never', kind: 'pattern', emoji: 'f4', example: 'It is never quiet in the morning, and it is always quiet at night.',
+    meaning: { en: 'the whole set — always, usually, sometimes, never', es: 'el conjunto completo: always, usually, sometimes, never', pt: 'o conjunto completo: always, usually, sometimes, never', fr: 'l’ensemble complet : always, usually, sometimes, never', it: 'l’insieme completo: always, usually, sometimes, never', de: 'die ganze Reihe: always, usually, sometimes, never', ja: 'always・usually・sometimes・never のセット', ar: 'المجموعة الكاملة: always، usually، sometimes، never' } },
+  { id: 'multi_attribute_pattern', term: 'It’s + quality + and + quality', kind: 'pattern', emoji: 'ma', example: 'It’s small and quiet.',
+    meaning: { en: 'two qualities in one sentence, joined with “and”', es: 'dos cualidades en una frase, unidas con “and”', pt: 'duas qualidades numa frase, unidas com “and”', fr: 'deux qualités dans une phrase, reliées par « and »', it: 'due qualità in una frase, unite con “and”', de: 'zwei Eigenschaften in einem Satz, verbunden mit „and“', ja: '「and」でつないだ二つの特徴', ar: 'صفتان في جملة واحدة، مرتبطتان بـ “and”' } },
+  { id: 'never', term: 'never', kind: 'word', emoji: 'nv', example: 'It is never quiet in the morning, and it is always quiet at night.',
+    meaning: { en: 'at no time, 0%', es: 'nunca', pt: 'nunca', fr: 'jamais', it: 'mai', de: 'nie', ja: '決して〜ない', ar: 'أبدًا' } },
+  { id: 'quiet', term: 'quiet', kind: 'word', emoji: 'qt', example: 'It’s small and quiet.',
+    meaning: { en: 'with little or no noise', es: 'tranquilo / silencioso', pt: 'tranquilo / silencioso', fr: 'calme', it: 'tranquillo', de: 'ruhig', ja: '静かな', ar: 'هادئ' } },
+  { id: 'small', term: 'small', kind: 'word', emoji: 'sm', example: 'It’s small and quiet.',
+    meaning: { en: 'little in size', es: 'pequeño', pt: 'pequeno', fr: 'petit(e)', it: 'piccolo', de: 'klein', ja: '小さい', ar: 'صغير' } },
+  { id: 'there_is_are_pattern', term: 'There is / There are + thing', kind: 'pattern', emoji: 'th', example: 'There are two cafés near here.',
+    meaning: { en: 'saying something exists — “there is/are”', es: 'decir que algo existe: “there is/are”', pt: 'dizer que algo existe: “there is/are”', fr: 'dire que quelque chose existe : « there is/are »', it: 'dire che qualcosa esiste: “there is/are”', de: 'sagen, dass etwas existiert: „there is/are“', ja: '「〜がある」と言う：「there is/are」', ar: 'قول إن شيئًا موجود: “there is/are”' } },
+  { id: 'third_person_s_pattern', term: 'he / she + verb-s', kind: 'pattern', emoji: '3s', example: 'She works every day.',
+    meaning: { en: 'adding “-s” to a verb for he/she/it', es: 'añadir “-s” al verbo para él/ella', pt: 'acrescentar “-s” ao verbo para ele/ela', fr: 'ajouter « -s » au verbe pour il/elle', it: 'aggiungere “-s” al verbo per lui/lei', de: '„-s“ an ein Verb für er/sie/es anhängen', ja: 'he/she/it のとき動詞に「-s」を付ける', ar: 'إضافة “-s” للفعل مع هو/هي' } },
+
+  /*
+   * ─── A2 arc 4 — "How to get there" (`getting_around`, episodes 49–50) ───
+   */
+  { id: 'multi_step_direction_pattern', term: 'Go straight, then turn left…', kind: 'pattern', emoji: 'gt', example: 'Go straight, then turn left, it’s on the right.',
+    meaning: { en: 'a direction with more than one step', es: 'una indicación con más de un paso', pt: 'uma indicação com mais de um passo', fr: 'une indication en plusieurs étapes', it: 'un’indicazione con più di un passaggio', de: 'eine Wegbeschreibung mit mehreren Schritten', ja: '複数の手順を含む道案内', ar: 'اتجاه بأكثر من خطوة' } },
+  { id: 'straight', term: 'straight', kind: 'word', emoji: 'sg', example: 'Go straight, then turn left, it’s on the right.',
+    meaning: { en: 'in one direction, not turning', es: 'recto / derecho (sin girar)', pt: 'em frente / reto (sem virar)', fr: 'tout droit', it: 'dritto', de: 'geradeaus', ja: 'まっすぐ', ar: 'مستقيم' } },
+  { id: 'turn', term: 'turn', kind: 'word', emoji: 'tn', example: 'Go straight, then turn left, it’s on the right.',
+    meaning: { en: 'change direction', es: 'girar', pt: 'virar', fr: 'tourner', it: 'girare', de: 'abbiegen', ja: '曲がる', ar: 'ينعطف' } },
+  { id: 'left', term: 'left', kind: 'word', emoji: 'lf', example: 'Go straight, then turn left, it’s on the right.',
+    meaning: { en: 'the opposite side from right', es: 'izquierda', pt: 'esquerda', fr: 'gauche', it: 'sinistra', de: 'links', ja: '左', ar: 'يسار' } },
+  { id: 'right', term: 'right', kind: 'word', emoji: 'rt', example: 'Go straight, then turn right, it’s on the corner.',
+    meaning: { en: 'the opposite side from left', es: 'derecha', pt: 'direita', fr: 'droite', it: 'destra', de: 'rechts', ja: '右', ar: 'يمين' } },
+  { id: 'corner', term: 'corner', kind: 'word', emoji: 'cn', example: 'Go straight, then turn right, it’s on the corner.',
+    meaning: { en: 'where two streets meet', es: 'la esquina', pt: 'a esquina', fr: 'le coin de la rue', it: 'l’angolo', de: 'die Ecke', ja: '角', ar: 'الزاوية' } },
+  { id: 'crossing', term: 'crossing', kind: 'word', emoji: 'xg', example: 'Turn left at the crossing.',
+    meaning: { en: 'a place to cross the street', es: 'el paso de peatones', pt: 'a faixa de pedestres', fr: 'le passage piéton', it: 'l’attraversamento pedonale', de: 'der Zebrastreifen / Übergang', ja: '横断歩道', ar: 'معبر المشاة' } },
+
+  /*
+   * ─── A2 arc 5 — "Booking it" (`booking_a_stay`, episodes 51–54) ───
+   */
+  { id: 'month_pattern', term: 'January … December', kind: 'pattern', emoji: 'mo', example: 'It’s the tenth of June.',
+    meaning: { en: 'the twelve months of the year', es: 'los doce meses del año', pt: 'os doze meses do ano', fr: 'les douze mois de l’année', it: 'i dodici mesi dell’anno', de: 'die zwölf Monate des Jahres', ja: '一年の十二か月', ar: 'أشهر السنة الاثنا عشر' } },
+  { id: 'ordinal_date_pattern', term: 'first, second, tenth … (ordinal date)', kind: 'pattern', emoji: 'od', example: 'It’s the tenth of June.',
+    meaning: { en: 'saying the day of the month — first, second, tenth…', es: 'decir el día del mes: primero, segundo, décimo…', pt: 'dizer o dia do mês: primeiro, segundo, décimo…', fr: 'dire le jour du mois : premier, deuxième, dixième…', it: 'dire il giorno del mese: primo, secondo, decimo…', de: 'das Datum sagen: erster, zweiter, zehnter…', ja: '日付の言い方：1日、2日、10日…', ar: 'قول يوم الشهر: الأول، الثاني، العاشر…' } },
+  { id: 'availability_question_pattern', term: 'Do you have a + thing?', kind: 'pattern', emoji: 'av', example: 'Do you have a table for the tenth of June?',
+    meaning: { en: 'asking if something is free — “Do you have…?”', es: 'preguntar si algo está disponible: “Do you have…?”', pt: 'perguntar se algo está disponível: “Do you have…?”', fr: 'demander si quelque chose est disponible : « Do you have…? »', it: 'chiedere se qualcosa è disponibile: “Do you have…?”', de: 'fragen, ob etwas frei ist: „Do you have…?“', ja: '空きがあるか尋ねる：「Do you have…?」', ar: 'السؤال إن كان الشيء متاحًا: “Do you have…?”' } },
+  { id: 'table', term: 'table', kind: 'word', emoji: 'Tb', example: 'Do you have a table for the tenth of June?',
+    meaning: { en: 'what you book at a restaurant', es: 'una mesa', pt: 'uma mesa', fr: 'une table', it: 'un tavolo', de: 'ein Tisch', ja: 'テーブル（席）', ar: 'طاولة' } },
+  { id: 'booking_pattern', term: 'I’d like to book + thing, and there will be + number', kind: 'pattern', emoji: 'bk', example: 'I’d like to book a table for the tenth of June, and there will be four of us.',
+    meaning: { en: 'making a reservation — the table/date/party size together', es: 'hacer una reserva: mesa, fecha y número de personas juntos', pt: 'fazer uma reserva: mesa, data e número de pessoas juntos', fr: 'faire une réservation : table, date et nombre de personnes ensemble', it: 'fare una prenotazione: tavolo, data e numero di persone insieme', de: 'eine Reservierung vornehmen: Tisch, Datum und Personenzahl zusammen', ja: '予約する：テーブル・日付・人数をまとめて伝える', ar: 'إجراء حجز: الطاولة والتاريخ وعدد الأشخاص معًا' } },
+  { id: 'deposit', term: 'deposit', kind: 'word', emoji: 'dp', example: 'We’ll need a small deposit.',
+    meaning: { en: 'money paid in advance to hold a booking', es: 'un depósito / una señal', pt: 'um sinal / depósito', fr: 'un acompte', it: 'una caparra', de: 'eine Anzahlung', ja: '予約金', ar: 'عربون' } },
+  { id: 'spelling_pattern', term: 'It’s + name, and that’s + letters', kind: 'pattern', emoji: 'sp', example: 'It’s Sam, and that’s S-A-M.',
+    meaning: { en: 'spelling a name letter by letter', es: 'deletrear un nombre letra por letra', pt: 'soletrar um nome letra por letra', fr: 'épeler un nom lettre par lettre', it: 'fare lo spelling di un nome lettera per lettera', de: 'einen Namen buchstabieren', ja: '名前を一文字ずつ伝える', ar: 'تهجئة اسم حرفًا حرفًا' } },
+  { id: 'can_you_spell_that', term: 'Can you spell that?', kind: 'phrase', emoji: '?s', example: 'Can you spell that for me, please?',
+    meaning: { en: 'asking someone to spell a word out', es: '¿Puedes deletrearlo?', pt: 'Podes soletrar isso?', fr: 'Peux-tu l’épeler ?', it: 'Puoi fare lo spelling?', de: 'Kannst du das buchstabieren?', ja: 'それを綴ってもらえますか。', ar: 'هل يمكنك تهجئة ذلك؟' } },
+
+  /*
+   * ─── A2 arc 6 — "When something's wrong" (`everyday_problems`, episodes 55–57) ───
+   */
+  { id: 'problem_with', term: 'problem with', kind: 'phrase', emoji: 'pw', example: 'There’s a problem with the room.',
+    meaning: { en: 'something wrong with a thing', es: 'un problema con', pt: 'um problema com', fr: 'un problème avec', it: 'un problema con', de: 'ein Problem mit', ja: '〜に問題がある', ar: 'مشكلة في' } },
+  { id: 'doesnt_work', term: 'doesn’t work', kind: 'phrase', emoji: 'dw', example: 'My key card doesn’t work.',
+    meaning: { en: 'something is broken, not working', es: 'no funciona', pt: 'não funciona', fr: 'ne fonctionne pas', it: 'non funziona', de: 'funktioniert nicht', ja: '動かない・故障している', ar: 'لا يعمل' } },
+  { id: 'lost', term: 'lost', kind: 'word', emoji: 'ls', example: 'I lost my room key.',
+    meaning: { en: 'you cannot find something of yours', es: 'perdido', pt: 'perdido', fr: 'perdu(e)', it: 'perso', de: 'verloren', ja: 'なくした', ar: 'مفقود' } },
+  { id: 'cold', term: 'cold', kind: 'word', emoji: 'cd', example: 'There’s a problem with the room. It’s cold.',
+    meaning: { en: 'low in temperature', es: 'frío', pt: 'frio', fr: 'froid', it: 'freddo', de: 'kalt', ja: '寒い／冷たい', ar: 'بارد' } },
+  { id: 'problem_report_pattern', term: 'There’s a problem with… / My ___ doesn’t work / I lost my ___', kind: 'pattern', emoji: 'pr', example: 'There’s a problem with the room. It’s cold.',
+    meaning: { en: 'reporting something is wrong', es: 'informar de que algo va mal', pt: 'relatar que algo está errado', fr: 'signaler que quelque chose ne va pas', it: 'segnalare che qualcosa non va', de: 'melden, dass etwas nicht stimmt', ja: '問題を報告する', ar: 'الإبلاغ عن وجود مشكلة' } },
+  { id: 'help_with', term: 'help with', kind: 'phrase', emoji: 'hw', example: 'Can you help me with this?',
+    meaning: { en: 'asking someone to assist with something', es: 'ayudar con', pt: 'ajudar com', fr: 'aider avec', it: 'aiutare con', de: 'helfen bei', ja: '〜を手伝う', ar: 'المساعدة في' } },
+  { id: 'what_should_i_do', term: 'What should I do?', kind: 'phrase', emoji: 'wd', example: 'What should I do?',
+    meaning: { en: 'asking for advice on what to do next', es: '¿Qué debo hacer?', pt: 'O que devo fazer?', fr: 'Que dois-je faire ?', it: 'Cosa devo fare?', de: 'Was soll ich tun?', ja: 'どうすればいいですか。', ar: 'ماذا يجب أن أفعل؟' } },
+  { id: 'fix', term: 'fix', kind: 'word', emoji: 'fx', example: 'Can you fix it, please?',
+    meaning: { en: 'repair something so it works again', es: 'arreglar', pt: 'consertar', fr: 'réparer', it: 'riparare', de: 'reparieren', ja: '直す', ar: 'يصلح' } },
+  { id: 'help_request_pattern', term: 'Can you help me with ___? What should I do?', kind: 'pattern', emoji: 'hr', example: 'Can you help me with this? What should I do?',
+    meaning: { en: 'asking for help and what to do', es: 'pedir ayuda y qué hacer', pt: 'pedir ajuda e o que fazer', fr: 'demander de l’aide et quoi faire', it: 'chiedere aiuto e cosa fare', de: 'um Hilfe bitten und fragen, was zu tun ist', ja: '助けと対処法を尋ねる', ar: 'طلب المساعدة ومعرفة ما يجب فعله' } },
+  { id: 'instead', term: 'instead', kind: 'word', emoji: 'in', example: 'Would you like to move to a different room instead?',
+    meaning: { en: 'in place of something else', es: 'en su lugar', pt: 'em vez disso', fr: 'à la place', it: 'invece', de: 'stattdessen', ja: 'その代わりに', ar: 'بدلاً من ذلك' } },
+
+  /*
+   * ─── A2 arc 7 — "Do you want to...?" (`lets_do_something`, episodes 58–61) ───
+   */
+  { id: 'invitation_pattern', term: 'Would you like to…? / Do you want to…?', kind: 'pattern', emoji: 'iv', example: 'Would you like to go to the cinema? Do you want to have dinner on Saturday?',
+    meaning: { en: 'inviting someone to do something', es: 'invitar a alguien a hacer algo', pt: 'convidar alguém para fazer algo', fr: 'inviter quelqu’un à faire quelque chose', it: 'invitare qualcuno a fare qualcosa', de: 'jemanden zu etwas einladen', ja: '誰かを何かに誘う', ar: 'دعوة شخص لفعل شيء' } },
+  { id: 'go_to_the_cinema', term: 'go to the cinema', kind: 'phrase', emoji: 'ci', example: 'Would you like to go to the cinema?',
+    meaning: { en: 'go and watch a film at the cinema', es: 'ir al cine', pt: 'ir ao cinema', fr: 'aller au cinéma', it: 'andare al cinema', de: 'ins Kino gehen', ja: '映画館に行く', ar: 'يذهب إلى السينما' } },
+  { id: 'have_dinner', term: 'have dinner', kind: 'phrase', emoji: 'hd', example: 'Do you want to have dinner on Saturday?',
+    meaning: { en: 'eat the evening meal, often with someone', es: 'cenar', pt: 'jantar', fr: 'dîner', it: 'cenare', de: 'zu Abend essen', ja: '夕食を食べる', ar: 'يتناول العشاء' } },
+  { id: 'accept_decline_reason_pattern', term: 'Yes, I’d like that! / I’d love to, but…', kind: 'pattern', emoji: 'ad', example: 'Yes, I’d like that! I’d love to, but I’m busy on Saturday.',
+    meaning: { en: 'accepting or declining an invitation, with a reason', es: 'aceptar o rechazar una invitación, con una razón', pt: 'aceitar ou recusar um convite, com uma razão', fr: 'accepter ou refuser une invitation, avec une raison', it: 'accettare o rifiutare un invito, con una ragione', de: 'eine Einladung annehmen oder ablehnen, mit einem Grund', ja: '理由を添えて誘いを受ける・断る', ar: 'قبول أو رفض دعوة مع ذكر السبب' } },
+  { id: 'id_love_to', term: 'I’d love to', kind: 'phrase', emoji: 'lv', example: 'I’d love to, but I’m busy on Saturday.',
+    meaning: { en: 'a warm way to say yes, or start a polite “no”', es: 'Me encantaría.', pt: 'Adoraria.', fr: 'J’adorerais.', it: 'Mi piacerebbe molto.', de: 'Sehr gern.', ja: 'ぜひそうしたいです。', ar: 'أحب ذلك كثيرًا.' } },
+  { id: 'im_busy', term: 'I’m busy', kind: 'phrase', emoji: 'bz', example: 'I’d love to, but I’m busy on Saturday.',
+    meaning: { en: 'you have no free time', es: 'estoy ocupado / ocupada', pt: 'estou ocupado / ocupada', fr: 'je suis occupé(e)', it: 'sono occupato / occupata', de: 'ich bin beschäftigt', ja: '忙しいです。', ar: 'أنا مشغول.' } },
+  { id: 'clause_connector_pattern', term: 'and / but / so', kind: 'pattern', emoji: 'cc', example: 'Yes, let’s go to the cinema, and last time we went, the film was really good.',
+    meaning: { en: 'joining two ideas — and / but / so', es: 'unir dos ideas: and / but / so', pt: 'unir duas ideias: and / but / so', fr: 'relier deux idées : and / but / so', it: 'collegare due idee: and / but / so', de: 'zwei Gedanken verbinden: and / but / so', ja: 'and・but・so で二つの内容をつなぐ', ar: 'ربط فكرتين: and / but / so' } },
+  { id: 'last_time', term: 'last time', kind: 'phrase', emoji: 'lt', example: 'Yes, let’s go to the cinema, and last time we went, the film was really good.',
+    meaning: { en: 'on the previous occasion', es: 'la última vez', pt: 'da última vez', fr: 'la dernière fois', it: 'l’ultima volta', de: 'letztes Mal', ja: 'この前', ar: 'آخر مرة' } },
+  { id: 'really_good', term: 'really good', kind: 'phrase', emoji: 'rg', example: 'Yes, let’s go to the cinema, and last time we went, the film was really good.',
+    meaning: { en: 'very good indeed', es: 'muy bueno', pt: 'muito bom', fr: 'vraiment bien', it: 'davvero buono', de: 'wirklich gut', ja: '本当に良い', ar: 'جيد جدًا' } },
+  { id: 'go_for_a_walk', term: 'go for a walk', kind: 'phrase', emoji: 'wa', example: 'Do you want to go for a walk instead?',
+    meaning: { en: 'walk outside for pleasure', es: 'dar un paseo', pt: 'dar um passeio', fr: 'faire une promenade', it: 'fare una passeggiata', de: 'spazieren gehen', ja: '散歩する', ar: 'يتمشى' } },
+
+  /*
+   * Receptive: what the OTHER speaker's line carries in arcs 3, 4 and 6 —
+   * comprehension/choice steps, never asked for. Grounded verbatim in the
+   * `target`/`promptEn` text of the steps that use each `itemId`.
+   */
+  { id: 'modern', term: 'modern', kind: 'word', emoji: 'md', example: 'It’s a small, modern café, and it’s usually quiet.',
+    meaning: { en: 'new in style, not old-fashioned', es: 'moderno', pt: 'moderno', fr: 'moderne', it: 'moderno', de: 'modern', ja: '現代的な', ar: 'حديث' } },
+  { id: 'better', term: 'better', kind: 'word', emoji: 'bt', example: 'This place is better than that one, but parking here is worse.',
+    meaning: { en: 'more good — the comparative of “good”', es: 'mejor', pt: 'melhor', fr: 'meilleur', it: 'migliore', de: 'besser', ja: 'より良い', ar: 'أفضل' } },
+  { id: 'comfortable', term: 'comfortable', kind: 'word', emoji: 'cf', example: 'I like this café because the chairs are comfortable.',
+    meaning: { en: 'pleasant to sit or be in', es: 'cómodo', pt: 'confortável', fr: 'confortable', it: 'comodo', de: 'bequem', ja: '快適な', ar: 'مريح' } },
+  { id: 'bank', term: 'bank', kind: 'word', emoji: 'Bk', example: 'Go straight, then turn right, then it’s next to the bank.',
+    meaning: { en: 'where people keep and manage money', es: 'el banco', pt: 'o banco', fr: 'la banque', it: 'la banca', de: 'die Bank', ja: '銀行', ar: 'البنك' } },
+  { id: 'which_way', term: 'which way', kind: 'phrase', emoji: 'ww', example: 'Sorry — straight, and then which way?',
+    meaning: { en: 'asking in which direction', es: '¿por dónde?', pt: 'por onde?', fr: 'dans quel sens ?', it: 'da che parte?', de: 'welche Richtung?', ja: 'どちらの方向', ar: 'أي اتجاه' } },
+  { id: 'church', term: 'church', kind: 'word', emoji: 'Ch', example: 'Go straight, then turn left, it’s next to the church.',
+    meaning: { en: 'a building for Christian worship', es: 'la iglesia', pt: 'a igreja', fr: 'l’église', it: 'la chiesa', de: 'die Kirche', ja: '教会', ar: 'الكنيسة' } },
+  { id: 'sorry_about_that', term: 'I’m sorry about that', kind: 'phrase', emoji: 'sa', example: 'I’m sorry about that. What’s the problem exactly?',
+    meaning: { en: 'a polite apology for a problem', es: 'lo siento por eso', pt: 'sinto muito por isso', fr: 'désolé pour ça', it: 'mi dispiace per questo', de: 'das tut mir leid', ja: 'それは申し訳ございません', ar: 'آسف على ذلك' } },
+  { id: 'of_course', term: 'Of course', kind: 'phrase', emoji: 'oc', example: 'Of course. Let me see what I can do.',
+    meaning: { en: 'a warm way to say yes, certainly', es: 'por supuesto', pt: 'claro', fr: 'bien sûr', it: 'certo', de: 'natürlich', ja: 'もちろんです', ar: 'بالطبع' } },
+  { id: 'extra_blankets', term: 'extra blankets', kind: 'phrase', emoji: 'bl', example: 'I can bring you extra blankets right away.',
+    meaning: { en: 'more blankets, in addition to what you have', es: 'mantas extra', pt: 'cobertores extras', fr: 'des couvertures supplémentaires', it: 'coperte extra', de: 'zusätzliche Decken', ja: '追加の毛布', ar: 'بطانيات إضافية' } },
 ]
 
 export const SEED_VOCAB_BY_ID = Object.fromEntries(SEED_VOCAB.map(item => [item.id, item]))

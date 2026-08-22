@@ -177,37 +177,40 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
   ok()
 }
 
-/* ---- 4) a future A1 episode fails closed ---- */
+/* ---- 4) a fabricated, never-designed episode still fails closed ---- */
 {
   /*
-   * Ids from the blueprint's UNBUILT arcs, derived rather than invented — and
-   * "unbuilt" is read from `A1_RUNTIME_ARCS`, not from "any arc after this one".
-   * Each arc's capabilities are registered when that arc exists; every arc after
-   * the built ones must still be unregistered.
-   *
-   * The count is DERIVED. It used to be a fixed "at least ten", which was true of
-   * a level with one arc built and became false as arcs landed — the useful
-   * assertion is that the design still has unbuilt episodes at all, and that every
-   * capability belonging to them is absent from the runtime map.
+   * All seven of A1's designed arcs now have runtime content (`LC-INT-001`
+   * wired arcs 6-7 in) — there is no longer a real "next unbuilt arc" to derive
+   * a future-episode example from. This group used to build its case from
+   * `BLUEPRINT.arcs.filter(arc => !A1_RUNTIME_ARCS.includes(arc.id))` and
+   * asserted that list was non-empty specifically so it would fail loudly and
+   * ask for a rewrite the day that stopped being true (see its own former
+   * assertion message). This is that rewrite: the property that matters — an id
+   * nobody designed must not resolve and must not be registered — still needs
+   * proving, from a fabricated id rather than a real blueprint arc.
    */
-  const unbuiltArcs = BLUEPRINT.arcs.filter(arc => !A1_RUNTIME_ARCS.includes(arc.id))
-  const futureCanDos = BLUEPRINT.episodes
-    .filter(ep => !A1_RUNTIME_ARCS.includes(ep.arc))
-    .map(ep => ep.canDo)
-  assert.ok(unbuiltArcs.length > 0, 'A1 is fully built, so this group needs rewriting rather than passing')
-  assert.equal(futureCanDos.length,
-    BLUEPRINT.episodes.filter(ep => unbuiltArcs.some(arc => arc.id === ep.arc)).length,
-    'every episode of an unbuilt arc must contribute its capability to this list')
-  for (const canDo of new Set(futureCanDos)) {
-    assert.ok(!A1_CAN_DO_INTENT[canDo], `${canDo} is registered before its arc exists`)
-  }
-  /* an id from an unbuilt arc, and two that never existed at all */
+  assert.equal(BLUEPRINT.arcs.length, A1_RUNTIME_ARCS.length,
+    'A1 is fully built: every blueprint arc now has runtime content')
+  const ghostCanDo = 'invent_a_capability_nobody_designed'
+  assert.ok(!BLUEPRINT.canDos.some(cd => cd.id === ghostCanDo), 'the fabricated id must not already be real')
+  assert.ok(!A1_CAN_DO_INTENT[ghostCanDo], `${ghostCanDo} must not be registered`)
+  /* an id from no arc at all, and two that never existed */
   for (const ghost of ['people_around_you_first', 'episode18', 'a1_arc3_first', 'introduce_someone_else']) {
     const result = episodeRequest({ levelId: A1, episodeId: ghost, forLearner: false })
     assert.equal(result.ok, false, `${ghost} must not resolve`)
     assert.equal(result.reason, REFUSED.UNKNOWN_EPISODE, `${ghost}: wrong reason`)
   }
-  assert.equal(episodeRequest({ levelId: 'a2', episodeId: 'anything', forLearner: false }).reason,
+  /*
+   * `'a2'` used to be this fabricated id — proving a level nobody had built
+   * yet still failed closed. `LC-INT-001` registered A2 for real
+   * (`levels.js`), so that string now resolves to a known, if unavailable,
+   * level instead of an unknown one. A level id in the same shape as a real
+   * one (`'a2'`, `'b1'`) will keep tripping this the moment that level is
+   * wired in too, so this uses an id no level naming scheme would ever
+   * produce, rather than the next one in line.
+   */
+  assert.equal(episodeRequest({ levelId: 'zz_unregistered_level', episodeId: 'anything', forLearner: false }).reason,
     REFUSED.UNKNOWN_LEVEL, 'an unknown level fails closed even for tooling')
   ok()
 }

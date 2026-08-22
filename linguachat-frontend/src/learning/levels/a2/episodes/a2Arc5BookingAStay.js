@@ -461,7 +461,15 @@ const BOOK_04 = {
      * fictional first name, never a real surname.
      */
     { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'Can I take a name for the booking, and can you spell that for me, please?', instructionKey: 'ep54SpellInstruction',
-      evalKind: 'spell_word', itemIds: ['spelling_pattern'] },
+      /*
+       * `expectedSpelling` (LC-INT-001's integration wiring, not part of this
+       * episode's original authored fields): `evaluators.js`'s `evaluateSpellWord`
+       * scores the letters actually present in the reply against a target, and has
+       * no default — a `spell_word` turn wired with no target could never complete.
+       * "Sam" is the same fictional first name this episode's own comments already
+       * name as the canonical answer.
+       */
+      evalKind: 'spell_word', expectedSpelling: 'Sam', itemIds: ['spelling_pattern'] },
     /*
      * Receptive: the other side reads it back — the receptiveTarget verbatim
      * — with ONE letter wrong, so understanding the read-back (not just
@@ -489,7 +497,7 @@ const BOOK_04 = {
     { type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: 'All booked — thank you, and see you on the tenth!', instructionKey: 'ep54CloseInstruction',
       evalKind: 'close_encounter', itemIds: ['thank_you', 'bye'] },
     /* Remember: spelling a name, unaided, with nothing on screen — the arc's final evidence. */
-    { type: 'recall', instructionKey: 'ep54FinalInstruction', evalKind: 'spell_word', itemIds: ['spelling_pattern'] },
+    { type: 'recall', instructionKey: 'ep54FinalInstruction', evalKind: 'spell_word', expectedSpelling: 'Sam', itemIds: ['spelling_pattern'] },
     { type: 'completion', canDoNameKey: 'ep54CanDoName', titleKey: 'ep54CloseTitle', bodyKey: 'ep54CloseBody', ctaKey: 'ep1CloseCta' },
   ],
 }

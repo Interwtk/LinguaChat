@@ -18,7 +18,7 @@ import { A1, episodesOfLevel } from './levels.js'
 import { SKELETON_BY_ID } from './preA1Skeleton.generated.js'
 
 /* The arcs of A1 with runtime content today, in the blueprint's order. */
-export const A1_RUNTIME_ARCS = ['work_and_study', 'daily_rhythm', 'people_around_you', 'finding_your_way', 'paying_and_choosing']
+export const A1_RUNTIME_ARCS = ['work_and_study', 'daily_rhythm', 'people_around_you', 'finding_your_way', 'paying_and_choosing', 'what_you_can_do', 'making_arrangements']
 
 /*
  * The capability each A1 can-do is evidenced by, in the same shape Pre-A1 uses:
@@ -67,6 +67,21 @@ export const A1_CAN_DO_INTENT = {
   use_bigger_numbers: 'use_quantity',
   ask_the_price: 'ask_price',
   buy_something: 'cafe_order_conversation',
+  /*
+   * Arc 6. `say_what_you_can_do`/`ask_someone_about_ability` are the level's two
+   * genuinely new ability intents. `ask_how_to_say_something` reuses
+   * `repair_request` with a fifth `repairKind` (`ask_how_to_say`), exactly the
+   * shape arc 2's `ask_what_something_means` already established.
+   */
+  say_what_you_can_do: 'state_ability',
+  ask_someone_about_ability: 'ask_ability',
+  ask_how_to_say_something: 'repair_request',
+  /*
+   * Arc 7. The level's closing capability: one hybrid intent shared by all three
+   * arrangement stages (propose/place/confirm), distinguished by the step's own
+   * `arrangeStage`.
+   */
+  arrange_to_meet: 'arrange_meeting',
 }
 
 /*
@@ -116,6 +131,14 @@ export const A1_REQUIRED_CAN_DOS = [
   'ask_where_something_is', 'say_where_something_is',
   /* Arc 5's three — all required in the blueprint, no should-have among them. */
   'use_bigger_numbers', 'ask_the_price', 'buy_something',
+  /*
+   * Arc 6's one required can-do. `ask_someone_about_ability` and
+   * `ask_how_to_say_something` are both `should` in the blueprint and
+   * deliberately absent here, per the same rule arc 4's comment states.
+   */
+  'say_what_you_can_do',
+  /* Arc 7's one, the level's last required capability. */
+  'arrange_to_meet',
 ]
 
 /*
@@ -159,11 +182,21 @@ export const A1_INCIDENTAL_ITEMS = []
 
 export const a1Episodes = () => episodesOfLevel(A1)
 
-export const A1_ARC_CAN_DOS = [...new Set(a1Episodes().map(ep => ep.canDoId).filter(Boolean))]
+/*
+ * Arc 6's episode 35 is the level's one two-capability episode: its own
+ * primary `canDoId` is `ask_someone_about_ability`, and one of its steps
+ * separately credits `ask_how_to_say_something` (`secondaryCanDoId` on the
+ * episode, `creditsCanDoId` on the step itself) rather than inventing a sixth
+ * episode for a single `should`-scope capability. Both ends must be readable
+ * here or the second capability would look introduced nowhere.
+ */
+export const A1_ARC_CAN_DOS = [...new Set(
+  a1Episodes().flatMap(ep => [ep.canDoId, ep.secondaryCanDoId]).filter(Boolean),
+)]
 
 /* Which episodes teach a capability — derived, never declared twice. */
 export function a1EpisodesForCanDo(canDoId) {
-  return a1Episodes().filter(ep => ep.canDoId === canDoId).map(ep => ep.id)
+  return a1Episodes().filter(ep => ep.canDoId === canDoId || ep.secondaryCanDoId === canDoId).map(ep => ep.id)
 }
 
 /*
@@ -234,6 +267,10 @@ export const A1_INTRODUCED_ITEMS = [
   'where_is_pattern', 'its_location_pattern', 'here', 'there', 'next_to', 'near', 'toilet', 'station',
   /* arc 5 — what it costs: three patterns, two choosing words, a ticket, a unit */
   'numbers_11_100', 'how_much_pattern', 'price_pattern', 'this_one', 'that_one', 'ticket', 'dollars',
+  /* arc 6 — what you can do: the ability frame, four neutral abilities, the question form, the how-to-say question */
+  'can_ability_pattern', 'swim', 'cook', 'drive', 'dance', 'can_you_ability_pattern', 'how_do_you_say_pattern', 'sing',
+  /* arc 7 — making arrangements: the day set, the proposal pattern, two neutral places */
+  'day_of_week_pattern', 'arrange_pattern', 'monday', 'friday', 'the_station', 'the_cinema',
   /* receptive: heard, never asked for */
   'at_the_office', 'at_university', 'early', 'late', 'works_third', 'studies_third',
   'bus', 'train', 'upstairs', 'downstairs', 'opposite', 'behind', 'exit', 'platform', 'banana',

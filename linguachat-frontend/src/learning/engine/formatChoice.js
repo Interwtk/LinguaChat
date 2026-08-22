@@ -233,6 +233,49 @@ const OBJECTIVE_FORMATS = {
   ask_what_thing: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay', 'choice'],
   identify_thing: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
   use_quantity: ['guided_reply', 'choice', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  /*
+   * A1 arc 6/7, the level's last two arcs. `mini_story` is absent from all
+   * three: `state_ability`/`ask_ability` have no authored story at all, and
+   * `arrange_meeting`'s one story (episode 38, `see_you_on_friday`) is
+   * `home: 'episode'` — the same episode-hosted reason `ask_transport` and
+   * `ask_price` already establish above, so it must never also be offered as a
+   * loose daily-session block.
+   */
+  state_ability: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  ask_ability: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
+  arrange_meeting: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  /*
+   * A2. `mini_story` is absent from all seventeen: every one of A2's five
+   * mini_story steps (`past_day_story`, `booking_call_story`,
+   * `problem_resolution_story`, `closing_invitation_story` — `making_plans`
+   * and `getting_around` opt out per their own arc files) is hosted by a
+   * specific episode, the same `home: 'episode'` reason `ask_transport` and
+   * `arrange_meeting` are already absent above — a daily-session block must
+   * never hand out an episode's own scene as a two-minute practice.
+   */
+  state_past_event: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  ask_past_event: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
+  // a compound two-clause sentence is not a good fit for word-order/fill-blank
+  narrate_past_sequence: ['guided_reply', 'free_reply', 'recall', 'roleplay'],
+  state_future_plan: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  ask_future_plan: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
+  describe_person_or_place: ['guided_reply', 'free_reply', 'recall', 'roleplay'],
+  compare_things: ['guided_reply', 'free_reply', 'recall', 'roleplay'],
+  state_opinion_with_reason: ['guided_reply', 'free_reply', 'recall', 'roleplay'],
+  give_multi_step_directions: ['guided_reply', 'free_reply', 'recall', 'roleplay'],
+  /*
+   * `state_availability` has no entry: it is not dispatched (see
+   * `responseEvaluation.js`'s own comment) because no A2 episode uses it.
+   */
+  ask_availability: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
+  make_booking: ['guided_reply', 'free_reply', 'recall', 'roleplay'],
+  // spelling needs a named target; not a fit for word_order/fill_blank/choice
+  spell_word: ['guided_reply', 'free_reply', 'recall', 'roleplay'],
+  report_problem: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay', 'choice'],
+  ask_for_help: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
+  invite_someone: ['guided_reply', 'word_order', 'free_reply', 'recall', 'roleplay'],
+  // accept/decline, the same shape as accept_offer/decline_offer above
+  respond_to_invitation: ['guided_reply', 'choice', 'free_reply', 'recall', 'roleplay'],
 }
 
 /*

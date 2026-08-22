@@ -18,6 +18,42 @@
  */
 
 import { thingById, withArticle, countedThing } from './semanticContext.js'
+/*
+ * A1 arc 6/7's three new intents (`state_ability`/`ask_ability`/
+ * `arrange_meeting`) were authored as level-owned reference evaluators against
+ * this file's own `base()` contract (`levels/a1/evaluators.js`'s header
+ * explains why: that task's write scope did not include `engine/**`). This is
+ * a circular import by module graph, not by runtime order: `evaluators.js`
+ * only uses `normalize`/`fold`, both hoisted function declarations, so it
+ * resolves safely regardless of which module finishes evaluating first — the
+ * same shape `levels/a2/evaluators.js` already relies on.
+ */
+import { evaluateStateAbility, evaluateAskAbility, evaluateArrangeMeeting } from '../levels/a1/evaluators.js'
+/*
+ * A2's 17 new intents were authored the same way, against the same `base()`
+ * contract, in `levels/a2/evaluators.js` — see that file's own header and
+ * `docs/curriculum/implementation/a2/core-requirements.md` §3. Also imports
+ * `evaluateSpellWord` (used directly for the `spell_word` intent) and
+ * `evaluateRespondToInvitation`, which internally reuses `twoClauseJudgment`
+ * for its decline-with-reason branch — no logic is duplicated here.
+ *
+ * `evaluateStateAvailability` is deliberately NOT imported/dispatched: no A2
+ * episode's steps use the `state_availability` intent (every availability
+ * turn in `booking_a_stay` is `ask_availability`), and `check-curriculum-map.mjs`
+ * asserts no dispatched intent goes unused — a real, enforced "no dead
+ * evaluator" rule, not an oversight. The reference implementation stays in
+ * `levels/a2/evaluators.js` for `check-a2-evaluators.mjs` and any future
+ * episode that needs it; wiring it into dispatch is that future content's job.
+ */
+import {
+  evaluateStatePastEvent, evaluateAskPastEvent, evaluateNarratePastSequence,
+  evaluateStateFuturePlan, evaluateAskFuturePlan,
+  evaluateDescribePersonOrPlace, evaluateCompareThings, evaluateStateOpinionWithReason,
+  evaluateGiveMultiStepDirections,
+  evaluateAskAvailability, evaluateMakeBooking, evaluateSpellWord,
+  evaluateReportProblem, evaluateAskForHelp,
+  evaluateInviteSomeone, evaluateRespondToInvitation,
+} from '../levels/a2/evaluators.js'
 
 // Normalize: lowercase, unify apostrophes, drop emojis/symbols, keep letters
 // (incl. accents) + digits + spaces + apostrophes, collapse spaces.
@@ -424,7 +460,20 @@ const namesAThing = (n) => /\p{L}/u.test(requestedThing(n))
  * — Pre-A1 can stop a conversation it does not follow, and this takes one word out
  * of it and keeps going.
  */
-export const REPAIR_KINDS = ['signal_nonunderstanding', 'repeat', 'slow_down', 'ask_meaning']
+/*
+ * A1 arc 6 adds a fifth, per `ask_how_to_say_something`'s own `intentReuse`:
+ * "repair_request with a new repairKind subtype" — the same shape arc 2's
+ * `ask_meaning` already established. Reference implementation and the exact
+ * ask are in `levels/a1/evaluators.js`'s `evaluateAskHowToSay`.
+ */
+/*
+ * A2 arc 5 adds a sixth, per `spell_a_name_for_a_booking`'s reuse note
+ * (`intentStrategy.newSubtypesOnExistingIntents`): "repair_request gains
+ * repairKind: 'ask_to_spell'" — the learner asking the OTHER speaker to spell
+ * something unclear (a confirmation code), the mirror image of `spell_word`
+ * where the learner spells their own name.
+ */
+export const REPAIR_KINDS = ['signal_nonunderstanding', 'repeat', 'slow_down', 'ask_meaning', 'ask_how_to_say', 'ask_to_spell']
 
 const NOT_UNDERSTAND = /\b(i (really )?(don'?t|do not) understand|i (don'?t|do not) get (it|that)|i'?m (not sure|lost)|i didn'?t (understand|catch|get) (that|it))\b/
 const NOT_UNDERSTAND_LOOSE = /\b((don'?t|do not|not) understand|no understand|understand not)\b/
@@ -453,6 +502,22 @@ const ASK_MEANING = /\bwhat\s+(does|do)\s+.{1,30}?\s*mean\b/
  */
 const ASK_MEANING_VARIANT = /\b(what\s+(is|are)|what'?s)\s+[\p{L}'’]+\s*$/u
 const ASK_MEANING_LOOSE = /\b(mean|means|meaning)\b/
+/*
+ * "How do you say ___?" — arc 6's pattern, requiring a complement after "say"
+ * so a bare "how do you say" falls through to the loose check. Kept identical
+ * to `levels/a1/evaluators.js`'s own `ASK_HOW_TO_SAY_RE`/`_LOOSE_RE` (that
+ * file's reference for this branch) — keep the two in sync at any future edit.
+ */
+const ASK_HOW_TO_SAY = /\bhow\s+do\s+(you|i)\s+say\s+\S+/
+const ASK_HOW_TO_SAY_LOOSE = /\bhow\s+(do\s+you\s+)?(say|spell)\b/
+/*
+ * "Can you spell that, please?" — A2 arc 5's sixth repair kind. Requires
+ * "that"/"it"/"this" as the object, so it stays distinct from `ask_how_to_say`
+ * ("How do you spell that?" is ALSO caught by `ASK_HOW_TO_SAY_LOOSE`'s bare
+ * "spell" match above, which is why this check runs first in the dispatcher).
+ */
+const ASK_TO_SPELL = /\b((can|could) you (please )?spell (that|it|this)|please spell (that|it|this)|spell (that|it|this),? please)\b/
+const ASK_TO_SPELL_LOOSE = /\bspell\b/
 /* "I don't know" answers a question; it does not report a breakdown. */
 const DONT_KNOW = /\b(i (don'?t|do not) know|no idea|dunno)\b/
 const BARE_CONFUSION = /^(what|sorry|huh|eh|again|pardon|excuse me)[?!.]*$/
@@ -802,6 +867,8 @@ export function evaluateRepairRequest(text, { independent = false, repairKind = 
     repeat: 'Can you repeat, please?',
     slow_down: 'Please speak slowly.',
     ask_meaning: `What does “${word}” mean?`,
+    ask_how_to_say: 'How do you say that in English?',
+    ask_to_spell: 'Can you spell that, please?',
   }
   r.naturalVersion = TARGET[kind]
   if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep13RetryPromptEmpty' }
@@ -810,12 +877,16 @@ export function evaluateRepairRequest(text, { independent = false, repairKind = 
   const askedRepeat = ASK_REPEAT.test(n)
   const askedSlow = ASK_SLOW.test(n)
   const askedMeaning = ASK_MEANING.test(n) || ASK_MEANING_VARIANT.test(n)
+  const askedHowToSay = ASK_HOW_TO_SAY.test(n)
+  const askedToSpell = ASK_TO_SPELL.test(n)
 
   /* the requested strategy, done properly */
   const done = kind === 'signal_nonunderstanding' ? signalled
     : kind === 'repeat' ? askedRepeat
       : kind === 'slow_down' ? askedSlow
-        : askedMeaning
+        : kind === 'ask_meaning' ? askedMeaning
+          : kind === 'ask_how_to_say' ? askedHowToSay
+            : askedToSpell
   if (done) {
     r.completedObjective = true
     r.confidence = 0.95
@@ -834,11 +905,30 @@ export function evaluateRepairRequest(text, { independent = false, repairKind = 
   }
 
   /*
+   * A reach for "How do you say...?" that never named what — "how do you say?",
+   * "how do you spell?". Mirrors `ask_meaning`'s own loose check above and
+   * `levels/a1/evaluators.js`'s `evaluateAskHowToSay` reference exactly.
+   */
+  if (kind === 'ask_how_to_say' && ASK_HOW_TO_SAY_LOOSE.test(n)) {
+    return { ...r, errorType: 'incomplete_how_to_say', confidence: 0.7,
+      priorityCorrection: 'ep35RetryExplainHowToSay', explanation: 'ep35RetryExplainHowToSay', retryRequired: true }
+  }
+
+  /*
+   * A reach for "Can you spell that, please?" that never got there — "spell?",
+   * "can you spell". Mirrors `ask_meaning`/`ask_how_to_say`'s own loose checks.
+   */
+  if (kind === 'ask_to_spell' && ASK_TO_SPELL_LOOSE.test(n)) {
+    return { ...r, errorType: 'incomplete_ask_to_spell', confidence: 0.7,
+      priorityCorrection: 'ep54RetryExplainAskToSpell', explanation: 'ep54RetryExplainAskToSpell', retryRequired: true }
+  }
+
+  /*
    * A different repair. The learner kept the conversation alive, which is the
    * whole skill — so this is understood and praised, and the turn simply says
    * what it was practising.
    */
-  if (signalled || askedRepeat || askedSlow || askedMeaning) {
+  if (signalled || askedRepeat || askedSlow || askedMeaning || askedHowToSay || askedToSpell) {
     return { ...r, errorType: 'other_repair', confidence: 0.9, priorityCorrection: 'ep14RetryExplainOther', explanation: 'ep14RetryExplainOther', retryRequired: true, retryPrompt: `ep13RetryPrompt_${kind}` }
   }
 
@@ -1467,6 +1557,27 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'state_location': return evaluateStateLocation(text, ctx)
     case 'ask_transport': return evaluateAskTransport(text, ctx)
     case 'ask_price': return evaluateAskPrice(text, ctx)
+    /* A1 arc 6/7 — implementations authored in `levels/a1/evaluators.js` */
+    case 'state_ability': return evaluateStateAbility(text, ctx)
+    case 'ask_ability': return evaluateAskAbility(text, ctx)
+    case 'arrange_meeting': return evaluateArrangeMeeting(text, ctx)
+    /* A2 — implementations authored in `levels/a2/evaluators.js` */
+    case 'state_past_event': return evaluateStatePastEvent(text, ctx)
+    case 'ask_past_event': return evaluateAskPastEvent(text, ctx)
+    case 'narrate_past_sequence': return evaluateNarratePastSequence(text, ctx)
+    case 'state_future_plan': return evaluateStateFuturePlan(text, ctx)
+    case 'ask_future_plan': return evaluateAskFuturePlan(text, ctx)
+    case 'describe_person_or_place': return evaluateDescribePersonOrPlace(text, ctx)
+    case 'compare_things': return evaluateCompareThings(text, ctx)
+    case 'state_opinion_with_reason': return evaluateStateOpinionWithReason(text, ctx)
+    case 'give_multi_step_directions': return evaluateGiveMultiStepDirections(text, ctx)
+    case 'ask_availability': return evaluateAskAvailability(text, ctx)
+    case 'make_booking': return evaluateMakeBooking(text, ctx)
+    case 'spell_word': return evaluateSpellWord(text, ctx)
+    case 'report_problem': return evaluateReportProblem(text, ctx)
+    case 'ask_for_help': return evaluateAskForHelp(text, ctx)
+    case 'invite_someone': return evaluateInviteSomeone(text, ctx)
+    case 'respond_to_invitation': return evaluateRespondToInvitation(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }
