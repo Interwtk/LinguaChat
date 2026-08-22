@@ -41,6 +41,6 @@ export const C1_SEMANTIC_TYPES = [
     requiredBy: ['negotiate_a_mutually_acceptable_outcome', 'propose_and_defend_an_alternative'],
     examples: ['a returned purchase', 'a service booking gone wrong', 'a shared calendar conflict', 'a rescheduled trip', 'a compromise plan'],
     generalizes: 'problem',
-    crossLevelNote: "Every problem value (B1's semantic-types.md family: delay, damage, wrong_item, missed_appointment) is a valid negotiated_item value, plus C1's own problem-free examples (a proposed meeting time, a compromise plan) that problem must continue to reject. See docs/curriculum/semantic-types.md section 2 for the full decision record.",
+    crossLevelNote: "Every problem value (B1's semantic-types family: delay, damage, wrong_item, missed_appointment) is a valid negotiated_item value, plus C1's own problem-free examples (a proposed meeting time, a compromise plan) that problem must continue to reject. See the cross-level semantic type registry's own decision record for the full rationale.",
   },
 ]

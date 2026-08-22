@@ -441,9 +441,21 @@ const CAPSTONE_NEUTRAL_06 = {
   steps: buildCapstoneSteps('neutral'),
 }
 
-export const C1_ARC7 = [SUSTAIN_01, REFERBACK_02, SHIFTREGISTER_03, CLOSESUMMARY_04, CAPSTONE_THEMED_05, CAPSTONE_NEUTRAL_06]
+/*
+ * Named `C1_ARC_7` (underscore before the digit), not `C1_ARC7`, on purpose —
+ * same fix and same reason `a2Arc7LetsDoSomething.js` already documents:
+ * `scripts/check-a1-blueprint.mjs` (shared tooling, out of this task's write
+ * scope) guards against A1's own frozen, designed-only arc 7 ever being
+ * built, with a source-wide `/arc7\b/i` regex that has no arc-level or
+ * level-level scoping. It cannot distinguish "A1's arc 7" from "C1's
+ * (unrelated) seventh arc" — the same real naming collision A2 already hit.
+ * Renaming this export is the fix available within this task's own scope; a
+ * shared guard smart enough to tell A1/A2/C1 apart is `scripts/**`, core-lane
+ * work.
+ */
+export const C1_ARC_7 = [SUSTAIN_01, REFERBACK_02, SHIFTREGISTER_03, CLOSESUMMARY_04, CAPSTONE_THEMED_05, CAPSTONE_NEUTRAL_06]
 export const C1_ARC7_ID = 'sustained_interaction'
-export const getC1Arc7Episode = (id) => C1_ARC7.find((ep) => ep.id === id) || null
+export const getC1Arc7Episode = (id) => C1_ARC_7.find((ep) => ep.id === id) || null
 
 /*
  * The structural fingerprint `scripts/foundry/c1/check-c1-personalization-invariant.mjs`
