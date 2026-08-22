@@ -1,0 +1,200 @@
+{
+  "taskId": "LC-AUD-001",
+  "title": "Cross-level A1-C2 pedagogical and psychological audit",
+  "status": "complete",
+  "auditedAgainst": {
+    "masterContract": "docs/curriculum/curriculum-master-a1-c2.md",
+    "template": "docs/curriculum/level-blueprint-template.md",
+    "supervisorEvidenceContract": "docs/research/supervisor-evidence-contract.md",
+    "supervisorReadiness": ".ai/foundry/completed/LC-SUP-001.json",
+    "blueprintsAudited": [
+      "docs/curriculum/blueprints/a1.json",
+      "docs/curriculum/blueprints/a2.json",
+      "docs/curriculum/blueprints/b1.json",
+      "docs/curriculum/blueprints/b2.json",
+      "docs/curriculum/blueprints/c1.json",
+      "docs/curriculum/blueprints/c2.json"
+    ]
+  },
+  "methodology": "Every level blueprint was loaded and normalized despite each lane using a different JSON schema for the same concepts (requiredCapabilityTable vs canDos vs capabilities; scope vs priority; evidence.transfer vs transferContexts vs independentEvidence). A deterministic resolver then: (1) built the full A1-C2 capability id graph including the Pre-A1 required core, (2) detected same-bare-id collisions across levels, (3) resolved every prerequisite string against same-level, earlier-level and explicitly-prefixed ids (b1.x / b2_x / c1_assumed__x notations), flagging anything that resolves nowhere, (4) ran cycle detection per level's same-level subgraph, (5) checked every required capability for a non-empty independent-evidence target and transfer context, (6) checked CEFR-reference presence per capability, (7) cross-referenced every coreEngineRequirements and semanticTypes.proposed entry across all six blueprints for duplicate/overlapping asks, and (8) cross-referenced pattern ids across levels for silent re-introduction or incompatible reuse. This is a design-time graph and evidence audit, not a runtime test; it changes no runtime code and does not open any level.",
+  "levelSummary": {
+    "a1": {"required": 13, "should": 3, "optional": 2, "cyclesFound": 0, "cefrCoverage": "16/16"},
+    "a2": {"required": 15, "should": 4, "optional": 0, "cyclesFound": 0, "cefrCoverage": "0/19"},
+    "b1": {"required": 12, "should": 4, "optional": 1, "cyclesFound": 0, "cefrCoverage": "17/17"},
+    "b2": {"required": 13, "should": 5, "optional": 1, "cyclesFound": 0, "cefrCoverage": "19/19"},
+    "c1": {"required": 21, "should": 7, "optional": 0, "cyclesFound": 0, "cefrCoverage": "28/28"},
+    "c2": {"required": 17, "should": 4, "optional": 1, "cyclesFound": 0, "cefrCoverage": "22/22"}
+  },
+  "findings": [
+    {
+      "id": "F1",
+      "severity": "high",
+      "category": "id-collision-incompatible-semantics",
+      "levels": ["a2", "b1"],
+      "summary": "The bare capability id 'report_a_problem' is independently defined at both A2 (required; a service/transaction problem, prereqs ['ask_for_repair','book_a_room_or_table']) and B1 (required; a different, more open-ended problem-explanation capability, prereq ['respond_to_a_simple_problem']) with different learner can-dos.",
+      "masterContractViolation": "section 5 (no later level silently redefining an earlier capability with incompatible semantics) and section 17 (no duplicated 'new' capability already taught earlier)",
+      "compoundedBy": "F4 — B1's own prerequisite for this capability ('respond_to_a_simple_problem') does not resolve to A2's real report_a_problem id or to any other id in the graph.",
+      "recommendedFix": "Rename B1's capability to a distinct id (e.g. 'escalate_and_resolve_a_problem', matching its actual can-do: explaining what is wrong plus negotiating a fix, which is a genuine escalation of A2's report_a_problem). Point its prerequisite at A2's real 'report_a_problem' id instead of the unresolved placeholder.",
+      "owner": "LC-FND-002 (docs/curriculum/** is in its write scope)"
+    },
+    {
+      "id": "F2",
+      "severity": "high",
+      "category": "id-collision-unlinked-escalation",
+      "levels": ["b2", "c1"],
+      "summary": "The bare id 'infer_implied_meaning' is defined at B2 (should; receptive; 'catching a meaning that was implied, not stated') and independently redefined at C1 (required; 'correctly infer what a speaker means when it is not stated directly') with near-identical can-dos, but C1's version does not prerequisite or reference B2's capability at all — its declared prerequisite is the unrelated 'b2_sustain_a_spontaneous_conversation' (itself unresolved, see F5).",
+      "masterContractViolation": "section 5 and section 17",
+      "recommendedFix": "C1's infer_implied_meaning should either (a) be renamed to reflect genuine escalation (e.g. 'infer_implied_meaning_in_unfamiliar_context') with prerequisite 'b2.infer_implied_meaning', turning a should-scope B2 receptive skill into a required C1 productive/interpretive one, which is a coherent progression — or (b) if truly identical in scope, be deleted from C1 and treated as pure B2 reuse in C1's reuse matrix instead of re-declared as a new capability.",
+      "owner": "LC-FND-002"
+    },
+    {
+      "id": "F3",
+      "severity": "high",
+      "category": "id-collision-duplicate-capstone-claim",
+      "levels": ["c1", "c2"],
+      "summary": "The bare id 'reformulate_for_a_different_audience' is defined as a required capability at both C1 ('restate the same content in simpler or more technical language depending on who is listening') and C2 ('carrying meaning across an audience gap without losing...', explicitly described in C2's blueprint as 'the product's first sustained mediation task'). The two can-dos are near-duplicates, and C2's 'first mediation task' framing is factually contradicted by C1 already declaring the same id.",
+      "masterContractViolation": "section 5, section 17, and section 3 (CEFR claims must be capability-based, not restated as new when already taught)",
+      "compoundedBy": "F6 — C2's own prerequisite for this capability is the unresolved placeholder 'c1_assumed__reformulate', meaning C2's authors intended a C1 dependency but never actually pointed at C1's real, identically-named capability.",
+      "recommendedFix": "Treat this as one capability owned by C1, reused/escalated (not re-declared) at C2 via a genuine transfer/complexity increase (e.g. C2 adds source-text density and audience ambiguity that C1 does not). C2 should rename its version (e.g. 'reformulate_dense_source_for_a_new_audience') and prerequisite on 'c1.reformulate_for_a_different_audience', and drop the 'first mediation task' claim or rescope it to 'first task combining dense-text extraction with audience reformulation'.",
+      "owner": "LC-FND-002"
+    },
+    {
+      "id": "F4",
+      "severity": "high",
+      "category": "unresolved-cross-level-prerequisite",
+      "levels": ["b1"],
+      "summary": "B1's own blueprint explicitly asked LC-AUD-001 to resolve its 'expectedA2ExitCapabilities' placeholder ids against the real A2 blueprint once both existed (prerequisiteReconciliation.auditInstruction). Six B1 required-capability prerequisites still use those unreconciled placeholder ids, none of which exist anywhere in the graph.",
+      "unresolvedPrerequisites": [
+        {"capability": "give_an_opinion", "brokenPrereq": "explain_a_reason", "realA2Match": "express_an_opinion_with_a_reason", "confidence": "high"},
+        {"capability": "compare_options_with_reasons", "brokenPrereq": "comparatives", "realA2Match": "compare_two_things", "confidence": "high"},
+        {"capability": "describe_an_experience", "brokenPrereq": "describe_people_and_places", "realA2Match": "describe_a_person_or_place", "confidence": "high"},
+        {"capability": "report_a_problem", "brokenPrereq": "respond_to_a_simple_problem", "realA2Match": "report_a_problem (a2)", "confidence": "high", "note": "see F1 — this fix cannot land until B1's own report_a_problem id is renamed"},
+        {"capability": "talk_about_plans_and_intentions", "brokenPrereq": "talk_about_future_plans_with_going_to", "realA2Match": "talk_about_future_plans", "confidence": "high"},
+        {"capability": "sustain_topic_change", "brokenPrereq": "hold_a_longer_conversation", "realA2Match": "keep_a_longer_conversation_going", "confidence": "medium", "note": "the real A2 match is scope=should, not required — see F4b"}
+      ],
+      "masterContractViolation": "section 5 (no missing prerequisite absent from current or earlier level) and template section 5",
+      "recommendedFix": "Update the six prerequisite strings to the realA2Match ids listed above (after F1 is resolved for the report_a_problem row).",
+      "owner": "LC-FND-002"
+    },
+    {
+      "id": "F4b",
+      "severity": "medium",
+      "category": "required-capability-depends-on-non-guaranteed-prerequisite",
+      "levels": ["a2", "b1"],
+      "summary": "Once F4's naming gap is fixed, B1's required capability 'sustain_topic_change' would correctly resolve its prerequisite to A2's 'keep_a_longer_conversation_going' — but that A2 capability is scope=should, not required. A2 does not guarantee every graduating learner has this evidence, so a required B1 capability would rest on an unreliable foundation for some learners.",
+      "masterContractViolation": "section 5 ('no required capability disappears' implies required chains should rest on guaranteed, not optional, prior evidence) and section 10 (scaffolding should react to genuinely low prerequisite evidence, not assume it)",
+      "recommendedFix": "Either (a) promote A2's keep_a_longer_conversation_going to required, or (b) have B1's sustain_topic_change declare a fallback/bridging first exposure inside B1 itself for learners who never independently produced the A2 should-capability, consistent with the shared scaffolding engine reacting to genuinely low prerequisite evidence (master section 10) rather than assuming it.",
+      "owner": "LC-FND-002 or a dedicated A2/B1 blueprint correction"
+    },
+    {
+      "id": "F5",
+      "severity": "high",
+      "category": "unresolved-cross-level-prerequisite",
+      "levels": ["c1"],
+      "summary": "C1's assumedPriorLevelCapabilities section explicitly marked eight B2 ids as 'assumed_unverified' pending this audit. Six of them are actually referenced as literal prerequisite strings inside C1's capability graph and do not resolve to any real B2 id (B2 landed with different naming).",
+      "unresolvedPrerequisites": [
+        {"capability": "develop_a_structured_argument", "brokenPrereq": "b2_develop_an_argument", "realB2Match": "b2.develop_and_defend_opinion", "confidence": "high"},
+        {"capability": "adapt_register_to_audience", "brokenPrereq": "b2_manage_register_deliberately", "realB2Match": "b2.adjust_register_to_context", "confidence": "high"},
+        {"capability": "summarize_a_complex_message_for_a_new_audience", "brokenPrereq": "b2_summarize_a_text", "realB2Match": "b2.summarize_for_someone_else", "confidence": "high"},
+        {"capability": "infer_implied_meaning", "brokenPrereq": "b2_sustain_a_spontaneous_conversation", "realB2Match": "b2.infer_implied_meaning", "confidence": "high", "note": "see F2 — the correct link is B2's own identically-named capability, not a conversation-sustaining one"},
+        {"capability": "negotiate_a_mutually_acceptable_outcome", "brokenPrereq": "b2_negotiate_a_simple_outcome", "realB2Match": "b2.negotiate_a_resolution", "confidence": "high"},
+        {"capability": "sustain_a_conversation_across_topic_shifts", "brokenPrereq": "b2_sustain_a_spontaneous_conversation", "realB2Match": "b2.sustain_a_multi_topic_conversation", "confidence": "medium", "note": "handle_a_topic_shift_gracefully is a plausible alternate/secondary match"}
+      ],
+      "masterContractViolation": "section 5 and template section 5",
+      "recommendedFix": "Update the six prerequisite strings to the realB2Match ids, using B2's own established 'b1.x' dot-notation convention for cross-level references (i.e. 'b2.develop_and_defend_opinion') for consistency.",
+      "owner": "LC-FND-002"
+    },
+    {
+      "id": "F6",
+      "severity": "high",
+      "category": "unresolved-cross-level-prerequisite",
+      "levels": ["c2"],
+      "summary": "C2's c1Inheritance section explicitly marked its assumedExitCapabilities as PENDING reconciliation by LC-AUD-001. Seven distinct 'c1_assumed__*' placeholder ids are referenced across six C2 required-capability prerequisites and do not resolve to any real C1 id.",
+      "unresolvedPrerequisites": [
+        {"capability": "extract_key_argument_from_dense_text", "brokenPrereq": "c1_assumed__synthesize_information", "realC1Match": "c1.synthesize_two_conflicting_viewpoints", "confidence": "medium"},
+        {"capability": "extract_key_argument_from_dense_text", "brokenPrereq": "c1_assumed__infer_meaning", "realC1Match": "c1.infer_implied_meaning", "confidence": "high", "note": "pending F2's rename"},
+        {"capability": "reformulate_for_a_different_audience", "brokenPrereq": "c1_assumed__reformulate", "realC1Match": "c1.reformulate_for_a_different_audience", "confidence": "high", "note": "see F3 — this is the strongest signal that C1 and C2 declared the same capability twice"},
+        {"capability": "recognize_implied_meaning", "brokenPrereq": "c1_assumed__infer_meaning", "realC1Match": "c1.infer_implied_meaning", "confidence": "high", "note": "pending F2's rename"},
+        {"capability": "shift_register_deliberately", "brokenPrereq": "c1_assumed__adapt_register_deliberately", "realC1Match": "c1.adapt_register_to_audience", "confidence": "high"},
+        {"capability": "develop_an_extended_qualified_argument", "brokenPrereq": "c1_assumed__argue_with_reasons", "realC1Match": "c1.develop_a_structured_argument", "confidence": "medium", "note": "c1.qualify_a_claim_precisely is a plausible secondary prerequisite"},
+        {"capability": "preempt_and_rebut_a_counterargument", "brokenPrereq": "c1_assumed__handle_counterarguments", "realC1Match": "c1.concede_a_counterpoint_gracefully", "confidence": "medium", "note": "c1.disagree_diplomatically is a plausible secondary prerequisite"},
+        {"capability": "sustain_coherence_across_topic_shifts", "brokenPrereq": "c1_assumed__handle_abstract_topics", "realC1Match": "c1.sustain_a_conversation_across_topic_shifts", "confidence": "low", "note": "weakest mapping in this audit; c1's own capability is itself still resting on an unresolved B2 placeholder (see F5) — needs a human/blueprint-owner judgment call, not a mechanical rename"}
+      ],
+      "masterContractViolation": "section 5 and template section 5",
+      "recommendedFix": "Update the seven prerequisite strings to the realC1Match ids, resolving F3's duplicate-id conflict first for the reformulate_for_a_different_audience row.",
+      "owner": "LC-FND-002"
+    },
+    {
+      "id": "F7",
+      "severity": "medium-high",
+      "category": "missing-required-field",
+      "levels": ["a2"],
+      "summary": "None of A2's 19 capabilities (canDos) carry a cefr or cefrRefs field, and no separate CEFR-mapping section exists elsewhere in a2.json. A1, B1, B2, C1 and C2 all populate this field for every capability; A2 is the only level with zero CEFR coverage.",
+      "masterContractViolation": "section 3 ('Each level blueprint must map its capabilities to relevant CEFR Companion Volume descriptors') and template section 3 (cefr refs is a required table column)",
+      "recommendedFix": "Add CEFR Companion Volume descriptor references to all 19 A2 capabilities before LC-CONT-A2 (or equivalent) content work depends on this blueprint as a CEFR-aligned source.",
+      "owner": "LC-FND-002 or a dedicated A2 blueprint correction"
+    },
+    {
+      "id": "F8",
+      "severity": "medium",
+      "category": "core-requirement-duplication-risk",
+      "levels": ["b2", "c1"],
+      "summary": "B2 and C1 each independently raised a CORE engine requirement for register-appropriateness scoring (B2: 'register_appropriateness_dimension'; C1: 'register_appropriateness_scoring') and for discourse-coherence scoring (B2: 'discourse_coherence_evaluation'; C1: 'discourse_coherence_scoring'). Both describe the same underlying evaluator capability in different words, authored in parallel lanes with no cross-reference to each other.",
+      "recommendedFix": "LC-FND-002 should implement one register-appropriateness dimension and one discourse-coherence-scoring path in the shared evaluator, satisfying both B2's 'should'-relevant and C1's 'required'-relevant needs, rather than risking two incompatible implementations.",
+      "owner": "LC-FND-002"
+    },
+    {
+      "id": "F9",
+      "severity": "medium",
+      "category": "semantic-type-fragmentation-risk",
+      "levels": ["b1", "b2", "c1"],
+      "summary": "C1's own blueprint explicitly flagged its proposed 'negotiated_item_semantic_type' as 'worth checking against A2/B1/B2 blueprints before building twice'. This audit found that B1 already declared a 'problem' semantic type ('an issue attached to a thing or event') and B2 already declared a related but distinct 'problem_type' ('a categorized situation: delay, damage, wrong_item, missed_appointment'). C1's proposed type is conceptually adjacent (the personalizable good/service being negotiated, not the problem itself) but the three types were designed independently across three parallel lanes with no cross-referencing, and B1's 'problem' and B2's 'problem_type' are themselves already two subtly different types for a similar underlying concept.",
+      "recommendedFix": "Before building a fourth type, LC-FND-002 should decide whether 'problem' and 'problem_type' should be reconciled into one type (or a documented is-a relationship), and whether C1's 'negotiated_item' can be expressed as a new field on the existing problem/transaction slot family rather than a wholly separate type.",
+      "owner": "LC-FND-002"
+    },
+    {
+      "id": "F10",
+      "severity": "medium",
+      "category": "pattern-id-reintroduction-ambiguity",
+      "levels": ["a2", "b1"],
+      "summary": "The pattern id 'because_reason_pattern' is declared independently at both A2 (firstArc: people_and_places) and B1 (firstArc: i_think_that), each with its own 'firstArc' as if introducing the pattern for the first time. B1's own prerequisite note already says 'because_clause (A2-expected)', showing B1's authors knew this was a reuse, but the schema has no field distinguishing 'introduce' from 'reuse' for patterns the way the reuseMatrix legend does for capabilities (I/G/R/T/F/D).",
+      "pedagogicalImplication": "If the runtime's spaced-review/retrieval-practice scheduler keys off pattern-first-appearance to decide when a pattern is 'new' versus due for retrieval, this ambiguity risks one of two failure modes: re-teaching a pattern the learner already produced independently in A2 (wastes learner time, reads as repetitive rather than personal per master section 13's healthy-motivation principle), or silently skipping A2-taught learners straight to B1's assumption of mastery without a genuine retrieval check (a false-mastery risk under master principle 12).",
+      "recommendedFix": "Add an explicit 'introducedAtLevel' or reuse marker to pattern declarations, and have B1 mark because_reason_pattern as reuse (R) of A2's pattern rather than a second 'firstArc' introduction.",
+      "owner": "LC-FND-002"
+    },
+    {
+      "id": "F11",
+      "severity": "medium",
+      "category": "pattern-id-reused-for-incompatible-form",
+      "levels": ["b2", "c2"],
+      "summary": "The pattern id 'hedging_pattern' is reused at C2 for a structurally different, more formal/academic form ('it could be argued that / arguably / to some extent / not necessarily') than the one it names at B2 ('sort of / tend to / I'd say / more or less'). Unlike the A2/B1 case in F10, these are not the same grammatical structure recurring — they are two different registers of hedging language sharing one id.",
+      "pedagogicalImplication": "Same false-mastery/spacing risk category as F10, but sharper: because the surface forms genuinely differ, crediting C2 register-appropriate hedging practice against a spaced-retrieval record seeded by B2's colloquial hedging (or vice versa) would be crediting production of language the learner was never actually taught, directly contradicting master principle 12 (no false mastery) and 9 (transfer must be to genuinely new realizations, not assumed).",
+      "recommendedFix": "Give C2's academic-register hedging form a distinct pattern id (e.g. 'academic_hedging_pattern') rather than reusing 'hedging_pattern'.",
+      "owner": "LC-FND-002"
+    },
+    {
+      "id": "F12",
+      "severity": "low",
+      "category": "self-disclosed-evidence-gap-carried-forward",
+      "levels": ["a1"],
+      "summary": "A1's live/frozen blueprint declares empty transferContexts for three required capabilities (ask_the_price, buy_something, arrange_to_meet), already self-documented in a1.json as a 'single-appearance risk' with a stated review-scheduler mitigation. This audit confirms the gap is real and unresolved but not new, not hidden, and not something this task may fix given A1 is frozen and live.",
+      "recommendedFix": "No action required from LC-AUD-001/LC-FND-002. Carry forward as a tracked, already-disclosed A1 risk; any future A1-content-touching task should re-check whether the review-scheduler mitigation actually delivers delayed retrieval for these three capabilities before treating them as fully evidenced.",
+      "owner": "future A1-maintenance task only, not blocking"
+    }
+  ],
+  "positiveFindings": [
+    "No prerequisite cycles were found in any of the six levels' same-level capability subgraphs.",
+    "Every A1 required capability is reused (explicitly listed in a1Inheritance.reuseFrequently/reuseOccasionally, or referenced as a real prerequisite) somewhere in A2 — the one level-boundary with a fully machine-checkable reuse ledger.",
+    "B2's cross-level prerequisites (b1.* dot-notation) all resolve correctly to real B1 ids — B2 is the one later-level blueprint authored after its predecessor had already landed, and it shows: this is the pattern the other four boundaries should be corrected to match.",
+    "All six blueprints correctly declare productAvailability/available: false and explicitly restate that A1 stays fail-closed; no blueprint attempts to flip or imply availability.",
+    "Independent-evidence thresholds for required capabilities do not inflate arbitrarily level over level (roughly 2 across A1-C2, richer qualitative criteria at B1/C1); complexity rises through task demand (discourse length, register, ambiguity) rather than sheer repetition count, consistent with master section 9's instruction that evidence type may not be weakened but exact thresholds may be revised.",
+    "No level's evidence model drops the recognition/guided/assisted/independent/transfer/delayed-retrieval structure inherited from the master contract, even where later blueprints (A2, B2, C2) do not restate the 'cannot graduate on recognition alone' prose explicitly (only B1 and C1 do) — the structural fields still enforce the same substance."
+  ],
+  "openQuestionsForHumanReview": [
+    "F6's sustain_coherence_across_topic_shifts mapping (confidence: low) needs a human curriculum-design judgment call, not a mechanical id rename, since its own C1 target capability is itself still resting on an unresolved B2 placeholder.",
+    "Whether F1's B1 capability should be renamed 'escalate_and_resolve_a_problem' or another name is a curriculum-authoring decision this audit does not have write scope to make.",
+    "Whether A2's keep_a_longer_conversation_going should be promoted to required (F4b option a) changes A2's own required-capability count and vocabulary budget, which is A2-blueprint-owner territory."
+  ],
+  "scopeNote": "This task's write scope is limited to docs/curriculum/cross-level-audit.md and docs/curriculum/cross-level-audit.json. No blueprint file was edited. All recommended fixes above are handed to LC-FND-002 (whose write scope includes docs/curriculum/**) via .ai/foundry/requests/LC-AUD-001.md, per the coordination contract's rule against quietly implementing changes outside this task's scope.",
+  "efficacyDisclaimer": "This audit proves internal structural and cross-level consistency of the design artifacts. It does not prove, and does not claim, real-learner pedagogical efficacy; that requires the pilot evidence process described in docs/research/learning-science-foundation.md and the master contract section 19."
+}
