@@ -68,7 +68,7 @@ export const B2_SEMANTIC_TYPES = [
     requiredBy: ['justify_a_request_for_change', 'negotiate_a_resolution', 'express_frustration_diplomatically', 'negotiate_an_agreement_under_pushback'],
     examples: ['delay', 'damage', 'wrong_item', 'missed_appointment'],
     incompatibleWith: ['person', 'feeling'],
-    crossLevelNote: "Escalates B1's problem family with an explicit category field; the runtime registry should register one problem type with an optional category, not two SEMANTIC_TYPES entries (docs/curriculum/semantic-types.md section 1).",
+    crossLevelNote: "Escalates B1's problem family with an explicit category field; the runtime registry should register one problem type with an optional category, not two SEMANTIC_TYPES entries (see this level's shared-core handoff notes).",
   },
   {
     id: 'register',

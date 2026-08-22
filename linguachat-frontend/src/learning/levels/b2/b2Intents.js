@@ -216,7 +216,7 @@ export const B2_INTENTS = [
         usedIn: ['the_long_conversation'],
         capabilityId: 'sustain_a_multi_topic_conversation',
         alsoCapabilityId: 'handle_a_topic_shift_gracefully',
-        note: 'b2.json literally names this intent+subtype for both capstone conversation-length capabilities (evaluationStrategy.discourse_coherence_plus_semantic); the id is reused from register-shift, not renamed — flagged in b2Capabilities.js and docs/curriculum/implementation/b2/README.md as a naming concern worth a human check, not silently fixed here.',
+        note: 'b2.json literally names this intent+subtype for both capstone conversation-length capabilities (evaluationStrategy.discourse_coherence_plus_semantic); the id is reused from register-shift, not renamed — flagged in b2Capabilities.js and this level\'s implementation README as a naming concern worth a human check, not silently fixed here.',
         discourseCoherenceExamples: {
           coherent: 'a topic-shift marker used with a genuine, signalled change of subject that both speakers can follow',
           incoherentFlatList: 'several correct, individually well-formed sentences on different topics with no shift marker connecting them',
