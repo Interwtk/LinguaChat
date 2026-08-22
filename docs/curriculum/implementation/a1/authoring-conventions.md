@@ -34,6 +34,12 @@ rule ("variants travel as a subtype on the step payload... not as a new intent")
 - **`arrangeStage: 'propose' | 'place' | 'confirm'`** on an `arrange_meeting` step — which part of the
   arrangement the step is asking for: a day+time proposal, a place, or the full day+time+place
   confirmation (the arc's headline evidence, episodes 37-38).
+- **`praisePrefix`** on an `arrange_meeting` `'confirm'`-stage step — `evaluateArrangeMeeting`'s
+  `'confirm'` branch is the one place a single evaluator branch is genuinely shared by two different
+  episodes (37's confirmation turns and 38's), so the step declares which episode's praise copy
+  applies rather than the evaluator guessing from stage alone (defaults to `'ep38'`; episode 37's own
+  confirm steps set `'ep37'` explicitly). Found and fixed by review — the first draft hardcoded
+  `'ep38'` unconditionally, which would have shown "that's the end of A1!" praise mid-episode-37.
 
 One episode-level field is new: **`secondaryCanDoId`**, paired with a step-level
 **`creditsCanDoId`** — episode 35 (`can_you`) is the only episode in this arc pair whose blueprint

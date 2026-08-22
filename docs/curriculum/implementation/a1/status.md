@@ -28,13 +28,18 @@ All inside this task's write scope (`linguachat-frontend/src/learning/levels/a1/
   (`coreEngineRequirements.canAmbiguity`) as real, tested code** — see `core-requirements.md` §3.
 - **A1's proposed `day` semantic type** (`levels/a1/semanticTypes.js`), verbatim from the blueprint,
   with a documented (not silently resolved) mismatch against A2's own already-shipped `day` proposal.
-- **A complete draft English i18n key set** (`levels/a1/i18n/en.js`) — 106 distinct keys, each a
-  finished English sentence, not a placeholder.
+- **A complete draft English i18n key set** (`levels/a1/i18n/en.js`) — 122 distinct keys (106
+  referenced by the episode content's own `*Key`/`key` fields, plus 16 the reference evaluators emit
+  at runtime — `praiseKey`/`priorityCorrection`/`explanation` values a content-only completeness check
+  would miss), each a finished English sentence, not a placeholder.
 - **Three level-owned QA scripts** (`scripts/foundry/a1/`): `check-a1-arc6-arc7-structure.mjs`
-  (blueprint conformance, including a content-level assertion that the canAmbiguity disambiguation is
-  actually taught), `check-a1-arc6-arc7-evaluators.mjs` (a correct/near-miss/nonsense/insufficient-form
-  battery per intent, plus the full canAmbiguity refusal battery), `check-a1-arc6-arc7-journeys.mjs`
-  (>=20 simulated varied learner journeys per arc against the level's own content+evaluators).
+  (blueprint conformance, a content-level assertion that the canAmbiguity disambiguation is actually
+  taught, a self-check that every step's own `suggestionEn` passes its own paired evaluator, and a
+  static scan of `evaluators.js` proving every key it can emit has a draft value),
+  `check-a1-arc6-arc7-evaluators.mjs` (a correct/near-miss/nonsense/insufficient-form battery per
+  intent, plus the full canAmbiguity refusal battery), `check-a1-arc6-arc7-journeys.mjs` (>=20
+  simulated varied learner journeys per arc against the level's own content+evaluators, honouring each
+  real step's own declared `abilityForm`/`arrangeStage`/`praisePrefix` rather than a fixed persona).
 - `docs/curriculum/implementation/a1/authoring-conventions.md` and `core-requirements.md` — the shared
   spec both arcs were authored against, and the precise, content-informed ask for `LC-INT-001`.
 
@@ -43,8 +48,9 @@ All inside this task's write scope (`linguachat-frontend/src/learning/levels/a1/
 See the PR's `## Evidence` section for exact command output. Summary:
 
 - `node scripts/foundry/a1/check-a1-arc6-arc7-structure.mjs` — PASS (2 arcs, 5 episodes, 8 distinct
-  evalKinds, 106 distinct i18n keys all present as drafts, no prerequisite cycles, no orphan
-  required/should capability, canAmbiguity content assertion holds)
+  evalKinds, 106 content-referenced + 16 evaluator-emitted i18n keys all present as drafts, no
+  prerequisite cycles, no orphan required/should capability, canAmbiguity content assertion holds,
+  every suggestionEn passes its own paired evaluator)
 - `node scripts/foundry/a1/check-a1-arc6-arc7-evaluators.mjs` — PASS (41/41 cases: correct/near-miss/
   nonsense/insufficient-form per intent, plus 4 explicit canAmbiguity refusal cases and 5 taught-activity
   acceptance cases)
@@ -80,7 +86,7 @@ Concretely, this task could NOT run or produce:
 
 - a live in-app browser walkthrough of episode 34-38 (390px/1440px, light/dark);
 - a real learner-journey replay through `SessionRunner`/the shared session engine;
-- `npm run check:i18n`'s real locale-parity proof for these 106 keys (they are draft values in a
+- `npm run check:i18n`'s real locale-parity proof for these 122 keys (they are draft values in a
   level-owned file, not yet merged into `src/i18n/**`);
 - replay/idempotency proof through the real XP/Garden reward pipeline;
 - cross-level `check-cross-level-ids.mjs` proof against the live registry (this task's own
@@ -110,3 +116,43 @@ simulated varied learner journeys against the real content paired with the real 
   did for B2/C1's register-appropriateness/discourse-coherence asks, correctly, since those levels have
   no runtime content yet to validate against) — A1 arc 6 DOES have real content now, so the fix is real,
   tested code with a named regression-proof property (zero edits to the function it must not break).
+
+## 5. Self-review findings, and what was fixed
+
+A code-review pass over the first draft found and this task fixed:
+
+- **Two content/evaluator-pairing bugs**: episode 36's ability-reuse turn asked about an untaught
+  activity ("come") whose own suggested answer therefore failed `evaluateStateAbility`; episode 37's
+  "agree to the new place" turn was tagged `arrangeStage: 'confirm'` (requiring day+time+place) but
+  only negotiates a place, so its own suggested answer failed `evaluateArrangeMeeting`. Both fixed at
+  the content level (a taught activity; the correct stage), and a permanent self-check added to
+  `check-a1-arc6-arc7-structure.mjs` (§7b: every step's `suggestionEn` must pass its own evaluator)
+  so this class of bug cannot silently ship again.
+- **16 missing i18n keys**: the reference evaluators' own `praiseKey`/`priorityCorrection`/
+  `explanation` values had no draft translation anywhere, invisible to a completeness check that only
+  read the episode JSON. Fixed by adding all 16 to `i18n/en.js` and adding §8b to
+  `check-a1-arc6-arc7-structure.mjs`, which statically scans `evaluators.js` for every key it can
+  emit.
+- **A real design gap**: `evaluateArrangeMeeting`'s `'confirm'` branch is genuinely shared by episode
+  37 and episode 38, but originally hardcoded episode-38 praise copy for both. Fixed with a
+  `praisePrefix` option content can override (episode 37's confirm steps now do); documented in
+  `authoring-conventions.md`.
+- **`check-a1-arc6-arc7-journeys.mjs` never exercised `state_ability`'s polarity check or
+  `evaluateAskHowToSay`** against real content (the polarity option was silently dropped; the
+  how-to-say evaluator wasn't in the map the self-check reads). Fixed: the journeys script now
+  forwards each real step's own `abilityForm`, and `check-a1-arc6-arc7-structure.mjs`'s §7b
+  self-check now also validates `repair_request`/`ask_how_to_say` steps via a dedicated
+  `A1_ARC6_ARC7_REPAIR_KIND_EVALUATORS` map.
+- **A real evaluator limitation**: `evaluateStateAbility`'s polarity regexes required "I" and
+  "can"/"can't" to be adjacent, so a natural reply like "I definitely can't cook." was misjudged as
+  having no ability frame at all. Fixed to tolerate one intervening word, deliberately capped at one
+  so a sentence about someone else's ability ("I think you can help") is still correctly not matched.
+- **Minor duplication cleanup**: a `nonsense(r)` helper (alongside the existing `empty(r)`) and a
+  `withPraise(r, prefix)` helper replaced five and six copy-pasted literals respectively in
+  `evaluators.js`; `semanticTypes.js`'s `day.validate()` now imports the same `DAYS` list
+  `evaluators.js` already exports instead of re-declaring it; `index.js` dropped an unnecessary
+  intermediate-constant indirection.
+
+Not changed, and deliberately so: the `REPAIR_COMPLEMENT_RE`/engine-internal-regex parallel and the
+A1/A2 `day`-type `incompatibleWith` mismatch — both already documented as intentional, content-informed
+handoffs to `LC-INT-001` (`core-requirements.md` §3, §4), not gaps this task could close itself.

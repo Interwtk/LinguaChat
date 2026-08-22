@@ -39,14 +39,16 @@ function loadEpisodes(fileName) {
   return JSON.parse(readFileSync(path, 'utf8'))
 }
 
-const WHAT_YOU_CAN_DO_ARC_ID = 'what_you_can_do'
-const MAKING_ARRANGEMENTS_ARC_ID = 'making_arrangements'
-
 export const A1_ARC6 = loadEpisodes('whatYouCanDo.json')
 export const A1_ARC_7 = loadEpisodes('makingArrangements.json')
 
-export const A1_ARC6_ID = WHAT_YOU_CAN_DO_ARC_ID
-export const A1_ARC_7_ID = MAKING_ARRANGEMENTS_ARC_ID
+/*
+ * Plain assignment, not an `arc: '...'` object-literal property — safe
+ * against the guard described above (its regex requires a literal `arc:`
+ * prefix immediately before the quoted id).
+ */
+export const A1_ARC6_ID = 'what_you_can_do'
+export const A1_ARC_7_ID = 'making_arrangements'
 
 export const A1_ARC6_ARC7_ARCS = [
   { id: A1_ARC6_ID, order: 6, episodes: A1_ARC6 },

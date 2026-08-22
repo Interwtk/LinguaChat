@@ -55,7 +55,32 @@ const PERSONAS = {
     transfer: 'Let’s meet on Monday at nine at the office.',
   },
 }
-const OPTS_FOR = (evalKind) => (evalKind === 'arrange_meeting' ? { arrangeStage: 'confirm' } : {})
+/*
+ * Forwards a real step's own subtype fields where it has them
+ * (`abilityForm`, `praisePrefix`), so a step that actually declares a
+ * polarity/praise-episode constraint is tested against it rather than
+ * silently ignored (found once by review: `abilityForm` was previously
+ * dropped entirely, so the polarity check was never exercised against real
+ * content). `arrangeStage` is the one deliberate exception — always tested
+ * at 'confirm' (the strictest stage) regardless of the originating step's
+ * own stage, per this file's own header comment.
+ */
+function optsFor(step) {
+  const opts = {}
+  if (step.evalKind === 'arrange_meeting') opts.arrangeStage = 'confirm'
+  if (step.abilityForm) opts.abilityForm = step.abilityForm
+  if (step.praisePrefix) opts.praisePrefix = step.praisePrefix
+  return opts
+}
+/* polarity-safe alternates for state_ability, so a step's own declared abilityForm is honoured */
+const POLARITY_TEXT = {
+  positive: { correct: 'I can swim.', variant: 'I can definitely cook.', transfer: 'I can sing, no problem.' },
+  negative: { correct: "I can't dance.", variant: "I definitely can't cook.", transfer: "I can't sing, sorry." },
+}
+function personaText(step, ex, kind) {
+  if (step.evalKind === 'state_ability' && step.abilityForm) return POLARITY_TEXT[step.abilityForm][kind]
+  return ex[kind]
+}
 
 let totalFailures = 0
 let grandTotalJourneys = 0
@@ -81,41 +106,44 @@ for (const arc of A1_ARC6_ARC7_ARCS) {
     const fn = EV.A1_ARC6_ARC7_EVALUATORS[step.evalKind]
     const ex = PERSONAS[step.evalKind]
     if (!fn || !ex) continue
-    const opts = (base) => ({ ...base, ...OPTS_FOR(step.evalKind) })
+    const opts = (base) => ({ ...base, ...optsFor(step) })
+    const correct = personaText(step, ex, 'correct')
+    const variant = personaText(step, ex, 'variant')
+    const transfer = personaText(step, ex, 'transfer')
 
     // Persona 1: clearly correct, independent — should complete.
     journeys += 1
     {
-      const r = fn(ex.correct, opts({ independent: true }))
-      if (r.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] correct persona not accepted: "${ex.correct}"`) }
+      const r = fn(correct, opts({ independent: true }))
+      if (r.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] correct persona not accepted: "${correct}"`) }
     }
     // Persona 2: near miss, then a retry with the correct form.
     journeys += 1
     {
       const r1 = fn(ex.nearMiss, opts({ independent: false }))
-      const r2 = fn(ex.correct, opts({ independent: false }))
+      const r2 = fn(correct, opts({ independent: false }))
       if (r1.completedObjective === true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] near-miss wrongly accepted: "${ex.nearMiss}"`) }
-      if (r2.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] retry after near-miss not accepted: "${ex.correct}"`) }
+      if (r2.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] retry after near-miss not accepted: "${correct}"`) }
     }
     // Persona 3: nonsense, then recovery.
     journeys += 1
     {
       const r1 = fn(ex.nonsense, opts({ independent: false }))
-      const r2 = fn(ex.correct, opts({ independent: false }))
+      const r2 = fn(correct, opts({ independent: false }))
       if (r1.completedObjective === true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] nonsense wrongly accepted: "${ex.nonsense}"`) }
-      if (r2.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] recovery after nonsense not accepted: "${ex.correct}"`) }
+      if (r2.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] recovery after nonsense not accepted: "${correct}"`) }
     }
     // Persona 4: natural variant phrasing.
     journeys += 1
     {
-      const r = fn(ex.variant, opts({ independent: true }))
-      if (r.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] natural variant not accepted: "${ex.variant}"`) }
+      const r = fn(variant, opts({ independent: true }))
+      if (r.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] natural variant not accepted: "${variant}"`) }
     }
     // Persona 5: transfer — a genuinely different lexical realization.
     journeys += 1
     {
-      const r = fn(ex.transfer, opts({ independent: true }))
-      if (r.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] transfer example not accepted: "${ex.transfer}"`) }
+      const r = fn(transfer, opts({ independent: true }))
+      if (r.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] transfer example not accepted: "${transfer}"`) }
     }
   }
 

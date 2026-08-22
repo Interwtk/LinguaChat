@@ -66,12 +66,25 @@ never exercised end-to-end.
 
 ## 2. i18n keys
 
-`levels/a1/i18n/en.js` (`A1_ARC6_ARC7_I18N_EN`) is a complete draft English value for all 106 keys
-the 5 episodes reference (`check-a1-arc6-arc7-structure.mjs` proves no key is missing a draft value).
+`levels/a1/i18n/en.js` (`A1_ARC6_ARC7_I18N_EN`) is a complete draft English value for all 122 keys
+these two arcs need: 106 referenced directly by the 5 episodes' own `*Key`/`key` fields, plus 16 more
+that only the reference evaluators emit at runtime (`praiseKey`/`priorityCorrection`/`explanation`
+values such as `ep34PraiseIndependent`, `ep35RetryExplainAbilityVsRequest`) — a class of key a
+content-only i18n-completeness check misses entirely unless it also reads the evaluator source, which
+`check-a1-arc6-arc7-structure.mjs` §8b now does (found by review, not assumed complete in advance).
 **Ask:** merge these into `src/i18n/translations.js` + `src/i18n/locales/*.js` for every gated
 locale, then translate the non-English locales — per CLAUDE.md, translation work stays in its own PR,
 separate from this content merge. The episode-numbered key prefix convention (`ep34*`...`ep38*`)
 already keeps these keys disjoint from every other arc's.
+
+**Also ask:** `engine/hybridEvaluation.js`'s `PRAISE` table looks up praise copy by intent name and
+currently ignores whatever `praiseKey` an evaluator's own result carries (per that file's existing
+`praiseFor(kind, independent)` shape) — add `state_ability`/`ask_ability`/`arrange_meeting` entries
+there too, pointing at the per-episode keys above, or the praise these evaluators compute will be
+silently overridden by `GENERIC_PRAISE` once wired in. This is the same three-table gap §3 point 4
+already names (`PRAISE`/`MODEL_ANSWER`+`PROMPT`/`OBJECTIVE_FORMATS`), stated here again specifically
+because it is the one that would otherwise look "already handled" (the reference evaluators DO set
+`praiseKey`) while actually not being consulted at all by the real runtime dispatcher.
 
 ## 3. Evaluator dispatch
 

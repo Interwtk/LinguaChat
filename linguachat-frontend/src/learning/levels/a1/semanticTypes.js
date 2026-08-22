@@ -32,14 +32,16 @@
  * proposals are merged into one registered type, rather than silently
  * forking a third variant here.
  */
+import { DAYS } from './evaluators.js'
+
 export const A1_SEMANTIC_TYPES = {
   day: {
     requiredBy: ['arrange_to_meet'],
     examples: ['Monday', 'Friday'],
     incompatibleWith: ['time_point', 'place'],
     why: "`on Monday` and `at seven` are different slots with different prepositions; collapsing them would let the engine build 'on seven'.",
+    /* the same closed 7-day set `evaluators.js`'s `evaluateArrangeMeeting` already judges against — one list, not two */
     validate(value) {
-      const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
       return DAYS.includes(String(value || '').trim().toLowerCase())
     },
   },
