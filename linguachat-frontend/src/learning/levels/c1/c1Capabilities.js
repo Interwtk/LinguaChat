@@ -559,12 +559,14 @@ export const C1_SHOULD_CAPABILITY_IDS = C1_CAPABILITIES.filter((c) => c.priority
  * export exists here as the ready-to-register payload — see
  * `docs/curriculum/implementation/c1/core-engine-handoff.md`.
  *
- * One capability -> one intent, per c1.json#/evaluationIntents, EXCEPT
- * clarify_an_ambiguous_instruction_precisely, which reuses the existing
- * repair_request intent family with a new repairKind subtype
- * (ask_for_precision) rather than minting clarify_ambiguity as a standalone
- * intent id — matching the blueprint's own `intentReuse` field exactly (same
- * convention A1 uses for ask_meaning extending repair_request).
+ * One capability -> one intent, per c1.json#/evaluationIntents (12 entries,
+ * including `clarify_ambiguity` as its own listed id). For
+ * clarify_an_ambiguous_instruction_precisely specifically, that intent's own
+ * `intentReuse` field records that the underlying evaluator MECHANISM is a
+ * new repairKind subtype (ask_for_precision) on the existing repair_request
+ * intent family, the same convention A1 uses for ask_meaning extending
+ * repair_request — see c1Intents.js's `clarify_ambiguity` entry for both
+ * facts recorded together.
  */
 export const C1_CAN_DO_INTENT = {
   develop_a_structured_argument: 'state_structured_argument',
@@ -591,10 +593,10 @@ export const C1_CAN_DO_INTENT = {
   negotiate_a_mutually_acceptable_outcome: 'negotiate_outcome',
   propose_and_defend_an_alternative: 'negotiate_outcome',
   handle_an_unexpected_complication: 'negotiate_outcome',
-  clarify_an_ambiguous_instruction_precisely: 'repair_request', // subtype: ask_for_precision — see intentReuse above
+  clarify_an_ambiguous_instruction_precisely: 'clarify_ambiguity', // mechanism: repair_request subtype ask_for_precision — see intentReuse above
   sustain_a_conversation_across_topic_shifts: 'track_discourse',
   refer_back_to_earlier_discourse: 'track_discourse',
   close_a_complex_interaction_with_a_summary: 'track_discourse',
 }
 
-export const C1_NEW_INTENT_COUNT = 12 // c1.json#/evaluationIntents.length (excludes the reused repair_request subtype)
+export const C1_NEW_INTENT_COUNT = 12 // c1.json#/evaluationIntents.length
