@@ -1,0 +1,476 @@
+{
+  "contentPlanVersion": "c2.content-plan.v1",
+  "level": "c2",
+  "status": "design-only-blocked-on-core-registration",
+  "designedAgainst": {
+    "blueprint": "docs/curriculum/blueprints/c2.json",
+    "blueprintVersion": "c2.blueprint.v1",
+    "blocker": ".ai/foundry/requests/LC-CONT-C2.md",
+    "note": "Design artifact only, per docs/curriculum/curriculum-master-a1-c2.md section 14. No runtime module imports this file, it does not make C2 available to a learner, and it does not claim any learner-facing evidence was produced. It is the starting point for authoring linguachat-frontend/src/learning/levels/c2/** once the shared-core registration wall documented in .ai/foundry/requests/LC-CONT-C2.md is resolved by a CORE task."
+  },
+
+  "arcs": [
+    {
+      "id": "dense_input_synthesis", "order": 1, "prerequisiteArcs": [],
+      "personalizationMode": "themed", "neutralFallback": "workplace-policy or neighborhood-issue source text",
+      "capabilities": [
+        { "id": "extract_key_argument_from_dense_text", "scope": "required", "cefrRefs": ["Reading for Information and Argument C2", "Overall Reading Comprehension C2"] },
+        { "id": "synthesize_multiple_viewpoints", "scope": "required", "cefrRefs": ["Reading for Information and Argument C2"] },
+        { "id": "identify_authors_stance_and_bias", "scope": "required", "cefrRefs": ["Reading for Information and Argument C2", "Sociolinguistic Appropriateness C2"] }
+      ],
+      "sourceTexts": [
+        { "id": "office_hours_memo", "text": "Our office's new 'flexible hours' policy claims to boost productivity, but three months in, the data tells a different story. Attendance at team meetings has dropped by a third, and two major projects slipped their deadlines. Management insists this is a temporary adjustment period. Perhaps it is - but if the numbers haven't improved by the next quarter, it will be hard to defend keeping a policy that, on the evidence so far, seems to be costing more than it saves." },
+        { "id": "bike_lane_review_a", "text": "The new bike lane on Elm Street has cut car traffic outside the school by half. It's exactly the kind of change this neighborhood needed." },
+        { "id": "bike_lane_review_b", "text": "The bike lane looks nice on paper, but delivery trucks now double-park on the only remaining lane, so traffic near the school is actually worse at drop-off time." }
+      ],
+      "intents": [
+        {
+          "id": "extract_argument", "evaluation": "hybrid",
+          "testCases": {
+            "correct": "The author's claim is that the flexible-hours policy may be doing more harm than good, based on falling meeting attendance and missed deadlines, though the author hedges by admitting it could still be an adjustment period.",
+            "naturalVariant": "Basically the writer thinks the new schedule policy might not be worth it - meetings are being missed and two projects were late, even though they say give it more time.",
+            "nearMiss": "The office started a flexible hours policy and meetings and deadlines got worse.",
+            "wrongMeaning": "The author argues that flexible hours have clearly failed and should be scrapped immediately.",
+            "nonsense": "Meetings happen when people want coffee.",
+            "pragmaticallyInappropriate": "lol flex hours suck get rid of them"
+          }
+        },
+        {
+          "id": "synthesize_viewpoints", "evaluation": "hybrid",
+          "testCases": {
+            "correct": "One resident feels the bike lane has clearly reduced car traffic near the school, while another agrees it looks good on paper but argues delivery-truck double-parking has actually made drop-off traffic worse - so the two accounts genuinely disagree on the real-world effect, not just its framing.",
+            "naturalVariant": "The two neighbors don't agree: one says the bike lane cut traffic a lot, the other says trucks parking in the road made it worse at pickup time.",
+            "nearMiss": "The bike lane cut car traffic outside the school by half.",
+            "wrongMeaning": "Both residents agree the bike lane has made the street calmer and safer.",
+            "nonsense": "Elm Street has more bikes now than before the lane existed, probably.",
+            "pragmaticallyInappropriate": "one person likes it, one doesn't, whatever"
+          }
+        },
+        {
+          "id": "identify_stance", "evaluation": "hybrid",
+          "testCases": {
+            "correct": "The author is skeptical of the policy but not fully committed to condemning it yet - the hedge 'perhaps it is' shows they're leaving room for the adjustment-period explanation before drawing a final conclusion.",
+            "naturalVariant": "The writer seems doubtful about the new hours policy, though they admit it might just need more time.",
+            "nearMiss": "The author doesn't like the new policy.",
+            "wrongMeaning": "The author is fully in favor of the flexible-hours policy.",
+            "nonsense": "The author works in an office.",
+            "pragmaticallyInappropriate": "the boss is obviously lying to cover it up"
+          }
+        }
+      ],
+      "patterns": [
+        { "id": "evidentiality_stance_pattern", "example": "The report presumably understates the delay, since it was allegedly compiled before the second deadline slipped." }
+      ],
+      "vocabulary": { "productive": ["presumably", "allegedly", "ostensibly", "according to", "claim", "support", "unstated", "imply"], "receptive": ["stance", "bias", "premise", "corroborate", "undermine", "concede", "conjecture", "substantiate"] },
+      "steps": [
+        { "order": 1, "type": "reading", "prompt": "What is the author's claim, and what two pieces of evidence support it?", "sourceTextId": "office_hours_memo", "scaffold": "a claim/support frame table is available on first exposure" },
+        { "order": 2, "type": "guided_reply", "prompt": "Fill in: Resident A believes __, because __. Resident B believes __, because __.", "sourceTextId": "bike_lane_review_a+b", "scaffold": "guided claim/support frame, withheld once independent evidence exists" },
+        { "order": 3, "type": "free_reply", "prompt": "In 2-3 sentences, explain what the two residents actually disagree about, and why the bike lane's effect isn't as simple as either review suggests.", "scaffold": "none - independent evidence" },
+        { "order": 4, "type": "recall", "prompt": "Without looking back: what did the office memo actually claim, what supported it, and how confident was the author?", "scaffold": "none - spaced retrieval within the arc" },
+        { "order": 5, "type": "reading", "prompt": "transfer: an unseen source text in an unrelated topic area (e.g. a short passage about a city's new recycling program) - extract the claim, support and the author's stance, unaided.", "scaffold": "none - transfer instance" }
+      ],
+      "personalization": { "neutralFallbackExample": "office_hours_memo / bike_lane reviews above", "interestFlavoredExample": "an equivalent dense source text drawn from the learner's stated interest area (e.g. a short conflicting-reviews pair about a hobby product), same claim/support/stance task" },
+      "delayedRetrievalPlan": "retrieved unaided inside arc 8's capstone (reuseMap marker not applicable to arc 1 itself; extraction skills are exercised again on arc 8's landlord/tenant statements)"
+    },
+
+    {
+      "id": "precise_reformulation", "order": 2, "prerequisiteArcs": ["dense_input_synthesis"],
+      "personalizationMode": "themed", "neutralFallback": "a workplace memo reformulated for a new colleague",
+      "capabilities": [
+        { "id": "reformulate_dense_source_for_a_new_audience", "scope": "required", "cefrRefs": ["Processing Text (mediation) C2"] },
+        { "id": "summarize_preserving_nuance", "scope": "required", "cefrRefs": ["Processing Text (mediation) C2"] },
+        { "id": "paraphrase_to_avoid_flattening_meaning", "scope": "should", "cefrRefs": ["Vocabulary Range C2"] }
+      ],
+      "sourceTexts": [
+        { "id": "expense_policy_memo", "text": "Effective next month, all expense claims over $50 must include a digital receipt and a one-line business justification. Claims lacking either will be returned unprocessed, adding an estimated 3-5 business days to reimbursement." }
+      ],
+      "intents": [
+        {
+          "id": "reformulate_for_audience", "evaluation": "hybrid", "subtypes": ["summarize", "paraphrase"],
+          "testCases": {
+            "correct": "From next month, if you spend more than $50, you'll need to attach a digital receipt and a short note saying what it was for - otherwise it gets sent back and your reimbursement takes 3-5 days longer.",
+            "naturalVariant": "Basically, big expenses (over $50) now need a receipt and a quick explanation, or they'll bounce back and you'll wait longer to get paid back.",
+            "nearMiss": "Big expenses need a receipt now, so you'll get your money back.",
+            "wrongMeaning": "All expense claims will now be rejected automatically.",
+            "nonsense": "Receipts are stored in the third filing cabinet.",
+            "pragmaticallyInappropriate": "Per Section 4.2(b), all expenditures exceeding the stipulated $50 threshold shall be accompanied by requisite documentary evidence."
+          },
+          "subtypeTestCases": {
+            "summarize": {
+              "correct": "New rule: receipts and a reason are required for expenses over $50, or reimbursement is delayed a few days.",
+              "naturalVariant": "Expenses over $50 now need proof and a short reason, or it takes longer to get paid back.",
+              "nearMiss": "Expenses over $50 need a receipt.",
+              "wrongMeaning": "All expenses now require manager approval.",
+              "nonsense": "$50 is a common number in accounting.",
+              "pragmaticallyInappropriate": "ugh more paperwork, whatever, $50, receipts, done"
+            },
+            "paraphrase": {
+              "correct": "If a claim is missing the receipt or the justification, it won't be processed - it'll just be sent back.",
+              "naturalVariant": "Without both the receipt and the reason, the claim gets bounced back unprocessed.",
+              "nearMiss": "Claims without receipts get rejected.",
+              "wrongMeaning": "Claims are always processed within 3-5 days.",
+              "nonsense": "The claim department has a mailbox.",
+              "pragmaticallyInappropriate": "your claim's getting sent back lol"
+            }
+          }
+        }
+      ],
+      "patterns": [
+        { "id": "reformulation_connector_pattern", "example": "In other words, if the paperwork's incomplete, you simply wait longer for your money." }
+      ],
+      "vocabulary": { "productive": ["in other words", "to put it another way", "put simply", "preserve", "flatten", "nuance", "justification", "reimbursement"], "receptive": ["threshold", "stipulate", "documentary evidence", "itemize", "expenditure", "audience", "hedge", "overstate"] },
+      "steps": [
+        { "order": 1, "type": "reading", "prompt": "Reformulate this memo for a new colleague outside finance who has never seen an expense policy before.", "sourceTextId": "expense_policy_memo", "scaffold": "audience profile and a partial frame available early" },
+        { "order": 2, "type": "guided_reply", "prompt": "Paraphrase this sentence without losing the 'either/or' condition: 'Claims lacking either will be returned unprocessed.'", "scaffold": "reformulation_connector_pattern scaffold given" },
+        { "order": 3, "type": "free_reply", "prompt": "Independently summarize an unseen parking-policy notice for a worried customer audience, preserving its actual hedges.", "scaffold": "none - independent evidence" },
+        { "order": 4, "type": "recall", "prompt": "Without looking back, restate the expense-memo rule for the same new-colleague audience.", "scaffold": "none - spaced retrieval" },
+        { "order": 5, "type": "free_reply", "prompt": "transfer: reformulate a new source text/audience pairing not used in teaching (a library-hours change, for a child audience), unaided.", "scaffold": "none - transfer instance" }
+      ],
+      "personalization": { "neutralFallbackExample": "expense_policy_memo above", "interestFlavoredExample": "a dense notice drawn from the learner's stated interest (e.g. a recipe-safety recall notice for a cooking-interested learner), reformulated for a friend audience" },
+      "delayedRetrievalPlan": "retrieved unaided inside arc 8 (mediation summary reuses reformulation-for-audience skills)"
+    },
+
+    {
+      "id": "implication_and_subtext", "order": 3, "prerequisiteArcs": ["dense_input_synthesis"],
+      "personalizationMode": "light", "neutralFallback": "a neutral workplace or service exchange carrying an indirect refusal",
+      "capabilities": [
+        { "id": "recognize_implied_meaning", "scope": "required", "cefrRefs": ["Sociolinguistic Appropriateness C2", "Coherence and Cohesion C2"] },
+        { "id": "recognize_irony_and_understatement", "scope": "required", "cefrRefs": ["Global Scale C2"] },
+        { "id": "respond_appropriately_to_an_indirect_speech_act", "scope": "should", "cefrRefs": ["Sociolinguistic Appropriateness C2"] }
+      ],
+      "sourceTexts": [
+        { "id": "salon_refusal_exchange", "text": "Customer: 'Would you be able to fit me in for a haircut this afternoon?' Stylist: 'We're fully booked until Thursday, but I can check the cancellation list for you.'" },
+        { "id": "long_meeting_understatement", "text": "After a meeting ran three hours over its scheduled slot, a colleague says: 'Well, that was a quick meeting.'" },
+        { "id": "loud_call_hint", "text": "During a call, a colleague says: 'It's getting pretty loud in here.'" }
+      ],
+      "intents": [
+        {
+          "id": "recognize_implication", "evaluation": "hybrid", "subtypes": ["irony", "indirect_speech_act"],
+          "testCases": {
+            "correct": "The stylist is politely saying no for this afternoon - 'fully booked' is the actual refusal, and the cancellation-list offer is a genuine but separate alternative, not a promise.",
+            "naturalVariant": "She's basically turning the customer down for today, just not saying 'no' directly - she offers the waitlist instead.",
+            "nearMiss": "She said she's fully booked until Thursday.",
+            "wrongMeaning": "She's telling the customer to come back Thursday for a guaranteed appointment.",
+            "nonsense": "Haircuts take about thirty minutes.",
+            "pragmaticallyInappropriate": "she's clearly lying about being booked"
+          },
+          "subtypeTestCases": {
+            "irony": {
+              "correct": "Saying 'that was a quick meeting' after it ran three hours over is ironic - the speaker means the opposite: it dragged on far too long.",
+              "naturalVariant": "They're being sarcastic - the meeting was actually really long, not quick at all.",
+              "nearMiss": "The meeting was quick.",
+              "wrongMeaning": "The speaker is happy the meeting ended early.",
+              "nonsense": "Meetings are held in conference rooms.",
+              "pragmaticallyInappropriate": "yeah lol so quick"
+            },
+            "indirect_speech_act": {
+              "correct": "Sorry about that - let me close the door and turn the music down.",
+              "naturalVariant": "Oh sorry, I'll quiet things down over here.",
+              "nearMiss": "Yes, it is quite loud today.",
+              "wrongMeaning": "I can't hear you, can you speak up?",
+              "nonsense": "The office was built in 1998.",
+              "pragmaticallyInappropriate": "why does that matter to you"
+            }
+          }
+        }
+      ],
+      "patterns": [
+        { "id": "irony_understatement_marker_pattern", "example": "'What a lovely surprise,' she said flatly, after the third delayed delivery that week." }
+      ],
+      "vocabulary": { "productive": ["implication", "understatement", "irony", "indirect", "imply", "hint"], "receptive": ["rhetorical question", "sarcasm", "deadpan", "euphemism", "subtext", "insinuate", "connotation", "wry"] },
+      "steps": [
+        { "order": 1, "type": "reading", "prompt": "What is the stylist actually telling the customer, and how do you know, given she never says 'no'?", "sourceTextId": "salon_refusal_exchange", "scaffold": "explicit 'what might this really mean' cue available early" },
+        { "order": 2, "type": "comprehension", "prompt": "What does the colleague actually mean by 'that was a quick meeting'? A literal reading ('it really was short') is offered as a distractor - explain why it's wrong.", "sourceTextId": "long_meeting_understatement", "scaffold": "distractor item included by design, per the arc's stated false-positive risk" },
+        { "order": 3, "type": "free_reply", "prompt": "Respond appropriately to the colleague's hint about the noise, independently.", "sourceTextId": "loud_call_hint", "scaffold": "none - independent evidence, support restored quickly after a miss given the task's strain" },
+        { "order": 4, "type": "reading", "prompt": "transfer: an unseen exchange carrying an unfamiliar implicature (a neighbor saying 'I suppose the noise doesn't bother everyone' after loud music) - identify the implication and respond appropriately.", "scaffold": "none - transfer instance" }
+      ],
+      "personalization": { "neutralFallbackExample": "salon_refusal_exchange / long_meeting_understatement above", "interestFlavoredExample": "an occasional indirect-refusal or irony example set in the learner's stated interest context (e.g. a hobby-club chat), not structurally required" },
+      "delayedRetrievalPlan": "retrieved unaided inside arc 6 and arc 8"
+    },
+
+    {
+      "id": "register_and_pragmatics", "order": 4, "prerequisiteArcs": ["implication_and_subtext"],
+      "personalizationMode": "none", "neutralFallback": "same neutral workplace/service situations used for every learner",
+      "capabilities": [
+        { "id": "shift_register_deliberately", "scope": "required", "cefrRefs": ["Sociolinguistic Appropriateness C2"] },
+        { "id": "soften_or_intensify_a_claim", "scope": "required", "cefrRefs": ["Grammatical Accuracy C2", "Vocabulary Control C2"] },
+        { "id": "manage_face_in_disagreement", "scope": "should", "cefrRefs": ["Sociolinguistic Appropriateness C2", "Managing Interaction C2"] }
+      ],
+      "sourceTexts": [
+        { "id": "out_of_stock_register_pairs", "text": "Formal: 'We regret to inform you that the item is currently unavailable.' Neutral: 'Unfortunately, this item isn't available right now.' Informal: 'Sorry, we're out of that one.'" },
+        { "id": "informal_stock_draft", "text": "hey sorry we're out of that, ill let u know when its back" }
+      ],
+      "intents": [
+        {
+          "id": "shift_register", "evaluation": "deterministic_local", "subtypes": ["face_saving_disagreement", "genre_adaptation"],
+          "testCases": {
+            "correct": "We regret to inform you that the item is currently out of stock; we will notify you as soon as it becomes available.",
+            "naturalVariant": "We apologize, but this item is currently unavailable. We will contact you once it is back in stock.",
+            "nearMiss": "Sorry we don't have that right now, we will inform you.",
+            "wrongMeaning": "We regret to inform you that this item has been discontinued permanently.",
+            "nonsense": "The warehouse is painted blue.",
+            "pragmaticallyInappropriate": "Pursuant to inventory protocol, the requested article is presently unattainable through standard procurement channels."
+          },
+          "subtypeTestCases": {
+            "face_saving_disagreement": {
+              "correct": "I take your point about speed, but I'd push back on skipping testing - I think we lose more time later if something breaks.",
+              "naturalVariant": "That's fair, though I'm a bit worried that skipping testing might cost us more time down the line.",
+              "nearMiss": "No, that's a bad idea, we should test first.",
+              "wrongMeaning": "I completely agree, let's skip testing.",
+              "nonsense": "Testing happens in QA environments.",
+              "pragmaticallyInappropriate": "whatever, do what you want then"
+            }
+          }
+        },
+        {
+          "id": "qualify_claim", "evaluation": "deterministic_local",
+          "testCases": {
+            "correct": "The launch will probably slip by about a week, though it's too early to be certain.",
+            "naturalVariant": "It looks like the launch might be pushed back roughly a week, but that's not confirmed yet.",
+            "nearMiss": "The launch might maybe possibly slip, I guess, perhaps.",
+            "wrongMeaning": "The launch is undeniably delayed by exactly one month.",
+            "nonsense": "The launch happens in a building.",
+            "pragmaticallyInappropriate": "the launch WILL 100% be late, no doubt"
+          }
+        }
+      ],
+      "patterns": [
+        { "id": "academic_hedging_pattern", "example": "It could be argued that the delay reflects a staffing issue, though that's not necessarily the whole story." },
+        { "id": "boosting_pattern", "example": "There is little doubt that the new schedule reduced errors." },
+        { "id": "register_shift_lexis_pattern", "example": "out_of_stock_register_pairs above" },
+        { "id": "face_saving_disagreement_pattern", "example": "I take your point, but I'd push back on..." }
+      ],
+      "vocabulary": { "productive": ["could be argued", "arguably", "to some extent", "not necessarily", "undeniably", "there is little doubt that", "I take your point", "that's fair"], "receptive": ["formality", "register", "boost", "diplomatic", "bureaucratic", "candor", "overclaim", "proportionate"] },
+      "steps": [
+        { "order": 1, "type": "guided_reply", "prompt": "Identify which register pair is formal/neutral/informal, then produce a formal version of the informal draft.", "sourceTextId": "out_of_stock_register_pairs+informal_stock_draft", "scaffold": "target register stated explicitly at first" },
+        { "order": 2, "type": "roleplay", "prompt": "Given three scenarios with different actual certainty levels, choose a proportionate hedge or boost for each.", "scaffold": "feedback on over/under-hedging" },
+        { "order": 3, "type": "free_reply", "prompt": "Independently roleplay a face-saving disagreement with a colleague's flawed proposal.", "scaffold": "none - independent evidence" },
+        { "order": 4, "type": "free_reply", "prompt": "transfer: a new audience/register pairing not used in teaching (a formal complaint vs. a casual note about the same issue), unaided.", "scaffold": "none - transfer instance" }
+      ],
+      "personalization": { "neutralFallbackExample": "out_of_stock_register_pairs above (no interest-flavored variant - personalizationMode is none for this arc)" },
+      "delayedRetrievalPlan": "retrieved unaided inside arc 6 and arc 8"
+    },
+
+    {
+      "id": "argument_and_position", "order": 5, "prerequisiteArcs": ["register_and_pragmatics"],
+      "personalizationMode": "themed", "neutralFallback": "a neutral public-interest debate topic",
+      "capabilities": [
+        { "id": "develop_an_extended_qualified_argument", "scope": "required", "cefrRefs": ["Coherence and Cohesion C2", "Flexibility C2"] },
+        { "id": "preempt_and_rebut_a_counterargument", "scope": "required", "cefrRefs": ["Flexibility C2", "Coherence and Cohesion C2"] },
+        { "id": "qualify_a_position_with_precision", "scope": "should", "cefrRefs": ["Grammatical Accuracy C2"] }
+      ],
+      "sourceTexts": [
+        { "id": "library_fees_prompt", "text": "Debate topic: should city libraries replace physical late fees with an honor system? Counterargument surfaced explicitly: 'But without fees, some people will just never return books.'" }
+      ],
+      "intents": [
+        {
+          "id": "develop_argument", "evaluation": "hybrid",
+          "testCases": {
+            "correct": "On balance, an honor system seems worth trying: late fees mostly punish people who already struggle to return books on time, and the fine revenue is small compared to the goodwill lost. That said, libraries would need some replacement - even a gentle reminder system - or borrowed books might simply stop coming back.",
+            "naturalVariant": "I think dropping late fees for an honor system makes sense overall, since fees mostly just hurt people already having a hard time, though they'd still need reminders so books actually get returned.",
+            "nearMiss": "Late fees are bad and should be removed.",
+            "wrongMeaning": "Libraries should charge higher fees to make people return books faster.",
+            "nonsense": "Libraries have many books.",
+            "pragmaticallyInappropriate": "fees are literally theft honestly disgusting"
+          }
+        },
+        {
+          "id": "rebut_counterargument", "evaluation": "hybrid",
+          "testCases": {
+            "correct": "That's a fair concern, and it's probably true for a small number of borrowers - but most studies on this show the honor system mainly changes who pays a fee, not whether books come back, since most late returns are already accidental rather than deliberate.",
+            "naturalVariant": "That's true for a few people, sure, but most late returns happen by accident anyway, so removing the fee probably won't change return rates much.",
+            "nearMiss": "No, that's not true, people will still return books.",
+            "wrongMeaning": "You're right, we should keep the fees exactly as they are.",
+            "nonsense": "Books are made of paper.",
+            "pragmaticallyInappropriate": "that's a silly thing to worry about"
+          }
+        }
+      ],
+      "qualifyPositionTestCases": {
+        "correct": "The honor system would likely reduce fee revenue somewhat, though probably not eliminate it entirely, since some libraries still charge for lost or badly damaged items.",
+        "naturalVariant": "Fee income would probably drop a fair bit, but not necessarily to zero, since damaged or lost items might still cost something.",
+        "nearMiss": "The honor system will definitely eliminate all fee revenue forever.",
+        "wrongMeaning": "The honor system will increase fee revenue.",
+        "nonsense": "Revenue is a financial term.",
+        "pragmaticallyInappropriate": "obviously it kills all revenue duh"
+      },
+      "patterns": [
+        { "id": "concession_then_position_pattern", "example": "While the concern about return rates has merit, the evidence suggests most late returns are accidental, not deliberate." }
+      ],
+      "vocabulary": { "productive": ["while X has merit", "granted that", "nevertheless", "even so", "on balance", "that said", "concede", "rebut"], "receptive": ["straw man", "counterpoint", "qualify", "underlying assumption", "weigh", "tradeoff", "defensible", "untenable"] },
+      "steps": [
+        { "order": 1, "type": "reading", "prompt": "Present the library debate prompt with the counterargument surfaced explicitly.", "sourceTextId": "library_fees_prompt", "scaffold": "counterargument surfaced explicitly at first" },
+        { "order": 2, "type": "guided_reply", "prompt": "Build an extended, qualified argument using the concession-then-position frame.", "scaffold": "concession_then_position_pattern scaffold given" },
+        { "order": 3, "type": "free_reply", "prompt": "Independently rebut a new, unseen counterargument: 'But an honor system is unfair to people who can afford fees and don't mind paying them.'", "scaffold": "none - independent evidence, learner must anticipate the counterargument unaided" },
+        { "order": 4, "type": "free_reply", "prompt": "transfer: an unseen debate topic and unseen counterargument entirely (should office parking be first-come-first-served or assigned?), unaided.", "scaffold": "none - transfer instance" }
+      ],
+      "personalization": { "neutralFallbackExample": "library_fees_prompt above", "interestFlavoredExample": "a debate topic drawn from the learner's stated interest area (e.g. for a sports-interested learner: should video review decide close calls in amateur leagues?)" },
+      "delayedRetrievalPlan": "retrieved unaided inside arc 8"
+    },
+
+    {
+      "id": "discourse_flexibility", "order": 6, "prerequisiteArcs": ["argument_and_position", "implication_and_subtext"],
+      "personalizationMode": "none", "neutralFallback": "a neutral multi-topic exchange (a shared-flat dispute that drifts from a chore schedule into money)",
+      "capabilities": [
+        { "id": "sustain_coherence_across_topic_shifts", "scope": "required", "cefrRefs": ["Coherence and Cohesion C2", "Flexibility C2"], "evaluationSpan": "multiTurn" },
+        { "id": "repair_a_misunderstanding_at_intention_level", "scope": "required", "cefrRefs": ["Managing Interaction C2", "Cooperating C2"] },
+        { "id": "function_inside_an_unfamiliar_high_ambiguity_exchange", "scope": "should", "cefrRefs": ["Global Scale C2"], "evaluationSpan": "multiTurn" }
+      ],
+      "sourceTexts": [
+        { "id": "flatmate_transcript", "text": "Turn 1 (flatmate): 'Can we talk about the chore schedule? I feel like I'm doing the dishes every night.' Turn 2 (learner - topic bridge to be produced). Turn 3 (flatmate): 'Wait, I thought we were splitting groceries evenly already?' Turn 4 (learner - intention-level repair to be produced)." }
+      ],
+      "intents": [
+        {
+          "id": "sustain_coherence", "evaluation": "hybrid", "subtypes": ["unfamiliar_exchange"], "evaluationSpan": "multiTurn",
+          "testCases": {
+            "correct": "Yeah, that's fair - and while we're on it, I think the grocery money split has been uneven too, since I've been buying most of the shared stuff lately.",
+            "naturalVariant": "Totally, and speaking of splitting things fairly, I feel like the grocery costs have been kind of one-sided too.",
+            "nearMiss": "Also, did you see the game last night?",
+            "wrongMeaning": "No, I don't mind doing the dishes.",
+            "nonsense": "Dishes are usually made of ceramic.",
+            "pragmaticallyInappropriate": "well maybe if you actually cleaned properly we wouldn't have this problem"
+          },
+          "subtypeTestCases": {
+            "unfamiliar_exchange": {
+              "correct": "I'm not totally sure what you mean by 'uneven by accident' - do you mean the amounts, or how often each of us pays?",
+              "naturalVariant": "Sorry, can you say more about what you mean by that? I want to make sure I understand before we sort it out.",
+              "nearMiss": "Nice weather we're having.",
+              "wrongMeaning": "responds to a completely different, invented topic than what was actually ambiguous",
+              "nonsense": "Ceramics are fired in a kiln.",
+              "pragmaticallyInappropriate": "it doesn't matter, forget it"
+            }
+          }
+        },
+        {
+          "id": "repair_at_intention_level", "evaluation": "hybrid",
+          "testCases": {
+            "correct": "Sorry, I didn't mean it as an accusation - I just meant we should double check the numbers together, since I think it's just gotten uneven by accident.",
+            "naturalVariant": "Oh, I didn't mean to imply you weren't paying your share - I just think it's worth checking since it might've drifted without either of us noticing.",
+            "nearMiss": "No, we're not splitting it evenly, I checked the receipts.",
+            "wrongMeaning": "You're right, forget I said anything.",
+            "nonsense": "Receipts are printed on thin paper.",
+            "pragmaticallyInappropriate": "why are you being so sensitive about this"
+          }
+        }
+      ],
+      "patterns": [
+        { "id": "paragraph_scale_cohesion_pattern", "example": "The schedule issue is one thing; that said, the money side of it is worth untangling too, insofar as they're both about fairness." }
+      ],
+      "vocabulary": { "productive": ["insofar as", "whereby", "that said", "by the same token", "coherence", "drift"], "receptive": ["non-sequitur", "tangent", "thread", "digress", "rapport", "ambiguity", "clarify", "escalate"] },
+      "steps": [
+        { "order": 1, "type": "roleplay", "prompt": "Present the four-turn transcript and ask the learner to identify where coherence succeeds or fails, and why.", "sourceTextId": "flatmate_transcript", "scaffold": "worked example available first" },
+        { "order": 2, "type": "guided_reply", "prompt": "Produce turn 2 (the topic bridge from chores to groceries).", "sourceTextId": "flatmate_transcript", "scaffold": "paragraph_scale_cohesion_pattern scaffold given" },
+        { "order": 3, "type": "free_reply", "prompt": "Produce turn 4 (the intention-level repair), independently.", "sourceTextId": "flatmate_transcript", "scaffold": "none - support fades fastest here per the arc's autonomy target" },
+        { "order": 4, "type": "roleplay", "prompt": "transfer: an unfamiliar-exchange scenario not used in teaching (a shared-tool borrowing dispute that drifts into scheduling), fully independent, multi-turn.", "scaffold": "none - transfer instance, unrehearsed by construction" }
+      ],
+      "personalization": { "neutralFallbackExample": "flatmate_transcript above (no interest-flavored variant - personalizationMode is none for this arc)" },
+      "delayedRetrievalPlan": "retrieved unaided inside arc 8"
+    },
+
+    {
+      "id": "stylistic_control", "order": 7, "prerequisiteArcs": ["register_and_pragmatics", "precise_reformulation"],
+      "personalizationMode": "light", "neutralFallback": "editing a neutral notice/message rather than a hobby text",
+      "capabilities": [
+        { "id": "edit_own_text_for_precision_and_tone", "scope": "required", "cefrRefs": ["Vocabulary Control C2", "Grammatical Accuracy C2"] },
+        { "id": "vary_expression_to_avoid_flattening_meaning", "scope": "should", "cefrRefs": ["Vocabulary Range C2"] },
+        { "id": "adapt_a_text_across_genre_and_register", "scope": "optional", "cefrRefs": ["Sociolinguistic Appropriateness C2"] }
+      ],
+      "sourceTexts": [
+        { "id": "elevator_draft", "text": "Hey everyone, just a heads up, the elevator's gonna be broken next week lol, so yeah, use the stairs I guess." },
+        { "id": "repetitive_draft", "text": "The problem is the schedule. The problem is also the budget. This problem needs a fix. We should solve this problem soon." },
+        { "id": "pipes_draft", "text": "hey the pipes are gonna get fixed thurs, sry for the noise" }
+      ],
+      "intents": [
+        {
+          "id": "edit_for_precision", "evaluation": "hybrid", "subtypes": ["lexical_variety"],
+          "testCases": {
+            "correct": "Notice: the elevator will be out of service next week. Please use the stairs during this time.",
+            "naturalVariant": "Please note that the elevator will be unavailable next week; residents are asked to use the stairs.",
+            "nearMiss": "Hey everyone, the elevator won't work next week, please use the stairs.",
+            "wrongMeaning": "Notice: the elevator has been permanently removed.",
+            "nonsense": "Elevators use a pulley system.",
+            "pragmaticallyInappropriate": "BY ORDER OF THE BUILDING MANAGEMENT COMMITTEE, ALL RESIDENTS SHALL REFRAIN FROM ELEVATOR USAGE"
+          },
+          "subtypeTestCases": {
+            "lexical_variety": {
+              "correct": "The main issue is the schedule; the budget is a second concern. Both need addressing, and the sooner the better.",
+              "naturalVariant": "There are two issues - the schedule and the budget - and both should be sorted out soon.",
+              "nearMiss": "The problem is the schedule. The problem is also the budget. This issue needs a fix.",
+              "wrongMeaning": "The schedule and budget are both fine now.",
+              "nonsense": "Budgets are made of numbers.",
+              "pragmaticallyInappropriate": "the schedule's a disaster and so is the budget, ugh"
+            }
+          }
+        }
+      ],
+      "genreAdaptationTestCases": {
+        "correct": "Notice: plumbing repairs are scheduled for Thursday. We apologize in advance for any noise during this work.",
+        "naturalVariant": "Please be advised that plumbing repairs will take place on Thursday; we apologize for any inconvenience.",
+        "nearMiss": "The pipes will be fixed Thursday, sorry for noise.",
+        "wrongMeaning": "Notice: plumbing repairs have been cancelled.",
+        "nonsense": "Pipes carry water.",
+        "pragmaticallyInappropriate": "IT HAS COME TO OUR ATTENTION THAT AUDITORY DISTURBANCES MAY EMANATE FROM PLUMBING APPARATUS"
+      },
+      "patterns": [
+        { "id": "lexical_precision_substitution_pattern", "example": "issue -> concern -> complication (three non-repeating ways to avoid repeating 'problem')" }
+      ],
+      "vocabulary": { "productive": ["precision", "tone-fit", "flatten", "repetition", "revise", "notice", "apparent", "register-appropriate"], "receptive": ["redundant", "collocate", "verbose", "terse", "formality marker", "genre convention"] },
+      "steps": [
+        { "order": 1, "type": "reading", "prompt": "Flag what's tonally wrong with this draft before fixing it - not just grammar.", "sourceTextId": "elevator_draft", "scaffold": "a flagged sentence/word available early ('this might sound too casual here')" },
+        { "order": 2, "type": "guided_reply", "prompt": "Edit the draft for an official building notice.", "sourceTextId": "elevator_draft", "scaffold": "flagged-word scaffold given" },
+        { "order": 3, "type": "free_reply", "prompt": "Independently fix the repetition in this draft.", "sourceTextId": "repetitive_draft", "scaffold": "none - independent evidence" },
+        { "order": 4, "type": "free_reply", "prompt": "transfer: an unseen draft with an unfamiliar tone mismatch (an overly stiff apology text that needs warming up, the reverse direction of adjustment), unaided.", "scaffold": "none - transfer instance" }
+      ],
+      "personalization": { "neutralFallbackExample": "elevator_draft / repetitive_draft above", "interestFlavoredExample": "editing a message related to the learner's stated interest club or group for tone, used occasionally" },
+      "delayedRetrievalPlan": "retrieved unaided inside arc 8"
+    },
+
+    {
+      "id": "integrated_mediation", "order": 8, "prerequisiteArcs": ["precise_reformulation", "register_and_pragmatics", "argument_and_position", "discourse_flexibility"],
+      "personalizationMode": "none", "neutralFallback": "a neutral landlord/tenant or community-notice disagreement, deliberately unfamiliar in its exact particulars",
+      "capabilities": [
+        { "id": "mediate_a_complex_disagreement_for_a_third_party", "scope": "required", "cefrRefs": ["Facilitating Collaborative Interaction C2", "Global Scale C2"], "evaluationSpan": "multiTurn", "graduationCapstone": true }
+      ],
+      "sourceTexts": [
+        { "id": "landlord_tenant_dispute", "text": "Landlord: 'The tenant hasn't paid the increased rent since the notice went out three months ago, and I've been more than patient.' Tenant: 'I never actually received a proper written notice - someone mentioned it in passing, but nothing was posted or mailed, and I'm not going to pay a rate I was never formally told about.'" }
+      ],
+      "intents": [
+        {
+          "id": "mediate_disagreement", "evaluation": "hybrid", "evaluationSpan": "multiTurn",
+          "testCases": {
+            "correct": "The landlord believes the tenant owes three months of increased rent because a notice was given; the tenant disputes this, saying they never received anything in writing, only a verbal mention, and won't pay a rate that was never formally confirmed. Both sides agree there was some kind of notice attempt, but disagree about whether it met a standard the tenant could reasonably act on. A useful next step might be for the landlord to produce whatever written notice does exist, if any, and for the two sides to agree on a clear cutoff date.",
+            "naturalVariant": "So the landlord thinks the tenant just hasn't paid the higher rent that was properly announced, but the tenant says they never got anything official - just heard about it secondhand - so they don't think they should have to pay yet. Maybe the fix is to check if there's any written notice at all, and set a clear date going forward.",
+            "nearMiss": "The tenant is right that a verbal mention isn't a proper notice, so they shouldn't have to pay yet.",
+            "wrongMeaning": "Both sides agree the tenant owes the back rent and just need to set a payment plan.",
+            "nonsense": "Rent is usually paid monthly.",
+            "pragmaticallyInappropriate": "honestly the landlord sounds shady, tenants never get proper notice"
+          }
+        }
+      ],
+      "patterns": [
+        { "id": "reformulation_connector_pattern", "reuseNote": "exemplified in arc 2; reused here for representing each side's position" },
+        { "id": "face_saving_disagreement_pattern", "reuseNote": "exemplified in arc 4; reused here for carrying disagreement without editorializing" },
+        { "id": "concession_then_position_pattern", "reuseNote": "exemplified in arc 5; reused here for the proposed next step" },
+        { "id": "paragraph_scale_cohesion_pattern", "reuseNote": "exemplified in arc 6; reused here for the shift between each side's account" }
+      ],
+      "vocabulary": { "productive": ["mediate", "represent both sides", "next step", "faithfully"], "receptive": ["impartial", "adjudicate", "standpoint", "common ground", "escalation", "good faith"] },
+      "steps": [
+        { "order": 1, "type": "reading", "prompt": "Identify each side's claim and its basis.", "sourceTextId": "landlord_tenant_dispute", "scaffold": "reuses arc 1's extraction skills" },
+        { "order": 2, "type": "guided_reply", "prompt": "Draft a mediation summary, checked explicitly for editorializing.", "sourceTextId": "landlord_tenant_dispute", "scaffold": "reformulation_connector_pattern and concession_then_position_pattern scaffolds given" },
+        { "order": 3, "type": "free_reply", "prompt": "Independently complete the full mediation task, unaided, with delayed-retrieval checks logged against the seven prior capabilities listed in delayedRetrievalChecks.", "sourceTextId": "landlord_tenant_dispute", "scaffold": "none - no support surfaced by default, per the arc's autonomy target" },
+        { "order": 4, "type": "free_reply", "prompt": "transfer: an entirely new disagreement scenario and source materials never used in any earlier arc (two neighbors disputing a shared fence repair cost), fully independent capstone attempt.", "scaffold": "none - transfer instance, by construction" }
+      ],
+      "personalization": { "neutralFallbackExample": "landlord_tenant_dispute above (no interest-flavored variant - personalizationMode is none for this arc, by design, since it is the graduation capstone)" },
+      "delayedRetrievalPlan": "the arc's entire purpose: every required capability from arcs 1-7 retrieved unaided here",
+      "delayedRetrievalChecks": [
+        { "capabilityId": "summarize_preserving_nuance", "marker": "T" },
+        { "capabilityId": "manage_face_in_disagreement", "marker": "D" },
+        { "capabilityId": "preempt_and_rebut_a_counterargument", "marker": "D" },
+        { "capabilityId": "repair_a_misunderstanding_at_intention_level", "marker": "D" },
+        { "capabilityId": "sustain_coherence_across_topic_shifts", "marker": "D" },
+        { "capabilityId": "recognize_irony_and_understatement", "marker": "D" },
+        { "capabilityId": "edit_own_text_for_precision_and_tone", "marker": "F" }
+      ]
+    }
+  ]
+}
