@@ -137,11 +137,52 @@ export const B1_ARC4_VOCAB = {
   b1_lets_sort_it_out: { en: "let's sort it out", type: 'connector' },
 }
 
+/* ---- Arc 5 — looking_ahead (18 productive / 10 receptive, per b1.json) ---- */
+export const B1_ARC5_VOCAB = {
+  // talk_about_plans_and_intentions — 5 productive
+  b1_ill: { en: "I'll", type: 'connector' },
+  b1_im_going_to: { en: "I'm going to", type: 'connector' },
+  b1_will_vs_going_to_pattern: { en: "I'll (decision/prediction) vs I'm going to (plan)", type: 'pattern' },
+  b1_probably: { en: 'probably', type: 'connector' },
+  b1_definitely: { en: 'definitely', type: 'connector' },
+  // talk_about_plans_and_intentions — 3 receptive
+  b1_im_thinking_of: { en: "I'm thinking of", type: 'connector' },
+  b1_i_might: { en: 'I might', type: 'connector' },
+  b1_at_some_point: { en: 'at some point', type: 'time_point' },
+  // talk_about_hopes_and_ambitions — 5 productive
+  b1_i_hope_to: { en: 'I hope to', type: 'connector' },
+  b1_id_like_to: { en: "I'd like to", type: 'connector' },
+  b1_one_day_ill: { en: "one day I'll", type: 'connector' },
+  b1_hope_would_like_pattern: { en: "I hope to / I'd like to / one day I'll", type: 'pattern' },
+  b1_my_dream_is_to: { en: 'my dream is to', type: 'connector' },
+  // talk_about_hopes_and_ambitions — 3 receptive
+  b1_im_hoping_to: { en: "I'm hoping to", type: 'connector' },
+  b1_someday: { en: 'someday', type: 'time_point' },
+  b1_my_ambition_is: { en: 'my ambition is', type: 'connector' },
+  // talk_about_real_conditions — 4 productive
+  b1_if_present_will: { en: 'if + present, ... will + verb', type: 'connector' },
+  b1_first_conditional_pattern: { en: 'if + present, ... will + verb', type: 'pattern' },
+  b1_unless: { en: 'unless', type: 'connector' },
+  b1_as_soon_as: { en: 'as soon as', type: 'connector' },
+  // talk_about_real_conditions — 2 receptive
+  b1_provided_that: { en: 'provided that', type: 'connector' },
+  b1_in_that_case: { en: 'in that case', type: 'connector' },
+  // imagine_a_hypothetical — 4 productive
+  b1_if_i_were_you: { en: 'if I were you', type: 'connector' },
+  b1_if_i_were_pattern: { en: "if I were you, I'd ...", type: 'pattern' },
+  b1_id_verb: { en: "I'd + verb", type: 'connector' },
+  b1_in_your_position: { en: 'in your position', type: 'connector' },
+  // imagine_a_hypothetical — 2 receptive
+  b1_if_i_were_in_your_shoes: { en: 'if I were in your shoes', type: 'connector' },
+  b1_my_advice_would_be: { en: 'my advice would be', type: 'connector' },
+}
+
 export const B1_VOCAB_BY_ID = {
   ...B1_ARC1_VOCAB,
   ...B1_ARC2_VOCAB,
   ...B1_ARC3_VOCAB,
   ...B1_ARC4_VOCAB,
+  ...B1_ARC5_VOCAB,
 }
 
 export const b1ProductiveIds = (ids) => ids.filter(id => B1_VOCAB_BY_ID[id])

@@ -20,6 +20,17 @@ export const B1_MODEL_ANSWER = {
     ? "This isn't ideal — I ordered this three days ago, but I understand these things happen."
     : "There's a problem with my order. I ordered a chicken sandwich, but I got a cheese one."),
   negotiate_solution: () => 'Would it be possible to get a replacement instead?',
+  state_future_intent: (v) => {
+    const byForm = {
+      decision: "I'll have the pasta, thanks.",
+      plan: "I'm going to visit my sister next week.",
+      prediction: 'It will probably rain later.',
+      hope: 'I hope to travel more one day.',
+    }
+    return byForm[v.situationForm] || byForm.decision
+  },
+  state_real_condition: () => "If it rains tomorrow, I'll stay home.",
+  state_hypothetical: () => "If I were you, I'd ask for more details before deciding.",
 }
 
 export const B1_PROMPT = {
@@ -35,4 +46,15 @@ export const B1_PROMPT = {
     ? `How do you feel about that, ${v.name || ''}? Tell me — politely.`
     : `What's wrong, ${v.name || ''}? Tell me what happened and what you expected instead.`),
   negotiate_solution: (v) => `What solution would you like, ${v.name || ''}?`,
+  state_future_intent: (v) => {
+    const byForm = {
+      decision: `What will you have, ${v.name || ''}?`,
+      plan: `What have you already planned, ${v.name || ''}?`,
+      prediction: `What do you think will happen, ${v.name || ''}?`,
+      hope: `What do you hope to do one day, ${v.name || ''}?`,
+    }
+    return byForm[v.situationForm] || byForm.decision
+  },
+  state_real_condition: (v) => `What will you do if that happens, ${v.name || ''}?`,
+  state_hypothetical: (v) => `What would you tell them, ${v.name || ''}?`,
 }

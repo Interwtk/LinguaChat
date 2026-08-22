@@ -378,6 +378,120 @@ export function evaluateNegotiateSolution(text, { independent = false } = {}) {
   return { ...r, errorType: 'no_negotiation_frame', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptNegotiateFrame' }
 }
 
+/* ---------------------------------------------------------------------------
+ * arc 5 — state_future_intent (subtype intentForm: will_going_to |
+ * hope_would_like; within will_going_to, evaluator-only situationForm:
+ * decision | plan | prediction), state_real_condition, state_hypothetical
+ *
+ * The will_going_to/hope_would_like distinction resolves b1.md section 15.1's
+ * hardest case — adapted from the draft evaluator that measurement produced,
+ * see docs/curriculum/implementation/b1/core-engine-findings.md and
+ * scripts/foundry/b1/measure-hybrid-evaluation-density.mjs.
+ * ------------------------------------------------------------------------- */
+
+const FUTURE_VERB = '(have|take|get|go|do|make|eat|call|check|see|try|order|visit|book|send|ask|stay|wait|learn|travel|start|finish|move|buy|open|begin|meet|study|work|cook|watch|write|build)'
+const WILL_DECISION_RE = new RegExp(`\\bi'?ll\\s+${FUTURE_VERB}\\b`)
+const GOING_TO_PLAN_RE = new RegExp(`\\bi'?m\\s+going\\s+to\\s+${FUTURE_VERB}\\b`)
+const PREDICTION_RE = /\b(i think|i'?m sure|i bet|i expect)\b.{0,20}\b(will|won'?t|'ll)\b|\b(it|there)\s+(will|won'?t|'ll)\b/
+const HOPE_RE = /\bi\s+hope\s+to\b|\bi'?d\s+like\s+to\b|\bone\s+day\s+i'?ll\b|\bmy\s+dream\s+is\s+to\b/
+const PAST_TENSE_INTENT_RE = /\b(had|did|went|was|were|visited|called)\b/
+const BARE_VERB_NO_SUBJECT_RE = /^(have|get|go|do|make|take|call|visit)\b/
+
+export function evaluateStateFutureIntent(text, { situationForm = 'decision', independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  const NATURAL_BY_FORM = {
+    decision: "I'll have the pasta, thanks.",
+    plan: "I'm going to visit my sister next week.",
+    prediction: 'It will probably rain later.',
+    hope: 'I hope to travel more one day.',
+  }
+  r.naturalVersion = NATURAL_BY_FORM[situationForm] || NATURAL_BY_FORM.decision
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptFutureEmpty' }
+  if (PAST_TENSE_INTENT_RE.test(n)) {
+    return { ...r, errorType: 'wrong_tense_past', priorityCorrection: 'b1RetryExplainFuturePast', explanation: 'b1RetryExplainFuturePast', retryRequired: true, retryPrompt: 'b1RetryPromptFuturePast' }
+  }
+  if (BARE_VERB_NO_SUBJECT_RE.test(n) && wordCount(n) <= 2) {
+    return { ...r, errorType: 'insufficient_form_telegraphic', priorityCorrection: 'b1RetryExplainFutureForm', explanation: 'b1RetryExplainFutureForm', retryRequired: true, retryPrompt: 'b1RetryPromptFutureForm' }
+  }
+
+  const forms = {
+    decision: WILL_DECISION_RE.test(n),
+    plan: GOING_TO_PLAN_RE.test(n),
+    prediction: PREDICTION_RE.test(n),
+    hope: HOPE_RE.test(n),
+  }
+
+  if (forms[situationForm]) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseFutureIndependent' : 'b1PraiseFutureHelped'
+    return r
+  }
+  const usedOtherForm = Object.entries(forms).some(([key, matched]) => key !== situationForm && matched)
+  if (usedOtherForm) {
+    return { ...r, errorType: 'near_miss_wrong_function', priorityCorrection: 'b1RetryExplainFutureFunction', explanation: 'b1RetryExplainFutureFunction', retryRequired: true, retryPrompt: 'b1RetryPromptFutureFunction' }
+  }
+  return { ...r, errorType: 'no_future_form', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptFutureForm' }
+}
+
+// either clause order is valid English: "if X, will Y" or "will Y if X"
+const FIRST_CONDITIONAL_RE = /\bif\b[\s\S]{2,50}\b(will|won'?t|'ll)\b|\b(will|won'?t|'ll)\b[\s\S]{2,50}\bif\b/
+const IF_CLAUSE_RE = /\bif\b/
+const WILL_OR_LL_RE = /\b(will|won'?t|'ll)\b/
+const WOULD_LEAK_RE = /\bwould\b|\b\w+'d\b/
+
+export function evaluateStateRealCondition(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = "If it rains tomorrow, I'll stay home."
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptConditionEmpty' }
+
+  if (WOULD_LEAK_RE.test(n) && IF_CLAUSE_RE.test(n)) {
+    return { ...r, errorType: 'wrong_conditional_hypothetical', priorityCorrection: 'b1RetryExplainConditionReal', explanation: 'b1RetryExplainConditionReal', retryRequired: true, retryPrompt: 'b1RetryPromptConditionReal' }
+  }
+  if (FIRST_CONDITIONAL_RE.test(n)) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseConditionIndependent' : 'b1PraiseConditionHelped'
+    return r
+  }
+  if (IF_CLAUSE_RE.test(n) && !WILL_OR_LL_RE.test(n)) {
+    return { ...r, errorType: 'missing_will_clause', priorityCorrection: 'b1RetryExplainConditionWill', explanation: 'b1RetryExplainConditionWill', retryRequired: true, retryPrompt: 'b1RetryPromptConditionWill' }
+  }
+  if (!IF_CLAUSE_RE.test(n) && WILL_OR_LL_RE.test(n)) {
+    return { ...r, errorType: 'missing_if_clause', priorityCorrection: 'b1RetryExplainConditionIf', explanation: 'b1RetryExplainConditionIf', retryRequired: true, retryPrompt: 'b1RetryPromptConditionIf' }
+  }
+  return { ...r, errorType: 'no_condition', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptConditionIf' }
+}
+
+const HYPOTHETICAL_FRAME_RE = /\bif\s+i\s+were\s+you\b|\bin\s+your\s+position\b/
+const ADVICE_RE = /\bi'?d\s+\w+/
+
+export function evaluateStateHypothetical(text, { independent = false } = {}) {
+  const n = normalize(text)
+  const r = base(independent)
+  r.naturalVersion = "If I were you, I'd ask for more details before deciding."
+  if (!n) return { ...r, understood: false, completedObjective: false, errorType: 'empty', retryRequired: true, retryPrompt: 'b1RetryPromptHypotheticalEmpty' }
+
+  const hasFrame = HYPOTHETICAL_FRAME_RE.test(n)
+  const hasAdvice = ADVICE_RE.test(n)
+
+  if (hasFrame && hasAdvice) {
+    r.completedObjective = true
+    r.confidence = 0.9
+    r.praiseKey = r.masteryEvidence.independent ? 'b1PraiseHypotheticalIndependent' : 'b1PraiseHypotheticalHelped'
+    return r
+  }
+  if (hasFrame && !hasAdvice) {
+    return { ...r, errorType: 'missing_advice', priorityCorrection: 'b1RetryExplainHypotheticalAdvice', explanation: 'b1RetryExplainHypotheticalAdvice', retryRequired: true, retryPrompt: 'b1RetryPromptHypotheticalAdvice' }
+  }
+  if (!hasFrame && hasAdvice) {
+    return { ...r, errorType: 'missing_hypothetical_frame', priorityCorrection: 'b1RetryExplainHypotheticalFrame', explanation: 'b1RetryExplainHypotheticalFrame', retryRequired: true, retryPrompt: 'b1RetryPromptHypotheticalFrame' }
+  }
+  return { ...r, errorType: 'no_hypothetical', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptHypotheticalFrame' }
+}
+
 /* Dispatcher for this arc's intents, mirroring `evaluateFree`'s own shape so a
  * future merge is mechanical. Grows as later arcs land. */
 export function evaluateB1Free(kind, text, ctx = {}) {
@@ -390,6 +504,9 @@ export function evaluateB1Free(kind, text, ctx = {}) {
     case 'recommend_or_warn': return evaluateRecommendOrWarn(text, ctx)
     case 'report_problem': return evaluateReportProblem(text, ctx)
     case 'negotiate_solution': return evaluateNegotiateSolution(text, ctx)
+    case 'state_future_intent': return evaluateStateFutureIntent(text, ctx)
+    case 'state_real_condition': return evaluateStateRealCondition(text, ctx)
+    case 'state_hypothetical': return evaluateStateHypothetical(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }

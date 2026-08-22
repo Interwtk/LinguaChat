@@ -15,13 +15,14 @@ import { B1_ARC1 } from './episodes/b1Arc1.js'
 import { B1_ARC2 } from './episodes/b1Arc2.js'
 import { B1_ARC3 } from './episodes/b1Arc3.js'
 import { B1_ARC4 } from './episodes/b1Arc4.js'
+import { B1_ARC5 } from './episodes/b1Arc5.js'
 
 /* A level-local id. NOT `curriculum/levels.js`'s `B1` (that constant does not
  * exist yet) — do not import this into anything that expects the real one. */
 export const B1_LEVEL_ID = 'b1'
 
 /* The arcs of B1 with runtime content today, in the blueprint's order. */
-export const B1_RUNTIME_ARCS = ['what_happened', 'i_think_that', 'which_one', 'somethings_wrong']
+export const B1_RUNTIME_ARCS = ['what_happened', 'i_think_that', 'which_one', 'somethings_wrong', 'looking_ahead']
 
 /* One intent per can-do, same convention as `A1_CAN_DO_INTENT`/`CAN_DO_INTENT`. */
 export const B1_CAN_DO_INTENT = {
@@ -43,6 +44,13 @@ export const B1_CAN_DO_INTENT = {
   escalate_and_resolve_a_problem: 'report_problem',
   express_frustration_politely: 'report_problem',
   negotiate_a_solution: 'negotiate_solution',
+  // arc 5 — state_future_intent carries both plans/intentions and
+  // hopes/ambitions via its intentForm subtype; real conditions and
+  // hypotheticals are each their own distinct intent.
+  talk_about_plans_and_intentions: 'state_future_intent',
+  talk_about_hopes_and_ambitions: 'state_future_intent',
+  talk_about_real_conditions: 'state_real_condition',
+  imagine_a_hypothetical: 'state_hypothetical',
 }
 
 export const B1_CAN_DO_EXTRA_INTENTS = {}
@@ -52,20 +60,27 @@ export const b1IntentsOf = (canDoId) => [
   ...(B1_CAN_DO_EXTRA_INTENTS[canDoId] || []),
 ].filter(Boolean)
 
-/* Required can-dos, `scope: required` in b1.json, arcs 1-4.
- * `recommend_or_warn`/`express_frustration_politely` are `scope: should`
- * (b1.json arcs 3-4) and deliberately excluded — each arc's required
+/* Required can-dos, `scope: required` in b1.json, arcs 1-5.
+ * `recommend_or_warn`/`express_frustration_politely`/`talk_about_real_conditions`
+ * are `scope: should` and `imagine_a_hypothetical` is `scope: optional`
+ * (b1.json arcs 3-5) — all deliberately excluded; each arc's required
  * independence is already evidenced by its other can-dos. */
 export const B1_REQUIRED_CAN_DOS = [
   'narrate_connected_event', 'narrate_interrupted_action',
   'give_an_opinion', 'agree_or_disagree',
   'compare_options_with_reasons', 'describe_an_experience',
   'escalate_and_resolve_a_problem', 'negotiate_a_solution',
+  'talk_about_plans_and_intentions', 'talk_about_hopes_and_ambitions',
 ]
 
 /* should-have can-dos: implemented, taught and evaluated, but not required
  * for level graduation (b1.json `graduationRelevance: should`). */
-export const B1_SHOULD_CAN_DOS = ['recommend_or_warn', 'express_frustration_politely']
+export const B1_SHOULD_CAN_DOS = ['recommend_or_warn', 'express_frustration_politely', 'talk_about_real_conditions']
+
+/* optional can-dos: implemented, taught and evaluated, but not required for
+ * level graduation and never assumed evidenced (b1.json `graduationRelevance:
+ * optional`). */
+export const B1_OPTIONAL_CAN_DOS = ['imagine_a_hypothetical']
 
 export const B1_RECEPTIVE_ITEMS = [
   'b1_that_morning', 'b1_later_that_day', 'b1_eventually', 'b1_in_the_end',
@@ -78,12 +93,16 @@ export const B1_RECEPTIVE_ITEMS = [
   'b1_faulty', 'b1_damaged', 'b1_missing', 'b1_delayed',
   'b1_a_partial_refund', 'b1_store_credit', 'b1_an_exchange', 'b1_a_different_one',
   'b1_thats_a_shame', 'b1_i_see_the_issue', 'b1_lets_sort_it_out',
+  'b1_im_thinking_of', 'b1_i_might', 'b1_at_some_point',
+  'b1_im_hoping_to', 'b1_someday', 'b1_my_ambition_is',
+  'b1_provided_that', 'b1_in_that_case',
+  'b1_if_i_were_in_your_shoes', 'b1_my_advice_would_be',
 ]
 
 export const B1_INCIDENTAL_ITEMS = []
 
 export function b1Episodes() {
-  return [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4]
+  return [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5]
 }
 
 export const B1_ARC_CAN_DOS = [...new Set(b1Episodes().map(ep => ep.canDoId).filter(Boolean))]
@@ -148,6 +167,11 @@ export const B1_INTRODUCED_ITEMS = [
   'b1_would_it_be_possible', 'b1_could_i_possibly', 'b1_negotiate_pattern',
   'b1_instead', 'b1_a_replacement', 'b1_a_refund',
   'b1_this_isnt_ideal', 'b1_i_understand_but', 'b1_polite_frustration_pattern',
+  // arc 5 — looking_ahead: future forms, hopes, real conditions, hypotheticals
+  'b1_ill', 'b1_im_going_to', 'b1_will_vs_going_to_pattern', 'b1_probably', 'b1_definitely',
+  'b1_i_hope_to', 'b1_id_like_to', 'b1_one_day_ill', 'b1_hope_would_like_pattern', 'b1_my_dream_is_to',
+  'b1_if_present_will', 'b1_first_conditional_pattern', 'b1_unless', 'b1_as_soon_as',
+  'b1_if_i_were_you', 'b1_if_i_were_pattern', 'b1_id_verb', 'b1_in_your_position',
   ...B1_RECEPTIVE_ITEMS,
 ]
 
