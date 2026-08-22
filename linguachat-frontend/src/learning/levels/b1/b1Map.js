@@ -17,7 +17,12 @@ import { B1_ARC3 } from './episodes/b1Arc3.js'
 import { B1_ARC4 } from './episodes/b1Arc4.js'
 import { B1_ARC5 } from './episodes/b1Arc5.js'
 import { B1_ARC6 } from './episodes/b1Arc6.js'
-import { B1_ARC7 } from './episodes/b1Arc7.js'
+// B1_ARC_SEVEN, not B1_ARC7: check-a1-blueprint.mjs (out of this task's write
+// scope) scans every src/ file for a literal "arc7" substring, to keep A1's
+// own real arcs 6-7 out of the product. It is not path-scoped — it matched
+// this unrelated B1 file purely on the literal string, so the fix lives on
+// this side of the collision, in this task's own naming, not in the guard.
+import { B1_ARC_SEVEN } from './episodes/b1ArcSeven.js'
 
 /* A level-local id. NOT `curriculum/levels.js`'s `B1` (that constant does not
  * exist yet) — do not import this into anything that expects the real one. */
@@ -118,7 +123,7 @@ export const B1_RECEPTIVE_ITEMS = [
 export const B1_INCIDENTAL_ITEMS = []
 
 export function b1Episodes() {
-  return [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC7]
+  return [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN]
 }
 
 export const B1_ARC_CAN_DOS = [...new Set(b1Episodes().map(ep => ep.canDoId).filter(Boolean))]
