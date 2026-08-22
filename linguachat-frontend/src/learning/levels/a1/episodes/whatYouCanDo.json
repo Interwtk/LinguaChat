@@ -1,0 +1,339 @@
+[
+  {
+    "id": "i_can_i_cant",
+    "arc": "what_you_can_do",
+    "level": "A1",
+    "role": "primary",
+    "titleKey": "ep34Title",
+    "goalKey": "ep34Goal",
+    "canDoId": "say_what_you_can_do",
+    "canDoNameKey": "ep34CanDoName",
+    "durationKey": "ep34Duration",
+    "estimatedMinutes": 9,
+    "xp": 75,
+    "prerequisites": [
+      "what_does_it_mean"
+    ],
+    "skillPrerequisites": [
+      "express_preferences"
+    ],
+    "gardenItems": [
+      "can_ability_pattern",
+      "swim",
+      "cook",
+      "drive",
+      "dance"
+    ],
+    "reuseSkills": [
+      "express_like"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "review": true,
+        "instructionKey": "ep34RecallInstruction",
+        "evalKind": "express_like",
+        "itemIds": [
+          "i_like"
+        ]
+      },
+      {
+        "type": "scene",
+        "mood": "welcoming",
+        "titleKey": "ep34SceneTitle",
+        "bodyKey": "ep34SceneBody",
+        "showGoal": true,
+        "ctaKey": "ep34Start"
+      },
+      {
+        "type": "model",
+        "target": "I can swim. I can’t cook.",
+        "meaningItems": [
+          "can_ability_pattern",
+          "swim",
+          "cook"
+        ],
+        "explainKey": "ep34ModelExplain"
+      },
+      {
+        "type": "comprehension",
+        "instructionKey": "ep34ComprehensionInstruction",
+        "target": "I can drive.",
+        "itemId": "can_ability_pattern",
+        "options": [
+          {
+            "key": "ep34CompOptCorrect",
+            "correct": true
+          },
+          {
+            "key": "ep34CompOptWrong1"
+          },
+          {
+            "key": "ep34CompOptWrong2"
+          }
+        ]
+      },
+      {
+        "type": "word_order",
+        "instructionKey": "ep34BuildInstruction",
+        "hintKey": "ep1BuildHint",
+        "itemId": "can_ability_pattern",
+        "tokens": [
+          "I",
+          "can",
+          "swim",
+          "."
+        ]
+      },
+      {
+        "type": "choice",
+        "instructionKey": "ep34ChoiceInstruction",
+        "promptEn": "What can you do?",
+        "itemId": "can_ability_pattern",
+        "allValid": true,
+        "options": [
+          {
+            "textEn": "I can swim.",
+            "correct": true
+          },
+          {
+            "textEn": "I can cook.",
+            "correct": true
+          },
+          {
+            "textEn": "I can dance.",
+            "correct": true
+          }
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "We’re going to the pool later. Can you come?",
+        "instructionKey": "ep34PositiveInstruction",
+        "evalKind": "state_ability",
+        "abilityForm": "positive",
+        "suggestionEn": "Yes, I can swim.",
+        "itemIds": [
+          "can_ability_pattern",
+          "swim"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "I can’t… mmm, the word for making food?",
+        "instructionKey": "ep34MeaningInstruction",
+        "evalKind": "repair_request",
+        "repairKind": "ask_meaning",
+        "suggestionEn": "What does “cook” mean?",
+        "itemIds": [
+          "can_ability_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "Do you want to come dancing with us on Friday?",
+        "instructionKey": "ep34NegativeInstruction",
+        "evalKind": "state_ability",
+        "abilityForm": "negative",
+        "itemIds": [
+          "can_ability_pattern",
+          "dance"
+        ]
+      },
+      {
+        "type": "recall",
+        "instructionKey": "ep34FinalInstruction",
+        "evalKind": "state_ability",
+        "abilityForm": "positive",
+        "itemIds": [
+          "can_ability_pattern"
+        ]
+      },
+      {
+        "type": "completion",
+        "canDoNameKey": "ep34CanDoName",
+        "titleKey": "ep34CloseTitle",
+        "bodyKey": "ep34CloseBody",
+        "ctaKey": "ep1CloseCta"
+      }
+    ]
+  },
+  {
+    "id": "can_you",
+    "arc": "what_you_can_do",
+    "level": "A1",
+    "role": "primary",
+    "titleKey": "ep35Title",
+    "goalKey": "ep35Goal",
+    "canDoId": "ask_someone_about_ability",
+    "canDoNameKey": "ep35CanDoName",
+    "secondaryCanDoId": "ask_how_to_say_something",
+    "durationKey": "ep35Duration",
+    "estimatedMinutes": 9,
+    "xp": 80,
+    "prerequisites": [
+      "i_can_i_cant"
+    ],
+    "skillPrerequisites": [
+      "say_what_you_can_do",
+      "ask_about_work_or_study"
+    ],
+    "gardenItems": [
+      "can_you_ability_pattern",
+      "how_do_you_say_pattern",
+      "sing"
+    ],
+    "reuseSkills": [
+      "repair_request"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "review": true,
+        "instructionKey": "ep35RecallInstruction",
+        "evalKind": "state_ability",
+        "itemIds": [
+          "can_ability_pattern"
+        ]
+      },
+      {
+        "type": "scene",
+        "mood": "curious",
+        "titleKey": "ep35SceneTitle",
+        "bodyKey": "ep35SceneBody",
+        "showGoal": true,
+        "ctaKey": "ep35Start"
+      },
+      {
+        "type": "model",
+        "target": "Can you swim?",
+        "response": "Yes, I can.",
+        "meaningItems": [
+          "can_you_ability_pattern"
+        ],
+        "explainKey": "ep35ModelExplain"
+      },
+      {
+        "type": "choice",
+        "instructionKey": "ep35DisambiguationInstruction",
+        "promptEn": "Which one is asking about ABILITY, not asking somebody to repeat?",
+        "itemId": "can_you_ability_pattern",
+        "options": [
+          {
+            "textEn": "Can you swim?",
+            "correct": true
+          },
+          {
+            "textEn": "Can you repeat, please?"
+          },
+          {
+            "textEn": "Can you speak slowly, please?"
+          }
+        ]
+      },
+      {
+        "type": "word_order",
+        "instructionKey": "ep35BuildInstruction",
+        "hintKey": "ep1BuildHint",
+        "itemId": "can_you_ability_pattern",
+        "tokens": [
+          "Can",
+          "you",
+          "sing",
+          "?"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "I have a hobby you don’t know about yet.",
+        "instructionKey": "ep35AskInstruction",
+        "evalKind": "ask_ability",
+        "suggestionEn": "Can you sing?",
+        "itemIds": [
+          "can_you_ability_pattern",
+          "sing"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "Yes, I ca— mmm mmm mmm, sorry.",
+        "instructionKey": "ep35RepairInstruction",
+        "evalKind": "repair_request",
+        "repairKind": "repeat",
+        "suggestionEn": "Can you repeat, please?",
+        "itemIds": [
+          "can_you_repeat"
+        ]
+      },
+      {
+        "type": "model",
+        "target": "How do you say “nadar” in English?",
+        "meaningItems": [
+          "how_do_you_say_pattern"
+        ],
+        "explainKey": "ep35SayExplain"
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "You know a word in your language, but not in English. What do you ask me?",
+        "instructionKey": "ep35SayInstruction",
+        "evalKind": "repair_request",
+        "repairKind": "ask_how_to_say",
+        "creditsCanDoId": "ask_how_to_say_something",
+        "suggestionEn": "How do you say that in English?",
+        "itemIds": [
+          "how_do_you_say_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "instructionKey": "ep35ReasonInstruction",
+        "target": "I can’t, I’m tired.",
+        "itemId": "can_ability_pattern",
+        "options": [
+          {
+            "key": "ep35ReasonOptCorrect",
+            "correct": true
+          },
+          {
+            "key": "ep35ReasonOptWrong1"
+          },
+          {
+            "key": "ep35ReasonOptWrong2"
+          }
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "Now ask me something else. What can I do?",
+        "instructionKey": "ep35AgainInstruction",
+        "evalKind": "ask_ability",
+        "itemIds": [
+          "can_you_ability_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "instructionKey": "ep35FinalInstruction",
+        "evalKind": "ask_ability",
+        "itemIds": [
+          "can_you_ability_pattern"
+        ]
+      },
+      {
+        "type": "completion",
+        "canDoNameKey": "ep35CanDoName",
+        "titleKey": "ep35CloseTitle",
+        "bodyKey": "ep35CloseBody",
+        "ctaKey": "ep1CloseCta"
+      }
+    ]
+  }
+]

@@ -1,0 +1,500 @@
+[
+  {
+    "id": "when_are_you_free",
+    "arc": "making_arrangements",
+    "level": "A1",
+    "role": "primary",
+    "titleKey": "ep36Title",
+    "goalKey": "ep36Goal",
+    "canDoId": "arrange_to_meet",
+    "canDoNameKey": "ep36CanDoName",
+    "durationKey": "ep36Duration",
+    "estimatedMinutes": 10,
+    "xp": 85,
+    "prerequisites": [
+      "can_you"
+    ],
+    "skillPrerequisites": [
+      "say_when_something_happens",
+      "make_plan",
+      "say_where_something_is"
+    ],
+    "gardenItems": [
+      "day_of_week_pattern",
+      "arrange_pattern",
+      "monday",
+      "friday"
+    ],
+    "reuseSkills": [
+      "simple_plan_conversation",
+      "state_routine"
+    ],
+    "semanticSlots": {
+      "day": "day",
+      "time": "time_point"
+    },
+    "steps": [
+      {
+        "type": "recall",
+        "review": true,
+        "instructionKey": "ep36RecallInstruction",
+        "evalKind": "ask_ability",
+        "itemIds": [
+          "can_you_ability_pattern"
+        ]
+      },
+      {
+        "type": "scene",
+        "mood": "welcoming",
+        "titleKey": "ep36SceneTitle",
+        "bodyKey": "ep36SceneBody",
+        "showGoal": true,
+        "ctaKey": "ep36Start"
+      },
+      {
+        "type": "model",
+        "target": "Let’s meet on Friday at seven.",
+        "meaningItems": [
+          "day_of_week_pattern",
+          "arrange_pattern"
+        ],
+        "explainKey": "ep36ModelExplain"
+      },
+      {
+        "type": "comprehension",
+        "instructionKey": "ep36ComprehensionInstruction",
+        "target": "Are you free on Monday?",
+        "itemId": "day_of_week_pattern",
+        "options": [
+          {
+            "key": "ep36CompOptCorrect",
+            "correct": true
+          },
+          {
+            "key": "ep36CompOptWrong1"
+          },
+          {
+            "key": "ep36CompOptWrong2"
+          }
+        ]
+      },
+      {
+        "type": "word_order",
+        "instructionKey": "ep36BuildInstruction",
+        "hintKey": "ep1BuildHint",
+        "itemId": "arrange_pattern",
+        "tokens": [
+          "Let’s",
+          "meet",
+          "on",
+          "Friday",
+          "at",
+          "seven",
+          "."
+        ]
+      },
+      {
+        "type": "choice",
+        "instructionKey": "ep36ChoiceInstruction",
+        "promptEn": "Which day is “Monday”?",
+        "itemId": "day_of_week_pattern",
+        "options": [
+          {
+            "textEn": "Monday.",
+            "correct": true
+          },
+          {
+            "textEn": "Sunday."
+          },
+          {
+            "textEn": "May."
+          }
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "I’d like to see you this week. When are you free?",
+        "instructionKey": "ep36ProposeInstruction",
+        "evalKind": "arrange_meeting",
+        "arrangeStage": "propose",
+        "suggestionEn": "Let’s meet on Friday at seven.",
+        "itemIds": [
+          "day_of_week_pattern",
+          "arrange_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "Can you come on Saturday morning?",
+        "instructionKey": "ep36AbilityInstruction",
+        "evalKind": "state_ability",
+        "suggestionEn": "Yes, I can.",
+        "itemIds": [
+          "can_ability_pattern"
+        ]
+      },
+      {
+        "type": "choice",
+        "instructionKey": "ep36CounterInstruction",
+        "promptEn": "Sorry, I can’t on Friday. How about Saturday?",
+        "itemId": "day_of_week_pattern",
+        "options": [
+          {
+            "textEn": "They are proposing Saturday instead.",
+            "correct": true
+          },
+          {
+            "textEn": "They are cancelling."
+          },
+          {
+            "textEn": "They are asking the price."
+          }
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "Saturday doesn’t work for me. What about another day?",
+        "instructionKey": "ep36AgainInstruction",
+        "evalKind": "arrange_meeting",
+        "arrangeStage": "propose",
+        "itemIds": [
+          "day_of_week_pattern",
+          "arrange_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "instructionKey": "ep36FinalInstruction",
+        "evalKind": "arrange_meeting",
+        "arrangeStage": "propose",
+        "itemIds": [
+          "day_of_week_pattern",
+          "arrange_pattern"
+        ]
+      },
+      {
+        "type": "completion",
+        "canDoNameKey": "ep36CanDoName",
+        "titleKey": "ep36CloseTitle",
+        "bodyKey": "ep36CloseBody",
+        "ctaKey": "ep1CloseCta"
+      }
+    ]
+  },
+  {
+    "id": "where_shall_we_meet",
+    "arc": "making_arrangements",
+    "level": "A1",
+    "role": "reinforcement",
+    "titleKey": "ep37Title",
+    "goalKey": "ep37Goal",
+    "canDoId": "arrange_to_meet",
+    "canDoNameKey": "ep37CanDoName",
+    "durationKey": "ep37Duration",
+    "estimatedMinutes": 9,
+    "xp": 80,
+    "prerequisites": [
+      "when_are_you_free"
+    ],
+    "skillPrerequisites": [
+      "arrange_to_meet",
+      "say_where_something_is"
+    ],
+    "gardenItems": [
+      "the_station",
+      "the_cinema"
+    ],
+    "reuseSkills": [
+      "state_location",
+      "close_encounter"
+    ],
+    "semanticSlots": {
+      "place": "place"
+    },
+    "steps": [
+      {
+        "type": "recall",
+        "review": true,
+        "instructionKey": "ep37RecallInstruction",
+        "evalKind": "arrange_meeting",
+        "arrangeStage": "propose",
+        "itemIds": [
+          "arrange_pattern"
+        ]
+      },
+      {
+        "type": "scene",
+        "mood": "thinking",
+        "titleKey": "ep37SceneTitle",
+        "bodyKey": "ep37SceneBody",
+        "showGoal": true,
+        "ctaKey": "ep37Start"
+      },
+      {
+        "type": "model",
+        "target": "Where shall we meet? — At the station, next to the entrance.",
+        "meaningItems": [
+          "its_location_pattern"
+        ],
+        "explainKey": "ep37ModelExplain"
+      },
+      {
+        "type": "comprehension",
+        "instructionKey": "ep37ComprehensionInstruction",
+        "target": "Let’s meet at the cinema.",
+        "itemId": "its_location_pattern",
+        "options": [
+          {
+            "key": "ep37CompOptCorrect",
+            "correct": true
+          },
+          {
+            "key": "ep37CompOptWrong1"
+          },
+          {
+            "key": "ep37CompOptWrong2"
+          }
+        ]
+      },
+      {
+        "type": "choice",
+        "instructionKey": "ep37ChoiceInstruction",
+        "promptEn": "Where shall we meet?",
+        "itemId": "the_station",
+        "options": [
+          {
+            "textEn": "At the station.",
+            "correct": true
+          },
+          {
+            "textEn": "At seven."
+          },
+          {
+            "textEn": "On Friday."
+          }
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "Friday at seven — where shall we meet?",
+        "instructionKey": "ep37PlaceInstruction",
+        "evalKind": "arrange_meeting",
+        "arrangeStage": "place",
+        "suggestionEn": "Let’s meet at the station.",
+        "itemIds": [
+          "the_station",
+          "its_location_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "Actually, sorry — can we meet at the cinema instead?",
+        "instructionKey": "ep37ChangeInstruction",
+        "evalKind": "arrange_meeting",
+        "arrangeStage": "confirm",
+        "suggestionEn": "OK, see you at the cinema.",
+        "itemIds": [
+          "the_cinema",
+          "see_you"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "Great, that’s settled. See you then!",
+        "instructionKey": "ep37CloseInstruction",
+        "evalKind": "close_encounter",
+        "suggestionEn": "See you.",
+        "itemIds": [
+          "see_you"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "speaker": "lingua",
+        "promptEn": "Just to be sure — tell me everything we agreed.",
+        "instructionKey": "ep37ConfirmInstruction",
+        "evalKind": "arrange_meeting",
+        "arrangeStage": "confirm",
+        "itemIds": [
+          "day_of_week_pattern",
+          "arrange_pattern",
+          "its_location_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "instructionKey": "ep37FinalInstruction",
+        "evalKind": "arrange_meeting",
+        "arrangeStage": "confirm",
+        "itemIds": [
+          "arrange_pattern"
+        ]
+      },
+      {
+        "type": "completion",
+        "canDoNameKey": "ep37CanDoName",
+        "titleKey": "ep37CloseTitle",
+        "bodyKey": "ep37CloseBody",
+        "ctaKey": "ep1CloseCta"
+      }
+    ]
+  },
+  {
+    "id": "see_you_on_friday",
+    "arc": "making_arrangements",
+    "level": "A1",
+    "role": "primary",
+    "titleKey": "ep38Title",
+    "goalKey": "ep38Goal",
+    "canDoId": "arrange_to_meet",
+    "canDoNameKey": "ep38CanDoName",
+    "durationKey": "ep38Duration",
+    "estimatedMinutes": 12,
+    "xp": 100,
+    "prerequisites": [
+      "where_shall_we_meet"
+    ],
+    "skillPrerequisites": [
+      "arrange_to_meet",
+      "introduce_self",
+      "ask_wellbeing",
+      "express_preferences",
+      "ask_for_repair",
+      "close_an_encounter"
+    ],
+    "gardenItems": [],
+    "reuseSkills": [
+      "introduction",
+      "ask_wellbeing",
+      "express_like",
+      "repair_request",
+      "close_encounter"
+    ],
+    "story": {
+      "objective": "arrange_meeting",
+      "branchStep": 4,
+      "branches": [
+        "accept",
+        "postpone"
+      ],
+      "branchLines": {
+        "accept": "Great, Friday it is!",
+        "postpone": "No problem — how about Saturday instead?"
+      }
+    },
+    "steps": [
+      {
+        "type": "scene",
+        "mood": "welcoming",
+        "titleKey": "ep38SceneTitle",
+        "bodyKey": "ep38SceneBody",
+        "showGoal": true,
+        "ctaKey": "ep38Start"
+      },
+      {
+        "type": "free_reply",
+        "format": "roleplay",
+        "speaker": "lingua",
+        "promptEn": "Hi again! Nice to see you.",
+        "instructionKey": "ep38GreetInstruction",
+        "evalKind": "introduction",
+        "suggestionEn": "Hi, I’m {name}.",
+        "itemIds": [
+          "hi",
+          "im"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "format": "roleplay",
+        "speaker": "lingua",
+        "promptEn": "How are you?",
+        "instructionKey": "ep38WellbeingInstruction",
+        "evalKind": "ask_wellbeing",
+        "suggestionEn": "I’m good, thanks.",
+        "itemIds": [
+          "im_good"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "format": "roleplay",
+        "speaker": "lingua",
+        "promptEn": "I know you like music. There’s a concert this week — do you like the idea?",
+        "instructionKey": "ep38LikeInstruction",
+        "evalKind": "express_like",
+        "suggestionEn": "Yes, I like that.",
+        "itemIds": [
+          "i_like"
+        ]
+      },
+      {
+        "type": "mini_story",
+        "storyObjective": "arrange_meeting",
+        "instructionKey": "ep38StoryInstruction"
+      },
+      {
+        "type": "free_reply",
+        "format": "roleplay",
+        "speaker": "lingua",
+        "promptEn": "So, seeyouatthestationatseven, OK?",
+        "instructionKey": "ep38RepairInstruction",
+        "evalKind": "repair_request",
+        "repairKind": "repeat",
+        "suggestionEn": "Can you repeat, please?",
+        "itemIds": [
+          "can_you_repeat"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "format": "roleplay",
+        "speaker": "lingua",
+        "promptEn": "Perfect. So, just to be sure?",
+        "instructionKey": "ep38ConfirmInstruction",
+        "evalKind": "arrange_meeting",
+        "arrangeStage": "confirm",
+        "itemIds": [
+          "day_of_week_pattern",
+          "arrange_pattern",
+          "its_location_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "format": "roleplay",
+        "speaker": "lingua",
+        "promptEn": "See you then. Bye!",
+        "instructionKey": "ep38CloseInstruction",
+        "evalKind": "close_encounter",
+        "suggestionEn": "Bye! See you on Friday.",
+        "itemIds": [
+          "bye",
+          "see_you"
+        ]
+      },
+      {
+        "type": "recall",
+        "instructionKey": "ep38FinalInstruction",
+        "evalKind": "arrange_meeting",
+        "arrangeStage": "confirm",
+        "itemIds": [
+          "arrange_pattern"
+        ]
+      },
+      {
+        "type": "completion",
+        "canDoNameKey": "ep38CanDoName",
+        "titleKey": "ep38CloseTitle",
+        "bodyKey": "ep38CloseBody",
+        "ctaKey": "ep1CloseCta"
+      }
+    ]
+  }
+]
