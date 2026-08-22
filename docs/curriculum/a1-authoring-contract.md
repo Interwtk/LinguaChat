@@ -48,13 +48,14 @@ Every derivation that answers a question **about a level** now takes its episode
 |---|---|
 | `curriculum/readiness.js` | is this level finished, is this capability taught |
 | `curriculum/preA1Map.js` | Pre-A1's capabilities, items and coverage |
+| `curriculum/levelMaps.js` | which level owns this capability id / this intent, across every registered level |
 | `components/today/TodayView.jsx` | Home: progress, next episode, the completion card |
 | `context/AppContext.jsx` | which episodes a session may draw on |
 | `components/episode/CompletedEpisodes.jsx` | what may be replayed |
 
 Two modules deliberately do not, and both are asserted so the exception stays deliberate:
 
-- **`engine/scaffolding.js`** reads the whole curriculum, because it answers "how much help does this learner need for *this capability*", and a capability's home episode may belong to any level. Scoping it would stop transferring autonomy across the level boundary.
+- **`engine/scaffolding.js`** reads the whole curriculum, because it answers "how much help does this learner need for *this capability*", and a capability's home episode may belong to any level. Scoping it would stop transferring autonomy across the level boundary. Its `canDoForIntent` lookup reads `curriculum/levelMaps.js`'s merged registry (every registered level's own `*_CAN_DO_INTENT` map, one entry per level) rather than importing one level's map file directly — importing only `preA1Map.js` here previously left A1's own intents unresolvable to this engine's novelty check, since a lookup for an A1-only intent silently returned `null` instead of A1's capability id. A new level's map (e.g. `a2Map.js`) registers itself in `levelMaps.js` once; nothing in `scaffolding.js` needs to change again. `check:cross-level-ids` fails the build if two registered levels declare the same bare capability id.
 - **`engine/planner.js`** mentions no level at all. It is handed a list of episodes and plans within it, so the level lives at the call site.
 
 ## The contract an episode must satisfy

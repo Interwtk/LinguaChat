@@ -46,7 +46,8 @@
 import { EPISODE_SKELETON as ARC, SKELETON_BY_ID } from '../curriculum/preA1Skeleton.generated.js'
 
 const getEpisode = (id) => SKELETON_BY_ID[id] || null
-import { CAN_DO_INTENT, intentsForEpisode, skillPrerequisitesOf, targetsOf } from '../curriculum/preA1Map.js'
+import { intentsForEpisode, skillPrerequisitesOf, targetsOf } from '../curriculum/preA1Map.js'
+import { canDoForIntent } from '../curriculum/levelMaps.js'
 
 /*
  * Which episode teaches each can-do, so its own targets can be consulted.
@@ -147,9 +148,13 @@ export function isIndependentEvidence({ step, assistanceUsed = false, correct = 
 const canDoState = (model, canDoId) => (canDoId && model?.canDo?.[canDoId]) || null
 const itemState = (model, itemId) => (itemId && model?.languageItems?.[itemId]) || null
 
-/* The can-do that carries an intent, if the curriculum names one. */
-const canDoForIntent = (intent) =>
-  Object.keys(CAN_DO_INTENT).find(k => CAN_DO_INTENT[k] === intent) || null
+/*
+ * The can-do that carries an intent, if the curriculum names one — searched
+ * across every registered level's own map (`curriculum/levelMaps.js`), not
+ * one level's file by name. This engine answers for the whole curriculum
+ * (see the module note above); reading only one level's map here previously
+ * left every other level's intents silently unresolvable.
+ */
 
 /*
  * How solid the learner is on a skill, read only from recorded evidence.
