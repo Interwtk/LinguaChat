@@ -1,0 +1,42 @@
+{
+  "taskId": "LC-FND-002",
+  "lane": "core",
+  "status": "complete",
+  "cleanCycles": 2,
+  "artifacts": [
+    "docs/curriculum/blueprints/a2.json",
+    "docs/curriculum/blueprints/a2.md",
+    "docs/curriculum/blueprints/b1.json",
+    "docs/curriculum/blueprints/b1.md",
+    "docs/curriculum/blueprints/b2.json",
+    "docs/curriculum/blueprints/c1.json",
+    "docs/curriculum/blueprints/c1.md",
+    "docs/curriculum/blueprints/c2.json",
+    "docs/curriculum/blueprints/c2.md",
+    "docs/curriculum/semantic-types.md",
+    "docs/curriculum/core-engine-requirements.md",
+    "docs/curriculum/curriculum-isolation-plan.md",
+    "docs/curriculum/a1-authoring-contract.md",
+    "linguachat-frontend/src/learning/curriculum/levelMaps.js",
+    "linguachat-frontend/src/learning/engine/scaffolding.js",
+    "linguachat-frontend/src/learning/engine/responseEvaluation.js",
+    "linguachat-frontend/scripts/check-cross-level-ids.mjs",
+    "linguachat-frontend/package.json"
+  ],
+  "summary": "Resumed the existing draft branch (bootstrap-only, zero changed files at resume) and completed LC-AUD-001's full handoff in priority order, then isolated shared curriculum infrastructure within this task's declared write scopes. Resolved all three cross-level capability-id collisions (F1: B1's report_a_problem renamed to escalate_and_resolve_a_problem, distinct from A2's identically-named capability; F2: C1's infer_implied_meaning renamed to infer_implied_meaning_in_unfamiliar_context, escalating B2's should-scope receptive capability; F3: C2's reformulate_for_a_different_audience renamed to reformulate_dense_source_for_a_new_audience, ending the collision with C1's identically-named capability and correcting C2's factually-contradicted 'first mediation task' claim). Applied all nineteen cross-level prerequisite-string fixes (F4, F5, F6) at high/medium confidence, deliberately leaving the one low-confidence C2 mapping (sustain_coherence_across_topic_shifts) unresolved with an explicit unresolvedPrerequisiteNote for human curriculum-design judgment, per the audit's own instruction not to auto-apply it. Added a prerequisiteRisk bridging note to B1's sustain_topic_change since its real A2 prerequisite is should-scope, not guaranteed (F4b). Added CEFR Companion Volume references to all 19 A2 capabilities, the only level with zero coverage (F7). Reconciled B1's problem/B2's problem_type/C1's proposed negotiated_item into one documented type family (F9, docs/curriculum/semantic-types.md) rather than three overlapping types. Fixed both pattern-id reuse hazards (F10: B1's because_reason_pattern marked as A2 reuse, not a second introduction; F11: C2's academic hedging form renamed to academic_hedging_pattern rather than reusing B2's colloquial hedging_pattern id). Consolidated B2's and C1's duplicate CORE evaluator asks into one register-appropriateness dimension and one discourse-coherence-scoring path (F8, docs/curriculum/core-engine-requirements.md), and added the shared contract shape (registerAppropriateness/discourseCoherence fields, both checked:false by default) to responseEvaluation.js's base() result — zero behavioural change for any live Pre-A1/A1 capability, confirmed by full check:all and targeted evaluator-check reruns. Isolated shared curriculum infrastructure: added curriculum/levelMaps.js, a small additive registry every level's own capability-to-intent map registers itself in, replacing scaffolding.js's previous direct import of only Pre-A1's map — which was a real, live bug (any lookup for one of A1's own intents silently returned null, disabling novelty-based support scaling for A1's original intents, not just failing loudly). Added scripts/check-cross-level-ids.mjs (wired into check:all) as the mechanical guard that fails the build the moment two registered levels declare the same bare capability id, directly automating the collision class LC-AUD-001 had to find by hand. A full architecture survey found five more shared, flat, level-unaware surfaces (evaluator-dispatch switch, SessionRunner/formatChoice/miniStory tables, session.js's item/error/canDo tables, semanticContext.js's five registries, learnerModel.js's FACT_TYPES/MILESTONE_LEVELS, readiness.js/graduation.js's Pre-A1-only scoping, i18n's 8-file flat structure) — each deliberately left unrefactored and recorded with reasoning in docs/curriculum/curriculum-isolation-plan.md, since none has a real second-level runtime consumer yet to validate a registry-style split against; building that extension mechanism now, before any A2+ content exists, would be speculative rather than informed, and several are large live surfaces powering the shipped Pre-A1/A1 experience where an unvalidated refactor is a real regression risk. No blueprint file lost data, no runtime module was made to import design-artifact blueprints, A1 stays available:false, Pre-A1 stays frozen and untouched, no Supabase/voice/provider-policy surface was touched.",
+  "writeScopeRespected": [
+    "linguachat-frontend/src/learning/curriculum/**",
+    "linguachat-frontend/src/learning/engine/**",
+    "linguachat-frontend/scripts/**",
+    "linguachat-frontend/package.json",
+    "docs/curriculum/**"
+  ],
+  "evidence": {
+    "frontend": "cd linguachat-frontend && npm run check:all && npm run build && npm run check:i18n -- exit 0 by exit code, run twice consecutively clean with zero edits between runs (1727 base keys, all 7 gated locales at 100% coverage/0 missing/0 extra/0 phMismatch; check-bundle-boundaries OK both runs: entry 440.3 kB, 26 JS chunks, 1438.4 kB total, unchanged across both builds)",
+    "backend": "cd linguachat-backend && python -m compileall . && python -m pytest -q -- exit 0 (444 passed), run twice consecutively clean",
+    "targetedRegressionChecks": "check-adaptive-scaffolding (25 support groups), check-cross-level-ids (new, 3 registry groups/2 levels), check-hybrid-evaluation (18 routing groups), check-edge-cases (14 groups), check-repair-evaluation (12 groups), check-things-and-quantity-evaluation (12 groups), check-curriculum-authoring (7 groups, 33 runtime episodes), check-curriculum-map (15 groups), check-a1-arc1..5 (all OK) -- all pass unchanged before/after the scaffolding.js and responseEvaluation.js edits, confirming zero behavioural change to any live Pre-A1/A1 evaluation or scaffolding path",
+    "jsonConsistency": "all six blueprint JSON files parse as well-formed JSON; scripted verification that every remaining b2_-prefixed / c1_assumed__-prefixed placeholder string left in a live prerequisites/c1Reuse field is exactly the one documented exception (b2_weigh_advantages_and_disadvantages, which already resolves since B2 landed with that exact id, and c1_assumed__handle_abstract_topics, the one deliberately-unresolved low-confidence F6 row) -- no silently-broken placeholder remains",
+    "scopeGuard": "node .github/scripts/check-foundry-scope.mjs --branch foundry/core/lc-fnd-002-isolation --base origin/main --head HEAD -- OK, 18 changed files, all inside allowed write scope",
+    "evidenceGateFull": "node .github/scripts/check-supervisor-evidence.mjs -- pedagogical: 120/100 unique primary studies, 14 topics; psychology: 127/100 unique primary studies, 14 topics; gate reports READY (requiresEvidenceReady=true satisfied)"
+  }
+}
