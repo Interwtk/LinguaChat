@@ -62,6 +62,8 @@ const base = (independent) => ({
 })
 
 const empty = (r) => ({ ...r, understood: false, confidence: 0.95, errorType: 'empty', conclusive: true, retryRequired: true })
+const nonsense = (r) => ({ ...r, understood: false, errorType: 'nonsense', confidence: 0.85, retryRequired: true })
+const withPraise = (r, prefix) => { r.praiseKey = r.masteryEvidence.independent ? `${prefix}PraiseIndependent` : `${prefix}PraiseGuided`; return r }
 
 /* ---------------------------------------------------------------------- */
 /* Closed vocabulary — the arc's own taught set, plus a small receptive     */
@@ -115,14 +117,22 @@ export function evaluateStateAbility(text, { independent = false, abilityForm } 
   const n = normalize(text)
   if (!n) return empty(r)
 
-  const negative = /\bi\s+(can'?t|cannot|can not)\b/.test(n)
-  const positive = !negative && /\bi\s+can\b/.test(n)
+  /*
+   * Tolerates ONE intervening adverb between "I" and "can" — "I definitely
+   * can't cook." is a natural reply. Capped at one word (not more) so this
+   * stays "I [adverb] can(')t ___" and does not start matching a sentence
+   * about someone else's ability, e.g. "I think you can help" (two words,
+   * "think you", between "I" and "can" — correctly NOT matched as the
+   * learner's own ability).
+   */
+  const negative = /\bi\s+(?:\w+\s+)?(can'?t|cannot|can not)\b/.test(n)
+  const positive = !negative && /\bi\s+(?:\w+\s+)?can\b/.test(n)
   if (!negative && !positive) {
     /* a real attempt with no recognisable frame at all */
-    if (/\b(swim|cook|drive|dance|sing)\b/.test(n)) {
+    if (KNOWN_ABILITY_RE.test(n)) {
       return { ...r, understood: false, errorType: 'missing_can_frame', confidence: 0.7, conclusive: false, retryRequired: true }
     }
-    return { ...r, understood: false, errorType: 'nonsense', confidence: 0.85, retryRequired: true }
+    return nonsense(r)
   }
 
   const polarity = negative ? 'negative' : 'positive'
@@ -139,8 +149,7 @@ export function evaluateStateAbility(text, { independent = false, abilityForm } 
   r.completedObjective = true
   r.confidence = 0.92
   r.acceptedVariant = !/^i\s+can'?t?\s+\w+\.?$/.test(n)
-  r.praiseKey = r.masteryEvidence.independent ? 'ep34PraiseIndependent' : 'ep34PraiseGuided'
-  return r
+  return withPraise(r, 'ep34')
 }
 
 /* ---------------------------------------------------------------------- */
@@ -169,8 +178,7 @@ export function evaluateAskAbility(text, { independent = false } = {}) {
     r.completedObjective = true
     r.confidence = 0.92
     r.acceptedVariant = !/^can\s+you\s+\w+(\s\w+){0,2}\??$/.test(n)
-    r.praiseKey = r.masteryEvidence.independent ? 'ep35PraiseIndependent' : 'ep35PraiseGuided'
-    return r
+    return withPraise(r, 'ep35')
   }
 
   if (shellPresent) {
@@ -188,7 +196,7 @@ export function evaluateAskAbility(text, { independent = false } = {}) {
       priorityCorrection: 'ep35RetryExplainForm', explanation: 'ep35RetryExplainForm', retryRequired: true }
   }
 
-  return { ...r, understood: false, errorType: 'nonsense', confidence: 0.85, retryRequired: true }
+  return nonsense(r)
 }
 
 /* ---------------------------------------------------------------------- */
@@ -209,14 +217,13 @@ export function evaluateAskHowToSay(text, { independent = false } = {}) {
     r.completedObjective = true
     r.confidence = 0.94
     r.acceptedVariant = !/^how\s+do\s+you\s+say\s+.+\??$/.test(n)
-    r.praiseKey = r.masteryEvidence.independent ? 'ep35PraiseIndependent' : 'ep35PraiseGuided'
-    return r
+    return withPraise(r, 'ep35')
   }
   if (ASK_HOW_TO_SAY_LOOSE_RE.test(n)) {
     return { ...r, understood: false, errorType: 'incomplete_how_to_say', confidence: 0.7, conclusive: false,
       priorityCorrection: 'ep35RetryExplainHowToSay', explanation: 'ep35RetryExplainHowToSay', retryRequired: true }
   }
-  return { ...r, understood: false, errorType: 'nonsense', confidence: 0.85, retryRequired: true }
+  return nonsense(r)
 }
 
 /* ---------------------------------------------------------------------- */
@@ -224,10 +231,17 @@ export function evaluateAskHowToSay(text, { independent = false } = {}) {
 /* ---------------------------------------------------------------------- */
 
 /**
- * `arrangeStage`: 'propose' (day + time), 'place' (a place), 'confirm' (day +
- * time + place together — the arc's headline evidence, episodes 37 and 38).
+ * `arrangeStage`: 'propose' (day + time, episode 36), 'place' (a place,
+ * episode 37), 'confirm' (day + time + place together — the arc's headline
+ * evidence, exercised by BOTH episode 37's confirmation turns and episode
+ * 38's closing turns). Because 'confirm' is genuinely shared by two
+ * episodes, `praisePrefix` lets the caller (the step, via its own
+ * `praisePrefix` field) say which episode's praise copy applies — it
+ * defaults to `'ep38'` (the more common case: most 'confirm' turns across
+ * the arc are episode 38's) and episode 37's own confirm steps override it
+ * explicitly, rather than this function guessing from stage alone.
  */
-export function evaluateArrangeMeeting(text, { independent = false, arrangeStage = 'propose' } = {}) {
+export function evaluateArrangeMeeting(text, { independent = false, arrangeStage = 'propose', praisePrefix } = {}) {
   const r = base(independent)
   const n = normalize(text)
   if (!n) return empty(r)
@@ -241,23 +255,21 @@ export function evaluateArrangeMeeting(text, { independent = false, arrangeStage
       r.completedObjective = true
       r.confidence = 0.9
       r.acceptedVariant = !/^let'?s\s+meet\s+on\s+\w+\s+at\s+/.test(n)
-      r.praiseKey = r.masteryEvidence.independent ? 'ep36PraiseIndependent' : 'ep36PraiseGuided'
-      return r
+      return withPraise(r, praisePrefix || 'ep36')
     }
     const missing = !hasDay && !hasTime ? 'day_and_time' : !hasDay ? 'day' : 'time'
     if (hasDay || hasTime) {
       return { ...r, understood: false, errorType: `missing_${missing}`, confidence: 0.65, conclusive: false,
         priorityCorrection: 'ep36RetryExplainMissing', explanation: 'ep36RetryExplainMissing', retryRequired: true }
     }
-    return { ...r, understood: false, errorType: 'nonsense', confidence: 0.85, retryRequired: true }
+    return nonsense(r)
   }
 
   if (arrangeStage === 'place') {
     if (hasPlace) {
       r.completedObjective = true
       r.confidence = 0.88
-      r.praiseKey = r.masteryEvidence.independent ? 'ep37PraiseIndependent' : 'ep37PraiseGuided'
-      return r
+      return withPraise(r, praisePrefix || 'ep37')
     }
     return { ...r, understood: false, errorType: 'missing_place', confidence: 0.6, conclusive: false, retryRequired: true }
   }
@@ -266,8 +278,7 @@ export function evaluateArrangeMeeting(text, { independent = false, arrangeStage
   if (hasDay && hasTime && hasPlace) {
     r.completedObjective = true
     r.confidence = 0.93
-    r.praiseKey = r.masteryEvidence.independent ? 'ep38PraiseIndependent' : 'ep38PraiseGuided'
-    return r
+    return withPraise(r, praisePrefix || 'ep38')
   }
   const missingParts = [!hasDay && 'day', !hasTime && 'time', !hasPlace && 'place'].filter(Boolean)
   if (missingParts.length < 3) {
@@ -275,7 +286,7 @@ export function evaluateArrangeMeeting(text, { independent = false, arrangeStage
       priorityCorrection: 'ep37RetryExplainConfirm', explanation: 'ep37RetryExplainConfirm', retryRequired: true,
       naturalVersion: `missing: ${missingParts.join(', ')}` }
   }
-  return { ...r, understood: false, errorType: 'nonsense', confidence: 0.85, retryRequired: true }
+  return nonsense(r)
 }
 
 /* ---------------------------------------------------------------------- */
@@ -288,6 +299,19 @@ export const A1_ARC6_ARC7_EVALUATORS = {
   state_ability: evaluateStateAbility,
   ask_ability: evaluateAskAbility,
   arrange_meeting: evaluateArrangeMeeting,
+}
+
+/*
+ * `evaluateAskHowToSay` is deliberately NOT in `A1_ARC6_ARC7_EVALUATORS`
+ * above — it is not dispatched by `evalKind` (episode 35's step declares
+ * `evalKind: 'repair_request'`, the EXISTING shared intent, with
+ * `repairKind: 'ask_how_to_say'`), so it is keyed by `repairKind` here
+ * instead. `check-a1-arc6-arc7-structure.mjs`'s suggestionEn self-check
+ * reads this map for `repair_request` steps specifically, so the one step
+ * that actually exercises this function is not silently skipped.
+ */
+export const A1_ARC6_ARC7_REPAIR_KIND_EVALUATORS = {
+  ask_how_to_say: evaluateAskHowToSay,
 }
 
 /* fold is re-exported so a future consumer never has to import it from two places */

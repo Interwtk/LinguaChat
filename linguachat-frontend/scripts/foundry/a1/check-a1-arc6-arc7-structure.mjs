@@ -23,13 +23,27 @@ const ARC_IDS = ['what_you_can_do', 'making_arrangements']
 const blueprintArcs = blueprint.arcs.filter((a) => ARC_IDS.includes(a.id))
 const blueprintEpisodes = blueprint.episodes.filter((e) => ARC_IDS.includes(e.arc))
 
-const { A1_ARC6_ARC7_ARCS, A1_ARC6_ARC7_EPISODES } = await import(join(FRONTEND, 'src/learning/levels/a1/index.js'))
-const { A1_ARC6_ARC7_NEW_INTENTS, A1_ARC6_ARC7_EVALUATORS } = await import(join(FRONTEND, 'src/learning/levels/a1/evaluators.js'))
-const { A1_ARC6_ARC7_I18N_EN } = await import(join(FRONTEND, 'src/learning/levels/a1/i18n/en.js'))
+const [
+  { A1_ARC6_ARC7_ARCS, A1_ARC6_ARC7_EPISODES },
+  evaluatorsModule,
+  { A1_ARC6_ARC7_I18N_EN },
+] = await Promise.all([
+  import(join(FRONTEND, 'src/learning/levels/a1/index.js')),
+  import(join(FRONTEND, 'src/learning/levels/a1/evaluators.js')),
+  import(join(FRONTEND, 'src/learning/levels/a1/i18n/en.js')),
+])
+const { A1_ARC6_ARC7_NEW_INTENTS, A1_ARC6_ARC7_EVALUATORS, A1_ARC6_ARC7_REPAIR_KIND_EVALUATORS } = evaluatorsModule
 
 let failures = 0
 const fail = (msg) => { failures += 1; console.error(`FAIL: ${msg}`) }
 const warn = (msg) => console.warn(`WARN: ${msg}`)
+
+/* flattens a step tree (mini_story/branch steps may nest their own `steps`) */
+function collectSteps(steps) {
+  const out = []
+  for (const step of steps) { out.push(step); if (step.steps) out.push(...collectSteps(step.steps)) }
+  return out
+}
 
 /* ---- 1. Counts: 2 arcs, 5 episodes, episode numbers 34-38 ---- */
 if (A1_ARC6_ARC7_ARCS.length !== 2) fail(`expected 2 arcs, got ${A1_ARC6_ARC7_ARCS.length}`)
@@ -72,8 +86,8 @@ for (const ep of A1_ARC6_ARC7_EPISODES) {
   if (ep.secondaryCanDoId) {
     if (!blueprintCanDoIds.has(ep.secondaryCanDoId)) fail(`episode "${ep.id}" secondaryCanDoId "${ep.secondaryCanDoId}" is not in a1-blueprint.json#canDos`)
     canDoIdsCredited.add(ep.secondaryCanDoId)
-    // the secondary canDo must actually be credited by a step, not just declared
-    const creditingStep = (ep.steps || []).some((s) => s.creditsCanDoId === ep.secondaryCanDoId)
+    // the secondary canDo must actually be credited by a step, not just declared (nested steps included)
+    const creditingStep = collectSteps(ep.steps || []).some((s) => s.creditsCanDoId === ep.secondaryCanDoId)
     if (!creditingStep) fail(`episode "${ep.id}" declares secondaryCanDoId "${ep.secondaryCanDoId}" but no step credits it via creditsCanDoId`)
   }
 }
@@ -107,11 +121,6 @@ for (const ep of A1_ARC6_ARC7_EPISODES) {
 const SHIPPED_A1_EVAL_KINDS = new Set([
   'introduction', 'ask_wellbeing', 'express_like', 'repair_request', 'close_encounter',
 ])
-function collectSteps(steps) {
-  const out = []
-  for (const step of steps) { out.push(step); if (step.steps) out.push(...collectSteps(step.steps)) }
-  return out
-}
 const evalKindsUsed = new Set()
 for (const ep of A1_ARC6_ARC7_EPISODES) for (const s of collectSteps(ep.steps || [])) if (s.evalKind) evalKindsUsed.add(s.evalKind)
 for (const k of evalKindsUsed) {
@@ -131,6 +140,33 @@ for (const ep of A1_ARC6_ARC7_EPISODES) {
   }
 }
 
+/*
+ * 7b. Every step's own `suggestionEn` must actually pass ITS OWN evaluator
+ * with ITS OWN declared subtype options (`abilityForm`/`arrangeStage`) — a
+ * step whose displayed model answer the paired evaluator would refuse is a
+ * real content/evaluator-pairing bug (found once by review; held here
+ * permanently rather than left as an ad hoc check).
+ */
+for (const ep of A1_ARC6_ARC7_EPISODES) {
+  for (const s of collectSteps(ep.steps || [])) {
+    if (s.type !== 'free_reply' || !s.suggestionEn || !s.evalKind) continue
+    // repair_request is dispatched by repairKind (evaluateAskHowToSay is not in A1_ARC6_ARC7_EVALUATORS
+    // — see that map's own header comment); everything else is keyed by evalKind directly.
+    const fn = s.evalKind === 'repair_request'
+      ? A1_ARC6_ARC7_REPAIR_KIND_EVALUATORS[s.repairKind]
+      : A1_ARC6_ARC7_EVALUATORS[s.evalKind]
+    if (!fn) continue
+    const opts = {}
+    if (s.abilityForm) opts.abilityForm = s.abilityForm
+    if (s.arrangeStage) opts.arrangeStage = s.arrangeStage
+    if (s.praisePrefix) opts.praisePrefix = s.praisePrefix
+    const r = fn(s.suggestionEn, opts)
+    if (r.completedObjective !== true) {
+      fail(`episode "${ep.id}" step "${s.instructionKey}" suggestionEn "${s.suggestionEn}" is refused by its own evaluator (evalKind "${s.evalKind}", opts ${JSON.stringify(opts)}, errorType "${r.errorType}")`)
+    }
+  }
+}
+
 /* ---- 8. i18n key completeness: every *Key referenced (episode-level and step-level, incl. option "key") has a draft value ---- */
 function collectKeys(obj, out) {
   if (obj == null) return
@@ -145,6 +181,36 @@ const referencedKeys = []
 for (const ep of A1_ARC6_ARC7_EPISODES) collectKeys(ep, referencedKeys)
 const missingKeys = [...new Set(referencedKeys)].filter((k) => !(k in A1_ARC6_ARC7_I18N_EN))
 for (const k of missingKeys) fail(`i18n key "${k}" is referenced by arc 6/7 content but has no draft value in i18n/en.js`)
+
+/*
+ * 8b. i18n keys the EVALUATORS themselves emit at runtime (praiseKey /
+ * priorityCorrection / explanation) must also have a draft value — content's
+ * own *Key fields are not the only source of a real i18n key, and a
+ * "complete key set" claim that only checks the JSON would miss these
+ * (found once by review; scanning evaluators.js's own source statically
+ * rather than trusting a hand-maintained list keeps this honest as the
+ * functions change).
+ */
+{
+  const evaluatorsSrc = readFileSync(join(FRONTEND, 'src/learning/levels/a1/evaluators.js'), 'utf8')
+  const emittedKeys = new Set()
+  for (const m of evaluatorsSrc.matchAll(/'(ep\d+(?:Praise|RetryExplain)\w*)'/g)) emittedKeys.add(m[1])
+  // praiseKey is built as `${prefix}PraiseIndependent`/`${prefix}PraiseGuided` via withPraise(r, prefix);
+  // the literal prefixes passed at each call site are what this regex below picks up.
+  for (const m of evaluatorsSrc.matchAll(/withPraise\(r,\s*(?:praisePrefix\s*\|\|\s*)?'(ep\d+)'\)/g)) {
+    emittedKeys.add(`${m[1]}PraiseIndependent`)
+    emittedKeys.add(`${m[1]}PraiseGuided`)
+  }
+  // episode 37's own praisePrefix override (declared in content, not literal in evaluators.js)
+  for (const ep of A1_ARC6_ARC7_EPISODES) {
+    for (const s of collectSteps(ep.steps || [])) {
+      if (s.praisePrefix) { emittedKeys.add(`${s.praisePrefix}PraiseIndependent`); emittedKeys.add(`${s.praisePrefix}PraiseGuided`) }
+    }
+  }
+  const missingEmittedKeys = [...emittedKeys].filter((k) => !(k in A1_ARC6_ARC7_I18N_EN))
+  for (const k of missingEmittedKeys) fail(`evaluator-emitted i18n key "${k}" (praiseKey/priorityCorrection/explanation) has no draft value in i18n/en.js`)
+  console.log(`check-a1-arc6-arc7-structure: ${emittedKeys.size} evaluator-emitted keys checked`)
+}
 
 /* ---- 9. patterns declared by the blueprint for these 2 arcs must be granted as a gardenItem somewhere ---- */
 const blueprintPatternIds = new Set(blueprintArcs.flatMap((a) => a.newPatterns))

@@ -127,12 +127,13 @@
       {
         "type": "free_reply",
         "speaker": "lingua",
-        "promptEn": "Can you come on Saturday morning?",
+        "promptEn": "Can you come swimming on Saturday morning?",
         "instructionKey": "ep36AbilityInstruction",
         "evalKind": "state_ability",
-        "suggestionEn": "Yes, I can.",
+        "suggestionEn": "Yes, I can swim.",
         "itemIds": [
-          "can_ability_pattern"
+          "can_ability_pattern",
+          "swim"
         ]
       },
       {
@@ -296,7 +297,7 @@
         "promptEn": "Actually, sorry — can we meet at the cinema instead?",
         "instructionKey": "ep37ChangeInstruction",
         "evalKind": "arrange_meeting",
-        "arrangeStage": "confirm",
+        "arrangeStage": "place",
         "suggestionEn": "OK, see you at the cinema.",
         "itemIds": [
           "the_cinema",
@@ -321,6 +322,7 @@
         "instructionKey": "ep37ConfirmInstruction",
         "evalKind": "arrange_meeting",
         "arrangeStage": "confirm",
+        "praisePrefix": "ep37",
         "itemIds": [
           "day_of_week_pattern",
           "arrange_pattern",
@@ -332,6 +334,7 @@
         "instructionKey": "ep37FinalInstruction",
         "evalKind": "arrange_meeting",
         "arrangeStage": "confirm",
+        "praisePrefix": "ep37",
         "itemIds": [
           "arrange_pattern"
         ]
