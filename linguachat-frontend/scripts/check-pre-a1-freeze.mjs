@@ -26,6 +26,7 @@ import { a2ItemIds } from '../src/learning/curriculum/a2Map.js'
 import { b1ItemIds } from '../src/learning/curriculum/b1Map.js'
 import { b2ItemIds } from '../src/learning/curriculum/b2Map.js'
 import { c1ItemIds } from '../src/learning/curriculum/c1Map.js'
+import { c2ItemIds } from '../src/learning/curriculum/c2Map.js'
 import { createLearnerModel } from '../src/learning/engine/learnerModel.js'
 import { buildSessionPlan, DURATION_ORDER } from '../src/learning/engine/session.js'
 import { derivePreA1Readiness } from '../src/learning/curriculum/readiness.js'
@@ -108,17 +109,18 @@ const FROZEN = [
    * counted here and fail, which is the failure we want.
    */
   /*
-   * A2's, B1's, B2's and C1's own catalogue shares are subtracted the same
-   * way A1's is, so a level added above A1 cannot inflate Pre-A1's count
-   * either — the identical bug class this file's own comment already names
-   * for A1.
+   * A2's, B1's, B2's, C1's and C2's own catalogue shares are subtracted the
+   * same way A1's is, so a level added above A1 cannot inflate Pre-A1's
+   * count either — the identical bug class this file's own comment already
+   * names for A1.
    */
   const a1Own = new Set([...a1ItemIds()].filter(id => !preA1Referenced.has(id)))
   const a2Own = new Set([...a2ItemIds()].filter(id => !preA1Referenced.has(id) && !a1Own.has(id)))
   const b1Own = new Set([...b1ItemIds()].filter(id => !preA1Referenced.has(id) && !a1Own.has(id) && !a2Own.has(id)))
   const b2Own = new Set([...b2ItemIds()].filter(id => !preA1Referenced.has(id) && !a1Own.has(id) && !a2Own.has(id) && !b1Own.has(id)))
   const c1Own = new Set([...c1ItemIds()].filter(id => !preA1Referenced.has(id) && !a1Own.has(id) && !a2Own.has(id) && !b1Own.has(id) && !b2Own.has(id)))
-  const preA1Vocab = SEED_VOCAB.filter(v => !a1Own.has(v.id) && !a2Own.has(v.id) && !b1Own.has(v.id) && !b2Own.has(v.id) && !c1Own.has(v.id))
+  const c2Own = new Set([...c2ItemIds()].filter(id => !preA1Referenced.has(id) && !a1Own.has(id) && !a2Own.has(id) && !b1Own.has(id) && !b2Own.has(id) && !c1Own.has(id)))
+  const preA1Vocab = SEED_VOCAB.filter(v => !a1Own.has(v.id) && !a2Own.has(v.id) && !b1Own.has(v.id) && !b2Own.has(v.id) && !c1Own.has(v.id) && !c2Own.has(v.id))
   assert.equal(preA1Vocab.length, 72, `the level ships 72 entries of language, found ${preA1Vocab.length}`)
   const byKind = preA1Vocab.reduce((acc, v) => ({ ...acc, [v.kind]: (acc[v.kind] || 0) + 1 }), {})
   assert.deepEqual(byKind, { word: 30, pattern: 12, phrase: 30 },
