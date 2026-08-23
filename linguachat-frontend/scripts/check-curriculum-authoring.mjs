@@ -117,12 +117,13 @@ import { BLOCK_CANDIDATES } from '../src/learning/engine/formatChoice.js'
 let groups = 0
 const ok = () => { groups += 1 }
 
-/* Every episode with runtime content, in curriculum order: Pre-A1, then A1 arc by arc, then A2, then B1, then B2, then C1. */
+/* Every episode with runtime content, in curriculum order: Pre-A1, then A1 arc by arc, then A2, then B1, then B2, then C1, then C2. */
 const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7,
   ...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7,
   ...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN,
   ...B2_ARC1, ...B2_ARC2, ...B2_ARC3, ...B2_ARC4, ...B2_ARC5, ...B2_ARC6,
-  ...C1_ARC1, ...C1_ARC2, ...C1_ARC3, ...C1_ARC4, ...C1_ARC5, ...C1_ARC6, ...C1_ARC_7]
+  ...C1_ARC1, ...C1_ARC2, ...C1_ARC3, ...C1_ARC4, ...C1_ARC5, ...C1_ARC6, ...C1_ARC_7,
+  ...C2_ARC1, ...C2_ARC2, ...C2_ARC3, ...C2_ARC4, ...C2_ARC5, ...C2_ARC6, ...C2_ARC7, ...C2_ARC8]
 const A1_EPISODES = [...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7]
 const A2_EPISODES = [...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7]
 const B1_EPISODES = [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN]
@@ -158,7 +159,8 @@ const canDoIntentMapOf = (episode) =>
       : episode?.level === 'B1' ? B1_CAN_DO_INTENT
         : episode?.level === 'B2' ? B2_CAN_DO_INTENT
           : episode?.level === 'C1' ? C1_CAN_DO_INTENT
-            : CAN_DO_INTENT)
+            : episode?.level === 'C2' ? C2_CAN_DO_INTENT
+              : CAN_DO_INTENT)
 const canDoIntentOf = (episode) => intentOf(canDoIntentMapOf(episode)[episode?.canDoId])
 /*
  * Is this can-do id one the level's map actually KNOWS about — as opposed to
@@ -214,13 +216,14 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
 
   const levelId = levelIdOfEpisode(episode)
   if (!levelId) say(`declares level "${episode.level}", which the level registry does not know`)
-  /* the arcs OF THIS LEVEL: `ARCS` is Pre-A1's list and A1/A2/B1/B2/C1 each declare their own */
+  /* the arcs OF THIS LEVEL: `ARCS` is Pre-A1's list and A1/A2/B1/B2/C1/C2 each declare their own */
   const declaredArcs = episode.level === 'A1' ? A1_RUNTIME_ARCS
     : episode.level === 'A2' ? A2_RUNTIME_ARCS
       : episode.level === 'B1' ? B1_RUNTIME_ARCS
         : episode.level === 'B2' ? B2_RUNTIME_ARCS
           : episode.level === 'C1' ? C1_RUNTIME_ARCS
-            : ARCS
+            : episode.level === 'C2' ? C2_RUNTIME_ARCS
+              : ARCS
   if (!declaredArcs.includes(episode.arc)) say(`belongs to arc "${episode.arc}", which is not a declared arc`)
   if (!episode.canDoId) say('teaches no capability')
   else if (!canDoKnownFor(episode)) say(`teaches "${episode.canDoId}", which the curriculum map does not know`)

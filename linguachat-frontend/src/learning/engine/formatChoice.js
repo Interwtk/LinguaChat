@@ -362,6 +362,29 @@ const OBJECTIVE_FORMATS = {
   negotiate_outcome: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
   clarify_ambiguity: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
   track_discourse: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  /*
+   * C2's 10 exclusive new intents. A real grep across `levels/c2/arcs/**`
+   * finds only `free_reply`/`recall` steps carry an `evalKind` at all — every
+   * `choice`/`comprehension`/`completion`/`model`/`scene` step is either
+   * distractor-recognition or purely receptive, none of them dispatched
+   * through `evaluateFree`/this table — so every intent below gets the same
+   * default five-format set every should-relevant, pure-open-production
+   * B1/B2/C1 objective already uses. No `word_order`/`choice`/`mini_story`
+   * entries: C2 authors none of those as a graded step for any of its own
+   * intents. `qualify_claim`/`synthesize_viewpoints`/`shift_register` are NOT
+   * re-declared here — same reason `MODEL_ANSWER`'s own C2 comment
+   * (`components/session/SessionRunner.jsx`) gives.
+   */
+  extract_argument: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  identify_stance: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  reformulate_for_audience: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  recognize_implication: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  develop_argument: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  rebut_counterargument: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  sustain_coherence: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  repair_at_intention_level: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  edit_for_precision: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  mediate_disagreement: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
 }
 
 /*
