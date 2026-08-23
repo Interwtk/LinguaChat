@@ -886,7 +886,7 @@ def test_translation_and_meaning_still_work():
 
 
 # ---------- fifth arc: repair and closing ----------
-REPAIR_KINDS = ["signal_nonunderstanding", "repeat", "slow_down", "ask_meaning", "ask_how_to_say", "ask_to_spell"]
+REPAIR_KINDS = ["signal_nonunderstanding", "repeat", "slow_down", "ask_meaning", "ask_how_to_say", "ask_to_spell", "ask_for_precision"]
 
 
 def _repair(text, kind="signal_nonunderstanding"):
@@ -1042,6 +1042,32 @@ def test_a_half_built_ask_to_spell_question_gets_the_frame(text):
 
 def test_a_repetition_request_is_a_different_repair_on_an_ask_to_spell_turn():
     r = _ask_to_spell("Can you repeat, please?")
+    assert r["completed_objective"] is False
+    assert r["error_type"] == "other_repair"
+
+
+# ---------- C1 negotiation_and_complexity: a targeted question that resolves genuine ambiguity ----------
+def _ask_for_precision(text):
+    return evaluate_deterministic(_payload(expected_intent="repair_request",
+                                          repair_kind="ask_for_precision", learner_response=text))
+
+
+@pytest.mark.parametrize("text", ["When you say soon, do you mean today, or later this week?",
+                                  "Could you be more specific about the timing?",
+                                  "Just to make sure I understood, could you be more specific about that?"])
+def test_asking_for_precision_is_accepted(text):
+    assert _ask_for_precision(text)["completed_objective"] is True, text
+
+
+@pytest.mark.parametrize("text", ["More specific?", "What do you mean?"])
+def test_a_half_built_ask_for_precision_question_gets_the_frame(text):
+    r = _ask_for_precision(text)
+    assert r["completed_objective"] is False, text
+    assert r["error_type"] == "incomplete_precision_question"
+
+
+def test_a_repetition_request_is_a_different_repair_on_an_ask_for_precision_turn():
+    r = _ask_for_precision("Can you repeat, please?")
     assert r["completed_objective"] is False
     assert r["error_type"] == "other_repair"
 

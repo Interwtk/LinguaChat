@@ -23,7 +23,7 @@
  * switch somewhere else.
  */
 import {
-  PRE_A1, A1, A2, B1, B2, getLevel, isKnownLevel, isLevelAvailable, hasRuntimeContent,
+  PRE_A1, A1, A2, B1, B2, C1, getLevel, isKnownLevel, isLevelAvailable, hasRuntimeContent,
   episodesOfLevel, levelIdOfEpisodeId, playableLevelId,
 } from './levels.js'
 
@@ -122,6 +122,23 @@ const CONTENT_LOADERS = {
     talking_around_a_subject: () => import('../levels/b2/arcs/b2Arc4TalkingAroundASubjectContent.js'),
     reading_between_the_lines: () => import('../levels/b2/arcs/b2Arc5ReadingBetweenTheLinesContent.js'),
     the_long_conversation: () => import('../levels/b2/arcs/b2Arc6TheLongConversationContent.js'),
+  },
+  [C1]: {
+    /*
+     * C1's seven arcs arrived from `LC-CONT-C1` fully authored at once, same
+     * shape as A2/B1/B2's own arrival. Like B2, C1's own chunk-naming
+     * wrapper already lives inside `levels/c1/arcs/**`
+     * (`c1Arc{N}*Content.js`, each re-exporting `getEpisode`), so the loader
+     * points there directly rather than through a second, redundant
+     * top-level `episodes/c1Arc{N}Content.js` wrapper.
+     */
+    abstract_argument: () => import('../levels/c1/arcs/c1Arc1AbstractArgumentContent.js'),
+    register_and_diplomacy: () => import('../levels/c1/arcs/c1Arc2RegisterAndDiplomacyContent.js'),
+    synthesis_and_mediation: () => import('../levels/c1/arcs/c1Arc3SynthesisAndMediationContent.js'),
+    nuance_and_implication: () => import('../levels/c1/arcs/c1Arc4NuanceAndImplicationContent.js'),
+    extended_structured_discourse: () => import('../levels/c1/arcs/c1Arc5ExtendedStructuredDiscourseContent.js'),
+    negotiation_and_complexity: () => import('../levels/c1/arcs/c1Arc6NegotiationAndComplexityContent.js'),
+    sustained_interaction: () => import('../levels/c1/arcs/c1Arc7SustainedInteractionContent.js'),
   },
 }
 

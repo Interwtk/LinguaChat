@@ -98,8 +98,14 @@ const read = (p) => readFileSync(new URL('../' + p, import.meta.url), 'utf8')
    * identical shape every prior strategy already used, not a new intent. The
    * guard this assertion protects — repair stays ONE intent, never a family —
    * still holds; only the count of strategies sharing it grew.
+   *
+   * The ceiling moved from 6 to 7 on purpose: C1 (`negotiation_and_complexity`,
+   * `clarify_an_ambiguous_instruction_precisely`) adds `ask_for_precision`,
+   * per that capability's own `intentReuse` ("repair_request with a new
+   * repairKind subtype: ask_for_precision") — the identical shape every
+   * prior strategy already used. Same guard, same reason it still holds.
    */
-  assert.ok(REPAIR_KINDS.length <= 6,
+  assert.ok(REPAIR_KINDS.length <= 7,
     `${REPAIR_KINDS.length} repair strategies is a phrase list; the guard is one intent per function`)
 
   // every repair step names its strategy; nothing else does

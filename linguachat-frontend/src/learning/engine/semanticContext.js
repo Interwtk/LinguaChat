@@ -115,6 +115,22 @@ export const SEMANTIC_TYPES = [
    * reconciliation rather than a live consumer today.
    */
   'problem',         // broken, lost, the wrong one
+  /*
+   * C1. `negotiated_item` (`levels/c1/c1Patterns.js`'s `C1_SEMANTIC_TYPES`,
+   * resolved by `LC-FND-002`/`LC-AUD-001` F9 — see that file's own comment)
+   * generalizes `problem` above: every `problem` value (a delay, damage, a
+   * wrong item, a missed appointment) is a valid `negotiated_item`, plus
+   * C1's own problem-free negotiable objects (a meeting slot, a compromise
+   * plan) that `problem` alone must keep rejecting. Registered as its own,
+   * separate type rather than collapsing into `problem` for exactly that
+   * reason — a `problem`-scoped capability must never accept a calendar slot
+   * as if it were a malfunction. No C1 evaluator currently reads a
+   * personalised value through this pipeline (see the `INTENT_SLOTS`
+   * comment below — C1's negotiation turns are literal English), so this is
+   * a design-record registration, the same status `day` had until A1 arc 7
+   * gave it a real consumer.
+   */
+  'negotiated_item', // a returned purchase, a shared calendar conflict, a compromise plan
 ]
 
 export const isSemanticType = (type) => SEMANTIC_TYPES.includes(type)
@@ -343,6 +359,32 @@ export const INTENT_SLOTS = {
   report_third_party_opinion: [],
   shift_register: [],
   soften_or_intensify_claim: [],
+  /*
+   * C1's 11 new (non-repair) intents (`levels/c1/c1Intents.js`). Same reason
+   * as every level above: a grep across `levels/c1/arcs/**` finds no
+   * `{placeholder}` personalization at all — every prompt/target is literal
+   * English. `track_discourse` and `adapt_register` each cover more than one
+   * C1 can-do, distinguished by the step's own `canDoId` rather than a
+   * `subtype` field (unlike B2's capstone) — see `levels/c1/evaluators.js`'s
+   * own header for why, and its `canDoForIntent()` novelty-resolution
+   * limitation this leaves as a documented gap. `clarify_ambiguity` is
+   * listed too, explicitly empty like every intent above — it dispatches
+   * through `repair_request` for its evaluator (see `responseEvaluation.js`'s
+   * `REPAIR_KINDS` comment), but it is still C1's own literal evalKind in
+   * real episode content, so it needs its own declared (empty) slot.
+   */
+  state_structured_argument: [],
+  qualify_claim: [],
+  concede_point: [],
+  adapt_register: [],
+  hedge_statement: [],
+  summarize_message: [],
+  synthesize_viewpoints: [],
+  infer_meaning: [],
+  extended_explanation: [],
+  negotiate_outcome: [],
+  clarify_ambiguity: [],
+  track_discourse: [],
 }
 
 export const slotsFor = (intent) => INTENT_SLOTS[intent] || []
