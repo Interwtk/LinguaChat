@@ -26,7 +26,7 @@ import { dirname, resolve } from 'node:path'
 
 import { calculatePlacementResult } from '../src/services/placement.js'
 import {
-  PRE_A1, A1, A2, B1, B2, LEVEL_IDS, playableLevelId, labelKeyOfLevel, isLevelAvailable,
+  PRE_A1, A1, A2, B1, B2, C1, LEVEL_IDS, playableLevelId, labelKeyOfLevel, isLevelAvailable,
   availableLevelIds, episodesOfLevel, getLevel,
 } from '../src/learning/curriculum/levels.js'
 import { COURSE_NODE_BY_LEVEL_ID } from '../src/data/mockData.js'
@@ -142,7 +142,7 @@ async function main() {
   //    LC-INT-001, per its own task description — not an invention this
   //    check should still be guarding against), and none of A1/A2/B1/B2 is open.
   {
-    assert.deepEqual(LEVEL_IDS, [PRE_A1, A1, A2, B1, B2])
+    assert.deepEqual(LEVEL_IDS, [PRE_A1, A1, A2, B1, B2, C1])
     assert.equal(getLevel(A1).available, false)
     assert.equal(getLevel(A2).available, false)
     assert.equal(getLevel(B1).available, false)

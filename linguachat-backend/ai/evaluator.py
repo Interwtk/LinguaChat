@@ -528,7 +528,15 @@ def _cafe_order(text: str, thing: str) -> dict:
 # `ask_to_spell` is A2 arc 5's sixth strategy (`spell_a_name_for_a_booking`'s
 # own `intentReuse`) — the learner asking the OTHER speaker to spell something,
 # the mirror image of `spell_word` where the learner spells their own name.
-_REPAIR_KINDS = ("signal_nonunderstanding", "repeat", "slow_down", "ask_meaning", "ask_how_to_say", "ask_to_spell")
+#
+# `ask_for_precision` is C1's seventh strategy
+# (`clarify_an_ambiguous_instruction_precisely`'s own `intentReuse`) — a
+# targeted follow-up that resolves genuine ambiguity, not a generic
+# "I don't understand". Unlike the six strategies above, C1's content
+# dispatches this directly as `kind == "clarify_ambiguity"` (matching
+# c1.json's own literal evaluationIntents id), routed here with
+# `repair_kind` forced — mirroring `responseEvaluation.js`'s own routing.
+_REPAIR_KINDS = ("signal_nonunderstanding", "repeat", "slow_down", "ask_meaning", "ask_how_to_say", "ask_to_spell", "ask_for_precision")
 _NOT_UNDERSTAND = re.compile(
     r"\b(i (really )?(don'?t|do not) understand|i (don'?t|do not) get (it|that)"
     r"|i'?m (not sure|lost)|i didn'?t (understand|catch|get) (that|it))\b")
@@ -559,6 +567,13 @@ _ASK_TO_SPELL = re.compile(
     r"\b((can|could) you (please )?spell (that|it|this)|please spell (that|it|this)"
     r"|spell (that|it|this),? please)\b")
 _ASK_TO_SPELL_LOOSE = re.compile(r"\bspell\b")
+# C1's seventh strategy: "When you say X, do you mean...?" / "Could you be
+# more specific about...?" — mirrors `responseEvaluation.js`'s
+# `ASK_FOR_PRECISION`/`ASK_FOR_PRECISION_LOOSE` exactly.
+_ASK_FOR_PRECISION = re.compile(
+    r"\b(when you say\b[\s\S]{0,40}\bdo you mean\b|could you be more specific about"
+    r"|just to make sure i understood|to make sure i (got|understood) that right)\b")
+_ASK_FOR_PRECISION_LOOSE = re.compile(r"\b(more specific|do you mean|make sure i understood)\b")
 _DONT_KNOW = re.compile(r"\b(i (don'?t|do not) know|no idea|dunno)\b")
 _BARE_CONFUSION = re.compile(r"^(what|sorry|huh|eh|again|pardon|excuse me)[?!.]*$")
 _SORRY = re.compile(r"\b(sorry|excuse me|pardon)\b")
@@ -572,6 +587,7 @@ _REPAIR_TARGET = {
     "ask_meaning": "What does “{word}” mean?",
     "ask_how_to_say": "How do you say that in English?",
     "ask_to_spell": "Can you spell that, please?",
+    "ask_for_precision": "Could you be more specific about that?",
 }
 
 
@@ -590,11 +606,13 @@ def _repair_request(text: str, repair_kind: str, meaning_word: str = "") -> dict
     asked_meaning = bool(_ASK_MEANING.search(n)) or bool(_ASK_MEANING_VARIANT.search(n))
     asked_how_to_say = bool(_ASK_HOW_TO_SAY.search(n))
     asked_to_spell = bool(_ASK_TO_SPELL.search(n))
+    asked_for_precision = bool(_ASK_FOR_PRECISION.search(n))
     done = (signalled if kind == "signal_nonunderstanding"
             else asked_repeat if kind == "repeat"
             else asked_slow if kind == "slow_down"
             else asked_meaning if kind == "ask_meaning"
-            else asked_how_to_say if kind == "ask_how_to_say" else asked_to_spell)
+            else asked_how_to_say if kind == "ask_how_to_say"
+            else asked_to_spell if kind == "ask_to_spell" else asked_for_precision)
     if done:
         return _base(completed_objective=True, natural_version=natural,
                      accepted_variant=normalize(natural) != n, confidence=0.95)
@@ -615,8 +633,13 @@ def _repair_request(text: str, repair_kind: str, meaning_word: str = "") -> dict
         return _base(error_type="incomplete_ask_to_spell", retry_required=True,
                      natural_version=natural, confidence=0.7)
 
+    # same idea, C1's targeted clarifying question with nothing named yet
+    if kind == "ask_for_precision" and _ASK_FOR_PRECISION_LOOSE.search(n):
+        return _base(error_type="incomplete_precision_question", retry_required=True,
+                     natural_version=natural, confidence=0.7)
+
     # a different repair: the conversation was kept alive, which is the skill
-    if signalled or asked_repeat or asked_slow or asked_meaning or asked_how_to_say or asked_to_spell:
+    if signalled or asked_repeat or asked_slow or asked_meaning or asked_how_to_say or asked_to_spell or asked_for_precision:
         return _base(error_type="other_repair", retry_required=True, natural_version=natural, confidence=0.9)
 
     # "I don't know." answers a question instead of reporting a breakdown

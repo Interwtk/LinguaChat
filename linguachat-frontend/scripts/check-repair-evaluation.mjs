@@ -57,6 +57,13 @@ const close = (text) => evaluateCloseEncounter(text, {})
       'Can you spell that, please?', 'Can you spell that?', 'Could you spell it, please?',
       'Please spell that.', 'Spell that, please.', 'Can you please spell this?',
     ],
+    /* C1's seventh strategy: a targeted question that resolves genuine ambiguity */
+    ask_for_precision: [
+      "When you say soon, do you mean today, or later this week?",
+      'Could you be more specific about the timing?',
+      'Just to make sure I understood, could you be more specific about that?',
+      'To make sure I understood that right, when you say later, do you mean this week?',
+    ],
   }
   for (const kind of REPAIR_KINDS) {
     assert.ok(accepted[kind], `${kind} has no accepted list`)
@@ -82,6 +89,8 @@ const close = (text) => evaluateCloseEncounter(text, {})
     ask_how_to_say: ['How do you say?', 'How do you spell?'],
     /* the reach for "Can you spell that, please?" that never got there */
     ask_to_spell: ['Spell?', 'Can you spell'],
+    /* the reach for a targeted clarifying question that never named what */
+    ask_for_precision: ['More specific?', 'What do you mean?'],
   }
   /*
    * The error name differs for arc 2's, arc 6's and A2 arc 5's strategies, and
@@ -90,7 +99,7 @@ const close = (text) => evaluateCloseEncounter(text, {})
    */
   const PARTIAL_ERROR = {
     ask_meaning: 'incomplete_meaning_question', ask_how_to_say: 'incomplete_how_to_say',
-    ask_to_spell: 'incomplete_ask_to_spell',
+    ask_to_spell: 'incomplete_ask_to_spell', ask_for_precision: 'incomplete_precision_question',
   }
   for (const kind of REPAIR_KINDS) {
     for (const text of partial[kind]) {

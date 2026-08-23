@@ -549,7 +549,27 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
       }
       return ''
     })()
-    const evalCtx = { name, independent, turnContext, place, partner: aboutPerson, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(step.timeForm ? { timeForm: step.timeForm } : {}), ...(usualTime ? { usualTime } : {}), ...(stepCount ? { targetCount: stepCount } : {}), /* arc 4: which public place the turn asks about, and which relation its situation implies */ ...(step.placeName ? { placeName: step.placeName } : {}), ...(step.relationHint ? { relationHint: step.relationHint } : {}), /* arc 6/7: ability polarity, arrangement stage, and which episode's confirm-stage praise applies */ ...(step.abilityForm ? { abilityForm: step.abilityForm } : {}), ...(step.arrangeStage ? { arrangeStage: step.arrangeStage } : {}), ...(step.praisePrefix ? { praisePrefix: step.praisePrefix } : {}), /* A2 arc 5: the name a spell_word turn asks the learner to spell */ ...(step.expectedSpelling ? { expected: step.expectedSpelling } : {}), /* B1: narrative form, problem tone, future-intent situation, and conversational role — see hybridEvaluation.js's own comment on these four fields */ ...(step.narrativeForm ? { narrativeForm: step.narrativeForm } : {}), ...(step.tone ? { tone: step.tone } : {}), ...(step.situationForm ? { situationForm: step.situationForm } : {}), ...(step.role ? { role: step.role } : {}), /* B2: capstone/register subtype, register-check target, discourse-coherence opt-in and the resolved mediation source text — see hybridEvaluation.js's own comment on these fields */ ...(step.subtype ? { subtype: step.subtype } : {}), ...(step.registerCheck ? { registerCheck: step.registerCheck } : {}), ...(step.expectedRegister ? { expectedRegister: step.expectedRegister } : {}), ...(step.discourseCoherenceCheck ? { discourseCoherenceCheck: step.discourseCoherenceCheck } : {}), ...(sourceText ? { sourceText } : {}) }
+    /*
+     * C1's `refer_back_to_earlier_discourse` (`track_discourse`, canDoId
+     * `refer_back_to_earlier_discourse`) needs something real to check a
+     * reference against — a bounded, per-episode-run buffer of the turn text
+     * already exchanged in THIS episode, the same "walk the real steps, do
+     * not fabricate content" discipline `sourceText` above already commits
+     * to. Every preceding step's `promptEn` (what Lingua actually said) plus
+     * this step's own `promptEn` (which usually names the specific thing to
+     * refer back to) make up the buffer; `levels/c1/evaluators.js`'s
+     * `evaluateTrackDiscourse` checks a reply's content words for overlap
+     * against it, never a claim of verified factual accuracy.
+     */
+    const conversationHistory = (() => {
+      if (evalKind !== 'track_discourse' || !ep?.steps) return []
+      const idx = ep.steps.indexOf(step)
+      if (idx < 0) return []
+      return ep.steps.slice(0, idx + 1)
+        .map((s) => s?.promptEn || s?.sceneEn || s?.target || '')
+        .filter(Boolean)
+    })()
+    const evalCtx = { name, independent, turnContext, place, partner: aboutPerson, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(step.timeForm ? { timeForm: step.timeForm } : {}), ...(usualTime ? { usualTime } : {}), ...(stepCount ? { targetCount: stepCount } : {}), /* arc 4: which public place the turn asks about, and which relation its situation implies */ ...(step.placeName ? { placeName: step.placeName } : {}), ...(step.relationHint ? { relationHint: step.relationHint } : {}), /* arc 6/7: ability polarity, arrangement stage, and which episode's confirm-stage praise applies */ ...(step.abilityForm ? { abilityForm: step.abilityForm } : {}), ...(step.arrangeStage ? { arrangeStage: step.arrangeStage } : {}), ...(step.praisePrefix ? { praisePrefix: step.praisePrefix } : {}), /* A2 arc 5: the name a spell_word turn asks the learner to spell */ ...(step.expectedSpelling ? { expected: step.expectedSpelling } : {}), /* B1: narrative form, problem tone, future-intent situation, and conversational role — see hybridEvaluation.js's own comment on these four fields */ ...(step.narrativeForm ? { narrativeForm: step.narrativeForm } : {}), ...(step.tone ? { tone: step.tone } : {}), ...(step.situationForm ? { situationForm: step.situationForm } : {}), ...(step.role ? { role: step.role } : {}), /* B2: capstone/register subtype, register-check target, discourse-coherence opt-in and the resolved mediation source text — see hybridEvaluation.js's own comment on these fields */ ...(step.subtype ? { subtype: step.subtype } : {}), ...(step.registerCheck ? { registerCheck: step.registerCheck } : {}), ...(step.expectedRegister ? { expectedRegister: step.expectedRegister } : {}), ...(step.discourseCoherenceCheck ? { discourseCoherenceCheck: step.discourseCoherenceCheck } : {}), ...(sourceText ? { sourceText } : {}), /* C1: which of a multi-canDo intent's can-dos this step teaches, and the referable-discourse buffer — see hybridEvaluation.js's own comment on these fields */ ...(step.canDoId ? { canDoId: step.canDoId } : {}), ...(conversationHistory.length ? { conversationHistory } : {}) }
     const preview = evaluateFree(evalKind, text, evalCtx)
     const willEscalate = shouldEscalate(preview)
 
@@ -583,6 +603,8 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
         expectedRegister: step.expectedRegister || undefined,
         discourseCoherenceCheck: step.discourseCoherenceCheck || undefined,
         sourceText: sourceText || undefined,
+        canDoId: step.canDoId || undefined,
+        conversationHistory: conversationHistory.length ? conversationHistory : undefined,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
         targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion, independent,
         previousAttempts: attemptsRef.current, turnContext,

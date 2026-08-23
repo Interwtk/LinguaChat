@@ -31,6 +31,7 @@ const base = (independent) => ({
   masteryEvidence: { independent: Boolean(independent), scaffoldUsed: !independent },
   registerAppropriateness: { checked: false, appropriate: null, expectedRegister: null, detectedRegister: null },
   discourseCoherence: { checked: false, coherent: null, clausesEvaluated: null, incoherenceType: null },
+  conversationStateTracking: { checked: false, correct: null, failureType: null },
 })
 
 export function normalize(text) {

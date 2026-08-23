@@ -337,6 +337,31 @@ const OBJECTIVE_FORMATS = {
   report_third_party_opinion: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
   shift_register: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
   soften_or_intensify_claim: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  /*
+   * C1's 12 new intents. A real grep across `levels/c1/arcs/**` finds only
+   * `free_reply`/`recall` steps authored (every arc's own README section 1
+   * says so explicitly: "zero renderer work is needed... only evaluator/
+   * dispatch wiring"), so no `word_order`/`choice` entries the way some of
+   * B2's fourteen got — same default five-format set every should-relevant,
+   * pure-open-production B2/B1 objective already uses. `mini_story` is
+   * absent for the same reason B2's own comment above gives: no C1 arc uses
+   * a `mini_story` step (`README.md` section 4/`core-engine-handoff.md`
+   * section 7 both say so explicitly).
+   */
+  state_structured_argument: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  /* arc 1 episode 2 (`qualify_a_claim_precisely`) authors a real `word_order` step for `hedging_modal_pattern`. */
+  qualify_claim: ['guided_reply', 'word_order', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  concede_point: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  adapt_register: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  hedge_statement: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  summarize_message: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  synthesize_viewpoints: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  infer_meaning: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  /* arc 5 episodes 21/22 (`produce_an_extended_structured_explanation`/`use_cohesive_devices_across_a_turn`) author real `choice` steps recognizing a flat-list/contradictory shape. */
+  extended_explanation: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay', 'choice'],
+  negotiate_outcome: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  clarify_ambiguity: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
+  track_discourse: ['guided_reply', 'fill_blank', 'free_reply', 'recall', 'roleplay'],
 }
 
 /*

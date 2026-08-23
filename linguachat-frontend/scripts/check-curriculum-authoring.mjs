@@ -73,8 +73,20 @@ import { B2_ARC4, getB2Arc4Episode } from '../src/learning/levels/b2/arcs/b2Arc4
 import { B2_ARC5, getB2Arc5Episode } from '../src/learning/levels/b2/arcs/b2Arc5ReadingBetweenTheLinesContent.js'
 import { B2_ARC6, getB2Arc6Episode } from '../src/learning/levels/b2/arcs/b2Arc6TheLongConversationContent.js'
 import { B2_RUNTIME_ARCS, B2_CAN_DO_INTENT } from '../src/learning/curriculum/b2Map.js'
+/*
+ * C1's arcs are imported straight from `levels/c1/arcs/**` — same reason
+ * B2's own comment above gives.
+ */
+import { C1_ARC1, getC1Arc1Episode } from '../src/learning/levels/c1/arcs/c1Arc1AbstractArgumentContent.js'
+import { C1_ARC2, getC1Arc2Episode } from '../src/learning/levels/c1/arcs/c1Arc2RegisterAndDiplomacyContent.js'
+import { C1_ARC3, getC1Arc3Episode } from '../src/learning/levels/c1/arcs/c1Arc3SynthesisAndMediationContent.js'
+import { C1_ARC4, getC1Arc4Episode } from '../src/learning/levels/c1/arcs/c1Arc4NuanceAndImplicationContent.js'
+import { C1_ARC5, getC1Arc5Episode } from '../src/learning/levels/c1/arcs/c1Arc5ExtendedStructuredDiscourseContent.js'
+import { C1_ARC6, getC1Arc6Episode } from '../src/learning/levels/c1/arcs/c1Arc6NegotiationAndComplexityContent.js'
+import { C1_ARC_7, getC1Arc7Episode } from '../src/learning/levels/c1/arcs/c1Arc7SustainedInteractionContent.js'
+import { C1_RUNTIME_ARCS, C1_CAN_DO_INTENT } from '../src/learning/curriculum/c1Map.js'
 import {
-  PRE_A1, A1, A2, B1, B2, LEVELS, getLevel, episodesOfLevel, runtimeEpisodeCount, isLevelComplete,
+  PRE_A1, A1, A2, B1, B2, C1, LEVELS, getLevel, episodesOfLevel, runtimeEpisodeCount, isLevelComplete,
   levelIdOfEpisode, levelIdOfEpisodeId, playableLevelId, availableLevelIds, isKnownLevel,
 } from '../src/learning/curriculum/levels.js'
 import { episodeRequest, loadEpisodeContent, hasContentLoader, REFUSED } from '../src/learning/curriculum/episodeContent.js'
@@ -90,15 +102,17 @@ import { BLOCK_CANDIDATES } from '../src/learning/engine/formatChoice.js'
 let groups = 0
 const ok = () => { groups += 1 }
 
-/* Every episode with runtime content, in curriculum order: Pre-A1, then A1 arc by arc, then A2, then B1, then B2. */
+/* Every episode with runtime content, in curriculum order: Pre-A1, then A1 arc by arc, then A2, then B1, then B2, then C1. */
 const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7,
   ...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7,
   ...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN,
-  ...B2_ARC1, ...B2_ARC2, ...B2_ARC3, ...B2_ARC4, ...B2_ARC5, ...B2_ARC6]
+  ...B2_ARC1, ...B2_ARC2, ...B2_ARC3, ...B2_ARC4, ...B2_ARC5, ...B2_ARC6,
+  ...C1_ARC1, ...C1_ARC2, ...C1_ARC3, ...C1_ARC4, ...C1_ARC5, ...C1_ARC6, ...C1_ARC_7]
 const A1_EPISODES = [...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7]
 const A2_EPISODES = [...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7]
 const B1_EPISODES = [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN]
 const B2_EPISODES = [...B2_ARC1, ...B2_ARC2, ...B2_ARC3, ...B2_ARC4, ...B2_ARC5, ...B2_ARC6]
+const C1_EPISODES = [...C1_ARC1, ...C1_ARC2, ...C1_ARC3, ...C1_ARC4, ...C1_ARC5, ...C1_ARC6, ...C1_ARC_7]
 const runtimeEpisode = (id) =>
   getEpisode(id) || getA1Arc1Episode(id) || getA1Arc2Episode(id) || getA1Arc3Episode(id) || getA1Arc4Episode(id) || getA1Arc5Episode(id)
     || getA1Arc6Episode(id) || getA1Arc7Episode(id)
@@ -108,6 +122,8 @@ const runtimeEpisode = (id) =>
     || getB1Arc6Episode(id) || getB1ArcSevenEpisode(id)
     || getB2Arc1Episode(id) || getB2Arc2Episode(id) || getB2Arc3Episode(id) || getB2Arc4Episode(id) || getB2Arc5Episode(id)
     || getB2Arc6Episode(id)
+    || getC1Arc1Episode(id) || getC1Arc2Episode(id) || getC1Arc3Episode(id) || getC1Arc4Episode(id) || getC1Arc5Episode(id)
+    || getC1Arc6Episode(id) || getC1Arc7Episode(id)
 
 /*
  * Which intent evidences a can-do, asked of the map that owns the level. A
@@ -125,7 +141,8 @@ const canDoIntentMapOf = (episode) =>
     : episode?.level === 'A2' ? A2_CAN_DO_INTENT
       : episode?.level === 'B1' ? B1_CAN_DO_INTENT
         : episode?.level === 'B2' ? B2_CAN_DO_INTENT
-          : CAN_DO_INTENT)
+          : episode?.level === 'C1' ? C1_CAN_DO_INTENT
+            : CAN_DO_INTENT)
 const canDoIntentOf = (episode) => intentOf(canDoIntentMapOf(episode)[episode?.canDoId])
 /*
  * Is this can-do id one the level's map actually KNOWS about — as opposed to
@@ -181,12 +198,13 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
 
   const levelId = levelIdOfEpisode(episode)
   if (!levelId) say(`declares level "${episode.level}", which the level registry does not know`)
-  /* the arcs OF THIS LEVEL: `ARCS` is Pre-A1's list and A1/A2/B1/B2 each declare their own */
+  /* the arcs OF THIS LEVEL: `ARCS` is Pre-A1's list and A1/A2/B1/B2/C1 each declare their own */
   const declaredArcs = episode.level === 'A1' ? A1_RUNTIME_ARCS
     : episode.level === 'A2' ? A2_RUNTIME_ARCS
       : episode.level === 'B1' ? B1_RUNTIME_ARCS
         : episode.level === 'B2' ? B2_RUNTIME_ARCS
-          : ARCS
+          : episode.level === 'C1' ? C1_RUNTIME_ARCS
+            : ARCS
   if (!declaredArcs.includes(episode.arc)) say(`belongs to arc "${episode.arc}", which is not a declared arc`)
   if (!episode.canDoId) say('teaches no capability')
   else if (!canDoKnownFor(episode)) say(`teaches "${episode.canDoId}", which the curriculum map does not know`)
@@ -277,11 +295,13 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
   assert.equal(A2_EPISODES.length, runtimeEpisodeCount(A2), 'and so is A2')
   assert.equal(B1_EPISODES.length, runtimeEpisodeCount(B1), 'and so is B1')
   assert.equal(B2_EPISODES.length, runtimeEpisodeCount(B2), 'and so is B2')
+  assert.equal(C1_EPISODES.length, runtimeEpisodeCount(C1), 'and so is C1')
   console.log(`\n  ${RUNTIME_EPISODES.length} runtime episodes satisfy the authoring contract`
     + ` (${ARC.length} Pre-A1, ${A1_EPISODES.length} A1 across ${A1_RUNTIME_ARCS.length} arcs,`
     + ` ${A2_EPISODES.length} A2 across ${A2_RUNTIME_ARCS.length} arcs,`
     + ` ${B1_EPISODES.length} B1 across ${B1_RUNTIME_ARCS.length} arcs,`
-    + ` ${B2_EPISODES.length} B2 across ${B2_RUNTIME_ARCS.length} arcs)`)
+    + ` ${B2_EPISODES.length} B2 across ${B2_RUNTIME_ARCS.length} arcs,`
+    + ` ${C1_EPISODES.length} C1 across ${C1_RUNTIME_ARCS.length} arcs)`)
   ok()
 }
 
@@ -292,14 +312,16 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
   const cases = [
     ['a duplicate id', broken({}), { allEpisodes: [...ARC, valid] }, /more than one episode/],
     /*
-     * A fabricated, still-unregistered level id — `B2` itself was this
-     * placeholder until this very task registered it, the same transition
-     * `A2`/`B1` each made in their own turn. `C1` is the next level in
-     * sequence and genuinely unregistered as of this task; when C1 is wired,
-     * whoever does it must move this placeholder again — same "edit on
-     * purpose" precedent as every level before it.
+     * A fabricated, permanently-unregistered level id. `B2` was this
+     * placeholder until `LC-INT-001` registered it, and `C1` inherited the
+     * same churn immediately after — the same transition `A2`/`B1` each
+     * made in their own turn, and the same "edit on purpose" precedent
+     * `check-a1-arc1/2/3.mjs` already resolved for its own equivalent
+     * fixture (see that file's own comment): a source-wide literal with no
+     * plausible real level id is immune to every future level's own
+     * registration, so this line never needs to move again.
      */
-    ['an unknown level', broken({ level: 'C1' }), {}, /level registry does not know/],
+    ['an unknown level', broken({ level: 'zz_unregistered_level' }), {}, /level registry does not know/],
     ['an unknown arc', broken({ arc: 'arc7' }), {}, /not a declared arc/],
     ['no capability', broken({ canDoId: undefined }), {}, /teaches no capability/],
     ['an unknown capability', broken({ canDoId: 'talk_about_daily_routine' }), {}, /curriculum map does not know/],
@@ -338,7 +360,7 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
 
 /* ---- 3) the level registry says what it means ---- */
 {
-  assert.deepEqual(LEVELS.map(l => l.id), [PRE_A1, A1, A2, B1, B2], 'the registry knows Pre-A1, A1, A2, B1 and B2, in order')
+  assert.deepEqual(LEVELS.map(l => l.id), [PRE_A1, A1, A2, B1, B2, C1], 'the registry knows Pre-A1, A1, A2, B1, B2 and C1, in order')
   /*
    * `implemented` became `contentStatus` when A1's first arc landed: a boolean
    * could not distinguish "has content" from "is finished", and A1 is now the
@@ -359,6 +381,9 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
   assert.equal(getLevel(B2).contentStatus, 'partial', 'B2 has runtime content for all six designed arcs, and is still not complete/available until its own completion gate says so')
   assert.equal(isLevelComplete(B2), false, 'a partially built level is never complete')
   assert.equal(getLevel(B2).available, false, 'B2 may not be opened')
+  assert.equal(getLevel(C1).contentStatus, 'partial', 'C1 has runtime content for all seven designed arcs, and is still not complete/available until its own completion gate says so')
+  assert.equal(isLevelComplete(C1), false, 'a partially built level is never complete')
+  assert.equal(getLevel(C1).available, false, 'C1 may not be opened')
   assert.deepEqual(availableLevelIds(), [PRE_A1], 'exactly one level is available today')
   assert.equal(playableLevelId(), PRE_A1)
 
@@ -383,6 +408,9 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
     'and the arcs it holds are exactly the ones declared as implemented, in order')
   assert.equal(runtimeEpisodeCount(B2), B2_EPISODES.length, 'B2 holds exactly its implemented arcs')
   assert.deepEqual([...new Set(B2_EPISODES.map(ep => ep.arc))], B2_RUNTIME_ARCS,
+    'and the arcs it holds are exactly the ones declared as implemented, in order')
+  assert.equal(runtimeEpisodeCount(C1), C1_EPISODES.length, 'C1 holds exactly its implemented arcs')
+  assert.deepEqual([...new Set(C1_EPISODES.map(ep => ep.arc))], C1_RUNTIME_ARCS,
     'and the arcs it holds are exactly the ones declared as implemented, in order')
   assert.equal(runtimeEpisodeCount(PRE_A1), 17, 'Pre-A1 is seventeen episodes')
   ok()
@@ -485,6 +513,12 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
   }
   assert.equal(hasContentLoader(B2), false, 'and the level must not have a catch-all loader')
   assert.equal(hasContentLoader(B2, unplannedArc), false, 'an undeclared arc must not resolve')
+  /* C1's seven arcs, same completeness proof as A1/B2's own above */
+  for (const arc of C1_RUNTIME_ARCS) {
+    assert.equal(hasContentLoader(C1, arc), true, `${arc} is implemented and must be loadable`)
+  }
+  assert.equal(hasContentLoader(C1), false, 'and the level must not have a catch-all loader')
+  assert.equal(hasContentLoader(C1, unplannedArc), false, 'an undeclared arc must not resolve')
   ok()
 }
 

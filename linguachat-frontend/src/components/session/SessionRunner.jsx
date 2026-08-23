@@ -187,6 +187,27 @@ const MODEL_ANSWER = {
   report_third_party_opinion: () => 'She said she thought the later time would work better for everyone.',
   shift_register: () => 'Could you possibly let me know when the report will be ready?',
   soften_or_intensify_claim: () => "It's sort of a problem, to be honest — I'd say it needs looking at soon.",
+  /*
+   * C1. Added for the same reason every level's own block above states: an
+   * unlisted objective falls back to the introduction answer. `track_discourse`
+   * covers three can-dos (topic-shift/refer-back/closing-summary); its one
+   * fallback model answer here is the topic-shift shape, matching how a
+   * canDoId-less review block would resolve in `levels/c1/evaluators.js`
+   * (see that file's own header on the `canDoForIntent()` limitation this
+   * leaves — a soft scaffold-generosity gap, not a grading one).
+   */
+  state_structured_argument: () => "What really matters here is that forcing everyone back full-time ignores how differently people work best, because a lot of the team does its most focused work early morning.",
+  qualify_claim: () => "It's arguably the more efficient option, though that's not necessarily true for every team.",
+  concede_point: () => "I take your point that it costs more upfront, but it still pays for itself within a year, so I'd still go with it.",
+  adapt_register: () => 'Would it be possible to get some feedback on this before Friday?',
+  hedge_statement: () => "I don't want to overstate this, but I think the current draft still needs some work before it goes out.",
+  summarize_message: () => 'Basically, the repair will happen next week, but only if we cover the cost of the part ourselves.',
+  synthesize_viewpoints: () => 'Both reviews agree the location is great, but they disagree on the noise — one calls it lively, the other calls it too loud.',
+  infer_meaning: () => "What they probably mean is that they're avoiding the catch-up, not that they're genuinely too busy.",
+  extended_explanation: () => "So, basically, what happened is the delivery got rescheduled twice. As a result, I had to rearrange my whole morning.",
+  negotiate_outcome: () => 'What if we split the difference — you get the earlier slot next week, and I get it the week after?',
+  clarify_ambiguity: () => 'Could you be more specific about the timing — are we talking hours or days?',
+  track_discourse: () => 'Anyway, before I forget — speaking of which, that reminds me, I should tell you about the trip too.',
 }
 
 /* The three ways out, and what a turn practising each one asks for. */
@@ -313,6 +334,19 @@ const PROMPT = {
   report_third_party_opinion: () => 'What did the other person think about it?',
   shift_register: () => 'Could you write a message asking them to fix this?',
   soften_or_intensify_claim: () => 'That message reads a bit harsh. Can you soften it slightly?',
+  // C1 — a case to argue, a claim to qualify, a register to adapt, a conversation to sustain
+  state_structured_argument: () => 'People disagree on whether the office should require full-time attendance. What do you think, and why?',
+  qualify_claim: () => 'Is the online option really the better one? Give a precise, honest answer.',
+  concede_point: () => 'Someone makes a fair point against your position. How do you respond, honestly?',
+  adapt_register: () => 'You need to ask for something. Who are you asking, and how does that change your wording?',
+  hedge_statement: () => "You need to raise something difficult without causing a fight. What do you say?",
+  summarize_message: () => 'A long message just came in. Someone new to it needs the essential point.',
+  synthesize_viewpoints: () => 'Two sources disagree about the same thing. What do they agree and disagree on?',
+  infer_meaning: () => "Someone gives a vague, evasive answer. What do you think they actually mean?",
+  extended_explanation: () => 'Explain, in one organized turn, exactly what happened and why.',
+  negotiate_outcome: () => 'Two people both need the same thing. What would you propose?',
+  clarify_ambiguity: () => "Someone just said something genuinely ambiguous. What do you ask to resolve it?",
+  track_discourse: () => "The conversation has covered a few different things so far. Keep it going.",
 }
 
 /*

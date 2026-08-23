@@ -106,6 +106,22 @@ import {
   evaluateSummarizeForThirdParty, evaluateReformulateForClarity, evaluateReportThirdPartyOpinion,
   evaluateShiftRegister, evaluateSoftenOrIntensifyClaim,
 } from '../levels/b2/evaluators.js'
+/*
+ * C1's 11 new (non-repair) intents were authored the same way, against the
+ * same `base()` contract, in `levels/c1/evaluators.js` — see that file's own
+ * header for how it implements `registerAppropriateness`/`discourseCoherence`
+ * as REQUIRED (not should-relevant, B2's own use of the same two fields) and
+ * the new `conversationStateTracking` dimension. The 12th C1 intent,
+ * `clarify_ambiguity`, has no entry here — it dispatches through
+ * `evaluateRepairRequest` above with a forced `repairKind`, per
+ * `REPAIR_KINDS`'s own comment.
+ */
+import {
+  evaluateStateStructuredArgument, evaluateQualifyClaim, evaluateConcedePoint,
+  evaluateAdaptRegister, evaluateHedgeStatement, evaluateSummarizeMessage,
+  evaluateSynthesizeViewpoints, evaluateInferMeaning, evaluateExtendedExplanation,
+  evaluateNegotiateOutcome, evaluateTrackDiscourse,
+} from '../levels/c1/evaluators.js'
 
 // Normalize: lowercase, unify apostrophes, drop emojis/symbols, keep letters
 // (incl. accents) + digits + spaces + apostrophes, collapse spaces.
@@ -154,6 +170,13 @@ function hasNameToken(normalized, name) {
  * explicitly when that capability's own evaluator is written. This is the
  * shared contract, not the scoring logic — see the design doc for how a
  * future B2/C1 evaluator should populate it.
+ *
+ * `conversationStateTracking` is C1-only (core-engine-requirements.md
+ * section 3, kept deliberately separate from `discourseCoherence` — "coherent
+ * within a turn" vs. "accurately references an earlier turn" are different
+ * mechanisms). Same shared-default treatment: every evaluator gets
+ * `checked: false` here, and only `refer_back_to_earlier_discourse`'s own
+ * evaluator (`levels/c1/evaluators.js`) populates it.
  */
 const base = (independent) => ({
   source: 'deterministic',
@@ -172,6 +195,7 @@ const base = (independent) => ({
   masteryEvidence: { independent: Boolean(independent), scaffoldUsed: !independent },
   registerAppropriateness: { checked: false, appropriate: null, expectedRegister: null, detectedRegister: null },
   discourseCoherence: { checked: false, coherent: null, clausesEvaluated: null, incoherenceType: null },
+  conversationStateTracking: { checked: false, correct: null, failureType: null },
 })
 
 /* ---- Episode 1 & 3: introduce yourself ---- */
@@ -525,7 +549,18 @@ const namesAThing = (n) => /\p{L}/u.test(requestedThing(n))
  * something unclear (a confirmation code), the mirror image of `spell_word`
  * where the learner spells their own name.
  */
-export const REPAIR_KINDS = ['signal_nonunderstanding', 'repeat', 'slow_down', 'ask_meaning', 'ask_how_to_say', 'ask_to_spell']
+/*
+ * C1 adds a seventh, per `clarify_an_ambiguous_instruction_precisely`'s own
+ * `intentReuse` field (`c1Intents.js`): "repair_request with a new
+ * repairKind subtype: ask_for_precision" — the same convention every repair
+ * kind above already establishes. Unlike the six kinds above, C1's authored
+ * content dispatches this directly as `evalKind: 'clarify_ambiguity'`
+ * (matching `c1.json#/evaluationIntents`'s own literal id, per
+ * `c1Capabilities.js`'s own comment on `C1_CAN_DO_INTENT`), so `evaluateFree`
+ * routes that case here with `repairKind` forced to `ask_for_precision`
+ * rather than reading it off the step.
+ */
+export const REPAIR_KINDS = ['signal_nonunderstanding', 'repeat', 'slow_down', 'ask_meaning', 'ask_how_to_say', 'ask_to_spell', 'ask_for_precision']
 
 const NOT_UNDERSTAND = /\b(i (really )?(don'?t|do not) understand|i (don'?t|do not) get (it|that)|i'?m (not sure|lost)|i didn'?t (understand|catch|get) (that|it))\b/
 const NOT_UNDERSTAND_LOOSE = /\b((don'?t|do not|not) understand|no understand|understand not)\b/
@@ -570,6 +605,17 @@ const ASK_HOW_TO_SAY_LOOSE = /\bhow\s+(do\s+you\s+)?(say|spell)\b/
  */
 const ASK_TO_SPELL = /\b((can|could) you (please )?spell (that|it|this)|please spell (that|it|this)|spell (that|it|this),? please)\b/
 const ASK_TO_SPELL_LOOSE = /\bspell\b/
+/*
+ * C1's seventh repair kind — a TARGETED follow-up that resolves genuine
+ * ambiguity, not a generic "I don't understand". "When you say X, do you
+ * mean...?" and "Could you be more specific about...?" both name the
+ * specific thing that is unclear, which is what distinguishes this from a
+ * bare `signal_nonunderstanding`/"What?" (c1Intents.js's own `nearMiss`
+ * note: "a generic repair request that does not target the specific
+ * ambiguity").
+ */
+const ASK_FOR_PRECISION = /\b(when you say\b[\s\S]{0,40}\bdo you mean\b|could you be more specific about|just to make sure i understood|to make sure i (got|understood) that right)\b/
+const ASK_FOR_PRECISION_LOOSE = /\b(more specific|do you mean|make sure i understood)\b/
 /* "I don't know" answers a question; it does not report a breakdown. */
 const DONT_KNOW = /\b(i (don'?t|do not) know|no idea|dunno)\b/
 const BARE_CONFUSION = /^(what|sorry|huh|eh|again|pardon|excuse me)[?!.]*$/
@@ -921,6 +967,7 @@ export function evaluateRepairRequest(text, { independent = false, repairKind = 
     ask_meaning: `What does “${word}” mean?`,
     ask_how_to_say: 'How do you say that in English?',
     ask_to_spell: 'Can you spell that, please?',
+    ask_for_precision: 'Could you be more specific about that?',
   }
   r.naturalVersion = TARGET[kind]
   if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep13RetryPromptEmpty' }
@@ -931,6 +978,7 @@ export function evaluateRepairRequest(text, { independent = false, repairKind = 
   const askedMeaning = ASK_MEANING.test(n) || ASK_MEANING_VARIANT.test(n)
   const askedHowToSay = ASK_HOW_TO_SAY.test(n)
   const askedToSpell = ASK_TO_SPELL.test(n)
+  const askedForPrecision = ASK_FOR_PRECISION.test(n)
 
   /* the requested strategy, done properly */
   const done = kind === 'signal_nonunderstanding' ? signalled
@@ -938,7 +986,8 @@ export function evaluateRepairRequest(text, { independent = false, repairKind = 
       : kind === 'slow_down' ? askedSlow
         : kind === 'ask_meaning' ? askedMeaning
           : kind === 'ask_how_to_say' ? askedHowToSay
-            : askedToSpell
+            : kind === 'ask_to_spell' ? askedToSpell
+              : askedForPrecision
   if (done) {
     r.completedObjective = true
     r.confidence = 0.95
@@ -976,11 +1025,21 @@ export function evaluateRepairRequest(text, { independent = false, repairKind = 
   }
 
   /*
+   * A reach for a targeted clarifying question that never named what — "more
+   * specific?", "what do you mean?" with nothing pinned down. Mirrors the
+   * three loose checks above.
+   */
+  if (kind === 'ask_for_precision' && ASK_FOR_PRECISION_LOOSE.test(n)) {
+    return { ...r, errorType: 'incomplete_precision_question', confidence: 0.7,
+      priorityCorrection: 'c1RetryExplainAskForPrecision', explanation: 'c1RetryExplainAskForPrecision', retryRequired: true }
+  }
+
+  /*
    * A different repair. The learner kept the conversation alive, which is the
    * whole skill — so this is understood and praised, and the turn simply says
    * what it was practising.
    */
-  if (signalled || askedRepeat || askedSlow || askedMeaning || askedHowToSay || askedToSpell) {
+  if (signalled || askedRepeat || askedSlow || askedMeaning || askedHowToSay || askedToSpell || askedForPrecision) {
     return { ...r, errorType: 'other_repair', confidence: 0.9, priorityCorrection: 'ep14RetryExplainOther', explanation: 'ep14RetryExplainOther', retryRequired: true, retryPrompt: `ep13RetryPrompt_${kind}` }
   }
 
@@ -1665,6 +1724,25 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'report_third_party_opinion': return evaluateReportThirdPartyOpinion(text, ctx)
     case 'shift_register': return evaluateShiftRegister(text, ctx)
     case 'soften_or_intensify_claim': return evaluateSoftenOrIntensifyClaim(text, ctx)
+    /*
+     * C1 — implementations authored in `levels/c1/evaluators.js`.
+     * `clarify_ambiguity` is C1's own literal evaluationIntents id
+     * (c1.json, mirrored in `c1Capabilities.js`'s `C1_CAN_DO_INTENT`
+     * comment) but its evaluator MECHANISM is a `repair_request` subtype —
+     * see `REPAIR_KINDS`'s own comment on `ask_for_precision` above.
+     */
+    case 'clarify_ambiguity': return evaluateRepairRequest(text, { ...ctx, repairKind: 'ask_for_precision' })
+    case 'state_structured_argument': return evaluateStateStructuredArgument(text, ctx)
+    case 'qualify_claim': return evaluateQualifyClaim(text, ctx)
+    case 'concede_point': return evaluateConcedePoint(text, ctx)
+    case 'adapt_register': return evaluateAdaptRegister(text, ctx)
+    case 'hedge_statement': return evaluateHedgeStatement(text, ctx)
+    case 'summarize_message': return evaluateSummarizeMessage(text, ctx)
+    case 'synthesize_viewpoints': return evaluateSynthesizeViewpoints(text, ctx)
+    case 'infer_meaning': return evaluateInferMeaning(text, ctx)
+    case 'extended_explanation': return evaluateExtendedExplanation(text, ctx)
+    case 'negotiate_outcome': return evaluateNegotiateOutcome(text, ctx)
+    case 'track_discourse': return evaluateTrackDiscourse(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }

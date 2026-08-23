@@ -133,6 +133,25 @@ const PRAISE = {
   report_third_party_opinion: { independent: 'b2PraiseReportIndependent', helped: 'b2PraiseReportHelped' },
   shift_register: { independent: 'b2PraiseRegisterIndependent', helped: 'b2PraiseRegisterHelped' },
   soften_or_intensify_claim: { independent: 'b2PraiseSoftenIndependent', helped: 'b2PraiseSoftenHelped' },
+  /*
+   * C1's 12 new intents. Same reason as every level above — reached ONLY on
+   * the remote-escalation path, where `levels/c1/evaluators.js`'s own
+   * `praiseKey` (set on every conclusive local accept) was not set.
+   * `clarify_ambiguity` is dispatched through `repair_request` (see
+   * `responseEvaluation.js`'s `REPAIR_KINDS` comment) and reuses that
+   * intent's own `ep13Praise*` keys above, not a new pair here.
+   */
+  state_structured_argument: { independent: 'c1PraiseArgumentIndependent', helped: 'c1PraiseArgumentHelped' },
+  qualify_claim: { independent: 'c1PraiseQualifyIndependent', helped: 'c1PraiseQualifyHelped' },
+  concede_point: { independent: 'c1PraiseConcedeIndependent', helped: 'c1PraiseConcedeHelped' },
+  adapt_register: { independent: 'c1PraiseRegisterIndependent', helped: 'c1PraiseRegisterHelped' },
+  hedge_statement: { independent: 'c1PraiseHedgeIndependent', helped: 'c1PraiseHedgeHelped' },
+  summarize_message: { independent: 'c1PraiseSummaryIndependent', helped: 'c1PraiseSummaryHelped' },
+  synthesize_viewpoints: { independent: 'c1PraiseSynthesizeIndependent', helped: 'c1PraiseSynthesizeHelped' },
+  infer_meaning: { independent: 'c1PraiseInferIndependent', helped: 'c1PraiseInferHelped' },
+  extended_explanation: { independent: 'c1PraiseExtendedIndependent', helped: 'c1PraiseExtendedHelped' },
+  negotiate_outcome: { independent: 'c1PraiseNegotiateIndependent', helped: 'c1PraiseNegotiateHelped' },
+  track_discourse: { independent: 'c1PraiseSustainIndependent', helped: 'c1PraiseSustainHelped' },
 }
 
 /*
@@ -260,6 +279,18 @@ function buildRemotePayload(params, kind) {
     expected_register: params.expectedRegister ?? '',
     discourse_coherence_check: Boolean(params.discourseCoherenceCheck),
     source_text: params.sourceText ?? '',
+    /*
+     * C1's own fields, same bug class as every field above: without
+     * `step_can_do_id` a remote judge cannot tell `track_discourse`'s
+     * topic-shift turn from its refer-back or closing-summary one (C1's
+     * content distinguishes these by the step's own `canDoId`, not a
+     * `subtype` field — see `levels/c1/evaluators.js`'s own header), and
+     * without `conversation_history` a `refer_back_to_earlier_discourse`
+     * turn cannot be judged against anything the conversation actually
+     * established so far.
+     */
+    step_can_do_id: params.canDoId ?? '',
+    conversation_history: Array.isArray(params.conversationHistory) ? params.conversationHistory : [],
     interest_id: params.interestId ?? null,
     native_language: params.nativeLanguage ?? 'en',
     interface_language: params.interfaceLanguage ?? 'en',
@@ -272,7 +303,7 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', abilityForm = '', arrangeStage = '', praisePrefix = '', expected = '', narrativeForm = '', tone = '', situationForm = '', role = '', subtype = '', registerCheck = false, expectedRegister = '', discourseCoherenceCheck = false, sourceText = '', signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', abilityForm = '', arrangeStage = '', praisePrefix = '', expected = '', narrativeForm = '', tone = '', situationForm = '', role = '', subtype = '', registerCheck = false, expectedRegister = '', discourseCoherenceCheck = false, sourceText = '', canDoId = '', conversationHistory = [], signal, remote } = params
   const kind = step?.evalKind
   /*
    * Whether this counts as unaided production, used only to choose the wording
@@ -361,6 +392,16 @@ export async function evaluateEpisodeResponse(params) {
     ...(expectedRegister ? { expectedRegister } : {}),
     ...(discourseCoherenceCheck ? { discourseCoherenceCheck } : {}),
     ...(sourceText ? { sourceText } : {}),
+    /*
+     * C1's own fields: without `canDoId` here, `track_discourse`/
+     * `adapt_register`'s LOCAL re-evaluation (the verdict actually shown for
+     * every locally-conclusive turn) cannot tell which of several can-dos
+     * this step teaches and falls back to the wrong branch's judgment; without
+     * `conversationHistory`, `refer_back_to_earlier_discourse` has nothing to
+     * check a reference against. Same bug class as every field above.
+     */
+    ...(canDoId ? { canDoId } : {}),
+    ...(conversationHistory.length ? { conversationHistory } : {}),
   })
 
   // Conclusive local verdict (closed step, clear accept, empty, clear failure).
