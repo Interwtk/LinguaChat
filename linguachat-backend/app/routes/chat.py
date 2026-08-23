@@ -75,7 +75,7 @@ def _safe_tutor_preferences(preferences: dict) -> dict:
 
 
 class ChatRequest(BaseModel):
-    message: str = Field(min_length=1)
+    message: str = Field(min_length=1, max_length=4000)
     level: LanguageLevel = LanguageLevel.A1
     mode: str | None = None
     history: list[dict] = Field(default_factory=list)

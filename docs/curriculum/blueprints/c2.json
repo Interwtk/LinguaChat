@@ -581,7 +581,8 @@
       "earliestLevelNeeded": "c2",
       "proposedSharedBehaviour": "Allow one episode/task completion to log multiple distinct delayedRetrieval evidence records against different canDoIds.",
       "regressionRisk": "Learner-model schema change must be additive only; existing single-capability episodes must record identically.",
-      "testsRequired": ["learner-model schema tests proving old single-capability episodes are unaffected"]
+      "testsRequired": ["learner-model schema tests proving old single-capability episodes are unaffected"],
+      "note": "RESOLVED by LC-INT-001: learnerModel.js's recordDelayedRetrievalEvidence(model, canDoIds, ...) accepts an array and logs a distinct delayedRetrievalAt timestamp per capability id from one completion, additive to the existing single-capability path; wired live from EpisodeShell.jsx, not dead code. See docs/curriculum/final-supervisor-acceptance.md section 3."
     }
   ],
 
