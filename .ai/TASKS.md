@@ -17,12 +17,18 @@ _(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
-_(none — the queue is open. Do not seed a new serial `LC-CURR-006`/`LC-CURR-007`
-for A1 arcs 6–7: the merged Curriculum Foundry pipeline
-(`.ai/foundry/tasks.json`, `.ai/foundry/README.md`) now owns remaining A1
-curriculum work through its `LC-CONT-A1` lane, gated behind
-`LC-FND-002`/`LC-AUD-001`/the evidence-ready supervisor gates. A serial task
-here would duplicate or conflict with that lane's write scope.)_
+- [LC-PED-002] Final all-arcs learning acceptance gate before A1 can open
+  owner:  unclaimed
+  branch: none
+  why:    the full A1 curriculum is now implemented, integrated, supervisor-accepted and release-hardened, but A1 must still be re-proven end-to-end before any availability decision.
+  done:   on the final integrated/hardened curriculum head, re-derive every Pre-A1 + A1 arc and run at
+          least 20 distinct learner journeys per arc plus longitudinal new-learner
+          journeys through A1 exit; prove delayed recall, transfer, support fading/
+          recovery, independent can-do evidence, no false mastery, no duplicate
+          rewards, prerequisite reuse and 390px/1440px es/ja/ar usability. Require
+          two consecutive clean full cycles after the last fix. A1 MUST remain
+          unavailable until this gate is DONE and a separate availability decision is
+          explicitly approved.
 
 ## BLOCKED
 
@@ -37,26 +43,12 @@ here would duplicate or conflict with that lane's write scope.)_
           create or modify a Supabase project for LinguaChat unless the owner gives a
           new explicit instruction that changes this rule.
 
-- [LC-PED-002] Final all-arcs learning acceptance gate before A1 can open
-  owner:  unclaimed
-  branch: none
-  blocked-on: A1 arcs 6 and 7 implemented from the live blueprint
-  why:    every completed A1 arc must be re-reviewed as one complete learning journey before learners can enter A1.
-  done:   on the final curriculum head, re-derive every Pre-A1 + A1 arc and run at
-          least 20 distinct learner journeys per arc plus longitudinal new-learner
-          journeys through A1 exit; prove delayed recall, transfer, support fading/
-          recovery, independent can-do evidence, no false mastery, no duplicate
-          rewards, prerequisite reuse and 390px/1440px es/ja/ar usability. Require
-          two consecutive clean full cycles after the last fix. A1 MUST remain
-          unavailable until this gate is DONE and a separate availability decision is
-          explicitly approved.
-
 ## DONE
 
-- [LC-DOC-001] Reconcile README and historical repository debris with the real product — PR #34; README rewritten to describe the real product (Lingua/Chatto identity, frozen Hoy·Chats·Palabras·Tú nav, honest Pre-A1 frozen/A1 partial-unavailable curriculum state, one `user_language`, eight implemented auxiliary locales with Arabic RTL, explicit deferred/unimplemented boundaries); proven-unused legacy debris (`linguachat-frontend-old/` CRA tree, empty `pacientes.txt`/`procedimientos.txt`) removed after confirming zero references anywhere outside their own initial commit; no runtime frontend/backend code changed. Reconciled against the Curriculum Foundry pipeline merged to `main` after this branch was first opened — the queue is left open rather than seeding a new serial `LC-CURR-006`, since Foundry's `LC-CONT-A1` lane (`.ai/foundry/tasks.json`) now owns remaining A1 arc 6–7 work and a duplicate serial task would conflict with its write scope. Supabase stays fail-closed under `LC-CLOUD-001`.
+- [LC-DOC-001] Reconcile README and historical repository debris with the real product — PR #34.
 - [LC-BE-001] Remove the Pydantic V1 validator deprecation safely — PR #33; migrated to `field_validator`, behavior preserved, 444 pytest.
 - [LC-SEC-001] Audit and safely resolve frontend dependency vulnerabilities — PR #32; safe compatible upgrades, `npm audit` 0, no forced audit fix.
-- [LC-QA-001] Extend `check:i18n` into a real source linter — PR #31; reachable-source AST linting for raw keys, hardcoded auxiliary copy and duplicate keys.
+- [LC-QA-001] Extend `check:i18n` into a real source linter — PR #31.
 - [LC-I18N-002] Stop advertising unsupported languages as supported — PR #30.
 - [LC-PED-001] Stress-test completed teaching arcs — PR #26; 253 distinct journeys across 11 runtime arcs plus real es/ja/ar browser proof.
 - [LC-PROD-001] Make placement/profile/Home honest about currently playable curriculum — PR #25.
@@ -82,3 +74,9 @@ here would duplicate or conflict with that lane's write scope.)_
 - [LC-CURR-002] A1 arc 2 `daily_rhythm`.
 - [LC-CURR-001] A1 arc 1 `work_and_study`.
 - [LC-UI-001] Visual architecture restored and frozen — Hoy/Chats/Palabras/Tú, navigation and personalization.
+
+## Separate i18n lane
+
+`LC-I18N-006` is tracked in issue #81 and remains separate from `LC-PED-002`.
+It may localize integrated A2–C2 auxiliary-language copy, but must not modify curriculum logic,
+evaluator behavior or level availability.
