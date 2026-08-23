@@ -60,8 +60,22 @@ if (!existsSync(DIST)) {
  * (well under its own 5.5 kB/episode cap) — both real, measured headroom,
  * so no lazy-loading change was needed before this budget could move. 800 kB
  * leaves headroom for the same de-minimis growth without another edit.
+ *
+ * 800 kB held for C1; `LC-INT-001` wiring C2's 29 episodes in the same way
+ * (plus, this checkpoint, backfilling a real pre-existing gap — B2's and
+ * C1's own evaluator praise/retry copy, 170 keys, had never been merged at
+ * all until now, see that commit's own message) took the entry to 804.1 kB —
+ * measured, not guessed. `check-curriculum-loading.mjs`'s own finer-grained
+ * budget again confirms this is the expected shape, not a leak: app code is
+ * 170.5 kB (well under its own 290 kB cap) and curriculum data is
+ * 4.5 kB/episode (well under its own 5.5 kB/episode cap) — both real,
+ * measured headroom, so no lazy-loading change was needed before this
+ * budget could move. C2 is the terminal level of this curriculum, so no
+ * further per-level growth of this shape is expected after it; 850 kB
+ * leaves headroom for the remaining, smaller de-minimis growth (the real
+ * translation PRs #81 will eventually bring) without another edit.
  */
-const ENTRY_BUDGET_KB = 800
+const ENTRY_BUDGET_KB = 850
 /*
  * A locale's own chunk. Sixty was calibrated when the product had one level's
  * worth of strings; A1 arc 1 added seventy-five keys in eight languages and the
