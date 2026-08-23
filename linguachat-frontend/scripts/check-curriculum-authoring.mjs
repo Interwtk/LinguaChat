@@ -315,12 +315,14 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
   assert.equal(B1_EPISODES.length, runtimeEpisodeCount(B1), 'and so is B1')
   assert.equal(B2_EPISODES.length, runtimeEpisodeCount(B2), 'and so is B2')
   assert.equal(C1_EPISODES.length, runtimeEpisodeCount(C1), 'and so is C1')
+  assert.equal(C2_EPISODES.length, runtimeEpisodeCount(C2), 'and so is C2')
   console.log(`\n  ${RUNTIME_EPISODES.length} runtime episodes satisfy the authoring contract`
     + ` (${ARC.length} Pre-A1, ${A1_EPISODES.length} A1 across ${A1_RUNTIME_ARCS.length} arcs,`
     + ` ${A2_EPISODES.length} A2 across ${A2_RUNTIME_ARCS.length} arcs,`
     + ` ${B1_EPISODES.length} B1 across ${B1_RUNTIME_ARCS.length} arcs,`
     + ` ${B2_EPISODES.length} B2 across ${B2_RUNTIME_ARCS.length} arcs,`
-    + ` ${C1_EPISODES.length} C1 across ${C1_RUNTIME_ARCS.length} arcs)`)
+    + ` ${C1_EPISODES.length} C1 across ${C1_RUNTIME_ARCS.length} arcs,`
+    + ` ${C2_EPISODES.length} C2 across ${C2_RUNTIME_ARCS.length} arcs)`)
   ok()
 }
 

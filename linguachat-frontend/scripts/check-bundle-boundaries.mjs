@@ -116,8 +116,19 @@ const ENTRY_BUDGET_KB = 800
  * Japanese to 250.08 kB — both still three-byte-heavy scripts, the same
  * reason this number keeps moving. Measured, not guessed; 280 kB leaves
  * headroom for the same de-minimis growth.
+ *
+ * 280 kB held for C1; `LC-INT-001` merging C2's 558 new keys the same way
+ * (draft English placeholder, mechanically generated from `levels/c2/**`
+ * content and identical across all seven gated locales pending a later
+ * translation PR — see that merge's own commit) took Arabic to 287.90 kB and
+ * Japanese to 283.12 kB — both still three-byte-heavy scripts, the same
+ * reason this number keeps moving. Measured, not guessed; 310 kB leaves
+ * headroom for the same de-minimis growth. (C2 is the terminal level of
+ * this curriculum, so no further per-level growth of this kind is expected
+ * after it, though the eventual real-translation PRs for #81 will still
+ * change these numbers again.)
  */
-const LOCALE_MAX_KB = 280
+const LOCALE_MAX_KB = 310
 
 const files = readdirSync(DIST).filter(f => f.endsWith('.js'))
 const sizeKb = (f) => statSync(join(DIST, f)).size / 1024
