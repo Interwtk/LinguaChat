@@ -85,8 +85,23 @@ import { C1_ARC5, getC1Arc5Episode } from '../src/learning/levels/c1/arcs/c1Arc5
 import { C1_ARC6, getC1Arc6Episode } from '../src/learning/levels/c1/arcs/c1Arc6NegotiationAndComplexityContent.js'
 import { C1_ARC_7, getC1Arc7Episode } from '../src/learning/levels/c1/arcs/c1Arc7SustainedInteractionContent.js'
 import { C1_RUNTIME_ARCS, C1_CAN_DO_INTENT } from '../src/learning/curriculum/c1Map.js'
+/*
+ * C2's arcs are imported straight from `levels/c2/arcs/**` — same reason
+ * B2/C1's own comments above give. Arc 7's own export is
+ * `C2_ARC7_EPISODES`, not `C2_ARC7` — aliased here, same as
+ * `scripts/build-curriculum-skeleton.mjs`.
+ */
+import { C2_ARC1, getC2Arc1Episode } from '../src/learning/levels/c2/arcs/c2Arc1DenseInputSynthesisContent.js'
+import { C2_ARC2, getC2Arc2Episode } from '../src/learning/levels/c2/arcs/c2Arc2PreciseReformulationContent.js'
+import { C2_ARC3, getC2Arc3Episode } from '../src/learning/levels/c2/arcs/c2Arc3ImplicationAndSubtextContent.js'
+import { C2_ARC4, getC2Arc4Episode } from '../src/learning/levels/c2/arcs/c2Arc4RegisterAndPragmaticsContent.js'
+import { C2_ARC5, getC2Arc5Episode } from '../src/learning/levels/c2/arcs/c2Arc5ArgumentAndPositionContent.js'
+import { C2_ARC6, getC2Arc6Episode } from '../src/learning/levels/c2/arcs/c2Arc6DiscourseFlexibilityContent.js'
+import { C2_ARC7_EPISODES as C2_ARC7, getC2Arc7Episode } from '../src/learning/levels/c2/arcs/c2Arc7StylisticControlContent.js'
+import { C2_ARC8, getC2Arc8Episode } from '../src/learning/levels/c2/arcs/c2Arc8IntegratedMediationContent.js'
+import { C2_RUNTIME_ARCS, C2_CAN_DO_INTENT } from '../src/learning/curriculum/c2Map.js'
 import {
-  PRE_A1, A1, A2, B1, B2, C1, LEVELS, getLevel, episodesOfLevel, runtimeEpisodeCount, isLevelComplete,
+  PRE_A1, A1, A2, B1, B2, C1, C2, LEVELS, getLevel, episodesOfLevel, runtimeEpisodeCount, isLevelComplete,
   levelIdOfEpisode, levelIdOfEpisodeId, playableLevelId, availableLevelIds, isKnownLevel,
 } from '../src/learning/curriculum/levels.js'
 import { episodeRequest, loadEpisodeContent, hasContentLoader, REFUSED } from '../src/learning/curriculum/episodeContent.js'
@@ -113,6 +128,7 @@ const A2_EPISODES = [...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5,
 const B1_EPISODES = [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN]
 const B2_EPISODES = [...B2_ARC1, ...B2_ARC2, ...B2_ARC3, ...B2_ARC4, ...B2_ARC5, ...B2_ARC6]
 const C1_EPISODES = [...C1_ARC1, ...C1_ARC2, ...C1_ARC3, ...C1_ARC4, ...C1_ARC5, ...C1_ARC6, ...C1_ARC_7]
+const C2_EPISODES = [...C2_ARC1, ...C2_ARC2, ...C2_ARC3, ...C2_ARC4, ...C2_ARC5, ...C2_ARC6, ...C2_ARC7, ...C2_ARC8]
 const runtimeEpisode = (id) =>
   getEpisode(id) || getA1Arc1Episode(id) || getA1Arc2Episode(id) || getA1Arc3Episode(id) || getA1Arc4Episode(id) || getA1Arc5Episode(id)
     || getA1Arc6Episode(id) || getA1Arc7Episode(id)
@@ -360,7 +376,7 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
 
 /* ---- 3) the level registry says what it means ---- */
 {
-  assert.deepEqual(LEVELS.map(l => l.id), [PRE_A1, A1, A2, B1, B2, C1], 'the registry knows Pre-A1, A1, A2, B1, B2 and C1, in order')
+  assert.deepEqual(LEVELS.map(l => l.id), [PRE_A1, A1, A2, B1, B2, C1, C2], 'the registry knows Pre-A1, A1, A2, B1, B2, C1 and C2, in order')
   /*
    * `implemented` became `contentStatus` when A1's first arc landed: a boolean
    * could not distinguish "has content" from "is finished", and A1 is now the
@@ -384,6 +400,9 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
   assert.equal(getLevel(C1).contentStatus, 'partial', 'C1 has runtime content for all seven designed arcs, and is still not complete/available until its own completion gate says so')
   assert.equal(isLevelComplete(C1), false, 'a partially built level is never complete')
   assert.equal(getLevel(C1).available, false, 'C1 may not be opened')
+  assert.equal(getLevel(C2).contentStatus, 'partial', 'C2 has runtime content for all eight designed arcs, and is still not complete/available until its own completion gate says so')
+  assert.equal(isLevelComplete(C2), false, 'a partially built level is never complete')
+  assert.equal(getLevel(C2).available, false, 'C2 may not be opened — it is also the terminal level, so this gate is load-bearing for whatever "all seven levels complete" statement the product eventually makes')
   assert.deepEqual(availableLevelIds(), [PRE_A1], 'exactly one level is available today')
   assert.equal(playableLevelId(), PRE_A1)
 
@@ -411,6 +430,9 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
     'and the arcs it holds are exactly the ones declared as implemented, in order')
   assert.equal(runtimeEpisodeCount(C1), C1_EPISODES.length, 'C1 holds exactly its implemented arcs')
   assert.deepEqual([...new Set(C1_EPISODES.map(ep => ep.arc))], C1_RUNTIME_ARCS,
+    'and the arcs it holds are exactly the ones declared as implemented, in order')
+  assert.equal(runtimeEpisodeCount(C2), C2_EPISODES.length, 'C2 holds exactly its implemented arcs')
+  assert.deepEqual([...new Set(C2_EPISODES.map(ep => ep.arc))], C2_RUNTIME_ARCS,
     'and the arcs it holds are exactly the ones declared as implemented, in order')
   assert.equal(runtimeEpisodeCount(PRE_A1), 17, 'Pre-A1 is seventeen episodes')
   ok()

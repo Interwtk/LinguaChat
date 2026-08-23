@@ -68,6 +68,19 @@ import { C1_ARC4 } from '../src/learning/levels/c1/arcs/c1Arc4NuanceAndImplicati
 import { C1_ARC5 } from '../src/learning/levels/c1/arcs/c1Arc5ExtendedStructuredDiscourseContent.js'
 import { C1_ARC6 } from '../src/learning/levels/c1/arcs/c1Arc6NegotiationAndComplexityContent.js'
 import { C1_ARC_7 } from '../src/learning/levels/c1/arcs/c1Arc7SustainedInteractionContent.js'
+/*
+ * C2's arcs are imported straight from `levels/c2/arcs/**` — same reason
+ * B2/C1's own comments above give. Arc 7's own export is
+ * `C2_ARC7_EPISODES`, not `C2_ARC7`.
+ */
+import { C2_ARC1 } from '../src/learning/levels/c2/arcs/c2Arc1DenseInputSynthesisContent.js'
+import { C2_ARC2 } from '../src/learning/levels/c2/arcs/c2Arc2PreciseReformulationContent.js'
+import { C2_ARC3 } from '../src/learning/levels/c2/arcs/c2Arc3ImplicationAndSubtextContent.js'
+import { C2_ARC4 } from '../src/learning/levels/c2/arcs/c2Arc4RegisterAndPragmaticsContent.js'
+import { C2_ARC5 } from '../src/learning/levels/c2/arcs/c2Arc5ArgumentAndPositionContent.js'
+import { C2_ARC6 } from '../src/learning/levels/c2/arcs/c2Arc6DiscourseFlexibilityContent.js'
+import { C2_ARC7_EPISODES as C2_ARC7 } from '../src/learning/levels/c2/arcs/c2Arc7StylisticControlContent.js'
+import { C2_ARC8 } from '../src/learning/levels/c2/arcs/c2Arc8IntegratedMediationContent.js'
 
 /* A1's runtime episodes, arc by arc — the same order the generator uses. */
 const A1_EPISODES = [...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4, ...A1_ARC5, ...A1_ARC6, ...A1_ARC_7]
@@ -75,6 +88,7 @@ const A2_EPISODES = [...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5,
 const B1_EPISODES = [...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN]
 const B2_EPISODES = [...B2_ARC1, ...B2_ARC2, ...B2_ARC3, ...B2_ARC4, ...B2_ARC5, ...B2_ARC6]
 const C1_EPISODES = [...C1_ARC1, ...C1_ARC2, ...C1_ARC3, ...C1_ARC4, ...C1_ARC5, ...C1_ARC6, ...C1_ARC_7]
+const C2_EPISODES = [...C2_ARC1, ...C2_ARC2, ...C2_ARC3, ...C2_ARC4, ...C2_ARC5, ...C2_ARC6, ...C2_ARC7, ...C2_ARC8]
 import { ARC } from '../src/learning/episodes/index.js'
 import { EPISODE_SKELETON, SKELETON_BY_ID } from '../src/learning/curriculum/preA1Skeleton.generated.js'
 import { intentsForEpisode, productiveItemsOf, itemsOf, personalisesOf } from '../src/learning/curriculum/preA1Map.js'
@@ -138,7 +152,7 @@ const curriculumOnlyProse = (minLength = 14) => {
    * against Pre-A1's list alone, so A1 arc 1 looked like an undescribed extra
    * rather than the second level the skeleton exists to hold.
    */
-  assert.equal(EPISODE_SKELETON.length, ARC.length + A1_EPISODES.length + A2_EPISODES.length + B1_EPISODES.length + B2_EPISODES.length + C1_EPISODES.length, 'every episode must be described')
+  assert.equal(EPISODE_SKELETON.length, ARC.length + A1_EPISODES.length + A2_EPISODES.length + B1_EPISODES.length + B2_EPISODES.length + C1_EPISODES.length + C2_EPISODES.length, 'every episode must be described')
   assert.equal(EPISODE_SKELETON.filter(ep => ep.level === 'Pre-A1').length, ARC.length)
   assert.equal(EPISODE_SKELETON.filter(ep => ep.level === 'A1').length, A1_EPISODES.length)
   for (const ep of ARC) {
