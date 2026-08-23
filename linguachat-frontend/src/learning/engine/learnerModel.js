@@ -647,6 +647,44 @@ export function recordCanDoAttempt(model, canDoId, { success, independent = fals
   return model
 }
 
+/*
+ * `coreEngineRequirements[3]` (C2's capstone) — several OTHER capabilities'
+ * delayed-retrieval evidence, recorded against the SAME task completion.
+ * Every earlier level's own completion records evidence for exactly one
+ * canDoId (`recordCanDoAttempt` above, called once per episode finish);
+ * C2's capstone (`levels/c2/arcs/c2Arc8IntegratedMediation.js`'s `MEDIATE_01`)
+ * is the first episode whose one independent step also names SEVEN OTHER
+ * capabilities it re-demonstrates unaided (`step.delayedRetrievalChecks`,
+ * matching `c2EvaluationContracts.js`'s `C2_CAPSTONE_DELAYED_RETRIEVAL_CHECKS`
+ * exactly), and none of those seven capabilities' own dedicated arc-level
+ * completion runs again inside this same task.
+ *
+ * Deliberately does NOT touch `attempts`/`successes`/`independentSuccesses` —
+ * this canDo was not actually practiced end-to-end in this task the way its
+ * own arc's episode practices it; recording a fabricated attempt/success
+ * here would silently inflate mastery evidence for a capability this task
+ * only warms up, not on masters from scratch. `delayedRetrievalAt` is
+ * purely evidentiary bookkeeping (capped at the last 10 timestamps, the
+ * same bound `recurringErrors` above already uses), additive to whatever
+ * canDo state already exists — including none at all, if this is reached
+ * before the capability's own arc.
+ *
+ * Schema change is additive only: every existing single-capability episode
+ * (every level below C2) never calls this, so their own `model.canDo`
+ * entries never gain a `delayedRetrievalAt` field and keep recording
+ * identically to before.
+ */
+export function recordDelayedRetrievalEvidence(model, canDoIds, { atMs = Date.now() } = {}) {
+  const ids = Array.isArray(canDoIds) ? canDoIds : []
+  for (const canDoId of ids) {
+    if (!canDoId) continue
+    const prev = model.canDo[canDoId] || { status: 'new', attempts: 0, successes: 0, independentSuccesses: 0, contexts: [], lastPracticedAt: null }
+    const delayedRetrievalAt = [new Date(atMs).toISOString(), ...(prev.delayedRetrievalAt || [])].slice(0, 10)
+    model.canDo[canDoId] = { ...prev, delayedRetrievalAt }
+  }
+  return model
+}
+
 export function markRecurringError(model, errorType) {
   if (!errorType) return model
   const existing = model.recurringErrors.find(e => e.errorType === errorType)
