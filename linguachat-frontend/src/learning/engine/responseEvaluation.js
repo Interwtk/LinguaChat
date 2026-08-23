@@ -122,6 +122,30 @@ import {
   evaluateSynthesizeViewpoints, evaluateInferMeaning, evaluateExtendedExplanation,
   evaluateNegotiateOutcome, evaluateTrackDiscourse,
 } from '../levels/c1/evaluators.js'
+/*
+ * C2's 10 exclusive new intents were authored the same way, against the
+ * same `base()` contract, in `levels/c2/evaluators.js` — see that file's
+ * own header for the two real scoring dimensions it populates
+ * (`registerAppropriateness`, `discourseCoherence`), the multi-turn
+ * evaluation span mechanism (`ctx.spanTurns`) and the three-tier
+ * structural-floor fallback. `qualify_claim`, `synthesize_viewpoints` and
+ * `shift_register` are C2's THREE REUSED bare intent ids (from C1/C1/B2
+ * respectively) — each still has exactly one `case` below; the case itself
+ * branches on `ctx.canDoId` membership in `levels/c2/evaluators.js`'s own
+ * `C2_..._CAN_DO_IDS` sets, calling C1's/B2's existing function unchanged
+ * for their own can-dos and C2's own function otherwise. See that file's
+ * header for why a bare intent id may be reused across levels at all (the
+ * same precedent `cafe_order_conversation`/`repair_request`/`use_quantity`
+ * already set for Pre-A1/A1/A2).
+ */
+import {
+  evaluateExtractArgument, evaluateC2SynthesizeViewpoints, evaluateIdentifyStance,
+  evaluateReformulateForAudience, evaluateRecognizeImplication, evaluateC2ShiftRegister,
+  evaluateC2QualifyClaim, evaluateDevelopArgument, evaluateRebutCounterargument,
+  evaluateSustainCoherence, evaluateRepairAtIntentionLevel, evaluateEditForPrecision,
+  evaluateMediateDisagreement,
+  C2_QUALIFY_CLAIM_CAN_DO_IDS, C2_SYNTHESIZE_VIEWPOINTS_CAN_DO_IDS, C2_SHIFT_REGISTER_CAN_DO_IDS,
+} from '../levels/c2/evaluators.js'
 
 // Normalize: lowercase, unify apostrophes, drop emojis/symbols, keep letters
 // (incl. accents) + digits + spaces + apostrophes, collapse spaces.
@@ -1722,7 +1746,12 @@ export function evaluateFree(kind, text, ctx = {}) {
     case 'summarize_for_third_party': return evaluateSummarizeForThirdParty(text, ctx)
     case 'reformulate_for_clarity': return evaluateReformulateForClarity(text, ctx)
     case 'report_third_party_opinion': return evaluateReportThirdPartyOpinion(text, ctx)
-    case 'shift_register': return evaluateShiftRegister(text, ctx)
+    /*
+     * `shift_register` is reused by C2 (`levels/c2/evaluators.js`'s own
+     * header) — branch on `ctx.canDoId` before falling back to B2's own
+     * function, which stays completely unchanged for B2's own can-dos.
+     */
+    case 'shift_register': return C2_SHIFT_REGISTER_CAN_DO_IDS.has(ctx.canDoId) ? evaluateC2ShiftRegister(text, ctx) : evaluateShiftRegister(text, ctx)
     case 'soften_or_intensify_claim': return evaluateSoftenOrIntensifyClaim(text, ctx)
     /*
      * C1 — implementations authored in `levels/c1/evaluators.js`.
@@ -1733,16 +1762,37 @@ export function evaluateFree(kind, text, ctx = {}) {
      */
     case 'clarify_ambiguity': return evaluateRepairRequest(text, { ...ctx, repairKind: 'ask_for_precision' })
     case 'state_structured_argument': return evaluateStateStructuredArgument(text, ctx)
-    case 'qualify_claim': return evaluateQualifyClaim(text, ctx)
+    /*
+     * `qualify_claim` and `synthesize_viewpoints` are reused by C2 — same
+     * branch-on-`ctx.canDoId` shape as `shift_register` above, falling back
+     * to C1's own unchanged functions for C1's own can-dos.
+     */
+    case 'qualify_claim': return C2_QUALIFY_CLAIM_CAN_DO_IDS.has(ctx.canDoId) ? evaluateC2QualifyClaim(text, ctx) : evaluateQualifyClaim(text, ctx)
     case 'concede_point': return evaluateConcedePoint(text, ctx)
     case 'adapt_register': return evaluateAdaptRegister(text, ctx)
     case 'hedge_statement': return evaluateHedgeStatement(text, ctx)
     case 'summarize_message': return evaluateSummarizeMessage(text, ctx)
-    case 'synthesize_viewpoints': return evaluateSynthesizeViewpoints(text, ctx)
+    case 'synthesize_viewpoints': return C2_SYNTHESIZE_VIEWPOINTS_CAN_DO_IDS.has(ctx.canDoId) ? evaluateC2SynthesizeViewpoints(text, ctx) : evaluateSynthesizeViewpoints(text, ctx)
     case 'infer_meaning': return evaluateInferMeaning(text, ctx)
     case 'extended_explanation': return evaluateExtendedExplanation(text, ctx)
     case 'negotiate_outcome': return evaluateNegotiateOutcome(text, ctx)
     case 'track_discourse': return evaluateTrackDiscourse(text, ctx)
+    /*
+     * C2 — implementations authored in `levels/c2/evaluators.js`. See that
+     * file's own header, and the import comment above, for the three
+     * reused-intent cases already wired above (`qualify_claim`,
+     * `synthesize_viewpoints`, `shift_register`).
+     */
+    case 'extract_argument': return evaluateExtractArgument(text, ctx)
+    case 'identify_stance': return evaluateIdentifyStance(text, ctx)
+    case 'reformulate_for_audience': return evaluateReformulateForAudience(text, ctx)
+    case 'recognize_implication': return evaluateRecognizeImplication(text, ctx)
+    case 'develop_argument': return evaluateDevelopArgument(text, ctx)
+    case 'rebut_counterargument': return evaluateRebutCounterargument(text, ctx)
+    case 'sustain_coherence': return evaluateSustainCoherence(text, ctx)
+    case 'repair_at_intention_level': return evaluateRepairAtIntentionLevel(text, ctx)
+    case 'edit_for_precision': return evaluateEditForPrecision(text, ctx)
+    case 'mediate_disagreement': return evaluateMediateDisagreement(text, ctx)
     default: return { ...base(ctx.independent), understood: false, conclusive: true, retryRequired: true }
   }
 }

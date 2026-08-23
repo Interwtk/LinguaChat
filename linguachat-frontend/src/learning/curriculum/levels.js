@@ -41,6 +41,7 @@ export const A2 = 'a2'
 export const B1 = 'b1'
 export const B2 = 'b2'
 export const C1 = 'c1'
+export const C2 = 'c2'
 
 /*
  * `episodeLevel` is the string an episode definition carries in its own
@@ -88,6 +89,16 @@ export const LEVELS = [
    * is required before this changes, exactly like A1's own gate.
    */
   { id: C1, order: 6, contentStatus: 'partial', available: false, episodeLevel: 'C1' },
+  /*
+   * C2: all eight arcs are implemented (`LC-CONT-C2`, wired in by
+   * `LC-INT-001`) and the level is not open — same distinction as
+   * A1/A2/B1/B2/C1's own comments above. C2 is also the terminal level of
+   * this curriculum; a separate, deliberate completion gate is required
+   * before this changes, and that gate is also load-bearing for whatever
+   * "all seven levels complete" product statement A1-C2 eventually makes.
+   * Wiring the engine here is not that gate.
+   */
+  { id: C2, order: 7, contentStatus: 'partial', available: false, episodeLevel: 'C2' },
 ]
 
 export const LEVEL_IDS = LEVELS.map(l => l.id)

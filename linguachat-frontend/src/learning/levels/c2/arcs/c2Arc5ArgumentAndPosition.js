@@ -148,7 +148,7 @@ const DEVELOP_01 = {
     },
     {
       type: 'free_reply', speaker: 'lingua', personalizationVariant: true, format: 'themed',
-      promptEn: "Optional: here's a themed debate topic about {{learnerInterest}} instead - want to try building a qualified argument on that one too?",
+      promptEn: "Optional: here's a themed debate topic about something you enjoy instead - want to try building a qualified argument on that one too?",
       instructionKey: 'c2ep17PersonalizationInstruction', evalKind: 'develop_argument', canDoId: 'develop_an_extended_qualified_argument',
       itemIds: ['academic_hedging_pattern', 'boosting_pattern'], evidenceType: 'guided',
       note: 'not counted toward independent/transfer evidence — an optional interest-flavored alternative, per c2.json arc.personalizationMode "themed" and content-plan.json arc 5 personalization.interestFlavoredExample',

@@ -131,6 +131,28 @@ export const SEMANTIC_TYPES = [
    * gave it a real consumer.
    */
   'negotiated_item', // a returned purchase, a shared calendar conflict, a compromise plan
+  /*
+   * C2. Four types proposed by `levels/c2/c2Patterns.js`'s `C2_SEMANTIC_TYPES.proposed`
+   * (authored directly against the blueprint's `semanticTypes.proposed` field,
+   * per that file's own header) and registered here now that C2's content
+   * exists — the same "design-record until an intent personalises through
+   * this pipeline" status `day`/`negotiated_item` held before their own first
+   * consumer. No C2 evaluator currently reads a personalised value through
+   * `INTENT_SLOTS` (see that object's own C2 comment below — every C2 source
+   * text/audience/register/stance value in real episode content is literal
+   * English, authored per scene, not filled from a learner-chosen topic).
+   */
+  'source_text',      // a two-paragraph opinion column, two short conflicting reviews
+  /*
+   * `incompatibleWith` is documentary only (see the note above this array),
+   * so `register_level`'s blueprint-authored incompatibility with a type
+   * this registry has never named (`free_text`) is transcribed verbatim
+   * rather than silently corrected — it asserts nothing this file or any
+   * check reads.
+   */
+  'audience_profile',  // a colleague outside the field, a worried customer, a child
+  'register_level',    // formal, neutral, informal, technical
+  'stance_marker',     // presumably, undeniably, to some extent
 ]
 
 export const isSemanticType = (type) => SEMANTIC_TYPES.includes(type)
@@ -385,6 +407,42 @@ export const INTENT_SLOTS = {
   negotiate_outcome: [],
   clarify_ambiguity: [],
   track_discourse: [],
+  /*
+   * C2's 13 new intents (`levels/c2/c2Intents.js`). Same reason as every
+   * level above: a grep across `levels/c2/arcs/**` finds no single-brace
+   * `{placeholder}` personalization anywhere — every source text, audience,
+   * register and stance value in real episode content is literal English,
+   * authored per scene. (Five steps across arcs 1/2/3/5/7 do carry a
+   * `personalizationVariant: true` flag with a `{{learnerInterest}}`-style
+   * double-brace token in their prompt text — a different, informal
+   * "optional interest-flavored alternative" idea the content task sketched
+   * but never wired to any real consumer; not this slot-personalization
+   * pipeline, which only ever recognizes single-brace tokens. Left as a
+   * design note here rather than invented into a new engine feature, since
+   * no `coreEngineRequirements` entry asks for it.) `reformulate_for_audience`,
+   * `recognize_implication` and `edit_for_precision` each cover more than one
+   * C2 can-do via the step's own `canDoId` (C1's pattern, not B2's `subtype`
+   * field) — see `curriculum/c2Map.js`'s own header for why one INTENT_SLOTS
+   * entry per intent is still correct regardless of how many can-dos reuse
+   * it. `shift_register`, `qualify_claim` and `synthesize_viewpoints` are
+   * NOT re-declared here — C2 reuses those three bare intent ids from
+   * B2/C1 respectively (`curriculum/levelMaps.js`'s registry already shows
+   * this precedent for `cafe_order_conversation`/`repair_request`/
+   * `use_quantity` across Pre-A1/A1/A2), so their one shared INTENT_SLOTS
+   * entry already above (still `[]`) covers C2's steps too; see
+   * `responseEvaluation.js`'s own comment on these three cases for how
+   * dispatch resolves which level's evaluator logic actually runs.
+   */
+  extract_argument: [],
+  identify_stance: [],
+  reformulate_for_audience: [],
+  recognize_implication: [],
+  develop_argument: [],
+  rebut_counterargument: [],
+  sustain_coherence: [],
+  repair_at_intention_level: [],
+  edit_for_precision: [],
+  mediate_disagreement: [],
 }
 
 export const slotsFor = (intent) => INTENT_SLOTS[intent] || []
