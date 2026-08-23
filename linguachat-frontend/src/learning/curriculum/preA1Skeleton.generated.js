@@ -12786,6 +12786,2416 @@ export const EPISODE_SKELETON = [
         "type": "completion"
       }
     ]
+  },
+  {
+    "id": "c2_dense_input_synthesis_extract",
+    "level": "C2",
+    "arc": "dense_input_synthesis",
+    "titleKey": "c2ep1Title",
+    "goalKey": "c2ep1Goal",
+    "canDoId": "extract_key_argument_from_dense_text",
+    "canDoNameKey": "c2ep1CanDoName",
+    "durationKey": "c2ep1Duration",
+    "estimatedMinutes": 12,
+    "xp": 100,
+    "gardenItems": [
+      "evidentiality_stance_pattern",
+      "presumably",
+      "allegedly",
+      "claim",
+      "support"
+    ],
+    "skillPrerequisites": [
+      "c1.synthesize_two_conflicting_viewpoints",
+      "c1.infer_implied_meaning_in_unfamiliar_context"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "c1.infer_implied_meaning_in_unfamiliar_context"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "evidentiality_stance_pattern",
+          "claim"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "evidentiality_stance_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "evidentiality_stance_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "extract_argument",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "extract_argument",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "extract_argument",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ],
+        "format": "themed"
+      },
+      {
+        "type": "recall",
+        "evalKind": "extract_argument",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_dense_input_synthesis_synthesize",
+    "level": "C2",
+    "arc": "dense_input_synthesis",
+    "titleKey": "c2ep2Title",
+    "goalKey": "c2ep2Goal",
+    "canDoId": "synthesize_multiple_viewpoints",
+    "canDoNameKey": "c2ep2CanDoName",
+    "durationKey": "c2ep2Duration",
+    "estimatedMinutes": 12,
+    "xp": 100,
+    "prerequisites": [
+      "c2_dense_input_synthesis_extract"
+    ],
+    "gardenItems": [
+      "evidentiality_stance_pattern",
+      "ostensibly",
+      "according to"
+    ],
+    "skillPrerequisites": [
+      "extract_key_argument_from_dense_text"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "extract_key_argument_from_dense_text"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "extract_argument",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "evidentiality_stance_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "evidentiality_stance_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "synthesize_viewpoints",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "synthesize_viewpoints",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "synthesize_viewpoints",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_dense_input_synthesis_stance",
+    "level": "C2",
+    "arc": "dense_input_synthesis",
+    "titleKey": "c2ep3Title",
+    "goalKey": "c2ep3Goal",
+    "canDoId": "identify_authors_stance_and_bias",
+    "canDoNameKey": "c2ep3CanDoName",
+    "durationKey": "c2ep3Duration",
+    "estimatedMinutes": 10,
+    "xp": 100,
+    "prerequisites": [
+      "c2_dense_input_synthesis_synthesize"
+    ],
+    "gardenItems": [
+      "evidentiality_stance_pattern",
+      "unstated",
+      "imply"
+    ],
+    "skillPrerequisites": [
+      "extract_key_argument_from_dense_text"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "extract_key_argument_from_dense_text"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "synthesize_viewpoints",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "evidentiality_stance_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "evidentiality_stance_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "identify_stance",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "identify_stance",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "identify_stance",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_dense_input_synthesis_integrated",
+    "level": "C2",
+    "arc": "dense_input_synthesis",
+    "titleKey": "c2ep4Title",
+    "goalKey": "c2ep4Goal",
+    "canDoId": "extract_key_argument_from_dense_text",
+    "canDoNameKey": "c2ep4CanDoName",
+    "durationKey": "c2ep4Duration",
+    "estimatedMinutes": 14,
+    "xp": 120,
+    "prerequisites": [
+      "c2_dense_input_synthesis_stance"
+    ],
+    "skillPrerequisites": [
+      "extract_key_argument_from_dense_text",
+      "synthesize_multiple_viewpoints",
+      "identify_authors_stance_and_bias"
+    ],
+    "role": "integrated",
+    "reuseSkills": [
+      "extract_key_argument_from_dense_text",
+      "synthesize_multiple_viewpoints",
+      "identify_authors_stance_and_bias"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "extract_argument",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "identify_stance",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "synthesize_viewpoints",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "synthesize_viewpoints",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_precise_reformulation_reformulate",
+    "level": "C2",
+    "arc": "precise_reformulation",
+    "titleKey": "c2ep5Title",
+    "goalKey": "c2ep5Goal",
+    "canDoId": "reformulate_dense_source_for_a_new_audience",
+    "canDoNameKey": "c2ep5CanDoName",
+    "durationKey": "c2ep5Duration",
+    "estimatedMinutes": 12,
+    "xp": 100,
+    "gardenItems": [
+      "reformulation_connector_pattern",
+      "in other words",
+      "to put it another way",
+      "justification",
+      "reimbursement"
+    ],
+    "skillPrerequisites": [
+      "extract_key_argument_from_dense_text",
+      "c1.reformulate_for_a_different_audience"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "extract_key_argument_from_dense_text"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "extract_argument",
+        "itemIds": [
+          "evidentiality_stance_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "reformulation_connector_pattern",
+          "justification"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "reformulation_connector_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "reformulation_connector_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "format": "themed"
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_precise_reformulation_summarize",
+    "level": "C2",
+    "arc": "precise_reformulation",
+    "titleKey": "c2ep6Title",
+    "goalKey": "c2ep6Goal",
+    "canDoId": "summarize_preserving_nuance",
+    "canDoNameKey": "c2ep6CanDoName",
+    "durationKey": "c2ep6Duration",
+    "estimatedMinutes": 12,
+    "xp": 100,
+    "prerequisites": [
+      "c2_precise_reformulation_reformulate"
+    ],
+    "gardenItems": [
+      "reformulation_connector_pattern",
+      "put simply",
+      "preserve"
+    ],
+    "skillPrerequisites": [
+      "reformulate_dense_source_for_a_new_audience",
+      "synthesize_multiple_viewpoints"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "reformulate_dense_source_for_a_new_audience"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "reformulation_connector_pattern",
+          "preserve"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "reformulation_connector_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "reformulation_connector_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "subtype": "summarize"
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "subtype": "summarize"
+      },
+      {
+        "type": "recall",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "subtype": "summarize"
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_precise_reformulation_paraphrase",
+    "level": "C2",
+    "arc": "precise_reformulation",
+    "titleKey": "c2ep7Title",
+    "goalKey": "c2ep7Goal",
+    "canDoId": "paraphrase_to_avoid_flattening_meaning",
+    "canDoNameKey": "c2ep7CanDoName",
+    "durationKey": "c2ep7Duration",
+    "estimatedMinutes": 10,
+    "xp": 100,
+    "prerequisites": [
+      "c2_precise_reformulation_summarize"
+    ],
+    "gardenItems": [
+      "reformulation_connector_pattern",
+      "flatten",
+      "nuance"
+    ],
+    "skillPrerequisites": [
+      "reformulate_dense_source_for_a_new_audience"
+    ],
+    "role": "secondary",
+    "reuseSkills": [
+      "reformulate_dense_source_for_a_new_audience"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "review": true,
+        "subtype": "summarize"
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "reformulation_connector_pattern",
+          "nuance"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "reformulation_connector_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "reformulation_connector_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "subtype": "paraphrase"
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "subtype": "paraphrase"
+      },
+      {
+        "type": "recall",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "subtype": "paraphrase"
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_precise_reformulation_integrated",
+    "level": "C2",
+    "arc": "precise_reformulation",
+    "titleKey": "c2ep8Title",
+    "goalKey": "c2ep8Goal",
+    "canDoId": "reformulate_dense_source_for_a_new_audience",
+    "canDoNameKey": "c2ep8CanDoName",
+    "durationKey": "c2ep8Duration",
+    "estimatedMinutes": 14,
+    "xp": 120,
+    "prerequisites": [
+      "c2_precise_reformulation_paraphrase"
+    ],
+    "skillPrerequisites": [
+      "reformulate_dense_source_for_a_new_audience",
+      "summarize_preserving_nuance",
+      "paraphrase_to_avoid_flattening_meaning"
+    ],
+    "role": "integrated",
+    "reuseSkills": [
+      "reformulate_dense_source_for_a_new_audience",
+      "summarize_preserving_nuance",
+      "paraphrase_to_avoid_flattening_meaning"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "subtype": "summarize"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "subtype": "paraphrase"
+      },
+      {
+        "type": "recall",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "subtype": "paraphrase"
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_implication_and_subtext_recognize",
+    "level": "C2",
+    "arc": "implication_and_subtext",
+    "titleKey": "c2ep9Title",
+    "goalKey": "c2ep9Goal",
+    "canDoId": "recognize_implied_meaning",
+    "canDoNameKey": "c2ep9CanDoName",
+    "durationKey": "c2ep9Duration",
+    "estimatedMinutes": 12,
+    "xp": 100,
+    "gardenItems": [
+      "irony_understatement_marker_pattern",
+      "implication",
+      "indirect",
+      "imply"
+    ],
+    "skillPrerequisites": [
+      "c1.infer_implied_meaning_in_unfamiliar_context",
+      "identify_authors_stance_and_bias"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "identify_authors_stance_and_bias"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "irony_understatement_marker_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "irony_understatement_marker_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "irony_understatement_marker_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_implication_and_subtext_irony",
+    "level": "C2",
+    "arc": "implication_and_subtext",
+    "titleKey": "c2ep10Title",
+    "goalKey": "c2ep10Goal",
+    "canDoId": "recognize_irony_and_understatement",
+    "canDoNameKey": "c2ep10CanDoName",
+    "durationKey": "c2ep10Duration",
+    "estimatedMinutes": 12,
+    "xp": 100,
+    "prerequisites": [
+      "c2_implication_and_subtext_recognize"
+    ],
+    "gardenItems": [
+      "irony_understatement_marker_pattern",
+      "irony",
+      "understatement"
+    ],
+    "skillPrerequisites": [
+      "recognize_implied_meaning"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "recognize_implied_meaning"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "irony_understatement_marker_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "irony_understatement_marker_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "irony_understatement_marker_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ],
+        "subtype": "irony"
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ],
+        "subtype": "irony"
+      },
+      {
+        "type": "recall",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_implication_and_subtext_indirect",
+    "level": "C2",
+    "arc": "implication_and_subtext",
+    "titleKey": "c2ep11Title",
+    "goalKey": "c2ep11Goal",
+    "canDoId": "respond_appropriately_to_an_indirect_speech_act",
+    "canDoNameKey": "c2ep11CanDoName",
+    "durationKey": "c2ep11Duration",
+    "estimatedMinutes": 10,
+    "xp": 100,
+    "prerequisites": [
+      "c2_implication_and_subtext_irony"
+    ],
+    "gardenItems": [
+      "irony_understatement_marker_pattern",
+      "hint"
+    ],
+    "skillPrerequisites": [
+      "recognize_implied_meaning"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "recognize_implied_meaning"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "irony_understatement_marker_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "irony_understatement_marker_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "irony_understatement_marker_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ],
+        "subtype": "indirect_speech_act"
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ],
+        "subtype": "indirect_speech_act"
+      },
+      {
+        "type": "recall",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_implication_and_subtext_integrated",
+    "level": "C2",
+    "arc": "implication_and_subtext",
+    "titleKey": "c2ep12Title",
+    "goalKey": "c2ep12Goal",
+    "canDoId": "recognize_implied_meaning",
+    "canDoNameKey": "c2ep12CanDoName",
+    "durationKey": "c2ep12Duration",
+    "estimatedMinutes": 14,
+    "xp": 120,
+    "prerequisites": [
+      "c2_implication_and_subtext_indirect"
+    ],
+    "skillPrerequisites": [
+      "recognize_implied_meaning",
+      "recognize_irony_and_understatement",
+      "respond_appropriately_to_an_indirect_speech_act"
+    ],
+    "role": "integrated",
+    "reuseSkills": [
+      "recognize_implied_meaning",
+      "recognize_irony_and_understatement",
+      "respond_appropriately_to_an_indirect_speech_act"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ],
+        "subtype": "indirect_speech_act"
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ],
+        "subtype": "irony"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ],
+        "format": "light"
+      },
+      {
+        "type": "recall",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_register_and_pragmatics_shift",
+    "level": "C2",
+    "arc": "register_and_pragmatics",
+    "titleKey": "c2ep13Title",
+    "goalKey": "c2ep13Goal",
+    "canDoId": "shift_register_deliberately",
+    "canDoNameKey": "c2ep13CanDoName",
+    "durationKey": "c2ep13Duration",
+    "estimatedMinutes": 12,
+    "xp": 100,
+    "gardenItems": [
+      "register_shift_lexis_pattern",
+      "formality",
+      "register",
+      "diplomatic",
+      "bureaucratic"
+    ],
+    "skillPrerequisites": [
+      "c1.adapt_register_to_audience"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "c1.adapt_register_to_audience",
+      "recognize_implied_meaning"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "register_shift_lexis_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "register_shift_lexis_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "register_shift_lexis_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "register_shift_lexis_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "register_shift_lexis_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "register_shift_lexis_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_register_and_pragmatics_qualify",
+    "level": "C2",
+    "arc": "register_and_pragmatics",
+    "titleKey": "c2ep14Title",
+    "goalKey": "c2ep14Goal",
+    "canDoId": "soften_or_intensify_a_claim",
+    "canDoNameKey": "c2ep14CanDoName",
+    "durationKey": "c2ep14Duration",
+    "estimatedMinutes": 13,
+    "xp": 105,
+    "prerequisites": [
+      "c2_register_and_pragmatics_shift"
+    ],
+    "gardenItems": [
+      "academic_hedging_pattern",
+      "boosting_pattern",
+      "could be argued",
+      "arguably",
+      "to some extent",
+      "not necessarily",
+      "undeniably",
+      "there is little doubt that"
+    ],
+    "skillPrerequisites": [
+      "shift_register_deliberately"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "shift_register_deliberately"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "register_shift_lexis_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "academic_hedging_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "academic_hedging_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "academic_hedging_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "qualify_claim",
+        "itemIds": [
+          "academic_hedging_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "boosting_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "qualify_claim",
+        "itemIds": [
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "qualify_claim",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "qualify_claim",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_register_and_pragmatics_face",
+    "level": "C2",
+    "arc": "register_and_pragmatics",
+    "titleKey": "c2ep15Title",
+    "goalKey": "c2ep15Goal",
+    "canDoId": "manage_face_in_disagreement",
+    "canDoNameKey": "c2ep15CanDoName",
+    "durationKey": "c2ep15Duration",
+    "estimatedMinutes": 10,
+    "xp": 100,
+    "prerequisites": [
+      "c2_register_and_pragmatics_qualify"
+    ],
+    "gardenItems": [
+      "face_saving_disagreement_pattern",
+      "I take your point",
+      "that's fair"
+    ],
+    "skillPrerequisites": [
+      "soften_or_intensify_a_claim",
+      "recognize_implied_meaning"
+    ],
+    "role": "secondary",
+    "reuseSkills": [
+      "soften_or_intensify_a_claim"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "qualify_claim",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "face_saving_disagreement_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "face_saving_disagreement_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "face_saving_disagreement_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "face_saving_disagreement_pattern"
+        ],
+        "subtype": "face_saving_disagreement"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "face_saving_disagreement_pattern"
+        ],
+        "subtype": "face_saving_disagreement"
+      },
+      {
+        "type": "recall",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "face_saving_disagreement_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_register_and_pragmatics_integrated",
+    "level": "C2",
+    "arc": "register_and_pragmatics",
+    "titleKey": "c2ep16Title",
+    "goalKey": "c2ep16Goal",
+    "canDoId": "shift_register_deliberately",
+    "canDoNameKey": "c2ep16CanDoName",
+    "durationKey": "c2ep16Duration",
+    "estimatedMinutes": 14,
+    "xp": 120,
+    "prerequisites": [
+      "c2_register_and_pragmatics_face"
+    ],
+    "skillPrerequisites": [
+      "shift_register_deliberately",
+      "soften_or_intensify_a_claim",
+      "manage_face_in_disagreement"
+    ],
+    "role": "integrated",
+    "reuseSkills": [
+      "shift_register_deliberately",
+      "soften_or_intensify_a_claim",
+      "manage_face_in_disagreement"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "register_shift_lexis_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "qualify_claim",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "face_saving_disagreement_pattern"
+        ],
+        "subtype": "face_saving_disagreement"
+      },
+      {
+        "type": "recall",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "register_shift_lexis_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_argument_and_position_develop",
+    "level": "C2",
+    "arc": "argument_and_position",
+    "titleKey": "c2ep17Title",
+    "goalKey": "c2ep17Goal",
+    "canDoId": "develop_an_extended_qualified_argument",
+    "canDoNameKey": "c2ep17CanDoName",
+    "durationKey": "c2ep17Duration",
+    "estimatedMinutes": 12,
+    "xp": 100,
+    "gardenItems": [
+      "academic_hedging_pattern",
+      "boosting_pattern",
+      "on balance",
+      "that said",
+      "concede"
+    ],
+    "skillPrerequisites": [
+      "c1.develop_a_structured_argument",
+      "soften_or_intensify_a_claim"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "soften_or_intensify_a_claim"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "qualify_claim",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "academic_hedging_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "academic_hedging_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "develop_argument",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "develop_argument",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "develop_argument",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ],
+        "format": "themed"
+      },
+      {
+        "type": "recall",
+        "evalKind": "develop_argument",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_argument_and_position_rebut",
+    "level": "C2",
+    "arc": "argument_and_position",
+    "titleKey": "c2ep18Title",
+    "goalKey": "c2ep18Goal",
+    "canDoId": "preempt_and_rebut_a_counterargument",
+    "canDoNameKey": "c2ep18CanDoName",
+    "durationKey": "c2ep18Duration",
+    "estimatedMinutes": 12,
+    "xp": 100,
+    "prerequisites": [
+      "c2_argument_and_position_develop"
+    ],
+    "gardenItems": [
+      "concession_then_position_pattern",
+      "while X has merit",
+      "granted that",
+      "nevertheless",
+      "even so",
+      "rebut"
+    ],
+    "skillPrerequisites": [
+      "develop_an_extended_qualified_argument",
+      "c1.concede_a_counterpoint_gracefully"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "develop_an_extended_qualified_argument"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "develop_argument",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "concession_then_position_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "concession_then_position_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "concession_then_position_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "rebut_counterargument",
+        "itemIds": [
+          "concession_then_position_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "rebut_counterargument",
+        "itemIds": [
+          "concession_then_position_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "rebut_counterargument",
+        "itemIds": [
+          "concession_then_position_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_argument_and_position_qualify",
+    "level": "C2",
+    "arc": "argument_and_position",
+    "titleKey": "c2ep19Title",
+    "goalKey": "c2ep19Goal",
+    "canDoId": "qualify_a_position_with_precision",
+    "canDoNameKey": "c2ep19CanDoName",
+    "durationKey": "c2ep19Duration",
+    "estimatedMinutes": 10,
+    "xp": 100,
+    "prerequisites": [
+      "c2_argument_and_position_rebut"
+    ],
+    "gardenItems": [
+      "academic_hedging_pattern",
+      "boosting_pattern",
+      "qualify"
+    ],
+    "skillPrerequisites": [
+      "develop_an_extended_qualified_argument",
+      "soften_or_intensify_a_claim"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "develop_an_extended_qualified_argument",
+      "soften_or_intensify_a_claim"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "rebut_counterargument",
+        "itemIds": [
+          "concession_then_position_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "academic_hedging_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "academic_hedging_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "qualify_claim",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "qualify_claim",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "qualify_claim",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_argument_and_position_integrated",
+    "level": "C2",
+    "arc": "argument_and_position",
+    "titleKey": "c2ep20Title",
+    "goalKey": "c2ep20Goal",
+    "canDoId": "develop_an_extended_qualified_argument",
+    "canDoNameKey": "c2ep20CanDoName",
+    "durationKey": "c2ep20Duration",
+    "estimatedMinutes": 15,
+    "xp": 125,
+    "prerequisites": [
+      "c2_argument_and_position_qualify"
+    ],
+    "skillPrerequisites": [
+      "develop_an_extended_qualified_argument",
+      "preempt_and_rebut_a_counterargument",
+      "qualify_a_position_with_precision"
+    ],
+    "role": "integrated",
+    "reuseSkills": [
+      "develop_an_extended_qualified_argument",
+      "preempt_and_rebut_a_counterargument",
+      "qualify_a_position_with_precision"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "develop_argument",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "rebut_counterargument",
+        "itemIds": [
+          "concession_then_position_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "qualify_claim",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "rebut_counterargument",
+        "itemIds": [
+          "concession_then_position_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_discourse_flexibility_sustain",
+    "level": "C2",
+    "arc": "discourse_flexibility",
+    "titleKey": "c2ep21Title",
+    "goalKey": "c2ep21Goal",
+    "canDoId": "sustain_coherence_across_topic_shifts",
+    "canDoNameKey": "c2ep21CanDoName",
+    "durationKey": "c2ep21Duration",
+    "estimatedMinutes": 14,
+    "xp": 110,
+    "gardenItems": [
+      "paragraph_scale_cohesion_pattern",
+      "insofar as",
+      "whereby",
+      "coherence"
+    ],
+    "skillPrerequisites": [
+      "develop_an_extended_qualified_argument"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "develop_an_extended_qualified_argument"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "develop_argument",
+        "itemIds": [
+          "academic_hedging_pattern",
+          "boosting_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "paragraph_scale_cohesion_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "paragraph_scale_cohesion_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "paragraph_scale_cohesion_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "sustain_coherence",
+        "itemIds": [
+          "paragraph_scale_cohesion_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "sustain_coherence",
+        "itemIds": [
+          "paragraph_scale_cohesion_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "sustain_coherence",
+        "itemIds": [
+          "paragraph_scale_cohesion_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_discourse_flexibility_repair",
+    "level": "C2",
+    "arc": "discourse_flexibility",
+    "titleKey": "c2ep22Title",
+    "goalKey": "c2ep22Goal",
+    "canDoId": "repair_a_misunderstanding_at_intention_level",
+    "canDoNameKey": "c2ep22CanDoName",
+    "durationKey": "c2ep22Duration",
+    "estimatedMinutes": 12,
+    "xp": 110,
+    "prerequisites": [
+      "c2_discourse_flexibility_sustain"
+    ],
+    "gardenItems": [
+      "face_saving_disagreement_pattern",
+      "that said",
+      "by the same token"
+    ],
+    "skillPrerequisites": [
+      "recognize_implied_meaning",
+      "manage_face_in_disagreement"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "manage_face_in_disagreement"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "sustain_coherence",
+        "itemIds": [
+          "paragraph_scale_cohesion_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "recall",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "face_saving_disagreement_pattern"
+        ],
+        "review": true,
+        "subtype": "face_saving_disagreement"
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "face_saving_disagreement_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "face_saving_disagreement_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "face_saving_disagreement_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_at_intention_level",
+        "itemIds": [
+          "face_saving_disagreement_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_at_intention_level",
+        "itemIds": [
+          "face_saving_disagreement_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "repair_at_intention_level",
+        "itemIds": [
+          "face_saving_disagreement_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_discourse_flexibility_unfamiliar",
+    "level": "C2",
+    "arc": "discourse_flexibility",
+    "titleKey": "c2ep23Title",
+    "goalKey": "c2ep23Goal",
+    "canDoId": "function_inside_an_unfamiliar_high_ambiguity_exchange",
+    "canDoNameKey": "c2ep23CanDoName",
+    "durationKey": "c2ep23Duration",
+    "estimatedMinutes": 10,
+    "xp": 100,
+    "prerequisites": [
+      "c2_discourse_flexibility_repair"
+    ],
+    "gardenItems": [
+      "paragraph_scale_cohesion_pattern",
+      "ambiguity",
+      "clarify"
+    ],
+    "skillPrerequisites": [
+      "sustain_coherence_across_topic_shifts",
+      "repair_a_misunderstanding_at_intention_level"
+    ],
+    "role": "secondary",
+    "reuseSkills": [
+      "sustain_coherence_across_topic_shifts",
+      "repair_a_misunderstanding_at_intention_level"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "repair_at_intention_level",
+        "itemIds": [
+          "face_saving_disagreement_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ],
+        "subtype": "irony"
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "paragraph_scale_cohesion_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "paragraph_scale_cohesion_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "paragraph_scale_cohesion_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "sustain_coherence",
+        "itemIds": [
+          "paragraph_scale_cohesion_pattern"
+        ],
+        "subtype": "unfamiliar_exchange"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "sustain_coherence",
+        "itemIds": [
+          "paragraph_scale_cohesion_pattern"
+        ],
+        "subtype": "unfamiliar_exchange"
+      },
+      {
+        "type": "recall",
+        "evalKind": "sustain_coherence",
+        "itemIds": [
+          "paragraph_scale_cohesion_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_discourse_flexibility_integrated",
+    "level": "C2",
+    "arc": "discourse_flexibility",
+    "titleKey": "c2ep24Title",
+    "goalKey": "c2ep24Goal",
+    "canDoId": "sustain_coherence_across_topic_shifts",
+    "canDoNameKey": "c2ep24CanDoName",
+    "durationKey": "c2ep24Duration",
+    "estimatedMinutes": 16,
+    "xp": 130,
+    "prerequisites": [
+      "c2_discourse_flexibility_unfamiliar"
+    ],
+    "skillPrerequisites": [
+      "sustain_coherence_across_topic_shifts",
+      "repair_a_misunderstanding_at_intention_level",
+      "function_inside_an_unfamiliar_high_ambiguity_exchange"
+    ],
+    "role": "integrated",
+    "reuseSkills": [
+      "sustain_coherence_across_topic_shifts",
+      "repair_a_misunderstanding_at_intention_level",
+      "function_inside_an_unfamiliar_high_ambiguity_exchange"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "sustain_coherence",
+        "itemIds": [
+          "paragraph_scale_cohesion_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_at_intention_level",
+        "itemIds": [
+          "face_saving_disagreement_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "sustain_coherence",
+        "itemIds": [
+          "paragraph_scale_cohesion_pattern"
+        ],
+        "subtype": "unfamiliar_exchange"
+      },
+      {
+        "type": "recall",
+        "evalKind": "sustain_coherence",
+        "itemIds": [
+          "paragraph_scale_cohesion_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_stylistic_control_edit",
+    "level": "C2",
+    "arc": "stylistic_control",
+    "titleKey": "c2ep25Title",
+    "goalKey": "c2ep25Goal",
+    "canDoId": "edit_own_text_for_precision_and_tone",
+    "canDoNameKey": "c2ep25CanDoName",
+    "durationKey": "c2ep25Duration",
+    "estimatedMinutes": 12,
+    "xp": 100,
+    "gardenItems": [
+      "lexical_precision_substitution_pattern",
+      "precision",
+      "notice",
+      "revise"
+    ],
+    "skillPrerequisites": [
+      "shift_register_deliberately",
+      "reformulate_dense_source_for_a_new_audience"
+    ],
+    "role": "primary",
+    "reuseSkills": [
+      "shift_register_deliberately",
+      "reformulate_dense_source_for_a_new_audience"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "register_shift_lexis_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "recall",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "lexical_precision_substitution_pattern",
+          "notice"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "lexical_precision_substitution_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "lexical_precision_substitution_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ]
+      },
+      {
+        "type": "recall",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_stylistic_control_variety",
+    "level": "C2",
+    "arc": "stylistic_control",
+    "titleKey": "c2ep26Title",
+    "goalKey": "c2ep26Goal",
+    "canDoId": "vary_expression_to_avoid_flattening_meaning",
+    "canDoNameKey": "c2ep26CanDoName",
+    "durationKey": "c2ep26Duration",
+    "estimatedMinutes": 10,
+    "xp": 90,
+    "prerequisites": [
+      "c2_stylistic_control_edit"
+    ],
+    "gardenItems": [
+      "lexical_precision_substitution_pattern",
+      "repetition",
+      "flatten"
+    ],
+    "skillPrerequisites": [
+      "edit_own_text_for_precision_and_tone"
+    ],
+    "role": "secondary",
+    "reuseSkills": [
+      "edit_own_text_for_precision_and_tone"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ],
+        "review": true
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "lexical_precision_substitution_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "lexical_precision_substitution_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "lexical_precision_substitution_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ],
+        "subtype": "lexical_variety"
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ],
+        "subtype": "lexical_variety"
+      },
+      {
+        "type": "recall",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_stylistic_control_genre",
+    "level": "C2",
+    "arc": "stylistic_control",
+    "titleKey": "c2ep27Title",
+    "goalKey": "c2ep27Goal",
+    "canDoId": "adapt_a_text_across_genre_and_register",
+    "canDoNameKey": "c2ep27CanDoName",
+    "durationKey": "c2ep27Duration",
+    "estimatedMinutes": 10,
+    "xp": 90,
+    "prerequisites": [
+      "c2_stylistic_control_variety"
+    ],
+    "gardenItems": [
+      "register_shift_lexis_pattern",
+      "tone-fit",
+      "apparent",
+      "register-appropriate"
+    ],
+    "skillPrerequisites": [
+      "edit_own_text_for_precision_and_tone",
+      "shift_register_deliberately"
+    ],
+    "role": "secondary",
+    "reuseSkills": [
+      "edit_own_text_for_precision_and_tone",
+      "shift_register_deliberately"
+    ],
+    "steps": [
+      {
+        "type": "recall",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ],
+        "review": true,
+        "subtype": "lexical_variety"
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "register_shift_lexis_pattern"
+        ]
+      },
+      {
+        "type": "comprehension",
+        "itemId": "register_shift_lexis_pattern"
+      },
+      {
+        "type": "choice",
+        "itemId": "register_shift_lexis_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "register_shift_lexis_pattern"
+        ],
+        "subtype": "genre_adaptation"
+      },
+      {
+        "type": "recall",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "register_shift_lexis_pattern"
+        ],
+        "subtype": "genre_adaptation"
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_stylistic_control_integrated",
+    "level": "C2",
+    "arc": "stylistic_control",
+    "titleKey": "c2ep28Title",
+    "goalKey": "c2ep28Goal",
+    "canDoId": "edit_own_text_for_precision_and_tone",
+    "canDoNameKey": "c2ep28CanDoName",
+    "durationKey": "c2ep28Duration",
+    "estimatedMinutes": 14,
+    "xp": 120,
+    "prerequisites": [
+      "c2_stylistic_control_genre"
+    ],
+    "skillPrerequisites": [
+      "edit_own_text_for_precision_and_tone",
+      "vary_expression_to_avoid_flattening_meaning",
+      "adapt_a_text_across_genre_and_register"
+    ],
+    "role": "integrated",
+    "reuseSkills": [
+      "edit_own_text_for_precision_and_tone",
+      "vary_expression_to_avoid_flattening_meaning",
+      "adapt_a_text_across_genre_and_register"
+    ],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ],
+        "subtype": "lexical_variety"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ],
+        "format": "themed"
+      },
+      {
+        "type": "recall",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
+  },
+  {
+    "id": "c2_integrated_mediation_capstone",
+    "level": "C2",
+    "arc": "integrated_mediation",
+    "titleKey": "c2ep29Title",
+    "goalKey": "c2ep29Goal",
+    "canDoId": "mediate_a_complex_disagreement_for_a_third_party",
+    "canDoNameKey": "c2ep29CanDoName",
+    "durationKey": "c2ep29Duration",
+    "estimatedMinutes": 20,
+    "xp": 200,
+    "gardenItems": [
+      "reformulation_connector_pattern",
+      "face_saving_disagreement_pattern",
+      "concession_then_position_pattern",
+      "paragraph_scale_cohesion_pattern",
+      "mediate",
+      "represent both sides",
+      "next step"
+    ],
+    "skillPrerequisites": [
+      "summarize_preserving_nuance",
+      "manage_face_in_disagreement",
+      "preempt_and_rebut_a_counterargument",
+      "repair_a_misunderstanding_at_intention_level"
+    ],
+    "role": "integrated",
+    "reuseSkills": [
+      "summarize_preserving_nuance",
+      "manage_face_in_disagreement",
+      "preempt_and_rebut_a_counterargument",
+      "repair_a_misunderstanding_at_intention_level",
+      "sustain_coherence_across_topic_shifts",
+      "recognize_irony_and_understatement",
+      "edit_own_text_for_precision_and_tone"
+    ],
+    "prerequisites": [],
+    "steps": [
+      {
+        "type": "scene"
+      },
+      {
+        "type": "comprehension",
+        "itemId": "evidentiality_stance_pattern"
+      },
+      {
+        "type": "model",
+        "meaningItems": [
+          "reformulation_connector_pattern",
+          "concession_then_position_pattern"
+        ]
+      },
+      {
+        "type": "choice",
+        "itemId": "reformulation_connector_pattern"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "mediate_disagreement",
+        "itemIds": [
+          "reformulation_connector_pattern",
+          "concession_then_position_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "reformulate_for_audience",
+        "itemIds": [
+          "reformulation_connector_pattern"
+        ],
+        "subtype": "summarize"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "shift_register",
+        "itemIds": [
+          "face_saving_disagreement_pattern"
+        ],
+        "subtype": "face_saving_disagreement"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "rebut_counterargument",
+        "itemIds": [
+          "concession_then_position_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "repair_at_intention_level",
+        "itemIds": [
+          "face_saving_disagreement_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "sustain_coherence",
+        "itemIds": [
+          "paragraph_scale_cohesion_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "recognize_implication",
+        "itemIds": [
+          "irony_understatement_marker_pattern"
+        ],
+        "subtype": "irony"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "edit_for_precision",
+        "itemIds": [
+          "lexical_precision_substitution_pattern"
+        ]
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "mediate_disagreement",
+        "itemIds": [
+          "reformulation_connector_pattern",
+          "face_saving_disagreement_pattern",
+          "concession_then_position_pattern",
+          "paragraph_scale_cohesion_pattern"
+        ]
+      },
+      {
+        "type": "scene"
+      },
+      {
+        "type": "free_reply",
+        "evalKind": "mediate_disagreement",
+        "itemIds": [
+          "reformulation_connector_pattern",
+          "face_saving_disagreement_pattern",
+          "concession_then_position_pattern",
+          "paragraph_scale_cohesion_pattern"
+        ]
+      },
+      {
+        "type": "completion"
+      }
+    ]
   }
 ]
 

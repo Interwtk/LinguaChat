@@ -306,7 +306,18 @@ const ok = () => { n++ }
 // 13) no dead evaluator, no unevaluated intent, no undeclared slot
 {
   const src = readFileSync(new URL('../src/learning/engine/responseEvaluation.js', import.meta.url), 'utf8')
-  const dispatched = [...src.matchAll(/case '([a-z_]+)': return evaluate/g)].map(m => m[1])
+  /*
+   * A case dispatches to a real evaluator either directly (`return
+   * evaluateX(text, ctx)`, every level's own precedent) or, for C2's three
+   * reused bare intent ids (`qualify_claim`/`synthesize_viewpoints`/
+   * `shift_register` — see `levels/c2/evaluators.js`'s own header), via a
+   * `ctx.canDoId`-branching ternary that still calls a real `evaluate...`
+   * function either way. Matching anywhere on the case's own line (not only
+   * immediately after `return`) covers both shapes without weakening what
+   * this check actually verifies: some real evaluator function is reachable
+   * from this case, not merely a bare pass-through.
+   */
+  const dispatched = [...src.matchAll(/case '([a-z_]+)':[^\n]*\bevaluate[A-Za-z0-9]+\(/g)].map(m => m[1])
   /*
    * EVERY runtime episode, not just Pre-A1's. This read `ARC` — the Pre-A1 list —
    * and called the result "used", which was true while one level existed and

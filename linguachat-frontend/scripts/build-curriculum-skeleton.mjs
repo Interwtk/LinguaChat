@@ -75,6 +75,23 @@ import { C1_ARC4 } from '../src/learning/levels/c1/arcs/c1Arc4NuanceAndImplicati
 import { C1_ARC5 } from '../src/learning/levels/c1/arcs/c1Arc5ExtendedStructuredDiscourseContent.js'
 import { C1_ARC6 } from '../src/learning/levels/c1/arcs/c1Arc6NegotiationAndComplexityContent.js'
 import { C1_ARC_7 } from '../src/learning/levels/c1/arcs/c1Arc7SustainedInteractionContent.js'
+/*
+ * C2's arcs are imported straight from `levels/c2/arcs/**` — same reason
+ * B2/C1's own comments above give: that is already the chunk-naming wrapper
+ * location for this level, so there is no second, redundant top-level
+ * `episodes/c2Arc{N}Content.js` file to import instead. Arc 7's own export
+ * is `C2_ARC7_EPISODES`, not `C2_ARC7` — transcribed verbatim rather than
+ * silently renamed, aliased here only so `RUNTIME_EPISODES` below reads
+ * consistently with every other arc.
+ */
+import { C2_ARC1 } from '../src/learning/levels/c2/arcs/c2Arc1DenseInputSynthesisContent.js'
+import { C2_ARC2 } from '../src/learning/levels/c2/arcs/c2Arc2PreciseReformulationContent.js'
+import { C2_ARC3 } from '../src/learning/levels/c2/arcs/c2Arc3ImplicationAndSubtextContent.js'
+import { C2_ARC4 } from '../src/learning/levels/c2/arcs/c2Arc4RegisterAndPragmaticsContent.js'
+import { C2_ARC5 } from '../src/learning/levels/c2/arcs/c2Arc5ArgumentAndPositionContent.js'
+import { C2_ARC6 } from '../src/learning/levels/c2/arcs/c2Arc6DiscourseFlexibilityContent.js'
+import { C2_ARC7_EPISODES as C2_ARC7 } from '../src/learning/levels/c2/arcs/c2Arc7StylisticControlContent.js'
+import { C2_ARC8 } from '../src/learning/levels/c2/arcs/c2Arc8IntegratedMediationContent.js'
 import { getStory, storyTurns } from '../src/learning/engine/miniStory.js'
 
 const OUT = 'src/learning/curriculum/preA1Skeleton.generated.js'
@@ -158,7 +175,8 @@ const RUNTIME_EPISODES = [...ARC, ...A1_ARC1, ...A1_ARC2, ...A1_ARC3, ...A1_ARC4
   ...A2_ARC1, ...A2_ARC2, ...A2_ARC3, ...A2_ARC4, ...A2_ARC5, ...A2_ARC6, ...A2_ARC_7,
   ...B1_ARC1, ...B1_ARC2, ...B1_ARC3, ...B1_ARC4, ...B1_ARC5, ...B1_ARC6, ...B1_ARC_SEVEN,
   ...B2_ARC1, ...B2_ARC2, ...B2_ARC3, ...B2_ARC4, ...B2_ARC5, ...B2_ARC6,
-  ...C1_ARC1, ...C1_ARC2, ...C1_ARC3, ...C1_ARC4, ...C1_ARC5, ...C1_ARC6, ...C1_ARC_7]
+  ...C1_ARC1, ...C1_ARC2, ...C1_ARC3, ...C1_ARC4, ...C1_ARC5, ...C1_ARC6, ...C1_ARC_7,
+  ...C2_ARC1, ...C2_ARC2, ...C2_ARC3, ...C2_ARC4, ...C2_ARC5, ...C2_ARC6, ...C2_ARC7, ...C2_ARC8]
 
 const skeleton = RUNTIME_EPISODES.map(ep => ({
   ...pick(ep, EPISODE_FIELDS),
