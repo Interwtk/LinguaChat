@@ -208,6 +208,26 @@ const MODEL_ANSWER = {
   negotiate_outcome: () => 'What if we split the difference — you get the earlier slot next week, and I get it the week after?',
   clarify_ambiguity: () => 'Could you be more specific about the timing — are we talking hours or days?',
   track_discourse: () => 'Anyway, before I forget — speaking of which, that reminds me, I should tell you about the trip too.',
+  /*
+   * C2. Added for the same reason every level's own block above states: an
+   * unlisted objective falls back to the introduction answer. `qualify_claim`/
+   * `synthesize_viewpoints`/`shift_register` are NOT re-declared here — C2
+   * reuses those three bare intent ids from C1/C1/B2 (`levels/c2/evaluators.js`'s
+   * own header), and this table is keyed by intent id alone, so C1's/B2's
+   * existing entries above already cover C2's own steps for those three, the
+   * same soft scaffold-generosity gap `track_discourse`'s own comment already
+   * accepts for a multi-canDo intent's one fallback shape.
+   */
+  extract_argument: () => "The author's claim is that the flexible-hours policy may be doing more harm than good, based on falling attendance, though they hedge by admitting it could still be an adjustment period.",
+  identify_stance: () => "The author is skeptical of the policy but not fully committed to condemning it — the hedge shows they're leaving room for the adjustment-period explanation.",
+  reformulate_for_audience: () => "Basically, big expenses over $50 now need a receipt and a quick explanation, or they'll bounce back and you'll wait longer to get paid.",
+  recognize_implication: () => "She's basically turning the customer down for today, just not saying 'no' directly — she offers the waitlist instead.",
+  develop_argument: () => "On balance, an honor system seems worth trying, since fees mostly punish people already struggling. That said, libraries would still need some replacement, or books might not come back.",
+  rebut_counterargument: () => "That's true for a few people, sure, but most late returns happen by accident anyway, so removing the fee probably won't change return rates much.",
+  sustain_coherence: () => "Yeah, that's fair — and while we're on it, I think the grocery money split has been uneven too.",
+  repair_at_intention_level: () => "Sorry, I didn't mean it as an accusation — I just meant we should double check the numbers together, since I think it's gotten uneven by accident.",
+  edit_for_precision: () => 'Notice: the elevator will be out of service next week. Please use the stairs during this time.',
+  mediate_disagreement: () => 'The landlord believes the tenant owes the increased rent because notice was given; the tenant disputes this, saying nothing was received in writing. A useful next step might be for the landlord to produce any written notice.',
 }
 
 /* The three ways out, and what a turn practising each one asks for. */
@@ -347,6 +367,22 @@ const PROMPT = {
   negotiate_outcome: () => 'Two people both need the same thing. What would you propose?',
   clarify_ambiguity: () => "Someone just said something genuinely ambiguous. What do you ask to resolve it?",
   track_discourse: () => "The conversation has covered a few different things so far. Keep it going.",
+  /*
+   * C2 — a dense source to summarize, an implication to catch, a register to
+   * hold on purpose, a disagreement to mediate. `qualify_claim`/
+   * `synthesize_viewpoints`/`shift_register` are NOT re-declared here — same
+   * reason `MODEL_ANSWER`'s own C2 comment above gives.
+   */
+  extract_argument: () => "Read the passage above. What is the author's claim, and what evidence supports it?",
+  identify_stance: () => 'Is the author fully committed to this position, or hedging? What tells you?',
+  reformulate_for_audience: () => 'Rewrite this dense passage in plain terms for someone outside the field.',
+  recognize_implication: () => "What is this person actually saying, beneath the literal words?",
+  develop_argument: () => 'Take a position on this and qualify it — what would make you wrong?',
+  rebut_counterargument: () => 'Someone raises a fair objection to your position. How do you answer it without dismissing it?',
+  sustain_coherence: () => 'Respond, then bridge naturally to a second, related point you want to raise.',
+  repair_at_intention_level: () => "Someone read your last message as an accusation. That's not what you meant. Repair it.",
+  edit_for_precision: () => 'This draft is too casual for an official notice. Rewrite it precisely, in the right tone.',
+  mediate_disagreement: () => 'Two people disagree about this. Summarize both sides fairly, without taking one.',
 }
 
 /*
