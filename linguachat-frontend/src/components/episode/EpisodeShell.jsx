@@ -14,7 +14,7 @@ import { partnerFor, placeFor } from '../../learning/engine/variation.js'
 import { getLearnerInterests, getInterestContext, getInterestObject } from '../../learning/engine/interests.js'
 import { evaluateLearningResponse } from '../../services/api'
 import {
-  loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, markRecurringError,
+  loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, recordDelayedRetrievalEvidence, markRecurringError,
   getEpisodeState, setEpisodeState, recordActivitySignalOnce,
 } from '../../learning/engine/learnerModel.js'
 import {
@@ -667,6 +667,16 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
        * on whether the learner refreshed the page.
        */
       if (independent) runRef.current = updateActiveRun(modelRef.current, { independentEvidence: true }) || runRef.current
+      /*
+       * C2's capstone (`coreEngineRequirements[3]`): a step may name several
+       * OTHER capabilities it re-demonstrates unaided
+       * (`step.delayedRetrievalChecks`) — see `learnerModel.js`'s own
+       * `recordDelayedRetrievalEvidence` header for why this is additive
+       * bookkeeping, never a fabricated attempt/success for those canDos.
+       */
+      if (Array.isArray(step.delayedRetrievalChecks) && step.delayedRetrievalChecks.length) {
+        recordDelayedRetrievalEvidence(modelRef.current, step.delayedRetrievalChecks)
+      }
       captureLifeFact(evalKind, text)
       if (attemptsRef.current > 0) signal('retried')
       adaptScaffold({ correct: true, usedHelp: fromSuggestion, evidenceKind: evidenceKindForStep(step), retried: attemptsRef.current > 0 })
