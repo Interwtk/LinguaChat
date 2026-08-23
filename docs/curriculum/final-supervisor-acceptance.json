@@ -1,0 +1,158 @@
+{
+  "taskId": "LC-SUP-002",
+  "documentType": "final-supervisor-acceptance",
+  "status": "PASS_WITH_CONDITIONS",
+  "scope": "Evidence-grounded design/consistency acceptance of the integrated A1-C2 curriculum. Does not open any level, does not certify real-learner efficacy.",
+  "preconditions": {
+    "evidenceGate": {
+      "status": "READY",
+      "pedagogical": { "count": 120, "floor": 100, "topics": 14 },
+      "psychology": { "count": 127, "floor": 100, "topics": 14 },
+      "command": "node .github/scripts/check-supervisor-evidence.mjs"
+    },
+    "crossLevelAudit": {
+      "status": "PASS",
+      "source": "docs/curriculum/cross-level-audit.md",
+      "deliberatelyDeferredItems": [
+        {
+          "id": "F6-remainder",
+          "capability": "c2.sustain_coherence_across_topic_shifts",
+          "note": "prerequisite mapping left to explicit human curriculum-design judgment per LC-AUD-001's own instruction; visibly flagged via unresolvedPrerequisiteNote in c2.json, not silently broken",
+          "blocking": false
+        }
+      ]
+    },
+    "integration": { "status": "complete", "source": ".ai/foundry/completed/LC-INT-001.json" },
+    "availabilityFailClosed": {
+      "status": "confirmed",
+      "levels": {
+        "preA1": { "available": true, "contentStatus": "complete" },
+        "a1": { "available": false, "contentStatus": "partial" },
+        "a2": { "available": false, "contentStatus": "partial" },
+        "b1": { "available": false, "contentStatus": "partial" },
+        "b2": { "available": false, "contentStatus": "partial" },
+        "c1": { "available": false, "contentStatus": "partial" },
+        "c2": { "available": false, "contentStatus": "partial" }
+      },
+      "source": "linguachat-frontend/src/learning/curriculum/levels.js"
+    }
+  },
+  "crossCuttingClaims": [
+    {
+      "id": "GC1",
+      "claim": "Recognition/guided evidence alone never satisfies a required capability; only independent production counts toward mastery.",
+      "verdict": "PASS_WITH_CONDITIONS",
+      "confidence": "moderate",
+      "evidenceIds": ["PED-P03-004", "PSY-Y02-013", "PSY-Y01-014", "PSY-Y03-022"],
+      "condition": "May not be described as a directly-proven claim; evidence is inferential/adjacent (general testing-effect and recognition/recall-dissociation literature), not a purpose-built L2 recognition-vs-production study."
+    },
+    {
+      "id": "GC2",
+      "claim": "Delayed-retrieval capstone requirement improves retention.",
+      "verdict": "PASS",
+      "confidence": "high",
+      "evidenceIds": ["PSY-Y01-001", "PSY-Y02-001", "PSY-Y02-028", "PED-P03-004"]
+    },
+    {
+      "id": "GC3",
+      "claim": "Corrective feedback with retry (not recasts-only) improves L2 outcomes.",
+      "verdict": "PASS_WITH_CONDITIONS",
+      "confidence": "moderate-high",
+      "evidenceIds": ["PED-P01-005", "PED-P03-010", "PED-P03-011", "PED-P04-020"],
+      "condition": "No future PR may standardize the feedback engine on recasts alone; retry/self-repair as default, recasts as one tool among several, matches LC-SUP-001's own P2 calibration precedent."
+    },
+    {
+      "id": "GC4",
+      "claim": "Interests/context personalization varies examples only, never the capability standard or mastery threshold.",
+      "verdict": "PASS_WITH_CONDITIONS",
+      "confidence": "high for the underlying interleaving evidence, scoped not blanket",
+      "evidenceIds": ["PSY-Y01-007", "PSY-Y01-008", "PSY-Y01-009", "PSY-Y02-004"],
+      "condition": "check:interest-personalization must remain a permanent, non-removable gate in check:all."
+    },
+    {
+      "id": "GC5",
+      "claim": "Motivation/engagement design uses autonomy-competence-relatedness support, no variable-reward or dark-pattern mechanics.",
+      "verdict": "PASS",
+      "confidence": "high",
+      "evidenceIds": ["PSY-Y03-015", "PSY-Y03-016", "PSY-Y02-022"]
+    },
+    {
+      "id": "GC6",
+      "claim": "Age-sensitive scaffolding for older adults is L2-pedagogy-evidence-based.",
+      "verdict": "RESEARCH_NEEDED",
+      "confidence": "low for L2-specific older-adult claims; moderate for general cognitive-aging-informed pacing",
+      "evidenceIds": ["PSY-Y01-030", "PSY-Y03-026", "PSY-Y04-028"],
+      "gap": "Zero pedagogical-corpus records have an older-adult L2-learner population. Matches limitation already logged in docs/research/supervisors/readiness-report.md.",
+      "requiredChange": "Do not market or document older-adult scaffolding as L2-pedagogy-proven; scope claims to 'general accessible-pacing design, L2-specific validation still open', consistent with CLAUDE.md's requirement for later real-learner pilot evidence."
+    }
+  ],
+  "cefrHonestyCheck": {
+    "status": "no_violation_found",
+    "note": "All six blueprints explicitly exclude listening/speaking/pronunciation/live interpretation from their CEFR claims."
+  },
+  "runtimeFidelitySpotCheck": {
+    "levelsSampled": ["a2", "b1", "b2", "c1", "c2"],
+    "findings": [
+      {
+        "id": "RT1",
+        "summary": "Recognition/guided/independent distinction is a real, load-bearing code path (scaffolding.js:122-144), not documentation-only.",
+        "severity": "none"
+      },
+      {
+        "id": "RT2",
+        "summary": "Delayed retrieval is genuinely implemented end to end for C2's multi-capability capstone requirement (blueprints/c2.json coreEngineRequirements[3]) via learnerModel.js's recordDelayedRetrievalEvidence(model, canDoIds), wired live in EpisodeShell.jsx:677-679.",
+        "severity": "none"
+      },
+      {
+        "id": "RT3",
+        "summary": "docs/curriculum/blueprints/c2.json's coreEngineRequirements[3] entry is not annotated as resolved, unlike the parallel F8 entries in b2.json/c1.json.",
+        "severity": "minor",
+        "blocking": false,
+        "recommendation": "A future task with write access to docs/curriculum/blueprints/c2.json should add a 'RESOLVED by LC-INT-001' note."
+      },
+      {
+        "id": "RT4",
+        "summary": "B1's b1Arc1.js (earlier-authored) distinguishes independent/assisted evidence via suggestionEn presence/absence rather than the explicit evidenceType field A2/B2/C1/C2 use. Functionally sound, less uniform.",
+        "severity": "minor",
+        "blocking": false,
+        "recommendation": "Future B1 content-alignment pass, not blocking since B1 stays unavailable."
+      },
+      {
+        "id": "RT5",
+        "summary": "No dark-pattern reward mechanics found in the learning runtime (no Math.random-driven reward code; fixed per-episode XP constants).",
+        "severity": "none"
+      }
+    ]
+  },
+  "crossLevelAuditFindingsReverified": [
+    { "id": "F1", "status": "RESOLVED" },
+    { "id": "F2", "status": "RESOLVED" },
+    { "id": "F3", "status": "RESOLVED" },
+    { "id": "F4", "status": "RESOLVED" },
+    { "id": "F4b", "status": "RESOLVED" },
+    { "id": "F5", "status": "RESOLVED" },
+    { "id": "F6", "status": "PARTIALLY_RESOLVED", "note": "6/7 resolved; 1 deliberately deferred, see preconditions.crossLevelAudit.deliberatelyDeferredItems" },
+    { "id": "F7", "status": "RESOLVED" },
+    { "id": "F8", "status": "RESOLVED" },
+    { "id": "F9", "status": "RESOLVED" },
+    { "id": "F10", "status": "RESOLVED" },
+    { "id": "F11", "status": "RESOLVED" }
+  ],
+  "perLevelVerdicts": [
+    { "level": "a1", "verdict": "PASS", "basis": "Frozen per CLAUDE.md; arcs 1-5 runtime-proven; arcs 6-7 fail closed; available:false" },
+    { "level": "a2", "verdict": "PASS", "basis": "CEFR-reference gap closed; delayed retrieval/repair genuinely present; available:false" },
+    { "level": "b1", "verdict": "PASS_WITH_CONDITIONS", "basis": "One non-blocking authoring-generation gap (evidence-tagging convention) in b1Arc1.js" },
+    { "level": "b2", "verdict": "PASS", "basis": "Capstone genuinely implements delayed retrieval for every required arc 1-5 capability" },
+    { "level": "c1", "verdict": "PASS_WITH_CONDITIONS", "basis": "Personalization invariant enforced structurally but not restated verbatim, unlike sibling blueprints" },
+    { "level": "c2", "verdict": "PASS_WITH_CONDITIONS", "basis": "One deliberately-deferred cross-level prerequisite; one documentation-sync gap on a resolved core-engine requirement" }
+  ],
+  "overallVerdict": "PASS_WITH_CONDITIONS",
+  "blocksLcRc001": false,
+  "opensAnyLevel": false,
+  "certifiesRealLearnerEfficacy": false,
+  "conditions": [
+    "GC1 and GC6 must be described at the confidence level the corpora actually support, not overstated.",
+    "B1 evidence-tagging convention, C1 unstated personalization sentence, and C2's un-annotated resolved core-engine requirement should be picked up by a future task with write access to those files.",
+    "C2's deliberately-deferred sustain_coherence_across_topic_shifts prerequisite needs explicit human judgment before C2's own runtime content is authored against it."
+  ]
+}
