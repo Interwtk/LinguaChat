@@ -31,13 +31,14 @@
  * dedicated collision detector; it imports this same registry so the two
  * never drift apart.
  */
-import { PRE_A1, A1, A2, B1, B2, C1 } from './levels.js'
+import { PRE_A1, A1, A2, B1, B2, C1, C2 } from './levels.js'
 import { CAN_DO_INTENT as PRE_A1_CAN_DO_INTENT } from './preA1Map.js'
 import { A1_CAN_DO_INTENT } from './a1Map.js'
 import { A2_CAN_DO_INTENT } from './a2Map.js'
 import { B1_CAN_DO_INTENT } from './b1Map.js'
 import { B2_CAN_DO_INTENT } from './b2Map.js'
 import { C1_CAN_DO_INTENT } from './c1Map.js'
+import { C2_CAN_DO_INTENT } from './c2Map.js'
 
 export const LEVEL_CAN_DO_INTENT_MAPS = [
   { levelId: PRE_A1, canDoIntent: PRE_A1_CAN_DO_INTENT },
@@ -46,6 +47,7 @@ export const LEVEL_CAN_DO_INTENT_MAPS = [
   { levelId: B1, canDoIntent: B1_CAN_DO_INTENT },
   { levelId: B2, canDoIntent: B2_CAN_DO_INTENT },
   { levelId: C1, canDoIntent: C1_CAN_DO_INTENT },
+  { levelId: C2, canDoIntent: C2_CAN_DO_INTENT },
 ]
 
 /*

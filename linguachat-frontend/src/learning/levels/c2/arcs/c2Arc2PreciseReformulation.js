@@ -160,7 +160,7 @@ const REFORMULATE_01 = {
     },
     {
       type: 'free_reply', speaker: 'lingua', personalizationVariant: true, format: 'themed',
-      promptEn: "Optional: here's a short {{learnerInterest}}-related recall notice instead - want to try reformulating that one for a friend too?",
+      promptEn: "Optional: here's a short recall notice about a topic you enjoy instead - want to try reformulating that one for a friend too?",
       instructionKey: 'c2ep5PersonalizationInstruction', evalKind: 'reformulate_for_audience', canDoId: 'reformulate_dense_source_for_a_new_audience',
       itemIds: ['reformulation_connector_pattern'], evidenceType: 'guided',
       note: 'not counted toward independent/transfer evidence — an optional interest-flavored alternative, per c2.json arc.personalizationMode "themed" and content-plan.json arc 2 personalization.interestFlavoredExample',

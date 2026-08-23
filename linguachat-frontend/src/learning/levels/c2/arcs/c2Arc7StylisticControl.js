@@ -323,7 +323,7 @@ const INTEGRATED_04 = {
     },
     {
       type: 'free_reply', speaker: 'lingua', personalizationVariant: true, format: 'themed',
-      promptEn: "Optional: here's a short, overly stiff message about {{learnerInterest}} instead - want to try warming up the tone on that one too?",
+      promptEn: "Optional: here's a short, overly stiff message about a topic you enjoy instead - want to try warming up the tone on that one too?",
       instructionKey: 'c2ep28PersonalizationInstruction', evalKind: 'edit_for_precision', canDoId: 'edit_own_text_for_precision_and_tone',
       itemIds: ['lexical_precision_substitution_pattern'], evidenceType: 'guided',
       note: 'not counted toward independent/transfer evidence — an optional interest-flavored alternative, per c2.json arc.personalizationMode "light" and content-plan.json arc 7 personalization.interestFlavoredExample; the neutral fallback stays elevator_draft/repetitive_draft/pipes_draft/stiff_apology_draft above',

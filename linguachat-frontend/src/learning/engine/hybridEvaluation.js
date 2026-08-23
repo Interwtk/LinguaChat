@@ -152,6 +152,31 @@ const PRAISE = {
   extended_explanation: { independent: 'c1PraiseExtendedIndependent', helped: 'c1PraiseExtendedHelped' },
   negotiate_outcome: { independent: 'c1PraiseNegotiateIndependent', helped: 'c1PraiseNegotiateHelped' },
   track_discourse: { independent: 'c1PraiseSustainIndependent', helped: 'c1PraiseSustainHelped' },
+  /*
+   * C2's 13 new intents. Same reason as every level above — reached ONLY on
+   * the remote-escalation path, where `levels/c2/evaluators.js`'s own
+   * `praiseKey` (set on every conclusive local accept) was not set.
+   * `qualify_claim`/`synthesize_viewpoints`/`shift_register` are NOT
+   * re-declared here — they are C1's/B2's own bare intent ids, reused by
+   * C2 can-dos (`levels/c2/evaluators.js`'s own header), and this table is
+   * keyed by intent id alone, not by (intent, level): a remote-confirmed
+   * C2 `qualify_claim`/`synthesize_viewpoints`/`shift_register` reply
+   * reuses C1's/B2's existing praise key above rather than a fifteenth
+   * duplicate — a soft, cosmetic gap (a C2 learner's remote-escalated
+   * praise copy would read as if it were a C1/B2 achievement), never a
+   * grading one, and the same class of gap this table already accepts
+   * for `clarify_ambiguity` reusing `repair_request`'s keys.
+   */
+  extract_argument: { independent: 'c2PraiseExtractIndependent', helped: 'c2PraiseExtractHelped' },
+  identify_stance: { independent: 'c2PraiseStanceIndependent', helped: 'c2PraiseStanceHelped' },
+  reformulate_for_audience: { independent: 'c2PraiseReformulateIndependent', helped: 'c2PraiseReformulateHelped' },
+  recognize_implication: { independent: 'c2PraiseImplicationIndependent', helped: 'c2PraiseImplicationHelped' },
+  develop_argument: { independent: 'c2PraiseArgumentIndependent', helped: 'c2PraiseArgumentHelped' },
+  rebut_counterargument: { independent: 'c2PraiseRebutIndependent', helped: 'c2PraiseRebutHelped' },
+  sustain_coherence: { independent: 'c2PraiseSustainIndependent', helped: 'c2PraiseSustainHelped' },
+  repair_at_intention_level: { independent: 'c2PraiseRepairIndependent', helped: 'c2PraiseRepairHelped' },
+  edit_for_precision: { independent: 'c2PraiseEditIndependent', helped: 'c2PraiseEditHelped' },
+  mediate_disagreement: { independent: 'c2PraiseMediateIndependent', helped: 'c2PraiseMediateHelped' },
 }
 
 /*
@@ -291,6 +316,16 @@ function buildRemotePayload(params, kind) {
      */
     step_can_do_id: params.canDoId ?? '',
     conversation_history: Array.isArray(params.conversationHistory) ? params.conversationHistory : [],
+    /*
+     * C2's own field, same bug class as every field above: without
+     * `turn_context_span` a remote judge grading `sustain_coherence`/
+     * `mediate_disagreement`/`repair_at_intention_level` has no preceding
+     * turn(s) to bridge from or repair against — see
+     * `levels/c2/evaluators.js`'s own header for the full account of this
+     * multi-turn evaluation span mechanism (`ctx.spanTurns`, deliberately a
+     * different name from the pre-existing scalar `turn_context` below).
+     */
+    turn_context_span: Array.isArray(params.spanTurns) ? params.spanTurns : [],
     interest_id: params.interestId ?? null,
     native_language: params.nativeLanguage ?? 'en',
     interface_language: params.interfaceLanguage ?? 'en',
@@ -303,7 +338,7 @@ function buildRemotePayload(params, kind) {
 }
 
 export async function evaluateEpisodeResponse(params) {
-  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', abilityForm = '', arrangeStage = '', praisePrefix = '', expected = '', narrativeForm = '', tone = '', situationForm = '', role = '', subtype = '', registerCheck = false, expectedRegister = '', discourseCoherenceCheck = false, sourceText = '', canDoId = '', conversationHistory = [], signal, remote } = params
+  const { step, learnerResponse, learnerName, scaffoldLevel, assistanceUsed = false, turnContext = null, place = '', targetNoun = '', targetThing = '', activity = '', partner = '', repairKind = '', meaningWord = '', quantityForm = '', timeForm = '', usualTime = '', targetCount = null, placeName = '', relationHint = '', abilityForm = '', arrangeStage = '', praisePrefix = '', expected = '', narrativeForm = '', tone = '', situationForm = '', role = '', subtype = '', registerCheck = false, expectedRegister = '', discourseCoherenceCheck = false, sourceText = '', canDoId = '', conversationHistory = [], spanTurns = [], signal, remote } = params
   const kind = step?.evalKind
   /*
    * Whether this counts as unaided production, used only to choose the wording
@@ -402,6 +437,15 @@ export async function evaluateEpisodeResponse(params) {
      */
     ...(canDoId ? { canDoId } : {}),
     ...(conversationHistory.length ? { conversationHistory } : {}),
+    /*
+     * C2's multi-turn evaluation span — same bug class as every field
+     * above: without `spanTurns` here, `sustain_coherence`/
+     * `mediate_disagreement`/`repair_at_intention_level`'s LOCAL
+     * re-evaluation (the verdict actually shown for every
+     * locally-conclusive turn) cannot bridge from or repair against the
+     * preceding turn(s) a step's own `turnContext` array supplies.
+     */
+    ...(spanTurns.length ? { spanTurns } : {}),
   })
 
   // Conclusive local verdict (closed step, clear accept, empty, clear failure).

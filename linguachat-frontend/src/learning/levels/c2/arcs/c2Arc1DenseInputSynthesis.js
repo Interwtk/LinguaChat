@@ -119,7 +119,7 @@ const EXTRACT_01 = {
     },
     {
       type: 'free_reply', speaker: 'lingua', personalizationVariant: true, format: 'themed',
-      promptEn: "Optional: here's a short conflicting-reviews pair about {{learnerInterest}} instead - want to try extracting the claim and support from that one too?",
+      promptEn: "Optional: here's a short conflicting-reviews pair about a topic you enjoy instead - want to try extracting the claim and support from that one too?",
       instructionKey: 'c2ep1PersonalizationInstruction', evalKind: 'extract_argument', canDoId: 'extract_key_argument_from_dense_text',
       itemIds: ['evidentiality_stance_pattern'], evidenceType: 'guided',
       note: 'not counted toward independent/transfer evidence — an optional interest-flavored alternative, per c2.json arc.personalizationMode "themed" and content-plan.json arc 1 personalization.interestFlavoredExample',

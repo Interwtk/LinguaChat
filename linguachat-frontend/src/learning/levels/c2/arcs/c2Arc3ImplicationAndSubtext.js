@@ -320,7 +320,7 @@ const INTEGRATED_04 = {
     },
     {
       type: 'free_reply', speaker: 'lingua', personalizationVariant: true, format: 'light',
-      promptEn: "Optional: here's a short indirect-refusal or irony exchange set in {{learnerInterest}} instead - want to try identifying the implication in that one too?",
+      promptEn: "Optional: here's a short indirect-refusal or irony exchange set around a topic you enjoy instead - want to try identifying the implication in that one too?",
       instructionKey: 'c2ep12PersonalizationInstruction', evalKind: 'recognize_implication', canDoId: 'recognize_implied_meaning',
       itemIds: ['irony_understatement_marker_pattern'], evidenceType: 'guided',
       note: 'not counted toward independent/transfer evidence — an optional interest-flavored alternative, per c2.json arc.personalizationMode "light" and content-plan.json arc 3 personalization.interestFlavoredExample; the neutral default it replaces is c2.json arc.neutralFallback, "a neutral workplace or service exchange carrying an indirect refusal" (EP1\'s salon exchange already fills that neutral role).',
