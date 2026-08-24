@@ -70,6 +70,16 @@ jobs:
             Do not spend the final 15 turns expanding scope or repeating repository-wide
             inspection that the request does not require.
 
+            MERGE-BLOCKER CONTRACT: your single progress/result comment is part of the
+            automated merge gate. If you find an evidence gap, defect, unresolved check,
+            or any reason the PR must NOT be marked Ready or merged, include this exact
+            marker in that comment while the blocker is active:
+            <!-- linguachat-merge-blocker -->
+            Keep the marker present through progress updates. Remove it only after your
+            own observed validation proves the blocker is cleared. Never say "do not
+            merge" while omitting the marker, and never leave the marker behind after
+            explicitly reporting that the same blocker has passed.
+
             If the request needs implementation beyond a tiny review/comment, say
             explicitly that it belongs in `.ai/TASKS.md` and name the smallest task
             boundary and acceptance evidence. The cloud `Claude — chain` plus
