@@ -13,9 +13,29 @@ branch/PR instead of duplicating it.
 
 ## IN_PROGRESS
 
+_(none — the queue is open; the premature LC-PED-002 claim is superseded by this coordinated queue fix)_
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
+
+- [LC-DOC-002] Sync agent/operator contracts with the integrated A1–C2 baseline
+  owner:  unclaimed
+  branch: none
+  why:    `CLAUDE.md`, `.ai/TRANSLATIONS.md` and one operator-facing A1 blueprint
+          message still describe the pre-Foundry state. Because every Claude session
+          reads `CLAUDE.md` first, this drift can make the next worker act on stale
+          A1/Supabase assumptions before `LC-PED-002` starts.
+  done:   documentation/operator-message only: align `CLAUDE.md` with the live
+          no-Supabase contract and integrated A1–C2 state; refresh the measured
+          structural i18n baseline without claiming placeholder English is translated;
+          update only the stale green operator conclusion in `check-a1-blueprint`.
+          Do not modify curriculum logic, evaluators, level availability, providers,
+          voice/media/pronunciation, Supabase or frozen visuals. Require focused
+          regression proof plus check:all, build, check:i18n, backend compileall/pytest,
+          guards and two consecutive clean full cycles on the exact final head.
+
 - [LC-PED-002] Final all-arcs learning acceptance gate before A1 can open
-  owner:  claude-action
-  branch: qa/lc-ped-002-final-acceptance-gate
+  owner:  unclaimed
+  branch: none
   why:    the full A1 curriculum is now implemented, integrated, supervisor-accepted and release-hardened, but A1 must still be re-proven end-to-end before any availability decision.
   done:   on the final integrated/hardened curriculum head, re-derive every Pre-A1 + A1 arc and run at
           least 20 distinct learner journeys per arc plus longitudinal new-learner
@@ -25,10 +45,6 @@ branch/PR instead of duplicating it.
           two consecutive clean full cycles after the last fix. A1 MUST remain
           unavailable until this gate is DONE and a separate availability decision is
           explicitly approved.
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
-_(none currently unclaimed and unblocked — see PR #87 / issue #86 for a pending queue-order proposal not yet merged)_
 
 ## BLOCKED
 
