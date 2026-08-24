@@ -1,16 +1,17 @@
 # The cloud orchestrator. A finished agent PR is merged and the next task starts
-# without relying on a second GitHub event. An hourly watchdog repairs stalls.
+# without relying on a second GitHub event. Successful checkpointed workers resume
+# immediately; a five-minute watchdog is the missed-event/failure recovery net.
 name: Claude — chain
 
 on:
   workflow_run:
-    workflows: ["QA"]
+    workflows: ["QA", "Claude — autonomous task", "Claude — translations"]
     types: [completed]
   pull_request:
     types: [closed]
   schedule:
-    # Recovery net only. Normal advancement happens in the same QA-triggered run.
-    - cron: '17 * * * *'
+    # Recovery net only. Normal advancement/resume is event-driven.
+    - cron: '*/5 * * * *'
   workflow_dispatch:
     inputs:
       reason:
@@ -59,8 +60,9 @@ jobs:
   advance:
     needs: [merge]
     # `always()` is required because merge is intentionally skipped for schedule,
-    # workflow_dispatch and pull_request.closed entry points. Foundry QA events also
-    # enter here even when red so the self-healing cycle can return/resume that PR.
+    # workflow_dispatch, pull_request.closed and worker-completion entry points.
+    # Successful worker completion resumes a remote checkpoint immediately. Failed
+    # workers use the five-minute watchdog so a persistent failure cannot hot-loop.
     if: >
       always() &&
       (
@@ -71,7 +73,14 @@ jobs:
           github.event_name == 'workflow_run' &&
           (
             needs.merge.outputs.merged == 'true' ||
-            startsWith(github.event.workflow_run.head_branch, 'foundry/')
+            startsWith(github.event.workflow_run.head_branch, 'foundry/') ||
+            (
+              github.event.workflow_run.conclusion == 'success' &&
+              (
+                github.event.workflow_run.name == 'Claude — autonomous task' ||
+                github.event.workflow_run.name == 'Claude — translations'
+              )
+            )
           )
         )
       )
@@ -106,14 +115,17 @@ jobs:
           git fetch origin main --quiet
           git reset --hard origin/main
 
-      - name: Is any Claude writer already alive?
+      - name: Is any autonomous Claude writer already alive?
         id: busy
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           RUNNING=0
-          for WF in claude-task.yml claude-i18n.yml claude-mention.yml; do
+          # Interactive Claude — mention is read/review-only and has its own
+          # concurrency group. It may validate in parallel and can still block merge
+          # through LC-OPS-020 without freezing implementation.
+          for WF in claude-task.yml claude-i18n.yml; do
             N=$(gh run list --workflow="$WF" --limit 30 --json status \
               --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length')
             echo "$WF: $N alive"
@@ -121,8 +133,38 @@ jobs:
           done
           echo "running=$RUNNING" >> "$GITHUB_OUTPUT"
           if [ "$RUNNING" != "0" ]; then
-            echo "Another serial Claude writer is alive; watchdog will not mutate the serial queue." >> "$GITHUB_STEP_SUMMARY"
+            echo "Another autonomous Claude writer is alive; watchdog will not mutate the serial queue." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      # Successful worker completion is allowed to immediately re-dispatch only if
+      # that worker left a real remote checkpoint. If it returned success without
+      # any branch/PR, defer retry to the five-minute watchdog rather than hot-looping.
+      - name: Did the completed worker leave a resumable checkpoint?
+        id: worker_checkpoint
+        if: >
+          steps.busy.outputs.running == '0' &&
+          github.event_name == 'workflow_run' &&
+          (
+            github.event.workflow_run.name == 'Claude — autonomous task' ||
+            github.event.workflow_run.name == 'Claude — translations'
+          )
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          BRANCH=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
+            grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
+          RESUMABLE=false
+          if [ -n "${BRANCH:-}" ] && [ "$BRANCH" != "none" ]; then
+            if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+              RESUMABLE=true
+            else
+              NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty' || true)
+              [ -n "$NUMBER" ] && RESUMABLE=true
+            fi
+          fi
+          echo "resumable=$RESUMABLE" >> "$GITHUB_OUTPUT"
+          echo "worker checkpoint: branch=${BRANCH:-none} resumable=$RESUMABLE" >> "$GITHUB_STEP_SUMMARY"
 
       # If a previous QA/merge event was missed, the watchdog may safely finish a
       # READY claimed PR using exactly the same merge contract as the normal path.
@@ -216,7 +258,17 @@ jobs:
           node .github/scripts/next-task.mjs --explain 2>&1 | tail -30 >> "$GITHUB_STEP_SUMMARY" || true
 
       - name: Start exactly one task in its correct lane
-        if: steps.busy.outputs.running == '0' && steps.next.outputs.id != ''
+        if: >
+          steps.busy.outputs.running == '0' &&
+          steps.next.outputs.id != '' &&
+          (
+            github.event_name != 'workflow_run' ||
+            (
+              github.event.workflow_run.name != 'Claude — autonomous task' &&
+              github.event.workflow_run.name != 'Claude — translations'
+            ) ||
+            steps.worker_checkpoint.outputs.resumable == 'true'
+          )
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TASK_ID: ${{ steps.next.outputs.id }}
@@ -228,6 +280,18 @@ jobs:
           esac
           gh workflow run "$WORKFLOW" --ref main -f task_id="$TASK_ID" -f dry_run=false
           echo "Dispatched **$TASK_ID** to **$WORKFLOW**." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Defer a worker with no remote checkpoint to the watchdog
+        if: >
+          steps.busy.outputs.running == '0' &&
+          steps.next.outputs.id != '' &&
+          github.event_name == 'workflow_run' &&
+          (
+            github.event.workflow_run.name == 'Claude — autonomous task' ||
+            github.event.workflow_run.name == 'Claude — translations'
+          ) &&
+          steps.worker_checkpoint.outputs.resumable != 'true'
+        run: echo "Worker left no provable remote checkpoint; avoiding an immediate retry loop. The <=5 minute watchdog will retry safely." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Stop cleanly
         if: steps.busy.outputs.running == '0' && steps.next.outputs.id == ''
