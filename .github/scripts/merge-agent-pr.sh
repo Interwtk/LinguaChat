@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Merge exactly one agent PR only when its checks, evidence and bookkeeping prove
-# that it is finished. Safe to call from a QA workflow_run or the cloud watchdog.
+# Merge exactly one agent PR only when its checks, evidence, bookkeeping and two
+# complete clean QA cycles on the exact final source head prove it is finished.
+# Safe to call from a QA workflow_run or the cloud watchdog.
 set -euo pipefail
 
 BRANCH="${1:-}"
@@ -107,6 +108,42 @@ case "$BRANCH" in
     fi
     ;;
 esac
+
+# Two clean cycles are a source-head property, not a prose claim. The QA workflow
+# emits a sentinel job only for a non-Draft pull_request run in which frontend,
+# backend, guards and Evidence all succeeded. The verifier counts the newest
+# eligible sentinel jobs for this exact PR head and fails closed on red/cancelled/
+# incomplete cycles. A new commit naturally resets the count because its SHA changes.
+REPO="${GITHUB_REPOSITORY:-}"
+if [ -z "$REPO" ]; then
+  REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+fi
+HEAD_SHA=$(gh pr view "$NUMBER" --json headRefOid --jq .headRefOid)
+set +e
+CYCLE_OUTPUT=$(node .github/scripts/check-two-clean-qa-cycles.mjs --repo "$REPO" --head "$HEAD_SHA" --required 2 2>&1)
+CYCLE_STATUS=$?
+set -e
+printf '%s\n' "$CYCLE_OUTPUT"
+
+if [ "$CYCLE_STATUS" -eq 2 ]; then
+  # Exactly one clean cycle exists on the final head. Request the second cycle
+  # automatically without changing source: Draft -> Ready emits ready_for_review,
+  # which is a first-class QA trigger. converted_to_draft is intentionally not.
+  comment_once "Not merged yet: this exact final head has only one complete clean non-draft QA cycle. A second cycle is being requested automatically; no source change is needed."
+  if gh pr ready "$NUMBER" --undo && gh pr ready "$NUMBER"; then
+    out reason second-cycle-triggered
+  else
+    echo "Could not trigger the second QA cycle; watchdog will retry safely."
+    out reason second-cycle-trigger-failed
+  fi
+  exit 0
+fi
+
+if [ "$CYCLE_STATUS" -ne 0 ]; then
+  comment_once "Not merged: two consecutive complete clean non-draft QA cycles on the exact final head are required. $CYCLE_OUTPUT"
+  out reason clean-cycle-gate
+  exit 0
+fi
 
 # Agent branches deliberately merge current main while they work. Preserve that
 # evidenced final tree with a normal 3-way merge instead of replaying its history
