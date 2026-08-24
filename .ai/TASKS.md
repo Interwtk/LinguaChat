@@ -13,13 +13,9 @@ branch/PR instead of duplicating it.
 
 ## IN_PROGRESS
 
-_(none — the queue is open)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-PED-002] Final all-arcs learning acceptance gate before A1 can open
-  owner:  unclaimed
-  branch: none
+  owner:  claude-action
+  branch: qa/lc-ped-002-final-acceptance-gate
   why:    the full A1 curriculum is now implemented, integrated, supervisor-accepted and release-hardened, but A1 must still be re-proven end-to-end before any availability decision.
   done:   on the final integrated/hardened curriculum head, re-derive every Pre-A1 + A1 arc and run at
           least 20 distinct learner journeys per arc plus longitudinal new-learner
@@ -29,10 +25,13 @@ _(none — the queue is open)_
           two consecutive clean full cycles after the last fix. A1 MUST remain
           unavailable until this gate is DONE and a separate availability decision is
           explicitly approved.
-  note:   re-legitimately reclaimed after LC-DOC-002; the prior premature claim's
-          checkpoint commit 5e8d1f3f4f0b6ff7efedc1aa5ee096f47e1ab236 (PR #88,
-          closed not merged) was cherry-picked onto a fresh branch off this head
-          per the owner's PR #88 comment, not duplicated from scratch.
+  note:   resumed (not duplicated) from the existing draft PR #91 on this branch —
+          298 per-arc journeys (13 arcs) plus a 38-episode longitudinal Pre-A1+A1
+          journey already green on this head. Remaining: es/ja/ar 390px/1440px
+          browser proof for arcs 6-7, final full check:all/build/backend cycles
+          (two consecutive clean), and this bookkeeping.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
 
 ## BLOCKED
 
