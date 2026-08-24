@@ -160,8 +160,15 @@ ok()
 
 // 14. Docs agent branches are first-class and normal merges preserve their evidenced
 // final trees instead of replaying merge-history commits through a forced rebase.
+// Explicit ops/coord-* branches are the only exception to the task-DONE requirement:
+// they are queue/state/handoff maintenance and must be limited to exactly those files.
 assert.match(mergeScript, /curr\/\*\|i18n\/\*\|qa\/\*\|ops\/\*\|docs\/\*\|fix\/\*/)
 assert.match(mergeScript, /curr\/\*\|i18n\/\*\|qa\/\*\|ops\/\*\|docs\/\*\)/)
+assert.match(mergeScript, /ops\/coord-\*\) COORDINATION_ONLY=true/)
+assert.match(mergeScript, /coordination-only and may change only \.ai\/TASKS\.md/)
+assert.match(mergeScript, /if \[ "\$COORDINATION_ONLY" = "true" \]/)
+assert.match(mergeScript, /comment_once\(\)/)
+assert.match(mergeScript, /gh pr view "\$NUMBER" --json comments/)
 assert.match(mergeScript, /gh pr merge "\$NUMBER" --merge --delete-branch/)
 assert.doesNotMatch(mergeScript, /gh pr merge "\$NUMBER" --rebase/)
 ok()
