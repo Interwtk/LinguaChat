@@ -13,13 +13,9 @@ branch/PR instead of duplicating it.
 
 ## IN_PROGRESS
 
-_(none — the queue is open; the premature LC-PED-002 claim is superseded by this coordinated queue fix)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-DOC-002] Sync agent/operator contracts with the integrated A1–C2 baseline
-  owner:  unclaimed
-  branch: none
+  owner:  claude-action
+  branch: docs/lc-doc-002-sync-contracts
   why:    `CLAUDE.md`, `.ai/TRANSLATIONS.md` and one operator-facing A1 blueprint
           message still describe the pre-Foundry state. Because every Claude session
           reads `CLAUDE.md` first, this drift can make the next worker act on stale
@@ -32,6 +28,8 @@ _(none — the queue is open; the premature LC-PED-002 claim is superseded by th
           voice/media/pronunciation, Supabase or frozen visuals. Require focused
           regression proof plus check:all, build, check:i18n, backend compileall/pytest,
           guards and two consecutive clean full cycles on the exact final head.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
 
 - [LC-PED-002] Final all-arcs learning acceptance gate before A1 can open
   owner:  unclaimed
