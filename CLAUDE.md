@@ -83,20 +83,25 @@ OpenAI is used only when the owner authorises it explicitly, in writing.
 
 Pre-A1: 17 episodes, frozen. A1: 7 arcs, 21 episodes, ids 18–38.
 
-A1 arcs 1–5 (episodes 18–33) have runtime content and have been proved against
-their blueprints; arc 5 also has a production-build browser walkthrough covering
-all four episodes. Arcs 6–7 (34–38) remain designed-only and must fail closed.
+The A1–C2 Curriculum Foundry chain (`LC-CONT-A1` through `LC-CONT-C2`, then
+`LC-INT-001`) is complete: A1 arcs 1–7, A2, B1, B2, C1 and C2 all have runtime
+content wired into the shared engine (episode registry, evaluator dispatch,
+i18n, semantic types, mini-story), and the release-candidate hardening pass
+(`LC-RC-001`) re-proved that head clean. The integrated runtime holds 171
+curriculum episodes across Pre-A1 and A1–C2. **Having content is not the same
+as being open**: every level from A1 through C2 is `contentStatus: partial`
+and `available: false` in `src/learning/curriculum/levels.js`.
 
-A1 stays `contentStatus: partial` and `available: false` until **all seven arcs**
-are implemented, all required capabilities and integrated conversations satisfy
-the blueprint, final functional/browser QA passes, `LC-PED-002` completes its final
-all-arcs pedagogical gate, and a separate A1 completion gate deliberately changes
-the level state. Never infer availability from "all runtime episodes passed" while
-runtime is incomplete.
+A1 stays `contentStatus: partial` and `available: false` until `LC-PED-002`
+completes its final all-arcs pedagogical acceptance gate over the integrated
+runtime and a separate, explicit A1 availability decision deliberately changes
+the level state. Never infer availability from "all runtime episodes passed" or
+"content exists" while that gate and decision are still outstanding — the same
+rule applies to A2–C2, which have no availability gate scheduled at all yet.
 
 Episodes without runtime content fail closed with `unknown_episode`. A normal
-learner asking for built-but-closed A1 gets `level_unavailable` **before any A1
-content chunk is fetched**.
+learner asking for a built-but-closed level (A1 through C2 today) gets
+`level_unavailable` **before any content chunk is fetched**.
 
 ## Research-before-implementation rule
 

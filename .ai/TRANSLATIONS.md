@@ -36,22 +36,27 @@ NEVER translate the English the learner is practising.
 
 ## Current coverage — measured, not claimed
 
-Latest verified main after LC-PROD-001 (PR #25), unchanged by LC-I18N-002 (this
-task touches no locale copy): `npm run check:i18n` reports **1726 visible keys**
-in the English base (6 plural-aware) and 100% coverage in the seven implemented
-locale files. Coverage now includes plural-category completeness, not just flat
-key parity; it still does not by itself certify translation quality.
+Re-measured for `LC-DOC-002` on the final integrated A1–C2 Curriculum Foundry
+head (after `LC-INT-001`/`LC-SUP-002`/`LC-RC-001`), superseding the 1726-key
+figure recorded when this table was last refreshed (`LC-PROD-001`, PR #25): the
+base dictionary grew as the Foundry's six content lanes and shared-runtime
+integration added copy. `npm run check:i18n` now reports **5205 visible keys**
+in the English base (still 6 plural-aware) and 100% structural coverage in all
+seven implemented locale files — zero missing, zero extra, zero placeholder
+mismatches. This is structural key/plural-category parity only; a locale being
+100% here is not a claim that its copy is human-reviewed translation quality,
+and none of these levels is available to learners regardless of coverage.
 
 | language | keys | structural coverage | audit status |
 |---|---:|---:|---|
-| en (base) | 1726 | source | structural baseline; welcome/placement/profile now route through it |
-| es | 1726 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| pt | 1726 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| fr | 1726 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| it | 1726 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| de | 1726 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| ja | 1720 | 100% | implemented; fewer keys is correct — Japanese has no grammatical plural, so it needs one category per plural key instead of six |
-| ar | 1750 | 100% | implemented; more keys is correct — Arabic plural grammar needs `zero/one/two/few/many/other`, all six populated |
+| en (base) | 5205 | source | structural baseline; welcome/placement/profile now route through it |
+| es | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| pt | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| fr | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| it | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| de | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
+| ja | 5199 | 100% | implemented; fewer keys is correct — Japanese has no grammatical plural, so it needs one category per plural key instead of six |
+| ar | 5229 | 100% | implemented; more keys is correct — Arabic plural grammar needs `zero/one/two/few/many/other`, all six populated |
 
 The seven lazy locale modules actually present are `es/pt/fr/it/de/ja/ar`; English
 is the base dictionary. This is the real implemented set today — the same 8 bases
