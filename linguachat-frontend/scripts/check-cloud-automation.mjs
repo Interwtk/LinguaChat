@@ -50,7 +50,7 @@ assert.match(mention, /TRIAGE\/REVIEW lane|triage\/review lane/i)
 assert.match(mention, /never edit\s+`?\.github\/workflows|NEVER take ownership of a queue-sized implementation/i)
 assert.match(mention, /--allowedTools\s+Read,Glob,Grep,Bash,TodoWrite\b/,
   'interactive mention lane must expose only read/diagnostic tools plus TodoWrite')
-assert.match(mention, /--max-turns 80/)
+assert.match(mention, /--max-turns 140/)
 ok()
 
 // 5. A QA transition from draft -> ready is a first-class trigger.

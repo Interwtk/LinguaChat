@@ -1,6 +1,6 @@
 # HANDOFF — read this, then start
 
-Current as of 2026-08-24 after the A1–C2 Curriculum Foundry completed, the serial queue was corrected, and `LC-DOC-002` synced the agent/operator contracts with that integrated baseline.
+Current as of 2026-08-24 after the A1–C2 Curriculum Foundry completed, the serial queue was corrected, `LC-DOC-002` synced the agent/operator contracts with that integrated baseline, and `LC-PED-002` completed the final all-arcs pedagogical acceptance gate.
 
 ## What just happened
 
@@ -18,11 +18,13 @@ The final hardening pass preserved all product boundaries and finished with two 
 
 `LC-DOC-002` (PR #90) then closed the documentation gap this created: `CLAUDE.md`'s Curriculum state section, `.ai/TRANSLATIONS.md`'s coverage table (stale 1726-key snapshot, now 5205) and `check-a1-blueprint.mjs`'s printed conclusion ("A1 is planned and absent from the product") all still described the pre-Foundry state. They now match reality — content exists for A1 through C2, all still `available:false`. Documentation/operator-message only; no curriculum, evaluator, availability, provider or visual behavior changed.
 
+`LC-PED-002` (PR #91) then re-proved the whole Pre-A1 + A1 learning journey end to end on that final integrated/hardened head: 298 distinct per-arc journeys across all 13 Pre-A1+A1 arcs, a 38-episode longitudinal new-learner journey through A1 exit (delayed recall, transfer, cross-level prerequisite reuse, scaffold fading/recovery, assisted-vs-independent evidence, no false mastery, no duplicate replay reward), 41/41 focused evaluator cases and a real Chromium browser pass for A1 arcs 6–7 at 390px/1440px in es/ja/ar (correct RTL, target-English stays `lang=en`/LTR, Chatto never mirrored, no overflow/raw keys/console errors). It also fixed one stale test assertion (`check-cloud-automation.mjs` still expected `--max-turns 80` after an unrelated main commit, `LC-OPS-019`, intentionally raised the interactive-lane budget to 140) that was otherwise blocking every branch's `check:all` from a clean run. A1 stays `available:false` — this gate proves the curriculum works, it does not itself authorize opening A1.
+
 ## Product contract — do not reinterpret
 
 - Lingua is the tutor; Chatto is mascot-only.
 - Pre-A1 is frozen.
-- A1 stays fail-closed until `LC-PED-002` is DONE and a separate explicit availability decision is approved.
+- A1 stays fail-closed. `LC-PED-002` is now DONE, but that is not itself the availability decision — a separate, explicit decision is still required and has not happened.
 - One `user_language` governs UI, explanations, hints, corrections, interpretations and meanings; target language is English.
 - Arabic auxiliary UI is RTL; target-English content/input stays LTR; Chatto is never mirrored.
 - No Supabase.
@@ -32,24 +34,9 @@ The final hardening pass preserved all product boundaries and finished with two 
 
 ## What comes next
 
-The next and only serial product task is `LC-PED-002`, the final all-arcs learning acceptance gate. Its old blocker (“A1 arcs 6 and 7 implemented”) is satisfied, and the contract-sync prerequisite (`LC-DOC-002`) is now also DONE.
+`LC-PED-002` is done. There is no A1-availability task in the queue yet — do not infer one is implicitly authorized. The next serial product step is a distinct, explicitly-scoped availability-decision task (not yet filed as of this writing) that would deliberately flip A1's `available:false`. Until that task exists and is separately approved, A1 stays closed exactly as it is today.
 
-Do not create another A1 curriculum task and do not reopen the Foundry. `LC-PED-002` is an acceptance/proof task over the integrated runtime, not a curriculum rewrite.
-
-Required proof before `LC-PED-002` can be DONE:
-- re-derive every Pre-A1 + A1 arc from the live integrated runtime;
-- at least 20 distinct learner journeys per arc;
-- longitudinal new-learner journeys through A1 exit;
-- delayed recall and transfer;
-- support fading and recovery;
-- independent can-do evidence;
-- no false mastery and no duplicate rewards;
-- prerequisite reuse;
-- rendered es/ja/ar proof at 390px and 1440px;
-- `check:all`, build, `check:i18n`, backend `compileall` + `pytest`, guards;
-- two consecutive complete clean cycles on the exact final head after the last fix.
-
-A1 must remain `available:false` during `LC-PED-002`. Completing `LC-PED-002` does not itself authorize opening A1.
+Do not create another A1 curriculum task and do not reopen the Foundry — the curriculum and its acceptance proof are both finished.
 
 ## Separate i18n lane
 
