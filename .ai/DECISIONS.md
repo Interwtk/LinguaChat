@@ -3,6 +3,41 @@
 Append only, newest first. A decision recorded here does not need re-litigating; a
 decision NOT recorded here is not a decision, it is a habit.
 
+## 2026-08-24 — PR #91 (`LC-PED-002`) merged while one requested proof was still in flight
+
+Timeline (`gh api .../issues/91/timeline`): this run marked PR #91 ready at 19:05:02.
+The automated two-clean-cycle gate (`merge-agent-pr.sh`, run from `claude-chain.yml`)
+saw only one clean cycle and auto-flipped draft→ready at 19:05:53 to request the
+second. Only then did this run notice an earlier, still-unaddressed supervisor
+comment (19:02:10) requiring one additional targeted real-browser proof — a
+deliberately-triggered "Use suggestion" help state on a known A1 arc 6/7 step,
+observed rather than inferred from the Node-level longitudinal check. This run
+converted the PR back to draft at 19:06:20 specifically to hold the merge for that
+proof. The owner (`Interwtk`) then set it back to ready at 19:09:07, and the
+automation merged it at 19:10:05 — three minutes before this run had finished
+gathering and posting the requested evidence.
+
+The owner's `ready_for_review` after a run's deliberate draft conversion is the
+owner's call, not a bug to fight or a merge to revert; this run did not attempt
+either. It did complete the requested proof immediately after (PR #91 comment,
+19:1x): a real Chromium session resumed `i_can_i_cant` at step 6 via the sanctioned
+`forLearner:false` + seeded-storage resume path, drove a wrong-answer retry, clicked
+the real "Use suggestion" button, and read `localStorage`'s learner model before/after
+to confirm `correct` moved but `independentCorrect` did not — i.e. the product itself
+recorded the assisted answer as assisted, never independent mastery. The evidence
+came back clean; nothing shipped was actually wrong, only the order of proof vs.
+merge was out of sequence.
+
+The gap this exposes: `merge-agent-pr.sh`'s automatic draft→ready flip to request a
+second QA cycle can race a human or agent's own attempt to hold a PR back for a
+legitimate, still-open review comment, because nothing currently checks for an
+unresolved blocking comment before that auto-flip or before the final merge. Not
+fixed here (would be a distinct `ops/` task); recorded so the next agent that finds
+a PR merged with an apparently-still-open supervisor objection checks the timeline
+before assuming something went wrong, and so a future `ops/` task can consider
+gating the auto-flip/merge on the newest supervisor comment having no unresolved
+"do not mark Ready" instruction.
+
 ## 2026-08-21 — PR #34 (`LC-DOC-001`) was merged directly, not by the chain
 
 The PR was finished, evidenced and green (`mergeStateStatus: CLEAN`) well before
