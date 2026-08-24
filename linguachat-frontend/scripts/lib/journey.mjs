@@ -29,6 +29,8 @@ import { getA1Arc2Episode } from '../../src/learning/episodes/a1Arc2.js'
 import { getA1Arc3Episode } from '../../src/learning/episodes/a1Arc3.js'
 import { getA1Arc4Episode } from '../../src/learning/episodes/a1Arc4.js'
 import { getA1Arc5Episode } from '../../src/learning/episodes/a1Arc5.js'
+import { getA1Arc6Episode } from '../../src/learning/episodes/a1Arc6Content.js'
+import { getA1Arc7Episode } from '../../src/learning/episodes/a1Arc7Content.js'
 
 /*
  * The harness plays any runtime episode, whatever level it belongs to. Content is
@@ -42,9 +44,12 @@ import { getA1Arc5Episode } from '../../src/learning/episodes/a1Arc5.js'
  * Arc 5 (`paying_and_choosing`) had the same gap: its module was never added to
  * this chain, so `playEpisode(model, 'more_than_ten', ...)` threw `unknown
  * episode` — found by LC-PED-001, which needs every runtime arc playable.
+ * Arcs 6/7 (`what_you_can_do`/`making_arrangements`) are added by LC-PED-002,
+ * the same way, now that they are implemented and integrated runtime content.
  */
 const getEpisode = (id) => getPreA1Episode(id) || getA1Arc1Episode(id) || getA1Arc2Episode(id)
   || getA1Arc3Episode(id) || getA1Arc4Episode(id) || getA1Arc5Episode(id)
+  || getA1Arc6Episode(id) || getA1Arc7Episode(id)
 import { evaluateFree } from '../../src/learning/engine/responseEvaluation.js'
 import { getStory, storyTurns, storyBranches, turnText } from '../../src/learning/engine/miniStory.js'
 import {
@@ -112,6 +117,9 @@ const ANSWERS = {
   cafe_order_conversation: 'Can I have water, please? That’s all, thanks.',
   close_encounter: 'Bye.',
   ask_what_thing: "What's this?",
+  /* A1 arc 6: ability, both directions, and asking someone else's */
+  ask_ability: 'Can you swim?',
+  ask_price: 'How much is it?',
 }
 const REPAIR = {
   signal_nonunderstanding: "I don't understand.",
@@ -119,6 +127,10 @@ const REPAIR = {
   slow_down: 'Please speak slowly.',
   /* arc 2's fourth strategy: take one word out and keep going */
   ask_meaning: 'What does “late” mean?',
+  /* arc 6's fifth strategy: a repair_request subtype, reference-implemented
+   * in `levels/a1/evaluators.js`'s `evaluateAskHowToSay` and wired into the
+   * shared `evaluateRepairRequest` */
+  ask_how_to_say: 'How do you say that in English?',
 }
 const QUANTITY = {
   bare: (step) => `${step.count === 3 ? 'Three' : 'Two'}.`,
@@ -140,6 +152,22 @@ export function answerFor(step) {
   }
   if (step.evalKind === 'use_quantity') return (QUANTITY[step.quantityForm] || QUANTITY.bare)(step)
   if (step.evalKind === 'identify_thing') return `It's a ${step.thingId || 'book'}.`
+  /*
+   * A1 arc 6's `state_ability`: the step names which polarity it wants, same
+   * as `state_routine`'s subtype above — a step with no declared `abilityForm`
+   * (a free-choice turn) accepts either, so the positive default is safe there.
+   */
+  if (step.evalKind === 'state_ability') return step.abilityForm === 'negative' ? "I can't dance." : 'I can swim.'
+  /*
+   * A1 arc 7's `arrange_meeting`: the step names which stage it wants —
+   * `propose` (day+time), `place`, or `confirm` (all three together, the
+   * arc's headline evidence).
+   */
+  if (step.evalKind === 'arrange_meeting') {
+    if (step.arrangeStage === 'place') return "Let's meet at the station."
+    if (step.arrangeStage === 'confirm') return "Let's meet on Friday at seven at the station."
+    return "Let's meet on Friday at seven."
+  }
   const answer = ANSWERS[step.evalKind]
   if (!answer) throw new Error(`journey: no answer for ${step.evalKind}`)
   return answer
@@ -316,9 +344,22 @@ export function playEpisode(model, episodeId, {
       branchId = wantsOtherBranch ? branches[1] : branches[0]
       for (const turn of storyTurns(story)) {
         if (turn.kind !== 'reply') continue
+        /*
+         * Mirrors `MiniStory.jsx`'s own `evalCtx` construction: a turn that
+         * declares a subtype (`arrangeStage`, so far — arc 7's confirm turn)
+         * must carry it through, or the evaluator falls back to its default
+         * ('propose', its least strict stage) and the harness would prove a
+         * turn easier than the product actually asks for. Found by LC-PED-002
+         * extending this harness to arc 7: the story's `confirm` turn threw
+         * `pedagogyBank: no variant bank for arrange_meeting/` because this
+         * synthetic step silently dropped the field.
+         */
         productive({
           type: 'free_reply', evalKind: turn.evalKind, suggestionEn: turn.suggestionEn,
           itemIds: turn.itemIds || [], format: 'mini_story',
+          ...(turn.arrangeStage ? { arrangeStage: turn.arrangeStage } : {}),
+          ...(turn.abilityForm ? { abilityForm: turn.abilityForm } : {}),
+          ...(turn.praisePrefix ? { praisePrefix: turn.praisePrefix } : {}),
         }, { storyTurn: true })
       }
       updateActiveRun(model, { branchId })
@@ -385,6 +426,10 @@ function ctxFor(step, model, independent) {
     /* arc 3's turns are about a third person, so the evaluator needs to know who */
     partner: PARTNER_IN_ARC3,
     ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}),
+    /* arc 6/7's own subtype fields — `evaluateStateAbility`/`evaluateArrangeMeeting` */
+    ...(step.abilityForm ? { abilityForm: step.abilityForm } : {}),
+    ...(step.arrangeStage ? { arrangeStage: step.arrangeStage } : {}),
+    ...(step.praisePrefix ? { praisePrefix: step.praisePrefix } : {}),
     ...(Number.isInteger(step.count) ? { targetCount: step.count } : {}),
     turnContext: { linguaSaid: step.promptEn || step.sceneEn || '' },
   }

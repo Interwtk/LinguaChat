@@ -13,24 +13,7 @@ branch/PR instead of duplicating it.
 
 ## IN_PROGRESS
 
-- [LC-PED-002] Final all-arcs learning acceptance gate before A1 can open
-  owner:  claude-action
-  branch: qa/lc-ped-002-final-acceptance-gate
-  why:    the full A1 curriculum is now implemented, integrated, supervisor-accepted and release-hardened, but A1 must still be re-proven end-to-end before any availability decision.
-  done:   on the final integrated/hardened curriculum head, re-derive every Pre-A1 + A1 arc and run at
-          least 20 distinct learner journeys per arc plus longitudinal new-learner
-          journeys through A1 exit; prove delayed recall, transfer, support fading/
-          recovery, independent can-do evidence, no false mastery, no duplicate
-          rewards, prerequisite reuse and 390px/1440px es/ja/ar usability. Require
-          two consecutive clean full cycles after the last fix. A1 MUST remain
-          unavailable until this gate is DONE and a separate availability decision is
-          explicitly approved.
-  note:   resumed (not duplicated) from the existing draft PR #91 on this branch —
-          298 per-arc journeys (13 arcs), a 38-episode longitudinal Pre-A1+A1
-          journey, and real es/ja/ar 390px/1440px browser proof for arcs 6-7
-          (bounded @claude validation, run 32763940667) all green on this head.
-          Remaining: final full check:all/build/backend validation cycles and this
-          bookkeeping, then mark Ready.
+_(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
@@ -51,6 +34,7 @@ _(none — the queue is open)_
 
 ## DONE
 
+- [LC-PED-002] Final all-arcs learning acceptance gate before A1 can open — PR #91; final integrated/hardened Pre-A1+A1 head re-proven end to end: 298 per-arc journeys across 13 arcs, a 7-proof/38-episode longitudinal Pre-A1→A1-exit new-learner journey (delayed recall, transfer, prerequisite reuse across the Pre-A1/A1 boundary, scaffold fading, assisted-vs-independent evidence, no false mastery, no duplicate replay reward), 41/41 arc-6/7 evaluator cases, and real es/ja/ar browser proof at 390px/1440px for arcs 6-7 (RTL correct, target-English stays lang=en/LTR, Chatto not mirrored, no overflow/raw keys/console errors). Also fixed a stale `check-cloud-automation.mjs` assertion left behind by an unrelated main commit (LC-OPS-019) so the suite could run clean. Two consecutive clean full non-draft QA cycles required before merge; A1 stays `available:false` — this gate does not itself open A1.
 - [LC-DOC-002] Sync agent/operator contracts with the integrated A1–C2 baseline — PR #90; `CLAUDE.md` Curriculum state, `.ai/TRANSLATIONS.md` coverage table (1726→5205 base keys) and `check-a1-blueprint.mjs`'s printed conclusion aligned with the real integrated-runtime state; no curriculum/evaluator/availability/provider/visual changes.
 - [LC-OPS-017] Refresh coordination after A1–C2 Foundry completion — PR #84; bookkeeping only, no runtime/curriculum/i18n/provider/visual changes; makes LC-PED-002 the next serial gate while keeping A1 unavailable.
 - [LC-DOC-001] Reconcile README and historical repository debris with the real product — PR #34.
