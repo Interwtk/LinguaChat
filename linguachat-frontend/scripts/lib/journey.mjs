@@ -119,6 +119,7 @@ const ANSWERS = {
   ask_what_thing: "What's this?",
   /* A1 arc 6: ability, both directions, and asking someone else's */
   ask_ability: 'Can you swim?',
+  ask_price: 'How much is it?',
 }
 const REPAIR = {
   signal_nonunderstanding: "I don't understand.",
