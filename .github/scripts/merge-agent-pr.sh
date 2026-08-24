@@ -29,6 +29,13 @@ if [ -z "$NUMBER" ]; then
 fi
 out pr_number "$NUMBER"
 
+REPO="${GITHUB_REPOSITORY:-}"
+if [ -z "$REPO" ]; then
+  REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
+fi
+REPO_OWNER="${REPO%%/*}"
+REPO_NAME="${REPO#*/}"
+
 comment_once() {
   local body="$1"
   if gh pr view "$NUMBER" --json comments --jq '.comments[].body' | grep -Fxq "$body"; then
@@ -38,9 +45,60 @@ comment_once() {
   fi
 }
 
+# Review/validation blockers are independent of CI. A PR must never be re-readied
+# for a second cycle, or merged after two green cycles, while a reviewer is still
+# explicitly blocking it. Interactive validation uses one canonical marker in its
+# progress comment and removes it only when that same validation clears the gap.
+merge_blockers_clear() {
+  local decision thread_json unresolved has_more
+
+  decision=$(gh pr view "$NUMBER" --json reviewDecision --jq '.reviewDecision // ""')
+  if [ "$decision" = "CHANGES_REQUESTED" ]; then
+    echo "PR #$NUMBER has CHANGES_REQUESTED."
+    return 1
+  fi
+
+  if gh pr view "$NUMBER" --json comments --jq '.comments[].body' | grep -Fq '<!-- linguachat-merge-blocker -->'; then
+    echo "PR #$NUMBER has an active LinguaChat merge-blocker marker."
+    return 1
+  fi
+
+  set +e
+  thread_json=$(gh api graphql \
+    -f owner="$REPO_OWNER" \
+    -f name="$REPO_NAME" \
+    -F number="$NUMBER" \
+    -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved} pageInfo{hasNextPage}}}}}' 2>/dev/null)
+  local query_status=$?
+  set -e
+  if [ "$query_status" -ne 0 ] || [ -z "$thread_json" ]; then
+    echo "Could not verify PR review threads; failing closed."
+    return 1
+  fi
+
+  unresolved=$(printf '%s' "$thread_json" | jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length')
+  has_more=$(printf '%s' "$thread_json" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')
+  if [ "$has_more" = "true" ]; then
+    echo "PR #$NUMBER has more than 100 review threads; automated merge cannot prove all are resolved."
+    return 1
+  fi
+  if [ "$unresolved" -gt 0 ]; then
+    echo "PR #$NUMBER has $unresolved unresolved review thread(s)."
+    return 1
+  fi
+
+  return 0
+}
+
 if [ "$(gh pr view "$NUMBER" --json isDraft --jq .isDraft)" = "true" ]; then
   echo "PR #$NUMBER is a draft."
   out reason draft
+  exit 0
+fi
+
+if ! merge_blockers_clear; then
+  comment_once "Not merged: an unresolved review or validation blocker is still active. Resolve/clear it before Ready or merge."
+  out reason review-blocker
   exit 0
 fi
 
@@ -114,10 +172,6 @@ esac
 # backend, guards and Evidence all succeeded. The verifier counts the newest
 # eligible sentinel jobs for this exact PR head and fails closed on red/cancelled/
 # incomplete cycles. A new commit naturally resets the count because its SHA changes.
-REPO="${GITHUB_REPOSITORY:-}"
-if [ -z "$REPO" ]; then
-  REPO=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
-fi
 HEAD_SHA=$(gh pr view "$NUMBER" --json headRefOid --jq .headRefOid)
 set +e
 CYCLE_OUTPUT=$(node .github/scripts/check-two-clean-qa-cycles.mjs --repo "$REPO" --head "$HEAD_SHA" --required 2 2>&1)
@@ -126,6 +180,11 @@ set -e
 printf '%s\n' "$CYCLE_OUTPUT"
 
 if [ "$CYCLE_STATUS" -eq 2 ]; then
+  if ! merge_blockers_clear; then
+    comment_once "Not merged: an unresolved review or validation blocker is still active. Resolve/clear it before Ready or merge."
+    out reason review-blocker
+    exit 0
+  fi
   # Exactly one clean cycle exists on the final head. Request the second cycle
   # automatically without changing source: Draft -> Ready emits ready_for_review,
   # which is a first-class QA trigger. converted_to_draft is intentionally not.
@@ -142,6 +201,14 @@ fi
 if [ "$CYCLE_STATUS" -ne 0 ]; then
   comment_once "Not merged: two consecutive complete clean non-draft QA cycles on the exact final head are required. $CYCLE_OUTPUT"
   out reason clean-cycle-gate
+  exit 0
+fi
+
+# Close the time-of-check gap: a blocking review/comment may have arrived while the
+# second QA cycle was running. Re-check immediately before the merge call.
+if ! merge_blockers_clear; then
+  comment_once "Not merged: an unresolved review or validation blocker is still active. Resolve/clear it before Ready or merge."
+  out reason review-blocker
   exit 0
 fi
 
