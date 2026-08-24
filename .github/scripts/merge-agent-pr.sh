@@ -37,28 +37,53 @@ REPO_OWNER="${REPO%%/*}"
 REPO_NAME="${REPO#*/}"
 
 comment_once() {
-  local body="$1"
-  if gh pr view "$NUMBER" --json comments --jq '.comments[].body' | grep -Fxq "$body"; then
+  local body="$1" comments status
+  set +e
+  comments=$(gh pr view "$NUMBER" --json comments --jq '.comments[].body' 2>/dev/null)
+  status=$?
+  set -e
+  if [ "$status" -ne 0 ]; then
+    echo "Could not read PR #$NUMBER comments; not posting a possibly duplicate blocker comment."
+    return 0
+  fi
+  if printf '%s\n' "$comments" | grep -Fxq "$body"; then
     echo "PR #$NUMBER already has this blocker comment; not posting it again."
-  else
-    gh pr comment "$NUMBER" --body "$body"
+  elif ! gh pr comment "$NUMBER" --body "$body"; then
+    echo "Could not post blocker comment on PR #$NUMBER; merge remains blocked by the caller."
   fi
 }
 
 # Review/validation blockers are independent of CI. A PR must never be re-readied
 # for a second cycle, or merged after two green cycles, while a reviewer is still
-# explicitly blocking it. Interactive validation uses one canonical marker in its
-# progress comment and removes it only when that same validation clears the gap.
+# explicitly blocking it. Every API read in this gate fails closed: an outage,
+# auth error or malformed response can delay a merge, but can never be mistaken for
+# evidence that no blocker exists.
 merge_blockers_clear() {
-  local decision thread_json unresolved has_more
+  local decision decision_status comments comments_status
+  local thread_json query_status unresolved unresolved_status has_more has_more_status
 
-  decision=$(gh pr view "$NUMBER" --json reviewDecision --jq '.reviewDecision // ""')
+  set +e
+  decision=$(gh pr view "$NUMBER" --json reviewDecision --jq '.reviewDecision // ""' 2>/dev/null)
+  decision_status=$?
+  set -e
+  if [ "$decision_status" -ne 0 ]; then
+    echo "Could not verify PR review decision; failing closed."
+    return 1
+  fi
   if [ "$decision" = "CHANGES_REQUESTED" ]; then
     echo "PR #$NUMBER has CHANGES_REQUESTED."
     return 1
   fi
 
-  if gh pr view "$NUMBER" --json comments --jq '.comments[].body' | grep -Fq '<!-- linguachat-merge-blocker -->'; then
+  set +e
+  comments=$(gh pr view "$NUMBER" --json comments --jq '.comments[].body' 2>/dev/null)
+  comments_status=$?
+  set -e
+  if [ "$comments_status" -ne 0 ]; then
+    echo "Could not verify PR validation comments; failing closed."
+    return 1
+  fi
+  if printf '%s\n' "$comments" | grep -Fq '<!-- linguachat-merge-blocker -->'; then
     echo "PR #$NUMBER has an active LinguaChat merge-blocker marker."
     return 1
   fi
@@ -69,15 +94,23 @@ merge_blockers_clear() {
     -f name="$REPO_NAME" \
     -F number="$NUMBER" \
     -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){pullRequest(number:$number){reviewThreads(first:100){nodes{isResolved} pageInfo{hasNextPage}}}}}' 2>/dev/null)
-  local query_status=$?
+  query_status=$?
   set -e
   if [ "$query_status" -ne 0 ] || [ -z "$thread_json" ]; then
     echo "Could not verify PR review threads; failing closed."
     return 1
   fi
 
-  unresolved=$(printf '%s' "$thread_json" | jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length')
-  has_more=$(printf '%s' "$thread_json" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage')
+  set +e
+  unresolved=$(printf '%s' "$thread_json" | jq '[.data.repository.pullRequest.reviewThreads.nodes[] | select(.isResolved == false)] | length' 2>/dev/null)
+  unresolved_status=$?
+  has_more=$(printf '%s' "$thread_json" | jq -r '.data.repository.pullRequest.reviewThreads.pageInfo.hasNextPage' 2>/dev/null)
+  has_more_status=$?
+  set -e
+  if [ "$unresolved_status" -ne 0 ] || [ "$has_more_status" -ne 0 ] || ! [[ "$unresolved" =~ ^[0-9]+$ ]] || ! [[ "$has_more" =~ ^(true|false)$ ]]; then
+    echo "Could not parse PR review-thread state; failing closed."
+    return 1
+  fi
   if [ "$has_more" = "true" ]; then
     echo "PR #$NUMBER has more than 100 review threads; automated merge cannot prove all are resolved."
     return 1
