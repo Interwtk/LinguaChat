@@ -9,7 +9,11 @@
  * is a rule nobody who actually talks differently from the fixture could ever
  * meet. So this file plays each of the eleven completed arcs (Pre-A1's six,
  * A1's first five) through the REAL evaluator, scaffold and learner-model code
- * — via `scripts/lib/journey.mjs` — with genuinely varied learner behaviour:
+ * — via `scripts/lib/journey.mjs` — with genuinely varied learner behaviour.
+ * LC-PED-002 extends the same harness to A1 arcs 6-7 (`what_you_can_do`,
+ * `making_arrangements`) now that they are implemented and integrated
+ * runtime content, and adds a longitudinal new-learner run through the whole
+ * Pre-A1 + A1 sequence in `check-a1-longitudinal-journeys.mjs`:
  *
  *   natural variants   distinct, real phrasings the evaluator's own accepted
  *                      regex families already recognise (`pedagogyBank.mjs`,
@@ -44,6 +48,8 @@ import { A1_ARC2 } from '../src/learning/episodes/a1Arc2.js'
 import { A1_ARC3 } from '../src/learning/episodes/a1Arc3.js'
 import { A1_ARC4 } from '../src/learning/episodes/a1Arc4.js'
 import { A1_ARC5 } from '../src/learning/episodes/a1Arc5.js'
+import { A1_ARC6 } from '../src/learning/episodes/a1Arc6Content.js'
+import { A1_ARC_7 as A1_ARC7 } from '../src/learning/episodes/a1Arc7Content.js'
 import { createLearnerModel, recordItemAttempt } from '../src/learning/engine/learnerModel.js'
 import { evaluateFree } from '../src/learning/engine/responseEvaluation.js'
 import { showsModelAnswer } from '../src/learning/engine/scaffolding.js'
@@ -61,6 +67,8 @@ const ARC_DEFS = [
   { id: 'people_around_you', level: 'A1', episodes: A1_ARC3 },
   { id: 'finding_your_way', level: 'A1', episodes: A1_ARC4 },
   { id: 'paying_and_choosing', level: 'A1', episodes: A1_ARC5 },
+  { id: 'what_you_can_do', level: 'A1', episodes: A1_ARC6 },
+  { id: 'making_arrangements', level: 'A1', episodes: A1_ARC7 },
 ]
 
 const STRONG = { usesSuggestion: () => false, retries: () => false }
@@ -99,6 +107,11 @@ function paramsFor(step, { novel = false } = {}) {
     numberWord,
     counted: countedThing(thing.id, count),
     count,
+    /* A1 arc 6/7's own novel-context slots — see `NOVEL_CONTEXT`'s comment in `pedagogyBank.mjs` */
+    ability: novel ? NOVEL_CONTEXT.ability : 'swim',
+    day: novel ? NOVEL_CONTEXT.day : 'friday',
+    timeWord: novel ? NOVEL_CONTEXT.timeWord : 'seven',
+    arrangePlace: novel ? NOVEL_CONTEXT.arrangePlace : 'the station',
   }
 }
 
@@ -147,7 +160,7 @@ function evalKindsOf(arcDef) {
   for (const ep of arcDef.episodes) {
     for (const step of ep.steps || []) {
       if (!step.evalKind || (step.type !== 'free_reply' && step.type !== 'recall')) continue
-      const key = `${step.evalKind}:${step.repairKind || step.timeForm || step.quantityForm || step.relationHint || ''}`
+      const key = `${step.evalKind}:${step.repairKind || step.timeForm || step.quantityForm || step.relationHint || step.abilityForm || step.arrangeStage || ''}`
       if (!seen.has(key)) seen.set(key, step)
     }
   }
@@ -277,7 +290,7 @@ function runArc(arcDef) {
 console.log('\ncheck-pedagogical-journeys — per-arc learner stress test\n')
 for (const arcDef of ARC_DEFS) runArc(arcDef)
 
-assert.equal(report.length, 11, 'eleven completed runtime arcs — six Pre-A1, five A1 — must all be exercised')
-assert.equal(report.reduce((s, r) => s + r.episodes, 0), 33, 'every completed episode (Pre-A1 17 + A1 18..33\'s first 16) must be reachable')
+assert.equal(report.length, 13, 'thirteen completed runtime arcs — six Pre-A1, seven A1 — must all be exercised')
+assert.equal(report.reduce((s, r) => s + r.episodes, 0), 38, 'every completed episode (Pre-A1 17 + A1 18..38\'s 21) must be reachable')
 
 console.log(`\ncheck-pedagogical-journeys — OK  (${totalJourneys} journeys across ${report.length} arcs)`)
