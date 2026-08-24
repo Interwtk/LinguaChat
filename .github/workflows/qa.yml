@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: qa-${{ github.ref }}
@@ -145,25 +146,50 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: The description must carry an Evidence section
+      - name: The live PR description must carry measured Evidence
         env:
-          BODY: ${{ github.event.pull_request.body }}
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
-          printf '%s' "$BODY" > /tmp/body.md
-          if ! grep -qi '^##\s*Evidence' /tmp/body.md; then
-            echo "::error::This pull request has no '## Evidence' section. Put the QA you actually ran in the description — counts, not adjectives. See CLAUDE.md."
+          valid=false
+          last_problem="live PR body was not read"
+
+          # The event payload is a snapshot. PR descriptions are often updated with
+          # measured counts immediately before Ready, so read the current body from
+          # GitHub instead of failing on stale event metadata. A short bounded retry
+          # absorbs API/metadata propagation without ever turning missing evidence green.
+          for attempt in 1 2 3 4 5; do
+            set +e
+            BODY=$(gh api "/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.body // ""' 2>/tmp/evidence-api.err)
+            api_status=$?
+            set -e
+
+            if [ "$api_status" -ne 0 ]; then
+              last_problem="GitHub API could not return the live PR body (attempt $attempt/5)"
+            else
+              printf '%s' "$BODY" > /tmp/body.md
+              missing=""
+              grep -qi '^##\s*Evidence' /tmp/body.md || missing="$missing Evidence-section"
+              grep -qi 'check:all' /tmp/body.md || missing="$missing check:all"
+              grep -qiE 'build' /tmp/body.md || missing="$missing build"
+              grep -qiE 'pytest|compileall' /tmp/body.md || missing="$missing backend"
+              if [ -z "$missing" ]; then
+                valid=true
+                break
+              fi
+              last_problem="live Evidence is still incomplete:$missing (attempt $attempt/5)"
+            fi
+
+            if [ "$attempt" -lt 5 ]; then sleep 5; fi
+          done
+
+          if [ "$valid" != "true" ]; then
+            echo "::error::$last_problem. Put the QA actually run in the live PR description — counts, not adjectives. See CLAUDE.md."
+            if [ -s /tmp/evidence-api.err ]; then tail -5 /tmp/evidence-api.err; fi
             exit 1
           fi
-          missing=""
-          grep -qi 'check:all' /tmp/body.md || missing="$missing check:all"
-          grep -qiE 'build' /tmp/body.md || missing="$missing build"
-          grep -qiE 'pytest|compileall' /tmp/body.md || missing="$missing backend"
-          if [ -n "$missing" ]; then
-            echo "::error::The Evidence section does not mention:$missing"
-            exit 1
-          fi
-          echo "Evidence section present and mentions the suites." >> "$GITHUB_STEP_SUMMARY"
+          echo "Live Evidence section present and mentions check:all, build and backend suites." >> "$GITHUB_STEP_SUMMARY"
 
   clean_cycle:
     name: qa-cycle — complete clean non-draft cycle
