@@ -13,9 +13,13 @@ branch/PR instead of duplicating it.
 
 ## IN_PROGRESS
 
+_(none — the queue is open)_
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
+
 - [LC-PED-002] Final all-arcs learning acceptance gate before A1 can open
-  owner:  claude-action
-  branch: qa/lc-ped-002-final-acceptance-gate
+  owner:  unclaimed
+  branch: none
   why:    the full A1 curriculum is now implemented, integrated, supervisor-accepted and release-hardened, but A1 must still be re-proven end-to-end before any availability decision.
   done:   on the final integrated/hardened curriculum head, re-derive every Pre-A1 + A1 arc and run at
           least 20 distinct learner journeys per arc plus longitudinal new-learner
@@ -29,8 +33,6 @@ branch/PR instead of duplicating it.
           checkpoint commit 5e8d1f3f4f0b6ff7efedc1aa5ee096f47e1ab236 (PR #88,
           closed not merged) was cherry-picked onto a fresh branch off this head
           per the owner's PR #88 comment, not duplicated from scratch.
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
 
 ## BLOCKED
 
