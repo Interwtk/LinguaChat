@@ -26,12 +26,15 @@ branch/PR instead of duplicating it.
           unavailable until this gate is DONE and a separate availability decision is
           explicitly approved.
   note:   resumed (not duplicated) from the existing draft PR #91 on this branch —
-          298 per-arc journeys (13 arcs) plus a 38-episode longitudinal Pre-A1+A1
-          journey already green on this head. Remaining: es/ja/ar 390px/1440px
-          browser proof for arcs 6-7, final full check:all/build/backend cycles
-          (two consecutive clean), and this bookkeeping.
+          298 per-arc journeys (13 arcs), a 38-episode longitudinal Pre-A1+A1
+          journey, and real es/ja/ar 390px/1440px browser proof for arcs 6-7
+          (bounded @claude validation, run 32763940667) all green on this head.
+          Remaining: final full check:all/build/backend validation cycles and this
+          bookkeeping, then mark Ready.
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
+
+_(none — the queue is open)_
 
 ## BLOCKED
 
