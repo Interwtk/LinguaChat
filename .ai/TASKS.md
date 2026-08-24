@@ -25,10 +25,11 @@ branch/PR instead of duplicating it.
           two consecutive clean full cycles after the last fix. A1 MUST remain
           unavailable until this gate is DONE and a separate availability decision is
           explicitly approved.
-  note:   re-legitimately reclaimed after LC-DOC-002; the prior premature claim's
-          checkpoint commit 5e8d1f3f4f0b6ff7efedc1aa5ee096f47e1ab236 (PR #88,
-          closed not merged) was cherry-picked onto a fresh branch off this head
-          per the owner's PR #88 comment, not duplicated from scratch.
+  note:   resumed (not duplicated) from the existing draft PR #91 on this branch —
+          298 per-arc journeys (13 arcs) plus a 38-episode longitudinal Pre-A1+A1
+          journey already green on this head. Remaining: es/ja/ar 390px/1440px
+          browser proof for arcs 6-7, final full check:all/build/backend cycles
+          (two consecutive clean), and this bookkeeping.
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 

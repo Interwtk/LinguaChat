@@ -164,3 +164,24 @@ jobs:
             exit 1
           fi
           echo "Evidence section present and mentions the suites." >> "$GITHUB_STEP_SUMMARY"
+
+  clean_cycle:
+    name: qa-cycle — complete clean non-draft cycle
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    needs: [frontend, backend, guards, evidence]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: All required QA jobs completed successfully in this non-draft run
+        env:
+          FRONTEND: ${{ needs.frontend.result }}
+          BACKEND: ${{ needs.backend.result }}
+          GUARDS: ${{ needs.guards.result }}
+          EVIDENCE: ${{ needs.evidence.result }}
+        run: |
+          set -euo pipefail
+          printf 'frontend=%s backend=%s guards=%s evidence=%s\n' "$FRONTEND" "$BACKEND" "$GUARDS" "$EVIDENCE"
+          for result in "$FRONTEND" "$BACKEND" "$GUARDS" "$EVIDENCE"; do
+            [ "$result" = "success" ] || { echo "This run is not a complete clean non-draft QA cycle."; exit 1; }
+          done
+          echo "Complete clean non-draft QA cycle on $GITHUB_SHA." >> "$GITHUB_STEP_SUMMARY"

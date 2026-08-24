@@ -160,6 +160,14 @@ jobs:
             grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
           [ -n "${BRANCH:-}" ] && [ "$BRANCH" != "none" ] || exit 0
 
+          # The merge contract may have just requested the second clean QA cycle by
+          # toggling the same PR Draft -> Ready. Preserve the claim and wait for that
+          # ready_for_review run instead of immediately undoing the deliberate trigger.
+          if [ "${{ steps.recover_merge.outputs.reason }}" = "second-cycle-triggered" ]; then
+            echo "$BRANCH has one clean exact-head cycle; second QA was triggered automatically. Waiting." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
           NUMBER=$(gh pr list --head "$BRANCH" --state open --json number,isDraft --jq '.[0].number // empty')
           if [ -n "$NUMBER" ]; then
             DRAFT=$(gh pr view "$NUMBER" --json isDraft --jq .isDraft)
