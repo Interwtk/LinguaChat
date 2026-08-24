@@ -63,6 +63,13 @@ jobs:
               `.github/workflows`, never perform broad refactors, and never start a
               long task that could die at the turn ceiling.
 
+            For validation-only requests on an existing PR, prioritize executing the
+            requested proof over broad re-analysis. Reuse the PR's already-established
+            context, batch deterministic checks into as few Bash/tool calls as practical,
+            and reserve enough turns to publish the observed result before the ceiling.
+            Do not spend the final 15 turns expanding scope or repeating repository-wide
+            inspection that the request does not require.
+
             If the request needs implementation beyond a tiny review/comment, say
             explicitly that it belongs in `.ai/TASKS.md` and name the smallest task
             boundary and acceptance evidence. The cloud `Claude — chain` plus
@@ -80,5 +87,5 @@ jobs:
           allowed_bots: github-actions
           claude_args: |
             --model claude-sonnet-5
-            --max-turns 80
+            --max-turns 140
             --allowedTools Read,Glob,Grep,Bash,TodoWrite
