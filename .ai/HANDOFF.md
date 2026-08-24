@@ -1,152 +1,62 @@
 # HANDOFF — read this, then start
 
-Keep this file current: what just happened, what is proved, what comes next, and
-what will bite the next operator.
-
-_Written for `LC-DOC-001` closeout, PR #34, on 2026-08-21. Live main/TASKS wins if
-it changes after this branch was cut._
+Current as of 2026-08-23 after the A1–C2 Curriculum Foundry completed.
 
 ## What just happened
 
-`LC-DOC-001` closes the stale-documentation gap this queue had flagged since
-`LC-OPS-010`: `README.md` still described an earlier "LinguaChat Local" product —
-a bare Practice Room chatting at raw B1/mode labels, "Lingo" left unmentioned, no
-Lingua/Chatto distinction, mock-flow lists that predate the frozen Hoy · Chats ·
-Palabras · Tú navigation, and no honest statement of what A1/Pre-A1 actually cover
-today. It also linked to `linguachat-frontend-old/` (a 740 KB legacy Create React
-App tree) and two empty root files, `pacientes.txt`/`procedimientos.txt`, as if they
-were live parts of the architecture.
+The full Curriculum Foundry chain finished and merged:
+- evidence foundation/supervision and cross-level audit;
+- shared curriculum isolation;
+- all six content lanes `LC-CONT-A1` through `LC-CONT-C2`;
+- shared runtime integration `LC-INT-001`;
+- final supervisor acceptance `LC-SUP-002` (`PASS_WITH_CONDITIONS`);
+- release-candidate hardening `LC-RC-001`.
 
-Per this task's `done` criteria, unused status was proven before deleting anything:
-`git log --all --oneline -- linguachat-frontend-old/ pacientes.txt procedimientos.txt`
-shows exactly one commit for all three (the original `536dd62` "add guided
-LinguaChat learning experience" import) and a repo-wide grep found no reference to
-any of the three paths anywhere in `.github/`, source, configs or docs except
-`README.md`'s own description and `.ai/TASKS.md`'s own task text. No build tool,
-CI workflow or `package.json` referenced `linguachat-frontend-old/`. All three were
-therefore removed outright, not merely marked deprecated.
+A1 arcs 6–7 are no longer design-only. A1 arcs 1–7 are implemented and integrated. A2, B1, B2, C1 and C2 are also integrated into the shared runtime. None of those levels is open to learners: A1–C2 remain `available:false`.
 
-`README.md` was rewritten to state, accurately and checkably against the live
-tree: Lingua is the sole tutor, Chatto is mascot-only; the frozen navigation; Pre-A1
-frozen/available vs. A1 partial/`available:false` with named arcs 6–7 still
-designed-only; one canonical `user_language` with the eight actually-implemented
-auxiliary locales and Arabic RTL; an explicit "what is real today" / "what is
-intentionally not implemented" pair (no cloud persistence, no Supabase, no voice/
-STT/TTS/WebRTC/calls, no real paid-provider calls, no A2+ runtime curriculum); real
-`npm ci`/`npm run dev`/`check:all`/`check:i18n` and backend `pip install -r
-requirements.txt`/`compileall`/`pytest -q` commands verified against the actual
-`package.json` scripts and `requirements.txt` in this tree, not assumed. No
-runtime frontend/backend behavior was touched by this task.
+The final hardening pass preserved all product boundaries and finished with two clean frontend/backend cycles and 468 backend tests. Pre-A1 remains frozen.
 
-## A resumed branch, and a real merge conflict-in-spirit this run had to resolve
+## Product contract — do not reinterpret
 
-PR #34 / `docs/lc-doc-001-readme-cleanup` already had real completed work sitting
-in draft from prior runs (the README rewrite and debris removal were done; final
-bookkeeping had already moved `LC-DOC-001` to DONE in a local copy of
-`.ai/TASKS.md`/`.ai/STATE.md`/`.ai/HANDOFF.md`). This run resumed that branch
-rather than duplicating it, per the standing instruction to check for existing
-branch/PR work before re-claiming a task.
+- Lingua is the tutor; Chatto is mascot-only.
+- Pre-A1 is frozen.
+- A1 stays fail-closed until `LC-PED-002` is DONE and a separate explicit availability decision is approved.
+- One `user_language` governs UI, explanations, hints, corrections, interpretations and meanings; target language is English.
+- Arabic auxiliary UI is RTL; target-English content/input stays LTR; Chatto is never mirrored.
+- No Supabase.
+- No voice/calls/video/WebRTC/STT/TTS/pronunciation scoring.
+- No real OpenAI or paid-provider runtime calls; local provider contract remains authoritative.
+- Preserve the frozen Hoy · Chats · Palabras · Tú visual architecture.
 
-Between that draft's last sync and this run, an entirely separate, large
-**Curriculum Foundry** pipeline was merged to `main` (`.ai/foundry/`,
-`docs/curriculum/curriculum-master-a1-c2.md`,
-`docs/curriculum/level-blueprint-template.md`,
-`docs/research/supervisor-evidence-contract.md`,
-`docs/research/supervisor-evidence-ledger.md`, plus
-`.github/scripts/check-foundry-scope.mjs` and `.github/workflows/claude-task.yml`
-changes) — a second, scope-isolated task graph specifically for A1–C2 curriculum/
-research work, coordinated through `.ai/foundry/tasks.json` rather than
-`.ai/TASKS.md`. `git merge origin/main` picked all of this up with no textual
-conflicts (the two branches never touched the same lines), but the draft's own
-final-bookkeeping commit had already decided to seed a new serial task,
-`LC-CURR-006`, for A1 arc 6 in `.ai/TASKS.md`.
+## What comes next
 
-That decision predates the Foundry merge and is now wrong: `.ai/foundry/tasks.json`
-already declares `LC-CONT-A1` ("Implement and prove A1 curriculum"), which is
-intended to cover the remaining A1 arcs once its dependency chain
-(`LC-FND-002` → `LC-AUD-001` → six level blueprints → the 100+100-primary-study
-supervisor evidence-ready gate, `LC-SUP-001`) clears. Seeding a competing serial
-`LC-CURR-006` would either duplicate that eventual work or land inside a write
-scope (`linguachat-frontend/src/learning/levels/a1/**`) the Foundry's own
-`check-foundry-scope.mjs` gate is designed to protect before it formally exists.
-This run therefore **reverted that part of the draft's bookkeeping**: the TODO
-queue is left open rather than seeded with `LC-CURR-006`, and `.ai/STATE.md` now
-documents the Foundry discovery and this reasoning so a future operator does not
-recreate the same conflict. Nothing about the README rewrite or the debris removal
-needed to change — those were unaffected by the Foundry merge.
+The next serial product task is the existing `LC-PED-002` final all-arcs learning acceptance gate. Its old blocker (“A1 arcs 6 and 7 implemented”) is satisfied, so it belongs at the top of TODO.
 
-## Automation lane status
+Do not create another A1 curriculum task and do not reopen the Foundry. `LC-PED-002` is an acceptance/proof task over the integrated runtime, not a curriculum rewrite.
 
-A prior run recorded that a controlled re-dispatch of `LC-DOC-001` reached
-autonomous run `32474896010` and failed immediately at turn 1 with `is_error:true`,
-zero permission denials and no pushed work — an external Claude Code/OAuth
-failure, not a LinguaChat defect. `main` subsequently merged PR #41
-(`ops/claude-action-turn1-diagnostic`), PR #42
-(`ops/claude-safe-error-surface`, "surface sanitized Claude startup errors") and
-PR #43 (`ops/wake-lc-doc-001-sanitized`, "wake chain for one sanitized LC-DOC-001
-diagnostic") to investigate and address that failure class.
+Required proof before `LC-PED-002` can be DONE:
+- re-derive every Pre-A1 + A1 arc from the live integrated runtime;
+- at least 20 distinct learner journeys per arc;
+- longitudinal new-learner journeys through A1 exit;
+- delayed recall and transfer;
+- support fading and recovery;
+- independent can-do evidence;
+- no false mastery and no duplicate rewards;
+- prerequisite reuse;
+- rendered es/ja/ar proof at 390px and 1440px;
+- `check:all`, build, `check:i18n`, backend `compileall` + `pytest`, guards;
+- two consecutive clean full cycles on the exact final head after the last fix.
 
-This run **is** the evidence those fixes worked: it is itself an autonomous
-`claude-action` dispatch for exactly `LC-DOC-001`, and it authenticated, read the
-full coordination stack, resumed the existing branch/PR and pushed real work
-without hitting that failure. Treat the autonomous task lane as healthy again.
-Do not re-apply the old "do not repeatedly rerun" caution without a new failure to
-justify it.
+A1 must remain `available:false` during the entire gate. Completing the gate does not itself authorize opening A1.
 
-## Merge required manual intervention — a real automation gap in `merge-agent-pr.sh`
+## Separate i18n lane
 
-PR #34 was fully finished (README rewrite, debris removal, `## Evidence`, DONE
-bookkeeping, all QA checks green, `mergeStateStatus: CLEAN`) well before this run,
-yet the chain's QA-triggered merge job (`.github/scripts/merge-agent-pr.sh`) never
-merged it. Two real defects, found by this run while diagnosing the stall:
+Issue #81 (`LC-I18N-006`) tracks translation of the integrated A2–C2 auxiliary-language instructional surface. Keep it separate from `LC-PED-002`: no curriculum/evaluator/availability changes in the i18n task, and no translation expansion inside the pedagogical acceptance task.
 
-1. The script's branch-prefix allowlist is `curr/*|i18n/*|qa/*|ops/*|fix/*` — it
-   does not include `docs/*`. Every push to `docs/lc-doc-001-readme-cleanup`
-   therefore hit the `non-agent` early-exit and was silently never considered for
-   merge, no matter how green or complete it became. This is almost certainly why
-   two prior "wake the chain" PRs (#40, #43) existed and still didn't get this task
-   merged — they addressed a startup/diagnostic failure class, not this filter.
-2. Separately, this branch's long history of repeated `Merge remote-tracking
-   branch 'origin/main'` commits means `gh pr merge --rebase` (the strategy the
-   script always uses) fails outright: replaying the branch's commits one at a
-   time against ever-newer intermediate bases produces a real conflict in
-   `.ai/TASKS.md` partway through, even though a single ordinary 3-way merge
-   against the current main tip is clean. Verified locally both ways before
-   touching anything real: `git rebase origin/main` on a scratch copy of the
-   branch conflicts on `.ai/TASKS.md`; `git merge origin/main` on the same scratch
-   copy resolves with no conflicts at all.
+## Current coordination warning
 
-Given the PR was fully evidenced and green, this run merged it directly
-(`gh pr merge 34 --merge --delete-branch`, not `--rebase`) rather than leaving a
-finished task stuck indefinitely, and re-verified the actual resulting merge
-commit on `main` (`21d1223`) with a fresh `check:all`/`build`/backend
-`compileall`+`pytest` run — all green, matching the PR's own reported numbers
-(entry `450.83 kB`, 444 pytest passed).
+Before this refresh, `.ai/TASKS.md`, `.ai/STATE.md` and `.ai/HANDOFF.md` still described the repository as it existed at PR #34: A1 arcs 6–7 design-only and the Foundry dependency chain pending. That was materially stale and could prevent the correct next task from being selected. Live `main` and the completed Foundry markers are the source of truth.
 
-**For the next operator or ops task:** `merge-agent-pr.sh` should add `docs/*` to
-its accepted prefixes, and either fall back to a plain merge when `--rebase` fails
-instead of giving up, or (simpler) stop using `--rebase` at all in favor of a
-regular merge commit, since the agent workflow already produces many
-intermediate `Merge main into branch` commits by design (step 3 of the standing
-worker instructions). This was not fixed in this run to keep `LC-DOC-001` scoped
-to its own concern; it is a real, reproducible gap worth its own small `ops/` task.
+## QA discipline
 
-## QA — what was actually run on the final head
-
-This task changed documentation and removed dead files only; no runtime/UI/backend
-behavior changed, so per the QA table in `CLAUDE.md` no browser walkthrough
-applies — build/`check:all`/`compileall`/`pytest` proof is what's required. Exact
-counts and two-consecutive-clean-cycle confirmation are recorded in `## Evidence`
-on PR #34 and in `.ai/TASKS.md`'s `LC-DOC-001` DONE entry.
-
-## Next product handoff
-
-The serial `.ai/TASKS.md` queue is open. Do not seed a new `LC-CURR-006`/
-`LC-CURR-007` for A1 arcs 6–7 — read `.ai/foundry/README.md` and
-`.ai/foundry/tasks.json` first; that work is now scoped to the Foundry's
-`LC-CONT-A1` lane, which is not yet unblocked (it waits on `LC-FND-002`, itself
-waiting on `LC-AUD-001` and the supervisor evidence-ready gates). `LC-CLOUD-001`
-and `LC-PED-002` remain BLOCKED for the reasons already recorded in
-`.ai/TASKS.md`. If the next operator believes arc 6/7 genuinely needs to move
-outside the Foundry timeline, that is an owner-level product decision, not
-something to resolve by quietly reintroducing a competing serial task.
+Never merge a Draft or red PR. Never relax thresholds/guards to make a change pass. Functional changes need actual affected-flow proof. Any fix after validation resets the two-cycle count. Require two consecutive complete clean cycles on the exact final head before Ready/Merge.
