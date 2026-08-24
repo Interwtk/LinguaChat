@@ -13,21 +13,7 @@ branch/PR instead of duplicating it.
 
 ## IN_PROGRESS
 
-- [LC-DOC-002] Sync agent/operator contracts with the integrated A1–C2 baseline
-  owner:  claude-action
-  branch: docs/lc-doc-002-sync-contracts
-  why:    `CLAUDE.md`, `.ai/TRANSLATIONS.md` and one operator-facing A1 blueprint
-          message still describe the pre-Foundry state. Because every Claude session
-          reads `CLAUDE.md` first, this drift can make the next worker act on stale
-          A1/Supabase assumptions before `LC-PED-002` starts.
-  done:   documentation/operator-message only: align `CLAUDE.md` with the live
-          no-Supabase contract and integrated A1–C2 state; refresh the measured
-          structural i18n baseline without claiming placeholder English is translated;
-          update only the stale green operator conclusion in `check-a1-blueprint`.
-          Do not modify curriculum logic, evaluators, level availability, providers,
-          voice/media/pronunciation, Supabase or frozen visuals. Require focused
-          regression proof plus check:all, build, check:i18n, backend compileall/pytest,
-          guards and two consecutive clean full cycles on the exact final head.
+_(none)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
@@ -59,6 +45,7 @@ branch/PR instead of duplicating it.
 
 ## DONE
 
+- [LC-DOC-002] Sync agent/operator contracts with the integrated A1–C2 baseline — PR #90; `CLAUDE.md` Curriculum state, `.ai/TRANSLATIONS.md` coverage table (1726→5205 base keys) and `check-a1-blueprint.mjs`'s printed conclusion aligned with the real integrated-runtime state; no curriculum/evaluator/availability/provider/visual changes.
 - [LC-OPS-017] Refresh coordination after A1–C2 Foundry completion — PR #84; bookkeeping only, no runtime/curriculum/i18n/provider/visual changes; makes LC-PED-002 the next serial gate while keeping A1 unavailable.
 - [LC-DOC-001] Reconcile README and historical repository debris with the real product — PR #34.
 - [LC-BE-001] Remove the Pydantic V1 validator deprecation safely — PR #33; migrated to `field_validator`, behavior preserved, 444 pytest.

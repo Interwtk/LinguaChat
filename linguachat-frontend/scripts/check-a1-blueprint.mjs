@@ -442,4 +442,5 @@ const required = blueprint.canDos.filter(c => c.scope === 'required').length
 console.log(`\ncheck-a1-blueprint — OK  (${groups} blueprint groups verified)`)
 console.log(`  ${blueprint.blueprintVersion}: ${arcIds.length} arcs, ${blueprint.episodes.length} planned episodes, `
   + `${canDoIds.length} capabilities (${required} required), ${blueprint.deferredToA2.length} deferred to A2`)
-console.log(`  decision: ${blueprint.decision} — A1 is ${blueprint.status} and absent from the product`)
+console.log(`  decision: ${blueprint.decision} — A1 is ${blueprint.status} in this design document;`
+  + ` in the product it is contentStatus 'partial' and available: false until LC-PED-002`)

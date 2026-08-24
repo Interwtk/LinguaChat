@@ -1,6 +1,6 @@
 # STATE — where LinguaChat actually is
 
-Updated after completion of the A1–C2 Curriculum Foundry, final supervisor acceptance and release-candidate hardening on 2026-08-23, with queue-order coordination corrected on 2026-08-24.
+Updated after completion of the A1–C2 Curriculum Foundry, final supervisor acceptance and release-candidate hardening on 2026-08-23, with queue-order coordination corrected and `LC-DOC-002` contract sync completed on 2026-08-24.
 
 ## Product contract
 
@@ -28,21 +28,13 @@ The Curriculum Foundry chain is complete:
 - `LC-INT-001` complete: A1–C2 integrated into the shared runtime.
 - `LC-SUP-002` complete with `PASS_WITH_CONDITIONS`.
 - `LC-RC-001` complete: release-candidate hardening finished with two clean full cycles and 468 backend tests.
+- `LC-DOC-002` complete (PR #90): `CLAUDE.md`, `.ai/TRANSLATIONS.md` and `check-a1-blueprint.mjs`'s printed conclusion now match the integrated A1–C2 state — no more stale pre-Foundry wording for a worker to act on.
 
 The integrated runtime currently contains 171 curriculum episodes across Pre-A1 and A1–C2. Pre-A1 remains frozen and A1–C2 remain unavailable.
 
-## Next serial product gates
+## Next serial product gate
 
-`LC-DOC-002` is the first claimable serial task. It must run before `LC-PED-002` because the operator/agent contract still contains stale pre-Foundry wording that could make a worker act on obsolete A1/Supabase assumptions.
-
-`LC-DOC-002` is documentation/operator-message only:
-- align `CLAUDE.md` with the integrated A1–C2 baseline and current no-Supabase contract;
-- refresh the measured structural i18n baseline without pretending English placeholders are translations;
-- update only the stale green operator conclusion in `check-a1-blueprint`;
-- do not modify curriculum logic, evaluators, availability, providers, voice/media/pronunciation, Supabase or frozen visuals;
-- require focused regression proof plus `check:all`, production build, `check:i18n`, backend `compileall`, `pytest`, guards and two consecutive clean full cycles on the exact final head.
-
-After `LC-DOC-002` is DONE, `LC-PED-002` becomes the next serial product gate. It must re-prove the final integrated Pre-A1 + A1 learning journey before any A1 availability decision:
+`LC-PED-002` is now the next and only claimable serial product task. It must re-prove the final integrated Pre-A1 + A1 learning journey before any A1 availability decision:
 - at least 20 distinct learner journeys per arc;
 - longitudinal new-learner journeys through A1 exit;
 - delayed recall, transfer, support fading/recovery and independent can-do evidence;
@@ -52,11 +44,11 @@ After `LC-DOC-002` is DONE, `LC-PED-002` becomes the next serial product gate. I
 - `check:all`, production build, `check:i18n`, backend `compileall`, `pytest`, guards;
 - two consecutive clean full cycles on the exact final head after the last fix.
 
-A1 MUST remain `available:false` throughout both tasks.
+A1 MUST remain `available:false` throughout this task.
 
 ## Separate i18n work
 
-Issue #81 (`LC-I18N-006`) tracks real auxiliary-language localization of the integrated A2–C2 surface. It is independent of `LC-DOC-002` and `LC-PED-002` and must not change curriculum logic, evaluator behavior, level availability, the frozen visual architecture or any hard product boundary.
+Issue #81 (`LC-I18N-006`) tracks real auxiliary-language localization of the integrated A2–C2 surface. It is independent of `LC-PED-002` and must not change curriculum logic, evaluator behavior, level availability, the frozen visual architecture or any hard product boundary.
 
 ## QA discipline
 
