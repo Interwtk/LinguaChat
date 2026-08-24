@@ -106,7 +106,43 @@ export const VARIANTS = {
     with_object: ({ numberWord, counted }) => [`${cap(numberWord)} ${counted}.`],
     polite_request: ({ numberWord, counted }) => [`Can I have ${numberWord} ${counted}, please?`],
   },
+  /*
+   * A1 arc 6/7's three new intents (`levels/a1/evaluators.js`) plus a fifth
+   * `repair_request` subtype (`ask_how_to_say`). `ability`/`day`/`timeWord`/
+   * `arrangePlace` are the same novel-context substitution slots
+   * `check-pedagogical-journeys.mjs`'s `paramsFor` fills for every other
+   * evalKind — swapped for a receptive-extension activity / an unused day,
+   * time and place in a novel-context run, exactly like `targetNoun`/`place`
+   * elsewhere in this bank.
+   */
+  state_ability: {
+    /* a free-choice turn declares no `abilityForm`, so either polarity is a complete answer */
+    none: ({ ability }) => [`I can ${ability}.`, `I can't ${ability}.`],
+    positive: ({ ability }) => [
+      `I can ${ability}.`, `I can definitely ${ability}.`, `I certainly can ${ability}.`, `I can ${ability}, no problem.`,
+    ],
+    negative: ({ ability }) => [
+      `I can't ${ability}.`, `I definitely can't ${ability}.`, `I cannot ${ability}.`, `I can not ${ability}, sorry.`,
+    ],
+  },
+  ask_ability: ({ ability }) => [`Can you ${ability}?`, `Can you ${ability} well?`, `Can you really ${ability}?`],
+  arrange_meeting: {
+    propose: ({ day, timeWord }) => [
+      `Let's meet on ${cap(day)} at ${timeWord}.`, `How about ${cap(day)} at ${timeWord}?`, `Let's meet on ${cap(day)}, at ${timeWord}.`,
+    ],
+    place: ({ arrangePlace }) => [
+      `Let's meet at ${arrangePlace}.`, `Shall we meet near ${arrangePlace}?`, `Let's meet next to ${arrangePlace}.`,
+    ],
+    confirm: ({ day, timeWord, arrangePlace }) => [
+      `Let's meet on ${cap(day)} at ${timeWord} at ${arrangePlace}.`,
+      `OK, so ${cap(day)} at ${timeWord}, at ${arrangePlace}.`,
+      `Let's meet on ${cap(day)} at ${timeWord}, near ${arrangePlace}.`,
+    ],
+  },
 }
+VARIANTS.repair_request.ask_how_to_say = () => [
+  'How do you say that in English?', 'How do you say this in English?', 'How do I say that in English?',
+]
 
 /*
  * Near-miss: understood, but incomplete/wrong-shaped — a real "wrong answer"
@@ -169,7 +205,20 @@ export const NEAR_MISS = {
     with_object: ({ numberWord }) => cap(numberWord),
     polite_request: ({ numberWord, counted }) => `${cap(numberWord)} ${counted}.`,
   },
+  /* real near-misses, each verified against `levels/a1/evaluators.js` in `scripts/foundry/a1/check-a1-arc6-arc7-evaluators.mjs` */
+  state_ability: {
+    none: () => 'I can.', // insufficient_form: the frame is right, no activity is named
+    positive: () => "I can't swim.", // wrong_polarity: positive asked, negative given
+    negative: () => 'I can swim.', // wrong_polarity: negative asked, positive given
+  },
+  ask_ability: () => 'Do you can swim?', // wrong_question_form: the L1-transfer near miss
+  arrange_meeting: {
+    propose: () => "Let's meet on Friday.", // missing_time: day only
+    place: () => "Let's meet on Friday at seven.", // missing_place: no place named
+    confirm: () => "Let's meet on Friday at seven.", // incomplete_confirmation: missing place
+  },
 }
+NEAR_MISS.repair_request.ask_how_to_say = () => 'How do you say?' // incomplete_how_to_say: the bare frame
 
 /*
  * Novel-context substitutions: values no episode's own canonical script uses,
@@ -185,6 +234,20 @@ export const NOVEL_CONTEXT = {
   place: 'Tokyo',
   partner: 'Chen',
   placeName: 'the bank',
+  /*
+   * A1 arc 6/7: `ski` is the level's own documented receptive extension
+   * (`ABILITY_ACTIVITIES_RECEPTIVE` in `levels/a1/evaluators.js`) — an
+   * activity named that no episode's own script ever teaches productively,
+   * so accepting it is evidence the evaluator judges the "I can ___"/"Can
+   * you ___?" structure, not a memorised verb. `wednesday`/`three`/`the
+   * market` are the same idea for arc 7's day/time/place: real taught
+   * vocabulary (`DAYS`, taught numbers, `PLACE_WORDS`) that no episode's own
+   * canonical script (Friday/seven/the station/the cinema) ever names.
+   */
+  ability: 'ski',
+  day: 'wednesday',
+  timeWord: 'three',
+  arrangePlace: 'the market',
 }
 
 const cap = (s) => `${String(s || '').charAt(0).toUpperCase()}${String(s || '').slice(1)}`
@@ -194,6 +257,7 @@ export function bankFor(bank, step) {
   const entry = bank[step.evalKind]
   if (!entry) return null
   if (typeof entry === 'function') return entry
-  const sub = step.repairKind || step.timeForm || step.quantityForm || step.relationHint || 'none'
+  const sub = step.repairKind || step.timeForm || step.quantityForm || step.relationHint
+    || step.abilityForm || step.arrangeStage || 'none'
   return entry[sub] || null
 }
