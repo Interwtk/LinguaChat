@@ -41,8 +41,11 @@ requires later real-learner pilot evidence.
 country/geo guessing. Device/browser preferred languages are the first-launch hint;
 an explicit learner choice always wins.
 
-**Cloud persistence:** `docs/architecture/supabase-beta-plan.md` is the boundary for
-future Supabase work. Do not point LinguaChat at an EvoLabs project by guess.
+**Cloud persistence:** the current product contract is fail-closed: do not add or
+connect Supabase/Auth/Postgres/Storage/pgvector/Edge Functions unless the owner gives
+a new explicit instruction changing that contract. `docs/architecture/supabase-beta-plan.md`
+is historical/planning material only and is not implementation authority. Never point
+LinguaChat at an EvoLabs project by guess.
 
 ## Frozen — do not redesign
 
@@ -59,13 +62,11 @@ older adults, and never childish. **Do not redesign for taste.**
 
 ## Infrastructure boundaries
 
-- **Supabase is now authorized only through dedicated `LC-CLOUD-*` tasks.** Until a
-  LinguaChat-specific Supabase project is positively identified or deliberately
-  created, implementation remains blocked. Never reuse `Evolabs Platform` or
-  `SG-Evolabs-Auth-Testing` by assumption. Initial cloud scope is minimal Auth +
-  compact Postgres learner state with RLS and measured size budgets. No Storage,
-  pgvector, Realtime fan-out, Edge Functions or large event logs unless a later
-  dedicated task proves they are necessary.
+- **No Supabase/Auth/Postgres/Storage/pgvector/Edge Functions under the current
+  contract.** `LC-CLOUD-*` planning/history does not authorize implementation.
+  Supabase remains non-claimable until a future explicit owner instruction changes
+  this rule. Do not create, connect, inspect for reuse, or modify an EvoLabs project
+  for LinguaChat by assumption.
 - **No migration to Next.js.** Vite + React stays; FastAPI stays as the
   pedagogical backend.
 - **Voice and media are out of scope:** no WebRTC, STT, TTS, pronunciation
@@ -92,12 +93,11 @@ curriculum episodes across Pre-A1 and A1–C2. **Having content is not the same
 as being open**: every level from A1 through C2 is `contentStatus: partial`
 and `available: false` in `src/learning/curriculum/levels.js`.
 
-A1 stays `contentStatus: partial` and `available: false` until `LC-PED-002`
-completes its final all-arcs pedagogical acceptance gate over the integrated
-runtime and a separate, explicit A1 availability decision deliberately changes
-the level state. Never infer availability from "all runtime episodes passed" or
-"content exists" while that gate and decision are still outstanding — the same
-rule applies to A2–C2, which have no availability gate scheduled at all yet.
+`LC-PED-002` is complete and merged. A1 still stays `contentStatus: partial` and
+`available: false` until a separate, explicit A1 availability decision deliberately
+changes the level state. Never infer availability from "all runtime episodes passed"
+or "content exists"; the same rule applies to A2–C2, which have no availability
+gate scheduled at all yet.
 
 Episodes without runtime content fail closed with `unknown_episode`. A normal
 learner asking for a built-but-closed level (A1 through C2 today) gets
