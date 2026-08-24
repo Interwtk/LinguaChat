@@ -10,6 +10,18 @@ const ok = () => { groups += 1 }
 // Formal GitHub review blockers must fail closed.
 assert.match(mergeAgent, /reviewDecision/)
 assert.match(mergeAgent, /CHANGES_REQUESTED/)
+assert.match(mergeAgent, /Could not verify PR review decision; failing closed/)
+ok()
+
+// Every API read used to prove "no blocker" must distinguish a failed lookup from
+// a successful empty result. A transient GitHub/auth failure must delay merge, not
+// be interpreted as permission to merge.
+assert.match(mergeAgent, /comments_status=\$\?/)
+assert.match(mergeAgent, /Could not verify PR validation comments; failing closed/)
+assert.match(mergeAgent, /query_status=\$\?/)
+assert.match(mergeAgent, /unresolved_status=\$\?/)
+assert.match(mergeAgent, /has_more_status=\$\?/)
+assert.match(mergeAgent, /Could not parse PR review-thread state; failing closed/)
 ok()
 
 // Unresolved inline review threads must be queried, and inability to prove their
@@ -39,6 +51,12 @@ assert.ok(mergeAgent.lastIndexOf('merge_blockers_clear', secondCycle) > 0,
   'blockers must be rechecked immediately before the second-cycle Ready transition')
 assert.ok(mergeAgent.lastIndexOf('merge_blockers_clear', finalMerge) > secondCycle,
   'blockers must be rechecked after QA and before the final merge')
+ok()
+
+// Blocker-comment deduplication is best-effort and must not turn a blocked PR into a
+// red orchestrator loop when GitHub comment reads/writes are temporarily unavailable.
+assert.match(mergeAgent, /Could not read PR #\$NUMBER comments; not posting a possibly duplicate blocker comment/)
+assert.match(mergeAgent, /merge remains blocked by the caller/)
 ok()
 
 // The exact-head two-clean-cycle gate must remain intact; this fix supplements it.
