@@ -6,6 +6,7 @@ const chain = readFileSync('../.github/workflows/claude-chain.yml', 'utf8')
 const mention = readFileSync('../.github/workflows/claude-mention.yml', 'utf8')
 const task = readFileSync('../.github/workflows/claude-task.yml', 'utf8')
 const i18n = readFileSync('../.github/workflows/claude-i18n.yml', 'utf8')
+const release = readFileSync('../.github/scripts/release-stale-claim.mjs', 'utf8')
 
 let groups = 0
 const ok = () => { groups += 1 }
@@ -47,12 +48,37 @@ assert.ok(busyBlock.includes('claude-task.yml') && busyBlock.includes('claude-i1
 assert.ok(!busyBlock.includes('claude-mention.yml'), 'interactive review must not freeze autonomous implementation')
 ok()
 
-// Immediate worker chaining is allowed only when the previous success left a real
-// remote checkpoint. Otherwise the short watchdog retries later, avoiding hot loops.
-assert.match(chain, /id:\s*worker_checkpoint/)
+// A released task must keep a real remote checkpoint branch instead of erasing the
+// task->branch mapping. Only a proven missing ref is cleared; git/network uncertainty
+// preserves the mapping fail-closed.
+assert.match(release, /git', \['ls-remote', '--exit-code', '--heads', 'origin', name\]/)
+assert.match(release, /error\?\.status === 2/)
+assert.match(release, /return true\s*\/\/ fail closed/)
+assert.match(release, /if \(!preserveBranch\)/)
+ok()
+
+// Immediate worker chaining must resolve both states that can exist when workflow_run
+// arrives: a still-claimed IN_PROGRESS task or the exact released TODO task chosen by
+// next-task.mjs. A branch alone is insufficient; require an open Draft PR as durable
+// checkpoint proof before allowing the one dispatch step to fire.
+assert.match(chain, /SOURCE=IN_PROGRESS/)
+assert.match(chain, /TASK_ID=\$\(node \.github\/scripts\/next-task\.mjs \|\| true\)/)
+assert.match(chain, /SOURCE=TODO/)
+assert.match(chain, /awk -v id="\$TASK_ID"/)
 assert.match(chain, /git ls-remote --exit-code --heads origin "\$BRANCH"/)
+assert.match(chain, /gh pr list --head "\$BRANCH" --state open --json number,isDraft/)
+assert.match(chain, /select\(\.isDraft == true\)/)
 assert.match(chain, /steps\.worker_checkpoint\.outputs\.resumable == 'true'/)
 assert.match(chain, /avoiding an immediate retry loop/)
+ok()
+
+// There is exactly one autonomous dispatch site, so a successful checkpoint event
+// cannot fan out into duplicate workers. The serial queue and busy guard remain the
+// second line of defense.
+assert.equal((chain.match(/gh workflow run "\$WORKFLOW"/g) || []).length, 1,
+  'continuous recovery must have exactly one autonomous dispatch site')
+assert.match(chain, /steps\.busy\.outputs\.running == '0'/)
+assert.match(chain, /steps\.next\.outputs\.id != ''/)
 ok()
 
 console.log(`check-continuous-automation — OK (${groups} groups)`)
