@@ -20,11 +20,11 @@ function withQueue(markdown, fn) {
   }
 }
 
-function release(markdown) {
+function release(markdown, branchState = 'missing') {
   return withQueue(markdown, file => {
     const id = execFileSync(process.execPath, [releaseScript], {
       encoding: 'utf8',
-      env: { ...process.env, TASKS_PATH: file },
+      env: { ...process.env, TASKS_PATH: file, RELEASE_BRANCH_STATE: branchState },
     }).trim()
     return { id, text: readFileSync(file, 'utf8') }
   })
@@ -69,7 +69,7 @@ const malformed = `# TASKS
 ## DONE
 `
 
-const healed = release(malformed)
+const healed = release(malformed, 'missing')
 assert.equal(healed.id, 'LC-PED-001')
 assert.equal((healed.text.match(/^## TODO\b/gm) || []).length, 1, 'recovery must restore exactly one TODO heading')
 assert.match(healed.text, /## IN_PROGRESS\n\n_\(none — the queue is open\)_/)
@@ -98,11 +98,27 @@ const valid = `# TASKS
 ## DONE
 `
 
-const normalRelease = release(valid)
-assert.equal(normalRelease.id, 'LC-PED-001')
-assert.equal((normalRelease.text.match(/^## TODO\b/gm) || []).length, 1, 'normal recovery must not duplicate TODO')
-assert.equal(next(normalRelease.text), 'LC-PED-001')
-assert.ok(normalRelease.text.indexOf('[LC-PED-001]') < normalRelease.text.indexOf('[LC-I18N-002]'))
+// A real remote checkpoint must survive claim release. This is the durable
+// task -> branch mapping the workflow_run handler needs for immediate resume.
+const checkpointRelease = release(valid, 'exists')
+assert.equal(checkpointRelease.id, 'LC-PED-001')
+assert.equal((checkpointRelease.text.match(/^## TODO\b/gm) || []).length, 1)
+assert.match(checkpointRelease.text, /- \[LC-PED-001\][\s\S]*?owner:\s+unclaimed[\s\S]*?branch:\s+qa\/lc-ped-001-arc-journeys/)
+assert.equal(next(checkpointRelease.text), 'LC-PED-001')
+assert.ok(checkpointRelease.text.indexOf('[LC-PED-001]') < checkpointRelease.text.indexOf('[LC-I18N-002]'))
+
+// No remote checkpoint means the stale mapping is honestly cleared. The task is
+// still claimable, but worker-completion must not hot-loop immediately.
+const noCheckpointRelease = release(valid, 'missing')
+assert.equal(noCheckpointRelease.id, 'LC-PED-001')
+assert.match(noCheckpointRelease.text, /- \[LC-PED-001\][\s\S]*?owner:\s+unclaimed[\s\S]*?branch:\s+none/)
+assert.equal(next(noCheckpointRelease.text), 'LC-PED-001')
+
+// Infrastructure uncertainty is fail-closed: losing GitHub/network visibility must
+// never erase a branch that may contain the only resumable checkpoint.
+const uncertainRelease = release(valid, 'error')
+assert.equal(uncertainRelease.id, 'LC-PED-001')
+assert.match(uncertainRelease.text, /- \[LC-PED-001\][\s\S]*?branch:\s+qa\/lc-ped-001-arc-journeys/)
 
 const missingTodoWithoutLeakedTasks = `# TASKS
 
@@ -116,9 +132,9 @@ const missingTodoWithoutLeakedTasks = `# TASKS
 
 ## DONE
 `
-const repairedEmptyTodo = release(missingTodoWithoutLeakedTasks)
+const repairedEmptyTodo = release(missingTodoWithoutLeakedTasks, 'missing')
 assert.equal(repairedEmptyTodo.id, 'LC-PED-001')
 assert.equal((repairedEmptyTodo.text.match(/^## TODO\b/gm) || []).length, 1)
 assert.equal(next(repairedEmptyTodo.text), 'LC-PED-001')
 
-console.log('check-queue-recovery — OK (missing TODO self-heals, ordering preserved)')
+console.log('check-queue-recovery — OK (checkpoint preserved, missing branch cleared, uncertainty fail-closed)')
