@@ -5,12 +5,20 @@
  * The queue then says "somebody is working" for ever and the chain politely
  * refuses to start anything, so autonomy would last exactly until the first crash.
  *
- * The caller decides whether the claim is stale (no agent running, no open pull
- * request for its branch); this performs the edit and prints what it did.
+ * The caller decides whether the claim is stale. This script drops the owner lock,
+ * but it MUST NOT destroy a real remote checkpoint: when the task's recorded branch
+ * still exists on origin, that branch remains attached to the TODO task so the next
+ * worker can resume it. Only a provably missing remote branch becomes `branch: none`.
+ * A transient git/network failure is fail-closed and preserves the mapping.
+ *
+ * RELEASE_BRANCH_STATE=exists|missing|error is a deterministic test override. Real
+ * workflow calls leave it unset and verify the branch with `git ls-remote`.
+ *
  * It also self-heals the specific coordination corruption where the ## TODO
  * heading was accidentally removed and queued tasks leaked into IN_PROGRESS.
  * Exit 0 and print nothing when there is nothing to release.
  */
+import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync } from 'node:fs'
 
 const path = process.env.TASKS_PATH || '.ai/TASKS.md'
@@ -33,11 +41,38 @@ const secondTaskAt = taskMatches[1]?.index == null ? block.length : taskMatches[
 const task = block.slice(firstTaskAt, secondTaskAt).trim()
 const leakedQueued = taskMatches.length > 1 ? block.slice(secondTaskAt).trim() : ''
 const id = (task.match(/^-\s+\[([^\]]+)\]/) || [])[1] || 'unknown'
+const branch = (task.match(/^\s+branch:\s*(\S+)\s*$/m) || [])[1] || 'none'
 
-/* The task keeps its id, its title and its history — only the lock is dropped. */
-const released = task
-  .replace(/^(\s+owner:\s*).*$/m, '$1unclaimed')
-  .replace(/^(\s+branch:\s*).*$/m, '$1none')
+function remoteBranchExists(name) {
+  if (!name || name === 'none') return false
+
+  const override = process.env.RELEASE_BRANCH_STATE
+  if (override === 'exists') return true
+  if (override === 'missing') return false
+  if (override === 'error') return true // fail closed: never erase a checkpoint on uncertainty
+
+  try {
+    execFileSync('git', ['ls-remote', '--exit-code', '--heads', 'origin', name], {
+      stdio: 'ignore',
+    })
+    return true
+  } catch (error) {
+    // git ls-remote --exit-code uses status 2 when the ref genuinely does not exist.
+    // Auth/network/runner failures use other statuses; preserve the mapping so a
+    // temporary infrastructure problem cannot silently orphan resumable work.
+    if (error?.status === 2) return false
+    return true
+  }
+}
+
+const preserveBranch = remoteBranchExists(branch)
+
+/* The task keeps its id, title and history. Drop only the owner lock; keep a real
+ * checkpoint branch, otherwise make the missing branch explicit. */
+let released = task.replace(/^(\s+owner:\s*).*$/m, '$1unclaimed')
+if (!preserveBranch) {
+  released = released.replace(/^(\s+branch:\s*).*$/m, '$1none')
+}
 
 let todoHeading = '## TODO — ordered; take the first unclaimed one you are allowed to do'
 let existingTodo = ''
