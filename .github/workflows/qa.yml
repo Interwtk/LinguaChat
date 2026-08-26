@@ -6,7 +6,19 @@ on:
     branches: [main]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  # The merge gate uses an explicit dispatch for the second exact-head cycle.
+  # GITHUB_TOKEN-authored PR state changes do not reliably emit another workflow,
+  # so the second cycle must not depend on a recursive ready_for_review event.
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Open PR number being re-proved; empty means an ordinary manual QA run.'
+        required: false
+        type: string
+      expected_head_sha:
+        description: 'Exact PR source head that this dispatched clean cycle must prove.'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -142,43 +154,59 @@ jobs:
 
   evidence:
     name: evidence — the PR shows the QA it ran
-    if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    if: >
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
+      (github.event_name == 'workflow_dispatch' && inputs.pr_number != '' && inputs.expected_head_sha != '')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - name: The live PR description must carry measured Evidence
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_NUMBER: ${{ github.event_name == 'pull_request' && github.event.pull_request.number || inputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || inputs.expected_head_sha }}
         run: |
           set -euo pipefail
           valid=false
           last_problem="live PR body was not read"
 
           # The event payload is a snapshot. PR descriptions are often updated with
-          # measured counts immediately before Ready, so read the current body from
-          # GitHub instead of failing on stale event metadata. A short bounded retry
-          # absorbs API/metadata propagation without ever turning missing evidence green.
+          # measured counts immediately before Ready, so read the current PR directly.
+          # For an automation-requested second cycle, additionally prove that the PR is
+          # still Ready and still points at the exact source SHA supplied by the merge gate.
           for attempt in 1 2 3 4 5; do
             set +e
-            BODY=$(gh api "/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.body // ""' 2>/tmp/evidence-api.err)
+            LIVE=$(gh api "/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" 2>/tmp/evidence-api.err)
             api_status=$?
             set -e
 
-            if [ "$api_status" -ne 0 ]; then
-              last_problem="GitHub API could not return the live PR body (attempt $attempt/5)"
+            if [ "$api_status" -ne 0 ] || [ -z "$LIVE" ]; then
+              last_problem="GitHub API could not return the live PR (attempt $attempt/5)"
             else
+              BODY=$(printf '%s' "$LIVE" | jq -r '.body // ""')
+              LIVE_SHA=$(printf '%s' "$LIVE" | jq -r '.head.sha // ""')
+              LIVE_DRAFT=$(printf '%s' "$LIVE" | jq -r '.draft')
               printf '%s' "$BODY" > /tmp/body.md
-              missing=""
-              grep -qi '^##\s*Evidence' /tmp/body.md || missing="$missing Evidence-section"
-              grep -qi 'check:all' /tmp/body.md || missing="$missing check:all"
-              grep -qiE 'build' /tmp/body.md || missing="$missing build"
-              grep -qiE 'pytest|compileall' /tmp/body.md || missing="$missing backend"
-              if [ -z "$missing" ]; then
-                valid=true
-                break
+
+              if [ "$LIVE_DRAFT" != "false" ]; then
+                last_problem="PR #$PR_NUMBER is Draft, so this cannot be a clean cycle (attempt $attempt/5)"
+              elif [ -z "$EXPECTED_HEAD_SHA" ] || [ "$LIVE_SHA" != "$EXPECTED_HEAD_SHA" ]; then
+                last_problem="PR head changed: live=$LIVE_SHA expected=$EXPECTED_HEAD_SHA (attempt $attempt/5)"
+              elif [ "$EVENT_NAME" = "workflow_dispatch" ] && [ "$GITHUB_SHA" != "$EXPECTED_HEAD_SHA" ]; then
+                last_problem="dispatched QA checked out $GITHUB_SHA instead of expected PR head $EXPECTED_HEAD_SHA"
+              else
+                missing=""
+                grep -qi '^##\s*Evidence' /tmp/body.md || missing="$missing Evidence-section"
+                grep -qi 'check:all' /tmp/body.md || missing="$missing check:all"
+                grep -qiE 'build' /tmp/body.md || missing="$missing build"
+                grep -qiE 'pytest|compileall' /tmp/body.md || missing="$missing backend"
+                if [ -z "$missing" ]; then
+                  valid=true
+                  break
+                fi
+                last_problem="live Evidence is still incomplete:$missing (attempt $attempt/5)"
               fi
-              last_problem="live Evidence is still incomplete:$missing (attempt $attempt/5)"
             fi
 
             if [ "$attempt" -lt 5 ]; then sleep 5; fi
@@ -189,11 +217,16 @@ jobs:
             if [ -s /tmp/evidence-api.err ]; then tail -5 /tmp/evidence-api.err; fi
             exit 1
           fi
-          echo "Live Evidence section present and mentions check:all, build and backend suites." >> "$GITHUB_STEP_SUMMARY"
+          echo "Live PR/Evidence and exact source head verified for PR #$PR_NUMBER at $EXPECTED_HEAD_SHA." >> "$GITHUB_STEP_SUMMARY"
 
   clean_cycle:
     name: qa-cycle — complete clean non-draft cycle
-    if: always() && github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    if: >
+      always() &&
+      (
+        (github.event_name == 'pull_request' && github.event.pull_request.draft == false) ||
+        (github.event_name == 'workflow_dispatch' && inputs.pr_number != '' && inputs.expected_head_sha != '')
+      )
     needs: [frontend, backend, guards, evidence]
     runs-on: ubuntu-latest
     timeout-minutes: 5
