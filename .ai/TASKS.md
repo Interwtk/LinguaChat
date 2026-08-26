@@ -17,9 +17,38 @@ _(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
-_(none — the queue is open)_
+- [LC-I18N-006] Localize integrated A2–C2 curriculum auxiliary copy
+  owner:  unclaimed
+  branch: none
+  issue:  #81
+  why:    A2–C2 are integrated and structurally i18n-complete, but the seven auxiliary
+          locale files still contain English placeholder instructional copy from the
+          integration phase. The Foundry/integration/supervisor baselines are stable,
+          so this independent translation lane is now safe and useful to run.
+  done:   remove unintended English placeholder auxiliary copy from the integrated
+          A2–C2 instructional surface in es/pt/fr/it/de/ja/ar while preserving
+          interpolation variables and intentional target-English content; keep Arabic
+          auxiliary UI RTL, target-English content/input LTR and Chatto unmirrored;
+          do not change curriculum logic, evaluator behavior, level availability,
+          providers, Supabase/voice/media or frozen visuals; prove affected copy with
+          es/ja/ar functional/browser spot checks including 390px and 1440px where
+          rendered UI is touched; `check:i18n`, `check:all`, production build, backend
+          compileall/pytest and guards green; two consecutive complete clean cycles on
+          the exact final head after the last fix.
 
 ## BLOCKED
+
+- [LC-PROD-002] Explicit A1 availability decision gate
+  owner:  unclaimed
+  branch: none
+  issue:  #101
+  blocked-on: explicit owner approval to open A1
+  why:    LC-PED-002 proved the final Pre-A1+A1 learning gate, but that proof was
+          deliberately not authorization to expose A1 to learners.
+  done:   if and only if the owner explicitly approves opening A1, make the smallest
+          A1-only availability change and re-prove affected navigation/availability
+          surfaces plus full QA and two exact-head clean cycles. Without approval,
+          keep A1 `available:false` and make no availability change.
 
 - [LC-CLOUD-001] Cloud persistence / Supabase
   owner:  unclaimed
@@ -34,6 +63,7 @@ _(none — the queue is open)_
 
 ## DONE
 
+- [LC-OPS-021] Continuous recovery + live Evidence hardening — PR #100; eliminated stale PR-body Evidence races, reduced watchdog fallback to 5 minutes, separated review from implementation writer concurrency, preserved durable task→checkpoint branch identity across claim release, resumed released TODO checkpoints from branch+Draft PR proof, prevented no-checkpoint hot loops, and replaced the unreliable GITHUB_TOKEN Draft→Ready second-cycle trigger with an explicitly dispatched exact-head QA cycle. Final head passed two consecutive complete clean cycles before merge.
 - [LC-PED-002] Final all-arcs learning acceptance gate before A1 can open — PR #91; final integrated/hardened Pre-A1+A1 head re-proven end to end: 298 per-arc journeys across 13 arcs, a 7-proof/38-episode longitudinal Pre-A1→A1-exit new-learner journey (delayed recall, transfer, prerequisite reuse across the Pre-A1/A1 boundary, scaffold fading, assisted-vs-independent evidence, no false mastery, no duplicate replay reward), 41/41 arc-6/7 evaluator cases, and real es/ja/ar browser proof at 390px/1440px for arcs 6-7 (RTL correct, target-English stays lang=en/LTR, Chatto not mirrored, no overflow/raw keys/console errors). Also fixed a stale `check-cloud-automation.mjs` assertion left behind by an unrelated main commit (LC-OPS-019) so the suite could run clean. Two consecutive clean full non-draft QA cycles required before merge; A1 stays `available:false` — this gate does not itself open A1.
 - [LC-DOC-002] Sync agent/operator contracts with the integrated A1–C2 baseline — PR #90; `CLAUDE.md` Curriculum state, `.ai/TRANSLATIONS.md` coverage table (1726→5205 base keys) and `check-a1-blueprint.mjs`'s printed conclusion aligned with the real integrated-runtime state; no curriculum/evaluator/availability/provider/visual changes.
 - [LC-OPS-017] Refresh coordination after A1–C2 Foundry completion — PR #84; bookkeeping only, no runtime/curriculum/i18n/provider/visual changes; makes LC-PED-002 the next serial gate while keeping A1 unavailable.
@@ -69,6 +99,6 @@ _(none — the queue is open)_
 
 ## Separate i18n lane
 
-`LC-I18N-006` is tracked in issue #81 and remains separate from `LC-PED-002`.
-It may localize integrated A2–C2 auxiliary-language copy, but must not modify curriculum logic,
-evaluator behavior or level availability.
+`LC-I18N-006` is now the first claimable TODO after continuity hardening. Its `LC-I18N-*`
+prefix routes it to the translations worker. It remains independent from A1 availability and
+must not modify curriculum logic, evaluator behavior, level availability or frozen visuals.
