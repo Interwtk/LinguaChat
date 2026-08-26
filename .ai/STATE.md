@@ -1,12 +1,12 @@
 # STATE — where LinguaChat actually is
 
-Updated after completion of the A1–C2 Curriculum Foundry, final supervisor acceptance and release-candidate hardening on 2026-08-23, with queue-order coordination corrected, `LC-DOC-002` contract sync and `LC-PED-002`'s final all-arcs pedagogical acceptance gate completed on 2026-08-24.
+Updated after completion of the A1–C2 Curriculum Foundry, final supervisor acceptance, release-candidate hardening, `LC-DOC-002`, `LC-PED-002`, and the continuous-recovery hardening `LC-OPS-021` (PR #100). The queue is now deliberately fed with the independent A2–C2 localization task `LC-I18N-006` so autonomous work has a real next task instead of stopping on an empty TODO list.
 
 ## Product contract
 
 - Lingua is the tutor. Chatto is the mascot only; Chatto is not a tutor/chat agent.
 - Pre-A1 is complete, available and **frozen**. Do not modify it unless a separately approved regression fix requires it.
-- A1 remains **fail-closed** with `available: false`. `LC-PED-002` (the final pedagogical acceptance gate) is now DONE, but that alone does not open A1 — a separate, explicit availability decision is still required and has not been made.
+- A1 remains **fail-closed** with `available: false`. `LC-PED-002` (the final pedagogical acceptance gate) is DONE, but that alone does not open A1 — `LC-PROD-002` / issue #101 is a separate availability decision and remains blocked on explicit owner approval.
 - A1 arcs 1–7 are implemented and integrated. A2, B1, B2, C1 and C2 are also integrated into the shared runtime, but all A1–C2 levels remain `available:false`.
 - `user_language` is one auxiliary language for UI/chrome, explanations, hints, corrections, interpretations and meanings. `target_language` is English.
 - Implemented auxiliary locales are `en`, `es`, `pt`, `fr`, `it`, `de`, `ja`, `ar`; unsupported languages must not masquerade as supported via English fallback.
@@ -28,19 +28,22 @@ The Curriculum Foundry chain is complete:
 - `LC-INT-001` complete: A1–C2 integrated into the shared runtime.
 - `LC-SUP-002` complete with `PASS_WITH_CONDITIONS`.
 - `LC-RC-001` complete: release-candidate hardening finished with two clean full cycles and 468 backend tests.
-- `LC-DOC-002` complete (PR #90): `CLAUDE.md`, `.ai/TRANSLATIONS.md` and `check-a1-blueprint.mjs`'s printed conclusion now match the integrated A1–C2 state — no more stale pre-Foundry wording for a worker to act on.
-- `LC-PED-002` complete (PR #91): the final all-arcs pedagogical acceptance gate re-proved every Pre-A1 + A1 arc on the final integrated/hardened head — 298 per-arc journeys across 13 arcs, a 38-episode longitudinal new-learner journey through A1 exit (delayed recall, transfer, prerequisite reuse, scaffold fading/recovery, assisted-vs-independent evidence, no false mastery, no duplicate replay reward), 41/41 arc-6/7 evaluator cases, and real es/ja/ar browser proof at 390px/1440px for arcs 6-7. Two consecutive clean non-draft QA cycles on the exact final head, per the merge gate.
+- `LC-DOC-002` complete (PR #90): `CLAUDE.md`, `.ai/TRANSLATIONS.md` and `check-a1-blueprint.mjs`'s printed conclusion match the integrated A1–C2 state.
+- `LC-PED-002` complete (PR #91): the final all-arcs pedagogical acceptance gate re-proved every Pre-A1 + A1 arc on the final integrated/hardened head — 298 per-arc journeys across 13 arcs, a 38-episode longitudinal new-learner journey through A1 exit, 41/41 arc-6/7 evaluator cases, 95/95 focused arc-6/7 journeys and real es/ja/ar browser proof at 390px/1440px.
+- `LC-OPS-021` complete (PR #100): live-Evidence reads replace stale event snapshots; successful checkpointed workers can resume from durable task→branch/Draft-PR state; claim release no longer destroys a real checkpoint mapping; no-checkpoint success cannot hot-loop; review work no longer freezes the implementation writer; watchdog fallback is every 5 minutes; and the second exact-head QA cycle is explicitly dispatched rather than relying on a recursively suppressed `GITHUB_TOKEN` Draft→Ready event. The final source head passed two complete clean cycles before merge.
 
 The integrated runtime currently contains 171 curriculum episodes across Pre-A1 and A1–C2. Pre-A1 remains frozen and A1–C2 remain unavailable.
 
-## Next serial product gate
+## Current claimable work
 
-`LC-PED-002` is done. The pedagogical acceptance gate does not itself authorize opening A1: a distinct, explicit A1 availability decision task is now the next serial product step, and until it lands A1 stays `available:false` exactly as it is today. No task currently in the queue makes that decision — it is not implicitly authorized by this gate's completion.
+`LC-I18N-006` / issue #81 is now the first TODO and is intentionally claimable. It is translation/i18n-only work for the integrated A2–C2 auxiliary-language instructional copy in `es`, `pt`, `fr`, `it`, `de`, `ja` and `ar`. It must remove unintended English placeholders while preserving intentional target-English content and interpolation variables. It must not change curriculum logic, evaluator behavior, level availability, providers, Supabase/voice/media or the frozen visual architecture.
 
-## Separate i18n work
+Because its ID starts with `LC-I18N-`, the existing orchestrator routes it to `claude-i18n.yml`. A durable checkpoint/Draft PR should be resumed rather than duplicated; after a successful checkpointed worker completion the chain should continue immediately, with the <=5-minute watchdog only as fallback.
 
-Issue #81 (`LC-I18N-006`) tracks real auxiliary-language localization of the integrated A2–C2 surface. It is independent of `LC-PED-002` and must not change curriculum logic, evaluator behavior, level availability, the frozen visual architecture or any hard product boundary.
+## A1 availability remains separately blocked
+
+`LC-PROD-002` / issue #101 records the explicit A1 availability decision gate. It is in BLOCKED, not TODO. Creating the issue and completing `LC-PED-002` are **not** approval to open A1. Without an explicit owner instruction approving the release, A1 remains `available:false` and the automation must not infer permission.
 
 ## QA discipline
 
-For any changed final head: require functional proof for affected flows plus `check:all`, production build, `check:i18n`, backend `compileall`, `pytest` and guards. Any fix after validation resets the clean-cycle count. Require two consecutive clean full cycles on the exact final head before Ready/Merge. Never merge red or Draft PRs and never weaken QA to make a change pass.
+For any changed final head: require functional proof for affected flows plus `check:all`, production build, `check:i18n`, backend `compileall`, `pytest` and guards. Any fix after validation resets the clean-cycle count. Require two consecutive complete clean cycles on the exact final head before merge. Never merge red or Draft PRs and never weaken QA to make a change pass.
