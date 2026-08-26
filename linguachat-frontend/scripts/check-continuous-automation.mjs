@@ -121,7 +121,7 @@ ok()
 assert.match(permanentContract, /linguachat-claude-writer/)
 assert.match(permanentContract, /linguachat-claude-review/)
 assert.match(permanentContract, /five-minute scheduled watchdog/)
-assert.match(permanentContract, /main-controlled merge handoff/)
+assert.match(permanentContract, /main-\s*controlled merge handoff/)
 assert.doesNotMatch(permanentContract, /hourly watchdog as recovery/)
 ok()
 
