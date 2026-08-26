@@ -6,10 +6,10 @@ import {
 
 let groups = 0
 const ok = () => { groups += 1 }
-const run = (id, head, minute) => ({
+const run = (id, head, minute, event = 'pull_request') => ({
   id,
   head_sha: head,
-  event: 'pull_request',
+  event,
   created_at: `2026-08-24T17:${String(minute).padStart(2, '0')}:00Z`,
 })
 const job = (conclusion, status = 'completed') => ({
@@ -24,7 +24,7 @@ const history = (workflowRuns, entries, headSha) => evaluateCycleHistory({
   required: 2,
 })
 
-// 1. Two complete clean non-draft cycles on the exact same head allow merge.
+// 1. Two complete clean non-draft PR cycles on the exact same head allow merge.
 {
   const result = history(
     [run(2, 'B', 2), run(1, 'B', 1)],
@@ -36,10 +36,24 @@ const history = (workflowRuns, entries, headSha) => evaluateCycleHistory({
   ok()
 }
 
-// 2. Two greens on an old SHA cannot be reused after a new commit; SHA B has one.
+// 2. The normal autonomous shape also counts: first pull_request proof + an
+// explicitly attested workflow_dispatch second cycle on the exact same source head.
 {
   const result = history(
-    [run(4, 'B', 4), run(3, 'A', 3), run(2, 'A', 2)],
+    [run(2, 'B', 2, 'workflow_dispatch'), run(1, 'B', 1)],
+    [[1, job('success')], [2, job('success')]],
+    'B',
+  )
+  assert.equal(result.ok, true)
+  assert.equal(result.clean, 2)
+  assert.equal(result.considered[0].event, 'workflow_dispatch')
+  ok()
+}
+
+// 3. Two greens on an old SHA cannot be reused after a new commit; SHA B has one.
+{
+  const result = history(
+    [run(4, 'B', 4), run(3, 'A', 3, 'workflow_dispatch'), run(2, 'A', 2)],
     [[2, job('success')], [3, job('success')], [4, job('success')]],
     'B',
   )
@@ -49,10 +63,10 @@ const history = (workflowRuns, entries, headSha) => evaluateCycleHistory({
   ok()
 }
 
-// 3. A red eligible cycle breaks the consecutive streak even if an older green exists.
+// 4. A red eligible cycle breaks the consecutive streak even if an older green exists.
 {
   const result = history(
-    [run(6, 'B', 6), run(5, 'B', 5), run(4, 'B', 4)],
+    [run(6, 'B', 6, 'workflow_dispatch'), run(5, 'B', 5), run(4, 'B', 4)],
     [[4, job('success')], [5, job('failure')], [6, job('success')]],
     'B',
   )
@@ -62,10 +76,11 @@ const history = (workflowRuns, entries, headSha) => evaluateCycleHistory({
   ok()
 }
 
-// 4. Draft runs are represented by a skipped sentinel and never count.
+// 5. Draft PR runs / unattested dispatches are represented by a skipped sentinel
+// and never count.
 {
   const result = history(
-    [run(7, 'B', 7), run(6, 'B', 6), run(5, 'B', 5)],
+    [run(7, 'B', 7, 'workflow_dispatch'), run(6, 'B', 6), run(5, 'B', 5)],
     [[5, job('skipped')], [6, job('success')], [7, job('success')]],
     'B',
   )
@@ -74,10 +89,10 @@ const history = (workflowRuns, entries, headSha) => evaluateCycleHistory({
   ok()
 }
 
-// 5. A still-running eligible cycle blocks merge rather than being ignored.
+// 6. A still-running eligible cycle blocks merge rather than being ignored.
 {
   const result = history(
-    [run(9, 'B', 9), run(8, 'B', 8), run(7, 'B', 7)],
+    [run(9, 'B', 9, 'workflow_dispatch'), run(8, 'B', 8), run(7, 'B', 7)],
     [[7, job('success')], [8, job('success')], [9, job(null, 'in_progress')]],
     'B',
   )
@@ -87,7 +102,7 @@ const history = (workflowRuns, entries, headSha) => evaluateCycleHistory({
   ok()
 }
 
-// 6. One clean cycle is a distinct recoverable state: request exactly one more.
+// 7. One clean cycle is a distinct recoverable state: request exactly one more.
 {
   const result = history(
     [run(10, 'B', 10)],
@@ -100,15 +115,28 @@ const history = (workflowRuns, entries, headSha) => evaluateCycleHistory({
   ok()
 }
 
-// 7. Cancelled/non-success eligible cycles never count as clean.
+// 8. Cancelled/non-success eligible cycles never count as clean.
 {
   const result = history(
-    [run(12, 'B', 12), run(11, 'B', 11)],
+    [run(12, 'B', 12, 'workflow_dispatch'), run(11, 'B', 11)],
     [[11, job('success')], [12, job('cancelled')]],
     'B',
   )
   assert.equal(result.ok, false)
   assert.equal(result.code, 'not-clean')
+  ok()
+}
+
+// 9. Other events cannot masquerade as clean cycles even with a forged sentinel.
+{
+  const result = history(
+    [run(14, 'B', 14, 'push'), run(13, 'B', 13)],
+    [[13, job('success')], [14, job('success')]],
+    'B',
+  )
+  assert.equal(result.ok, false)
+  assert.equal(result.code, 'needs-more')
+  assert.equal(result.clean, 1)
   ok()
 }
 

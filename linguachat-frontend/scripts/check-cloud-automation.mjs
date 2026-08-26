@@ -25,17 +25,23 @@ const nextTask = join(root, '.github/scripts/next-task.mjs')
 let groups = 0
 const ok = () => { groups++ }
 
-// 1. The chain, not a worker, owns the scheduler.
-assert.match(chain, /schedule:\s*\n\s*#?[\s\S]*?cron:\s*['"]17 \* \* \* \*['"]/)
+// 1. The chain, not a worker, owns the scheduler. The watchdog is a short recovery
+// net rather than an hourly stall window; normal advancement remains event-driven.
+assert.match(chain, /schedule:\s*\n\s*#?[\s\S]*?cron:\s*['"]\*\/5 \* \* \* \*['"]/)
+assert.doesNotMatch(chain, /cron:\s*['"]17 \* \* \* \*['"]/)
 assert.doesNotMatch(task, /^\s*schedule:/m)
 assert.doesNotMatch(i18n, /^\s*schedule:/m)
 ok()
 
-// 2. All Claude writers serialize through the same repository-wide lock.
-for (const [name, text] of [['task', task], ['i18n', i18n], ['mention', mention]]) {
-  assert.match(text, /group:\s*linguachat-claude-writer\b/, `${name} does not share the writer lock`)
+// 2. Autonomous implementation writers serialize through the repository-wide lock.
+// Interactive @claude is review-only, has a separate lock, and must not freeze
+// implementation while a browser proof or review is running.
+for (const [name, text] of [['task', task], ['i18n', i18n]]) {
+  assert.match(text, /group:\s*linguachat-claude-writer\b/, `${name} does not share the autonomous writer lock`)
 }
-assert.match(chain, /for WF in claude-task\.yml claude-i18n\.yml claude-mention\.yml/)
+assert.match(mention, /group:\s*linguachat-claude-review\b/)
+assert.match(chain, /for WF in claude-task\.yml claude-i18n\.yml; do/)
+assert.doesNotMatch(chain, /for WF in[^\n]*claude-mention\.yml/)
 ok()
 
 // 3. There is no Claude push-trigger loop. QA may still gate pushes to main.

@@ -2,6 +2,7 @@
 import { execFileSync } from 'node:child_process'
 
 export const CLEAN_CYCLE_JOB = 'qa-cycle — complete clean non-draft cycle'
+export const CLEAN_CYCLE_EVENTS = new Set(['pull_request', 'workflow_dispatch'])
 
 function asJobs(entry) {
   if (!entry) return []
@@ -12,7 +13,10 @@ function asJobs(entry) {
 
 export function evaluateCycleHistory({ workflowRuns, jobsByRun, headSha, required = 2 }) {
   const runs = [...(workflowRuns || [])]
-    .filter(run => run?.head_sha === headSha && run?.event === 'pull_request')
+    // pull_request is the normal first proof. workflow_dispatch is an explicitly
+    // attested second-cycle proof: qa.yml only emits the sentinel after validating
+    // the live PR is Ready and still points at this exact source SHA.
+    .filter(run => run?.head_sha === headSha && CLEAN_CYCLE_EVENTS.has(run?.event))
     .sort((a, b) => {
       const bt = Date.parse(b.run_started_at || b.created_at || 0) || 0
       const at = Date.parse(a.run_started_at || a.created_at || 0) || 0
@@ -26,14 +30,13 @@ export function evaluateCycleHistory({ workflowRuns, jobsByRun, headSha, require
     const jobs = asJobs(jobsByRun?.[String(run.id)] ?? jobsByRun?.[run.id])
     const sentinel = jobs.find(job => job?.name === CLEAN_CYCLE_JOB)
 
-    // Runs created while a PR was Draft have this job skipped. They are deliberately
-    // ignored: a Draft run is not evidence for the two-clean-cycle merge contract.
-    // Runs created before this sentinel existed are also ignored and can never satisfy
-    // the new gate retroactively.
+    // Draft PR runs and ordinary/manual dispatches have this job skipped. They are
+    // deliberately ignored and can never satisfy the clean-cycle merge contract.
     if (!sentinel || sentinel.conclusion === 'skipped') continue
 
     considered.push({
       runId: run.id,
+      event: run.event,
       status: sentinel.status,
       conclusion: sentinel.conclusion,
     })
@@ -81,12 +84,14 @@ async function main() {
     process.exit(3)
   }
 
-  const query = `/repos/${repo}/actions/workflows/qa.yml/runs?head_sha=${encodeURIComponent(headSha)}&event=pull_request&per_page=20`
+  // Fetch all QA runs for the exact source head. Filtering only event=pull_request
+  // would hide the explicit workflow_dispatch second cycle and recreate the stall.
+  const query = `/repos/${repo}/actions/workflows/qa.yml/runs?head_sha=${encodeURIComponent(headSha)}&per_page=30`
   const runsPayload = ghJson(query)
   const workflowRuns = runsPayload.workflow_runs || []
   const jobsByRun = {}
 
-  for (const run of workflowRuns) {
+  for (const run of workflowRuns.filter(run => CLEAN_CYCLE_EVENTS.has(run?.event))) {
     jobsByRun[String(run.id)] = ghJson(`/repos/${repo}/actions/runs/${run.id}/jobs?per_page=100`)
   }
 

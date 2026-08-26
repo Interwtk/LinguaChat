@@ -15,8 +15,11 @@ permissions:
   issues: write
   id-token: write
 
+# Review/validation is deliberately separate from the serial implementation writer.
+# This lane cannot edit repository contents; its merge-blocker marker/review threads
+# are the safety boundary. A long browser proof must not freeze autonomous coding.
 concurrency:
-  group: linguachat-claude-writer
+  group: linguachat-claude-review
   cancel-in-progress: false
 
 jobs:
