@@ -17,24 +17,25 @@ _(none — the queue is open)_
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
-- [LC-I18N-006] Localize integrated A2–C2 curriculum auxiliary copy
+- [LC-I18N-006] Localize A1 arcs 6–7 + integrated A2–C2 curriculum auxiliary copy
   owner:  unclaimed
   branch: none
   issue:  #81
-  why:    A2–C2 are integrated and structurally i18n-complete, but the seven auxiliary
-          locale files still contain English placeholder instructional copy from the
-          integration phase. The Foundry/integration/supervisor baselines are stable,
-          so this independent translation lane is now safe and useful to run.
-  done:   remove unintended English placeholder auxiliary copy from the integrated
-          A2–C2 instructional surface in es/pt/fr/it/de/ja/ar while preserving
-          interpolation variables and intentional target-English content; keep Arabic
-          auxiliary UI RTL, target-English content/input LTR and Chatto unmirrored;
-          do not change curriculum logic, evaluator behavior, level availability,
-          providers, Supabase/voice/media or frozen visuals; prove affected copy with
-          es/ja/ar functional/browser spot checks including 390px and 1440px where
-          rendered UI is touched; `check:i18n`, `check:all`, production build, backend
-          compileall/pytest and guards green; two consecutive complete clean cycles on
-          the exact final head after the last fix.
+  why:    A1 arcs 6–7 and A2–C2 are integrated and structurally i18n-complete, but
+          the seven auxiliary locale files still contain English placeholder
+          instructional copy from the integration phase. Structural 100% key parity
+          does not prove that auxiliary-language copy is semantically localized.
+  done:   remove unintended English placeholder auxiliary copy from A1 arcs 6–7 and
+          the integrated A2–C2 instructional surface in es/pt/fr/it/de/ja/ar while
+          preserving interpolation variables and intentional target-English content;
+          keep Pre-A1 frozen; keep A1 `available:false`; keep Arabic auxiliary UI RTL,
+          target-English content/input LTR and Chatto unmirrored; do not change
+          curriculum logic, evaluator behavior, level availability, providers,
+          Supabase/voice/media or frozen visuals; prove affected explanations/hints/
+          corrections/meanings with es/ja/ar functional/browser spot checks including
+          390px and 1440px where rendered UI is touched; `check:i18n`, `check:all`,
+          production build, backend compileall/pytest and guards green; two consecutive
+          complete clean cycles on the exact final head after the last fix.
 
 ## BLOCKED
 
@@ -42,13 +43,15 @@ _(none — the queue is open)_
   owner:  unclaimed
   branch: none
   issue:  #101
-  blocked-on: explicit owner approval to open A1
+  blocked-on: explicit owner approval to open A1 and completion of LC-I18N-006
   why:    LC-PED-002 proved the final Pre-A1+A1 learning gate, but that proof was
-          deliberately not authorization to expose A1 to learners.
-  done:   if and only if the owner explicitly approves opening A1, make the smallest
-          A1-only availability change and re-prove affected navigation/availability
-          surfaces plus full QA and two exact-head clean cycles. Without approval,
-          keep A1 `available:false` and make no availability change.
+          deliberately not authorization to expose A1 to learners; A1 arcs 6–7 also
+          still need honest auxiliary-language localization before any release decision.
+  done:   if and only if the owner explicitly approves opening A1 after LC-I18N-006 is
+          DONE, make the smallest A1-only availability change and re-prove affected
+          navigation/availability surfaces plus full QA and two exact-head clean cycles.
+          Without approval or while LC-I18N-006 is incomplete, keep A1
+          `available:false` and make no availability change.
 
 - [LC-CLOUD-001] Cloud persistence / Supabase
   owner:  unclaimed
@@ -100,5 +103,7 @@ _(none — the queue is open)_
 ## Separate i18n lane
 
 `LC-I18N-006` is now the first claimable TODO after continuity hardening. Its `LC-I18N-*`
-prefix routes it to the translations worker. It remains independent from A1 availability and
-must not modify curriculum logic, evaluator behavior, level availability or frozen visuals.
+prefix routes it to the translations worker. Its real scope is A1 arcs 6–7 plus integrated
+A2–C2 auxiliary-language instructional copy; Pre-A1 stays frozen. It remains independent
+from availability and must not modify curriculum logic, evaluator behavior, level
+availability or frozen visuals.
