@@ -1,12 +1,12 @@
 # STATE — where LinguaChat actually is
 
-Updated after completion of the A1–C2 Curriculum Foundry, final supervisor acceptance, release-candidate hardening, `LC-DOC-002`, `LC-PED-002`, and the continuous-recovery hardening `LC-OPS-021` (PR #100). The queue is now deliberately fed with the independent A2–C2 localization task `LC-I18N-006` so autonomous work has a real next task instead of stopping on an empty TODO list.
+Updated after completion of the A1–C2 Curriculum Foundry, final supervisor acceptance, release-candidate hardening, `LC-DOC-002`, `LC-PED-002`, and the continuous-recovery hardening `LC-OPS-021` (PR #100). The queue is now deliberately fed with `LC-I18N-006`, whose real localization scope is A1 arcs 6–7 plus integrated A2–C2 auxiliary copy, so autonomous work has a correct next task instead of stopping on an empty TODO list or declaring localization complete too early.
 
 ## Product contract
 
 - Lingua is the tutor. Chatto is the mascot only; Chatto is not a tutor/chat agent.
 - Pre-A1 is complete, available and **frozen**. Do not modify it unless a separately approved regression fix requires it.
-- A1 remains **fail-closed** with `available: false`. `LC-PED-002` (the final pedagogical acceptance gate) is DONE, but that alone does not open A1 — `LC-PROD-002` / issue #101 is a separate availability decision and remains blocked on explicit owner approval.
+- A1 remains **fail-closed** with `available: false`. `LC-PED-002` (the final pedagogical acceptance gate) is DONE, but that alone does not open A1 — `LC-PROD-002` / issue #101 is a separate availability decision and remains blocked on explicit owner approval and completion of `LC-I18N-006`.
 - A1 arcs 1–7 are implemented and integrated. A2, B1, B2, C1 and C2 are also integrated into the shared runtime, but all A1–C2 levels remain `available:false`.
 - `user_language` is one auxiliary language for UI/chrome, explanations, hints, corrections, interpretations and meanings. `target_language` is English.
 - Implemented auxiliary locales are `en`, `es`, `pt`, `fr`, `it`, `de`, `ja`, `ar`; unsupported languages must not masquerade as supported via English fallback.
@@ -36,13 +36,15 @@ The integrated runtime currently contains 171 curriculum episodes across Pre-A1 
 
 ## Current claimable work
 
-`LC-I18N-006` / issue #81 is now the first TODO and is intentionally claimable. It is translation/i18n-only work for the integrated A2–C2 auxiliary-language instructional copy in `es`, `pt`, `fr`, `it`, `de`, `ja` and `ar`. It must remove unintended English placeholders while preserving intentional target-English content and interpolation variables. It must not change curriculum logic, evaluator behavior, level availability, providers, Supabase/voice/media or the frozen visual architecture.
+`LC-I18N-006` / issue #81 is the first TODO and is intentionally claimable. It is translation/i18n-only work for the known untranslated auxiliary-language instructional surface in **A1 arcs 6–7 plus A2, B1, B2, C1 and C2**, across `es`, `pt`, `fr`, `it`, `de`, `ja` and `ar`. It must remove unintended English placeholders while preserving intentional target-English content and interpolation variables. Pre-A1 must remain frozen. It must not change curriculum logic, evaluator behavior, level availability, providers, Supabase/voice/media or the frozen visual architecture.
+
+`check:i18n` showing 100% key parity is necessary but not sufficient: it proves structure, not that auxiliary-language values are genuinely translated. Completion therefore requires semantic inspection plus affected-flow/browser proof in es/ja/ar, not only missing/extra-key checks.
 
 Because its ID starts with `LC-I18N-`, the existing orchestrator routes it to `claude-i18n.yml`. A durable checkpoint/Draft PR should be resumed rather than duplicated; after a successful checkpointed worker completion the chain should continue immediately, with the <=5-minute watchdog only as fallback.
 
 ## A1 availability remains separately blocked
 
-`LC-PROD-002` / issue #101 records the explicit A1 availability decision gate. It is in BLOCKED, not TODO. Creating the issue and completing `LC-PED-002` are **not** approval to open A1. Without an explicit owner instruction approving the release, A1 remains `available:false` and the automation must not infer permission.
+`LC-PROD-002` / issue #101 records the explicit A1 availability decision gate. It is in BLOCKED, not TODO. Creating the issue and completing `LC-PED-002` are **not** approval to open A1. `LC-I18N-006` must also be complete so A1 arcs 6–7 no longer expose untranslated auxiliary instructions. Without both that localization completion and an explicit owner instruction approving the release, A1 remains `available:false` and the automation must not infer permission.
 
 ## QA discipline
 
