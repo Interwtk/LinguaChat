@@ -9,6 +9,8 @@ const i18n = readFileSync('../.github/workflows/claude-i18n.yml', 'utf8')
 const release = readFileSync('../.github/scripts/release-stale-claim.mjs', 'utf8')
 const mergeScript = readFileSync('../.github/scripts/merge-agent-pr.sh', 'utf8')
 const cycleVerifier = readFileSync('../.github/scripts/check-two-clean-qa-cycles.mjs', 'utf8')
+const mergeHandoff = readFileSync('../.github/workflows/qa-merge-handoff.yml', 'utf8')
+const permanentContract = readFileSync('../CLAUDE.md', 'utf8')
 
 let groups = 0
 const ok = () => { groups += 1 }
@@ -86,8 +88,7 @@ ok()
 // The second clean cycle must not rely on a GITHUB_TOKEN-authored Draft->Ready event:
 // GitHub suppresses recursive workflow creation. The merge gate explicitly dispatches
 // QA on the same branch/SHA; qa.yml re-attests live PR Ready state + exact head before
-// emitting its sentinel, the verifier counts that attested dispatch, and the chain
-// accepts successful QA workflow_dispatch completion back into the merge lane.
+// emitting its sentinel, and the verifier counts that attested dispatch.
 assert.match(qa, /workflow_dispatch:[\s\S]*pr_number:[\s\S]*expected_head_sha:/)
 assert.match(qa, /LIVE_SHA=.*\.head\.sha/)
 assert.match(qa, /LIVE_DRAFT=.*\.draft/)
@@ -97,6 +98,31 @@ assert.doesNotMatch(mergeScript, /gh pr ready "\$NUMBER" --undo && gh pr ready "
 assert.match(cycleVerifier, /CLEAN_CYCLE_EVENTS = new Set\(\['pull_request', 'workflow_dispatch'\]\)/)
 assert.match(chain, /github\.event\.workflow_run\.name == 'QA'/)
 assert.match(chain, /github\.event\.workflow_run\.event == 'workflow_dispatch'/)
+ok()
+
+// A main-controlled receiver exists for the explicit post-QA handoff. It accepts only
+// PR number + expected source SHA, re-reads the live PR, proves open/Ready/exact-head,
+// and then reuses merge-agent-pr.sh. It advances the queue only after a real merge.
+// This makes duplicate/manual dispatches fail closed rather than trusting caller data.
+assert.match(mergeHandoff, /workflow_dispatch:[\s\S]*pr_number:[\s\S]*expected_head_sha:/)
+assert.match(mergeHandoff, /group:\s*claude-chain/)
+assert.ok(mergeHandoff.includes('gh api "/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER"'))
+assert.match(mergeHandoff, /STATE=.*\.state/)
+assert.match(mergeHandoff, /DRAFT=.*\.draft/)
+assert.match(mergeHandoff, /LIVE_SHA=.*\.head\.sha/)
+assert.match(mergeHandoff, /"\$LIVE_SHA" != "\$EXPECTED_HEAD_SHA"/)
+assert.match(mergeHandoff, /bash \.github\/scripts\/merge-agent-pr\.sh "\$HEAD_BRANCH"/)
+assert.match(mergeHandoff, /if:\s*steps\.merge_pr\.outputs\.merged == 'true'/)
+assert.match(mergeHandoff, /gh workflow run claude-chain\.yml --ref main/)
+ok()
+
+// The permanent operator contract must describe the deployed concurrency/recovery
+// model, otherwise future workers can restore the exact deadlocks this suite forbids.
+assert.match(permanentContract, /linguachat-claude-writer/)
+assert.match(permanentContract, /linguachat-claude-review/)
+assert.match(permanentContract, /five-minute scheduled watchdog/)
+assert.match(permanentContract, /main-controlled merge handoff/)
+assert.doesNotMatch(permanentContract, /hourly watchdog as recovery/)
 ok()
 
 console.log(`check-continuous-automation — OK (${groups} groups)`)
