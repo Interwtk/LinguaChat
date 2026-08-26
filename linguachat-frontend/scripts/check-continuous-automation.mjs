@@ -7,6 +7,8 @@ const mention = readFileSync('../.github/workflows/claude-mention.yml', 'utf8')
 const task = readFileSync('../.github/workflows/claude-task.yml', 'utf8')
 const i18n = readFileSync('../.github/workflows/claude-i18n.yml', 'utf8')
 const release = readFileSync('../.github/scripts/release-stale-claim.mjs', 'utf8')
+const mergeScript = readFileSync('../.github/scripts/merge-agent-pr.sh', 'utf8')
+const cycleVerifier = readFileSync('../.github/scripts/check-two-clean-qa-cycles.mjs', 'utf8')
 
 let groups = 0
 const ok = () => { groups += 1 }
@@ -72,13 +74,29 @@ assert.match(chain, /steps\.worker_checkpoint\.outputs\.resumable == 'true'/)
 assert.match(chain, /avoiding an immediate retry loop/)
 ok()
 
-// There is exactly one autonomous dispatch site, so a successful checkpoint event
-// cannot fan out into duplicate workers. The serial queue and busy guard remain the
-// second line of defense.
+// There is exactly one autonomous implementation dispatch site, so a successful
+// checkpoint event cannot fan out into duplicate workers. The serial queue and busy
+// guard remain the second line of defense.
 assert.equal((chain.match(/gh workflow run "\$WORKFLOW"/g) || []).length, 1,
-  'continuous recovery must have exactly one autonomous dispatch site')
+  'continuous recovery must have exactly one autonomous implementation dispatch site')
 assert.match(chain, /steps\.busy\.outputs\.running == '0'/)
 assert.match(chain, /steps\.next\.outputs\.id != ''/)
+ok()
+
+// The second clean cycle must not rely on a GITHUB_TOKEN-authored Draft->Ready event:
+// GitHub suppresses recursive workflow creation. The merge gate explicitly dispatches
+// QA on the same branch/SHA; qa.yml re-attests live PR Ready state + exact head before
+// emitting its sentinel, the verifier counts that attested dispatch, and the chain
+// accepts successful QA workflow_dispatch completion back into the merge lane.
+assert.match(qa, /workflow_dispatch:[\s\S]*pr_number:[\s\S]*expected_head_sha:/)
+assert.match(qa, /LIVE_SHA=.*\.head\.sha/)
+assert.match(qa, /LIVE_DRAFT=.*\.draft/)
+assert.match(qa, /"\$GITHUB_SHA" != "\$EXPECTED_HEAD_SHA"/)
+assert.match(mergeScript, /gh workflow run qa\.yml --ref "\$BRANCH" -f pr_number="\$NUMBER" -f expected_head_sha="\$HEAD_SHA"/)
+assert.doesNotMatch(mergeScript, /gh pr ready "\$NUMBER" --undo && gh pr ready "\$NUMBER"/)
+assert.match(cycleVerifier, /CLEAN_CYCLE_EVENTS = new Set\(\['pull_request', 'workflow_dispatch'\]\)/)
+assert.match(chain, /github\.event\.workflow_run\.name == 'QA'/)
+assert.match(chain, /github\.event\.workflow_run\.event == 'workflow_dispatch'/)
 ok()
 
 console.log(`check-continuous-automation — OK (${groups} groups)`)
