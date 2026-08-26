@@ -1,6 +1,6 @@
 # HANDOFF — read this, then start
 
-Current after the A1–C2 Curriculum Foundry, `LC-DOC-002`, the final pedagogical gate `LC-PED-002`, and continuous-recovery hardening `LC-OPS-021` (PR #100). The serial queue is intentionally non-empty again: `LC-I18N-006` is the next claimable task and must run in the translations lane. A1 remains closed pending a separate explicit owner-approved availability decision.
+Current after the A1–C2 Curriculum Foundry, `LC-DOC-002`, the final pedagogical gate `LC-PED-002`, and continuous-recovery hardening `LC-OPS-021` (PR #100). The serial queue is intentionally non-empty again: `LC-I18N-006` is the next claimable task and must run in the translations lane. Its real scope is A1 arcs 6–7 plus integrated A2–C2 auxiliary copy. A1 remains closed pending completion of that localization and a separate explicit owner-approved availability decision.
 
 ## What just happened
 
@@ -46,13 +46,13 @@ The final LC-OPS-021 source head passed two consecutive complete clean QA cycles
 
 Take **`LC-I18N-006` / issue #81** from TODO. Its `LC-I18N-*` prefix means it belongs to `claude-i18n.yml`, not the generic implementation lane.
 
-Scope is translation/i18n only: remove unintended English placeholder instructional copy from the integrated A2–C2 auxiliary-language surface in `es`, `pt`, `fr`, `it`, `de`, `ja`, `ar`. Preserve interpolation variables exactly and preserve intentional target-English lesson answers/examples. Arabic auxiliary UI stays RTL; target-English content/input stays LTR; Chatto is never mirrored. Do not touch curriculum logic, evaluator behavior, level availability, providers, Supabase/voice/media or frozen visuals.
+Scope is translation/i18n only: remove unintended English placeholder instructional copy from **A1 arcs 6–7 and integrated A2–C2** in `es`, `pt`, `fr`, `it`, `de`, `ja`, `ar`. Known A1 examples include instructional keys around `ep34*`; equivalent untranslated blocks exist across the advertised auxiliary locales. Preserve interpolation variables exactly and preserve intentional target-English lesson answers/examples. Pre-A1 stays frozen. Arabic auxiliary UI stays RTL; target-English content/input stays LTR; Chatto is never mirrored. Do not touch curriculum logic, evaluator behavior, level availability, providers, Supabase/voice/media or frozen visuals.
 
-Required proof: affected translation checks plus `check:i18n`, `check:all`, production build, backend compileall/pytest and guards; functional/browser spot proof in at least es/ja/ar at 390px and 1440px wherever rendered UI is affected; then two consecutive complete clean cycles on the exact final head. If the worker checkpoints before completion, resume the existing branch/Draft PR instead of duplicating it.
+Do not treat `check:i18n` 100% structural key coverage as proof of semantic localization. Required proof includes inspection/guards capable of distinguishing intentional target-English from untranslated auxiliary copy, plus `check:i18n`, `check:all`, production build, backend compileall/pytest and guards; functional/browser spot proof in at least es/ja/ar at 390px and 1440px wherever rendered explanations/hints/corrections/meanings are affected; then two consecutive complete clean cycles on the exact final head. If the worker checkpoints before completion, resume the existing branch/Draft PR instead of duplicating it.
 
 ## A1 availability — explicitly blocked
 
-Issue #101 (`LC-PROD-002`) exists for the separate A1 availability decision. It is BLOCKED on explicit owner approval. Do **not** interpret its existence, `LC-PED-002` completion, or the empty product queue as permission to flip A1 to available. Without a new explicit owner instruction approving A1 release, leave `available:false` unchanged.
+Issue #101 (`LC-PROD-002`) exists for the separate A1 availability decision. It is BLOCKED on **both** completion of `LC-I18N-006` and explicit owner approval. Do **not** interpret its existence or `LC-PED-002` completion as permission to flip A1 to available. Until A1 arcs 6–7 are honestly localized and a new explicit owner instruction approves A1 release, leave `available:false` unchanged.
 
 ## Current coordination warning
 
