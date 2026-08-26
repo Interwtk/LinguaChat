@@ -53,11 +53,9 @@ comment_once() {
   fi
 }
 
-# Review/validation blockers are independent of CI. A PR must never be re-readied
-# for a second cycle, or merged after two green cycles, while a reviewer is still
-# explicitly blocking it. Every API read in this gate fails closed: an outage,
-# auth error or malformed response can delay a merge, but can never be mistaken for
-# evidence that no blocker exists.
+# Review/validation blockers are independent of CI. A PR must never be merged while
+# a reviewer is explicitly blocking it. Every API read fails closed: an outage,
+# auth error or malformed response can delay a merge, never impersonate clearance.
 merge_blockers_clear() {
   local decision decision_status comments comments_status
   local thread_json query_status unresolved unresolved_status has_more has_more_status
@@ -201,10 +199,8 @@ case "$BRANCH" in
 esac
 
 # Two clean cycles are a source-head property, not a prose claim. The QA workflow
-# emits a sentinel job only for a non-Draft pull_request run in which frontend,
-# backend, guards and Evidence all succeeded. The verifier counts the newest
-# eligible sentinel jobs for this exact PR head and fails closed on red/cancelled/
-# incomplete cycles. A new commit naturally resets the count because its SHA changes.
+# emits a sentinel for either a real non-Draft PR run or an explicit second-cycle
+# workflow_dispatch that re-verifies the live PR number + exact source SHA.
 HEAD_SHA=$(gh pr view "$NUMBER" --json headRefOid --jq .headRefOid)
 set +e
 CYCLE_OUTPUT=$(node .github/scripts/check-two-clean-qa-cycles.mjs --repo "$REPO" --head "$HEAD_SHA" --required 2 2>&1)
@@ -218,21 +214,24 @@ if [ "$CYCLE_STATUS" -eq 2 ]; then
     out reason review-blocker
     exit 0
   fi
-  # Exactly one clean cycle exists on the final head. Request the second cycle
-  # automatically without changing source: Draft -> Ready emits ready_for_review,
-  # which is a first-class QA trigger. converted_to_draft is intentionally not.
-  comment_once "Not merged yet: this exact final head has only one complete clean non-draft QA cycle. A second cycle is being requested automatically; no source change is needed."
-  if gh pr ready "$NUMBER" --undo && gh pr ready "$NUMBER"; then
+
+  # Exactly one clean cycle exists on the final head. Do NOT toggle Draft/Ready here:
+  # GitHub deliberately suppresses recursive workflow creation for events authored by
+  # GITHUB_TOKEN, which can leave the PR waiting forever. Dispatch QA explicitly on
+  # this exact branch/head and make qa.yml attest the live Ready PR before its sentinel.
+  comment_once "Not merged yet: this exact final head has only one complete clean QA cycle. A second exact-head cycle is being dispatched automatically; no source change is needed."
+  if gh workflow run qa.yml --ref "$BRANCH" -f pr_number="$NUMBER" -f expected_head_sha="$HEAD_SHA"; then
+    echo "Requested explicit second QA cycle for PR #$NUMBER on $HEAD_SHA."
     out reason second-cycle-triggered
   else
-    echo "Could not trigger the second QA cycle; watchdog will retry safely."
+    echo "Could not dispatch the second QA cycle; watchdog will retry safely."
     out reason second-cycle-trigger-failed
   fi
   exit 0
 fi
 
 if [ "$CYCLE_STATUS" -ne 0 ]; then
-  comment_once "Not merged: two consecutive complete clean non-draft QA cycles on the exact final head are required. $CYCLE_OUTPUT"
+  comment_once "Not merged: two consecutive complete clean QA cycles on the exact final head are required. $CYCLE_OUTPUT"
   out reason clean-cycle-gate
   exit 0
 fi
