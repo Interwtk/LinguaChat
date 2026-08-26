@@ -136,9 +136,12 @@ jobs:
             echo "Another autonomous Claude writer is alive; watchdog will not mutate the serial queue." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      # Successful worker completion is allowed to immediately re-dispatch only if
-      # that worker left a real remote checkpoint. If it returned success without
-      # any branch/PR, defer retry to the five-minute watchdog rather than hot-looping.
+      # A successful worker may have already released its claim back to TODO before
+      # this workflow_run event arrives. Resolve the checkpoint from durable queue
+      # state: prefer the current IN_PROGRESS claim, otherwise use the exact task that
+      # next-task.mjs says is claimable and read that task's preserved branch in TODO.
+      # Immediate redispatch requires BOTH the remote branch and an open Draft PR.
+      # A plain success without both proofs defers to the <=5-minute watchdog.
       - name: Did the completed worker leave a resumable checkpoint?
         id: worker_checkpoint
         if: >
@@ -152,19 +155,41 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+
+          TASK_ID=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
+            grep -oE '^- \[[^]]+\]' | sed -E 's/^- \[([^]]+)\]/\1/' | head -1 || true)
           BRANCH=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
             grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
+          SOURCE=IN_PROGRESS
+
+          if [ -z "${TASK_ID:-}" ]; then
+            TASK_ID=$(node .github/scripts/next-task.mjs || true)
+            SOURCE=TODO
+            if [ -n "${TASK_ID:-}" ]; then
+              BRANCH=$(awk -v id="$TASK_ID" '
+                $0 == "- [" id "]" || index($0, "- [" id "] ") == 1 { in_task=1; next }
+                in_task && /^- \[/ { in_task=0 }
+                in_task && /^[[:space:]]+branch:[[:space:]]*/ {
+                  sub(/^[[:space:]]+branch:[[:space:]]*/, ""); print; exit
+                }
+              ' .ai/TASKS.md)
+            fi
+          fi
+
           RESUMABLE=false
-          if [ -n "${BRANCH:-}" ] && [ "$BRANCH" != "none" ]; then
+          NUMBER=""
+          if [ -n "${TASK_ID:-}" ] && [ -n "${BRANCH:-}" ] && [ "$BRANCH" != "none" ]; then
             if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
-              RESUMABLE=true
-            else
-              NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty' || true)
+              NUMBER=$(gh pr list --head "$BRANCH" --state open --json number,isDraft \
+                --jq '[.[] | select(.isDraft == true)][0].number // empty' || true)
               [ -n "$NUMBER" ] && RESUMABLE=true
             fi
           fi
+
+          echo "task_id=${TASK_ID:-}" >> "$GITHUB_OUTPUT"
+          echo "branch=${BRANCH:-}" >> "$GITHUB_OUTPUT"
           echo "resumable=$RESUMABLE" >> "$GITHUB_OUTPUT"
-          echo "worker checkpoint: branch=${BRANCH:-none} resumable=$RESUMABLE" >> "$GITHUB_STEP_SUMMARY"
+          echo "worker checkpoint: source=$SOURCE task=${TASK_ID:-none} branch=${BRANCH:-none} draft_pr=${NUMBER:-none} resumable=$RESUMABLE" >> "$GITHUB_STEP_SUMMARY"
 
       # If a previous QA/merge event was missed, the watchdog may safely finish a
       # READY claimed PR using exactly the same merge contract as the normal path.
@@ -234,6 +259,9 @@ jobs:
             fi
           fi
 
+          # release-stale-claim.mjs verifies the recorded remote branch itself. A real
+          # checkpoint keeps its branch mapping in TODO; only a provably missing ref
+          # becomes branch:none. Infrastructure errors preserve the mapping fail-closed.
           RELEASED=$(node .github/scripts/release-stale-claim.mjs || true)
           if [ -z "$RELEASED" ]; then exit 0; fi
           git config user.name "github-actions[bot]"
