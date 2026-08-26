@@ -201,22 +201,34 @@ irrelevant.
 - `.github/scripts/next-task.mjs` is the only authority for claimability and
   dependencies.
 - `Claude — chain` is the scheduler/router. Workers do not own independent schedules.
-- General, i18n and interactive Claude writers share one repository-wide concurrency
-  group: never two writers at once.
+- General and i18n implementation workers share the serial
+  `linguachat-claude-writer` concurrency group: never two implementation writers at
+  once. `Claude — mention` is review/triage only and uses the separate
+  `linguachat-claude-review` group, so validation may run in parallel without freezing
+  implementation; its review threads/merge-blocker marker still prevent unsafe merge.
 - The initial queue claim may go directly to `main` so every agent can see the lock.
   Functional work always goes through a branch + PR.
 - Final `TASKS.md` DONE movement, `STATE.md` and `HANDOFF.md` travel **inside the
   same PR** as the completed task and land atomically with it.
 - A run that dies must leave resumable branch/draft work or release its claim. A red
-  PR is resumable work, not a permanent queue lock.
+  PR is resumable work, not a permanent queue lock. A real remote checkpoint branch
+  must remain associated with the released task so the chain can resume it rather
+  than creating duplicate work.
 - Autonomous workers checkpoint within the first 15 turns, push every milestone and
   never go 20 turns without remote progress. Their turn ceilings are run boundaries,
   not project boundaries: unfinished work must be resumable.
 - `Claude — mention` is triage/review only. It must never be used for queue-sized
   implementation or workflow edits; this prevents an interactive turn ceiling from
   destroying long-running work.
-- The chain may use an hourly watchdog as recovery, but normal progression happens
-  in the same orchestration run after a successful merge.
+- Normal recovery/progression is event-driven: successful checkpointed autonomous or
+  translation workers wake the chain immediately. A five-minute scheduled watchdog is
+  only the missed-event/failure fallback; do not restore an hourly-only recovery path.
+- Final merge requires two consecutive complete clean QA cycles on the exact unchanged
+  source head. The second cycle is explicitly dispatched instead of relying on a
+  `GITHUB_TOKEN` Draft→Ready event. After that dispatched cycle succeeds, a main-
+  controlled merge handoff must re-read the live Ready PR, verify the exact head and
+  reuse the full merge contract; never assume a recursively-created `workflow_run`
+  event will exist.
 - Never add a generic Claude `push` trigger and never use `allowed_bots: '*'`.
 
 ## QA protocol — for every change that matters
