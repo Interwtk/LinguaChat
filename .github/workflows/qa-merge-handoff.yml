@@ -1,0 +1,106 @@
+# Main-controlled receiver for a successful explicitly-dispatched second QA cycle.
+# QA sends only PR number + exact source SHA. This workflow re-reads the live PR and
+# then reuses merge-agent-pr.sh, so a stale/malformed handoff can never bypass gates.
+name: QA — merge handoff
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Open PR number whose second exact-head QA just completed.'
+        required: true
+        type: string
+      expected_head_sha:
+        description: 'Exact source head proven by that QA cycle.'
+        required: true
+        type: string
+
+permissions:
+  actions: write
+  checks: read
+  contents: write
+  pull-requests: write
+
+# Serialize with Claude — chain. Duplicate handoffs are harmless: after the first
+# merge the next one sees a closed PR and cannot advance unrelated work.
+concurrency:
+  group: claude-chain
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - id: target
+        name: Re-verify live Ready PR and exact source head
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+          EXPECTED_HEAD_SHA: ${{ inputs.expected_head_sha }}
+        run: |
+          set -euo pipefail
+          echo "valid=false" >> "$GITHUB_OUTPUT"
+          echo "head_branch=" >> "$GITHUB_OUTPUT"
+
+          if ! [[ "$PR_NUMBER" =~ ^[0-9]+$ ]] || [ -z "$EXPECTED_HEAD_SHA" ]; then
+            echo "Invalid second-cycle handoff inputs; refusing safely." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          set +e
+          LIVE=$(gh api "/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" 2>/tmp/handoff-api.err)
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ] || [ -z "$LIVE" ]; then
+            echo "Could not verify live PR #$PR_NUMBER; refusing safely." >> "$GITHUB_STEP_SUMMARY"
+            [ -s /tmp/handoff-api.err ] && tail -5 /tmp/handoff-api.err >> "$GITHUB_STEP_SUMMARY" || true
+            exit 0
+          fi
+
+          STATE=$(printf '%s' "$LIVE" | jq -r '.state // ""')
+          DRAFT=$(printf '%s' "$LIVE" | jq -r '.draft')
+          LIVE_SHA=$(printf '%s' "$LIVE" | jq -r '.head.sha // ""')
+          HEAD_BRANCH=$(printf '%s' "$LIVE" | jq -r '.head.ref // ""')
+
+          if [ "$STATE" != "open" ] || [ "$DRAFT" != "false" ] || \
+             [ "$LIVE_SHA" != "$EXPECTED_HEAD_SHA" ] || [ -z "$HEAD_BRANCH" ]; then
+            echo "Second-cycle handoff is stale: state=$STATE draft=$DRAFT live=$LIVE_SHA expected=$EXPECTED_HEAD_SHA. Refusing safely." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "valid=true" >> "$GITHUB_OUTPUT"
+          echo "head_branch=$HEAD_BRANCH" >> "$GITHUB_OUTPUT"
+          echo "Verified live Ready PR #$PR_NUMBER at exact head $LIVE_SHA ($HEAD_BRANCH)." >> "$GITHUB_STEP_SUMMARY"
+
+      - id: merge_pr
+        name: Reuse the full merge contract
+        if: steps.target.outputs.valid == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_BRANCH: ${{ steps.target.outputs.head_branch }}
+        run: bash .github/scripts/merge-agent-pr.sh "$HEAD_BRANCH"
+
+      - name: Record handoff result
+        if: always()
+        env:
+          VALID: ${{ steps.target.outputs.valid }}
+          MERGED: ${{ steps.merge_pr.outputs.merged }}
+          REASON: ${{ steps.merge_pr.outputs.reason }}
+        run: |
+          echo "handoff_valid=${VALID:-false} merged=${MERGED:-false} reason=${REASON:-not-merged}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Continue the queue only after this PR actually merged
+        if: steps.merge_pr.outputs.merged == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ inputs.pr_number }}
+        run: |
+          set -euo pipefail
+          gh workflow run claude-chain.yml --ref main -f reason="qa-second-cycle-merged-pr-$PR_NUMBER"
+          echo "Merged PR #$PR_NUMBER and explicitly woke Claude — chain for the next task." >> "$GITHUB_STEP_SUMMARY"
