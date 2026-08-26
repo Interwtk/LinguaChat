@@ -247,6 +247,8 @@ jobs:
 
   merge_handoff:
     name: handoff — successful explicit cycle back to main merge lane
+    # This sender intentionally targets the receiver already installed on main.
+    # Never retarget it to the PR branch: the code under test must not become its own merge authority.
     if: >
       always() &&
       github.event_name == 'workflow_dispatch' &&
