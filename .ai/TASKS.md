@@ -13,13 +13,9 @@ branch/PR instead of duplicating it.
 
 ## IN_PROGRESS
 
-_(none — the queue is open)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-I18N-006] Localize A1 arcs 6–7 + integrated A2–C2 curriculum auxiliary copy
-  owner:  unclaimed
-  branch: none
+  owner:  claude-i18n
+  branch: i18n/lc-i18n-006
   issue:  #81
   why:    A1 arcs 6–7 and A2–C2 are integrated and structurally i18n-complete, but
           the seven auxiliary locale files still contain English placeholder
@@ -36,6 +32,10 @@ _(none — the queue is open)_
           390px and 1440px where rendered UI is touched; `check:i18n`, `check:all`,
           production build, backend compileall/pytest and guards green; two consecutive
           complete clean cycles on the exact final head after the last fix.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
+
+_(none — the queue is open)_
 
 ## BLOCKED
 
@@ -102,8 +102,8 @@ _(none — the queue is open)_
 
 ## Separate i18n lane
 
-`LC-I18N-006` is now the first claimable TODO after continuity hardening. Its `LC-I18N-*`
-prefix routes it to the translations worker. Its real scope is A1 arcs 6–7 plus integrated
-A2–C2 auxiliary-language instructional copy; Pre-A1 stays frozen. It remains independent
-from availability and must not modify curriculum logic, evaluator behavior, level
-availability or frozen visuals.
+`LC-I18N-006` is now IN_PROGRESS, claimed by `claude-i18n` on branch `i18n/lc-i18n-006`.
+Its `LC-I18N-*` prefix routes it to the translations worker. Its real scope is A1 arcs 6–7
+plus integrated A2–C2 auxiliary-language instructional copy; Pre-A1 stays frozen. It remains
+independent from availability and must not modify curriculum logic, evaluator behavior,
+level availability or frozen visuals.
