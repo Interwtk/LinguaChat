@@ -100,6 +100,28 @@ assert.match(chain, /github\.event\.workflow_run\.name == 'QA'/)
 assert.match(chain, /github\.event\.workflow_run\.event == 'workflow_dispatch'/)
 ok()
 
+// A successful explicitly-dispatched second QA must actively hand back to the
+// main-controlled receiver instead of hoping GitHub emits another workflow_run.
+// The sender is gated on the clean-cycle sentinel, carries only the attested PR/head,
+// has narrowly-scoped Actions write permission, targets main, and retries transient
+// dispatch failures without ever firing from an ordinary pull_request run.
+const senderStart = qa.indexOf('  merge_handoff:')
+assert.ok(senderStart > 0, 'QA must contain the explicit main merge-handoff sender')
+const senderBlock = qa.slice(senderStart)
+assert.match(senderBlock, /github\.event_name == 'workflow_dispatch'/)
+assert.doesNotMatch(senderBlock, /github\.event_name == 'pull_request'/)
+assert.match(senderBlock, /inputs\.pr_number != ''/)
+assert.match(senderBlock, /inputs\.expected_head_sha != ''/)
+assert.match(senderBlock, /needs\.clean_cycle\.result == 'success'/)
+assert.match(senderBlock, /needs:\s*\[clean_cycle\]/)
+assert.match(senderBlock, /permissions:[\s\S]*actions:\s*write/)
+assert.match(senderBlock, /GH_REPO:\s*\$\{\{ github\.repository \}\}/)
+assert.match(senderBlock, /gh workflow run qa-merge-handoff\.yml --ref main/)
+assert.match(senderBlock, /-f pr_number="\$PR_NUMBER"/)
+assert.match(senderBlock, /-f expected_head_sha="\$EXPECTED_HEAD_SHA"/)
+assert.match(senderBlock, /for attempt in 1 2 3 4 5/)
+ok()
+
 // The main-controlled receiver must preserve the exact identity it attested. It may
 // derive the branch from the live PR, but it must pass PR number + exact source SHA
 // into the merge helper instead of re-resolving an arbitrary PR by branch name.
