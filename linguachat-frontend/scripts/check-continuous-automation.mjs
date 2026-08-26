@@ -122,10 +122,9 @@ assert.match(senderBlock, /-f expected_head_sha="\$EXPECTED_HEAD_SHA"/)
 assert.match(senderBlock, /for attempt in 1 2 3 4 5/)
 ok()
 
-// A main-controlled receiver exists for the explicit post-QA handoff. It accepts only
-// PR number + expected source SHA, re-reads the live PR, proves open/Ready/exact-head,
-// and then reuses merge-agent-pr.sh. It advances the queue only after a real merge.
-// This makes duplicate/manual dispatches fail closed rather than trusting caller data.
+// The main-controlled receiver must preserve the exact identity it attested. It may
+// derive the branch from the live PR, but it must pass PR number + exact source SHA
+// into the merge helper instead of re-resolving an arbitrary PR by branch name.
 assert.match(mergeHandoff, /workflow_dispatch:[\s\S]*pr_number:[\s\S]*expected_head_sha:/)
 assert.match(mergeHandoff, /group:\s*claude-chain/)
 assert.ok(mergeHandoff.includes('gh api "/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER"'))
@@ -133,7 +132,13 @@ assert.match(mergeHandoff, /STATE=.*\.state/)
 assert.match(mergeHandoff, /DRAFT=.*\.draft/)
 assert.match(mergeHandoff, /LIVE_SHA=.*\.head\.sha/)
 assert.match(mergeHandoff, /"\$LIVE_SHA" != "\$EXPECTED_HEAD_SHA"/)
-assert.match(mergeHandoff, /bash \.github\/scripts\/merge-agent-pr\.sh "\$HEAD_BRANCH"/)
+assert.match(mergeHandoff, /bash \.github\/scripts\/merge-agent-pr\.sh "\$HEAD_BRANCH" "\$PR_NUMBER" "\$EXPECTED_HEAD_SHA"/)
+assert.match(mergeScript, /EXPECTED_NUMBER="\$\{2:-\}"/)
+assert.match(mergeScript, /EXPECTED_HEAD_SHA="\$\{3:-\}"/)
+assert.match(mergeScript, /gh pr view "\$EXPECTED_NUMBER" --json number,state,isDraft,headRefName,headRefOid/)
+assert.match(mergeScript, /\.headRefName == \$expected_branch/)
+assert.match(mergeScript, /\.headRefOid == \$expected_sha/)
+assert.match(mergeScript, /--match-head-commit "\$HEAD_SHA"/)
 assert.match(mergeHandoff, /if:\s*steps\.merge_pr\.outputs\.merged == 'true'/)
 assert.match(mergeHandoff, /gh workflow run claude-chain\.yml --ref main/)
 ok()
