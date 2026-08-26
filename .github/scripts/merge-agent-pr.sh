@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 # Merge exactly one agent PR only when its checks, evidence, bookkeeping and two
 # complete clean QA cycles on the exact final source head prove it is finished.
-# Safe to call from a QA workflow_run or the cloud watchdog.
+# Safe to call from a QA workflow_run or the cloud watchdog. Trusted callers may
+# additionally pin an exact PR number + source SHA; that identity is then preserved
+# and revalidated all the way through the final atomic merge request.
 set -euo pipefail
 
 BRANCH="${1:-}"
+EXPECTED_NUMBER="${2:-}"
+EXPECTED_HEAD_SHA="${3:-}"
+EXACT_IDENTITY=false
 
 out() {
   if [ -n "${GITHUB_OUTPUT:-}" ]; then
@@ -21,11 +26,60 @@ case "$BRANCH" in
   *) echo "$BRANCH is not an agent branch."; out reason non-agent; exit 0 ;;
 esac
 
-NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
-if [ -z "$NUMBER" ]; then
-  echo "No open PR for $BRANCH."
-  out reason no-open-pr
-  exit 0
+# Exact-identity mode is deliberately all-or-nothing. It is used by the main-owned
+# QA handoff after that workflow has already attested a PR number + exact source SHA.
+# A partial/malformed identity must never silently fall back to branch-name lookup.
+if [ -n "$EXPECTED_NUMBER" ] || [ -n "$EXPECTED_HEAD_SHA" ]; then
+  if ! [[ "$EXPECTED_NUMBER" =~ ^[0-9]+$ ]] || ! [[ "$EXPECTED_HEAD_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+    echo "Malformed exact PR identity; refusing safely."
+    out reason invalid-exact-identity
+    exit 0
+  fi
+  EXACT_IDENTITY=true
+fi
+
+exact_identity_clear() {
+  local live status
+  [ "$EXACT_IDENTITY" = "true" ] || return 0
+
+  set +e
+  live=$(gh pr view "$EXPECTED_NUMBER" --json number,state,isDraft,headRefName,headRefOid 2>/tmp/exact-pr-identity.err)
+  status=$?
+  set -e
+  if [ "$status" -ne 0 ] || [ -z "$live" ]; then
+    echo "Could not re-verify exact PR #$EXPECTED_NUMBER; failing closed."
+    return 1
+  fi
+
+  if ! printf '%s' "$live" | jq -e \
+      --argjson expected_number "$EXPECTED_NUMBER" \
+      --arg expected_branch "$BRANCH" \
+      --arg expected_sha "$EXPECTED_HEAD_SHA" \
+      '(.number == $expected_number) and
+       (((.state // "") | ascii_downcase) == "open") and
+       (.isDraft == false) and
+       (.headRefName == $expected_branch) and
+       (.headRefOid == $expected_sha)' >/dev/null 2>&1; then
+    echo "Exact PR identity changed or mismatched for #$EXPECTED_NUMBER; failing closed."
+    return 1
+  fi
+
+  return 0
+}
+
+if [ "$EXACT_IDENTITY" = "true" ]; then
+  NUMBER="$EXPECTED_NUMBER"
+  if ! exact_identity_clear; then
+    out reason exact-identity-mismatch
+    exit 0
+  fi
+else
+  NUMBER=$(gh pr list --head "$BRANCH" --state open --json number --jq '.[0].number // empty')
+  if [ -z "$NUMBER" ]; then
+    echo "No open PR for $BRANCH."
+    out reason no-open-pr
+    exit 0
+  fi
 fi
 out pr_number "$NUMBER"
 
@@ -201,7 +255,15 @@ esac
 # Two clean cycles are a source-head property, not a prose claim. The QA workflow
 # emits a sentinel for either a real non-Draft PR run or an explicit second-cycle
 # workflow_dispatch that re-verifies the live PR number + exact source SHA.
-HEAD_SHA=$(gh pr view "$NUMBER" --json headRefOid --jq .headRefOid)
+if [ "$EXACT_IDENTITY" = "true" ]; then
+  if ! exact_identity_clear; then
+    out reason exact-identity-mismatch
+    exit 0
+  fi
+  HEAD_SHA="$EXPECTED_HEAD_SHA"
+else
+  HEAD_SHA=$(gh pr view "$NUMBER" --json headRefOid --jq .headRefOid)
+fi
 set +e
 CYCLE_OUTPUT=$(node .github/scripts/check-two-clean-qa-cycles.mjs --repo "$REPO" --head "$HEAD_SHA" --required 2 2>&1)
 CYCLE_STATUS=$?
@@ -212,6 +274,10 @@ if [ "$CYCLE_STATUS" -eq 2 ]; then
   if ! merge_blockers_clear; then
     comment_once "Not merged: an unresolved review or validation blocker is still active. Resolve/clear it before Ready or merge."
     out reason review-blocker
+    exit 0
+  fi
+  if [ "$EXACT_IDENTITY" = "true" ] && ! exact_identity_clear; then
+    out reason exact-identity-mismatch
     exit 0
   fi
 
@@ -236,20 +302,27 @@ if [ "$CYCLE_STATUS" -ne 0 ]; then
   exit 0
 fi
 
-# Close the time-of-check gap: a blocking review/comment may have arrived while the
-# second QA cycle was running. Re-check immediately before the merge call.
+# Close the time-of-check gap: a blocking review/comment or source mutation may have
+# arrived while the second QA cycle was running. Re-check both immediately before
+# the merge request. The merge itself also pins the same source SHA atomically.
 if ! merge_blockers_clear; then
   comment_once "Not merged: an unresolved review or validation blocker is still active. Resolve/clear it before Ready or merge."
   out reason review-blocker
+  exit 0
+fi
+if [ "$EXACT_IDENTITY" = "true" ] && ! exact_identity_clear; then
+  out reason exact-identity-mismatch
   exit 0
 fi
 
 # Agent branches deliberately merge current main while they work. Preserve that
 # evidenced final tree with a normal 3-way merge instead of replaying its history
 # through rebase, which can conflict even when the final trees merge cleanly.
+# --match-head-commit closes the final source-identity race for both normal and exact
+# callers: a new source commit between the last check and merge is refused atomically.
 # A conflict or transient merge refusal remains recoverable work, not a reason for
 # the orchestrator job itself to go red and stop healing.
-if ! gh pr merge "$NUMBER" --merge --delete-branch; then
+if ! gh pr merge "$NUMBER" --merge --delete-branch --match-head-commit "$HEAD_SHA"; then
   echo "PR #$NUMBER could not be merged; watchdog will return it to resumable work."
   out reason merge-failed
   exit 0
