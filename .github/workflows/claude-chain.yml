@@ -31,10 +31,17 @@ concurrency:
 
 jobs:
   merge:
+    # QA clean cycles can arrive as the normal pull_request run or as the explicitly
+    # dispatched exact-head second cycle. Restrict this merge lane to QA so successful
+    # autonomous-worker workflow_dispatch runs cannot be mistaken for PR QA.
     if: >
       github.event_name == 'workflow_run' &&
+      github.event.workflow_run.name == 'QA' &&
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'pull_request'
+      (
+        github.event.workflow_run.event == 'pull_request' ||
+        github.event.workflow_run.event == 'workflow_dispatch'
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
     outputs:
@@ -227,11 +234,11 @@ jobs:
             grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
           [ -n "${BRANCH:-}" ] && [ "$BRANCH" != "none" ] || exit 0
 
-          # The merge contract may have just requested the second clean QA cycle by
-          # toggling the same PR Draft -> Ready. Preserve the claim and wait for that
-          # ready_for_review run instead of immediately undoing the deliberate trigger.
+          # The merge contract may have just dispatched the explicit second exact-head
+          # QA cycle. Preserve the claim and wait for that run instead of converting
+          # the PR back to Draft while its proof is being produced.
           if [ "${{ steps.recover_merge.outputs.reason }}" = "second-cycle-triggered" ]; then
-            echo "$BRANCH has one clean exact-head cycle; second QA was triggered automatically. Waiting." >> "$GITHUB_STEP_SUMMARY"
+            echo "$BRANCH has one clean exact-head cycle; explicit second QA was dispatched. Waiting." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
 
