@@ -13,12 +13,8 @@ branch/PR instead of duplicating it.
 
 ## IN_PROGRESS
 
-_(none — the queue is open)_
-
-## TODO — ordered; take the first unclaimed one you are allowed to do
-
 - [LC-I18N-006] Localize A1 arcs 6–7 + integrated A2–C2 curriculum auxiliary copy
-  owner:  unclaimed
+  owner:  claude-i18n
   branch: i18n/lc-i18n-006
   issue:  #81
   why:    A1 arcs 6–7 and A2–C2 are integrated and structurally i18n-complete, but
@@ -36,6 +32,8 @@ _(none — the queue is open)_
           390px and 1440px where rendered UI is touched; `check:i18n`, `check:all`,
           production build, backend compileall/pytest and guards green; two consecutive
           complete clean cycles on the exact final head after the last fix.
+
+## TODO — ordered; take the first unclaimed one you are allowed to do
 
 _(none — the queue is open)_
 
