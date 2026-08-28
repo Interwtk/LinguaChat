@@ -42,9 +42,9 @@ The final LC-OPS-021 source head passed two consecutive complete clean QA cycles
 - No real OpenAI or paid-provider runtime calls; local provider contract remains authoritative.
 - Preserve the frozen Hoy · Chats · Palabras · Tú visual architecture.
 
-## Start here — next claimable task
+## Start here — read the structured queue, then act
 
-Take **`LC-I18N-006` / issue #81** from TODO. Its `LC-I18N-*` prefix means it belongs to `claude-i18n.yml`, not the generic implementation lane.
+Read `.ai/TASKS.md`'s structured task block fresh to see whether **`LC-I18N-006` / issue #81** is TODO/unclaimed or already IN_PROGRESS — this section's prose is not guaranteed to be updated on every claim/release cycle, so do not trust a cached "take it from TODO" instruction. If it is unclaimed TODO, claim and take it. If it is already IN_PROGRESS, resume its existing branch/Draft PR (`i18n/lc-i18n-006` / PR #108) rather than reclaiming or duplicating it. Its `LC-I18N-*` prefix means it belongs to `claude-i18n.yml`, not the generic implementation lane.
 
 Scope is translation/i18n only: remove unintended English placeholder instructional copy from **A1 arcs 6–7 and integrated A2–C2** in `es`, `pt`, `fr`, `it`, `de`, `ja`, `ar`. Known A1 examples include instructional keys around `ep34*`; equivalent untranslated blocks exist across the advertised auxiliary locales. Preserve interpolation variables exactly and preserve intentional target-English lesson answers/examples. Pre-A1 stays frozen. Arabic auxiliary UI stays RTL; target-English content/input stays LTR; Chatto is never mirrored. Do not touch curriculum logic, evaluator behavior, level availability, providers, Supabase/voice/media or frozen visuals.
 
