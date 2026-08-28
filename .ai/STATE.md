@@ -34,13 +34,15 @@ The Curriculum Foundry chain is complete:
 
 The integrated runtime currently contains 171 curriculum episodes across Pre-A1 and A1–C2. Pre-A1 remains frozen and A1–C2 remain unavailable.
 
-## Current claimable work
+## Current work in the queue
 
-`LC-I18N-006` / issue #81 is the first TODO and is intentionally claimable. It is translation/i18n-only work for the known untranslated auxiliary-language instructional surface in **A1 arcs 6–7 plus A2, B1, B2, C1 and C2**, across `es`, `pt`, `fr`, `it`, `de`, `ja` and `ar`. It must remove unintended English placeholders while preserving intentional target-English content and interpolation variables. Pre-A1 must remain frozen. It must not change curriculum logic, evaluator behavior, level availability, providers, Supabase/voice/media or the frozen visual architecture.
+`.ai/TASKS.md`'s structured task block is the sole authority for whether `LC-I18N-006` / issue #81 is TODO/unclaimed or IN_PROGRESS/claimed — read it fresh; this prose is not guaranteed to be updated on every claim/release cycle. Either way its scope is translation/i18n-only work for the known untranslated auxiliary-language instructional surface in **A1 arcs 6–7 plus A2, B1, B2, C1 and C2**, across `es`, `pt`, `fr`, `it`, `de`, `ja` and `ar`. It must remove unintended English placeholders while preserving intentional target-English content and interpolation variables. Pre-A1 must remain frozen. It must not change curriculum logic, evaluator behavior, level availability, providers, Supabase/voice/media or the frozen visual architecture.
 
 `check:i18n` showing 100% key parity is necessary but not sufficient: it proves structure, not that auxiliary-language values are genuinely translated. Completion therefore requires semantic inspection plus affected-flow/browser proof in es/ja/ar, not only missing/extra-key checks.
 
-Because its ID starts with `LC-I18N-`, the existing orchestrator routes it to `claude-i18n.yml`. A durable checkpoint/Draft PR should be resumed rather than duplicated; after a successful checkpointed worker completion the chain should continue immediately, with the <=5-minute watchdog only as fallback.
+Because its ID starts with `LC-I18N-`, the existing orchestrator routes it to `claude-i18n.yml`. A durable checkpoint/Draft PR (currently #108 on `i18n/lc-i18n-006`) should be resumed rather than duplicated, never duplicated into a second branch/PR.
+
+`LC-OPS-025` / issue #110 is a queued TODO tracking a still-open gap in that resume path: a checkpointed worker's completion (success or `error_max_turns` failure) has no dependable same-run wake for `Claude — chain`, and the `*/5 * * * *` schedule fallback has repeatedly gone stale for hours in live evidence. Do not assume the watchdog is dependable until that task is DONE; see `.ai/TASKS.md` for its exact scope and the queue-lock caveat that blocks it from being claimed while another task is IN_PROGRESS.
 
 ## A1 availability remains separately blocked
 

@@ -35,7 +35,45 @@ branch/PR instead of duplicating it.
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
-_(none — the queue is open)_
+- [LC-OPS-025] Restore chain watchdog + post-worker resume continuity
+  owner:  unclaimed
+  branch: ops/lc-ops-025
+  issue:  #110
+  why:    live evidence across issue #110 shows a checkpointed `Claude — translations`
+          worker (success or `error_max_turns` failure) has no dependable same-run wake
+          for `Claude — chain`: the only follow-ups are a second `workflow_run` event
+          (sometimes suppressed for GITHUB_TOKEN-dispatched runs) and a `*/5 * * * *`
+          cron that has repeatedly gone stale for hours. `claude-chain.yml` also has no
+          `push: [main]` trigger, unlike `curriculum-foundry.yml`. Redispatch after a
+          worker failure is also not progress-gated, so a release/reclaim/merge-sync
+          with a zero-diff tree can loop without producing a new checkpoint.
+  note:   `next-task.mjs`'s claimability lock (`.github/scripts/next-task.mjs`, the
+          `busy` check) is global: ANY task sitting in IN_PROGRESS blocks ALL new
+          claims, regardless of TODO order. So while `LC-I18N-006` remains IN_PROGRESS,
+          this entry cannot actually be claimed by the automated chain no matter where
+          it sits in this list — reordering alone does not resolve a stalled task
+          blocking the fix for its own stall. Unblocking this without silently
+          weakening CLAUDE.md's stated "one IN_PROGRESS task maximum" queue lock needs
+          an explicit owner decision: either (a) authorize a narrow, auditable
+          exception in `next-task.mjs` for disjoint `LC-OPS-*` bootstrap tasks that
+          touch no locked branch, or (b) manually `workflow_dispatch` `claude-task.yml`
+          for this task while `LC-I18N-006` stays IN_PROGRESS. `.github/workflows/*`
+          are outside the interactive triage lane's write scope; this task must be
+          implemented by the autonomous general lane or a manually-dispatched run.
+  done:   `claude-i18n.yml`/`claude-task.yml` dispatch `claude-chain.yml` directly from
+          their own completion step (covering both success and `error_max_turns`) so
+          recovery does not depend on a second `workflow_run` event; `claude-chain.yml`
+          gains a `push: [main]` wake source alongside its 5-minute schedule fallback;
+          redispatch after a worker failure is progress-gated (a no-diff release/
+          reclaim/merge-sync does not count as progress or reset any attempt/backoff
+          counter); existing busy/identity gates keep active-writer-skip and
+          no-checkpoint/no-hot-loop behavior intact; deterministic regression fixtures
+          cover same-run wake, push wake, duplicate-wake suppression, success/failure
+          recovery, exact task/branch continuity, active-writer skip and no-hot-loop;
+          `check:all`, production build, backend compileall/pytest and guards green;
+          two consecutive complete clean cycles on the exact final head. Must not touch
+          `i18n/lc-i18n-006`, PR #108, locale content, curriculum, evaluator behavior,
+          level availability, providers, Supabase/voice/media or frozen visuals.
 
 ## BLOCKED
 
@@ -102,8 +140,10 @@ _(none — the queue is open)_
 
 ## Separate i18n lane
 
-`LC-I18N-006` is now IN_PROGRESS, claimed by `claude-i18n` on branch `i18n/lc-i18n-006`.
-Its `LC-I18N-*` prefix routes it to the translations worker. Its real scope is A1 arcs 6–7
-plus integrated A2–C2 auxiliary-language instructional copy; Pre-A1 stays frozen. It remains
-independent from availability and must not modify curriculum logic, evaluator behavior,
-level availability or frozen visuals.
+`LC-I18N-006`'s current state (TODO/unclaimed or IN_PROGRESS/claimed) and owner/branch are
+whatever the structured task block above says right now — read that block fresh instead of
+trusting this paragraph, which is not guaranteed to be updated on every claim/release cycle.
+Its `LC-I18N-*` prefix routes it to the translations worker regardless of section. Its real
+scope is A1 arcs 6–7 plus integrated A2–C2 auxiliary-language instructional copy; Pre-A1
+stays frozen. It remains independent from availability and must not modify curriculum logic,
+evaluator behavior, level availability or frozen visuals.
