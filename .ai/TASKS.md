@@ -35,7 +35,58 @@ branch/PR instead of duplicating it.
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
-_(none — the queue is open)_
+- [LC-OPS-025] Restore chain watchdog and post-translation resume continuity
+  owner:  unclaimed
+  branch: ops/lc-ops-025
+  issue:  #110
+  why:    live evidence gathered across issue #110 shows a checkpointed
+          `Claude — translations` worker (success or `error_max_turns`
+          failure) can leave its claimed task idle for hours. The only wake
+          paths after a worker run are second `workflow_run` events (this
+          repo's own `claude-chain.yml` listener and
+          `claude-post-worker-kick.yml`), both dependent on GitHub actually
+          delivering a recursive `workflow_run` "completed" event for a run
+          started via `gh workflow run` under the App/GITHUB_TOKEN, and that
+          delivery has been observed intermittently suppressed. The declared
+          `*/5 * * * *` cron fallback has also been observed stale for hours
+          at a time, unlike `curriculum-foundry.yml`, which additionally
+          wakes on `push: branches: [main]`. Repeated release->reclaim->
+          merge-sync cycles with an unchanged tree have also been observed
+          masquerading as recovery progress, and `.ai/STATE.md`/
+          `.ai/HANDOFF.md` have drifted out of sync with the structured
+          `.ai/TASKS.md` block more than once during this incident.
+  done:   (1) the worker's own `if: always()` completion step in
+          `claude-i18n.yml`/`claude-task.yml` directly dispatches
+          `claude-chain.yml` on both success and `error_max_turns`/failure,
+          so continuation does not depend solely on a second delivered
+          event; (2) `claude-chain.yml` gains a `push: branches: [main]`
+          trigger (a cheap no-op via the existing busy/next-task checks when
+          nothing is claimable), in addition to its existing schedule/
+          workflow_run triggers, which must remain; (3) redispatch after a
+          worker failure is progress-gated: track attempts since the last
+          functional (non merge-sync-only) commit on the claimed branch, and
+          after a bounded number of no-diff attempts stop auto-redispatching
+          and surface an explicit stuck/backoff signal in the step summary
+          instead of looping; (4) a release->reclaim->merge-sync commit with
+          an unchanged tree must never reset the attempt counter or be
+          reported as forward progress; (5) an active/queued writer is
+          always skipped, and a claimed task with no durable branch/Draft PR
+          is never hot-looped; (6) deterministic regression fixtures cover:
+          missing/suppressed `workflow_run` completion -> bounded watchdog
+          resume, `error_max_turns` failure with a durable checkpoint -> one
+          bounded same-task retry, active-writer skip, no-checkpoint
+          no-hot-loop, and no-diff-attempt backoff/stuck signalling; (7)
+          step-summary evidence distinguishes event-driven resume, watchdog
+          resume, active-writer skip, Draft-merge skip and no-op; (8)
+          `.ai/STATE.md` and `.ai/HANDOFF.md` describe current claim state by
+          pointing at the structured `.ai/TASKS.md` block instead of
+          asserting TODO/IN_PROGRESS in prose, so claim/release bookkeeping
+          cannot stale them again. Must not touch `i18n/lc-i18n-006`, PR
+          #108, locale/curriculum content, level availability, Supabase,
+          providers, voice/media or frozen visuals. Requires `check:all`,
+          production build, backend `compileall`/`pytest`, guards, focused
+          workflow/regression proof, and two consecutive complete clean
+          cycles on the exact final head before merge.
 
 ## BLOCKED
 
@@ -102,8 +153,10 @@ _(none — the queue is open)_
 
 ## Separate i18n lane
 
-`LC-I18N-006` is now IN_PROGRESS, claimed by `claude-i18n` on branch `i18n/lc-i18n-006`.
-Its `LC-I18N-*` prefix routes it to the translations worker. Its real scope is A1 arcs 6–7
-plus integrated A2–C2 auxiliary-language instructional copy; Pre-A1 stays frozen. It remains
-independent from availability and must not modify curriculum logic, evaluator behavior,
-level availability or frozen visuals.
+`LC-I18N-006`'s `LC-I18N-*` prefix routes it to the translations worker on branch
+`i18n/lc-i18n-006` whenever it is claimed; see the IN_PROGRESS/TODO block above for its
+current owner and state — do not assume this note reflects it, since claim/release
+bookkeeping can move the block without this note being edited. Its real scope is A1
+arcs 6–7 plus integrated A2–C2 auxiliary-language instructional copy; Pre-A1 stays frozen.
+It remains independent from availability and must not modify curriculum logic, evaluator
+behavior, level availability or frozen visuals.

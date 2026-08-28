@@ -44,11 +44,19 @@ The final LC-OPS-021 source head passed two consecutive complete clean QA cycles
 
 ## Start here — next claimable task
 
-Take **`LC-I18N-006` / issue #81** from TODO. Its `LC-I18N-*` prefix means it belongs to `claude-i18n.yml`, not the generic implementation lane.
+`.ai/TASKS.md` is the canonical source for which task is IN_PROGRESS vs TODO and who owns
+it right now; this section describes scope/expectations for the tasks currently in the
+queue, not a live claim snapshot, since claim/release bookkeeping can move a task between
+sections without this file being edited in the same commit. Read the structured task block
+before assuming a task is TODO/claimable.
+
+**`LC-I18N-006` / issue #81.** Its `LC-I18N-*` prefix means it belongs to `claude-i18n.yml`, not the generic implementation lane, whenever it is unclaimed/TODO. If it is already IN_PROGRESS with a durable branch/Draft PR, resume that checkpoint rather than reclaiming or duplicating it.
 
 Scope is translation/i18n only: remove unintended English placeholder instructional copy from **A1 arcs 6–7 and integrated A2–C2** in `es`, `pt`, `fr`, `it`, `de`, `ja`, `ar`. Known A1 examples include instructional keys around `ep34*`; equivalent untranslated blocks exist across the advertised auxiliary locales. Preserve interpolation variables exactly and preserve intentional target-English lesson answers/examples. Pre-A1 stays frozen. Arabic auxiliary UI stays RTL; target-English content/input stays LTR; Chatto is never mirrored. Do not touch curriculum logic, evaluator behavior, level availability, providers, Supabase/voice/media or frozen visuals.
 
 Do not treat `check:i18n` 100% structural key coverage as proof of semantic localization. Required proof includes inspection/guards capable of distinguishing intentional target-English from untranslated auxiliary copy, plus `check:i18n`, `check:all`, production build, backend compileall/pytest and guards; functional/browser spot proof in at least es/ja/ar at 390px and 1440px wherever rendered explanations/hints/corrections/meanings are affected; then two consecutive complete clean cycles on the exact final head. If the worker checkpoints before completion, resume the existing branch/Draft PR instead of duplicating it.
+
+**`LC-OPS-025` / issue #110**, queued TODO behind `LC-I18N-006` in the general lane (`ops/lc-ops-025`): hardens the chain-wake/watchdog continuity path itself — direct same-run dispatch to `claude-chain.yml` on worker success/failure, a `push`-triggered wake on `main` alongside the existing schedule, progress-gated redispatch backoff so a no-diff release->reclaim->merge-sync loop cannot masquerade as recovery, and state-neutral `.ai/STATE.md`/`.ai/HANDOFF.md` wording. It is `.github/workflows`-scoped and must not touch `i18n/lc-i18n-006`, PR #108 or any locale/curriculum content.
 
 ## A1 availability — explicitly blocked
 
