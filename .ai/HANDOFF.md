@@ -1,6 +1,6 @@
 # HANDOFF — read this, then start
 
-Current after the A1–C2 Curriculum Foundry, `LC-DOC-002`, the final pedagogical gate `LC-PED-002`, and continuous-recovery hardening `LC-OPS-021` (PR #100). The serial queue is intentionally non-empty again: `LC-I18N-006` is the next claimable task and must run in the translations lane. Its real scope is A1 arcs 6–7 plus integrated A2–C2 auxiliary copy. A1 remains closed pending completion of that localization and a separate explicit owner-approved availability decision.
+Current after the A1–C2 Curriculum Foundry, `LC-DOC-002`, the final pedagogical gate `LC-PED-002`, continuous-recovery hardening `LC-OPS-021` (PR #100), and `LC-I18N-006` (PR #108). The queue is now intentionally empty. A1 arcs 6–7 and the integrated A2–C2 surface are honestly localized in all seven implemented auxiliary locales; A1 remains closed pending a separate, still-unfiled, explicit owner-approved availability decision (`LC-PROD-002` / issue #101).
 
 ## What just happened
 
@@ -30,6 +30,8 @@ A1 arcs 1–7 are implemented and integrated. A2, B1, B2, C1 and C2 are also int
 
 The final LC-OPS-021 source head passed two consecutive complete clean QA cycles and PR #100 merged. Do not reintroduce an hourly-only recovery path, IN_PROGRESS-only checkpoint lookup, destructive claim release, or recursive-token second-cycle trigger.
 
+`LC-I18N-006` (PR #108) then closed issue #81: the A1-C2 Curriculum Foundry integration phase had left many auxiliary-locale values byte-identical to the English base — structurally 100% coverage, never actually translated. A semantic scan (not just `check:i18n` key parity) confirmed genuine translation across A1 arcs 6-7 and integrated A2/B1/B2/C1/C2 in es/pt/fr/it/de/ja/ar, and real Chromium browser proof at 390px/1440px in es/ja/ar (via a temporary, uncommitted QA harness using the sanctioned `forLearner:false` tooling opt-out documented in `learning/curriculum/episodeContent.js`, fully removed before merge) confirmed correct rendering, RTL and no raw-key/overflow/console regressions. Full details and numbers are in `.ai/TRANSLATIONS.md`'s `LC-I18N-006` entry. A1/A2-C2 stayed `available:false` throughout; Pre-A1 untouched.
+
 ## Product contract — do not reinterpret
 
 - Lingua is the tutor; Chatto is mascot-only.
@@ -44,15 +46,11 @@ The final LC-OPS-021 source head passed two consecutive complete clean QA cycles
 
 ## Start here — next claimable task
 
-Take **`LC-I18N-006` / issue #81** from TODO. Its `LC-I18N-*` prefix means it belongs to `claude-i18n.yml`, not the generic implementation lane.
-
-Scope is translation/i18n only: remove unintended English placeholder instructional copy from **A1 arcs 6–7 and integrated A2–C2** in `es`, `pt`, `fr`, `it`, `de`, `ja`, `ar`. Known A1 examples include instructional keys around `ep34*`; equivalent untranslated blocks exist across the advertised auxiliary locales. Preserve interpolation variables exactly and preserve intentional target-English lesson answers/examples. Pre-A1 stays frozen. Arabic auxiliary UI stays RTL; target-English content/input stays LTR; Chatto is never mirrored. Do not touch curriculum logic, evaluator behavior, level availability, providers, Supabase/voice/media or frozen visuals.
-
-Do not treat `check:i18n` 100% structural key coverage as proof of semantic localization. Required proof includes inspection/guards capable of distinguishing intentional target-English from untranslated auxiliary copy, plus `check:i18n`, `check:all`, production build, backend compileall/pytest and guards; functional/browser spot proof in at least es/ja/ar at 390px and 1440px wherever rendered explanations/hints/corrections/meanings are affected; then two consecutive complete clean cycles on the exact final head. If the worker checkpoints before completion, resume the existing branch/Draft PR instead of duplicating it.
+The queue is empty: there is no TODO or IN_PROGRESS task right now. The only filed item is `LC-PROD-002` (below), and it is BLOCKED, not claimable. Do not invent new scope; wait for a new task to be filed or an explicit owner instruction.
 
 ## A1 availability — explicitly blocked
 
-Issue #101 (`LC-PROD-002`) exists for the separate A1 availability decision. It is BLOCKED on **both** completion of `LC-I18N-006` and explicit owner approval. Do **not** interpret its existence or `LC-PED-002` completion as permission to flip A1 to available. Until A1 arcs 6–7 are honestly localized and a new explicit owner instruction approves A1 release, leave `available:false` unchanged.
+Issue #101 (`LC-PROD-002`) exists for the separate A1 availability decision. It is BLOCKED on explicit owner approval only now that `LC-I18N-006` is DONE. Do **not** interpret `LC-I18N-006` or `LC-PED-002` completion as permission to flip A1 to available. Until a new explicit owner instruction approves A1 release, leave `available:false` unchanged.
 
 ## Current coordination warning
 
