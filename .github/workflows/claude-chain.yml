@@ -1,0 +1,333 @@
+# The cloud orchestrator. A finished agent PR is merged and the next task starts
+# without relying on a second GitHub event. Successful checkpointed workers resume
+# immediately; a five-minute watchdog is the missed-event/failure recovery net.
+name: Claude — chain
+
+on:
+  workflow_run:
+    workflows: ["QA", "Claude — autonomous task", "Claude — translations"]
+    types: [completed]
+  pull_request:
+    types: [closed]
+  schedule:
+    # Recovery net only. Normal advancement/resume is event-driven.
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Why the chain is being started manually.'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+  checks: read
+
+concurrency:
+  group: claude-chain
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    # QA clean cycles can arrive as the normal pull_request run or as the explicitly
+    # dispatched exact-head second cycle. Restrict this merge lane to QA so successful
+    # autonomous-worker workflow_dispatch runs cannot be mistaken for PR QA.
+    if: >
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.name == 'QA' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      (
+        github.event.workflow_run.event == 'pull_request' ||
+        github.event.workflow_run.event == 'workflow_dispatch'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      merged: ${{ steps.merge_pr.outputs.merged }}
+      pr_number: ${{ steps.merge_pr.outputs.pr_number }}
+      reason: ${{ steps.merge_pr.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: merge_pr
+        name: Merge the green agent PR under the shared contract
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+        run: bash .github/scripts/merge-agent-pr.sh "$HEAD_BRANCH"
+
+      - name: Record merge result
+        run: |
+          echo "merge=${{ steps.merge_pr.outputs.merged }} reason=${{ steps.merge_pr.outputs.reason }} pr=${{ steps.merge_pr.outputs.pr_number }}" >> "$GITHUB_STEP_SUMMARY"
+
+  advance:
+    needs: [merge]
+    # `always()` is required because merge is intentionally skipped for schedule,
+    # workflow_dispatch, pull_request.closed and worker-completion entry points.
+    # Successful worker completion resumes a remote checkpoint immediately. Failed
+    # workers use the five-minute watchdog so a persistent failure cannot hot-loop.
+    if: >
+      always() &&
+      (
+        github.event_name == 'schedule' ||
+        github.event_name == 'workflow_dispatch' ||
+        (github.event_name == 'pull_request' && github.event.pull_request.merged == true) ||
+        (
+          github.event_name == 'workflow_run' &&
+          (
+            needs.merge.outputs.merged == 'true' ||
+            startsWith(github.event.workflow_run.head_branch, 'foundry/') ||
+            (
+              github.event.workflow_run.conclusion == 'success' &&
+              (
+                github.event.workflow_run.name == 'Claude — autonomous task' ||
+                github.event.workflow_run.name == 'Claude — translations'
+              )
+            )
+          )
+        )
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Refresh main after a same-run merge
+        if: github.event_name == 'workflow_run' && needs.merge.outputs.merged == 'true'
+        run: |
+          git fetch origin main --quiet
+          git reset --hard origin/main
+
+      # This runs independently of the serial writer lock. Foundry tasks have their
+      # own per-lane concurrency and exact write scopes, so a docs/backend task in
+      # the old queue must not stall evidence research or independent blueprints.
+      - name: Advance Curriculum Foundry independently
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash .github/scripts/run-foundry-cycle.sh
+
+      - name: Refresh main after Foundry cycle
+        run: |
+          git fetch origin main --quiet
+          git reset --hard origin/main
+
+      - name: Is any autonomous Claude writer already alive?
+        id: busy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          RUNNING=0
+          # Interactive Claude — mention is read/review-only and has its own
+          # concurrency group. It may validate in parallel and can still block merge
+          # through LC-OPS-020 without freezing implementation.
+          for WF in claude-task.yml claude-i18n.yml; do
+            N=$(gh run list --workflow="$WF" --limit 30 --json status \
+              --jq '[.[] | select(.status == "in_progress" or .status == "queued")] | length')
+            echo "$WF: $N alive"
+            RUNNING=$((RUNNING + N))
+          done
+          echo "running=$RUNNING" >> "$GITHUB_OUTPUT"
+          if [ "$RUNNING" != "0" ]; then
+            echo "Another autonomous Claude writer is alive; watchdog will not mutate the serial queue." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # A successful worker may have already released its claim back to TODO before
+      # this workflow_run event arrives. Resolve the checkpoint from durable queue
+      # state: prefer the current IN_PROGRESS claim, otherwise use the exact task that
+      # next-task.mjs says is claimable and read that task's preserved branch in TODO.
+      # Immediate redispatch requires BOTH the remote branch and an open Draft PR.
+      # A plain success without both proofs defers to the <=5-minute watchdog.
+      - name: Did the completed worker leave a resumable checkpoint?
+        id: worker_checkpoint
+        if: >
+          steps.busy.outputs.running == '0' &&
+          github.event_name == 'workflow_run' &&
+          (
+            github.event.workflow_run.name == 'Claude — autonomous task' ||
+            github.event.workflow_run.name == 'Claude — translations'
+          )
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          TASK_ID=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
+            grep -oE '^- \[[^]]+\]' | sed -E 's/^- \[([^]]+)\]/\1/' | head -1 || true)
+          BRANCH=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
+            grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
+          SOURCE=IN_PROGRESS
+
+          if [ -z "${TASK_ID:-}" ]; then
+            TASK_ID=$(node .github/scripts/next-task.mjs || true)
+            SOURCE=TODO
+            if [ -n "${TASK_ID:-}" ]; then
+              BRANCH=$(awk -v id="$TASK_ID" '
+                $0 == "- [" id "]" || index($0, "- [" id "] ") == 1 { in_task=1; next }
+                in_task && /^- \[/ { in_task=0 }
+                in_task && /^[[:space:]]+branch:[[:space:]]*/ {
+                  sub(/^[[:space:]]+branch:[[:space:]]*/, ""); print; exit
+                }
+              ' .ai/TASKS.md)
+            fi
+          fi
+
+          RESUMABLE=false
+          NUMBER=""
+          if [ -n "${TASK_ID:-}" ] && [ -n "${BRANCH:-}" ] && [ "$BRANCH" != "none" ]; then
+            if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+              NUMBER=$(gh pr list --head "$BRANCH" --state open --json number,isDraft \
+                --jq '[.[] | select(.isDraft == true)][0].number // empty' || true)
+              [ -n "$NUMBER" ] && RESUMABLE=true
+            fi
+          fi
+
+          echo "task_id=${TASK_ID:-}" >> "$GITHUB_OUTPUT"
+          echo "branch=${BRANCH:-}" >> "$GITHUB_OUTPUT"
+          echo "resumable=$RESUMABLE" >> "$GITHUB_OUTPUT"
+          echo "worker checkpoint: source=$SOURCE task=${TASK_ID:-none} branch=${BRANCH:-none} draft_pr=${NUMBER:-none} resumable=$RESUMABLE" >> "$GITHUB_STEP_SUMMARY"
+
+      # If a previous QA/merge event was missed, the watchdog may safely finish a
+      # READY claimed PR using exactly the same merge contract as the normal path.
+      - id: recover_merge
+        name: Recover a green ready PR if an event was missed
+        if: steps.busy.outputs.running == '0' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
+            grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
+          if [ -z "${BRANCH:-}" ] || [ "$BRANCH" = "none" ]; then
+            echo "merged=false" >> "$GITHUB_OUTPUT"
+            echo "reason=no-claim" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          bash .github/scripts/merge-agent-pr.sh "$BRANCH"
+
+      - name: Refresh main after watchdog recovery merge
+        if: steps.recover_merge.outputs.merged == 'true'
+        run: |
+          git fetch origin main --quiet
+          git reset --hard origin/main
+
+      # A dead worker with a DRAFT is resumable. A dead worker with a RED ready PR
+      # is also resumable: convert it back to draft, release the claim, then the
+      # next worker continues the same branch/PR. Pending checks are simply waited on.
+      - name: Heal a stale or red claim
+        if: steps.busy.outputs.running == '0' && steps.recover_merge.outputs.merged != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          BRANCH=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
+            grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
+          [ -n "${BRANCH:-}" ] && [ "$BRANCH" != "none" ] || exit 0
+
+          # The merge contract may have just dispatched the explicit second exact-head
+          # QA cycle. Preserve the claim and wait for that run instead of converting
+          # the PR back to Draft while its proof is being produced.
+          if [ "${{ steps.recover_merge.outputs.reason }}" = "second-cycle-triggered" ]; then
+            echo "$BRANCH has one clean exact-head cycle; explicit second QA was dispatched. Waiting." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          NUMBER=$(gh pr list --head "$BRANCH" --state open --json number,isDraft --jq '.[0].number // empty')
+          if [ -n "$NUMBER" ]; then
+            DRAFT=$(gh pr view "$NUMBER" --json isDraft --jq .isDraft)
+            if [ "$DRAFT" = "false" ]; then
+              CHECKS=$(gh pr checks "$NUMBER" 2>&1 || true)
+              if printf '%s\n' "$CHECKS" | grep -qi 'pending'; then
+                echo "$BRANCH has pending QA; waiting rather than restarting it." >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
+              if printf '%s\n' "$CHECKS" | grep -qiE 'fail|cancel'; then
+                gh pr ready "$NUMBER" --undo
+                echo "PR #$NUMBER had red QA; returned it to draft so the same task can resume." >> "$GITHUB_STEP_SUMMARY"
+              elif [ "${{ steps.recover_merge.outputs.reason }}" != "no-open-pr" ] && [ -n "${{ steps.recover_merge.outputs.reason }}" ]; then
+                # Green but not mergeable under the contract (for example missing
+                # bookkeeping/evidence): make it resumable instead of deadlocking.
+                gh pr ready "$NUMBER" --undo
+                echo "PR #$NUMBER is green but incomplete under the merge contract; returned to draft." >> "$GITHUB_STEP_SUMMARY"
+              else
+                # Ready/green PR on a non-watchdog entry point: preserve the claim.
+                exit 0
+              fi
+            fi
+          fi
+
+          # release-stale-claim.mjs verifies the recorded remote branch itself. A real
+          # checkpoint keeps its branch mapping in TODO; only a provably missing ref
+          # becomes branch:none. Infrastructure errors preserve the mapping fail-closed.
+          RELEASED=$(node .github/scripts/release-stale-claim.mjs || true)
+          if [ -z "$RELEASED" ]; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .ai/TASKS.md
+          git commit -m "chore(ops): release $RELEASED so its existing work can resume"
+          git push origin main
+          echo "Released **$RELEASED** for safe resume." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Refresh main after claim repair
+        if: steps.busy.outputs.running == '0'
+        run: |
+          git fetch origin main --quiet
+          git reset --hard origin/main
+
+      - name: Which task is next?
+        id: next
+        if: steps.busy.outputs.running == '0'
+        run: |
+          NEXT=$(node .github/scripts/next-task.mjs || true)
+          echo "id=$NEXT" >> "$GITHUB_OUTPUT"
+          node .github/scripts/next-task.mjs --explain 2>&1 | tail -30 >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Start exactly one task in its correct lane
+        if: >
+          steps.busy.outputs.running == '0' &&
+          steps.next.outputs.id != '' &&
+          (
+            github.event_name != 'workflow_run' ||
+            (
+              github.event.workflow_run.name != 'Claude — autonomous task' &&
+              github.event.workflow_run.name != 'Claude — translations'
+            ) ||
+            steps.worker_checkpoint.outputs.resumable == 'true'
+          )
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TASK_ID: ${{ steps.next.outputs.id }}
+        run: |
+          set -euo pipefail
+          case "$TASK_ID" in
+            LC-I18N-*) WORKFLOW=claude-i18n.yml ;;
+            *)         WORKFLOW=claude-task.yml ;;
+          esac
+          gh workflow run "$WORKFLOW" --ref main -f task_id="$TASK_ID" -f dry_run=false
+          echo "Dispatched **$TASK_ID** to **$WORKFLOW**." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Defer a worker with no remote checkpoint to the watchdog
+        if: >
+          steps.busy.outputs.running == '0' &&
+          steps.next.outputs.id != '' &&
+          github.event_name == 'workflow_run' &&
+          (
+            github.event.workflow_run.name == 'Claude — autonomous task' ||
+            github.event.workflow_run.name == 'Claude — translations'
+          ) &&
+          steps.worker_checkpoint.outputs.resumable != 'true'
+        run: echo "Worker left no provable remote checkpoint; avoiding an immediate retry loop. The <=5 minute watchdog will retry safely." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Stop cleanly
+        if: steps.busy.outputs.running == '0' && steps.next.outputs.id == ''
+        run: echo "Nothing claimable. Clean stop." >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,104 @@
+# Interactive Claude is a bounded triage/review lane only.
+# Long-running implementation is ALWAYS dispatched through the autonomous workers,
+# which checkpoint branches/PRs and can resume after a run ends.
+name: Claude — mention
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+# Review/validation is deliberately separate from the serial implementation writer.
+# This lane cannot edit repository contents; its merge-blocker marker/review threads
+# are the safety boundary. A long browser proof must not freeze autonomous coding.
+concurrency:
+  group: linguachat-claude-review
+  cancel-in-progress: false
+
+jobs:
+  claude:
+    if: |
+      contains(github.event.comment.body, '@claude') &&
+      (github.event.comment.author_association == 'OWNER' ||
+       github.event.comment.author_association == 'MEMBER' ||
+       github.event.comment.author_association == 'COLLABORATOR')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      LINGUACHAT_PROVIDER: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refuse clearly if the token is not configured
+        env:
+          TOKEN_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          if [ "$TOKEN_PRESENT" != "true" ]; then
+            echo "CLAUDE_CODE_OAUTH_TOKEN is not set. See .ai/HANDOFF.md."
+            exit 1
+          fi
+
+      - uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          track_progress: true
+          prompt: |
+            You are LinguaChat's INTERACTIVE TRIAGE/REVIEW lane, not its autonomous
+            implementation worker.
+
+            Read CLAUDE.md, .ai/STATE.md, .ai/TASKS.md and .ai/HANDOFF.md first.
+
+            Your job is bounded:
+            - inspect the issue/PR/question and diagnose it precisely;
+            - review code/diffs and identify root causes, risks and the smallest safe
+              correction;
+            - answer the user/reviewer with a concise evidence-based recommendation;
+            - NEVER take ownership of a queue-sized implementation, never edit
+              `.github/workflows`, never perform broad refactors, and never start a
+              long task that could die at the turn ceiling.
+
+            For validation-only requests on an existing PR, prioritize executing the
+            requested proof over broad re-analysis. Reuse the PR's already-established
+            context, batch deterministic checks into as few Bash/tool calls as practical,
+            and reserve enough turns to publish the observed result before the ceiling.
+            Do not spend the final 15 turns expanding scope or repeating repository-wide
+            inspection that the request does not require.
+
+            MERGE-BLOCKER CONTRACT: your single progress/result comment is part of the
+            automated merge gate. If you find an evidence gap, defect, unresolved check,
+            or any reason the PR must NOT be marked Ready or merged, include this exact
+            marker in that comment while the blocker is active:
+            <!-- linguachat-merge-blocker -->
+            Keep the marker present through progress updates. Remove it only after your
+            own observed validation proves the blocker is cleared. Never say "do not
+            merge" while omitting the marker, and never leave the marker behind after
+            explicitly reporting that the same blocker has passed.
+
+            If the request needs implementation beyond a tiny review/comment, say
+            explicitly that it belongs in `.ai/TASKS.md` and name the smallest task
+            boundary and acceptance evidence. The cloud `Claude — chain` plus
+            `Claude — autonomous task` / `Claude — translations` workers are the
+            implementation path. They checkpoint within 15 turns, push every
+            milestone and can be resumed after a run ends.
+
+            Do not hide failures. A turn ceiling is a safety boundary, not a reason to
+            lose work: this lane must finish analysis well before the ceiling. Do not
+            claim code was changed when this lane only reviewed it.
+
+            Product constraints still apply: one user_language for all auxiliary
+            experience, English target, A1 fail-closed until final gates, no real paid
+            provider calls, no voice/STT/TTS/WebRTC/pronunciation/calls/video.
+          allowed_bots: github-actions
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 140
+            --allowedTools Read,Glob,Grep,Bash,TodoWrite

@@ -1,0 +1,232 @@
+# General autonomous worker. It is dispatched only by Claude — chain; scheduling
+# lives in the chain so routing and locking have one source of truth.
+name: Claude — autonomous task
+
+on:
+  workflow_dispatch:
+    inputs:
+      task_id:
+        description: 'Exact task id selected by the chain.'
+        required: false
+        type: string
+      dry_run:
+        description: 'Report what it would do, change nothing.'
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: linguachat-claude-writer
+  cancel-in-progress: false
+
+jobs:
+  work:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      LINGUACHAT_PROVIDER: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Refuse clearly if the token is not configured
+        env:
+          TOKEN_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          if [ "$TOKEN_PRESENT" != "true" ]; then
+            echo "CLAUDE_CODE_OAUTH_TOKEN is not set. See .ai/HANDOFF.md."
+            exit 1
+          fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: linguachat-frontend/package-lock.json
+
+      - id: queue
+        name: Validate the task against next-task.mjs
+        env:
+          REQUESTED: ${{ inputs.task_id }}
+        run: |
+          set -euo pipefail
+          NEXT=$(node .github/scripts/next-task.mjs || true)
+          if [ -z "$NEXT" ]; then
+            echo "claimable=false" >> "$GITHUB_OUTPUT"
+            echo "No task is claimable."
+            exit 0
+          fi
+          case "$NEXT" in
+            LC-I18N-*)
+              echo "claimable=false" >> "$GITHUB_OUTPUT"
+              echo "The next task is $NEXT and belongs to claude-i18n.yml, not this lane."
+              exit 0
+              ;;
+          esac
+          if [ -n "${REQUESTED:-}" ] && [ "$REQUESTED" != "$NEXT" ]; then
+            echo "claimable=false" >> "$GITHUB_OUTPUT"
+            echo "Requested $REQUESTED but the only claimable task is $NEXT. Refusing safely."
+            exit 0
+          fi
+          echo "claimable=true" >> "$GITHUB_OUTPUT"
+          echo "task_id=$NEXT" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-python@v5
+        if: steps.queue.outputs.claimable == 'true'
+        with:
+          python-version: '3.12'
+
+      - name: Install
+        if: steps.queue.outputs.claimable == 'true'
+        run: |
+          npm ci --prefix linguachat-frontend
+          pip install -r linguachat-backend/requirements.txt
+
+      - id: claude
+        uses: anthropics/claude-code-action@v1
+        if: steps.queue.outputs.claimable == 'true'
+        continue-on-error: true
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            You are the autonomous operator of LinguaChat.
+
+            READ FIRST and obey over this prompt:
+            CLAUDE.md, .ai/STATE.md, .ai/TASKS.md, .ai/HANDOFF.md, .ai/DECISIONS.md.
+
+            Exact task selected by the shared queue parser: "${{ steps.queue.outputs.task_id }}".
+            Dry run: "${{ inputs.dry_run }}".
+
+            PRODUCT LANGUAGE RULE
+            There is one user language for the auxiliary experience: UI/chrome,
+            explanations, hints, corrections, interpretations and meanings all use
+            the same user_language. English is the target language being learned.
+            Legacy interface_language/native_language, while present, represent the
+            same user choice and must stay synchronized. Never implement mixed
+            interface=es/native=ja behavior. Arabic auxiliary UI is RTL; target
+            English and English input stay LTR; Chatto is never mirrored.
+
+            WORKFLOW
+            1. Claim exactly this task on main before functional work: move its whole
+               block to IN_PROGRESS, owner `claude-action`, with its conventional
+               branch. The claim is the only normal coordination write direct to main.
+            2. Use the conventional task branch (`curr/`, `qa/`, `ops/` or `fix/`).
+               If it already exists, continue it and its existing draft PR; never
+               duplicate work.
+            3. Within the first 15 turns push a checkpoint and open a DRAFT PR. Push
+               every milestone and never go 20 turns without remote progress.
+            4. Implement only the smallest correct task. Read curriculum contracts
+               in full before curriculum work; the live blueprint outranks memory.
+            5. During implementation run targeted checks. At completion run:
+                 cd linguachat-frontend && npm run check:all && npm run build
+                 cd linguachat-backend && python -m compileall . && python -m pytest -q
+               Count check:all by exit code. If any fix follows validation, restart
+               validation and produce two consecutive clean cycles.
+            6. Functional evidence is mandatory: runtime -> walk the flow; episode ->
+               happy path + wrong/retry + help marked assisted + replay without
+               duplicate reward; UI/i18n -> browser at 390px and 1440px; evaluator ->
+               frontend/backend verdict parity case by case. Never imply a test ran
+               when it did not.
+            7. BEFORE marking the PR ready, put final bookkeeping IN THE SAME BRANCH:
+               move this task from IN_PROGRESS to DONE in .ai/TASKS.md and update
+               .ai/STATE.md + .ai/HANDOFF.md. These must merge atomically with the
+               functional change. Do not make a later direct-main DONE/handoff commit.
+            8. Put exact QA numbers in the PR under `## Evidence`, self-review the
+               diff for scope creep/secrets/provider calls/frozen-UI regressions,
+               push the final commit, then mark the PR ready.
+
+            HARD LIMITS
+            - A1 remains unavailable until its final gate. No Supabase/Auth/Postgres/
+              Storage/pgvector/Edge Functions. No voice/STT/TTS/WebRTC/pronunciation
+              scoring/calls/video calls. No Next.js migration. No real OpenAI calls;
+              LINGUACHAT_PROVIDER stays local. Do not touch owner ZIPs or secrets.
+            - One task per run.
+            - If turns are running low, STOP EARLY: checkpoint the branch/draft PR.
+              If unfinished, release the claim on main so the next run can resume the
+              same branch and document the exact stopping point. Never burn the final
+              turns on broad re-analysis after work already exists.
+          allowed_bots: github-actions
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 150
+            --allowedTools Read,Write,Edit,Glob,Grep,Bash,TodoWrite
+
+      - name: Surface sanitized Claude failure
+        if: steps.queue.outputs.claimable == 'true' && steps.claude.outcome == 'failure'
+        env:
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const p = process.env.EXECUTION_FILE
+          const redact = (v) => String(v ?? '')
+            .replace(/sk-ant-[A-Za-z0-9_-]+/g, '[REDACTED]')
+            .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, 'Bearer [REDACTED]')
+            .replace(/[A-Za-z0-9_-]{48,}/g, '[REDACTED-LONG-TOKEN]')
+            .slice(0, 1000)
+          let safe = { error: 'Claude action failed without a readable execution_file' }
+          try {
+            if (p && fs.existsSync(p)) {
+              const raw = JSON.parse(fs.readFileSync(p, 'utf8'))
+              const events = Array.isArray(raw) ? raw : [raw]
+              const r = [...events].reverse().find(e => e && e.type === 'result') || {}
+              safe = {
+                type: r.type || null,
+                subtype: r.subtype || null,
+                is_error: r.is_error ?? null,
+                api_error_status: r.api_error_status ?? null,
+                error_status: r.error_status ?? null,
+                terminal_reason: r.terminal_reason || null,
+                stop_reason: r.stop_reason || null,
+                result: redact(r.result),
+              }
+            }
+          } catch (e) {
+            safe = { error: `Could not parse Claude execution file: ${redact(e.message)}` }
+          }
+          console.error('Sanitized Claude failure: ' + JSON.stringify(safe, null, 2))
+          process.exit(1)
+          NODE
+
+      - name: Leave the repository honest, whatever happened
+        if: always() && steps.queue.outputs.claimable == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --quiet
+          git checkout main --quiet && git reset --hard origin/main --quiet
+          BRANCH=$(awk '/^## IN_PROGRESS/{f=1;next} /^## /{f=0} f' .ai/TASKS.md |
+            grep -oE '^[[:space:]]+branch:[[:space:]]*\S+' | awk '{print $2}' | head -1 || true)
+          if [ -z "${BRANCH:-}" ] || [ "$BRANCH" = "none" ]; then exit 0; fi
+
+          if ! git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null 2>&1; then
+            RELEASED=$(node .github/scripts/release-stale-claim.mjs || true)
+            if [ -n "$RELEASED" ]; then
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add .ai/TASKS.md
+              git commit -m "chore(ops): release $RELEASED — its run ended with nothing pushed"
+              git push origin main
+              echo "Released **$RELEASED** because the run pushed nothing." >> "$GITHUB_STEP_SUMMARY"
+            fi
+            exit 0
+          fi
+
+          OPEN=$(gh pr list --head "$BRANCH" --state open --json number --jq 'length')
+          if [ "$OPEN" = "0" ]; then
+            gh pr create --draft --base main --head "$BRANCH" \
+              --title "WIP: $BRANCH" \
+              --body "Automatic recovery draft. This task is unfinished; the next run must continue this branch rather than restart it."
+          fi
+
+      - name: Nothing to do
+        if: steps.queue.outputs.claimable != 'true'
+        run: echo "No task for this lane — clean exit without Claude cost." >> "$GITHUB_STEP_SUMMARY"
