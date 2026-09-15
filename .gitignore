@@ -20,6 +20,13 @@ yarn-debug.log*
 yarn-error.log*
 *.log
 
+# Runtime data
+# Daily email subscriptions and send-dedupe state are local server data, never source.
+data/
+*.sqlite
+*.sqlite3
+*.db
+
 # OS / editor
 .DS_Store
 Thumbs.db
