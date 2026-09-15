@@ -141,8 +141,22 @@ const ENTRY_BUDGET_KB = 850
  * this curriculum, so no further per-level growth of this kind is expected
  * after it, though the eventual real-translation PRs for #81 will still
  * change these numbers again.)
+ *
+ * 310 kB held until `LC-I18N-006` (issue #81) actually replaced the
+ * byte-identical-to-English placeholder values across A1 arcs 6-7 and the
+ * integrated A2-C2 surface with genuine translations. Real Japanese/Arabic
+ * prose costs more per character than the ASCII placeholder it replaced
+ * (still the three-byte-heavy-script reason every note above already
+ * gives), so this is the same growth shape landing for real instead of as
+ * a placeholder — not a leak. Measured on the final translated head: Arabic
+ * 341.52 kB, Japanese 328.53 kB (the other five locales stayed under
+ * 310 kB — es 296.67, pt 294.72, it 295.76, fr 306.92, de 308.69). 370 kB
+ * leaves headroom for the same de-minimis growth without another edit;
+ * no further curriculum level exists after C2, so the only expected future
+ * driver of this number is native-copy quality passes, not new content
+ * volume.
  */
-const LOCALE_MAX_KB = 310
+const LOCALE_MAX_KB = 370
 
 const files = readdirSync(DIST).filter(f => f.endsWith('.js'))
 const sizeKb = (f) => statSync(join(DIST, f)).size / 1024

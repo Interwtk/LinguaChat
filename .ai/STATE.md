@@ -1,6 +1,6 @@
 # STATE — where LinguaChat actually is
 
-Updated after completion of the A1–C2 Curriculum Foundry, final supervisor acceptance, release-candidate hardening, `LC-DOC-002`, `LC-PED-002`, and the continuous-recovery hardening `LC-OPS-021` (PR #100). The queue is now deliberately fed with `LC-I18N-006`, whose real localization scope is A1 arcs 6–7 plus integrated A2–C2 auxiliary copy, so autonomous work has a correct next task instead of stopping on an empty TODO list or declaring localization complete too early.
+Updated after completion of the A1–C2 Curriculum Foundry, final supervisor acceptance, release-candidate hardening, `LC-DOC-002`, `LC-PED-002`, the continuous-recovery hardening `LC-OPS-021` (PR #100), and `LC-I18N-006` (PR #108). A1 arcs 6–7's and the integrated A2–C2 surface's auxiliary-language instructional copy is now genuinely localized in es/pt/fr/it/de/ja/ar, not merely structurally 100% while English-identical. The queue is intentionally empty (TODO/IN_PROGRESS both open); the only remaining item is the explicitly BLOCKED A1 availability decision, `LC-PROD-002`.
 
 ## Product contract
 
@@ -31,20 +31,17 @@ The Curriculum Foundry chain is complete:
 - `LC-DOC-002` complete (PR #90): `CLAUDE.md`, `.ai/TRANSLATIONS.md` and `check-a1-blueprint.mjs`'s printed conclusion match the integrated A1–C2 state.
 - `LC-PED-002` complete (PR #91): the final all-arcs pedagogical acceptance gate re-proved every Pre-A1 + A1 arc on the final integrated/hardened head — 298 per-arc journeys across 13 arcs, a 38-episode longitudinal new-learner journey through A1 exit, 41/41 arc-6/7 evaluator cases, 95/95 focused arc-6/7 journeys and real es/ja/ar browser proof at 390px/1440px.
 - `LC-OPS-021` complete (PR #100): live-Evidence reads replace stale event snapshots; successful checkpointed workers can resume from durable task→branch/Draft-PR state; claim release no longer destroys a real checkpoint mapping; no-checkpoint success cannot hot-loop; review work no longer freezes the implementation writer; watchdog fallback is every 5 minutes; and the second exact-head QA cycle is explicitly dispatched rather than relying on a recursively suppressed `GITHUB_TOKEN` Draft→Ready event. The final source head passed two complete clean cycles before merge.
+- `LC-I18N-006` complete (PR #108): the A1-C2 Curriculum Foundry integration phase had left many `es/pt/fr/it/de/ja/ar` auxiliary-instructional values byte-identical to the English base — structurally 100% coverage, never actually translated. This task replaced those values with genuine localized copy across A1 arcs 6-7 and integrated A2/B1/B2/C1/C2, verified by a semantic scan (not just `check:i18n` structure) and real Chromium browser proof at 390px/1440px in es/ja/ar via a temporary QA-only harness using the sanctioned `forLearner:false` tooling opt-out, then fully removed before merge. See `.ai/TRANSLATIONS.md`'s `LC-I18N-006` entry for full evidence.
 
 The integrated runtime currently contains 171 curriculum episodes across Pre-A1 and A1–C2. Pre-A1 remains frozen and A1–C2 remain unavailable.
 
 ## Current claimable work
 
-`LC-I18N-006` / issue #81 is the first TODO and is intentionally claimable. It is translation/i18n-only work for the known untranslated auxiliary-language instructional surface in **A1 arcs 6–7 plus A2, B1, B2, C1 and C2**, across `es`, `pt`, `fr`, `it`, `de`, `ja` and `ar`. It must remove unintended English placeholders while preserving intentional target-English content and interpolation variables. Pre-A1 must remain frozen. It must not change curriculum logic, evaluator behavior, level availability, providers, Supabase/voice/media or the frozen visual architecture.
-
-`check:i18n` showing 100% key parity is necessary but not sufficient: it proves structure, not that auxiliary-language values are genuinely translated. Completion therefore requires semantic inspection plus affected-flow/browser proof in es/ja/ar, not only missing/extra-key checks.
-
-Because its ID starts with `LC-I18N-`, the existing orchestrator routes it to `claude-i18n.yml`. A durable checkpoint/Draft PR should be resumed rather than duplicated; after a successful checkpointed worker completion the chain should continue immediately, with the <=5-minute watchdog only as fallback.
+The queue is intentionally empty: `LC-I18N-006` is DONE and no other TODO item is currently filed.
 
 ## A1 availability remains separately blocked
 
-`LC-PROD-002` / issue #101 records the explicit A1 availability decision gate. It is in BLOCKED, not TODO. Creating the issue and completing `LC-PED-002` are **not** approval to open A1. `LC-I18N-006` must also be complete so A1 arcs 6–7 no longer expose untranslated auxiliary instructions. Without both that localization completion and an explicit owner instruction approving the release, A1 remains `available:false` and the automation must not infer permission.
+`LC-PROD-002` / issue #101 records the explicit A1 availability decision gate. It is in BLOCKED, not TODO. `LC-PED-002` and `LC-I18N-006` completing are **not** approval to open A1 — that requires a new, explicit owner instruction. Without it, A1 remains `available:false` and the automation must not infer permission.
 
 ## QA discipline
 
