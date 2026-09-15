@@ -50,19 +50,117 @@ and none of these levels is available to learners regardless of coverage.
 | language | keys | structural coverage | audit status |
 |---|---:|---:|---|
 | en (base) | 5205 | source | structural baseline; welcome/placement/profile now route through it |
-| es | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| pt | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| fr | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| it | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| de | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004) |
-| ja | 5199 | 100% | implemented; fewer keys is correct — Japanese has no grammatical plural, so it needs one category per plural key instead of six |
-| ar | 5229 | 100% | implemented; more keys is correct — Arabic plural grammar needs `zero/one/two/few/many/other`, all six populated |
+| es | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004); A1 arcs 6-7 + A2-C2 auxiliary copy now genuinely translated, not English-identical (LC-I18N-006) |
+| pt | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004); A1 arcs 6-7 + A2-C2 auxiliary copy now genuinely translated, not English-identical (LC-I18N-006) |
+| fr | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004); A1 arcs 6-7 + A2-C2 auxiliary copy now genuinely translated, not English-identical (LC-I18N-006) |
+| it | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004); A1 arcs 6-7 + A2-C2 auxiliary copy now genuinely translated, not English-identical (LC-I18N-006) |
+| de | 5205 | 100% | implemented; plural-aware, placement/profile/welcome localized (LC-I18N-004); A1 arcs 6-7 + A2-C2 auxiliary copy now genuinely translated, not English-identical (LC-I18N-006) |
+| ja | 5199 | 100% | implemented; fewer keys is correct — Japanese has no grammatical plural, so it needs one category per plural key instead of six; A1 arcs 6-7 + A2-C2 auxiliary copy now genuinely translated, not English-identical (LC-I18N-006) |
+| ar | 5229 | 100% | implemented; more keys is correct — Arabic plural grammar needs `zero/one/two/few/many/other`, all six populated; A1 arcs 6-7 + A2-C2 auxiliary copy now genuinely translated, not English-identical (LC-I18N-006) |
 
 The seven lazy locale modules actually present are `es/pt/fr/it/de/ja/ar`; English
 is the base dictionary. This is the real implemented set today — the same 8 bases
 (`en` + these 7) `LC-I18N-002` now makes the ONLY selectable set anywhere in the
 product, closing the gap where the post-login picker previously let a learner
 choose any of 46 rows / 34 base languages.
+
+---
+
+# LC-I18N-006 — genuine auxiliary copy for A1 arcs 6-7 + integrated A2-C2, 2026-08-29
+
+PR #108, branch `i18n/lc-i18n-006`, issue #81. `check:i18n` structural coverage
+was already 100% for all seven locales (see table above), but the A1-C2
+Curriculum Foundry integration phase (`LC-CONT-A1` arcs 6-7 through
+`LC-CONT-C2`, wired by `LC-INT-001`) had left many `es/pt/fr/it/de/ja/ar`
+auxiliary-instructional values byte-identical to the English base — present
+structurally, never actually translated. This task closes that gap for the
+full scope named in issue #81: A1 arcs 6-7 (`ep34`-`ep38`) plus the integrated
+A2 (`ep39`-`ep61`), B1 (`b1Ep*`), B2 (`b2ep*`), C1 (`c1ep*`) and C2 (`c2ep*`)
+instructional surfaces — titles, goals, scene text, instructions, model
+explanations, comprehension options, near-miss/praise/retry feedback.
+
+Quoted target-English grammar fragments (e.g. `"I can"`, `"Can you...?"`)
+were preserved untranslated inside auxiliary explanations, matching the
+existing A1 arcs 1-5 convention. Duration units follow the pre-existing
+per-locale convention (es/pt/fr/it keep `"N min"`; de/ja/ar localize the
+unit) rather than being treated as a defect. No curriculum logic, evaluator
+behavior, level availability, providers or frozen visuals were touched —
+locale-dictionary value edits only. A1 and A2-C2 stay `available:false`;
+Pre-A1 is unaffected.
+
+## Evidence
+
+- **Semantic scan, not just structural**: a one-off script loaded the English
+  `base` dictionary and each locale's module directly and compared every key
+  matching the six target groups (`ep3[4-8]`, A2's `ep39`-`ep61`, `b1Ep*`,
+  `b2ep*`, `c1ep*`, `c2ep*`) against the English value. Result: **zero**
+  remaining English-identical values in any of the seven locales, other than
+  the documented `*Duration` convention (es/pt/fr/it genuinely keep `"N min"`
+  by design) and one coincidental true match (`b1Ep5CompOptWrong2` = `"No."`
+  in both es and it — Spanish and Italian spell that word identically; pt/fr/
+  de/ja/ar all show their own distinct word: `"Não."`/`"Non."`/`"Nein."`/
+  `"いいえ。"`/`"لا."`).
+- `check:i18n` — 5205 base keys, es/pt/fr/it/de 100% (5205), ja 100% (5199),
+  ar 100% (5229) — unchanged coverage, now genuinely translated for the six
+  target groups instead of English-identical.
+- `check:all` — full suite green, exit 0, **two consecutive clean cycles** on
+  the exact final head (includes `check-a1-arc6-arc7-evaluators` 41/41,
+  `check-a1-arc6-arc7-journeys` 95/95 across `what_you_can_do`/
+  `making_arrangements`, `check-pedagogical-journeys` 298 journeys/13 arcs,
+  `check-a1-longitudinal-journeys` 7 proofs/38 episodes — all Node-level
+  checks unaffected by locale-value-only edits).
+- `npm run build` — clean, exit 0, two consecutive clean cycles;
+  `check-bundle-boundaries` 7 boundary groups, entry 813.9 kB, 63 JS chunks,
+  4399.4 kB total. Genuine ja/ar prose costs more bytes than the
+  ASCII/English-identical placeholder it replaced (ar 341.52 kB, ja
+  328.53 kB, both measured on the translated head), so `LOCALE_MAX_KB` in
+  `scripts/check-bundle-boundaries.mjs` moved from 310 to 370 — a measured,
+  documented increase, not a masked leak; the other five locales stayed
+  under the old 310 kB budget (es 296.67, pt 294.72, it 295.76, fr 306.92,
+  de 308.69 kB).
+- Backend: `compileall` clean, `pytest -q` **468 passed**, two consecutive
+  clean cycles — unchanged, confirming no backend edit was needed (this is a
+  frontend-only locale-dictionary concern).
+- **Real Chromium browser proof** at **390px and 1440px** in **es/ja/ar**
+  (system Chromium, transient `npm install --no-save playwright`, removed
+  afterward — `package.json` unchanged): one representative episode per
+  target group was rendered through a temporary, uncommitted QA-only harness
+  (`harness.html` + `src/harness-main.jsx`, deleted before this PR was marked
+  ready) that mounts `EpisodeShell` directly via the sanctioned tooling-only
+  `forLearner: false` opt-out documented in
+  `learning/curriculum/episodeContent.js` — the same opt-out
+  `scripts/check-a1-arc*.mjs` already use at the Node level, here used to get
+  real rendered DOM for levels that stay `available:false` to learners.
+  Episodes: `i_can_i_cant` (A1 arc 6-7 / `ep34`), `go_straight_then_turn_right`
+  (A2 / `ep50`), `agree_to_disagree` (B1 / `b1Ep5`), `b2_what_if_speculate`
+  (B2 / `b2ep10`), `c1_register_and_diplomacy_integrated` (C1 / `c1ep10`),
+  `c2_implication_and_subtext_irony` (C2 / `c2ep10`). **36/36 runs clean** (6
+  episodes × 3 locales × 2 viewports): `document.documentElement.lang`
+  matched the seeded locale and `dir="rtl"` for `ar` / `dir="ltr"` for
+  `es`/`ja` in every run; no horizontal overflow
+  (`scrollWidth <= clientWidth`); no raw `{key}`-shaped or bare-identifier
+  untranslated placeholder text anywhere in the rendered page; no console/page
+  errors (the one 404 observed on the very first run was the temporary
+  harness page's missing favicon, confirmed by a direct `curl` — unrelated to
+  i18n/product code, not present in the real app's `index.html`). Rendered
+  text was genuinely localized natural copy in all three languages, e.g. the
+  C1 episode's scene body rendered as `"Vamos a practicar cómo adaptar el
+  registro al público."` (es), `"相手に合わせて話し方を変えることを練習してみよう。"`
+  (ja) and `"لنتدرّب على تكييف الأسلوب حسب الجمهور."` (ar) — not the English
+  source string. The harness, `harness.html`, `src/harness-main.jsx` and the
+  transient `playwright` dependency were all removed before this branch was
+  marked ready; `git status` on the final head is clean of QA-only artifacts.
+
+## What is still open after this task
+
+Native-quality *review* (idiom, register, regional neutrality) beyond
+"genuinely translated, not English-identical" remains future small-batch
+copy-polish work, same caveat every prior `LC-I18N-*` coverage claim in this
+file already carries. This task closes the specific defect issue #81 named:
+byte-identical-to-English auxiliary placeholders left over from curriculum
+integration. `LC-PROD-002` / issue #101 (the separate A1 availability
+decision) remains blocked on explicit owner approval — this task's
+completion removes one of its two blockers, not both.
 
 ---
 
