@@ -1,14 +1,17 @@
-name: Security audit probe
+name: Security maintenance
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - chatgpt/security-hardening
 
 permissions:
   contents: read
 
 jobs:
-  npm-audit:
+  audit:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
@@ -17,21 +20,55 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: linguachat-frontend/package-lock.json
+      - working-directory: linguachat-frontend
+        run: npm ci
+      - name: Full dependency audit
+        working-directory: linguachat-frontend
+        run: npm audit --json || true
+      - name: Production dependency audit must be clean
+        working-directory: linguachat-frontend
+        run: npm audit --omit=dev --audit-level=moderate
+
+  repair:
+    if: github.ref == 'refs/heads/chatgpt/security-hardening' && !contains(github.event.head_commit.message, '[security-fix]')
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/security-hardening
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: linguachat-frontend/package-lock.json
       - name: Install exact lockfile
         working-directory: linguachat-frontend
         run: npm ci
-      - name: Dependency versions
+      - name: Apply only compatible npm security updates
         working-directory: linguachat-frontend
-        run: npm ls vite esbuild @vitejs/plugin-react --all || true
-      - name: Full npm audit JSON
+        run: npm audit fix
+      - name: Require zero npm advisories
         working-directory: linguachat-frontend
+        run: npm audit --audit-level=moderate
+      - name: Full frontend checks
+        working-directory: linguachat-frontend
+        run: npm run check:all
+      - name: Production build
+        working-directory: linguachat-frontend
+        run: npm run build
+      - name: i18n gate
+        working-directory: linguachat-frontend
+        run: npm run check:i18n
+      - name: Commit lockfile-only compatible repair
         run: |
-          echo '=== FULL_AUDIT_BEGIN ==='
-          npm audit --json || true
-          echo '=== FULL_AUDIT_END ==='
-      - name: Production-only npm audit JSON
-        working-directory: linguachat-frontend
-        run: |
-          echo '=== PROD_AUDIT_BEGIN ==='
-          npm audit --omit=dev --json || true
-          echo '=== PROD_AUDIT_END ==='
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add linguachat-frontend/package-lock.json linguachat-frontend/package.json
+          if git diff --cached --quiet; then
+            echo "No dependency file changes were necessary"
+            exit 0
+          fi
+          git commit -m "fix(security): refresh vulnerable dev dependencies [security-fix]"
+          git push origin HEAD:chatgpt/security-hardening
