@@ -1,0 +1,38 @@
+name: Security audit probe
+
+on:
+  push:
+    branches: [chatgpt/security-audit]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  npm-audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: linguachat-frontend/package-lock.json
+      - name: Install exact lockfile
+        working-directory: linguachat-frontend
+        run: npm ci
+      - name: Dependency versions
+        working-directory: linguachat-frontend
+        run: npm ls vite esbuild @vitejs/plugin-react --all || true
+      - name: Full npm audit JSON
+        working-directory: linguachat-frontend
+        run: |
+          echo '=== FULL_AUDIT_BEGIN ==='
+          npm audit --json || true
+          echo '=== FULL_AUDIT_END ==='
+      - name: Production-only npm audit JSON
+        working-directory: linguachat-frontend
+        run: |
+          echo '=== PROD_AUDIT_BEGIN ==='
+          npm audit --omit=dev --json || true
+          echo '=== PROD_AUDIT_END ==='
