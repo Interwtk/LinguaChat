@@ -1,8 +1,8 @@
 /*
- * Adapt existing local preferences to the authenticated Supabase
- * learner_preferences row. This module NEVER performs network calls or alters
- * localStorage: login, consent and conflict resolution belong to the separate
- * cloud-sync integration, not to the learning engine.
+ * Project existing local tutor settings into an optional, remote preference
+ * record. This pure module NEVER performs network calls or alters localStorage:
+ * login, consent and conflict resolution belong to a separately gated integration,
+ * not to the existing learning engine.
  *
  * Pedagogical evidence/readiness and billing entitlements must never be taken
  * from user-editable preferences. Do not store raw chats or learner facts here.
@@ -24,7 +24,7 @@ const ALLOWED = Object.freeze({
 const oneOf = (key, value, fallback) => ALLOWED[key].includes(value) ? value : fallback
 
 export function toCloudPreferenceFields(local = {}, options = {}) {
-  // No user_id: identity must come from a verified Supabase session.
+  // No user_id: identity must come from a verified authentication session.
   // No billing_country: pricing must come from the payment provider, not here.
   return {
     user_language: oneOf('user_language', options.user_language, 'es'),
@@ -43,7 +43,7 @@ export function toCloudPreferenceFields(local = {}, options = {}) {
 export function fromCloudPreferenceFields(row, currentLocal = {}) {
   if (!row || typeof row !== 'object') return { ...currentLocal }
   // Only the current local model's known settings are imported. The calling
-  // login flow must ask before replacing a newer local profile with cloud data.
+  // login flow must ask before replacing a newer local profile with remote data.
   const mapped = toCloudPreferenceFields({
     goal: row.learning_goal,
     correction_style: row.correction_style,
