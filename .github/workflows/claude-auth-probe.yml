@@ -1,0 +1,85 @@
+# One-shot authentication probe for the paused Claude automation.
+#
+# This is NOT a worker and NOT the chain. It answers exactly one question:
+# does the stored CLAUDE_CODE_OAUTH_TOKEN still authenticate against Claude?
+#
+# Deliberate boundaries, so a credential test can never become an agent run:
+#   - workflow_dispatch is the ONLY trigger. No push, no cron, no issue_comment.
+#   - GITHUB_TOKEN is read-only, so the job cannot commit, open a PR, merge or deploy.
+#   - one turn, one trivial prompt, five-minute ceiling, no automatic retry.
+#   - it never reads .ai/TASKS.md and never claims, releases or advances a task.
+#   - the secret is compared against '' and passed to the action; it is never echoed.
+#
+# Remove this file once the credential question is settled.
+name: Claude auth probe (manual, one-shot)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linguachat-claude-auth-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Confirm the secret exists without revealing it
+        env:
+          TOKEN_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          if [ "$TOKEN_PRESENT" != 'true' ]; then
+            echo '::error::CLAUDE_CODE_OAUTH_TOKEN is not configured; there is nothing to probe.'
+            exit 1
+          fi
+          echo 'presence: CLAUDE_CODE_OAUTH_TOKEN is set (value never printed).'
+
+      # continue-on-error so a rejected token still reaches the report step below.
+      # Without it the job would stop here and the failure would be ambiguous.
+      - id: claude
+        uses: anthropics/claude-code-action@v1
+        continue-on-error: true
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          track_progress: false
+          prompt: 'Reply with exactly this and nothing else: LINGUACHAT_AUTH_OK'
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 1
+            --allowedTools Read
+
+      - name: Separate "secret present" from "Claude actually answered"
+        if: always()
+        env:
+          STEP_OUTCOME: ${{ steps.claude.outcome }}
+          CONCLUSION: ${{ steps.claude.outputs.conclusion }}
+          EXECUTION_FILE: ${{ steps.claude.outputs.execution_file }}
+        run: |
+          set -uo pipefail
+          report() { printf '%s\n' "$1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+          report '## Claude authentication probe'
+          report '- Secret presence: confirmed before the call (presence alone proves nothing about validity).'
+          report "- Action step outcome: ${STEP_OUTCOME:-unknown}"
+          report "- Action conclusion output: ${CONCLUSION:-<empty: the action did not report one>}"
+          if [ -n "${EXECUTION_FILE:-}" ] && [ -f "$EXECUTION_FILE" ]; then
+            report '- Model round trip: an execution log exists, so the request reached Claude.'
+            report ''
+            report '```json'
+            jq -c '[.[] | select(.type == "result")] | .[0] // "no result record in execution log"' \
+              "$EXECUTION_FILE" 2>/dev/null | head -c 3000 | tee -a "$GITHUB_STEP_SUMMARY" \
+              || head -c 1500 "$EXECUTION_FILE" | tee -a "$GITHUB_STEP_SUMMARY"
+            printf '\n' | tee -a "$GITHUB_STEP_SUMMARY"
+            report '```'
+          else
+            report '- Model round trip: NONE. No execution log was produced, so Claude never answered.'
+            report '  Read the action step log above for the reason (rejected credential, quota, or setup error).'
+          fi
+          report '- This job did not commit, push, open or merge a PR, deploy, touch the task queue or start the chain.'
