@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "echo 'Frontend dependencies are installed by buildCommand'",
+  "buildCommand": "cd linguachat-frontend && npm ci && npm run build",
+  "outputDirectory": "linguachat-frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
