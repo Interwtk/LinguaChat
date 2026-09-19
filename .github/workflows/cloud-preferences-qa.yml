@@ -1,0 +1,43 @@
+# Isolated pre-integration verification: no cloud credentials, no paid providers.
+name: Cloud preference mapping QA
+
+on:
+  pull_request:
+    paths:
+      - 'linguachat-frontend/src/services/cloudPreferenceMapping.js'
+      - 'linguachat-frontend/scripts/check-cloud-preferences.mjs'
+      - 'linguachat-frontend/src/services/tutorPreferences.js'
+      - 'linguachat-frontend/src/learning/engine/interests.js'
+      - '.github/workflows/cloud-preferences-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloud-preferences-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  mapping:
+    name: mapping assertions and existing frontend regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: linguachat-frontend
+    env:
+      LINGUACHAT_PROVIDER: local
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: linguachat-frontend/package-lock.json
+      - run: npm ci
+      - name: Verify existing local-to-cloud preference mapping
+        run: node scripts/check-cloud-preferences.mjs
+      - name: Confirm frozen Pre-A1 regression protection remains green
+        run: node scripts/check-pre-a1-freeze.mjs
+      - run: npm run build
