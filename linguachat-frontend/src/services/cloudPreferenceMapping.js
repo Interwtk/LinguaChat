@@ -41,24 +41,17 @@ export function toCloudPreferenceFields(local = {}, options = {}) {
 }
 
 export function fromCloudPreferenceFields(row, currentLocal = {}) {
-  if (!row || typeof row !== 'object') return { ...currentLocal }
-  // Only the current local model's known settings are imported. The calling
-  // login flow must ask before replacing a newer local profile with remote data.
-  const mapped = toCloudPreferenceFields({
-    goal: row.learning_goal,
-    correction_style: row.correction_style,
-    tone: row.tone,
-    pace: row.pace,
-    explanation_depth: row.explanation_depth,
-    interests: row.interests,
-  }, { user_language: row.user_language, english_variant: row.english_variant, conversation_register: row.conversation_register })
-  return {
-    ...currentLocal,
-    goal: mapped.learning_goal,
-    correction_style: mapped.correction_style,
-    tone: mapped.tone,
-    pace: mapped.pace,
-    explanation_depth: mapped.explanation_depth,
-    interests: mapped.interests,
+  if (!row || typeof row !== 'object' || Array.isArray(row)) return { ...currentLocal }
+  // A partial or malformed remote record must never reset a learner's existing
+  // choices to defaults. Import only explicitly present, allowlisted fields;
+  // the login flow must separately resolve conflicts before applying any import.
+  const accepted = {}
+  if (ALLOWED.learning_goal.includes(row.learning_goal)) accepted.goal = row.learning_goal
+  for (const key of ['correction_style', 'tone', 'pace', 'explanation_depth']) {
+    if (ALLOWED[key].includes(row[key])) accepted[key] = row[key]
   }
+  // An explicit [] means the learner chose no interests; a missing/invalid list
+  // must not replace an existing local selection.
+  if (Array.isArray(row.interests)) accepted.interests = normalizeInterests(row.interests)
+  return { ...currentLocal, ...accepted }
 }
