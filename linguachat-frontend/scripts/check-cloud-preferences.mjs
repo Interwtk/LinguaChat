@@ -37,5 +37,26 @@ const local = { ...original, unrelated_local_setting: 'keep me' }
 const restored = fromCloudPreferenceFields(row, local)
 assert.equal(restored.goal, 'work')
 assert.equal(restored.unrelated_local_setting, 'keep me')
+assert.deepEqual(restored.interests, ['music', 'travel'])
 assert.deepEqual(fromCloudPreferenceFields(null, local), local)
+assert.deepEqual(fromCloudPreferenceFields([], local), local)
+
+// Missing and malformed remote fields must not reset a learner's local choices.
+const partial = fromCloudPreferenceFields({ tone: 'professional' }, local)
+assert.equal(partial.tone, 'professional')
+assert.equal(partial.goal, 'work')
+assert.equal(partial.pace, 'slow_clear')
+assert.deepEqual(partial.interests, local.interests)
+const invalid = fromCloudPreferenceFields({
+  learning_goal: 'invented', correction_style: null, tone: '<script>',
+  pace: 'unknown', explanation_depth: {}, interests: 'music',
+  learner_style: 'child', user_id: 'other-person', billing_country: 'US',
+}, local)
+assert.deepEqual(invalid, local)
+
+// Explicit no-interests is a genuine learner choice; never substitute defaults.
+const noneSelected = fromCloudPreferenceFields({ interests: [] }, local)
+assert.deepEqual(noneSelected.interests, [])
+assert.equal(noneSelected.goal, 'work')
+assert.deepEqual(local.interests, original.interests, 'the mapping does not mutate the local profile')
 console.log('cloud preference mapping: all assertions passed')
