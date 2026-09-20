@@ -33,6 +33,17 @@ assert.equal(bad.english_variant, 'adaptive')
 assert.equal(bad.conversation_register, 'adaptive')
 assert.deepEqual(bad.interests, [])
 
+// A saved onboarding draft may be null or an invalid JSON shape at login.
+// It must not crash preference mapping or leak unverified identity fields.
+const empty = toCloudPreferenceFields(null, null)
+assert.equal(empty.learning_goal, 'daily_conversation')
+assert.equal(empty.user_language, 'es')
+assert.equal(empty.target_language, 'en')
+assert.equal(empty.english_variant, 'adaptive')
+assert.equal('user_id' in empty, false)
+assert.deepEqual(toCloudPreferenceFields([], []).interests, empty.interests)
+assert.equal(toCloudPreferenceFields('bad-profile', 'bad-options').tone, 'friendly')
+
 const local = { ...original, unrelated_local_setting: 'keep me' }
 const restored = fromCloudPreferenceFields(row, local)
 assert.equal(restored.goal, 'work')
