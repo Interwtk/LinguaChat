@@ -24,19 +24,23 @@ const ALLOWED = Object.freeze({
 const oneOf = (key, value, fallback) => ALLOWED[key].includes(value) ? value : fallback
 
 export function toCloudPreferenceFields(local = {}, options = {}) {
+  // Login/profile storage can contain null or malformed values before onboarding.
+  // Treat them as absent rather than throwing or writing invalid cloud fields.
+  const safeLocal = local && typeof local === 'object' && !Array.isArray(local) ? local : {}
+  const safeOptions = options && typeof options === 'object' && !Array.isArray(options) ? options : {}
   // No user_id: identity must come from a verified authentication session.
   // No billing_country: pricing must come from the payment provider, not here.
   return {
-    user_language: oneOf('user_language', options.user_language, 'es'),
+    user_language: oneOf('user_language', safeOptions.user_language, 'es'),
     target_language: 'en',
-    learning_goal: oneOf('learning_goal', local.goal, DEFAULT_TUTOR_PREFERENCES.goal),
-    correction_style: oneOf('correction_style', local.correction_style, DEFAULT_TUTOR_PREFERENCES.correction_style),
-    tone: oneOf('tone', local.tone, DEFAULT_TUTOR_PREFERENCES.tone),
-    pace: oneOf('pace', local.pace, DEFAULT_TUTOR_PREFERENCES.pace),
-    explanation_depth: oneOf('explanation_depth', local.explanation_depth, DEFAULT_TUTOR_PREFERENCES.explanation_depth),
-    interests: normalizeInterests(local.interests ?? DEFAULT_TUTOR_PREFERENCES.interests),
-    english_variant: oneOf('english_variant', options.english_variant, 'adaptive'),
-    conversation_register: oneOf('conversation_register', options.conversation_register, 'adaptive'),
+    learning_goal: oneOf('learning_goal', safeLocal.goal, DEFAULT_TUTOR_PREFERENCES.goal),
+    correction_style: oneOf('correction_style', safeLocal.correction_style, DEFAULT_TUTOR_PREFERENCES.correction_style),
+    tone: oneOf('tone', safeLocal.tone, DEFAULT_TUTOR_PREFERENCES.tone),
+    pace: oneOf('pace', safeLocal.pace, DEFAULT_TUTOR_PREFERENCES.pace),
+    explanation_depth: oneOf('explanation_depth', safeLocal.explanation_depth, DEFAULT_TUTOR_PREFERENCES.explanation_depth),
+    interests: normalizeInterests(safeLocal.interests ?? DEFAULT_TUTOR_PREFERENCES.interests),
+    english_variant: oneOf('english_variant', safeOptions.english_variant, 'adaptive'),
+    conversation_register: oneOf('conversation_register', safeOptions.conversation_register, 'adaptive'),
   }
 }
 
