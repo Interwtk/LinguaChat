@@ -1,0 +1,74 @@
+# Manual-only Claude implementation lane for LC-AUTH-001 (#126).
+# This workflow is not triggered by PR, push, cron, or the old chain.
+# Run it only after reviewing/merging this workflow PR and current owner/cloud contracts.
+name: Claude — bounded Auth implementation (manual)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: linguachat-claude-writer
+  cancel-in-progress: false
+
+jobs:
+  auth:
+    if: github.actor == 'Interwtk' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      LINGUACHAT_PROVIDER: local
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fail closed when the private token is not present
+        env:
+          TOKEN_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          test "$TOKEN_PRESENT" = true || { echo 'Claude OAuth secret unavailable; no worker launched.'; exit 1; }
+      - name: Claude implements one bounded Auth checkpoint
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          track_progress: false
+          prompt: |
+            Work ONLY on Interwtk/LinguaChat issue #126, the owner's current explicit
+            LinguaChat-only Supabase Auth authorization in issue #120, and existing
+            branch/PR if one already owns this Auth task. Follow the security, frozen
+            curriculum, no-secrets, and no-direct-main constraints of CLAUDE.md.
+            Current first functional goal: real email signup/login/logout and session
+            handling with the existing React/Vite app, using the public Supabase
+            project configuration ONLY; never touch EvoLabs, service-role keys, a
+            production database, billing, A1-C2 availability, or PR #123 mapping.
+            Existing CLAUDE.md / .ai / QA contain obsolete blanket cloud prohibitions;
+            do not bypass them, coordinate a separate reviewable contract/QA change
+            and report that dependency if they prevent safe Auth implementation.
+            Read only relevant contract/queue/Auth files; use rg rather than scanning
+            the whole tree. Never run broad internet research or spawn subagents.
+            One writer for Auth; first check for an active overlapping Auth branch/PR.
+            By turn 6, push a scoped checkpoint on ONE feature branch and open a
+            DRAFT PR, or if blocked leave a concise factual comment on issue #126.
+            Add targeted tests for each completed behavior. A green build alone does
+            not prove verified email, recovery, RLS or two-user isolation. Report
+            exactly what was implemented and tested and what remains.
+            Do not modify main directly, merge, deploy, dispatch other workflows,
+            trigger another Claude run, access paid AI providers, or open levels.
+            STOP after this one bounded checkpoint. Do not claim Auth complete unless
+            all issue #126 acceptance criteria have direct test evidence.
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 10
+            --allowedTools Read,Write,Edit,Glob,Grep,Bash
+      - name: Fail if Claude did not finish cleanly
+        if: steps.claude.outcome != 'success'
+        run: |
+          echo 'Claude run did not complete successfully; inspect this one run and the remote Draft checkpoint before any manual retry.'
+          exit 1
