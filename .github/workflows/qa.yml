@@ -99,6 +99,7 @@ jobs:
       - name: LinguaChat cloud/Auth scope stays public-client only
         run: |
           node .github/scripts/check-linguachat-cloud-scope.mjs --self-test
+          node .github/scripts/check-linguachat-cloud-scope.test.mjs
           node .github/scripts/check-linguachat-cloud-scope.mjs
 
       - name: no voice or media APIs
