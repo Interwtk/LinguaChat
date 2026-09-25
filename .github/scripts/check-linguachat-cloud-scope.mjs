@@ -54,11 +54,16 @@ export function validateEntry(path, text) {
     }
   }
 
+  // Lockfiles record transitives (including packages required by the approved SDK).
+  // Direct dependency policy belongs to package.json, not package-lock.json.
+  if (path.endsWith('/package-lock.json')) return problems
+
   // These bans must run even without a Supabase token. A bare direct-Postgres
   // URL or EvoLabs identifier was previously hidden behind an early return.
   if (EVOLABS.test(text)) problems.push(path + ': EvoLabs project/reference is forbidden')
   if (PRIVATE_TOKEN.test(text)) problems.push(path + ': private/server Supabase credential or direct database URL is forbidden')
   if (OTHER_IMPORT.test(text)) problems.push(path + ': unapproved Firebase/Amplify client is forbidden')
+  if (path.endsWith('/package.json')) return problems
 
   const sourceLike = path.startsWith('linguachat-frontend/src/')
   const frontend = path.startsWith('linguachat-frontend/')
@@ -85,7 +90,9 @@ export function validateEntry(path, text) {
   if (approved && PROJECT_LITERAL.test(text)) {
     problems.push(path + ': hard-coded Supabase project URL is forbidden')
   }
-  if (approved && /\bcreateClient\s*\(/.test(text) && !APPROVED_CREATE_CLIENT.test(text)) {
+  const calls = [...text.matchAll(/\bcreateClient\s*\(/g)].length
+  const approvedCalls = [...text.matchAll(new RegExp(APPROVED_CREATE_CLIENT.source, 'gm'))].length
+  if (approved && calls !== approvedCalls) {
     problems.push(path + ': createClient must use public VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY directly')
   }
   return problems
