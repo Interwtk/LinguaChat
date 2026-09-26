@@ -13,7 +13,18 @@ branch/PR instead of duplicating it.
 
 ## IN_PROGRESS
 
-_(none — the queue is open)_
+- [LC-OPS-027] Reconcile owner-authorized LinguaChat-only public Supabase/Auth contract
+  owner:  chatgpt-supervisor
+  branch: ops/coord-linguachat-cloud-auth-contract
+  PR:     #128
+  scope:  coordination + guards only; reconcile CLAUDE/STATE/TASKS/HANDOFF and QA/freeze guards
+  done:   public LinguaChat browser client is permitted only in `linguachat-frontend/src/auth/`
+          and `linguachat-frontend/src/cloud/` with `VITE_SUPABASE_URL` and
+          `VITE_SUPABASE_ANON_KEY`; private/server credentials, backend Supabase,
+          EvoLabs references and out-of-scope client use remain rejected; Pre-A1,
+          A1-C2 availability, no-voice/media, secrets and local/fake-provider gates
+          remain intact; focused positive/negative guard proof plus normal QA and
+          two exact-head clean cycles are required before merge.
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
@@ -34,16 +45,18 @@ _(none — the queue is open)_
           surfaces plus full QA and two exact-head clean cycles. Without explicit
           approval, keep A1 `available:false` and make no availability change.
 
-- [LC-CLOUD-001] Cloud persistence / Supabase
+- [LC-CLOUD-001] LinguaChat cloud persistence / Auth implementation
   owner:  unclaimed
   branch: none
-  blocked-on: explicit future owner instruction changing the current product contract
-  why:    the current LinguaChat contract forbids adding Supabase/Auth/Postgres/
-          Storage/pgvector/Edge Functions. Historical planning documents are
-          non-operative references only and do not authorize implementation.
-  done:   non-claimable while the current contract remains in force. Do not connect,
-          create or modify a Supabase project for LinguaChat unless the owner gives a
-          new explicit instruction that changes this rule.
+  blocked-on: completion and merge of LC-OPS-027, then a separately claimed implementation task
+  why:    the owner has explicitly authorized only the LinguaChat project's public
+          Supabase/Auth browser-client surface. That authorization does not permit
+          private/service-role credentials, backend Supabase, EvoLabs reuse, production
+          deployment, billing, paid providers, Storage/pgvector/Edge Functions, or
+          weakening existing safety/availability gates.
+  done:   remains non-claimable until LC-OPS-027 lands and a narrow implementation task
+          is filed. Any later implementation must use only the authorized public client
+          contract and carry its own security/data/E2E evidence.
 
 ## DONE
 
