@@ -11,11 +11,12 @@
  * — consolidation, reviews, practice — because a level that ends in an empty
  * screen has not been finished, it has been abandoned.
  *
- * It also holds the line that progress stays on this machine: no Supabase, no
- * cloud, no sync, anywhere in the frontend.
+ * Cloud/Auth scope is a separate product boundary. This freeze keeps that gate
+ * by delegating to the repository-level LinguaChat public-client scope guard.
  */
 import assert from 'node:assert/strict'
-import { readFileSync, readdirSync, existsSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 
 import { ARC, ARCS, getEpisode } from '../src/learning/episodes/index.js'
 import { PRE_A1_EXIT_CRITERIA, CAN_DO_INTENT, LEVEL, prerequisiteChain, intentsForEpisode, RECEPTIVE_ITEMS, INCIDENTAL_ITEMS } from '../src/learning/curriculum/preA1Map.js'
@@ -273,31 +274,12 @@ const FROZEN = [
   ok()
 }
 
-/* ---- 7) progress stays on this machine ---- */
+/* ---- 7) cloud/Auth scope remains narrow without owning product policy here ---- */
 {
-  const forbidden = /supabase|createClient\(|postgrest|pgvector|SUPABASE_/i
-  const offenders = []
-  const walk = (dir) => {
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (entry.name === 'node_modules' || entry.name === 'dist') continue
-      const path = `${dir}/${entry.name}`
-      if (entry.isDirectory()) walk(path)
-      else if (/\.(jsx?|mjs|json|ts|tsx)$/.test(entry.name) && forbidden.test(readFileSync(path, 'utf8'))) {
-        offenders.push(path)
-      }
-    }
-  }
-  walk('src')
-  assert.deepEqual(offenders, [], `progress must stay local: ${offenders.join(', ')}`)
-
-  const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
-  const deps = { ...pkg.dependencies, ...pkg.devDependencies }
-  const cloud = Object.keys(deps).filter(d => /supabase|firebase|amplify/i.test(d))
-  assert.deepEqual(cloud, [], `no cloud dependency belongs here yet: ${cloud.join(', ')}`)
-
-  for (const path of ['supabase', 'supabase/config.toml', 'supabase/migrations', '.env.supabase']) {
-    assert.equal(existsSync(path), false, `${path} should not exist`)
-  }
+  execFileSync('node', ['.github/scripts/check-linguachat-cloud-scope.mjs'], {
+    cwd: '..',
+    stdio: 'inherit',
+  })
   ok()
 }
 
