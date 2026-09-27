@@ -104,6 +104,7 @@ const B1_EP1 = {
       instructionKey: 'b1Ep1OpenInstruction',
       evalKind: 'narrate_past_event',
       narrativeForm: 'sequence',
+      evidenceType: 'assistedOpen',
       suggestionEn: 'First I got up late. Then I made coffee. After that I checked my messages. Finally I left the house.',
       itemIds: ['b1_first', 'b1_then', 'b1_after_that', 'b1_finally', 'b1_sequence_connectors_pattern'],
     },
@@ -175,6 +176,7 @@ const B1_EP2 = {
       instructionKey: 'b1Ep2OpenInstruction',
       evalKind: 'narrate_past_event',
       narrativeForm: 'interruption',
+      evidenceType: 'assistedOpen',
       suggestionEn: 'I was cooking dinner when the power went out.',
       itemIds: ['b1_past_continuous_pattern', 'b1_when_while_pattern', 'b1_suddenly'],
     },
@@ -185,6 +187,7 @@ const B1_EP2 = {
       instructionKey: 'b1Ep2OpenInstruction2',
       evalKind: 'narrate_past_event',
       narrativeForm: 'interruption',
+      evidenceType: 'independent',
       // no suggestionEn: the arc's second unaided moment, ahead of the
       // capstone's fully unaided close (autonomyTarget, b1.json arc 1)
       itemIds: ['b1_past_continuous_pattern', 'b1_when_while_pattern', 'b1_just_then'],
@@ -227,6 +230,7 @@ const B1_EP3 = {
       instructionKey: 'b1Ep3OpenInstruction',
       evalKind: 'narrate_past_event',
       narrativeForm: 'sequence',
+      evidenceType: 'assistedOpen',
       suggestionEn: 'First I went to the market. Then, while I was choosing vegetables, I met my neighbor. After that we had coffee together. Finally I went home.',
       itemIds: [
         'b1_first', 'b1_then', 'b1_after_that', 'b1_finally',
@@ -251,6 +255,7 @@ const B1_EP3 = {
       instructionKey: 'b1Ep3OpenInstruction2',
       evalKind: 'narrate_past_event',
       narrativeForm: 'interruption',
+      evidenceType: 'independent',
       // capstone close, unaided by design (b1.json arc 1 autonomyTarget:
       // "withheld on the arc's last recall")
       itemIds: ['b1_past_continuous_pattern', 'b1_when_while_pattern'],
