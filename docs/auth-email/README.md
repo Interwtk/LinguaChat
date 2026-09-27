@@ -9,7 +9,11 @@ Estas son plantillas HTML de **Supabase Auth** preparadas para exportación. Com
 
 Ambas usan exclusivamente `{{ .ConfirmationURL }}` para el CTA y enlace alternativo. **No** interpolar `{{ .Token }}` en el contenido o logs; la URL de Supabase incluye un token de un solo uso y debe tratarse como sensible. El enlace solo funcionará cuando las URLs autorizadas del proyecto LinguaChat incluyan el callback de la app.
 
-Prueba estática reproducible (no envía correo ni requiere secretos): `node docs/auth-email/check-templates.mjs`. Valida viewport móvil, layout por tablas, CTA y `{{ .ConfirmationURL }}`, y rechaza scripts, placeholders de token literal y URLs HTTP externas.\n\nGuía operacional de instalación manual (solo después de autorización): copia cada HTML en la plantilla correspondiente de Supabase Auth, conserva el asunto indicado, confirma que Site URL/Redirect URLs pertenecen únicamente a LinguaChat y ejecuta primero el flujo con una cuenta de prueba. No cambies SMTP, proveedores ni credenciales como parte de esta instalación. Si el callback, expiración o entrega real falla, revierte la plantilla/configuración antes de exponerla a usuarios.\n\nTextos de preencabezado / fallback:
+Prueba estática reproducible (no envía correo ni requiere secretos): `node docs/auth-email/check-templates.mjs`. Valida viewport móvil, layout por tablas, CTA y `{{ .ConfirmationURL }}`, y rechaza scripts, placeholders de token literal y URLs HTTP externas.
+
+Guía operacional de instalación manual (solo después de autorización): copia cada HTML en la plantilla correspondiente de Supabase Auth, conserva el asunto indicado, confirma que Site URL/Redirect URLs pertenecen únicamente a LinguaChat y ejecuta primero el flujo con una cuenta de prueba. No cambies SMTP, proveedores ni credenciales como parte de esta instalación. Si el callback, expiración o entrega real falla, revierte la plantilla/configuración antes de exponerla a usuarios.
+
+Textos de preencabezado / fallback:
 - Confirmación: «Confirma tu correo para empezar a practicar inglés.»
 - Recuperación: «Crea una nueva contraseña para volver a LinguaChat.»
 
