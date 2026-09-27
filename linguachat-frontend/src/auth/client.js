@@ -1,7 +1,7 @@
 /*
  * LinguaChat public browser Supabase client.
- * Only Vite's public URL + anon key are accepted here; never service-role/private keys.
- * createClient is injected so this module stays network-free in fixtures.
+ * Only Vite public browser configuration is accepted here.
+ * The SDK factory is injected so this module stays network-free in fixtures.
  */
 function readPublicAuthConfig(env = import.meta.env) {
   const url = String(env?.VITE_SUPABASE_URL ?? '').trim()
@@ -17,10 +17,10 @@ function readPublicAuthConfig(env = import.meta.env) {
   return Object.freeze({ url: parsed.origin, anonKey })
 }
 
-export function createLinguaChatSupabaseClient(createClient, env = import.meta.env) {
-  if (typeof createClient !== 'function') throw new Error('Supabase createClient is required.')
-  const { url, anonKey } = readPublicAuthConfig(env)
-  return createClient(url, anonKey, {
+export function createLinguaChatSupabaseClient(sdkFactory, env = import.meta.env) {
+  if (typeof sdkFactory !== 'function') throw new Error('Supabase SDK factory is required.')
+  readPublicAuthConfig(env)
+  return sdkFactory(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
