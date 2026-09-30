@@ -190,10 +190,7 @@ const B1_EP2 = {
       evidenceType: 'independent',
       // no suggestionEn: one unaided connected narration that also proves
       // the interruption shape; the capstone repeats this independently.
-      itemIds: [
-        'b1_first', 'b1_then', 'b1_after_that', 'b1_finally',
-        'b1_past_continuous_pattern', 'b1_when_while_pattern', 'b1_just_then',
-      ],
+      itemIds: ['b1_past_continuous_pattern', 'b1_when_while_pattern', 'b1_just_then'],
     },
   ],
 }
@@ -261,10 +258,7 @@ const B1_EP3 = {
       evidenceType: 'independent',
       // capstone close, unaided by design: this second connected narration
       // also supplies the second unaided interruption required by b1.json.
-      itemIds: [
-        'b1_first', 'b1_then', 'b1_after_that', 'b1_finally',
-        'b1_past_continuous_pattern', 'b1_when_while_pattern',
-      ],
+      itemIds: ['b1_past_continuous_pattern', 'b1_when_while_pattern'],
     },
   ],
 }
