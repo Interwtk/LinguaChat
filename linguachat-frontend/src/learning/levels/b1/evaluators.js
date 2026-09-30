@@ -128,7 +128,22 @@ function evaluateInterruption(text, { independent = false } = {}) {
   return { ...r, errorType: 'no_interruption', conclusive: false, confidence: 0.5, retryRequired: true, retryPrompt: 'b1RetryPromptInterruptionForm' }
 }
 
+function evaluateSequenceWithInterruption(text, ctx = {}) {
+  const sequence = evaluateSequence(text, ctx)
+  if (!sequence.completedObjective) return sequence
+
+  const interruption = evaluateInterruption(text, ctx)
+  if (!interruption.completedObjective) return interruption
+
+  return {
+    ...sequence,
+    naturalVersion: 'First I left home. Then, while I was waiting for the bus, I saw an old friend. After that we had coffee. Finally I went to work.',
+    confidence: Math.min(sequence.confidence, interruption.confidence),
+  }
+}
+
 export function evaluateNarratePastEvent(text, ctx = {}) {
+  if (ctx.narrativeForm === 'sequence_with_interruption') return evaluateSequenceWithInterruption(text, ctx)
   return ctx.narrativeForm === 'interruption' ? evaluateInterruption(text, ctx) : evaluateSequence(text, ctx)
 }
 

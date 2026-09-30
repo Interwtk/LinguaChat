@@ -44,6 +44,7 @@ const ANSWERS = {
   narrate_past_event: {
     sequence: 'First I got up. Then I made coffee. After that I read the news. Finally I left for work.',
     interruption: 'I was cooking dinner when the power went out.',
+    sequence_with_interruption: 'First I left home. Then, while I was waiting for the bus, I saw an old friend. After that we had coffee. Finally I went to work.',
   },
   state_opinion: 'I think that weekend trips are great, because they help you relax.',
   agree_or_disagree: "I agree, because there's more to do in a city.",

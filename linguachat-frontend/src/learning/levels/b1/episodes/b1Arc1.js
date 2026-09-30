@@ -104,6 +104,7 @@ const B1_EP1 = {
       instructionKey: 'b1Ep1OpenInstruction',
       evalKind: 'narrate_past_event',
       narrativeForm: 'sequence',
+      evidenceType: 'assistedOpen',
       suggestionEn: 'First I got up late. Then I made coffee. After that I checked my messages. Finally I left the house.',
       itemIds: ['b1_first', 'b1_then', 'b1_after_that', 'b1_finally', 'b1_sequence_connectors_pattern'],
     },
@@ -175,18 +176,20 @@ const B1_EP2 = {
       instructionKey: 'b1Ep2OpenInstruction',
       evalKind: 'narrate_past_event',
       narrativeForm: 'interruption',
+      evidenceType: 'assistedOpen',
       suggestionEn: 'I was cooking dinner when the power went out.',
       itemIds: ['b1_past_continuous_pattern', 'b1_when_while_pattern', 'b1_suddenly'],
     },
     {
       type: 'free_reply',
       speaker: 'lingua',
-      promptEn: 'One more — a different moment. What was happening when something else happened?',
+      promptEn: 'One more — a different moment. Tell the short story in order, using sequence words, and include what was happening when something interrupted it.',
       instructionKey: 'b1Ep2OpenInstruction2',
       evalKind: 'narrate_past_event',
-      narrativeForm: 'interruption',
-      // no suggestionEn: the arc's second unaided moment, ahead of the
-      // capstone's fully unaided close (autonomyTarget, b1.json arc 1)
+      narrativeForm: 'sequence_with_interruption',
+      evidenceType: 'independent',
+      // no suggestionEn: one unaided connected narration that also proves
+      // the interruption shape; the capstone repeats this independently.
       itemIds: ['b1_past_continuous_pattern', 'b1_when_while_pattern', 'b1_just_then'],
     },
   ],
@@ -227,6 +230,7 @@ const B1_EP3 = {
       instructionKey: 'b1Ep3OpenInstruction',
       evalKind: 'narrate_past_event',
       narrativeForm: 'sequence',
+      evidenceType: 'assistedOpen',
       suggestionEn: 'First I went to the market. Then, while I was choosing vegetables, I met my neighbor. After that we had coffee together. Finally I went home.',
       itemIds: [
         'b1_first', 'b1_then', 'b1_after_that', 'b1_finally',
@@ -247,12 +251,13 @@ const B1_EP3 = {
     {
       type: 'free_reply',
       speaker: 'lingua',
-      promptEn: "Your turn again — a different day this time. Tell me what happened, and what was happening when something interrupted it. No help this time.",
+      promptEn: "Your turn again — a different day this time. Tell the story in order with sequence words, and include what was happening when something interrupted it. No help this time.",
       instructionKey: 'b1Ep3OpenInstruction2',
       evalKind: 'narrate_past_event',
-      narrativeForm: 'interruption',
-      // capstone close, unaided by design (b1.json arc 1 autonomyTarget:
-      // "withheld on the arc's last recall")
+      narrativeForm: 'sequence_with_interruption',
+      evidenceType: 'independent',
+      // capstone close, unaided by design: this second connected narration
+      // also supplies the second unaided interruption required by b1.json.
       itemIds: ['b1_past_continuous_pattern', 'b1_when_while_pattern'],
     },
   ],
