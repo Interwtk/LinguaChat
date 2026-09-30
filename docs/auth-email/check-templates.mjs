@@ -33,6 +33,9 @@ for (const [file, expectedCtas] of cases) {
   assert.match(html, /<meta name="viewport"[^>]*width=device-width/i, `${file}: mobile viewport required`);
   assert.match(html, /role="presentation"/i, `${file}: table-based email layout required`);
   assert.equal((html.match(/{{\s*\.ConfirmationURL\s*}}/g) ?? []).length, 3, `${file}: CTA href, fallback href and visible fallback must use ConfirmationURL`);
+  const hrefs = [...html.matchAll(/href="([^"]+)"/gi)].map((match) => match[1].trim());
+  assert.equal(hrefs.length, 2, `${file}: exactly two link destinations are expected`);
+  for (const href of hrefs) assert.equal(href, '{{ .ConfirmationURL }}', `${file}: every href must be exactly ConfirmationURL with no wrapper or external origin`);
   assert.match(html, /background:#A9563A;border-radius:12px/i, `${file}: accessible CTA background required`);
   assert.match(html, /dir="{{ if eq \.Data\.language "ar" }}rtl{{ else }}ltr{{ end }}"/i, `${file}: Arabic RTL direction contract required`);
   assert.doesNotMatch(html, /background:#C86B4A;border-radius:12px/i, `${file}: low-contrast CTA color must not return`);
