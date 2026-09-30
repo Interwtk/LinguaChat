@@ -32,6 +32,7 @@ for (const [file, expectedCtas] of cases) {
   const html = readFileSync(join(here, file), 'utf8');
   assert.match(html, /<meta name="viewport"[^>]*width=device-width/i, `${file}: mobile viewport required`);
   assert.match(html, /role="presentation"/i, `${file}: table-based email layout required`);
+  assert.doesNotMatch(html, /<div\s+role="article"[^>]*aria-label=/i, `${file}: article accessible name must not be hardcoded in a different locale`);
   assert.equal((html.match(/{{\s*\.ConfirmationURL\s*}}/g) ?? []).length, 3, `${file}: CTA href, fallback href and visible fallback must use ConfirmationURL`);
   const hrefs = [...html.matchAll(/href="([^"]+)"/gi)].map((match) => match[1].trim());
   assert.equal(hrefs.length, 2, `${file}: exactly two link destinations are expected`);
