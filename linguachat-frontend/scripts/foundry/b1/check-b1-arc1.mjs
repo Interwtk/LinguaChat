@@ -117,6 +117,29 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
   ok()
 }
 
+/* ---- 6b) evidence/support contract — assistance can never count as independent ---- */
+{
+  const freeReplies = B1_ARC1.flatMap(ep => ep.steps.filter(step => step.type === 'free_reply'))
+  assert.equal(freeReplies.length, 5, 'arc 1 must contain exactly five productive free_reply turns')
+
+  const assisted = freeReplies.filter(step => step.evidenceType === 'assistedOpen')
+  const independent = freeReplies.filter(step => step.evidenceType === 'independent')
+  assert.equal(assisted.length, 3, 'arc 1 must contain exactly three assistedOpen turns')
+  assert.equal(independent.length, 2, 'arc 1 must contain exactly two independent turns')
+  assert.equal(assisted.length + independent.length, freeReplies.length,
+    'every arc-1 free_reply must declare assistedOpen or independent evidence')
+
+  for (const step of assisted) {
+    assert.ok(typeof step.suggestionEn === 'string' && step.suggestionEn.trim().length > 0,
+      'assistedOpen turns must expose a learner suggestion')
+  }
+  for (const step of independent) {
+    assert.ok(!step.suggestionEn,
+      'independent turns must not expose suggestionEn')
+  }
+  ok()
+}
+
 /* ---- 7) evaluator refusal / near-miss coverage — both narrativeForm subtypes ---- */
 const NONSENSE = 'purple bicycle Tuesday maybe'
 {
