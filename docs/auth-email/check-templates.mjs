@@ -26,6 +26,7 @@ function contrast(a, b) {
 }
 
 assert.ok(contrast('#FFFFFF', '#A9563A') >= 4.5, 'CTA white/deep-terracotta contrast must be WCAG AA for normal text');
+assert.ok(contrast('#5E6D58', '#FBF6EF') >= 4.5, 'Footer sage text must be WCAG AA for normal text');
 
 for (const [file, expectedCtas] of cases) {
   const html = readFileSync(join(here, file), 'utf8');
@@ -35,13 +36,14 @@ for (const [file, expectedCtas] of cases) {
   assert.match(html, /background:#A9563A;border-radius:12px/i, `${file}: accessible CTA background required`);
   assert.match(html, /dir="{{ if eq \.Data\.language "ar" }}rtl{{ else }}ltr{{ end }}"/i, `${file}: Arabic RTL direction contract required`);
   assert.doesNotMatch(html, /background:#C86B4A;border-radius:12px/i, `${file}: low-contrast CTA color must not return`);
+  assert.match(html, /font-size:12px;color:#5E6D58;font-weight:700/i, `${file}: accessible footer tagline color required`);
   for (const locale of locales) {
     assert.match(html, new RegExp(`eq \\.Data\\.language "${locale}"`), `${file}: locale branch ${locale} missing`);
   }
   for (const cta of expectedCtas) assert.ok(html.includes(cta), `${file}: expected localized CTA missing: ${cta}`);
   assert.doesNotMatch(html, /<script\b/i, `${file}: scripts are forbidden`);
   assert.doesNotMatch(html, /{{\s*\.Token(?:Hash)?\s*}}/i, `${file}: literal token placeholders are forbidden`);
-  assert.doesNotMatch(html, /https?:\/\/(?![^"'\s]*ConfirmationURL)/i, `${file}: external HTTP assets/links are forbidden`);
+  assert.doesNotMatch(html, /https?:\/\//i, `${file}: literal external HTTP(S) URLs are forbidden; only ConfirmationURL may supply the sensitive destination`);
 }
 
 console.log(`auth-email templates: ${cases.length} templates, 8 locales and accessible CTA contracts PASS`);
