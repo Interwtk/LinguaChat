@@ -19,8 +19,8 @@ function readPublicAuthConfig(env = import.meta.env) {
 
 export function createLinguaChatSupabaseClient(sdkFactory, env = import.meta.env) {
   if (typeof sdkFactory !== 'function') throw new Error('Supabase SDK factory is required.')
-  readPublicAuthConfig(env)
-  return sdkFactory(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
+  const { url, anonKey } = readPublicAuthConfig(env)
+  return sdkFactory(url, anonKey, {
     auth: {
       persistSession: true,
       autoRefreshToken: true,
