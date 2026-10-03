@@ -92,8 +92,8 @@ function checkAuth() {
     // Authentication and onboarding are separate authorities. A learner may
     // have completed onboarding/progress on this browser without having a
     // valid authenticated session, so lc2-onboarded must never unlock the app.
-    // lc2-auth is the temporary legacy auth flag until the Supabase session
-    // gate replaces it on this branch.
+    // lc2-auth is the temporary legacy auth flag until the real provider
+    // session gate replaces it on this branch.
     return localStorage.getItem('lc2-auth') === 'true'
   } catch { return false }
 }
