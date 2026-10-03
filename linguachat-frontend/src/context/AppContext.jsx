@@ -327,7 +327,9 @@ export function AppProvider({ children }) {
   // persisted live). Mark onboarding complete and arm Chatto's Home welcome once.
   const completePersonalization = useCallback(() => {
     try {
-      localStorage.setItem('lc2-auth', 'true')
+      // Onboarding records setup only. Authentication authority belongs solely
+      // to the provider session gate; finishing personalization must never mint
+      // or persist an authenticated state on its own.
       localStorage.setItem('lc2-onboarded', 'true')
       localStorage.setItem('lc2-personalization-completed', 'true')
       localStorage.setItem('lc2-welcome-seen', 'false')
