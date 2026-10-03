@@ -89,10 +89,12 @@ const DEFAULT_PROFILE = {
 
 function checkAuth() {
   try {
-    return (
-      localStorage.getItem('lc2-auth') === 'true' ||
-      localStorage.getItem('lc2-onboarded') === 'true'
-    )
+    // Authentication and onboarding are separate authorities. A learner may
+    // have completed onboarding/progress on this browser without having a
+    // valid authenticated session, so lc2-onboarded must never unlock the app.
+    // lc2-auth is the temporary legacy auth flag until the Supabase session
+    // gate replaces it on this branch.
+    return localStorage.getItem('lc2-auth') === 'true'
   } catch { return false }
 }
 
