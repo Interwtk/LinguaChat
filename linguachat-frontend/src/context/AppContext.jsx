@@ -89,10 +89,12 @@ const DEFAULT_PROFILE = {
 
 function checkAuth() {
   try {
-    return (
-      localStorage.getItem('lc2-auth') === 'true' ||
-      localStorage.getItem('lc2-onboarded') === 'true'
-    )
+    // Authentication and onboarding are separate authorities. A learner may
+    // have completed onboarding/progress on this browser without having a
+    // valid authenticated session, so lc2-onboarded must never unlock the app.
+    // lc2-auth is the temporary legacy auth flag until the real provider
+    // session gate replaces it on this branch.
+    return localStorage.getItem('lc2-auth') === 'true'
   } catch { return false }
 }
 
@@ -325,7 +327,9 @@ export function AppProvider({ children }) {
   // persisted live). Mark onboarding complete and arm Chatto's Home welcome once.
   const completePersonalization = useCallback(() => {
     try {
-      localStorage.setItem('lc2-auth', 'true')
+      // Onboarding records setup only. Authentication authority belongs solely
+      // to the provider session gate; finishing personalization must never mint
+      // or persist an authenticated state on its own.
       localStorage.setItem('lc2-onboarded', 'true')
       localStorage.setItem('lc2-personalization-completed', 'true')
       localStorage.setItem('lc2-welcome-seen', 'false')

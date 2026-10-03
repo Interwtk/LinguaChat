@@ -200,7 +200,7 @@ function SignupForm() {
     e.preventDefault()
     if (!name.trim() || !email.trim() || !password || !confirm) { setError(t('fillAllFields')); return }
     if (!email.includes('@')) { setError(t('validEmail')); return }
-    if (password.length < 6) { setError(t('passwordMin')); return }
+    if (password.length < 8) { setError(t('passwordMin')); return }
     if (password !== confirm) { setError(t('passwordMismatch')); return }
     if (!agreed) { setError(t('checkCommitment')); return }
     setLoading(true); setError('')

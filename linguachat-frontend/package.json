@@ -20,7 +20,7 @@
     "check:daily-session": "node scripts/check-daily-session.mjs",
     "check:second-arc": "node scripts/check-second-arc.mjs",
     "check:session-recovery": "node scripts/check-session-recovery.mjs",
-    "check:bundle-boundaries": "node scripts/check-bundle-boundaries.mjs",
+    "check:bundle-boundaries": "node scripts/check-bundle-boundaries.mjs && node scripts/check-auth-service.mjs",
     "check:locale-loading": "node scripts/check-locale-loading.mjs",
     "check:user-language": "node scripts/check-user-language.mjs",
     "check:language-detection": "node scripts/check-language-detection.mjs",
