@@ -1198,7 +1198,7 @@ const base = {
   yourName: 'Your name',
   namePlaceholder: 'How should Lingua call you?',
   setupBubble: 'Let me set up your practice space.',
-  passwordMin: 'Password must be at least 6 characters.',
+  passwordMin: 'Password must be at least 8 characters.',
   passwordMismatch: "Passwords don't match.",
   checkCommitment: 'Please check the commitment box.',
   commitment: 'I am ready to practice consistently. Mistakes are part of the journey.',
