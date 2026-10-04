@@ -602,7 +602,7 @@ export default {
   recoverySent: 'Enlace enviado',
   recoverySentText: 'Revisa tu correo. Tu historial de practica esta seguro y esperando.',
   authGenericError: 'No pudimos completar eso. Inténtalo de nuevo.',
-  authStorageFull: 'El almacenamiento del navegador está lleno. Libera espacio de este sitio y vuelve a iniciar sesión.'
+  authStorageFull: 'El almacenamiento del navegador está lleno. Libera espacio de este sitio y vuelve a iniciar sesión.',
   confirmEmailTitle: 'Confirma tu correo',
   confirmEmailText: 'Te enviamos un enlace a {email}. Ábrelo para activar tu cuenta.',
   resendConfirmation: 'Reenviar correo de confirmación',
