@@ -524,7 +524,7 @@ export default {
   yourName: "اسمك",
   namePlaceholder: "بماذا تنادي Lingua؟",
   setupBubble: "دعني أجهّز مساحة التدريب الخاصة بك.",
-  passwordMin: "يجب أن تتكوّن كلمة المرور من 6 أحرف على الأقل.",
+  passwordMin: "يجب أن تتكوّن كلمة المرور من 8 أحرف على الأقل.",
   passwordMismatch: "كلمتا المرور غير متطابقتين.",
   checkCommitment: "يرجى تحديد مربّع الالتزام.",
   commitment: "أنا مستعدّ للتدريب بانتظام. الأخطاء جزء من الرحلة.",
