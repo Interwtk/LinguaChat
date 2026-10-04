@@ -519,7 +519,7 @@ export default {
   yourName: "お名前",
   namePlaceholder: "Linguaは何と呼べばいい？",
   setupBubble: "あなたの練習スペースを用意させてね。",
-  passwordMin: "パスワードは6文字以上にしてください。",
+  passwordMin: "パスワードは8文字以上にしてください。",
   passwordMismatch: "パスワードが一致しません。",
   checkCommitment: "コミットのチェックを入れてください。",
   commitment: "コツコツ練習する準備ができています。間違いも学びの一部です。",
