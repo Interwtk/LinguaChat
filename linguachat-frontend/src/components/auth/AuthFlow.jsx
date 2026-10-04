@@ -101,7 +101,10 @@ function PasswordStrength({ password }) {
 
 /* ---- Entry Screen ---- */
 function EntryScreen() {
-  const { setAuthStep, t } = useApp()
+  const { setAuthStep, authProviderError, t } = useApp()
+  const providerErrorText = authProviderError === 'storage_full'
+    ? t('authStorageFull')
+    : authProviderError
   return (
     <AuthShell>
       <div className="flex flex-col items-center text-center animate-fade-up">
@@ -112,9 +115,14 @@ function EntryScreen() {
         <h1 style={{ fontWeight: 900, fontSize: 'clamp(1.75rem, 6vw, 2.25rem)', color: 'var(--ink)', lineHeight: 1.1, marginBottom: 12 }}>
           {t('entryTitle')}<br /><span >{t('entryTitleAccent')}</span>
         </h1>
-        <p style={{ fontSize: '1rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: 36, maxWidth: 320 }}>
+        <p style={{ fontSize: '1rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: providerErrorText ? 18 : 36, maxWidth: 320 }}>
           {t('entrySubtitle')}
         </p>
+        {providerErrorText && (
+          <div role="alert" style={{ width: '100%', maxWidth: 340, marginBottom: 18, padding: '12px 14px', borderRadius: 12, background: 'var(--surface)', border: '1px solid var(--accent)', color: 'var(--ink)', fontSize: '0.8125rem', lineHeight: 1.5, textAlign: 'left' }}>
+            {providerErrorText}
+          </div>
+        )}
         <div className="flex flex-col gap-3 w-full" style={{ maxWidth: 340 }}>
           <button onClick={() => setAuthStep('signup')}
             className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 hover:-translate-y-px active:scale-[0.98]"
