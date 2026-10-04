@@ -94,6 +94,15 @@ assert.equal(quotaStore.getItem('lc2-progress'), null, 'new account must not inh
 activateLocalAccount(quotaStore, 'quota-a')
 assert.equal(quotaStore.getItem('lc2-progress'), large, 'quota-safe snapshot must restore previous progress')
 
+const firstLoginQuotaStore = new QuotaStorage({
+  'lc2-progress': '{"xp":7}',
+})
+firstLoginQuotaStore.maxBytes = firstLoginQuotaStore.usage()
+const blockedGuestClaim = activateLocalAccount(firstLoginQuotaStore, 'quota-first-user')
+assert.equal(blockedGuestClaim.blocked, true, 'first login owner write must fail closed when storage quota is exhausted')
+assert.equal(firstLoginQuotaStore.getItem(browserDataIsolationKeys.OWNER_KEY), null, 'failed first-login claim must not assign a local owner')
+assert.equal(firstLoginQuotaStore.getItem('lc2-progress'), '{"xp":7}', 'failed first-login claim must preserve guest progress')
+
 const failingStore = new FailingCacheStorage({ 'lc2-progress': '{"xp":99}' })
 activateLocalAccount(failingStore, 'safe-a')
 const blocked = activateLocalAccount(failingStore, 'safe-b')
@@ -101,4 +110,4 @@ assert.equal(blocked.blocked, true, 'unrecoverable cache writes must fail closed
 assert.equal(failingStore.getItem(browserDataIsolationKeys.OWNER_KEY), 'safe-a', 'failed switch must keep the previous local owner')
 assert.equal(failingStore.getItem('lc2-progress'), '{"xp":99}', 'failed switch must restore the previous active dataset')
 
-console.log('check-browser-data-isolation — guest claim, account isolation, quota-safe moves, rollback and provider-token preservation PASS')
+console.log('check-browser-data-isolation — guest claim, first-login quota failure, account isolation, quota-safe moves, rollback and provider-token preservation PASS')
