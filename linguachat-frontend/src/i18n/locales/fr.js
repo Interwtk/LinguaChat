@@ -520,7 +520,7 @@ export default {
   yourName: "Ton nom",
   namePlaceholder: "Comment Lingua doit-elle t'appeler ?",
   setupBubble: "Laisse-moi préparer ton espace de pratique.",
-  passwordMin: "Le mot de passe doit contenir au moins 6 caractères.",
+  passwordMin: "Le mot de passe doit contenir au moins 8 caractères.",
   passwordMismatch: "Les mots de passe ne correspondent pas.",
   checkCommitment: "Coche la case d'engagement.",
   commitment: "Je suis prêt à pratiquer avec régularité. Les erreurs font partie du parcours.",
