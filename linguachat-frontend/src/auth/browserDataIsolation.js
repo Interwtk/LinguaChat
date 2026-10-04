@@ -24,10 +24,10 @@ function cacheKey(userId) {
   return CACHE_PREFIX + normalizeUserId(userId)
 }
 
-function snapshotActive(storage, userId) {
+function readActiveSnapshot(storage) {
   const snapshot = {}
   for (const key of activeKeys(storage)) snapshot[key] = storage.getItem(key)
-  storage.setItem(cacheKey(userId), JSON.stringify(snapshot))
+  return snapshot
 }
 
 function clearActive(storage) {
@@ -35,16 +35,41 @@ function clearActive(storage) {
   storage.removeItem(LEGACY_AUTH_KEY)
 }
 
-function restoreActive(storage, userId) {
-  const raw = storage.getItem(cacheKey(userId))
-  if (!raw) return
-  let snapshot
-  try { snapshot = JSON.parse(raw) } catch { return }
+function restoreSnapshot(storage, snapshot) {
   if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return
   for (const [key, value] of Object.entries(snapshot)) {
     if (!key.startsWith(ACTIVE_PREFIX) || key === OWNER_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
     if (typeof value === 'string') storage.setItem(key, value)
   }
+}
+
+function snapshotAndClearActive(storage, userId) {
+  const snapshot = readActiveSnapshot(storage)
+  const destination = cacheKey(userId)
+
+  // Move, rather than duplicate, the active dataset. This frees the browser
+  // quota before serializing the previous account into its private cache.
+  clearActive(storage)
+  try {
+    storage.setItem(destination, JSON.stringify(snapshot))
+    return true
+  } catch {
+    // Fail closed: restore the previous account in place and keep its owner.
+    // The caller can sign the newly authenticated provider session back out.
+    try {
+      storage.removeItem(destination)
+      restoreSnapshot(storage, snapshot)
+    } catch {}
+    return false
+  }
+}
+
+function restoreActive(storage, userId) {
+  const raw = storage.getItem(cacheKey(userId))
+  if (!raw) return
+  let snapshot
+  try { snapshot = JSON.parse(raw) } catch { return }
+  restoreSnapshot(storage, snapshot)
 }
 
 /*
@@ -65,8 +90,9 @@ export function activateLocalAccount(storage, userId) {
   }
   if (current === next) return { switched: false, claimedGuestData: false }
 
-  snapshotActive(storage, decodeURIComponent(current))
-  clearActive(storage)
+  if (!snapshotAndClearActive(storage, decodeURIComponent(current))) {
+    return { switched: false, claimedGuestData: false, blocked: true }
+  }
   restoreActive(storage, decodeURIComponent(next))
   storage.setItem(OWNER_KEY, next)
   return { switched: true, claimedGuestData: false }
