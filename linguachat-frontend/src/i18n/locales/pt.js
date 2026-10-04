@@ -533,7 +533,7 @@ export default {
   recoverySent: "Link enviado",
   recoverySentText: "Verifica a tua caixa de entrada. O teu histórico de prática está seguro e à espera.",
   authGenericError: 'Não foi possível concluir. Tente novamente.',
-  authStorageFull: 'O armazenamento do navegador está cheio. Libere espaço deste site e entre novamente.'
+  authStorageFull: 'O armazenamento do navegador está cheio. Libere espaço deste site e entre novamente.',
   confirmEmailTitle: 'Confirme seu e-mail',
   confirmEmailText: 'Enviamos um link de confirmação para {email}. Abra-o para ativar sua conta.',
   resendConfirmation: 'Reenviar e-mail de confirmação',
