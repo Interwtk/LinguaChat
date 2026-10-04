@@ -533,7 +533,7 @@ export default {
   recoverySent: "Lien envoyé",
   recoverySentText: "Vérifie ta boîte de réception. Ton historique de pratique est en sécurité et t'attend.",
   authGenericError: "Impossible de terminer l’opération. Réessayez.",
-  authStorageFull: "Le stockage du navigateur est plein. Libérez de l’espace pour ce site, puis reconnectez-vous."
+  authStorageFull: "Le stockage du navigateur est plein. Libérez de l’espace pour ce site, puis reconnectez-vous.",
   confirmEmailTitle: 'Confirmez votre e-mail',
   confirmEmailText: 'Nous avons envoyé un lien de confirmation à {email}. Ouvrez-le pour activer votre compte.',
   resendConfirmation: 'Renvoyer l’e-mail de confirmation',
