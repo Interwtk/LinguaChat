@@ -520,7 +520,7 @@ export default {
   yourName: "Dein Name",
   namePlaceholder: "Wie soll Lingua dich nennen?",
   setupBubble: "Lass mich deinen Übungsraum einrichten.",
-  passwordMin: "Das Passwort muss mindestens 6 Zeichen haben.",
+  passwordMin: "Das Passwort muss mindestens 8 Zeichen haben.",
   passwordMismatch: "Die Passwörter stimmen nicht überein.",
   checkCommitment: "Bitte das Zusage-Kästchen ankreuzen.",
   commitment: "Ich bin bereit, regelmäßig zu üben. Fehler gehören zum Weg.",
