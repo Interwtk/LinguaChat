@@ -319,8 +319,10 @@ function ForgotPassword() {
     try {
       await requestPasswordReset(email.trim())
       setSent(true)
-    } catch (err) {
-      setError(err?.message || t('authGenericError'))
+    } catch {
+      // Never surface provider-specific reset errors: the visible response must
+      // not disclose whether an address exists in the Auth directory.
+      setError(t('authGenericError'))
     } finally {
       setLoading(false)
     }
