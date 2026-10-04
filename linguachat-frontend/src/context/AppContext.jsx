@@ -170,6 +170,9 @@ export function AppProvider({ children }) {
 
   const applyProviderSession = useCallback((session, event = 'SESSION') => {
     if (!session?.user) {
+      // Invalid/expired auth callbacks must not survive into a later normal login.
+      // Otherwise a stale ?auth=reset can incorrectly reopen the reset screen.
+      if (currentAuthAction()) clearAuthCallback()
       try {
         localStorage.removeItem('lc2-auth')
         localStorage.removeItem('lc2-user')
