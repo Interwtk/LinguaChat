@@ -589,7 +589,7 @@ export default {
   yourName: 'Tu nombre',
   namePlaceholder: 'Como deberia llamarte Lingua?',
   setupBubble: 'Dejame preparar tu espacio de practica.',
-  passwordMin: 'La contrasena debe tener al menos 6 caracteres.',
+  passwordMin: 'La contrasena debe tener al menos 8 caracteres.',
   passwordMismatch: 'Las contrasenas no coinciden.',
   checkCommitment: 'Marca la casilla de compromiso.',
   commitment: 'Estoy listo para practicar con constancia. Los errores son parte del camino.',
