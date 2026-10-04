@@ -1,7 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import { createClient } from '@supabase/supabase-js'
-import { createLinguaChatSupabaseClient } from '../auth/client.js'
-import { createEmailPasswordAuth } from '../auth/emailPassword.js'
+import { getBrowserAuthService } from '../auth/provider.js'
 import { sendChatMessage } from '../services/api'
 import {
   ensureLanguagePreferences,
@@ -163,8 +161,7 @@ export function AppProvider({ children }) {
 
   const getAuthService = useCallback(() => {
     if (!authServiceRef.current) {
-      const client = createLinguaChatSupabaseClient(createClient)
-      authServiceRef.current = createEmailPasswordAuth(client, { origin: window.location.origin })
+      authServiceRef.current = getBrowserAuthService()
       try { localStorage.removeItem('lc2-auth') } catch {}
     }
     return authServiceRef.current
