@@ -128,14 +128,16 @@ function rememberVerifiedRecovery(userId) {
   } catch {}
 }
 
-function hasVerifiedRecovery(userId) {
+function consumeVerifiedRecovery(userId) {
   try {
     const parsed = JSON.parse(sessionStorage.getItem(RECOVERY_VERIFIED_KEY) || 'null')
+    sessionStorage.removeItem(RECOVERY_VERIFIED_KEY)
     return parsed?.userId === String(userId)
       && Number.isFinite(parsed?.verifiedAt)
       && Date.now() - parsed.verifiedAt >= 0
       && Date.now() - parsed.verifiedAt <= RECOVERY_VERIFIED_MAX_AGE_MS
   } catch {
+    clearVerifiedRecovery()
     return false
   }
 }
@@ -249,8 +251,11 @@ export function AppProvider({ children }) {
     } catch {}
 
     const action = currentAuthAction()
-    const verifiedRecovery = event === 'PASSWORD_RECOVERY' || hasVerifiedRecovery(session.user.id)
-    if (event === 'PASSWORD_RECOVERY' || (action === 'reset' && verifiedRecovery)) {
+    const resumedVerifiedRecovery = action === 'reset' && event !== 'PASSWORD_RECOVERY'
+      ? consumeVerifiedRecovery(session.user.id)
+      : false
+    if (event === 'PASSWORD_RECOVERY' || resumedVerifiedRecovery) {
+      if (event === 'PASSWORD_RECOVERY') clearVerifiedRecovery()
       setAuthStep('reset')
       return
     }
