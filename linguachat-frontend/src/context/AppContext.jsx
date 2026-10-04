@@ -158,6 +158,10 @@ export function AppProvider({ children }) {
   })
 
   const authServiceRef = useRef(null)
+  // Preserve a local-isolation failure across the compensating provider SIGNED_OUT event.
+  // The flag is reset only when the learner explicitly starts another Auth operation or
+  // when a provider session is safely activated.
+  const authIsolationBlockedRef = useRef(false)
   const [authProviderError, setAuthProviderError] = useState('')
 
   const getAuthService = useCallback(() => {
@@ -185,12 +189,17 @@ export function AppProvider({ children }) {
     const isolation = activateLocalAccount(localStorage, session.user.id)
     if (isolation.blocked) {
       clearAuthCallback()
-      setAuthProviderError('Browser storage is full. Free some site storage and sign in again.')
+      authIsolationBlockedRef.current = true
+      setAuthProviderError('storage_full')
       setAuthUser(null)
       setAuthStep('entry')
+      // This SIGNED_OUT is compensatory. Its auth-state callback must not erase the
+      // actionable storage error before the learner can read it.
       getAuthService().signOut().catch(() => {})
       return
     }
+    authIsolationBlockedRef.current = false
+    setAuthProviderError('')
     if (isolation.switched) {
       window.location.reload()
       return
@@ -229,7 +238,7 @@ export function AppProvider({ children }) {
       service = getAuthService()
       const registration = service.onAuthStateChange((event, session) => {
         if (!alive) return
-        setAuthProviderError('')
+        if (!authIsolationBlockedRef.current) setAuthProviderError('')
         applyProviderSession(session, event)
       })
       subscription = registration?.data?.subscription || registration?.subscription || null
@@ -242,7 +251,7 @@ export function AppProvider({ children }) {
     service.getSession()
       .then((session) => {
         if (!alive) return
-        setAuthProviderError('')
+        if (!authIsolationBlockedRef.current) setAuthProviderError('')
         applyProviderSession(session, 'INITIAL_SESSION')
       })
       .catch((error) => {
@@ -388,6 +397,7 @@ export function AppProvider({ children }) {
   }, [])
 
   const login = useCallback(async (email, password) => {
+    authIsolationBlockedRef.current = false
     setAuthProviderError('')
     const data = await getAuthService().signIn({ email, password })
     applyProviderSession(data.session, 'SIGNED_IN')
@@ -395,6 +405,7 @@ export function AppProvider({ children }) {
   }, [getAuthService, applyProviderSession])
 
   const signup = useCallback(async (name, email, password) => {
+    authIsolationBlockedRef.current = false
     setAuthProviderError('')
     const result = await getAuthService().signUp({
       name,
@@ -408,16 +419,19 @@ export function AppProvider({ children }) {
   }, [getAuthService, applyProviderSession, interfaceLanguageInfo.base])
 
   const requestPasswordReset = useCallback(async (email) => {
+    authIsolationBlockedRef.current = false
     setAuthProviderError('')
     return getAuthService().requestPasswordReset(email)
   }, [getAuthService])
 
   const resendConfirmation = useCallback(async (email) => {
+    authIsolationBlockedRef.current = false
     setAuthProviderError('')
     return getAuthService().resendConfirmation(email)
   }, [getAuthService])
 
   const changePassword = useCallback(async (password) => {
+    authIsolationBlockedRef.current = false
     setAuthProviderError('')
     const user = await getAuthService().changePassword(password)
     clearAuthCallback()
