@@ -444,25 +444,27 @@ export function AppProvider({ children }) {
     clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
-    const data = await getAuthService().signIn({ email, password })
-    applyProviderSession(data.session, 'SIGNED_IN')
-    return data
-  }, [getAuthService, applyProviderSession])
+    // The provider's onAuthStateChange listener is the single session authority.
+    // Applying the returned session here as well can race an account-switch reload
+    // and persist stale React state into the newly restored account snapshot.
+    return getAuthService().signIn({ email, password })
+  }, [getAuthService])
 
   const signup = useCallback(async (name, email, password) => {
     clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
-    const result = await getAuthService().signUp({
+    // Do not mutate profile/session state from the promise result. If signup
+    // creates a session, the provider listener applies it exactly once; if email
+    // confirmation is pending, learner state remains unauthenticated until that
+    // verified session event arrives.
+    return getAuthService().signUp({
       name,
       email,
       password,
       language: interfaceLanguageInfo.base,
     })
-    setProfile(previous => ({ ...previous, name, email }))
-    if (result.session) applyProviderSession(result.session, 'SIGNED_IN')
-    return result
-  }, [getAuthService, applyProviderSession, interfaceLanguageInfo.base])
+  }, [getAuthService, interfaceLanguageInfo.base])
 
   const requestPasswordReset = useCallback(async (email) => {
     clearVerifiedRecovery()
