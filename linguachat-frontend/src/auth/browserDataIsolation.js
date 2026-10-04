@@ -97,8 +97,16 @@ export function activateLocalAccount(storage, userId) {
   storage.removeItem(LEGACY_AUTH_KEY)
 
   if (!current) {
-    storage.setItem(OWNER_KEY, next)
-    return { switched: false, claimedGuestData: true }
+    // First-login guest claiming can fail before any account switch if local
+    // storage is already full. Fail closed so AppContext can compensate by
+    // signing the provider session back out instead of leaving an authenticated
+    // session with unowned learner data.
+    try {
+      storage.setItem(OWNER_KEY, next)
+      return { switched: false, claimedGuestData: true }
+    } catch {
+      return { switched: false, claimedGuestData: false, blocked: true }
+    }
   }
   if (current === next) return { switched: false, claimedGuestData: false }
 
