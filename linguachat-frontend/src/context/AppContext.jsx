@@ -260,7 +260,7 @@ export function AppProvider({ children }) {
       return
     }
 
-    // auth=reset is untrusted routing state. Supabase can preserve an existing
+    // auth=reset is untrusted routing state. The provider can preserve an existing
     // session when an expired/reused recovery callback fails, so never open the
     // reset form for that session unless PASSWORD_RECOVERY was actually verified.
     if (action === 'reset') {
