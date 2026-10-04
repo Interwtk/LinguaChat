@@ -533,7 +533,7 @@ export default {
   recoverySent: "Link gesendet",
   recoverySentText: "Sieh in deinem Posteingang nach. Dein Übungsverlauf ist sicher und wartet.",
   authGenericError: 'Das konnte nicht abgeschlossen werden. Bitte versuche es erneut.',
-  authStorageFull: 'Der Browserspeicher ist voll. Gib Speicher für diese Website frei und melde dich erneut an.'
+  authStorageFull: 'Der Browserspeicher ist voll. Gib Speicher für diese Website frei und melde dich erneut an.',
   confirmEmailTitle: 'Bestätige deine E-Mail-Adresse',
   confirmEmailText: 'Wir haben einen Bestätigungslink an {email} gesendet. Öffne ihn, um dein Konto zu aktivieren.',
   resendConfirmation: 'Bestätigungs-E-Mail erneut senden',
