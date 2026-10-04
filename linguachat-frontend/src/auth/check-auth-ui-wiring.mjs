@@ -39,6 +39,11 @@ assert.doesNotMatch(flow, /new Promise\s*\(.*setTimeout/s, 'Auth forms must not 
 for (const call of ['login(', 'signup(', 'requestPasswordReset(', 'resendConfirmation(', 'changePassword(']) {
   assert.ok(flow.includes(call), `AuthFlow must call ${call}`)
 }
+const forgotStart = flow.indexOf('function ForgotPassword()')
+const resetStart = flow.indexOf('/* ---- Reset Password ---- */', forgotStart)
+assert.ok(forgotStart >= 0 && resetStart > forgotStart, 'ForgotPassword source segment must exist')
+const forgotSource = flow.slice(forgotStart, resetStart)
+assert.doesNotMatch(forgotSource, /err\?\.message|error\?\.message/, 'recovery UI must not expose provider-specific errors that could enumerate accounts')
 
 const app = read('src/App.jsx')
 assert.match(app, /AUTH_STEPS\s*=\s*\[[^\]]*['"]reset['"]/, 'password recovery callback must have a reset screen route')
