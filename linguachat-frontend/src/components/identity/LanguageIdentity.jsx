@@ -94,7 +94,7 @@ export function LanguageIdentity() {
     profile,
     updateProfile,
     navigateTo,
-    logoutMock,
+    logout,
     localProgress,
     resetLocalProgress,
     nativeLanguageInfo,
@@ -746,7 +746,7 @@ export function LanguageIdentity() {
             {t('resetProgress')}
           </button>
           <button
-            onClick={logoutMock}
+            onClick={logout}
             className="px-5 py-3 rounded-2xl font-semibold text-sm transition-all hover:opacity-80 active:scale-[0.98]"
             style={{ background: 'none', border: '1px solid var(--accent)', color: 'var(--accent)', cursor: 'pointer' }}
           >
