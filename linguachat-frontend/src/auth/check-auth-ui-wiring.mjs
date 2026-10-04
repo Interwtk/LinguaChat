@@ -36,6 +36,15 @@ assert.match(context, /action === 'reset' && event !== 'PASSWORD_RECOVERY'[\s\S]
 assert.match(context, /if \(action === 'reset'\) \{[\s\S]*?clearVerifiedRecovery\(\)[\s\S]*?clearAuthCallback\(\)/, 'unverified reset routing must be cleared even when another valid session exists')
 assert.match(context, /if \(isolation\.blocked\) \{[\s\S]*?authIsolationBlockedRef\.current = true[\s\S]*?setAuthProviderError\('storage_full'\)[\s\S]*?getAuthService\(\)\.signOut\(\)/, 'storage-isolation failures must preserve an actionable error and sign the new provider session back out')
 assert.match(context, /if \(!authIsolationBlockedRef\.current\) setAuthProviderError\(''\)/, 'compensating auth events must not erase a pending isolation error')
+const loginStart = context.indexOf('const login = useCallback')
+const signupStart = context.indexOf('const signup = useCallback', loginStart)
+const resetStartInContext = context.indexOf('const requestPasswordReset = useCallback', signupStart)
+assert.ok(loginStart >= 0 && signupStart > loginStart && resetStartInContext > signupStart, 'login/signup source segments must exist')
+const loginSource = context.slice(loginStart, signupStart)
+const signupSource = context.slice(signupStart, resetStartInContext)
+assert.doesNotMatch(loginSource, /applyProviderSession/, 'login promise result must not apply a session in parallel with the provider listener')
+assert.doesNotMatch(signupSource, /applyProviderSession/, 'signup promise result must not apply a session in parallel with the provider listener')
+assert.doesNotMatch(signupSource, /setProfile\s*\(/, 'signup promise result must not persist stale profile state before account-switch reload')
 for (const action of ['login', 'signup', 'requestPasswordReset', 'resendConfirmation', 'changePassword', 'logout']) {
   assert.match(context, new RegExp(`\\b${action}\\b`), `AppContext must expose real ${action} action`)
 }
