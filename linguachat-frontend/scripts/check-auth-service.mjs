@@ -45,6 +45,10 @@ pending = false
 ok((await service.signUp({ name: 'Alex', email: 'alex@example.com', password: 'my-test-password', language: 'xx' })).confirmationPending === false, 'session result controls pending state')
 ok(calls.at(-1)[1].options.data.language === 'en', 'unknown signup locale falls back to English')
 ok((await service.signIn({ email: 'alex@example.com', password: 'my-test-password' })).session === session, 'real provider session returned')
+ok((await service.signIn({ email: 'alex@example.com', password: '123456' })).session === session, 'existing shorter provider-valid password reaches the provider')
+ok(calls.at(-1)[1].password === '123456', 'login password is passed through without signup-policy rewriting')
+await assert.rejects(() => service.signIn({ email: 'alex@example.com', password: '' }), /Enter your password/)
+passed++
 await service.signOut()
 ok(calls.at(-1)[1].scope === 'local', 'logout scope is local to this client')
 ok((await service.requestPasswordReset(' ALEX@EXAMPLE.COM ')).requested, 'reset dispatched')
