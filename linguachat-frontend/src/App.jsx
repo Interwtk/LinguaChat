@@ -127,7 +127,7 @@ function MobileNav() {
   )
 }
 
-const AUTH_STEPS = ['entry', 'login', 'signup', 'forgot']
+const AUTH_STEPS = ['entry', 'login', 'signup', 'forgot', 'reset']
 const SETUP_STEPS = ['placement', 'level-reveal', 'setup-choice', 'tutor-personality', 'learning-prefs', 'personalize']
 const FOCUS_MODE_KEY = 'lc2-focus-mode'
 
