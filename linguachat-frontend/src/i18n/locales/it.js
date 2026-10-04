@@ -520,7 +520,7 @@ export default {
   yourName: "Il tuo nome",
   namePlaceholder: "Come dovrebbe chiamarti Lingua?",
   setupBubble: "Lascia che prepari il tuo spazio di pratica.",
-  passwordMin: "La password deve avere almeno 6 caratteri.",
+  passwordMin: "La password deve avere almeno 8 caratteri.",
   passwordMismatch: "Le password non coincidono.",
   checkCommitment: "Spunta la casella di impegno.",
   commitment: "Sono pronto a esercitarmi con costanza. Gli errori fanno parte del percorso.",
