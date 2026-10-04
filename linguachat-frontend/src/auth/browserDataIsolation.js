@@ -65,11 +65,23 @@ function snapshotAndClearActive(storage, userId) {
 }
 
 function restoreActive(storage, userId) {
-  const raw = storage.getItem(cacheKey(userId))
-  if (!raw) return
+  const source = cacheKey(userId)
+  const raw = storage.getItem(source)
+  if (!raw) return true
   let snapshot
-  try { snapshot = JSON.parse(raw) } catch { return }
-  restoreSnapshot(storage, snapshot)
+  try { snapshot = JSON.parse(raw) } catch { return true }
+
+  // Consume the cached copy before restoring active keys so the same dataset
+  // never occupies browser quota twice.
+  storage.removeItem(source)
+  try {
+    restoreSnapshot(storage, snapshot)
+    return true
+  } catch {
+    clearActive(storage)
+    try { storage.setItem(source, raw) } catch {}
+    return false
+  }
 }
 
 /*
@@ -93,7 +105,10 @@ export function activateLocalAccount(storage, userId) {
   if (!snapshotAndClearActive(storage, decodeURIComponent(current))) {
     return { switched: false, claimedGuestData: false, blocked: true }
   }
-  restoreActive(storage, decodeURIComponent(next))
+  if (!restoreActive(storage, decodeURIComponent(next))) {
+    restoreActive(storage, decodeURIComponent(current))
+    return { switched: false, claimedGuestData: false, blocked: true }
+  }
   storage.setItem(OWNER_KEY, next)
   return { switched: true, claimedGuestData: false }
 }
