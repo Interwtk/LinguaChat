@@ -532,7 +532,7 @@ export default {
   recoverySent: "リンクを送信しました",
   recoverySentText: "受信トレイを確認してください。練習履歴は安全に保存されています。",
   authGenericError: '処理を完了できませんでした。もう一度お試しください。',
-  authStorageFull: 'ブラウザの保存領域がいっぱいです。このサイトの保存領域を空けてから、もう一度ログインしてください。'
+  authStorageFull: 'ブラウザの保存領域がいっぱいです。このサイトの保存領域を空けてから、もう一度ログインしてください。',
   confirmEmailTitle: 'メールアドレスを確認',
   confirmEmailText: '{email} に確認リンクを送信しました。リンクを開いてアカウントを有効化してください。',
   resendConfirmation: '確認メールを再送信',
