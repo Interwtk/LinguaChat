@@ -1,4 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { createClient } from '@supabase/supabase-js'
+import { createLinguaChatSupabaseClient } from '../auth/client.js'
+import { createEmailPasswordAuth } from '../auth/emailPassword.js'
 import { sendChatMessage } from '../services/api'
 import {
   ensureLanguagePreferences,
@@ -87,15 +90,27 @@ const DEFAULT_PROFILE = {
   moodColor: 'violet',
 }
 
-function checkAuth() {
+function storedOnboardingComplete() {
+  try { return localStorage.getItem('lc2-onboarded') === 'true' } catch { return false }
+}
+
+function providerUser(user) {
+  if (!user) return null
+  const email = String(user.email || '')
+  const name = String(user.user_metadata?.display_name || email.split('@')[0] || '').trim()
+  return { id: user.id, name, email }
+}
+
+function currentAuthAction() {
+  try { return new URL(window.location.href).searchParams.get('auth') } catch { return null }
+}
+
+function clearAuthCallback() {
   try {
-    // Authentication and onboarding are separate authorities. A learner may
-    // have completed onboarding/progress on this browser without having a
-    // valid authenticated session, so lc2-onboarded must never unlock the app.
-    // lc2-auth is the temporary legacy auth flag until the real provider
-    // session gate replaces it on this branch.
-    return localStorage.getItem('lc2-auth') === 'true'
-  } catch { return false }
+    const url = new URL(window.location.href)
+    for (const key of ['auth', 'code', 'error', 'error_code', 'error_description']) url.searchParams.delete(key)
+    window.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash)
+  } catch {}
 }
 
 const createWelcomeMessage = (language) => ({
@@ -108,10 +123,7 @@ const createWelcomeMessage = (language) => ({
 
 export function AppProvider({ children }) {
   // Auth/setup flow: null = main app, 'entry'/'login'/'signup'/'forgot'/'placement'/'tutor-personality'/'learning-prefs' = flow screens
-  const [authStep, setAuthStep] = useState(() => {
-    if (checkAuth()) return null
-    return 'entry'
-  })
+  const [authStep, setAuthStep] = useState('entry')
   const [languagePreferences, setLanguagePreferences] = useState(ensureLanguagePreferences)
   const nativeLanguageInfo = languagePreferences.nativeLanguage
   const interfaceLanguageInfo = languagePreferences.interfaceLanguage
@@ -145,6 +157,90 @@ export function AppProvider({ children }) {
       return s ? { ...DEFAULT_PROFILE, ...JSON.parse(s) } : DEFAULT_PROFILE
     } catch { return DEFAULT_PROFILE }
   })
+
+  const authServiceRef = useRef(null)
+  const [authProviderError, setAuthProviderError] = useState('')
+
+  const getAuthService = useCallback(() => {
+    if (!authServiceRef.current) {
+      const client = createLinguaChatSupabaseClient(createClient)
+      authServiceRef.current = createEmailPasswordAuth(client, { origin: window.location.origin })
+      try { localStorage.removeItem('lc2-auth') } catch {}
+    }
+    return authServiceRef.current
+  }, [])
+
+  const applyProviderSession = useCallback((session, event = 'SESSION') => {
+    if (!session?.user) {
+      try {
+        localStorage.removeItem('lc2-auth')
+        localStorage.removeItem('lc2-user')
+      } catch {}
+      setAuthUser(null)
+      setAuthStep('entry')
+      return
+    }
+
+    const user = providerUser(session.user)
+    setAuthUser(user)
+    setProfile(previous => ({
+      ...previous,
+      name: user?.name || previous.name,
+      email: user?.email || previous.email,
+    }))
+    try {
+      localStorage.removeItem('lc2-auth')
+      localStorage.setItem('lc2-user', JSON.stringify(user))
+    } catch {}
+
+    const action = currentAuthAction()
+    if (event === 'PASSWORD_RECOVERY' || action === 'reset') {
+      setAuthStep('reset')
+      return
+    }
+
+    if (action === 'confirmed') clearAuthCallback()
+    const onboarded = storedOnboardingComplete()
+    setOnboardingCompleted(onboarded)
+    setAuthStep(onboarded ? null : 'placement')
+  }, [])
+
+  useEffect(() => {
+    let alive = true
+    let subscription = null
+    let service
+
+    try {
+      service = getAuthService()
+      const registration = service.onAuthStateChange((event, session) => {
+        if (!alive) return
+        setAuthProviderError('')
+        applyProviderSession(session, event)
+      })
+      subscription = registration?.data?.subscription || registration?.subscription || null
+    } catch (error) {
+      setAuthProviderError(error?.message || 'Authentication is not configured.')
+      setAuthStep('entry')
+      return () => {}
+    }
+
+    service.getSession()
+      .then((session) => {
+        if (!alive) return
+        setAuthProviderError('')
+        applyProviderSession(session, 'INITIAL_SESSION')
+      })
+      .catch((error) => {
+        if (!alive) return
+        setAuthProviderError(error?.message || 'Could not restore your session.')
+        setAuthStep('entry')
+      })
+
+    return () => {
+      alive = false
+      subscription?.unsubscribe?.()
+    }
+  }, [getAuthService, applyProviderSession])
   const [view, setView] = useState('today')
   const [sessionId, setSessionId] = useState(getOrCreateSessionId)
   const [messages, setMessages] = useState(() => loadStoredMessages(createWelcomeMessage(languagePreferences.interfaceLanguage.base)))
@@ -276,29 +372,44 @@ export function AppProvider({ children }) {
     }))
   }, [])
 
-  const loginMock = useCallback((email) => {
-    let user = null
-    try {
-      const stored = localStorage.getItem('lc2-user')
-      if (stored) user = JSON.parse(stored)
-    } catch {}
-    if (!user) user = { name: email.split('@')[0], email }
-    setAuthUser(user)
-    setProfile(prev => ({ ...prev, name: user.name, email: user.email }))
-    localStorage.setItem('lc2-user', JSON.stringify(user))
-    localStorage.setItem('lc2-auth', 'true')
-    localStorage.setItem('lc2-onboarded', 'true')
-    setOnboardingCompleted(true)
-    setAuthStep(null)
-  }, [])
+  const login = useCallback(async (email, password) => {
+    setAuthProviderError('')
+    const data = await getAuthService().signIn({ email, password })
+    applyProviderSession(data.session, 'SIGNED_IN')
+    return data
+  }, [getAuthService, applyProviderSession])
 
-  const signupMock = useCallback((name, email) => {
-    const user = { name, email }
-    setAuthUser(user)
-    setProfile(prev => ({ ...prev, name, email }))
-    localStorage.setItem('lc2-user', JSON.stringify(user))
-    setAuthStep('placement')
-  }, [])
+  const signup = useCallback(async (name, email, password) => {
+    setAuthProviderError('')
+    const result = await getAuthService().signUp({
+      name,
+      email,
+      password,
+      language: interfaceLanguageInfo.base,
+    })
+    setProfile(previous => ({ ...previous, name, email }))
+    if (result.session) applyProviderSession(result.session, 'SIGNED_IN')
+    return result
+  }, [getAuthService, applyProviderSession, interfaceLanguageInfo.base])
+
+  const requestPasswordReset = useCallback(async (email) => {
+    setAuthProviderError('')
+    return getAuthService().requestPasswordReset(email)
+  }, [getAuthService])
+
+  const resendConfirmation = useCallback(async (email) => {
+    setAuthProviderError('')
+    return getAuthService().resendConfirmation(email)
+  }, [getAuthService])
+
+  const changePassword = useCallback(async (password) => {
+    setAuthProviderError('')
+    const user = await getAuthService().changePassword(password)
+    clearAuthCallback()
+    const session = await getAuthService().getSession()
+    applyProviderSession(session, 'USER_UPDATED')
+    return user
+  }, [getAuthService, applyProviderSession])
 
   const completePlacement = useCallback((result) => {
     setProfile(prev => ({ ...prev, level: result.level, placementResult: result }))
@@ -588,12 +699,11 @@ export function AppProvider({ children }) {
     })
   }, [])
 
-  const logoutMock = useCallback(() => {
-    localStorage.removeItem('lc2-auth')
-    localStorage.removeItem('lc2-user')
-    setAuthUser(null)
-    setAuthStep('entry')
-  }, [])
+  const logout = useCallback(async () => {
+    setAuthProviderError('')
+    await getAuthService().signOut()
+    applyProviderSession(null, 'SIGNED_OUT')
+  }, [getAuthService, applyProviderSession])
 
   const completeOnboarding = useCallback((profileData) => {
     const merged = { ...DEFAULT_PROFILE, ...profileData }
@@ -1021,8 +1131,8 @@ export function AppProvider({ children }) {
       setNativeLanguage: updateNativeLanguage,
       updateNativeLanguage,
       t,
-      authUser,
-      loginMock, signupMock,
+      authUser, authProviderError,
+      login, signup, requestPasswordReset, resendConfirmation, changePassword,
       completePlacement, completeTutorPersonality, completeLearningPrefs,
       completePersonalization, applyRecommendedSetup,
       showWelcome, dismissWelcome,
@@ -1030,7 +1140,7 @@ export function AppProvider({ children }) {
       episodeActiveId, episodeRunOptions, episodeArcVersion, startEpisode, exitEpisode, awardEpisode, finishEpisode,
       dailySession, sessionActive, preferredDuration,
       previewSession, chooseDuration, beginSession, advanceSession, finishSession, exitSession,
-      logoutMock,
+      logout,
       darkMode, toggleDark, setThemeDark,
       onboardingCompleted, completeOnboarding,
       profile, updateProfile,
