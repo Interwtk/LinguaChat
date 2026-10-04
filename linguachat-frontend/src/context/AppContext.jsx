@@ -112,6 +112,34 @@ function clearAuthCallback() {
   } catch {}
 }
 
+const RECOVERY_VERIFIED_KEY = 'lc2-auth-recovery-verified'
+const RECOVERY_VERIFIED_MAX_AGE_MS = 5 * 60 * 1000
+
+function clearVerifiedRecovery() {
+  try { sessionStorage.removeItem(RECOVERY_VERIFIED_KEY) } catch {}
+}
+
+function rememberVerifiedRecovery(userId) {
+  try {
+    sessionStorage.setItem(RECOVERY_VERIFIED_KEY, JSON.stringify({
+      userId: String(userId),
+      verifiedAt: Date.now(),
+    }))
+  } catch {}
+}
+
+function hasVerifiedRecovery(userId) {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(RECOVERY_VERIFIED_KEY) || 'null')
+    return parsed?.userId === String(userId)
+      && Number.isFinite(parsed?.verifiedAt)
+      && Date.now() - parsed.verifiedAt >= 0
+      && Date.now() - parsed.verifiedAt <= RECOVERY_VERIFIED_MAX_AGE_MS
+  } catch {
+    return false
+  }
+}
+
 const createWelcomeMessage = (language) => ({
   id: 'welcome',
   role: 'lingua',
@@ -176,6 +204,7 @@ export function AppProvider({ children }) {
     if (!session?.user) {
       // Invalid/expired auth callbacks must not survive into a later normal login.
       // Otherwise a stale ?auth=reset can incorrectly reopen the reset screen.
+      clearVerifiedRecovery()
       if (currentAuthAction()) clearAuthCallback()
       try {
         localStorage.removeItem('lc2-auth')
@@ -185,6 +214,8 @@ export function AppProvider({ children }) {
       setAuthStep('entry')
       return
     }
+
+    if (event === 'PASSWORD_RECOVERY') rememberVerifiedRecovery(session.user.id)
 
     const isolation = activateLocalAccount(localStorage, session.user.id)
     if (isolation.blocked) {
@@ -218,11 +249,19 @@ export function AppProvider({ children }) {
     } catch {}
 
     const action = currentAuthAction()
-    if (event === 'PASSWORD_RECOVERY' || action === 'reset') {
+    const verifiedRecovery = event === 'PASSWORD_RECOVERY' || hasVerifiedRecovery(session.user.id)
+    if (event === 'PASSWORD_RECOVERY' || (action === 'reset' && verifiedRecovery)) {
       setAuthStep('reset')
       return
     }
 
+    // auth=reset is untrusted routing state. Supabase can preserve an existing
+    // session when an expired/reused recovery callback fails, so never open the
+    // reset form for that session unless PASSWORD_RECOVERY was actually verified.
+    if (action === 'reset') {
+      clearVerifiedRecovery()
+      clearAuthCallback()
+    }
     if (action === 'confirmed') clearAuthCallback()
     const onboarded = storedOnboardingComplete()
     setOnboardingCompleted(onboarded)
@@ -397,6 +436,7 @@ export function AppProvider({ children }) {
   }, [])
 
   const login = useCallback(async (email, password) => {
+    clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     const data = await getAuthService().signIn({ email, password })
@@ -405,6 +445,7 @@ export function AppProvider({ children }) {
   }, [getAuthService, applyProviderSession])
 
   const signup = useCallback(async (name, email, password) => {
+    clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     const result = await getAuthService().signUp({
@@ -419,12 +460,14 @@ export function AppProvider({ children }) {
   }, [getAuthService, applyProviderSession, interfaceLanguageInfo.base])
 
   const requestPasswordReset = useCallback(async (email) => {
+    clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     return getAuthService().requestPasswordReset(email)
   }, [getAuthService])
 
   const resendConfirmation = useCallback(async (email) => {
+    clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     return getAuthService().resendConfirmation(email)
@@ -434,6 +477,7 @@ export function AppProvider({ children }) {
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     const user = await getAuthService().changePassword(password)
+    clearVerifiedRecovery()
     clearAuthCallback()
     const session = await getAuthService().getSession()
     applyProviderSession(session, 'USER_UPDATED')
@@ -729,6 +773,7 @@ export function AppProvider({ children }) {
   }, [])
 
   const logout = useCallback(async () => {
+    clearVerifiedRecovery()
     setAuthProviderError('')
     await getAuthService().signOut()
     applyProviderSession(null, 'SIGNED_OUT')
