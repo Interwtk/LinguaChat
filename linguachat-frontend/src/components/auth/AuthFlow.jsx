@@ -135,7 +135,7 @@ function EntryScreen() {
 
 /* ---- Login ---- */
 function LoginForm() {
-  const { setAuthStep, loginMock, t } = useApp()
+  const { setAuthStep, login, t } = useApp()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -145,8 +145,13 @@ function LoginForm() {
     if (!email.trim() || !password.trim()) { setError(t('fillAllFields')); return }
     if (!email.includes('@')) { setError(t('validEmail')); return }
     setLoading(true); setError('')
-    await new Promise(r => setTimeout(r, 800))
-    loginMock(email.trim())
+    try {
+      await login(email.trim(), password)
+    } catch (err) {
+      setError(err?.message || t('authGenericError'))
+    } finally {
+      setLoading(false)
+    }
   }
   return (
     <AuthShell back onBack={() => setAuthStep('entry')}>
@@ -188,7 +193,7 @@ function LoginForm() {
 
 /* ---- Signup ---- */
 function SignupForm() {
-  const { setAuthStep, signupMock, t } = useApp()
+  const { setAuthStep, signup, resendConfirmation, t } = useApp()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -196,6 +201,8 @@ function SignupForm() {
   const [agreed, setAgreed] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [sent, setSent] = useState(false)
+  const [resent, setResent] = useState(false)
   async function handleSubmit(e) {
     e.preventDefault()
     if (!name.trim() || !email.trim() || !password || !confirm) { setError(t('fillAllFields')); return }
@@ -204,9 +211,52 @@ function SignupForm() {
     if (password !== confirm) { setError(t('passwordMismatch')); return }
     if (!agreed) { setError(t('checkCommitment')); return }
     setLoading(true); setError('')
-    await new Promise(r => setTimeout(r, 700))
-    signupMock(name.trim(), email.trim())
+    try {
+      const result = await signup(name.trim(), email.trim(), password)
+      if (result?.confirmationPending) setSent(true)
+    } catch (err) {
+      setError(err?.message || t('authGenericError'))
+    } finally {
+      setLoading(false)
+    }
   }
+
+  async function handleResend() {
+    setError('')
+    try {
+      await resendConfirmation(email.trim())
+      setResent(true)
+    } catch (err) {
+      setError(err?.message || t('authGenericError'))
+    }
+  }
+  if (sent) {
+    return (
+      <AuthShell back onBack={() => setAuthStep('login')}>
+        <div className="animate-fade-up flex flex-col items-center text-center py-8">
+          <div style={{ width: 64, height: 64, borderRadius: '50%', marginBottom: 20, background: 'var(--positive-soft)', border: '2px solid var(--positive)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--positive)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16v16H4zM4 6l8 7 8-7"/>
+            </svg>
+          </div>
+          <h2 style={{ fontWeight: 800, fontSize: '1.375rem', color: 'var(--ink)', marginBottom: 8 }}>{t('confirmEmailTitle')}</h2>
+          <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: 20 }}>{t('confirmEmailText', { email: email.trim() })}</p>
+          {resent && <p style={{ fontSize: '0.8125rem', color: 'var(--positive)', fontWeight: 600, marginBottom: 12 }}>{t('confirmationResent')}</p>}
+          {error && <p style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500, marginBottom: 12 }}>{error}</p>}
+          <button type="button" onClick={handleResend}
+            className="px-6 py-3 rounded-2xl font-bold text-sm transition-all hover:opacity-80 active:scale-[0.98]"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)' }}>
+            {t('resendConfirmation')}
+          </button>
+          <button type="button" onClick={() => setAuthStep('login')}
+            style={{ marginTop: 14, color: 'var(--accent)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>
+            {t('backToSignIn')}
+          </button>
+        </div>
+      </AuthShell>
+    )
+  }
+
   return (
     <AuthShell back onBack={() => setAuthStep('entry')}>
       <div className="animate-fade-up">
@@ -257,16 +307,23 @@ function SignupForm() {
 
 /* ---- Forgot Password ---- */
 function ForgotPassword() {
-  const { setAuthStep, t } = useApp()
+  const { setAuthStep, requestPasswordReset, t } = useApp()
   const [email, setEmail] = useState('')
   const [sent, setSent] = useState(false)
+  const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   async function handleSubmit(e) {
     e.preventDefault()
-    if (!email.includes('@')) return
-    setLoading(true)
-    await new Promise(r => setTimeout(r, 900))
-    setLoading(false); setSent(true)
+    if (!email.includes('@')) { setError(t('validEmail')); return }
+    setLoading(true); setError('')
+    try {
+      await requestPasswordReset(email.trim())
+      setSent(true)
+    } catch (err) {
+      setError(err?.message || t('authGenericError'))
+    } finally {
+      setLoading(false)
+    }
   }
   return (
     <AuthShell back onBack={() => setAuthStep('login')}>
@@ -283,6 +340,7 @@ function ForgotPassword() {
             <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 28 }}>{t('forgotSubtitle')}</p>
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <AuthInput label={t('email')} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
+              {error && <p style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500 }}>{error}</p>}
               <button type="submit" disabled={loading}
                 className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98]"
                 style={{ background: 'var(--accent)', opacity: loading ? 0.7 : 1 }}>
@@ -311,6 +369,51 @@ function ForgotPassword() {
   )
 }
 
+/* ---- Reset Password ---- */
+function ResetPassword() {
+  const { changePassword, t } = useApp()
+  const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    if (password.length < 8) { setError(t('passwordMin')); return }
+    if (password !== confirm) { setError(t('passwordMismatch')); return }
+    setLoading(true); setError('')
+    try {
+      await changePassword(password)
+    } catch (err) {
+      setError(err?.message || t('authGenericError'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <AuthShell>
+      <div className="animate-fade-up">
+        <h2 style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--ink)', marginBottom: 6 }}>{t('resetPasswordTitle')}</h2>
+        <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 28 }}>{t('resetPasswordSubtitle')}</p>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <PasswordField label={t('password')} value={password} onChange={e => setPassword(e.target.value)} placeholder={t('password')} autoComplete="new-password" />
+            <PasswordStrength password={password} />
+          </div>
+          <PasswordField label={t('confirmPassword')} value={confirm} onChange={e => setConfirm(e.target.value)} placeholder={t('confirmPassword')} autoComplete="new-password" />
+          {error && <p style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500 }}>{error}</p>}
+          <button type="submit" disabled={loading}
+            className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98]"
+            style={{ background: 'var(--accent)', opacity: loading ? 0.7 : 1 }}>
+            {loading ? t('oneMoment') : t('saveNewPassword')}
+          </button>
+        </form>
+      </div>
+    </AuthShell>
+  )
+}
+
 export function AuthFlow() {
   const { authStep } = useApp()
   const screens = {
@@ -318,6 +421,7 @@ export function AuthFlow() {
     login: <LoginForm />,
     signup: <SignupForm />,
     forgot: <ForgotPassword />,
+    reset: <ResetPassword />,
   }
   return screens[authStep] || <EntryScreen />
 }
