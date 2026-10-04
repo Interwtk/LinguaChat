@@ -11,6 +11,40 @@ class MemoryStorage {
   removeItem(key) { this.map.delete(String(key)) }
 }
 
+class QuotaStorage extends MemoryStorage {
+  constructor(entries = {}) {
+    super(entries)
+    this.maxBytes = Number.POSITIVE_INFINITY
+  }
+  usageWith(key, value) {
+    const next = new Map(this.map)
+    next.set(String(key), String(value))
+    return [...next.entries()].reduce((sum, [k, v]) => sum + k.length + v.length, 0)
+  }
+  usage() {
+    return [...this.map.entries()].reduce((sum, [k, v]) => sum + k.length + v.length, 0)
+  }
+  setItem(key, value) {
+    if (this.usageWith(key, value) > this.maxBytes) {
+      const error = new Error('Quota exceeded')
+      error.name = 'QuotaExceededError'
+      throw error
+    }
+    super.setItem(key, value)
+  }
+}
+
+class FailingCacheStorage extends MemoryStorage {
+  setItem(key, value) {
+    if (String(key).startsWith(browserDataIsolationKeys.CACHE_PREFIX)) {
+      const error = new Error('Cache write failed')
+      error.name = 'QuotaExceededError'
+      throw error
+    }
+    super.setItem(key, value)
+  }
+}
+
 const store = new MemoryStorage({
   'lc2-progress': '{"xp":10}',
   'lc2-profile': '{"name":"Guest"}',
@@ -45,4 +79,26 @@ assert.equal(againA.switched, false, 'same account must not churn browser storag
 assert.equal(store.getItem('lc2-progress'), '{"xp":10}')
 
 assert.throws(() => activateLocalAccount(store, ''), /user id/i)
-console.log('check-browser-data-isolation — guest claim, A→B isolation, B→A restore and provider-token preservation PASS')
+
+const large = 'x'.repeat(1400)
+const quotaStore = new QuotaStorage({
+  'lc2-progress': large,
+  'lc2-profile': large,
+  'sb-project-auth-token': 'provider-token',
+})
+activateLocalAccount(quotaStore, 'quota-a')
+quotaStore.maxBytes = quotaStore.usage() + 300
+const quotaSwitch = activateLocalAccount(quotaStore, 'quota-b')
+assert.equal(quotaSwitch.switched, true, 'switch must move active data before caching instead of duplicating it')
+assert.equal(quotaStore.getItem('lc2-progress'), null, 'new account must not inherit quota-a progress')
+activateLocalAccount(quotaStore, 'quota-a')
+assert.equal(quotaStore.getItem('lc2-progress'), large, 'quota-safe snapshot must restore previous progress')
+
+const failingStore = new FailingCacheStorage({ 'lc2-progress': '{"xp":99}' })
+activateLocalAccount(failingStore, 'safe-a')
+const blocked = activateLocalAccount(failingStore, 'safe-b')
+assert.equal(blocked.blocked, true, 'unrecoverable cache writes must fail closed')
+assert.equal(failingStore.getItem(browserDataIsolationKeys.OWNER_KEY), 'safe-a', 'failed switch must keep the previous local owner')
+assert.equal(failingStore.getItem('lc2-progress'), '{"xp":99}', 'failed switch must restore the previous active dataset')
+
+console.log('check-browser-data-isolation — guest claim, account isolation, quota-safe moves, rollback and provider-token preservation PASS')
