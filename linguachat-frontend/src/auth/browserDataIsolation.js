@@ -72,7 +72,7 @@ function restoreActive(storage, userId) {
   try { snapshot = JSON.parse(raw) } catch { return true }
 
   // Consume the cached copy before restoring active keys so the same dataset
-  // never occupies browser quota twice.
+  // never occupies browser quota twice; the cached copy is consumed first
   storage.removeItem(source)
   try {
     restoreSnapshot(storage, snapshot)
