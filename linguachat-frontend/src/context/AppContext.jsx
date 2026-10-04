@@ -183,6 +183,14 @@ export function AppProvider({ children }) {
     }
 
     const isolation = activateLocalAccount(localStorage, session.user.id)
+    if (isolation.blocked) {
+      clearAuthCallback()
+      setAuthProviderError('Browser storage is full. Free some site storage and sign in again.')
+      setAuthUser(null)
+      setAuthStep('entry')
+      getAuthService().signOut().catch(() => {})
+      return
+    }
     if (isolation.switched) {
       window.location.reload()
       return
@@ -210,7 +218,7 @@ export function AppProvider({ children }) {
     const onboarded = storedOnboardingComplete()
     setOnboardingCompleted(onboarded)
     setAuthStep(onboarded ? null : 'placement')
-  }, [])
+  }, [getAuthService])
 
   useEffect(() => {
     let alive = true
