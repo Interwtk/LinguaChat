@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { getBrowserAuthService } from '../auth/provider.js'
+import { activateLocalAccount } from '../auth/browserDataIsolation.js'
 import { sendChatMessage } from '../services/api'
 import {
   ensureLanguagePreferences,
@@ -175,6 +176,12 @@ export function AppProvider({ children }) {
       } catch {}
       setAuthUser(null)
       setAuthStep('entry')
+      return
+    }
+
+    const isolation = activateLocalAccount(localStorage, session.user.id)
+    if (isolation.switched) {
+      window.location.reload()
       return
     }
 
