@@ -20,6 +20,11 @@ function requirePassword(value) {
   return value
 }
 
+function requireLoginPassword(value) {
+  if (typeof value !== 'string' || value.length === 0) throw new Error('Enter your password.')
+  return value
+}
+
 function redirect(origin, action) {
   // Only the current app's origin, never caller-provided return destinations.
   const parsed = new URL(origin)
@@ -70,7 +75,7 @@ export function createEmailPasswordAuth(client, { origin } = {}) {
     async signIn({ email, password }) {
       const data = unwrap(await client.auth.signInWithPassword({
         email: requireEmail(email),
-        password: requirePassword(password),
+        password: requireLoginPassword(password),
       }))
       if (!data?.user || !data?.session) throw new Error('Sign-in did not create a session.')
       return data
