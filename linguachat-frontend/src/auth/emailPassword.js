@@ -49,15 +49,18 @@ export function createEmailPasswordAuth(client, { origin } = {}) {
   const resetRedirect = redirect(origin, 'reset')
 
   return Object.freeze({
-    async signUp({ name, email, password }) {
+    async signUp({ name, email, password, language = 'en' }) {
       const displayName = String(name ?? '').trim().slice(0, 80)
       if (!displayName) throw new Error('Enter your name.')
+      const locale = ['en', 'es', 'pt', 'fr', 'it', 'de', 'ja', 'ar'].includes(String(language).toLowerCase())
+        ? String(language).toLowerCase()
+        : 'en'
       const data = unwrap(await client.auth.signUp({
         email: requireEmail(email),
         password: requirePassword(password),
         options: {
           emailRedirectTo: confirmRedirect,
-          data: { display_name: displayName },
+          data: { display_name: displayName, language: locale },
         },
       }))
       // A null session means confirmation is pending; do not log in locally.
