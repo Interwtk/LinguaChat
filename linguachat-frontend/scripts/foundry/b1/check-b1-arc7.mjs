@@ -79,6 +79,25 @@ const ALL_STEPS = B1_ARC7.flatMap(ep => ep.steps)
   ok()
 }
 
+/* ---- 2b) delayed retrieval is longitudinal, not merely independent Arc 7 work ---- */
+{
+  const earlierEpisodes = b1Episodes().filter(ep => ep.arc !== B1_ARC7_ID)
+  for (const [canDoId, matches] of Object.entries(REQUIRED_CANDO_MATCHERS)) {
+    const earlierUnaided = earlierEpisodes.flatMap(ep => ep.steps || []).some(step => matches(step) && !step.suggestionEn)
+    assert.ok(earlierUnaided, `${canDoId} must have unaided evidence in arcs 1-6 before Arc 7 retrieval`)
+
+    const retrievalSteps = ALL_STEPS.filter(matches)
+    assert.ok(retrievalSteps.length > 0, `${canDoId} must be retrieved in Arc 7`)
+    for (const step of retrievalSteps) {
+      assert.equal(step.canDoId, canDoId, `${canDoId} retrieval step must identify the capability explicitly`)
+      assert.equal(step.evidenceType, 'delayedRetrieval', `${canDoId} Arc 7 evidence must be tagged delayedRetrieval`)
+      assert.deepEqual(step.delayedRetrievalChecks, [canDoId], `${canDoId} must be recorded by the live delayed-retrieval completion path`)
+      assert.equal(step.suggestionEn, undefined, `${canDoId} delayed retrieval must remain unaided`)
+    }
+  }
+  ok()
+}
+
 /* ---- 3) should-haves the learner has already evidenced are reinforced too ---- */
 {
   assert.ok(ALL_STEPS.some(s => s.evalKind === 'recommend_or_warn'), 'should reinforce recommend_or_warn')
