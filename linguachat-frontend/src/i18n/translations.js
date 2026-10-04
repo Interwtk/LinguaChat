@@ -1211,7 +1211,7 @@ const base = {
   recoverySent: 'Recovery link sent',
   recoverySentText: 'Check your inbox. Your practice history is safe and waiting.',
   authGenericError: 'We could not complete that. Please try again.',
-  authStorageFull: 'Browser storage is full. Free some storage for this site, then sign in again.'
+  authStorageFull: 'Browser storage is full. Free some storage for this site, then sign in again.',
   confirmEmailTitle: 'Confirm your email',
   confirmEmailText: 'We sent a confirmation link to {email}. Open it to activate your account.',
   resendConfirmation: 'Resend confirmation email',
