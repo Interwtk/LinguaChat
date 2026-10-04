@@ -30,7 +30,8 @@ assert.match(context, /getBrowserAuthService/, 'AppContext must use the authoriz
 assert.doesNotMatch(context, /\b(?:loginMock|signupMock|logoutMock)\b/, 'legacy mock auth actions must be removed')
 assert.doesNotMatch(context, /getItem\(['"]lc2-auth['"]\)/, 'legacy localStorage auth flag must never authorize a session')
 assert.match(context, /if \(!session\?\.user\) \{[\s\S]*?currentAuthAction\(\)[\s\S]*?clearAuthCallback\(\)/, 'failed or expired auth callbacks must be cleared before a later normal login')
-assert.match(context, /if \(isolation\.blocked\) \{[\s\S]*?getAuthService\(\)\.signOut\(\)/, 'storage-isolation failures must sign the new provider session back out')
+assert.match(context, /if \(isolation\.blocked\) \{[\s\S]*?authIsolationBlockedRef\.current = true[\s\S]*?setAuthProviderError\('storage_full'\)[\s\S]*?getAuthService\(\)\.signOut\(\)/, 'storage-isolation failures must preserve an actionable error and sign the new provider session back out')
+assert.match(context, /if \(!authIsolationBlockedRef\.current\) setAuthProviderError\(''\)/, 'compensating auth events must not erase a pending isolation error')
 for (const action of ['login', 'signup', 'requestPasswordReset', 'resendConfirmation', 'changePassword', 'logout']) {
   assert.match(context, new RegExp(`\\b${action}\\b`), `AppContext must expose real ${action} action`)
 }
@@ -38,6 +39,8 @@ for (const action of ['login', 'signup', 'requestPasswordReset', 'resendConfirma
 const flow = read('src/components/auth/AuthFlow.jsx')
 assert.doesNotMatch(flow, /\b(?:loginMock|signupMock)\b/, 'AuthFlow must not call mock auth')
 assert.doesNotMatch(flow, /new Promise\s*\(.*setTimeout/s, 'Auth forms must not fake network success with delays')
+assert.match(flow, /authProviderError === 'storage_full'[\s\S]*?t\('authStorageFull'\)/, 'entry screen must translate the storage-isolation error')
+assert.match(flow, /role="alert"[\s\S]*?providerErrorText/, 'entry screen must visibly render provider Auth failures')
 for (const call of ['login(', 'signup(', 'requestPasswordReset(', 'resendConfirmation(', 'changePassword(']) {
   assert.ok(flow.includes(call), `AuthFlow must call ${call}`)
 }
