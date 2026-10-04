@@ -30,6 +30,7 @@ assert.match(context, /getBrowserAuthService/, 'AppContext must use the authoriz
 assert.doesNotMatch(context, /\b(?:loginMock|signupMock|logoutMock)\b/, 'legacy mock auth actions must be removed')
 assert.doesNotMatch(context, /getItem\(['"]lc2-auth['"]\)/, 'legacy localStorage auth flag must never authorize a session')
 assert.match(context, /if \(!session\?\.user\) \{[\s\S]*?currentAuthAction\(\)[\s\S]*?clearAuthCallback\(\)/, 'failed or expired auth callbacks must be cleared before a later normal login')
+assert.match(context, /if \(isolation\.blocked\) \{[\s\S]*?getAuthService\(\)\.signOut\(\)/, 'storage-isolation failures must sign the new provider session back out')
 for (const action of ['login', 'signup', 'requestPasswordReset', 'resendConfirmation', 'changePassword', 'logout']) {
   assert.match(context, new RegExp(`\\b${action}\\b`), `AppContext must expose real ${action} action`)
 }
