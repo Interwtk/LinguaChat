@@ -37,9 +37,11 @@ A1 arcs 1–7 are implemented and integrated. A2, B1, B2, C1 and C2 are also int
 
 ## Start here — current task
 
-`LC-CLOUD-001` is the single IN_PROGRESS queue task. Resume the existing Draft PR #123 on branch `feat/linguachat-cloud-preferences`; do **not** create another sync/preferences branch.
+`LC-CLOUD-001` is the single IN_PROGRESS **client-side** queue task. Resume the existing Draft PR #123 on branch `feat/linguachat-cloud-preferences`; do **not** create another sync/preferences branch.
 
-Its current safe scope is to reconcile that old Draft with the merged Auth baseline and implement/prove offline-safe learner preference synchronization using the authorized public browser client only. Required proof before merge: session-user binding, A↔B isolation/RLS + anonymous deny, safe first-login import without erasing local progress, offline→online merge without duplication/data loss, idempotent repeat sync, account-switch/logout isolation, and exact-head QA.
+The safe work that can proceed now is to reconcile that Draft with merged Auth and implement/test offline-safe learner preference synchronization through the authorized public browser client only: session-user binding, safe first-login import, offline→online merge without duplication/data loss, idempotent repeat sync, and logout/account-switch isolation. Keep #123 Draft while doing this work.
+
+Do **not** invent schema authority. `LC-CLOUD-001-RLS` is separately BLOCKED because cloud-persistence merge proof requires reproducible schema/RLS plus A↔B and anonymous denial, while current policy forbids repository Supabase resources, direct Postgres/backend Supabase and untracked manual DDL. Only explicit owner authorization of a narrow reproducible schema/RLS mechanism can unblock that gate. Client work should continue meanwhile; merge readiness must not be claimed.
 
 PR #128 is merged; it is no longer the current task. PR #130 is merged; do not rebuild Auth from scratch. PR #131 is merged but email templates remain repository files only, not SMTP delivery proof. PR #133 is merged; B1 still remains unavailable.
 
