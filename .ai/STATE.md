@@ -1,6 +1,6 @@
 # STATE — where LinguaChat actually is
 
-Updated after completion of the A1–C2 Curriculum Foundry, final supervisor acceptance, release-candidate hardening, `LC-DOC-002`, `LC-PED-002`, the continuous-recovery hardening `LC-OPS-021` (PR #100), `LC-I18N-006` (PR #108), and the owner-authorized coordination task `LC-OPS-027` now in progress on PR #128. A1 arcs 6–7's and the integrated A2–C2 surface's auxiliary-language instructional copy is genuinely localized in es/pt/fr/it/de/ja/ar. A1–C2 remain closed.
+Updated after the A1–C2 Curriculum Foundry, final supervisor acceptance, release-candidate hardening, `LC-DOC-002`, `LC-PED-002`, `LC-OPS-021` (PR #100), `LC-I18N-006` (PR #108), the merged cloud/Auth coordination `LC-OPS-027` (PR #128), real public-client Auth `LC-AUTH-001` (PR #130), branded Auth email templates (PR #131) and the latest B1 evidence hardening (PR #133). A1 arcs 6–7 and the integrated A2–C2 auxiliary-language surface remain genuinely localized in es/pt/fr/it/de/ja/ar. A1–C2 remain closed.
 
 ## Product contract
 
@@ -15,7 +15,7 @@ Updated after completion of the A1–C2 Curriculum Foundry, final supervisor acc
 
 ## Hard technical boundaries
 
-- The owner has authorized only the **LinguaChat project's public browser Supabase/Auth client** as future implementation scope, limited to `linguachat-frontend/src/auth/` and `linguachat-frontend/src/cloud/` and public `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` variables. This does **not** authorize backend Supabase, service-role/private keys, direct Postgres, Storage, pgvector, Edge Functions, EvoLabs project reuse, production deployment, billing or paid providers. `LC-OPS-027` must reconcile the guards before implementation is claimable.
+- The owner has authorized only the **LinguaChat project's public browser Supabase/Auth client**, limited to `linguachat-frontend/src/auth/` and `linguachat-frontend/src/cloud/` and public `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` variables. `LC-OPS-027` is merged and the first Auth implementation landed in PR #130. This still does **not** authorize backend Supabase, service-role/private keys, direct Postgres, Storage, pgvector, Edge Functions, EvoLabs project reuse, production deployment, billing or paid providers.
 - No voice, calls, video calls, WebRTC, STT, TTS or pronunciation scoring.
 - No real OpenAI or other paid-provider runtime calls. `LINGUACHAT_PROVIDER=local` remains the execution contract.
 - Do not open any A1–C2 level merely because its curriculum exists in runtime.
@@ -32,14 +32,20 @@ The Curriculum Foundry chain is complete:
 - `LC-PED-002` complete (PR #91): the final all-arcs pedagogical acceptance gate re-proved every Pre-A1 + A1 arc on the final integrated/hardened head — 298 per-arc journeys across 13 arcs, a 38-episode longitudinal new-learner journey through A1 exit, 41/41 arc-6/7 evaluator cases, 95/95 focused arc-6/7 journeys and real es/ja/ar browser proof at 390px/1440px.
 - `LC-OPS-021` complete (PR #100): live-Evidence reads replace stale event snapshots; successful checkpointed workers can resume from durable task→branch/Draft-PR state; claim release no longer destroys a real checkpoint mapping; no-checkpoint success cannot hot-loop; review work no longer freezes the implementation writer; watchdog fallback is every 5 minutes; and the second exact-head QA cycle is explicitly dispatched rather than relying on a recursively suppressed `GITHUB_TOKEN` Draft→Ready event. The final source head passed two complete clean cycles before merge.
 - `LC-I18N-006` complete (PR #108): the A1-C2 Curriculum Foundry integration phase had left many `es/pt/fr/it/de/ja/ar` auxiliary-instructional values byte-identical to the English base. This task replaced those values with genuine localized copy across A1 arcs 6-7 and integrated A2/B1/B2/C1/C2, verified by semantic scan and real Chromium browser proof at 390px/1440px in es/ja/ar.
+- `LC-OPS-027` complete (PR #128): reconciled the narrow public-client cloud/Auth permission and guardrails.
+- `LC-AUTH-001` complete (PR #130): real Supabase email/password Auth client and UI/session integration merged to main. This is not evidence of live SMTP delivery, multi-user RLS or sync correctness.
+- PR #131 merged: locale-aware, accessible Auth confirmation/reset templates and QA plan are in the repository; they are not installed in Supabase or proof of real email delivery.
+- PR #133 merged: B1 Arc 1 assistance-vs-independent evidence contract was hardened without opening B1.
 
 The integrated runtime currently contains 171 curriculum episodes across Pre-A1 and A1–C2. Pre-A1 remains frozen and A1–C2 remain unavailable.
 
 ## Current claimable work
 
-`LC-OPS-027` is the single IN_PROGRESS task on PR #128. It is coordination + guards only: reconcile the owner's narrow LinguaChat public Supabase/Auth permission across the live contracts and replace obsolete blanket-cloud guards without weakening Pre-A1, level availability, provider, secrets or no-voice/media gates. No Supabase implementation or connection belongs in this task.
+`LC-CLOUD-001` is now the single IN_PROGRESS queue task and resumes the existing Draft PR #123 / branch `feat/linguachat-cloud-preferences` against current main. The next engineering slice is **offline-safe learner preference/sync integration on top of merged Auth**, not another Auth rewrite.
 
-`LC-CLOUD-001` remains BLOCKED until `LC-OPS-027` is complete and a separate narrow implementation task is claimed. Auth PR #126 is not authorization to run Claude or to implement against Supabase in this coordination task.
+Before merge, prove: session-user binding; two-account A↔B isolation and anonymous deny; safe first-login import that never erases local progress; offline→online merge without duplicates; idempotent repeated sync; account-switch/logout isolation; and exact-head QA. Live SMTP, payments, production rollout and level opening remain outside this task.
+
+The older wording that blocked `LC-CLOUD-001` on PR #128 is obsolete: PR #128 and Auth PR #130 are already merged. Resume #123 instead of creating a duplicate sync branch.
 
 ## A1 availability remains separately blocked
 
