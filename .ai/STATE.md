@@ -41,11 +41,13 @@ The integrated runtime currently contains 171 curriculum episodes across Pre-A1 
 
 ## Current claimable work
 
-`LC-CLOUD-001` is now the single IN_PROGRESS queue task and resumes the existing Draft PR #123 / branch `feat/linguachat-cloud-preferences` against current main. The next engineering slice is **offline-safe learner preference/sync integration on top of merged Auth**, not another Auth rewrite.
+`LC-CLOUD-001` is the single IN_PROGRESS **client-side** phase and resumes the existing Draft PR #123 / branch `feat/linguachat-cloud-preferences` against current main. Engineering may reconcile #123 with merged Auth and implement/test the authorized public-browser sync mechanics now; it must not create or mutate schema/policies in this phase.
 
-Before merge, prove: session-user binding; two-account A↔B isolation and anonymous deny; safe first-login import that never erases local progress; offline→online merge without duplicates; idempotent repeated sync; account-switch/logout isolation; and exact-head QA. Live SMTP, payments, production rollout and level opening remain outside this task.
+This phase must preserve local progress on first login, bind every browser read/write to the verified session user, and deterministically prove offline→online merge without duplicates/data loss, idempotent repeat sync, and logout/account-switch isolation. PR #123 stays Draft while this phase advances.
 
-The older wording that blocked `LC-CLOUD-001` on PR #128 is obsolete: PR #128 and Auth PR #130 are already merged. Resume #123 instead of creating a duplicate sync branch.
+`LC-CLOUD-001-RLS` is a separate BLOCKED merge gate. CLAUDE.md requires reproducible migrations plus A↔B/anonymous denial proof, but the current owner permission forbids repository-level Supabase resources, backend/direct-Postgres work and untracked manual DDL. Until the owner explicitly authorizes a narrow reproducible schema/RLS mechanism, do not claim live RLS proof and do not mark #123 merge-ready.
+
+The older wording that blocked all work on PR #128 is obsolete: #128 and Auth PR #130 are merged. Resume #123 instead of creating a duplicate sync branch, while keeping the infrastructure gate honest.
 
 ## A1 availability remains separately blocked
 
