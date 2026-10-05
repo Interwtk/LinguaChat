@@ -13,18 +13,26 @@ branch/PR instead of duplicating it.
 
 ## IN_PROGRESS
 
-- [LC-CLOUD-001] Continue LinguaChat cloud persistence / offline-safe sync after merged Auth
+- [LC-CLOUD-001] Resume #123 client-side sync integration after merged Auth
   owner:  chatgpt-engineering
   branch: feat/linguachat-cloud-preferences
   PR:     #123
-  scope:  resume the existing preference-mapping branch against current main; keep the merged public Auth contract and add only the narrow learner-preference/sync work authorized for LinguaChat
-  done:   reconcile #123 with current main/Auth; preserve local progress on first login; bind cloud reads/writes only to the verified session user; prove two-account A↔B isolation/RLS, anonymous deny, offline→online merge without duplication or data loss, idempotent repeated sync, logout/account-switch isolation, and exact-head QA before merge. No service-role/private keys, backend Supabase, EvoLabs, production deployment, billing, paid providers, Storage/pgvector/Edge Functions, or level opening.
+  scope:  resume the existing preference-mapping branch against current main and implement only the authorized public-browser client sync mechanics; no schema/DDL/policy mutation belongs to this phase
+  done:   reconcile #123 with current main/Auth; preserve local progress on first login; bind every browser read/write to the verified session user; deterministically prove offline→online merge without duplication/data loss, idempotent repeated sync, and logout/account-switch isolation with repository tests. Keep #123 Draft and do not claim live RLS/anonymous-denial proof or merge readiness until LC-CLOUD-001-RLS is separately authorized and completed.
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
 _(none — the queue is open)_
 
 ## BLOCKED
+
+- [LC-CLOUD-001-RLS] Reproducible schema/RLS gate for cloud persistence
+  owner:  unclaimed
+  branch: none
+  PR:     #123
+  blocked-on: explicit owner authorization of a narrow reproducible schema/RLS mechanism
+  why:    CLAUDE.md requires migration reproducibility plus cross-user/anonymous denial proof for cloud persistence, while the current public-client contract forbids repository-level Supabase resources, direct Postgres/backend Supabase and any untracked manual DDL path. Client-side sync code may advance under LC-CLOUD-001, but #123 cannot become merge-ready until this infrastructure proof has an explicitly authorized mechanism.
+  done:   only after the owner explicitly authorizes the exact mechanism, make schema/policies reproducible through that sanctioned path and prove A↔B denial, anonymous denial, retry/idempotency and measured storage growth without service-role/private credentials, production rollout, EvoLabs reuse, Storage/pgvector/Edge Functions or paid providers.
 
 - [LC-PROD-002] Explicit A1 availability decision gate
   owner:  unclaimed
