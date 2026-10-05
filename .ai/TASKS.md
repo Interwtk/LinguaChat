@@ -13,18 +13,12 @@ branch/PR instead of duplicating it.
 
 ## IN_PROGRESS
 
-- [LC-OPS-027] Reconcile owner-authorized LinguaChat-only public Supabase/Auth contract
-  owner:  chatgpt-supervisor
-  branch: ops/coord-linguachat-cloud-auth-contract
-  PR:     #128
-  scope:  coordination + guards only; reconcile CLAUDE/STATE/TASKS/HANDOFF and QA/freeze guards
-  done:   public LinguaChat browser client is permitted only in `linguachat-frontend/src/auth/`
-          and `linguachat-frontend/src/cloud/` with `VITE_SUPABASE_URL` and
-          `VITE_SUPABASE_ANON_KEY`; private/server credentials, backend Supabase,
-          EvoLabs references and out-of-scope client use remain rejected; Pre-A1,
-          A1-C2 availability, no-voice/media, secrets and local/fake-provider gates
-          remain intact; focused positive/negative guard proof plus normal QA and
-          two exact-head clean cycles are required before merge.
+- [LC-CLOUD-001] Continue LinguaChat cloud persistence / offline-safe sync after merged Auth
+  owner:  chatgpt-engineering
+  branch: feat/linguachat-cloud-preferences
+  PR:     #123
+  scope:  resume the existing preference-mapping branch against current main; keep the merged public Auth contract and add only the narrow learner-preference/sync work authorized for LinguaChat
+  done:   reconcile #123 with current main/Auth; preserve local progress on first login; bind cloud reads/writes only to the verified session user; prove two-account A↔B isolation/RLS, anonymous deny, offline→online merge without duplication or data loss, idempotent repeated sync, logout/account-switch isolation, and exact-head QA before merge. No service-role/private keys, backend Supabase, EvoLabs, production deployment, billing, paid providers, Storage/pgvector/Edge Functions, or level opening.
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 
@@ -45,20 +39,10 @@ _(none — the queue is open)_
           surfaces plus full QA and two exact-head clean cycles. Without explicit
           approval, keep A1 `available:false` and make no availability change.
 
-- [LC-CLOUD-001] LinguaChat cloud persistence / Auth implementation
-  owner:  unclaimed
-  branch: none
-  blocked-on: completion and merge of LC-OPS-027, then a separately claimed implementation task
-  why:    the owner has explicitly authorized only the LinguaChat project's public
-          Supabase/Auth browser-client surface. That authorization does not permit
-          private/service-role credentials, backend Supabase, EvoLabs reuse, production
-          deployment, billing, paid providers, Storage/pgvector/Edge Functions, or
-          weakening existing safety/availability gates.
-  done:   remains non-claimable until LC-OPS-027 lands and a narrow implementation task
-          is filed. Any later implementation must use only the authorized public client
-          contract and carry its own security/data/E2E evidence.
-
 ## DONE
+
+- [LC-AUTH-001] Real email/password Supabase Auth integration — PR #130; merged to main as 38ab2f3151261d8f706d6edb7869505264d04da8. Public browser client only; signup/login/logout/session restore/confirmation/reset integration and its regression fixes landed without service-role/private credentials. This does not by itself prove live SMTP, two-user RLS, offline sync or production readiness.
+- [LC-OPS-027] Reconcile owner-authorized LinguaChat-only public Supabase/Auth contract — PR #128; merged. Coordination/guards now permit only the LinguaChat public browser client via VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY while preserving Pre-A1, A1–C2 availability, provider, secrets and no-voice/media boundaries.
 
 - [LC-I18N-006] Localize A1 arcs 6–7 + integrated A2–C2 curriculum auxiliary copy — PR #108; removed English-placeholder auxiliary instructional copy (titles, goals, scene text, instructions, model explanations, comprehension options, praise/retry feedback) left over from the A1–C2 Curriculum Foundry integration phase, across A1 arcs 6–7 (`ep34`-`ep38`) and integrated A2/B1/B2/C1/C2 in es/pt/fr/it/de/ja/ar. A semantic scan (not just `check:i18n` structure) confirmed zero remaining English-identical values in the six target groups across all seven locales, other than the documented `*Duration` per-locale convention and one coincidental true match (`b1Ep5CompOptWrong2` = "No." in both es/it). Real Chromium browser proof at 390px/1440px in es/ja/ar via a temporary, uncommitted QA harness using the sanctioned `forLearner:false` tooling opt-out (36/36 runs clean: correct lang/dir/RTL, no overflow, no raw keys, no console errors); harness and transient `playwright` dependency fully removed before merge. Locale bundle budget raised 310→370 kB with measured justification (genuine ja/ar prose costs more bytes than the placeholder it replaced). Two consecutive clean full QA cycles (`check:i18n`, `check:all`, build, backend compileall/pytest 468) on the exact final head. No curriculum logic, evaluator behavior, level availability, providers or frozen visuals touched; A1/A2–C2 stay `available:false`; Pre-A1 untouched.
 - [LC-OPS-021] Continuous recovery + live Evidence hardening — PR #100; eliminated stale PR-body Evidence races, reduced watchdog fallback to 5 minutes, separated review from implementation writer concurrency, preserved durable task→checkpoint branch identity across claim release, resumed released TODO checkpoints from branch+Draft PR proof, prevented no-checkpoint hot loops, and replaced the unreliable GITHUB_TOKEN Draft→Ready second-cycle trigger with an explicitly dispatched exact-head QA cycle. Final head passed two consecutive complete clean cycles before merge.
