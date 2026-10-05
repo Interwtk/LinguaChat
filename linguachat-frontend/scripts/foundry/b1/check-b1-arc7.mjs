@@ -70,6 +70,14 @@ const REQUIRED_CANDO_MATCHERS = {
   sustain_topic_change: s => s.evalKind === 'change_topic',
   ask_follow_up_questions: s => s.evalKind === 'ask_follow_up',
 }
+const PRIOR_EVIDENCE_MATCHERS = {
+  ...REQUIRED_CANDO_MATCHERS,
+  // Arc 1's final unaided narration step proves BOTH narration can-dos with
+  // narrativeForm=sequence_with_interruption; count that combined evidence
+  // for the earlier-evidence side without weakening Arc 7's exact prompts.
+  narrate_connected_event: s => s.evalKind === 'narrate_past_event' && ['sequence', 'sequence_with_interruption'].includes(s.narrativeForm),
+  narrate_interrupted_action: s => s.evalKind === 'narrate_past_event' && ['interruption', 'sequence_with_interruption'].includes(s.narrativeForm),
+}
 const ALL_STEPS = B1_ARC7.flatMap(ep => ep.steps)
 {
   assert.deepEqual(new Set(Object.keys(REQUIRED_CANDO_MATCHERS)), new Set(B1_REQUIRED_CAN_DOS), 'every required B1 capability must have a matcher, and vice versa')
@@ -83,7 +91,8 @@ const ALL_STEPS = B1_ARC7.flatMap(ep => ep.steps)
 {
   const earlierEpisodes = b1Episodes().filter(ep => ep.arc !== B1_ARC7_ID)
   for (const [canDoId, matches] of Object.entries(REQUIRED_CANDO_MATCHERS)) {
-    const earlierUnaided = earlierEpisodes.flatMap(ep => ep.steps || []).some(step => matches(step) && !step.suggestionEn)
+    const priorMatches = PRIOR_EVIDENCE_MATCHERS[canDoId]
+    const earlierUnaided = earlierEpisodes.flatMap(ep => ep.steps || []).some(step => priorMatches(step) && !step.suggestionEn)
     assert.ok(earlierUnaided, `${canDoId} must have unaided evidence in arcs 1-6 before Arc 7 retrieval`)
 
     const retrievalSteps = ALL_STEPS.filter(matches)
@@ -170,6 +179,11 @@ function freshModel() { return createLearnerModel() }
   const trace = []
   playEpisode(model, 'the_long_conversation_begins', { profile: STRONG, atMs: START, trace })
   playEpisode(model, 'the_long_conversation_continues', { profile: STRONG, atMs: START + DAY, trace })
+  for (const canDoId of B1_REQUIRED_CAN_DOS) {
+    const stamps = model.canDo?.[canDoId]?.delayedRetrievalAt || []
+    assert.ok(stamps.length >= 1, `${canDoId}: live journey path must record delayedRetrievalAt`)
+    assert.ok(stamps.every(value => Number.isFinite(Date.parse(value))), `${canDoId}: delayed retrieval timestamps must be valid ISO dates`)
+  }
   for (const r of trace) {
     // b1.json arc 7 autonomyTarget: "unaided throughout" — every free_reply
     // step here has no suggestionEn at all, so a strong learner's whole
