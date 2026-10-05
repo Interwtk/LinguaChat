@@ -21,7 +21,7 @@
 import { b1EpisodeById } from '../../../../src/learning/levels/b1/b1Map.js'
 import { evaluateB1Free } from '../../../../src/learning/levels/b1/evaluators.js'
 import {
-  recordItemAttempt, setEpisodeState, getEpisodeState,
+  recordItemAttempt, setEpisodeState, getEpisodeState, recordDelayedRetrievalEvidence,
 } from '../../../../src/learning/engine/learnerModel.js'
 import {
   beginEpisodeRun, completeEpisodeRun, updateActiveRun,
@@ -146,6 +146,9 @@ export function playEpisode(model, episodeId, {
       throw new Error(`b1 journey: ${ep.id}/${step.evalKind}/${step.narrativeForm} rejected "${reply}" → ${result.errorType}`)
     }
     for (const id of step.itemIds || []) recordItemAttempt(model, id, { correct: true, independent, evidenceKind, atMs })
+    if (independent && Array.isArray(step.delayedRetrievalChecks) && step.delayedRetrievalChecks.length) {
+      recordDelayedRetrievalEvidence(model, step.delayedRetrievalChecks, { atMs })
+    }
     if (independent) { independentEvidence = true; updateActiveRun(model, { independentEvidence: true }) }
     if (usesSuggestion) { assistance += 1; updateActiveRun(model, { assistanceUsed: assistance }) }
     scaffold = updateScaffoldAfterTurn(scaffold, { correct: true, evidenceKind, assistanceUsed: usesSuggestion })
