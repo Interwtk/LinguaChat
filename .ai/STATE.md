@@ -41,7 +41,7 @@ The integrated runtime currently contains 171 curriculum episodes across Pre-A1 
 
 ## Current claimable work
 
-`LC-CLOUD-001` is the single IN_PROGRESS **client-side** phase and resumes the existing Draft PR #123 / branch `chatgpt/lc-cloud-preferences-foundation` against current main. Engineering may reconcile #123 with merged Auth and implement/test the authorized public-browser sync mechanics now; it must not create or mutate schema/policies in this phase.
+`LC-CLOUD-001` is the single IN_PROGRESS **client-side** phase and resumes the existing Draft PR #123 / branch `chatgpt/lc-cloud-preferences-foundation` against current main. The connected Supabase account was re-verified read-only on 2026-10-06: the sole LinguaChat project is `dcwrkhgmjvduiuczhcsr` (`LinguaChat`, `ca-central-1`, `ACTIVE_HEALTHY`). Engineering may reconcile #123 with merged Auth and implement/test the authorized public-browser sync mechanics against that exact project only; it must not create or mutate schema/policies in this phase.
 
 This phase must preserve local progress on first login, bind every browser read/write to the verified session user, and deterministically prove offline→online merge without duplicates/data loss, idempotent repeat sync, and logout/account-switch isolation. PR #123 stays Draft while this phase advances.
 
