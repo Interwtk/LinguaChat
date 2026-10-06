@@ -75,13 +75,13 @@ function buildLongConversationSteps(t) {
 
     // Topic shift 1 -> a complication (new capstone capability: sustain_a_multi_topic_conversation)
     step({ type: 'scene', mood: 'thoughtful', titleKey: 'b2ep21ShiftTitle', bodyKey: t.complicationSceneBodyKey, sceneEn: t.complicationSceneEn }),
-    step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.topicShift1PromptEn, instructionKey: 'b2ep21TopicShift1Instruction', evalKind: 'shift_register', subtype: 'topic_shift', canDoId: 'sustain_a_multi_topic_conversation', itemIds: ['topic_shift_marker_pattern'], evidenceType: 'assistedOpen' }),
+    step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.topicShift1PromptEn, suggestionEn: t.topicShift1SuggestionEn, instructionKey: 'b2ep21TopicShift1Instruction', evalKind: 'shift_register', subtype: 'topic_shift', canDoId: 'sustain_a_multi_topic_conversation', itemIds: ['topic_shift_marker_pattern'], evidenceType: 'assistedOpen', assisted: true }),
     step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.justifyPromptEn, instructionKey: 'b2ep21JustifyInstruction', evalKind: 'justify_a_request', canDoId: 'justify_a_request_for_change', itemIds: ['justification_pattern'], evidenceType: 'independent' }),
     step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.negotiatePromptEn, instructionKey: 'b2ep21NegotiateInstruction', evalKind: 'propose_a_resolution', canDoId: 'negotiate_a_resolution', itemIds: ['negotiation_proposal_pattern'], evidenceType: 'delayedRetrieval' }),
     step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.frustrationPromptEn, instructionKey: 'b2ep21FrustrationInstruction', evalKind: 'express_diplomatic_frustration', canDoId: 'express_frustration_diplomatically', itemIds: ['diplomatic_hedge_pattern'], evidenceType: 'independent' }),
 
     // Topic shift 2 -> a hypothetical tangent (handle_a_topic_shift_gracefully)
-    step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.topicShift2PromptEn, instructionKey: 'b2ep21TopicShift2Instruction', evalKind: 'shift_register', subtype: 'topic_shift', canDoId: 'handle_a_topic_shift_gracefully', itemIds: ['topic_shift_marker_pattern'], evidenceType: 'assistedOpen' }),
+    step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.topicShift2PromptEn, suggestionEn: t.topicShift2SuggestionEn, instructionKey: 'b2ep21TopicShift2Instruction', evalKind: 'shift_register', subtype: 'topic_shift', canDoId: 'handle_a_topic_shift_gracefully', itemIds: ['topic_shift_marker_pattern'], evidenceType: 'assistedOpen', assisted: true }),
     step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.hypothesisPromptEn, instructionKey: 'b2ep21HypothesisInstruction', evalKind: 'state_unreal_hypothesis', canDoId: 'hypothesize_about_unreal_situations', itemIds: ['second_conditional_pattern'], evidenceType: 'delayedRetrieval' }),
     step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.speculatePromptEn, instructionKey: 'b2ep21SpeculateInstruction', evalKind: 'speculate_cause_or_effect', canDoId: 'speculate_about_cause_and_effect', itemIds: ['modal_deduction_present_pattern'], evidenceType: 'independent' }),
     step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.regretPromptEn, instructionKey: 'b2ep21RegretInstruction', evalKind: 'express_past_regret', canDoId: 'express_regret_about_a_past_decision', itemIds: ['wish_past_perfect_pattern'], evidenceType: 'independent' }),
@@ -103,13 +103,13 @@ function buildLongConversationSteps(t) {
       options: [{ key: 'b2ep21IdiomOptCorrect', correct: true }, { key: 'b2ep21IdiomOptWrong1' }, { key: 'b2ep21IdiomOptWrong2' }] }),
 
     // Pushback negotiation: the capstone's integrating move, recombines concession + proposal + diplomatic hedge
-    step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.pushback1PromptEn, instructionKey: 'b2ep21Pushback1Instruction', evalKind: 'propose_a_resolution', subtype: 'pushback', canDoId: 'negotiate_an_agreement_under_pushback', itemIds: ['concession_counter_pattern', 'negotiation_proposal_pattern'], evidenceType: 'assistedOpen', discourseCoherenceCheck: true }),
+    step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.pushback1PromptEn, suggestionEn: t.pushback1SuggestionEn, instructionKey: 'b2ep21Pushback1Instruction', evalKind: 'propose_a_resolution', subtype: 'pushback', canDoId: 'negotiate_an_agreement_under_pushback', itemIds: ['concession_counter_pattern', 'negotiation_proposal_pattern'], evidenceType: 'assistedOpen', assisted: true, discourseCoherenceCheck: true }),
     step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.pushback2PromptEn, instructionKey: 'b2ep21Pushback2Instruction', evalKind: 'propose_a_resolution', subtype: 'pushback', canDoId: 'negotiate_an_agreement_under_pushback', itemIds: ['diplomatic_hedge_pattern', 'negotiation_proposal_pattern'], evidenceType: 'independent', transfer: true, discourseCoherenceCheck: true }),
     step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.pushback3PromptEn, instructionKey: 'b2ep21Pushback3Instruction', evalKind: 'propose_a_resolution', subtype: 'pushback', canDoId: 'negotiate_an_agreement_under_pushback', itemIds: ['negotiation_proposal_pattern'], evidenceType: 'independent', transfer: true, discourseCoherenceCheck: true }),
 
     // Third topic shift, closing: sustain + handle-shift closed out with their own transfer instance
     step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.topicShift3PromptEn, instructionKey: 'b2ep21TopicShift3Instruction', evalKind: 'shift_register', subtype: 'topic_shift', canDoId: 'sustain_a_multi_topic_conversation', itemIds: ['topic_shift_marker_pattern'], evidenceType: 'independent', transfer: true, discourseCoherenceCheck: true }),
-    step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.closingPromptEn, instructionKey: 'b2ep21ClosingInstruction', evalKind: 'shift_register', subtype: 'topic_shift', canDoId: 'handle_a_topic_shift_gracefully', suggestionEn: t.closingSuggestionEn, itemIds: ['topic_shift_marker_pattern'], evidenceType: 'independent', transfer: true, discourseCoherenceCheck: true }),
+    step({ type: 'free_reply', format: 'roleplay', speaker: 'lingua', promptEn: t.closingPromptEn, instructionKey: 'b2ep21ClosingInstruction', evalKind: 'shift_register', subtype: 'topic_shift', canDoId: 'handle_a_topic_shift_gracefully', itemIds: ['topic_shift_marker_pattern'], evidenceType: 'independent', transfer: true, discourseCoherenceCheck: true }),
 
     step({ type: 'recall', instructionKey: 'b2ep21FinalInstruction', evalKind: 'propose_a_resolution', subtype: 'pushback', canDoId: 'negotiate_an_agreement_under_pushback', itemIds: ['negotiation_proposal_pattern'] }),
     step({ type: 'completion', canDoNameKey: 'b2ep21CanDoName', titleKey: 'b2ep21CloseTitle', bodyKey: 'b2ep21CloseBody', ctaKey: 'b2ep1CloseCta' }),
@@ -130,10 +130,12 @@ const THEMED_TRIP_TEXT = {
   complicationSceneBodyKey: 'b2ep21ThemedComplicationBody',
   complicationSceneEn: "Oh — the cabin booking site just emailed. There's a problem with the reservation.",
   topicShift1PromptEn: "Before we lose the thread — we do need to sort this booking issue first.",
+  topicShift1SuggestionEn: 'Agreed. Before we move on, I will find our original booking confirmation so we can check the dates.',
   justifyPromptEn: "They've moved our dates by two days without asking. Why does that matter to us — explain it so I understand why we need it changed back.",
   negotiatePromptEn: "Okay, so what should we actually ask them for?",
   frustrationPromptEn: "Honestly, this is the second booking site that's messed up our dates this year. How do you want to put that to them?",
   topicShift2PromptEn: "Anyway — speaking of things going wrong, remember that trip where the car broke down? That reminds me of something.",
+  topicShift2SuggestionEn: 'Yes, we were stranded for hours. On a different note, should we choose somewhere reachable by train?',
   hypothesisPromptEn: "If the booking falls through completely, what would you actually do?",
   speculatePromptEn: "They haven't replied in six hours. What do you think is going on?",
   regretPromptEn: "Looking back, was there anything you wish we'd done differently when we first booked this?",
@@ -147,11 +149,11 @@ const THEMED_TRIP_TEXT = {
   softenPromptEn: "That message reads a bit harsh. Can you soften it slightly before we send it?",
   idiomLineEn: "Honestly, let's just meet halfway on the budget and stop going back and forth.",
   pushback1PromptEn: "I really don't want to pay extra for the coastal place, even with the booking mess.",
+  pushback1SuggestionEn: 'I understand the cost is a concern, but could we choose cheaper meals so we can afford the coastal place?',
   pushback2PromptEn: "I hear you, but I still think it's not worth the extra cost for two nights.",
   pushback3PromptEn: "Okay, but only if we can also cut something else from the budget.",
   topicShift3PromptEn: "Right — before we forget, we still need to decide who's driving.",
   closingPromptEn: "Sounds good. Anything else before we lock this in?",
-  closingSuggestionEn: "No, I think we've covered everything — glad we worked it out.",
 }
 
 /*
@@ -168,10 +170,12 @@ const NEUTRAL_FLAT_TEXT = {
   complicationSceneBodyKey: 'b2ep21NeutralComplicationBody',
   complicationSceneEn: "Oh — the letting agency just emailed about the deposit. There's a problem.",
   topicShift1PromptEn: "Before we lose the thread — we do need to sort this deposit issue first.",
+  topicShift1SuggestionEn: 'Agreed. Before we move on, I will find our deposit receipt so we can compare the amount.',
   justifyPromptEn: "They've held back part of the deposit without explaining why. Why does that matter to us — explain it so I understand why we need it changed back.",
   negotiatePromptEn: "Okay, so what should we actually ask them for?",
   frustrationPromptEn: "Honestly, this is the second time they've been unclear about charges. How do you want to put that to them?",
   topicShift2PromptEn: "Anyway — speaking of things going wrong, remember when the boiler broke last winter? That reminds me of something.",
+  topicShift2SuggestionEn: 'Yes, we waited days for that repair. On a different note, should we keep a list of reliable contractors?',
   hypothesisPromptEn: "If they refuse to explain the deposit at all, what would you actually do?",
   speculatePromptEn: "They haven't replied in six hours. What do you think is going on?",
   regretPromptEn: "Looking back, was there anything you wish we'd done differently when we first signed the lease?",
@@ -185,11 +189,11 @@ const NEUTRAL_FLAT_TEXT = {
   softenPromptEn: "That message reads a bit harsh. Can you soften it slightly before we send it?",
   idiomLineEn: "Honestly, let's just meet halfway on the repair cost and stop going back and forth.",
   pushback1PromptEn: "I really don't want to pay for a plumber if we haven't even tried fixing it ourselves.",
+  pushback1SuggestionEn: 'I understand you want to try first, but could we agree to call a plumber if it still leaks tomorrow?',
   pushback2PromptEn: "I hear you, but I still think it's not worth risking making it worse.",
   pushback3PromptEn: "Okay, but only if we agree on a deadline for trying it ourselves first.",
   topicShift3PromptEn: "Right — before we forget, we still need to decide whose turn it is to deal with the bins this month.",
   closingPromptEn: "Sounds good. Anything else before we lock this in?",
-  closingSuggestionEn: "No, I think we've covered everything — glad we worked it out.",
 }
 
 const LONG_CONVERSATION_THEMED = {
