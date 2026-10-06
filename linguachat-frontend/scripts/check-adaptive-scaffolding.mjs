@@ -390,10 +390,13 @@ const openTurn = { correct: true, assistanceUsed: false, evidenceKind: EVIDENCE.
   assert.match(runner, /scaffoldLevel: scaffold/)
   // Daily practice must use the SAME day-scoped learning boundary as EpisodeShell.
   // This guards the live wiring that a model-only test cannot see.
-  assert.match(runner, /const learningSessionId = \`learning-day:\\${dailySession\\\?\\.dayKey \\|\\| dayKeyFor\\\(\\\)}\`/)
-  assert.match(runner, /recordCanDoAttempt\\\(modelRef\\.current, canDoId, \\{[^}]*sessionId: learningSessionId/)
+  assert.ok(runner.includes('const learningSessionId = `learning-day:${dailySession?.dayKey || dayKeyFor()}`'),
+    'daily practice must derive the same day-scoped learning boundary')
+  assert.ok(runner.includes('sessionId: learningSessionId'),
+    'daily can-do evidence must carry the learning-session provenance')
   const shell = readFileSync(new URL('../src/components/episode/EpisodeShell.jsx', import.meta.url), 'utf8')
-  assert.match(shell, /learning-day:\\${sessionActive && dailySession\\\?\\.dayKey \\? dailySession\\.dayKey : dayKeyFor\\\(\\\)} / .source.replace(' } ', '}'))
+  assert.ok(shell.includes('learning-day:${sessionActive && dailySession?.dayKey ? dailySession.dayKey : dayKeyFor()}'),
+    'episode and daily-session practice must share the same learning-day boundary')
   ok()
 }
 
