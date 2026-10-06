@@ -1,4 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { getBrowserAuthService } from '../auth/provider.js'
+import { CLOUD_PREFERENCES_RELEASED, connectPreferenceSync, schedulePreferenceSync } from '../cloud/runtime.js'
+import { toCloudPreferenceFields, fromCloudPreferenceFields } from '../services/cloudPreferenceMapping.js'
+import { activateLocalAccount } from '../auth/browserDataIsolation.js'
 import { sendChatMessage } from '../services/api'
 import {
   ensureLanguagePreferences,
@@ -87,13 +91,57 @@ const DEFAULT_PROFILE = {
   moodColor: 'violet',
 }
 
-function checkAuth() {
+function storedOnboardingComplete() {
+  try { return localStorage.getItem('lc2-onboarded') === 'true' } catch { return false }
+}
+
+function providerUser(user) {
+  if (!user) return null
+  const email = String(user.email || '')
+  const name = String(user.user_metadata?.display_name || email.split('@')[0] || '').trim()
+  return { id: user.id, name, email }
+}
+
+function currentAuthAction() {
+  try { return new URL(window.location.href).searchParams.get('auth') } catch { return null }
+}
+
+function clearAuthCallback() {
   try {
-    return (
-      localStorage.getItem('lc2-auth') === 'true' ||
-      localStorage.getItem('lc2-onboarded') === 'true'
-    )
-  } catch { return false }
+    const url = new URL(window.location.href)
+    for (const key of ['auth', 'code', 'error', 'error_code', 'error_description']) url.searchParams.delete(key)
+    window.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash)
+  } catch {}
+}
+
+const RECOVERY_VERIFIED_KEY = 'lc2-auth-recovery-verified'
+const RECOVERY_VERIFIED_MAX_AGE_MS = 5 * 60 * 1000
+
+function clearVerifiedRecovery() {
+  try { sessionStorage.removeItem(RECOVERY_VERIFIED_KEY) } catch {}
+}
+
+function rememberVerifiedRecovery(userId) {
+  try {
+    sessionStorage.setItem(RECOVERY_VERIFIED_KEY, JSON.stringify({
+      userId: String(userId),
+      verifiedAt: Date.now(),
+    }))
+  } catch {}
+}
+
+function consumeVerifiedRecovery(userId) {
+  try {
+    const parsed = JSON.parse(sessionStorage.getItem(RECOVERY_VERIFIED_KEY) || 'null')
+    sessionStorage.removeItem(RECOVERY_VERIFIED_KEY)
+    return parsed?.userId === String(userId)
+      && Number.isFinite(parsed?.verifiedAt)
+      && Date.now() - parsed.verifiedAt >= 0
+      && Date.now() - parsed.verifiedAt <= RECOVERY_VERIFIED_MAX_AGE_MS
+  } catch {
+    clearVerifiedRecovery()
+    return false
+  }
 }
 
 const createWelcomeMessage = (language) => ({
@@ -106,10 +154,7 @@ const createWelcomeMessage = (language) => ({
 
 export function AppProvider({ children }) {
   // Auth/setup flow: null = main app, 'entry'/'login'/'signup'/'forgot'/'placement'/'tutor-personality'/'learning-prefs' = flow screens
-  const [authStep, setAuthStep] = useState(() => {
-    if (checkAuth()) return null
-    return 'entry'
-  })
+  const [authStep, setAuthStep] = useState('entry')
   const [languagePreferences, setLanguagePreferences] = useState(ensureLanguagePreferences)
   const nativeLanguageInfo = languagePreferences.nativeLanguage
   const interfaceLanguageInfo = languagePreferences.interfaceLanguage
@@ -143,6 +188,130 @@ export function AppProvider({ children }) {
       return s ? { ...DEFAULT_PROFILE, ...JSON.parse(s) } : DEFAULT_PROFILE
     } catch { return DEFAULT_PROFILE }
   })
+
+  const authServiceRef = useRef(null)
+  // Preserve a local-isolation failure across the compensating provider SIGNED_OUT event.
+  // The flag is reset only when the learner explicitly starts another Auth operation or
+  // when a provider session is safely activated.
+  const authIsolationBlockedRef = useRef(false)
+  const [authProviderError, setAuthProviderError] = useState('')
+
+  const getAuthService = useCallback(() => {
+    if (!authServiceRef.current) {
+      authServiceRef.current = getBrowserAuthService()
+      try { localStorage.removeItem('lc2-auth') } catch {}
+    }
+    return authServiceRef.current
+  }, [])
+
+  const applyProviderSession = useCallback((session, event = 'SESSION') => {
+    if (!session?.user) {
+      preferenceSyncRef.current?.stop()
+      // Invalid/expired auth callbacks must not survive into a later normal login.
+      // Otherwise a stale ?auth=reset can incorrectly reopen the reset screen.
+      clearVerifiedRecovery()
+      if (currentAuthAction()) clearAuthCallback()
+      try {
+        localStorage.removeItem('lc2-auth')
+        localStorage.removeItem('lc2-user')
+      } catch {}
+      setAuthUser(null)
+      setAuthStep('entry')
+      return
+    }
+
+    if (event === 'PASSWORD_RECOVERY') rememberVerifiedRecovery(session.user.id)
+
+    const isolation = activateLocalAccount(localStorage, session.user.id)
+    if (isolation.blocked) {
+      clearAuthCallback()
+      authIsolationBlockedRef.current = true
+      setAuthProviderError('storage_full')
+      setAuthUser(null)
+      setAuthStep('entry')
+      // This SIGNED_OUT is compensatory. Its auth-state callback must not erase the
+      // actionable storage error before the learner can read it.
+      getAuthService().signOut().catch(() => {})
+      return
+    }
+    authIsolationBlockedRef.current = false
+    setAuthProviderError('')
+    if (isolation.switched) {
+      window.location.reload()
+      return
+    }
+
+    const user = providerUser(session.user)
+    setAuthUser(user)
+    setProfile(previous => ({
+      ...previous,
+      name: user?.name || previous.name,
+      email: user?.email || previous.email,
+    }))
+    try {
+      localStorage.removeItem('lc2-auth')
+      localStorage.setItem('lc2-user', JSON.stringify(user))
+    } catch {}
+
+    const action = currentAuthAction()
+    const resumedVerifiedRecovery = action === 'reset' && event !== 'PASSWORD_RECOVERY'
+      ? consumeVerifiedRecovery(session.user.id)
+      : false
+    if (event === 'PASSWORD_RECOVERY' || resumedVerifiedRecovery) {
+      if (event === 'PASSWORD_RECOVERY') clearVerifiedRecovery()
+      setAuthStep('reset')
+      return
+    }
+
+    // auth=reset is untrusted routing state. The provider can preserve an existing
+    // session when an expired/reused recovery callback fails, so never open the
+    // reset form for that session unless PASSWORD_RECOVERY was actually verified.
+    if (action === 'reset') {
+      clearVerifiedRecovery()
+      clearAuthCallback()
+    }
+    if (action === 'confirmed') clearAuthCallback()
+    const onboarded = storedOnboardingComplete()
+    setOnboardingCompleted(onboarded)
+    setAuthStep(onboarded ? null : 'placement')
+  }, [getAuthService])
+
+  useEffect(() => {
+    let alive = true
+    let subscription = null
+    let service
+
+    try {
+      service = getAuthService()
+      const registration = service.onAuthStateChange((event, session) => {
+        if (!alive) return
+        if (!authIsolationBlockedRef.current) setAuthProviderError('')
+        applyProviderSession(session, event)
+      })
+      subscription = registration?.data?.subscription || registration?.subscription || null
+    } catch (error) {
+      setAuthProviderError(error?.message || 'Authentication is not configured.')
+      setAuthStep('entry')
+      return () => {}
+    }
+
+    service.getSession()
+      .then((session) => {
+        if (!alive) return
+        if (!authIsolationBlockedRef.current) setAuthProviderError('')
+        applyProviderSession(session, 'INITIAL_SESSION')
+      })
+      .catch((error) => {
+        if (!alive) return
+        setAuthProviderError(error?.message || 'Could not restore your session.')
+        setAuthStep('entry')
+      })
+
+    return () => {
+      alive = false
+      subscription?.unsubscribe?.()
+    }
+  }, [getAuthService, applyProviderSession])
   const [view, setView] = useState('today')
   const [sessionId, setSessionId] = useState(getOrCreateSessionId)
   const [messages, setMessages] = useState(() => loadStoredMessages(createWelcomeMessage(languagePreferences.interfaceLanguage.base)))
@@ -274,29 +443,82 @@ export function AppProvider({ children }) {
     }))
   }, [])
 
-  const loginMock = useCallback((email) => {
-    let user = null
-    try {
-      const stored = localStorage.getItem('lc2-user')
-      if (stored) user = JSON.parse(stored)
-    } catch {}
-    if (!user) user = { name: email.split('@')[0], email }
-    setAuthUser(user)
-    setProfile(prev => ({ ...prev, name: user.name, email: user.email }))
-    localStorage.setItem('lc2-user', JSON.stringify(user))
-    localStorage.setItem('lc2-auth', 'true')
-    localStorage.setItem('lc2-onboarded', 'true')
-    setOnboardingCompleted(true)
-    setAuthStep(null)
-  }, [])
+  const preferenceSnapshotRef = useRef(null)
+  preferenceSnapshotRef.current = () => toCloudPreferenceFields(tutorPreferences, { user_language: interfaceLanguage })
+  const preferenceSyncRef = useRef(null)
+  useEffect(() => {
+    if (!CLOUD_PREFERENCES_RELEASED || !authUser?.id || authStep !== null) return undefined
+    let cancelled = false, controller = null
+    connectPreferenceSync({
+      store: localStorage,
+      readOwner: () => {
+        try { return decodeURIComponent(localStorage.getItem('lc2-auth-owner-id') || '') } catch { return '' }
+      },
+      readLocal: () => preferenceSnapshotRef.current(),
+      applyLocal: row => {
+        preferenceSnapshotRef.current = () => row
+        setTutorPreferencesState(previous => saveTutorPreferences(fromCloudPreferenceFields(row, previous)))
+        updateNativeLanguage(row.user_language)
+      },
+    }).then(sync => {
+      if (cancelled) { sync.cancel(); return }
+      controller = schedulePreferenceSync(sync, window)
+      preferenceSyncRef.current = controller
+    }).catch(() => { /* Local preferences remain usable; a later login retries initialization. */ })
+    return () => { cancelled = true; controller?.stop(); preferenceSyncRef.current = null }
+  }, [authUser?.id, authStep, updateNativeLanguage])
+  useEffect(() => { preferenceSyncRef.current?.changed() }, [tutorPreferences, interfaceLanguage])
 
-  const signupMock = useCallback((name, email) => {
-    const user = { name, email }
-    setAuthUser(user)
-    setProfile(prev => ({ ...prev, name, email }))
-    localStorage.setItem('lc2-user', JSON.stringify(user))
-    setAuthStep('placement')
-  }, [])
+  const login = useCallback(async (email, password) => {
+    clearVerifiedRecovery()
+    authIsolationBlockedRef.current = false
+    setAuthProviderError('')
+    // The provider's onAuthStateChange listener is the single session authority.
+    // Applying the returned session here as well can race an account-switch reload
+    // and persist stale React state into the newly restored account snapshot.
+    return getAuthService().signIn({ email, password })
+  }, [getAuthService])
+
+  const signup = useCallback(async (name, email, password) => {
+    clearVerifiedRecovery()
+    authIsolationBlockedRef.current = false
+    setAuthProviderError('')
+    // Do not mutate profile/session state from the promise result. If signup
+    // creates a session, the provider listener applies it exactly once; if email
+    // confirmation is pending, learner state remains unauthenticated until that
+    // verified session event arrives.
+    return getAuthService().signUp({
+      name,
+      email,
+      password,
+      language: interfaceLanguageInfo.base,
+    })
+  }, [getAuthService, interfaceLanguageInfo.base])
+
+  const requestPasswordReset = useCallback(async (email) => {
+    clearVerifiedRecovery()
+    authIsolationBlockedRef.current = false
+    setAuthProviderError('')
+    return getAuthService().requestPasswordReset(email)
+  }, [getAuthService])
+
+  const resendConfirmation = useCallback(async (email) => {
+    clearVerifiedRecovery()
+    authIsolationBlockedRef.current = false
+    setAuthProviderError('')
+    return getAuthService().resendConfirmation(email)
+  }, [getAuthService])
+
+  const changePassword = useCallback(async (password) => {
+    authIsolationBlockedRef.current = false
+    setAuthProviderError('')
+    const user = await getAuthService().changePassword(password)
+    clearVerifiedRecovery()
+    clearAuthCallback()
+    const session = await getAuthService().getSession()
+    applyProviderSession(session, 'USER_UPDATED')
+    return user
+  }, [getAuthService, applyProviderSession])
 
   const completePlacement = useCallback((result) => {
     setProfile(prev => ({ ...prev, level: result.level, placementResult: result }))
@@ -325,7 +547,9 @@ export function AppProvider({ children }) {
   // persisted live). Mark onboarding complete and arm Chatto's Home welcome once.
   const completePersonalization = useCallback(() => {
     try {
-      localStorage.setItem('lc2-auth', 'true')
+      // Onboarding records setup only. Authentication authority belongs solely
+      // to the provider session gate; finishing personalization must never mint
+      // or persist an authenticated state on its own.
       localStorage.setItem('lc2-onboarded', 'true')
       localStorage.setItem('lc2-personalization-completed', 'true')
       localStorage.setItem('lc2-welcome-seen', 'false')
@@ -584,12 +808,12 @@ export function AppProvider({ children }) {
     })
   }, [])
 
-  const logoutMock = useCallback(() => {
-    localStorage.removeItem('lc2-auth')
-    localStorage.removeItem('lc2-user')
-    setAuthUser(null)
-    setAuthStep('entry')
-  }, [])
+  const logout = useCallback(async () => {
+    clearVerifiedRecovery()
+    setAuthProviderError('')
+    await getAuthService().signOut()
+    applyProviderSession(null, 'SIGNED_OUT')
+  }, [getAuthService, applyProviderSession])
 
   const completeOnboarding = useCallback((profileData) => {
     const merged = { ...DEFAULT_PROFILE, ...profileData }
@@ -1017,8 +1241,8 @@ export function AppProvider({ children }) {
       setNativeLanguage: updateNativeLanguage,
       updateNativeLanguage,
       t,
-      authUser,
-      loginMock, signupMock,
+      authUser, authProviderError,
+      login, signup, requestPasswordReset, resendConfirmation, changePassword,
       completePlacement, completeTutorPersonality, completeLearningPrefs,
       completePersonalization, applyRecommendedSetup,
       showWelcome, dismissWelcome,
@@ -1026,7 +1250,7 @@ export function AppProvider({ children }) {
       episodeActiveId, episodeRunOptions, episodeArcVersion, startEpisode, exitEpisode, awardEpisode, finishEpisode,
       dailySession, sessionActive, preferredDuration,
       previewSession, chooseDuration, beginSession, advanceSession, finishSession, exitSession,
-      logoutMock,
+      logout,
       darkMode, toggleDark, setThemeDark,
       onboardingCompleted, completeOnboarding,
       profile, updateProfile,

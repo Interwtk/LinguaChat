@@ -117,10 +117,35 @@ const arc1 = BLUEPRINT.arcs.find(a => a.order === 1)
   ok()
 }
 
-/* ---- 7) evaluator refusal / near-miss coverage — both narrativeForm subtypes ---- */
+/* ---- 6b) evidence/support contract — assistance can never count as independent ---- */
+{
+  const freeReplies = B1_ARC1.flatMap(ep => ep.steps.filter(step => step.type === 'free_reply'))
+  assert.equal(freeReplies.length, 5, 'arc 1 must contain exactly five productive free_reply turns')
+
+  const assisted = freeReplies.filter(step => step.evidenceType === 'assistedOpen')
+  const independent = freeReplies.filter(step => step.evidenceType === 'independent')
+  assert.equal(assisted.length, 3, 'arc 1 must contain exactly three assistedOpen turns')
+  assert.equal(independent.length, 2, 'arc 1 must contain exactly two independent turns')
+  assert.equal(independent.filter(step => step.narrativeForm === 'sequence_with_interruption').length, 2,
+    'both independent turns must be connected narrations that also contain an interruption')
+  assert.equal(assisted.length + independent.length, freeReplies.length,
+    'every arc-1 free_reply must declare assistedOpen or independent evidence')
+
+  for (const step of assisted) {
+    assert.ok(typeof step.suggestionEn === 'string' && step.suggestionEn.trim().length > 0,
+      'assistedOpen turns must expose a learner suggestion')
+  }
+  for (const step of independent) {
+    assert.ok(!step.suggestionEn,
+      'independent turns must not expose suggestionEn')
+  }
+  ok()
+}
+
+/* ---- 7) evaluator refusal / near-miss coverage — all narrativeForm subtypes ---- */
 const NONSENSE = 'purple bicycle Tuesday maybe'
 {
-  for (const form of ['sequence', 'interruption']) {
+  for (const form of ['sequence', 'interruption', 'sequence_with_interruption']) {
     const nonsense = evaluateNarratePastEvent(NONSENSE, { narrativeForm: form })
     assert.equal(nonsense.completedObjective, false, `nonsense must never pass ${form}`)
     assert.equal(nonsense.retryRequired, true)
@@ -147,6 +172,11 @@ const NONSENSE = 'purple bicycle Tuesday maybe'
   const missingContinuous = evaluateNarratePastEvent('I cooked dinner when the power went out.', { narrativeForm: 'interruption' })
   assert.equal(missingContinuous.completedObjective, false)
   assert.equal(missingContinuous.errorType, 'missing_continuous')
+  // combined form must satisfy BOTH the connected-sequence and interruption contracts
+  const compositeMissingSequence = evaluateNarratePastEvent('I was cooking dinner when the power went out.', { narrativeForm: 'sequence_with_interruption' })
+  assert.equal(compositeMissingSequence.completedObjective, false)
+  const compositeMissingInterruption = evaluateNarratePastEvent('First I got up. Then I had breakfast. After that I went to work. Finally I came home.', { narrativeForm: 'sequence_with_interruption' })
+  assert.equal(compositeMissingInterruption.completedObjective, false)
   ok()
 }
 
@@ -165,9 +195,12 @@ const NONSENSE = 'purple bicycle Tuesday maybe'
   assert.ok(B1_PROMPT.narrate_past_event, 'PROMPT must have an entry for narrate_past_event')
   const seqAnswer = B1_MODEL_ANSWER.narrate_past_event({ narrativeForm: 'sequence' })
   const intAnswer = B1_MODEL_ANSWER.narrate_past_event({ narrativeForm: 'interruption' })
-  assert.notEqual(seqAnswer, intAnswer, 'the two subtypes must not share one model answer')
+  const combinedAnswer = B1_MODEL_ANSWER.narrate_past_event({ narrativeForm: 'sequence_with_interruption' })
+  assert.notEqual(seqAnswer, intAnswer, 'sequence and interruption must not share one model answer')
+  assert.notEqual(combinedAnswer, seqAnswer, 'combined evidence needs a model that demonstrates both structures')
   assert.equal(evaluateNarratePastEvent(seqAnswer, { narrativeForm: 'sequence' }).completedObjective, true, 'MODEL_ANSWER must itself pass its own evaluator')
   assert.equal(evaluateNarratePastEvent(intAnswer, { narrativeForm: 'interruption' }).completedObjective, true)
+  assert.equal(evaluateNarratePastEvent(combinedAnswer, { narrativeForm: 'sequence_with_interruption' }).completedObjective, true)
   ok()
 }
 
@@ -212,7 +245,7 @@ function freshModel() { return createLearnerModel() }
 /* ---- 11) wrong-then-retry: a genuine near miss and nonsense must recover ---- */
 {
   const model = freshModel()
-  const NEAR_MISS_BY_FORM = { sequence: 'First I went home.', interruption: 'I was cooking dinner.' }
+  const NEAR_MISS_BY_FORM = { sequence: 'First I went home.', interruption: 'I was cooking dinner.', sequence_with_interruption: 'I was cooking dinner when the power went out.' }
   playEpisode(model, 'one_thing_after_another', {
     profile: { ...STRONG, retries: ({ step }) => step.evalKind === 'narrate_past_event' },
     atMs: START,
@@ -233,6 +266,7 @@ function freshModel() { return createLearnerModel() }
 /* ---- 12) novel-context transfer: a story never rehearsed in training ---- */
 const NOVEL_SEQUENCE = 'First I fed the cat. Then I watered the plants. After that I answered some emails. Finally I went for a run.'
 const NOVEL_INTERRUPTION = 'She was reading a book when the doorbell rang.'
+const NOVEL_COMBINED = 'First I left the library. Then, while I was walking home, I saw a dog run into the road. After that I called its owner. Finally I got home.'
 {
   const model = freshModel()
   const trace = []
@@ -242,7 +276,9 @@ const NOVEL_INTERRUPTION = 'She was reading a book when the doorbell rang.'
   })
   playEpisode(model, 'when_it_happened', {
     profile: STRONG, atMs: START + DAY, trace,
-    answerOverride: (step) => (step.narrativeForm === 'interruption' ? NOVEL_INTERRUPTION : NOVEL_SEQUENCE),
+    answerOverride: (step) => (step.narrativeForm === 'interruption'
+      ? NOVEL_INTERRUPTION
+      : step.narrativeForm === 'sequence_with_interruption' ? NOVEL_COMBINED : NOVEL_SEQUENCE),
   })
   for (const r of trace) assert.equal(r.independentEvidence, true, `${r.episodeId}: novel phrasing must still be judged structurally, not by memorized string`)
   ok()
@@ -289,6 +325,10 @@ const INTERRUPTION_VARIANTS = [
   'He was driving to work when he saw an old friend.',
   'They were having dinner when the fire alarm went off.',
 ]
+const COMBINED_VARIANTS = [
+  'First I left home. Then, while I was waiting for the bus, I saw an old friend. After that we had coffee. Finally I went to work.',
+  'First we arrived at the park. Then, while we were looking for a bench, it started to rain. After that we found shelter. Finally we went home.',
+]
 
 {
   let journeys = 0
@@ -302,7 +342,12 @@ const INTERRUPTION_VARIANTS = [
     assert.equal(r.completedObjective, true, `interruption variant ${i} must pass: "${text}"`)
     journeys += 1
   }
-  // near-miss + nonsense refusal boundary, both subtypes (already exercised
+  for (const [i, text] of COMBINED_VARIANTS.entries()) {
+    const r = evaluateNarratePastEvent(text, { narrativeForm: 'sequence_with_interruption', independent: true })
+    assert.equal(r.completedObjective, true, `combined variant ${i} must pass both contracts: "${text}"`)
+    journeys += 1
+  }
+  // near-miss + nonsense refusal boundary, all subtypes (already exercised
   // structurally in group 7; counted here as their own learner-shaped journeys)
   journeys += 6
   // strong/assisted full-arc plays, retry recovery, novel-context, replay

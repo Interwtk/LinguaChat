@@ -41,11 +41,14 @@ requires later real-learner pilot evidence.
 country/geo guessing. Device/browser preferred languages are the first-launch hint;
 an explicit learner choice always wins.
 
-**Cloud persistence:** the current product contract is fail-closed: do not add or
-connect Supabase/Auth/Postgres/Storage/pgvector/Edge Functions unless the owner gives
-a new explicit instruction changing that contract. `docs/architecture/supabase-beta-plan.md`
-is historical/planning material only and is not implementation authority. Never point
-LinguaChat at an EvoLabs project by guess.
+**Cloud persistence:** owner-authorized scope is deliberately narrow: a future
+LinguaChat browser client may use Supabase Auth/public client access only from
+`linguachat-frontend/src/auth/` and `linguachat-frontend/src/cloud/`, and only via
+`VITE_SUPABASE_URL` plus `VITE_SUPABASE_ANON_KEY`. This permission does not authorize
+backend Supabase, service-role/private keys, direct Postgres, Storage, pgvector,
+Edge Functions, production deployment, billing, or reuse/inspection of any EvoLabs
+project. `docs/architecture/supabase-beta-plan.md` remains planning material rather
+than authority to widen this scope.
 
 ## Frozen — do not redesign
 
@@ -62,11 +65,11 @@ older adults, and never childish. **Do not redesign for taste.**
 
 ## Infrastructure boundaries
 
-- **No Supabase/Auth/Postgres/Storage/pgvector/Edge Functions under the current
-  contract.** `LC-CLOUD-*` planning/history does not authorize implementation.
-  Supabase remains non-claimable until a future explicit owner instruction changes
-  this rule. Do not create, connect, inspect for reuse, or modify an EvoLabs project
-  for LinguaChat by assumption.
+- **Supabase/Auth is allowed only inside the narrow public LinguaChat browser-client
+  contract above.** No backend Supabase, service-role/private credentials, direct
+  Postgres, Storage, pgvector or Edge Functions; no EvoLabs project may be inspected,
+  reused or modified for LinguaChat. Cloud implementation remains separately gated
+  and must not be inferred from planning/history.
 - **No migration to Next.js.** Vite + React stays; FastAPI stays as the
   pedagogical backend.
 - **Voice and media are out of scope:** no WebRTC, STT, TTS, pronunciation

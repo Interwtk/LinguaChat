@@ -16,7 +16,8 @@
  * recovery, natural variant phrasing, transfer to novel vocabulary) and
  * checks the evaluator's verdict matches what that persona should produce.
  * This proves the CONTENT+EVALUATOR pairing is sound; end-to-end in-app proof
- * is `LC-INT-001`'s job once the content is wired in.
+ * is `LC-INT-001`'s job once the content is wired in. Assisted retry/recovery
+ * must remain scaffolded and cannot claim independent mastery.
  */
 import * as EV from '../../../src/learning/levels/a2/evaluators.js'
 import { A2_ARCS } from '../../../src/learning/levels/a2/index.js'
@@ -150,6 +151,14 @@ let totalFailures = 0
 let grandTotalJourneys = 0
 const REQUIRED_PER_ARC = 20
 
+function assertEvidence(r, independent, label, arc, ep) {
+  if (!r.masteryEvidence || r.masteryEvidence.independent !== independent || r.masteryEvidence.scaffoldUsed !== !independent) {
+    console.error(`FAIL [${arc.id}/${ep.id}] ${label} has incorrect mastery evidence: ${JSON.stringify(r.masteryEvidence)}`)
+    return 1
+  }
+  return 0
+}
+
 for (const arc of A2_ARCS) {
   let journeys = 0
   let arcFailures = 0
@@ -174,6 +183,7 @@ for (const arc of A2_ARCS) {
     {
       const r = fn(ex.correct, opts({ independent: true }))
       if (r.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] correct persona not accepted: "${ex.correct}"`) }
+      arcFailures += assertEvidence(r, true, 'independent correct answer', arc, ep)
     }
     // Persona 2: near miss, then a retry with the correct form — should refuse then accept.
     journeys += 1
@@ -182,6 +192,8 @@ for (const arc of A2_ARCS) {
       const r2 = fn(ex.correct, opts({ independent: false }))
       if (r1.completedObjective === true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] near-miss wrongly accepted: "${ex.nearMiss}"`) }
       if (r2.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] retry after near-miss not accepted: "${ex.correct}"`) }
+      arcFailures += assertEvidence(r1, false, 'assisted near-miss', arc, ep)
+      arcFailures += assertEvidence(r2, false, 'assisted retry', arc, ep)
     }
     // Persona 3: nonsense, then recovery — should refuse/non-conclusive, then accept.
     journeys += 1
@@ -190,18 +202,22 @@ for (const arc of A2_ARCS) {
       const r2 = fn(ex.correct, opts({ independent: false }))
       if (r1.completedObjective === true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] nonsense wrongly accepted: "${ex.nonsense}"`) }
       if (r2.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] recovery after nonsense not accepted: "${ex.correct}"`) }
+      arcFailures += assertEvidence(r1, false, 'assisted nonsense', arc, ep)
+      arcFailures += assertEvidence(r2, false, 'assisted recovery', arc, ep)
     }
     // Persona 4: natural variant phrasing — should still complete (accepted variant).
     journeys += 1
     {
       const r = fn(ex.variant, opts({ independent: true }))
       if (r.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] natural variant not accepted: "${ex.variant}"`) }
+      arcFailures += assertEvidence(r, true, 'independent natural variant', arc, ep)
     }
     // Persona 5: transfer — a genuinely different lexical realization of the same frame.
     journeys += 1
     {
       const r = fn(ex.transfer, step.evalKind === 'spell_word' ? { independent: true, expected: 'Sam' } : opts({ independent: true }))
       if (r.completedObjective !== true) { arcFailures += 1; console.error(`FAIL [${arc.id}/${ep.id}] transfer example not accepted: "${ex.transfer}"`) }
+      arcFailures += assertEvidence(r, true, 'independent transfer', arc, ep)
     }
   }
 

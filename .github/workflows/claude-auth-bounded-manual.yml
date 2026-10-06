@@ -1,0 +1,83 @@
+# One-shot Claude Auth worker; no schedule, push/PR triggers, retry loop or auto-merge.
+# The exact issue comment can be posted from ChatGPT's connected GitHub app.
+name: Claude — bounded Auth implementation (manual)
+
+on:
+  workflow_dispatch:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: linguachat-claude-writer
+  cancel-in-progress: false
+
+jobs:
+  auth:
+    # Fixed command only; comment contents are never passed to the model.
+    if: >-
+      github.actor == 'Interwtk' && github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event_name == 'issue_comment' &&
+        github.event.issue.number == 126 &&
+        github.event.issue.pull_request == null &&
+        github.event.comment.body == '/linguachat-auth-once'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      LINGUACHAT_PROVIDER: local
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fail closed when Claude credential is absent
+        env:
+          TOKEN_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          test "$TOKEN_PRESENT" = true || { echo 'Claude credential unavailable; no worker started.'; exit 1; }
+      - name: Claude implements one Auth checkpoint
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          track_progress: false
+          prompt: |
+            Implement one bounded, verifiable checkpoint for Interwtk/LinguaChat
+            issue #126 only. Owner authorized cloud/Auth only for existing LinguaChat
+            project; preserve all frozen Pre-A1 and unavailable A1–C2 guards.
+            Never access EvoLabs. Inspect only relevant Auth and coordination files;
+            do not scan the entire repo, perform internet research, or spawn agents.
+            First check issue #126 and existing active branches/PR for an Auth owner.
+            Continue the existing Auth branch when one exists, never fork a duplicate.
+            If CLAUDE.md, .ai/TASKS.md and QA still forbid cloud Auth, do NOT bypass
+            them; make ONE separate reviewable coordination/guard PR or report the
+            exact blocked dependency. Do not claim Auth exists until it really does.
+            Once coordination is consistent, implement real frontend email signup,
+            confirmation-aware login, logout and session restoration using only
+            publishable Supabase client configuration for LinguaChat. Keep secrets,
+            password values and other users' data out of logs, localStorage and
+            Chatto. Preserve offline progress and existing frontend architecture.
+            By turn 5 push a checkpoint to ONE feature branch and open a DRAFT PR;
+            if GitHub_TOKEN cannot create PRs, push the branch and report the exact
+            branch/commit in issue #126 so ChatGPT can open the PR via connector.
+            Add targeted tests for completed behavior. Stop after this checkpoint,
+            report tests actually run, exact SHA, remaining work and limitations.
+            Do not modify main, merge, publish, charge users, dispatch another
+            worker, enable paid provider fallback, change curriculum availability
+            or edit PR #123. No broad unrelated work or automatic retry.
+          claude_args: |
+            --model claude-sonnet-5
+            --max-turns 8
+            --allowedTools Read,Write,Edit,Glob,Grep,Bash
+      - name: Fail if execution did not finish cleanly
+        if: steps.claude.outcome != 'success'
+        run: |
+          echo 'Claude worker failed; inspect this run and branch checkpoint before another owner-authorized call.'
+          exit 1
