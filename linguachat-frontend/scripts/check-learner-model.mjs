@@ -88,19 +88,37 @@ check('canDo two successes incl independent = can_do', m2.canDo.introduce_self.s
   check('retrieval leaves actual practice counts unchanged', model.canDo[id].attempts === 1 && model.canDo[id].independentSuccesses === 1)
 }
 
-/* ---- daily-session provenance keeps delayed retrieval session-distinct ---- */
+/* ---- newer independent daily practice refreshes session provenance ---- */
 {
   const model = createLearnerModel(), id = 'daily_provenance'
-  recordCanDoAttempt(model, id, { success: true, independent: true, sessionId: '2026-10-06:standard', atMs: 1000 })
-  check('independent daily practice records session provenance', model.canDo[id].independentPracticeSessionId === '2026-10-06:standard')
-  recordDelayedRetrievalEvidence(model, [id], { independent: true, sessionId: '2026-10-06:standard', atMs: 2000 })
-  check('same-session capstone cannot earn delayed retrieval', !model.canDo[id].delayedRetrievalAt)
-  recordDelayedRetrievalEvidence(model, [id], { independent: true, sessionId: '2026-10-07:standard', atMs: 3000 })
-  check('later distinct session can earn delayed retrieval', model.canDo[id].delayedRetrievalAt?.length === 1)
-  recordCanDoAttempt(model, id, { success: true, independent: true, sessionId: '2026-10-08:standard', atMs: 4000 })
-  check('newer independent practice replaces stale session provenance', model.canDo[id].independentPracticeSessionId === '2026-10-08:standard')
-  recordCanDoAttempt(model, id, { success: true, independent: false, sessionId: '2026-10-09:standard', atMs: 5000 })
-  check('assisted practice never establishes independent provenance', model.canDo[id].independentPracticeSessionId === '2026-10-08:standard')
+  recordCanDoAttempt(model, id, {
+    success: true, independent: true, context: 'daily', sessionId: 'learning-day:2026-10-05', atMs: 1000,
+  })
+  recordCanDoAttempt(model, id, {
+    success: true, independent: true, context: 'daily', sessionId: 'learning-day:2026-10-06', atMs: 2000,
+  })
+  check('newer independent practice refreshes provenance',
+    model.canDo[id].independentPracticeSessionId === 'learning-day:2026-10-06'
+      && Date.parse(model.canDo[id].independentPracticedAt) === 2000)
+
+  recordDelayedRetrievalEvidence(model, [id], {
+    independent: true, sessionId: 'learning-day:2026-10-06', atMs: 3000,
+  })
+  check('same daily session cannot reuse stale provenance for delayed retrieval',
+    !model.canDo[id].delayedRetrievalAt)
+
+  recordCanDoAttempt(model, id, {
+    success: true, independent: false, context: 'daily-assisted',
+    sessionId: 'learning-day:2026-10-07', atMs: 3500,
+  })
+  check('assisted daily practice never establishes independent provenance',
+    model.canDo[id].independentPracticeSessionId === 'learning-day:2026-10-06')
+
+  recordDelayedRetrievalEvidence(model, [id], {
+    independent: true, sessionId: 'learning-day:2026-10-07', atMs: 4000,
+  })
+  check('a later distinct daily session can earn delayed retrieval',
+    model.canDo[id].delayedRetrievalAt?.length === 1)
 }
 
 /* ---- review scheduling ---- */
