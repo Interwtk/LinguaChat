@@ -5,7 +5,7 @@
  */
 import { MODEL_VERSION } from '../src/learning/engine/learnerModel.js'
 import {
-  createLearnerModel, migrateLearnerModel, recordItemAttempt, recordCanDoAttempt,
+  createLearnerModel, migrateLearnerModel, recordItemAttempt, recordCanDoAttempt, recordDelayedRetrievalEvidence,
   scheduleReview, getRecommendedScaffold, getEpisodeState, setEpisodeState, getDueReviews,
 } from '../src/learning/engine/learnerModel.js'
 import { planDay, isEpisodeUnlocked } from '../src/learning/engine/planner.js'
@@ -49,6 +49,22 @@ recordCanDoAttempt(m2, 'introduce_self', { success: true, independent: false, co
 check('canDo one helped success = learning', m2.canDo.introduce_self.status === 'learning')
 recordCanDoAttempt(m2, 'introduce_self', { success: true, independent: true, context: 'ep1recall' })
 check('canDo two successes incl independent = can_do', m2.canDo.introduce_self.status === 'can_do')
+
+/* ---- finishing/revisiting a capability preserves real retrieval history ---- */
+{
+  const model = createLearnerModel()
+  const id = 'narrate_connected_event'
+  recordCanDoAttempt(model, id, { success: true, independent: true, context: 'earlier', atMs: 1000 })
+  recordDelayedRetrievalEvidence(model, [id], { atMs: 100000 })
+  const stamps = [...model.canDo[id].delayedRetrievalAt]
+  for (const [index, success] of [true, false].entries()) {
+    recordCanDoAttempt(model, id, { success, independent: success, context: 'later', atMs: 200000 + index })
+    check('finish and later failed practice preserve retrieval stamps', JSON.stringify(model.canDo[id].delayedRetrievalAt) === JSON.stringify(stamps))
+    check('only actual completions increment attempts', model.canDo[id].attempts === index + 2)
+    check('failed practice does not fabricate success', model.canDo[id].successes === 2)
+    check('retrieval does not fabricate mastery counters', model.canDo[id].independentSuccesses === 2)
+  }
+}
 
 /* ---- review scheduling ---- */
 const failSched = scheduleReview({ streak: 3 }, { correct: false, independent: false })

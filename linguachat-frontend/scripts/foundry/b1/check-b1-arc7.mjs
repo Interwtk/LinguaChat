@@ -212,8 +212,17 @@ function freshModel() { return createLearnerModel() }
     }
   }
 
-  playEpisode(model, 'the_long_conversation_begins', { profile: STRONG, atMs: arc7Start, trace })
-  playEpisode(model, 'the_long_conversation_continues', { profile: STRONG, atMs: arc7Start + DAY, trace })
+  const completionCounts = {}
+  for (const [index, ep] of B1_ARC7.entries()) {
+    const atMs = arc7Start + index * DAY
+    const run = playEpisode(model, ep.id, { profile: STRONG, atMs, trace })
+    // Mirror EpisodeShell.finish() for the capstone too: primary can-do practice
+    // legitimately increments counters, but must preserve step retrieval stamps.
+    recordCanDoAttempt(model, ep.canDoId, {
+      success: true, independent: run.independentEvidence, context: ep.id, atMs,
+    })
+    completionCounts[ep.canDoId] = (completionCounts[ep.canDoId] || 0) + 1
+  }
   for (const canDoId of B1_REQUIRED_CAN_DOS) {
     const entry = model.canDo?.[canDoId]
     const stamps = entry?.delayedRetrievalAt || []
@@ -221,9 +230,9 @@ function freshModel() { return createLearnerModel() }
     assert.ok(stamps.every(value => Number.isFinite(Date.parse(value))), `${canDoId}: delayed retrieval timestamps must be valid ISO dates`)
     assert.ok(stamps.every(value => Date.parse(value) >= arc7Start), `${canDoId}: retrieval evidence must be recorded in the later Arc 7 session`)
     assert.ok(stamps.every(value => Date.parse(value) > Date.parse(priorEvidence[canDoId].lastPracticedAt)), `${canDoId}: retrieval must occur after the learner's prior evidence`)
-    assert.equal(entry.attempts, priorEvidence[canDoId].attempts, `${canDoId}: delayed retrieval bookkeeping must not fabricate attempts`)
-    assert.equal(entry.successes, priorEvidence[canDoId].successes, `${canDoId}: delayed retrieval bookkeeping must not fabricate successes`)
-    assert.equal(entry.independentSuccesses, priorEvidence[canDoId].independentSuccesses, `${canDoId}: delayed retrieval bookkeeping must not inflate independent mastery`)
+    assert.equal(entry.attempts, priorEvidence[canDoId].attempts + (completionCounts[canDoId] || 0), `${canDoId}: delayed retrieval bookkeeping must not fabricate attempts`)
+    assert.equal(entry.successes, priorEvidence[canDoId].successes + (completionCounts[canDoId] || 0), `${canDoId}: delayed retrieval bookkeeping must not fabricate successes`)
+    assert.equal(entry.independentSuccesses, priorEvidence[canDoId].independentSuccesses + (completionCounts[canDoId] || 0), `${canDoId}: delayed retrieval bookkeeping must not inflate independent mastery`)
   }
   for (const r of trace) {
     // b1.json arc 7 autonomyTarget: "unaided throughout" — every free_reply

@@ -643,7 +643,9 @@ export function recordCanDoAttempt(model, canDoId, { success, independent = fals
   let status = 'learning'
   if (successes >= 2 && independentSuccesses >= 1) status = 'can_do'
   else if (attempts > 0) status = 'learning'
-  model.canDo[canDoId] = { status, attempts, successes, independentSuccesses, contexts, lastPracticedAt: new Date(atMs).toISOString() }
+  // Episode completion updates practice counters without discarding evidence
+  // recorded by earlier steps (including delayed retrieval in this very run).
+  model.canDo[canDoId] = { ...prev, status, attempts, successes, independentSuccesses, contexts, lastPracticedAt: new Date(atMs).toISOString() }
   return model
 }
 
