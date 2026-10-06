@@ -444,7 +444,11 @@ export function AppProvider({ children }) {
   }, [])
 
   const preferenceSnapshotRef = useRef(null)
-  preferenceSnapshotRef.current = () => toCloudPreferenceFields(tutorPreferences, { user_language: interfaceLanguage })
+  preferenceSnapshotRef.current = () => {
+    let options = {}
+    try { options = JSON.parse(localStorage.getItem('lc2-cloud-preference-options') || '{}') || {} } catch {}
+    return toCloudPreferenceFields(tutorPreferences, { ...options, user_language: interfaceLanguage })
+  }
   const preferenceSyncRef = useRef(null)
   useEffect(() => {
     if (!CLOUD_PREFERENCES_RELEASED || !authUser?.id || authStep !== null) return undefined
@@ -456,6 +460,9 @@ export function AppProvider({ children }) {
       },
       readLocal: () => preferenceSnapshotRef.current(),
       applyLocal: row => {
+        localStorage.setItem('lc2-cloud-preference-options', JSON.stringify({
+          english_variant: row.english_variant, conversation_register: row.conversation_register,
+        }))
         preferenceSnapshotRef.current = () => row
         setTutorPreferencesState(previous => saveTutorPreferences(fromCloudPreferenceFields(row, previous)))
         updateNativeLanguage(row.user_language)
