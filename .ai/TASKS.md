@@ -18,7 +18,7 @@ branch/PR instead of duplicating it.
   branch: chatgpt/lc-cloud-preferences-foundation
   PR:     #123
   scope:  resume the existing preference-mapping branch against current main and implement only the authorized public-browser client sync mechanics; no schema/DDL/policy mutation belongs to this phase
-  done:   reconcile #123 with current main/Auth; preserve local progress on first login; bind every browser read/write to the verified session user; deterministically prove offline→online merge without duplication/data loss, idempotent repeated sync, and logout/account-switch isolation with repository tests. Keep #123 Draft and keep this same task IN_PROGRESS until the owner explicitly authorizes a narrow reproducible schema/RLS mechanism and the same PR proves migration reproducibility plus A↔B and anonymous denial. Client-side work may advance before that authorization, but #123 must not claim merge readiness.
+  done:   reconcile #123 with current main/Auth; preserve local progress on first login; bind every browser read/write to the verified session user; deterministically prove offline→online merge without duplication/data loss, idempotent repeated sync, and logout/account-switch isolation with repository tests. Keep #123 Draft and keep this same task IN_PROGRESS until the owner explicitly authorizes a narrow reproducible schema/RLS mechanism and the same PR proves migration reproducibility plus A↔B and anonymous denial, measured database growth and bytes per user against the documented storage budget. Client-side work may advance before that authorization, but #123 must not claim merge readiness.
 
 ## TODO — ordered; take the first unclaimed one you are allowed to do
 

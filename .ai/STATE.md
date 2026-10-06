@@ -56,3 +56,5 @@ The older wording that blocked all work on PR #128 is obsolete: #128 and Auth PR
 ## QA discipline
 
 For any changed final head: require functional proof for affected flows plus `check:all`, production build, `check:i18n`, backend `compileall`, `pytest` and guards. Any fix after validation resets the clean-cycle count. Require two consecutive complete clean cycles on the exact final head before merge. Never merge red or Draft PRs and never weaken QA to make a change pass.
+
+The final cloud completion gate also requires measured database growth and bytes per user against the documented storage budget; client-only tests cannot substitute for this owner-gated proof.

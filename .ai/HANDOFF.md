@@ -56,3 +56,5 @@ Issue #101 (`LC-PROD-002`) exists for the separate A1 availability decision. Do 
 ## QA discipline
 
 Never merge a Draft or red PR. Never relax thresholds/guards to make a change pass. Functional changes need actual affected-flow proof. Any fix after validation resets the two-cycle count. Require two consecutive complete clean cycles on the exact final head before merge.
+
+The final cloud completion gate also requires measured database growth and bytes per user against the documented storage budget; client-only tests cannot substitute for this owner-gated proof.
