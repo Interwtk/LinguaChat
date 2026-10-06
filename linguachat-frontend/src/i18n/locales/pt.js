@@ -535,6 +535,7 @@ export default {
   recoverySent: "Link enviado",
   recoverySentText: "Verifica a tua caixa de entrada. O teu histórico de prática está seguro e à espera.",
   authGenericError: 'Não foi possível concluir. Tente novamente.',
+  authCallbackError: "Este link de acesso é inválido ou expirou. Entre novamente ou solicite outro link.",
   authStorageFull: 'O armazenamento do navegador está cheio. Libere espaço deste site e entre novamente.',
   confirmEmailTitle: 'Confirme seu e-mail',
   confirmEmailText: 'Enviamos um link de confirmação para {email}. Abra-o para ativar sua conta.',

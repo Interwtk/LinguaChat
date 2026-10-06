@@ -107,7 +107,7 @@ function EntryScreen() {
   const { setAuthStep, authProviderError, t } = useApp()
   const providerErrorText = authProviderError === 'storage_full'
     ? t('authStorageFull')
-    : authProviderError
+    : authProviderError === 'callback_error' ? t('authCallbackError') : authProviderError
   return (
     <AuthShell>
       <div className="flex flex-col items-center text-center animate-fade-up">

@@ -3,6 +3,15 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
+import { authCallbackError } from './callbackError.js'
+
+for (const action of ['confirmed', 'reset']) {
+  assert.equal(authCallbackError(`https://qa.example/?auth=${action}&error=access_denied&error_description=untrusted`), 'callback_error')
+  assert.equal(authCallbackError(`https://qa.example/?auth=${action}#error_code=otp_expired`), 'callback_error')
+  assert.equal(authCallbackError(`https://qa.example/?auth=${action}&code=valid-code`), null)
+}
+assert.equal(authCallbackError('https://qa.example/?error=unrelated'), null)
+assert.equal(authCallbackError('invalid-url'), null)
 
 const here = dirname(fileURLToPath(import.meta.url))
 const root = resolve(here, '../..')
@@ -26,6 +35,8 @@ for (const operation of ['signUp', 'signInWithPassword', 'signOut', 'resetPasswo
 }
 
 const context = read('src/context/AppContext.jsx')
+assert.match(context, /useRef\(authCallbackError\(window.location.href\)\)/, 'capture callback errors before the SDK clears routing state')
+assert.match(context, /if \(authCallbackErrorRef.current\) setAuthProviderError\(authCallbackErrorRef.current\)/, 'null session events must retain the generic callback error')
 assert.match(context, /getBrowserAuthService/, 'AppContext must use the authorized provider service')
 assert.doesNotMatch(context, /\b(?:loginMock|signupMock|logoutMock)\b/, 'legacy mock auth actions must be removed')
 assert.doesNotMatch(context, /getItem\(['"]lc2-auth['"]\)/, 'legacy localStorage auth flag must never authorize a session')
@@ -50,6 +61,7 @@ for (const action of ['login', 'signup', 'requestPasswordReset', 'resendConfirma
 }
 
 const flow = read('src/components/auth/AuthFlow.jsx')
+assert.match(flow, /authProviderError === 'callback_error' \? t\('authCallbackError'\)/, 'callback failures must show translated safe guidance')
 assert.equal((flow.match(/htmlFor=\{id\}/g) || []).length, 2, 'email/name and password fields must have associated labels')
 assert.equal((flow.match(/id=\{id\}/g) || []).length, 2, 'both reusable inputs must expose their generated label target')
 assert.match(flow, /aria-label=\{t\(show \? 'authHidePassword' : 'authShowPassword'\)\}/, 'password visibility toggle must have a translated accessible name')

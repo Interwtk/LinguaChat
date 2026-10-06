@@ -535,6 +535,7 @@ export default {
   recoverySent: "Link inviato",
   recoverySentText: "Controlla la tua casella di posta. La tua cronologia di pratica è al sicuro e ti aspetta.",
   authGenericError: 'Non siamo riusciti a completare l’operazione. Riprova.',
+  authCallbackError: "Questo link di accesso non è valido o è scaduto. Accedi o richiedi un nuovo link.",
   authStorageFull: 'Lo spazio del browser è pieno. Libera spazio per questo sito e accedi di nuovo.',
   confirmEmailTitle: 'Conferma la tua email',
   confirmEmailText: 'Abbiamo inviato un link di conferma a {email}. Aprilo per attivare il tuo account.',
