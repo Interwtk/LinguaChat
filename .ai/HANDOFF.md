@@ -37,7 +37,7 @@ A1 arcs 1–7 are implemented and integrated. A2, B1, B2, C1 and C2 are also int
 
 ## Start here — current task
 
-`LC-CLOUD-001` is the single IN_PROGRESS **client-side** queue task. Resume the existing Draft PR #123 on branch `chatgpt/lc-cloud-preferences-foundation`; do **not** create another sync/preferences branch.
+`LC-CLOUD-001` is the single IN_PROGRESS **client-side** queue task. Resume the existing Draft PR #123 on branch `chatgpt/lc-cloud-preferences-foundation`; do **not** create another sync/preferences branch. The connected Supabase account was re-verified read-only on 2026-10-06 and identifies the LinguaChat project as `dcwrkhgmjvduiuczhcsr` (`LinguaChat`, `ca-central-1`, `ACTIVE_HEALTHY`); no other Supabase project is an allowed target.
 
 The safe work that can proceed now is to reconcile that Draft with merged Auth and implement/test offline-safe learner preference synchronization through the authorized public browser client only: session-user binding, safe first-login import, offline→online merge without duplication/data loss, idempotent repeat sync, and logout/account-switch isolation. Keep #123 Draft while doing this work.
 
