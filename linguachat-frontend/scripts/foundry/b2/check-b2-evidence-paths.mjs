@@ -11,6 +11,7 @@
 import assert from 'node:assert/strict'
 
 import { ALL_EPISODES, ALL_ARCS } from './check-b2-arc-content.mjs'
+import { isIndependentEvidence } from '../../../src/learning/engine/scaffolding.js'
 import { evaluateB2Free } from '../../../src/learning/levels/b2/evaluators.js'
 import { B2_CAN_DOS } from '../../../src/learning/levels/b2/b2Capabilities.js'
 
@@ -95,7 +96,7 @@ for (const ep of ALL_EPISODES) {
   for (const ep of ALL_ARCS.the_long_conversation) for (const step of ep.steps) {
     if (step.type !== 'free_reply') continue
     if (step.evidenceType === 'assistedOpen') {
-      const result = evaluateB2Free(step.evalKind, step.suggestionEn, { ...step, independent: false })
+      const result = evaluateB2Free(step.evalKind, step.suggestionEn, { ...step, independent: isIndependentEvidence({ step, assistanceUsed: false, correct: true }) })
       assert.equal(result.completedObjective, true, `${ep.id}: authored suggestion must satisfy its evaluator`)
       assert.equal(result.masteryEvidence.independent, false, 'using the model must never claim independence')
       assisted++
