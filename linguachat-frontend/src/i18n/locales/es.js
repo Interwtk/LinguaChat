@@ -4,6 +4,8 @@
  * falls back to English, never to a raw key.
  */
 export default {
+  authShowPassword: "Mostrar contraseña",
+  authHidePassword: "Ocultar contraseña",
   recommended: 'Recomendado',
   setupChoiceEyebrow: 'Una decisión rápida',
   setupChoiceTitle: '¿Cómo quieres empezar?',

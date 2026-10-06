@@ -4,6 +4,8 @@
  * falls back to English, never to a raw key.
  */
 export default {
+  authShowPassword: "パスワードを表示",
+  authHidePassword: "パスワードを非表示",
   ep1PraiseIndependent: "モデルなしで自己紹介できました。すごい！",
   ep1PraiseIm: "名前の前に I’m を使えました。いいね！",
   ep1PraiseGreetAndName: "今回はあいさつと名前を両方言えました。",

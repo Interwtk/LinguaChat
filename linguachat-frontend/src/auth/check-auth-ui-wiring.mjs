@@ -50,6 +50,10 @@ for (const action of ['login', 'signup', 'requestPasswordReset', 'resendConfirma
 }
 
 const flow = read('src/components/auth/AuthFlow.jsx')
+assert.equal((flow.match(/htmlFor=\{id\}/g) || []).length, 2, 'email/name and password fields must have associated labels')
+assert.equal((flow.match(/id=\{id\}/g) || []).length, 2, 'both reusable inputs must expose their generated label target')
+assert.match(flow, /aria-label=\{t\(show \? 'authHidePassword' : 'authShowPassword'\)\}/, 'password visibility toggle must have a translated accessible name')
+assert.match(flow, /type="checkbox" checked=\{agreed\} onChange=/, 'signup commitment must use a keyboard-operable native checkbox')
 assert.doesNotMatch(flow, /\b(?:loginMock|signupMock)\b/, 'AuthFlow must not call mock auth')
 assert.doesNotMatch(flow, /new Promise\s*\(.*setTimeout/s, 'Auth forms must not fake network success with delays')
 assert.match(flow, /authProviderError === 'storage_full'[\s\S]*?t\('authStorageFull'\)/, 'entry screen must translate the storage-isolation error')

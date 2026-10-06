@@ -4,6 +4,8 @@
  * falls back to English, never to a raw key.
  */
 export default {
+  authShowPassword: "Afficher le mot de passe",
+  authHidePassword: "Masquer le mot de passe",
   ep1PraiseIndependent: "Tu t'es présenté sans le modèle. Bravo !",
   ep1PraiseIm: "Tu as utilisé I’m avant ton nom. Bien !",
   ep1PraiseGreetAndName: "Cette fois, tu as ajouté la salutation et ton nom.",

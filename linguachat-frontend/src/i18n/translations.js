@@ -1,4 +1,6 @@
 const base = {
+  authShowPassword: "Show password",
+  authHidePassword: "Hide password",
   // Setup choice (recommended vs personalize)
   recommended: 'Recommended',
   setupChoiceEyebrow: 'One quick choice',

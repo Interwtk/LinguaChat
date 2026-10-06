@@ -44,3 +44,17 @@ function fixture({ remote = null, base = null } = {}) {
   const f=fixture();f.map.set('lc-cloud-preferences:A','broken');await assert.rejects(f.sync.sync(),/invalid_sync_journal/);assert.equal(f.reads,0)
 }
 console.log('preference sync: import backup, idempotency, offline recovery, concurrent CAS, deterministic conflict preservation, account cancellation, wrong-owner denial and quota fail-closed PASS')
+
+for (const corrupt of [
+  {version:1,userId:'A',base:{tone:'invalid'},backup:defaults,conflicts:{}},
+  {version:1,userId:'A',base:null,conflicts:{}},
+  {version:1,userId:'A',base:defaults,backup:[],conflicts:{}},
+  {version:1,userId:'A',base:defaults,backup:defaults,conflicts:{tone:'invalid'}},
+]) {
+  const f=fixture(), raw=JSON.stringify(corrupt)
+  f.map.set('lc-cloud-preferences:A',raw)
+  await assert.rejects(f.sync.sync(),/invalid_sync_journal/)
+  assert.equal(f.reads,0);assert.equal(f.writes,0)
+  assert.equal(f.local.tone,'calm')
+  assert.equal(f.map.get('lc-cloud-preferences:A'),raw,'keep corrupt journal for recovery')
+}

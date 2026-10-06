@@ -5,6 +5,17 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 const copy = value => JSON.parse(JSON.stringify(value))
 const fields = row => Object.fromEntries(FIELDS.filter(key => Object.hasOwn(row || {}, key)).map(key => [key, row[key]]))
 
+const object = value => value && typeof value === 'object' && !Array.isArray(value)
+const validFields = (value, partial = false) => {
+  if (!object(value) || Object.keys(value).some(key => !FIELDS.includes(key))) return false
+  if (!partial && FIELDS.some(key => !Object.hasOwn(value, key))) return false
+  const normalized = toCloudPreferenceFields(fromCloudPreferenceFields(value), value)
+  return Object.keys(value).every(key => same(value[key], normalized[key]))
+}
+const validJournal = (journal, id) => object(journal) && journal.version === 1 && journal.userId === id
+  && (journal.base === null || validFields(journal.base))
+  && validFields(journal.backup) && validFields(journal.conflicts, true)
+
 // Three-way merge. Disjoint edits survive. For simultaneous edits of one field,
 // the already committed remote value wins, irrespective of the device clock.
 // The losing local choice remains in the account journal for explicit recovery.
@@ -36,7 +47,7 @@ export function createPreferenceSync({ transport, store, readLocal, applyLocal, 
     const key = 'lc-cloud-preferences:' + encodeURIComponent(id)
     let journal
     try { journal = JSON.parse(store.getItem(key) || 'null') } catch { throw new Error('invalid_sync_journal') }
-    if (journal && (journal.version !== 1 || journal.userId !== id)) throw new Error('invalid_sync_journal')
+    if (journal !== null && !validJournal(journal, id)) throw new Error('invalid_sync_journal')
     // Backup before any network write or local import. Quota errors fail closed.
     const initial = fields(readLocal())
     journal ||= { version: 1, userId: id, base: null, backup: initial, conflicts: {} }
