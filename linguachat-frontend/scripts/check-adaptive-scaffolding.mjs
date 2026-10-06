@@ -393,6 +393,14 @@ const openTurn = { correct: true, assistanceUsed: false, evidenceKind: EVIDENCE.
   }
   // and a block's level travels with the evaluation
   assert.match(runner, /scaffoldLevel: scaffold/)
+  // Daily blocks and episodes must share one day-scoped provenance boundary.
+  assert.ok(runner.includes('const learningSessionId = `learning-day:${dailySession?.dayKey || dayKeyFor()}`'),
+    'daily practice must derive the same day-scoped learning boundary')
+  assert.ok(runner.includes('sessionId={learningSessionId}'),
+    'daily PracticeTurn must receive the shared learning-session provenance')
+  const shell = readFileSync(new URL('../src/components/episode/EpisodeShell.jsx', import.meta.url), 'utf8')
+  assert.ok(shell.includes('learning-day:${sessionActive && dailySession?.dayKey ? dailySession.dayKey : dayKeyFor()}'),
+    'episode and daily-session practice must share the same learning-day boundary')
   ok()
 }
 
