@@ -14,7 +14,7 @@ import { partnerFor, placeFor } from '../../learning/engine/variation.js'
 import { getLearnerInterests, getInterestContext, getInterestObject } from '../../learning/engine/interests.js'
 import { evaluateLearningResponse } from '../../services/api'
 import {
-  loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, recordDelayedRetrievalEvidence, markRecurringError,
+  loadLearnerModel, saveLearnerModel, recordItemAttempt, markRecurringError,
   getEpisodeState, setEpisodeState, recordActivitySignalOnce,
 } from '../../learning/engine/learnerModel.js'
 import {
@@ -26,7 +26,7 @@ import { seedFrom } from '../../learning/engine/variation.js'
 import { FormatFeedback } from './FormatFeedback'
 import { MiniStory } from '../session/MiniStory'
 import {
-  beginEpisodeRun, completeEpisodeRun, updateActiveRun, runEarnsReward, otherBranch, RUN_BRANCH_REPLAY,
+  beginEpisodeRun, completeEpisodeRun, updateActiveRun, stageDelayedRetrieval, runEarnsReward, otherBranch, RUN_BRANCH_REPLAY,
 } from '../../learning/engine/episodeRuns.js'
 import {
   recordLearnerFact, selectLearnerFact, factsOfType, captureStatedLifeFact, captureStatedUsualTime,
@@ -678,7 +678,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
        * bookkeeping, never a fabricated attempt/success for those canDos.
        */
       if (independent && Array.isArray(step.delayedRetrievalChecks) && step.delayedRetrievalChecks.length) {
-        recordDelayedRetrievalEvidence(modelRef.current, step.delayedRetrievalChecks, { independent, sessionId: learningSessionId })
+        runRef.current = stageDelayedRetrieval(modelRef.current, step.delayedRetrievalChecks, { independent, sessionId: learningSessionId }) || runRef.current
       }
       captureLifeFact(evalKind, text)
       if (attemptsRef.current > 0) signal('retried')
@@ -713,7 +713,6 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
     // the can-do is only credited as independent if this run actually produced
     // unaided open production, which the scaffold state has been counting
     const independent = Boolean(runRef.current?.independentEvidence)
-    recordCanDoAttempt(m, ep.canDoId, { success: true, independent, context: ep.id, sessionId: learningSessionId })
     /*
      * The reward is gated by the episode, not by the run: whatever this run
      * calls itself, an episode that has already paid out never pays again.
@@ -736,7 +735,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
     } else {
       setEpisodeState(m, ep.id, { status: 'completed', stepIndex: ep.steps.length - 1 })
     }
-    completeEpisodeRun(m, { independentEvidence: independent, branchId: runRef.current?.branchId || null, rewarded: firstCompletion })
+    completeEpisodeRun(m, { canDoId: ep.canDoId, sessionId: learningSessionId, independentEvidence: independent, branchId: runRef.current?.branchId || null, rewarded: firstCompletion })
     saveLearnerModel(m)
     if (onComplete) onComplete(ep)
     else finishEpisode()

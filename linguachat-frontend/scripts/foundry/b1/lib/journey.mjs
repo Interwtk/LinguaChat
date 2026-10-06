@@ -21,10 +21,10 @@
 import { b1EpisodeById } from '../../../../src/learning/levels/b1/b1Map.js'
 import { evaluateB1Free } from '../../../../src/learning/levels/b1/evaluators.js'
 import {
-  recordItemAttempt, setEpisodeState, getEpisodeState, recordDelayedRetrievalEvidence,
+  recordItemAttempt, setEpisodeState, getEpisodeState,
 } from '../../../../src/learning/engine/learnerModel.js'
 import {
-  beginEpisodeRun, completeEpisodeRun, updateActiveRun,
+  beginEpisodeRun, completeEpisodeRun, updateActiveRun, stageDelayedRetrieval,
 } from '../../../../src/learning/engine/episodeRuns.js'
 import {
   deriveInitialScaffold, updateScaffoldAfterTurn, evidenceKindForStep,
@@ -148,7 +148,7 @@ export function playEpisode(model, episodeId, {
     }
     for (const id of step.itemIds || []) recordItemAttempt(model, id, { correct: true, independent, evidenceKind, atMs })
     if (independent && Array.isArray(step.delayedRetrievalChecks) && step.delayedRetrievalChecks.length) {
-      recordDelayedRetrievalEvidence(model, step.delayedRetrievalChecks, { atMs, independent, sessionId: `journey:${Math.floor(atMs / DAY)}` })
+      stageDelayedRetrieval(model, step.delayedRetrievalChecks, { atMs, independent, sessionId: `journey:${Math.floor(atMs / DAY)}` })
     }
     if (independent) { independentEvidence = true; updateActiveRun(model, { independentEvidence: true }) }
     if (usesSuggestion) { assistance += 1; updateActiveRun(model, { assistanceUsed: assistance }) }

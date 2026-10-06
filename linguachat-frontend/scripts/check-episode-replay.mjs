@@ -19,7 +19,7 @@ import {
 } from '../src/learning/engine/learnerModel.js'
 import {
   beginEpisodeRun, completeEpisodeRun, resolveRunMode, runEarnsReward, runsFor,
-  timesPractised, branchesSeen, otherBranch, lastBranchPlayed, canTryOtherBranch, updateActiveRun,
+  timesPractised, branchesSeen, otherBranch, lastBranchPlayed, canTryOtherBranch, updateActiveRun, stageDelayedRetrieval,
   RUN_FIRST, RUN_RESUME, RUN_REPLAY, RUN_REVIEW, RUN_BRANCH_REPLAY,
 } from '../src/learning/engine/episodeRuns.js'
 
@@ -296,3 +296,31 @@ const completed = (episodeId) => {
 }
 
 console.log(`check-episode-replay — OK  (${n} replay groups verified)`)
+
+// Partial capstones never earn delayed retrieval, even after persistence/reload.
+{
+  const m = createLearnerModel()
+  const id = 'test_retrieval'
+  recordCanDoAttempt(m, id, { success: true, independent: true, atMs: AT, sessionId: 'prior' })
+  beginEpisodeRun(m, 'capstone', { atMs: AT + 86400000 })
+  stageDelayedRetrieval(m, [id], { independent: true, sessionId: 'later', atMs: AT + 86400000 })
+  setEpisodeState(m, 'capstone', { status: 'in_progress', stepIndex: 2 })
+  assert.equal(m.canDo[id].delayedRetrievalAt, undefined)
+  const reloaded = migrateLearnerModel(JSON.parse(JSON.stringify(m)))
+  beginEpisodeRun(reloaded, 'capstone', { atMs: AT + 86400000 })
+  assert.equal(reloaded.activeRun.pendingRetrieval.length, 1)
+  assert.equal(reloaded.canDo[id].delayedRetrievalAt, undefined)
+  completeEpisodeRun(reloaded, { canDoId: id, independentEvidence: true, sessionId: 'later', atMs: AT + 86400000 })
+  assert.equal(reloaded.canDo[id].delayedRetrievalAt.length, 1)
+  assert.equal(reloaded.canDo[id].attempts, 2)
+  completeEpisodeRun(reloaded, { canDoId: id, independentEvidence: true, sessionId: 'later', atMs: AT + 86400000 })
+  assert.equal(reloaded.canDo[id].attempts, 2)
+  const abandoned = JSON.parse(JSON.stringify(m))
+  beginEpisodeRun(abandoned, 'another_episode', { atMs: AT + 86400000 })
+  completeEpisodeRun(abandoned, { atMs: AT + 86400000 })
+  assert.equal(abandoned.canDo[id].delayedRetrievalAt, undefined)
+  const shell = readFileSync(new URL('../src/components/episode/EpisodeShell.jsx', import.meta.url), 'utf8')
+  assert.ok(shell.includes('stageDelayedRetrieval(modelRef.current'))
+  assert.ok(!shell.includes('recordDelayedRetrievalEvidence(modelRef.current'))
+  console.log('partial retrieval: pending across resume, discarded on abandonment, committed once with completion PASS')
+}

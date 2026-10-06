@@ -756,6 +756,9 @@ export function sanitizeRun(raw) {
      * from its own reading of the evidence.
      */
     scaffold: sanitizeScaffold(raw.scaffold),
+    pendingRetrieval: Array.isArray(raw.pendingRetrieval) ? raw.pendingRetrieval
+      .filter(p => p && str(p.canDoId, 100) && str(p.sessionId, 100) && Number.isFinite(p.atMs))
+      .slice(0, 100).map(p => ({ canDoId: str(p.canDoId, 100), sessionId: str(p.sessionId, 100), atMs: p.atMs })) : [],
   }
 }
 
