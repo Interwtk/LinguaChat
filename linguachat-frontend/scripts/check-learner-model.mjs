@@ -54,8 +54,9 @@ check('canDo two successes incl independent = can_do', m2.canDo.introduce_self.s
 {
   const model = createLearnerModel()
   const id = 'narrate_connected_event'
-  recordCanDoAttempt(model, id, { success: true, independent: true, context: 'earlier', atMs: 1000 })
-  recordDelayedRetrievalEvidence(model, [id], { atMs: 100000 })
+  recordCanDoAttempt(model, id, { success: true, independent: true, context: 'earlier', atMs: 1000, sessionId: 'earlier' })
+  recordDelayedRetrievalEvidence(model, [id], { atMs: 100000, independent: true, sessionId: 'later' })
+  check('later independent session earns retrieval', model.canDo[id].delayedRetrievalAt?.length === 1)
   const stamps = [...model.canDo[id].delayedRetrievalAt]
   for (const [index, success] of [true, false].entries()) {
     recordCanDoAttempt(model, id, { success, independent: success, context: 'later', atMs: 200000 + index })
@@ -64,6 +65,27 @@ check('canDo two successes incl independent = can_do', m2.canDo.introduce_self.s
     check('failed practice does not fabricate success', model.canDo[id].successes === 2)
     check('retrieval does not fabricate mastery counters', model.canDo[id].independentSuccesses === 2)
   }
+}
+
+/* ---- metadata/elapsed time alone cannot manufacture delayed retrieval ---- */
+{
+  const model = createLearnerModel(), id = 'retrieval_gate'
+  recordDelayedRetrievalEvidence(model, [id], { atMs: 5000, independent: true, sessionId: 'later' })
+  check('no prior practice means no retrieval evidence', model.canDo[id] === undefined)
+  recordCanDoAttempt(model, id, { success: true, independent: true, sessionId: 'home', atMs: 1000 })
+  for (const options of [
+    { independent: true, sessionId: 'home', atMs: 900000000 },
+    { independent: false, sessionId: 'later', atMs: 5000 },
+    { independent: true, sessionId: 'later', atMs: 500 },
+    { independent: true, atMs: 5000 },
+  ]) {
+    recordDelayedRetrievalEvidence(model, [id], options)
+    check('same session, assisted retry, reversed clock or missing session cannot earn retrieval', !model.canDo[id].delayedRetrievalAt)
+  }
+  recordDelayedRetrievalEvidence(model, [id], { independent: true, sessionId: 'later', atMs: 5000 })
+  recordDelayedRetrievalEvidence(model, [id], { independent: true, sessionId: 'later', atMs: 6000 })
+  check('verified later unaided session earns exactly one stamp', model.canDo[id].delayedRetrievalAt.length === 1)
+  check('retrieval leaves actual practice counts unchanged', model.canDo[id].attempts === 1 && model.canDo[id].independentSuccesses === 1)
 }
 
 /* ---- review scheduling ---- */

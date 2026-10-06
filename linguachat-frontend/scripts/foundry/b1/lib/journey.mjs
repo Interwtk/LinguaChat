@@ -126,7 +126,8 @@ export function playEpisode(model, episodeId, {
       && profile.usesSuggestion({ step, scaffold: scaffold.currentLevel })
       && Boolean(step.suggestionEn)
 
-    if (profile.retries({ step, scaffold: scaffold.currentLevel })) {
+    const retried = profile.retries({ step, scaffold: scaffold.currentLevel })
+    if (retried) {
       retries += 1
       const wrongReply = wrongText ? wrongText(step) : 'hmm'
       const wrongCtx = { ...ctxFor(step, false), ...(ctxOverride ? ctxOverride(step) : {}) }
@@ -138,7 +139,7 @@ export function playEpisode(model, episodeId, {
       persistScaffold({ retriedSteps: retries })
     }
 
-    const independent = isIndependentEvidence({ step, assistanceUsed: usesSuggestion, correct: true })
+    const independent = isIndependentEvidence({ step, assistanceUsed: usesSuggestion || retried, correct: true })
     const reply = answerOverride ? answerOverride(step) : answerFor(step)
     const ctx = { ...ctxFor(step, independent), ...(ctxOverride ? ctxOverride(step) : {}) }
     const result = evaluateB1Free(step.evalKind, reply, ctx)
@@ -147,7 +148,7 @@ export function playEpisode(model, episodeId, {
     }
     for (const id of step.itemIds || []) recordItemAttempt(model, id, { correct: true, independent, evidenceKind, atMs })
     if (independent && Array.isArray(step.delayedRetrievalChecks) && step.delayedRetrievalChecks.length) {
-      recordDelayedRetrievalEvidence(model, step.delayedRetrievalChecks, { atMs })
+      recordDelayedRetrievalEvidence(model, step.delayedRetrievalChecks, { atMs, independent, sessionId: `journey:${Math.floor(atMs / DAY)}` })
     }
     if (independent) { independentEvidence = true; updateActiveRun(model, { independentEvidence: true }) }
     if (usesSuggestion) { assistance += 1; updateActiveRun(model, { assistanceUsed: assistance }) }

@@ -189,7 +189,7 @@ function freshModel() { return createLearnerModel() }
       success: true,
       independent: run.independentEvidence,
       context: ep.id,
-      atMs,
+      atMs, sessionId: `journey:${Math.floor(atMs / DAY)}`,
     })
   }
 
@@ -219,7 +219,7 @@ function freshModel() { return createLearnerModel() }
     // Mirror EpisodeShell.finish() for the capstone too: primary can-do practice
     // legitimately increments counters, but must preserve step retrieval stamps.
     recordCanDoAttempt(model, ep.canDoId, {
-      success: true, independent: run.independentEvidence, context: ep.id, atMs,
+      success: true, independent: run.independentEvidence, context: ep.id, atMs, sessionId: `journey:${Math.floor(atMs / DAY)}`,
     })
     completionCounts[ep.canDoId] = (completionCounts[ep.canDoId] || 0) + 1
   }
@@ -245,6 +245,25 @@ function freshModel() { return createLearnerModel() }
     assert.ok(r.objectives.length >= 6, `${r.episodeId}: expected at least 6 distinct objectives exercised, got ${r.objectives.length}`)
   }
   console.log('  delayed retrieval: PROVEN — every required B1 capability replayed and passed, unaided, inside one held conversation nobody scripted turn-by-turn.')
+  ok()
+}
+
+/* Real episode journeys must refuse same-session and assisted retrieval. */
+for (const assisted of [false, true]) {
+  const model = freshModel()
+  for (const ep of b1Episodes().filter(ep => ep.arc !== B1_ARC7_ID)) {
+    const run = playEpisode(model, ep.id, { profile: STRONG, atMs: START })
+    recordCanDoAttempt(model, ep.canDoId, {
+      success: true, independent: run.independentEvidence, context: ep.id,
+      atMs: START, sessionId: `journey:${Math.floor(START / DAY)}`,
+    })
+  }
+  const profile = assisted ? { ...STRONG, retries: () => true } : STRONG
+  for (const ep of B1_ARC7) playEpisode(model, ep.id, {
+    profile, atMs: START + (assisted ? 7 * DAY : 1000),
+  })
+  for (const id of B1_REQUIRED_CAN_DOS) assert.equal(model.canDo[id]?.delayedRetrievalAt, undefined,
+    `${id}: ${assisted ? 'corrected retry' : 'same-session capstone'} cannot earn delayed retrieval`)
   ok()
 }
 

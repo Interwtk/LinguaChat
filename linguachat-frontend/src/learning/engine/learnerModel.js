@@ -633,7 +633,7 @@ export const learningStateOf = (model, itemId) => model?.languageItems?.[itemId]
 export const canUseItem = (model, itemId) => learningStateOf(model, itemId) === 'can_use'
 
 // ---- can-do goals ----
-export function recordCanDoAttempt(model, canDoId, { success, independent = false, context = null, atMs = Date.now() }) {
+export function recordCanDoAttempt(model, canDoId, { success, independent = false, context = null, atMs = Date.now(), sessionId = null }) {
   const prev = model.canDo[canDoId] || { status: 'new', attempts: 0, successes: 0, independentSuccesses: 0, contexts: [], lastPracticedAt: null }
   const attempts = prev.attempts + 1
   const successes = prev.successes + (success ? 1 : 0)
@@ -643,46 +643,34 @@ export function recordCanDoAttempt(model, canDoId, { success, independent = fals
   let status = 'learning'
   if (successes >= 2 && independentSuccesses >= 1) status = 'can_do'
   else if (attempts > 0) status = 'learning'
+  const independentPractice = success && independent && sessionId
+    ? { independentPracticeSessionId: sessionId, independentPracticedAt: new Date(atMs).toISOString() }
+    : {}
   // Episode completion updates practice counters without discarding evidence
   // recorded by earlier steps (including delayed retrieval in this very run).
-  model.canDo[canDoId] = { ...prev, status, attempts, successes, independentSuccesses, contexts, lastPracticedAt: new Date(atMs).toISOString() }
+  model.canDo[canDoId] = { ...prev, ...independentPractice, status, attempts, successes, independentSuccesses, contexts, lastPracticedAt: new Date(atMs).toISOString() }
   return model
 }
 
-/*
- * `coreEngineRequirements[3]` (C2's capstone) — several OTHER capabilities'
- * delayed-retrieval evidence, recorded against the SAME task completion.
- * Every earlier level's own completion records evidence for exactly one
- * canDoId (`recordCanDoAttempt` above, called once per episode finish);
- * C2's capstone (`levels/c2/arcs/c2Arc8IntegratedMediation.js`'s `MEDIATE_01`)
- * is the first episode whose one independent step also names SEVEN OTHER
- * capabilities it re-demonstrates unaided (`step.delayedRetrievalChecks`,
- * matching `c2EvaluationContracts.js`'s `C2_CAPSTONE_DELAYED_RETRIEVAL_CHECKS`
- * exactly), and none of those seven capabilities' own dedicated arc-level
- * completion runs again inside this same task.
- *
- * Deliberately does NOT touch `attempts`/`successes`/`independentSuccesses` —
- * this canDo was not actually practiced end-to-end in this task the way its
- * own arc's episode practices it; recording a fabricated attempt/success
- * here would silently inflate mastery evidence for a capability this task
- * only warms up, not on masters from scratch. `delayedRetrievalAt` is
- * purely evidentiary bookkeeping (capped at the last 10 timestamps, the
- * same bound `recurringErrors` above already uses), additive to whatever
- * canDo state already exists — including none at all, if this is reached
- * before the capability's own arc.
- *
- * Schema change is additive only: every existing single-capability episode
- * (every level below C2) never calls this, so their own `model.canDo`
- * entries never gain a `delayedRetrievalAt` field and keep recording
- * identically to before.
- */
-export function recordDelayedRetrievalEvidence(model, canDoIds, { atMs = Date.now() } = {}) {
+/* Delayed retrieval is additive bookkeeping, never an invented practice or
+ * mastery counter. A capability must already have independent practice in an
+ * earlier session; legacy records without a session remain ineligible until
+ * new real practice establishes that provenance. Keep the last ten stamps. */
+export function recordDelayedRetrievalEvidence(model, canDoIds, { atMs = Date.now(), independent = false, sessionId = null } = {}) {
+  // Authored metadata is not learner evidence. Require an unaided answer and
+  // an earlier independent success in a different actual learning session.
+  if (!independent || !sessionId) return model
   const ids = Array.isArray(canDoIds) ? canDoIds : []
   for (const canDoId of ids) {
     if (!canDoId) continue
-    const prev = model.canDo[canDoId] || { status: 'new', attempts: 0, successes: 0, independentSuccesses: 0, contexts: [], lastPracticedAt: null }
+    const prev = model.canDo[canDoId]
+    if (!prev?.independentSuccesses || !prev.independentPracticeSessionId ||
+        prev.independentPracticeSessionId === sessionId ||
+        !(Date.parse(prev.independentPracticedAt) < atMs) ||
+        prev.delayedRetrievalSessions?.includes(sessionId)) continue
     const delayedRetrievalAt = [new Date(atMs).toISOString(), ...(prev.delayedRetrievalAt || [])].slice(0, 10)
-    model.canDo[canDoId] = { ...prev, delayedRetrievalAt }
+    const delayedRetrievalSessions = [sessionId, ...(prev.delayedRetrievalSessions || [])].slice(0, 10)
+    model.canDo[canDoId] = { ...prev, delayedRetrievalAt, delayedRetrievalSessions }
   }
   return model
 }

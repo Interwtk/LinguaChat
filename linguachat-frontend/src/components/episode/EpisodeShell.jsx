@@ -96,7 +96,10 @@ function LinguaLine({ children }) {
  * inside a session the next block follows, standalone it returns to Home.
  */
 function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = null, runOptions = null }) {
-  const { t, profile, tutorPreferences, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode } = useApp()
+  const { t, profile, tutorPreferences, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode, dailySession, sessionActive } = useApp()
+  // One daily learning boundary across guided and standalone practice. Changing
+  // duration/surface or immediately reopening an episode is not a delayed session.
+  const learningSessionId = useRef(`learning-day:${sessionActive && dailySession?.dayKey ? dailySession.dayKey : dayKeyFor()}`).current
   const ep = episode
   const name = (profile.name || '').trim() || 'Alex'
   // deterministic roleplay partner — stable per learner, reproducible on reload
@@ -674,8 +677,8 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
        * `recordDelayedRetrievalEvidence` header for why this is additive
        * bookkeeping, never a fabricated attempt/success for those canDos.
        */
-      if (Array.isArray(step.delayedRetrievalChecks) && step.delayedRetrievalChecks.length) {
-        recordDelayedRetrievalEvidence(modelRef.current, step.delayedRetrievalChecks)
+      if (independent && Array.isArray(step.delayedRetrievalChecks) && step.delayedRetrievalChecks.length) {
+        recordDelayedRetrievalEvidence(modelRef.current, step.delayedRetrievalChecks, { independent, sessionId: learningSessionId })
       }
       captureLifeFact(evalKind, text)
       if (attemptsRef.current > 0) signal('retried')
@@ -710,7 +713,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
     // the can-do is only credited as independent if this run actually produced
     // unaided open production, which the scaffold state has been counting
     const independent = Boolean(runRef.current?.independentEvidence)
-    recordCanDoAttempt(m, ep.canDoId, { success: true, independent, context: ep.id })
+    recordCanDoAttempt(m, ep.canDoId, { success: true, independent, context: ep.id, sessionId: learningSessionId })
     /*
      * The reward is gated by the episode, not by the run: whatever this run
      * calls itself, an episode that has already paid out never pays again.
