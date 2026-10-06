@@ -88,6 +88,21 @@ check('canDo two successes incl independent = can_do', m2.canDo.introduce_self.s
   check('retrieval leaves actual practice counts unchanged', model.canDo[id].attempts === 1 && model.canDo[id].independentSuccesses === 1)
 }
 
+/* ---- daily-session provenance keeps delayed retrieval session-distinct ---- */
+{
+  const model = createLearnerModel(), id = 'daily_provenance'
+  recordCanDoAttempt(model, id, { success: true, independent: true, sessionId: '2026-10-06:standard', atMs: 1000 })
+  check('independent daily practice records session provenance', model.canDo[id].independentPracticeSessionId === '2026-10-06:standard')
+  recordDelayedRetrievalEvidence(model, [id], { independent: true, sessionId: '2026-10-06:standard', atMs: 2000 })
+  check('same-session capstone cannot earn delayed retrieval', !model.canDo[id].delayedRetrievalAt)
+  recordDelayedRetrievalEvidence(model, [id], { independent: true, sessionId: '2026-10-07:standard', atMs: 3000 })
+  check('later distinct session can earn delayed retrieval', model.canDo[id].delayedRetrievalAt?.length === 1)
+  recordCanDoAttempt(model, id, { success: true, independent: true, sessionId: '2026-10-08:standard', atMs: 4000 })
+  check('newer independent practice replaces stale session provenance', model.canDo[id].independentPracticeSessionId === '2026-10-08:standard')
+  recordCanDoAttempt(model, id, { success: true, independent: false, sessionId: '2026-10-09:standard', atMs: 5000 })
+  check('assisted practice never establishes independent provenance', model.canDo[id].independentPracticeSessionId === '2026-10-08:standard')
+}
+
 /* ---- review scheduling ---- */
 const failSched = scheduleReview({ streak: 3 }, { correct: false, independent: false })
 check('fail -> review same day (0 days)', new Date(failSched.nextReviewAt).getTime() - Date.now() < 60000)
