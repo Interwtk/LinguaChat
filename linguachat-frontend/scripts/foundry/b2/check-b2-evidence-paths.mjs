@@ -11,7 +11,7 @@
 import assert from 'node:assert/strict'
 
 import { ALL_EPISODES, ALL_ARCS } from './check-b2-arc-content.mjs'
-import { isIndependentEvidence } from '../../../src/learning/engine/scaffolding.js'
+import { isIndependentEvidence, showsStepModelAnswer } from '../../../src/learning/engine/scaffolding.js'
 import { evaluateB2Free } from '../../../src/learning/levels/b2/evaluators.js'
 import { B2_CAN_DOS } from '../../../src/learning/levels/b2/b2Capabilities.js'
 
@@ -99,6 +99,11 @@ for (const ep of ALL_EPISODES) {
       const result = evaluateB2Free(step.evalKind, step.suggestionEn, { ...step, independent: isIndependentEvidence({ step, assistanceUsed: false, correct: true }) })
       assert.equal(result.completedObjective, true, `${ep.id}: authored suggestion must satisfy its evaluator`)
       assert.equal(result.masteryEvidence.independent, false, 'using the model must never claim independence')
+      for (const scaffold of ['high', 'medium', 'low']) {
+        assert.equal(showsStepModelAnswer(step, scaffold), true, 'assisted model remains visible after support fades')
+        assert.equal(showsStepModelAnswer(step, scaffold, { unaidedAttempt: true }), true)
+        assert.equal(showsStepModelAnswer(step, scaffold, { reviewing: true }), false)
+      }
       assisted++
     }
     if (step.evidenceType === 'independent' && step.evalKind === 'shift_register') {

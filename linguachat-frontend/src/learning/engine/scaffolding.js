@@ -541,3 +541,11 @@ export function updateScaffoldAfterTurn(state, {
 /* What the UI should show at a given level. */
 export const showsModelAnswer = (level) => level !== 'low'
 export const showsHintByDefault = (level) => level === 'high'
+
+// Authored assisted-open turns must expose the support their evidence requires.
+export function showsStepModelAnswer(step, scaffold, { unaidedAttempt = false, retry = false, reviewing = false } = {}) {
+  return Boolean(step?.suggestionEn && !reviewing && (
+    (step.assisted === true && step.evidenceType === 'assistedOpen')
+    || (showsModelAnswer(scaffold) && !unaidedAttempt) || retry
+  ))
+}
