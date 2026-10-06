@@ -388,6 +388,12 @@ const openTurn = { correct: true, assistanceUsed: false, evidenceKind: EVIDENCE.
   }
   // and a block's level travels with the evaluation
   assert.match(runner, /scaffoldLevel: scaffold/)
+  // Daily practice must use the SAME day-scoped learning boundary as EpisodeShell.
+  // This guards the live wiring that a model-only test cannot see.
+  assert.match(runner, /const learningSessionId = \`learning-day:\\${dailySession\\\?\\.dayKey \\|\\| dayKeyFor\\\(\\\)}\`/)
+  assert.match(runner, /recordCanDoAttempt\\\(modelRef\\.current, canDoId, \\{[^}]*sessionId: learningSessionId/)
+  const shell = readFileSync(new URL('../src/components/episode/EpisodeShell.jsx', import.meta.url), 'utf8')
+  assert.match(shell, /learning-day:\\${sessionActive && dailySession\\\?\\.dayKey \\? dailySession\\.dayKey : dayKeyFor\\\(\\\)} / .source.replace(' } ', '}'))
   ok()
 }
 
