@@ -58,3 +58,5 @@ Issue #101 (`LC-PROD-002`) exists for the separate A1 availability decision. Do 
 Never merge a Draft or red PR. Never relax thresholds/guards to make a change pass. Functional changes need actual affected-flow proof. Any fix after validation resets the two-cycle count. Require two consecutive complete clean cycles on the exact final head before merge.
 
 The final cloud completion gate also requires measured database growth and bytes per user against the documented storage budget; client-only tests cannot substitute for this owner-gated proof.
+
+The complete acceptance gate in docs/architecture/supabase-beta-plan.md section 12 is mandatory: document the exact LinguaChat project ID without secrets; demonstrate existing local learner progress migrating to cloud without loss under an explicitly authorized progress schema; review security and performance advisors; pass full frontend/backend QA and real 390px/1440px browser journeys; and obtain two consecutive clean cycles after the final fix. Preference-only sync cannot complete this task or establish beta readiness.
