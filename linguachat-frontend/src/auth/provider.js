@@ -32,9 +32,18 @@ export function createLazyAuthService(loadService) {
   return Object.freeze(service)
 }
 
+const HAS_VITE_ENV = typeof import.meta.env === 'object' && import.meta.env !== null
+
+export function resolveBrowserAuthOrigin(currentOrigin, env = HAS_VITE_ENV ? import.meta.env : {}) {
+  const configured = String(env?.VITE_AUTH_REDIRECT_ORIGIN ?? '').trim()
+  return configured || currentOrigin
+}
+
 let browserAuthService = null
 export function getBrowserAuthService() {
   if (!browserAuthService) browserAuthService = createLazyAuthService(async () =>
-    createEmailPasswordAuth(await getBrowserPublicClient(), { origin: window.location.origin }))
+    createEmailPasswordAuth(await getBrowserPublicClient(), {
+      origin: resolveBrowserAuthOrigin(window.location.origin),
+    }))
   return browserAuthService
 }
