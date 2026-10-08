@@ -20,13 +20,13 @@ export function createLazyAuthService(loadService) {
       // A failed lazy import must not orphan an active listener. A later
       // getSession/action retry can attach it without reviving unsubscribed ones.
       for (const entry of pendingListeners) {
-        pendingListeners.delete(entry)
-        if (!entry.active) continue
+        if (!entry.active) { pendingListeners.delete(entry); continue }
         try {
           const registration = adapter.onAuthStateChange(entry.listener)
           entry.subscription = registration?.data?.subscription || registration?.subscription
+          pendingListeners.delete(entry)
           if (!entry.active) entry.subscription?.unsubscribe()
-        } catch { /* Listener errors must not poison session initialization. */ }
+        } catch { /* Keep active listeners pending for a later auth action retry. */ }
       }
       return adapter
     })

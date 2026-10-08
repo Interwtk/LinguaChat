@@ -55,4 +55,42 @@ canceledListener.data.subscription.unsubscribe()
 await canceledRetry.getSession()
 assert.equal(zombieListeners, 0, 'unmounted listener must not revive after retry')
 
+
+let registrationAttempts = 0, registrationAttached = 0, registrationStopped = 0
+const registrationRetry = createLazyAuthService(async () => ({
+  getSession: async () => null,
+  onAuthStateChange: () => {
+    registrationAttempts++
+    if (registrationAttempts === 1) throw Error('temporary listener registration failure')
+    registrationAttached++
+    return { data: { subscription: { unsubscribe() { registrationStopped++ } } } }
+  },
+}))
+const retainedRegistration = registrationRetry.onAuthStateChange(() => {})
+await new Promise(resolve => setImmediate(resolve))
+assert.equal(registrationAttempts, 1, 'initial registration should fail once')
+assert.equal(registrationAttached, 0)
+await registrationRetry.getSession()
+assert.equal(registrationAttached, 1, 'next auth action must retry failed listener registration')
+await registrationRetry.getSession()
+assert.equal(registrationAttached, 1, 'recovered listener must not register twice')
+retainedRegistration.data.subscription.unsubscribe()
+assert.equal(registrationStopped, 1, 'recovered listener must remain cancelable')
+
+let canceledRegistrationAttempts = 0
+const canceledRegistration = createLazyAuthService(async () => ({
+  getSession: async () => null,
+  onAuthStateChange: () => {
+    canceledRegistrationAttempts++
+    if (canceledRegistrationAttempts === 1) throw Error('temporary listener registration failure')
+    return { data: { subscription: { unsubscribe() {} } } }
+  },
+}))
+const abandonedRegistration = canceledRegistration.onAuthStateChange(() => {})
+await new Promise(resolve => setImmediate(resolve))
+assert.equal(canceledRegistrationAttempts, 1)
+abandonedRegistration.data.subscription.unsubscribe()
+await canceledRegistration.getSession()
+assert.equal(canceledRegistrationAttempts, 1, 'canceled failed registration must not be revived')
+
 console.log('lazy auth: shared initialization, listener cancellation, session restoration and chunk retry, transient retry reattaches, no zombie listeners PASS')
