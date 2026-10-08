@@ -25,8 +25,9 @@ function contrast(a, b) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
-assert.ok(contrast('#FFFFFF', '#A9563A') >= 4.5, 'CTA white/deep-terracotta contrast must be WCAG AA for normal text');
-assert.ok(contrast('#5E6D58', '#FBF6EF') >= 4.5, 'Footer sage text must be WCAG AA for normal text');
+assert.ok(contrast('#1C2333', '#D98A66') >= 4.5, 'CTA dark-ink/warm-terracotta contrast must be WCAG AA for normal text');
+assert.ok(contrast('#9BB093', '#1C2333') >= 4.5, 'Footer sage/night contrast must be WCAG AA for normal text');
+assert.ok(contrast('#F1EEE8', '#262E42') >= 4.5, 'Primary copy on elevated night surface must be WCAG AA');
 
 for (const [file, expectedCtas] of cases) {
   const html = readFileSync(join(here, file), 'utf8');
@@ -37,10 +38,11 @@ for (const [file, expectedCtas] of cases) {
   const hrefs = [...html.matchAll(/href="([^"]+)"/gi)].map((match) => match[1].trim());
   assert.equal(hrefs.length, 2, `${file}: exactly two link destinations are expected`);
   for (const href of hrefs) assert.equal(href, '{{ .ConfirmationURL }}', `${file}: every href must be exactly ConfirmationURL with no wrapper or external origin`);
-  assert.match(html, /background:#A9563A;border-radius:12px/i, `${file}: accessible CTA background required`);
+  assert.match(html, /background:#D98A66;border-radius:14px/i, `${file}: current night-theme CTA background required`);
   assert.match(html, /dir="{{ if eq \.Data\.language "ar" }}rtl{{ else }}ltr{{ end }}"/i, `${file}: Arabic RTL direction contract required`);
-  assert.doesNotMatch(html, /background:#C86B4A;border-radius:12px/i, `${file}: low-contrast CTA color must not return`);
-  assert.match(html, /font-size:12px;color:#5E6D58;font-weight:700/i, `${file}: accessible footer tagline color required`);
+  assert.match(html, /background:#1C2333/i, `${file}: current night-theme page background required`);
+  assert.match(html, /background:#262E42;border:1px solid #3D4658;border-radius:22px/i, `${file}: elevated night card required`);
+  assert.match(html, /font-size:12px;color:#9BB093;font-weight:700/i, `${file}: accessible footer tagline color required`);
   for (const locale of locales) {
     assert.match(html, new RegExp(`eq \\.Data\\.language "${locale}"`), `${file}: locale branch ${locale} missing`);
   }
