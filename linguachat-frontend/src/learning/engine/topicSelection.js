@@ -44,6 +44,8 @@ export const TOPIC_SOURCES = ['explicit', 'related', 'exploration', 'neutral']
  * source occurs, explicit dominates), never the exact numbers.
  */
 export const TOPIC_MIX = { explicit: 70, related: 20, exploration: 10 }
+/* Daily plans stay interest-led, but sample other contexts across learning days. */
+export const DAILY_TOPIC_MIX = { explicit: 70, related: 20, exploration: 7, neutral: 3 }
 
 /*
  * How many recent topics stay on cooldown.
@@ -54,11 +56,13 @@ export const TOPIC_MIX = { explicit: 70, related: 20, exploration: 10 }
  */
 export const TOPIC_COOLDOWN = 3
 
-const bucketFor = (seedKey) => {
+const bucketFor = (seedKey, strength) => {
+  const mix = strength === 'medium' ? DAILY_TOPIC_MIX : TOPIC_MIX
   const n = seedFrom(String(seedKey)) % 100
-  if (n < TOPIC_MIX.explicit) return 'explicit'
-  if (n < TOPIC_MIX.explicit + TOPIC_MIX.related) return 'related'
-  return 'exploration'
+  if (n < mix.explicit) return 'explicit'
+  if (n < mix.explicit + mix.related) return 'related'
+  if (n < mix.explicit + mix.related + mix.exploration) return 'exploration'
+  return 'neutral'
 }
 
 const pickFrom = (list, seedKey) => (list.length ? list[seedFrom(String(seedKey)) % list.length] : null)
@@ -107,9 +111,10 @@ const eligible = (ids, { dismissed, acceptedSemanticTypes }) =>
  *
  *   strong  free chat. The learner is here to talk; a related subject or
  *           something new is welcome, and the mix above applies.
- *   medium  the daily session and generic practice. The subject is pinned into a
- *           plan the learner was shown, so it stays inside what they picked —
- *           rotation and "not today" still apply, exploration does not.
+ *   medium  the daily session and generic practice. The subject is pinned into
+ *           a plan for that day, but across days the learner's choices are soft
+ *           weights, not a whitelist: adjacent, unfamiliar and neutral contexts
+ *           are sampled deliberately. Objectives and mastery never change.
  *
  * Curriculum stories get less than either, and that is not decided here: a story
  * personalises only what its own template declares (see storyPersonalization).
@@ -141,29 +146,25 @@ export function selectTopic({
   )
 
   /*
-   * A medium surface with nothing chosen stays neutral, and that is a product
-   * decision rather than a limitation: the daily session PROMISES its subject on
-   * Home, and promising "today is about cars" to somebody who never mentioned
-   * cars is personalisation they did not ask for. Free chat may still explore,
-   * because there the invitation costs nothing and can be ignored in one reply.
+   * With no selected interests, a daily plan stays neutral instead of claiming
+   * the learner chose a subject. Free chat can still offer new catalogue topics.
+   * A daily plan's chosen topic is persisted, so a reload cannot change it.
    */
   if (strength === 'medium' && !explicit.length) return describeTopic(null, { source: 'neutral', seed })
 
-  const bucket = explicit.length ? bucketFor(`${seed}:mix`) : 'exploration'
+  const bucket = explicit.length ? bucketFor(`${seed}:mix`, strength) : 'exploration'
+  if (bucket === 'neutral') return describeTopic(null, { source: 'neutral', seed })
 
   /*
    * The order below is the whole policy. Each case falls through to the next
    * rather than giving up, so "nothing available" always ends at neutral instead
    * of at an exception or an empty string.
    */
-  const attempts = strength === 'medium'
-    /* inside what they chose, rotated, and nothing else */
-    ? [['explicit', fresh], ['explicit', stale]]
-    : bucket === 'explicit'
-      ? [['explicit', fresh], ['explicit', stale], ['related', related], ['exploration', unseen]]
-      : bucket === 'related'
-        ? [['related', related], ['explicit', fresh], ['explicit', stale], ['exploration', unseen]]
-        : [['exploration', unseen], ['related', related], ['explicit', fresh], ['explicit', stale]]
+  const attempts = bucket === 'explicit'
+    ? [['explicit', fresh], ['explicit', stale], ['related', related], ['exploration', unseen]]
+    : bucket === 'related'
+      ? [['related', related], ['explicit', fresh], ['explicit', stale], ['exploration', unseen]]
+      : [['exploration', unseen], ['related', related], ['explicit', fresh], ['explicit', stale]]
 
   for (const [source, pool] of attempts) {
     const id = pickFrom(pool, `${seed}:${source}`)

@@ -8,6 +8,7 @@ import assert from 'node:assert/strict'
 import { ARC } from '../src/learning/episodes/index.js'
 import { PRE_A1_EXIT_CRITERIA, productiveItemsOf } from '../src/learning/curriculum/preA1Map.js'
 import { createLearnerModel, setEpisodeState, markRecurringError } from '../src/learning/engine/learnerModel.js'
+import { relatedInterests } from '../src/learning/engine/interests.js'
 import {
   buildSessionPlan, getOrCreateSession, DURATION_MODES, dayKeyFor,
   startSession, advanceBlock, currentBlock, sessionProgress, sessionHeadline, sessionHasReview,
@@ -238,6 +239,36 @@ function seedDueReview(model, itemId, atMs = AT) {
     assert.equal(sessionHasReview(s), true, 'an overdue review must be planned at any instant')
     assert.ok(types(s).includes('continue_episode'))
     assert.equal(s.dayKey, dayKeyFor(atMs))
+  }
+  ok()
+}
+
+// 15) An unfinished episode spanning days must not pin the learner forever to
+//     one topic. Within a day, even a duration change must keep the same topic.
+{
+  const model = createLearnerModel()
+  const counts = { explicit: 0, related: 0, exploration: 0, neutral: 0 }
+  const related = relatedInterests('music')
+  for (let i = 0; i < 180; i += 1) {
+    const atMs = AT + i * DAY
+    const options = { atMs, interests: ['music'], learnerKey: 'single-music' }
+    const today = buildSessionPlan(model, ARC, { ...options, durationMode: 'standard' })
+    const repeat = buildSessionPlan(model, ARC, { ...options, durationMode: 'standard' })
+    const deep = buildSessionPlan(model, ARC, { ...options, durationMode: 'deep' })
+    assert.deepEqual(today.topic, repeat.topic, 'a daily topic must be deterministic')
+    assert.equal(today.topic.interestId, deep.topic.interestId,
+      'changing duration on the same day cannot change the topic')
+    const id = today.topic.interestId
+    const source = !id ? 'neutral' : id === 'music' ? 'explicit' : related.includes(id) ? 'related' : 'exploration'
+    counts[source] += 1
+    if (i === 0) {
+      const other = buildSessionPlan(model, ARC, { ...options, interests: ['travel'], durationMode: 'standard' })
+      assert.deepEqual(today.blocks, other.blocks, 'topic preferences cannot alter curriculum blocks')
+    }
+  }
+  assert.ok(counts.explicit > 90, 'onboarding interests must remain the majority')
+  for (const [source, count] of Object.entries(counts)) {
+    assert.ok(count > 0, `180 learning days never sampled ${source}`)
   }
   ok()
 }
