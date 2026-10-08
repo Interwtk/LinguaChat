@@ -349,6 +349,9 @@ function mergeActivityEvidence(model) {
   return {
     ...model,
     activityPreferences: merged,
+    // Preserve capabilities from independent snapshots without summing mastery evidence.
+    // Same-id concurrent attempts need per-event provenance before safe reconciliation.
+    canDo: { ...(stored.canDo || {}), ...(model.canDo || {}) },
     signalLog: log,
     recentFormats: (Array.isArray(recent) ? recent : []).filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12),
     episodeRuns: mergeEpisodeRuns(model.episodeRuns, stored.episodeRuns),
@@ -470,6 +473,7 @@ export function saveLearnerModel(model) {
   const merged = mergeActivityEvidence(model)
   // keep the caller's own object in step with what was written
   model.activityPreferences = merged.activityPreferences
+  model.canDo = merged.canDo
   model.signalLog = merged.signalLog
   model.recentFormats = merged.recentFormats
   model.episodeRuns = merged.episodeRuns
