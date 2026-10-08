@@ -8,9 +8,10 @@
  * builds deterministic and prevents a valid branch-scoped Vercel config from
  * being misread as absent at runtime.
  */
+const HAS_VITE_ENV = typeof import.meta.env === 'object' && import.meta.env !== null
 const BUILD_PUBLIC_AUTH_ENV = Object.freeze({
-  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
-  VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY,
+  VITE_SUPABASE_URL: HAS_VITE_ENV ? import.meta.env.VITE_SUPABASE_URL : undefined,
+  VITE_SUPABASE_ANON_KEY: HAS_VITE_ENV ? import.meta.env.VITE_SUPABASE_ANON_KEY : undefined,
 })
 
 function readPublicAuthConfig(env = BUILD_PUBLIC_AUTH_ENV) {
