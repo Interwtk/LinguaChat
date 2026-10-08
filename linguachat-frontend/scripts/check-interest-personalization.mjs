@@ -441,7 +441,7 @@ const TOMORROW = TODAY + DAY
 /* ---- 13) sessions rotate too, and still promise what they show ---- */
 {
   const session = read('src/learning/engine/session.js')
-  assert.match(session, /strength: 'medium'/, 'a session stays inside what the learner chose')
+  assert.match(session, /strength: 'medium'/, 'daily sessions use the soft topic selector')
   assert.match(session, /recentTopics/, 'and avoids what they heard about recently')
   const context = read('src/context/AppContext.jsx')
   assert.match(context, /recentTopics: recentTopicIds\(memory\)/, 'the app supplies the cooldown window')
@@ -573,6 +573,30 @@ const TOMORROW = TODAY + DAY
     assert.ok(!/level:\s*['"]A1['"]|a1Arc1|EPISODE_SKELETON/.test(src),
       `${path} must not define or enumerate curriculum`)
   }
+  ok()
+}
+
+/* ---- daily interests are a soft bias, not an exclusive topic filter ---- */
+{
+  const counts = new Map()
+  for (let i = 0; i < 240; i += 1) {
+    const seed = `daily:2026-10-${i}`
+    const topic = selectTopic({ explicitInterests: ['music'], strength: 'medium', seed })
+    assert.deepEqual(topic, selectTopic({ explicitInterests: ['music'], strength: 'medium', seed }),
+      'a daily topic must be stable for a given context')
+    counts.set(topic.source, (counts.get(topic.source) || 0) + 1)
+  }
+  for (const source of ['explicit', 'related', 'exploration', 'neutral']) {
+    assert.ok(counts.get(source) > 0, `medium sessions never select ${source} contexts`)
+  }
+  assert.ok(counts.get('explicit') > 120,
+    'onboarding interests should still dominate the medium topic mix')
+  const dismissed = selectTopic({
+    explicitInterests: ['music'], dismissedTopics: ['music'], strength: 'medium', seed: 'daily:dismissed',
+  })
+  assert.notEqual(dismissed.interestId, 'music', 'dismissal must still be respected')
+  assert.equal(selectTopic({ explicitInterests: [], strength: 'medium', seed: 'daily:none' }).source, 'neutral',
+    'a learner with no chosen interests must not be assigned an interest as if it were theirs')
   ok()
 }
 
