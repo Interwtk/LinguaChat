@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict'
-import { createLazyAuthService } from './provider.js'
+import { createLazyAuthService, resolveBrowserAuthOrigin } from './provider.js'
 let loads=0, listeners=0, stopped=0, release
+assert.equal(resolveBrowserAuthOrigin('https://exact-preview.example', {
+  VITE_AUTH_REDIRECT_ORIGIN: 'https://stable-preview.example',
+}), 'https://stable-preview.example')
+assert.equal(resolveBrowserAuthOrigin('https://exact-preview.example', {}), 'https://exact-preview.example')
 const ready=new Promise(r=>release=r)
 const service=createLazyAuthService(async()=>{loads++;await ready;return {
   getSession:async()=>({user:{id:'A'}}),
