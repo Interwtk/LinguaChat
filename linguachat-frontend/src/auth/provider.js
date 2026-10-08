@@ -13,21 +13,37 @@ export function getBrowserPublicClient() {
 
 export function createLazyAuthService(loadService) {
   let ready = null
-  const load = () => ready ||= Promise.resolve().then(loadService).catch(error => { ready = null; throw error })
+  const pendingListeners = new Set()
+  const load = () => {
+    if (!ready) ready = Promise.resolve().then(loadService).catch(error => { ready = null; throw error })
+    return ready.then(adapter => {
+      // A failed lazy import must not orphan an active listener. A later
+      // getSession/action retry can attach it without reviving unsubscribed ones.
+      for (const entry of pendingListeners) {
+        pendingListeners.delete(entry)
+        if (!entry.active) continue
+        try {
+          const registration = adapter.onAuthStateChange(entry.listener)
+          entry.subscription = registration?.data?.subscription || registration?.subscription
+          if (!entry.active) entry.subscription?.unsubscribe()
+        } catch { /* Listener errors must not poison session initialization. */ }
+      }
+      return adapter
+    })
+  }
   const service = {}
   for (const method of ['signUp', 'signIn', 'signOut', 'requestPasswordReset', 'changePassword', 'resendConfirmation', 'getSession', 'consumeCallbackCode']) {
     service[method] = async (...args) => (await load())[method](...args)
   }
   service.onAuthStateChange = listener => {
-    let active = true, subscription = null
-    // Register before getSession's result is applied. A late chunk cannot revive
-    // listeners from an unmounted StrictMode effect.
-    load().then(adapter => {
-      if (!active) return
-      const registration = adapter.onAuthStateChange(listener)
-      subscription = registration?.data?.subscription || registration?.subscription
-    }).catch(() => { /* getSession reports initialization errors to the UI. */ })
-    return { data: { subscription: { unsubscribe() { active = false; subscription?.unsubscribe() } } } }
+    const entry = { listener, active: true, subscription: null }
+    pendingListeners.add(entry)
+    load().catch(() => { /* getSession reports initialization errors to the UI. */ })
+    return { data: { subscription: { unsubscribe() {
+      entry.active = false
+      pendingListeners.delete(entry)
+      entry.subscription?.unsubscribe()
+    } } } }
   }
   return Object.freeze(service)
 }
