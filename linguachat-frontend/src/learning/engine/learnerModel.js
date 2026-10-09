@@ -907,7 +907,7 @@ export function recordActivitySignal(model, format, signal) {
  * counted once. Returns true only when the signal was actually new.
  */
 export function recordActivitySignalOnce(model, eventId, format, signal) {
-  if (!eventId || !ACTIVITY_FORMATS.includes(format) || !SIGNAL_KINDS.includes(signal)) return false
+  if (typeof eventId !== 'string' || eventId.length === 0 || eventId.length > 120 || !ACTIVITY_FORMATS.includes(format) || !SIGNAL_KINDS.includes(signal)) return false
   model.signalLog = Array.isArray(model.signalLog) ? model.signalLog : []
   if (model.signalLog.includes(eventId)) return false
   recordActivitySignal(model, format, signal)
