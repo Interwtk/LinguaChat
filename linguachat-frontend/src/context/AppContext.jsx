@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { getBrowserAuthService } from '../auth/provider.js'
+import { authCallbackError } from '../auth/callbackError.js'
+import { CLOUD_PREFERENCES_RELEASED, connectPreferenceSync, schedulePreferenceSync } from '../cloud/runtime.js'
+import { toCloudPreferenceFields, fromCloudPreferenceFields } from '../services/cloudPreferenceMapping.js'
 import { activateLocalAccount } from '../auth/browserDataIsolation.js'
 import { sendChatMessage } from '../services/api'
 import {
@@ -108,6 +111,8 @@ function clearAuthCallback() {
   try {
     const url = new URL(window.location.href)
     for (const key of ['auth', 'code', 'error', 'error_code', 'error_description']) url.searchParams.delete(key)
+    const hash = new URLSearchParams(url.hash.slice(1))
+    if (hash.has('error') || hash.has('error_code')) url.hash = ''
     window.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash)
   } catch {}
 }
@@ -151,6 +156,7 @@ const createWelcomeMessage = (language) => ({
 })
 
 export function AppProvider({ children }) {
+  const authCallbackErrorRef = useRef(authCallbackError(window.location.href))
   // Auth/setup flow: null = main app, 'entry'/'login'/'signup'/'forgot'/'placement'/'tutor-personality'/'learning-prefs' = flow screens
   const [authStep, setAuthStep] = useState('entry')
   const [languagePreferences, setLanguagePreferences] = useState(ensureLanguagePreferences)
@@ -204,9 +210,11 @@ export function AppProvider({ children }) {
 
   const applyProviderSession = useCallback((session, event = 'SESSION') => {
     if (!session?.user) {
+      preferenceSyncRef.current?.stop()
       // Invalid/expired auth callbacks must not survive into a later normal login.
       // Otherwise a stale ?auth=reset can incorrectly reopen the reset screen.
       clearVerifiedRecovery()
+      if (authCallbackErrorRef.current) setAuthProviderError(authCallbackErrorRef.current)
       if (currentAuthAction()) clearAuthCallback()
       try {
         localStorage.removeItem('lc2-auth')
@@ -216,6 +224,7 @@ export function AppProvider({ children }) {
       setAuthStep('entry')
       return
     }
+    authCallbackErrorRef.current = null
 
     if (event === 'PASSWORD_RECOVERY') rememberVerifiedRecovery(session.user.id)
 
@@ -300,7 +309,8 @@ export function AppProvider({ children }) {
       })
       .catch((error) => {
         if (!alive) return
-        setAuthProviderError(error?.message || 'Could not restore your session.')
+        setAuthProviderError(authCallbackErrorRef.current || error?.message || 'Could not restore your session.')
+        if (authCallbackErrorRef.current) clearAuthCallback()
         setAuthStep('entry')
       })
 
@@ -440,7 +450,41 @@ export function AppProvider({ children }) {
     }))
   }, [])
 
+  const preferenceSnapshotRef = useRef(null)
+  preferenceSnapshotRef.current = () => {
+    let options = {}
+    try { options = JSON.parse(localStorage.getItem('lc2-cloud-preference-options') || '{}') || {} } catch {}
+    return toCloudPreferenceFields(tutorPreferences, { ...options, user_language: interfaceLanguage })
+  }
+  const preferenceSyncRef = useRef(null)
+  useEffect(() => {
+    if (!CLOUD_PREFERENCES_RELEASED || !authUser?.id || authStep !== null) return undefined
+    let cancelled = false, controller = null
+    connectPreferenceSync({
+      store: localStorage,
+      readOwner: () => {
+        try { return decodeURIComponent(localStorage.getItem('lc2-auth-owner-id') || '') } catch { return '' }
+      },
+      readLocal: () => preferenceSnapshotRef.current(),
+      applyLocal: row => {
+        localStorage.setItem('lc2-cloud-preference-options', JSON.stringify({
+          english_variant: row.english_variant, conversation_register: row.conversation_register,
+        }))
+        preferenceSnapshotRef.current = () => row
+        setTutorPreferencesState(previous => saveTutorPreferences(fromCloudPreferenceFields(row, previous)))
+        updateNativeLanguage(row.user_language)
+      },
+    }).then(sync => {
+      if (cancelled) { sync.cancel(); return }
+      controller = schedulePreferenceSync(sync, window)
+      preferenceSyncRef.current = controller
+    }).catch(() => { /* Local preferences remain usable; a later login retries initialization. */ })
+    return () => { cancelled = true; controller?.stop(); preferenceSyncRef.current = null }
+  }, [authUser?.id, authStep, updateNativeLanguage])
+  useEffect(() => { preferenceSyncRef.current?.changed() }, [tutorPreferences, interfaceLanguage])
+
   const login = useCallback(async (email, password) => {
+    authCallbackErrorRef.current = null
     clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
@@ -451,6 +495,7 @@ export function AppProvider({ children }) {
   }, [getAuthService])
 
   const signup = useCallback(async (name, email, password) => {
+    authCallbackErrorRef.current = null
     clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
@@ -467,6 +512,7 @@ export function AppProvider({ children }) {
   }, [getAuthService, interfaceLanguageInfo.base])
 
   const requestPasswordReset = useCallback(async (email) => {
+    authCallbackErrorRef.current = null
     clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')

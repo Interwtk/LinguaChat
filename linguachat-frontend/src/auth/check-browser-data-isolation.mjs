@@ -111,3 +111,77 @@ assert.equal(failingStore.getItem(browserDataIsolationKeys.OWNER_KEY), 'safe-a',
 assert.equal(failingStore.getItem('lc2-progress'), '{"xp":99}', 'failed switch must restore the previous active dataset')
 
 console.log('check-browser-data-isolation — guest claim, first-login quota failure, account isolation, quota-safe moves, rollback and provider-token preservation PASS')
+
+// The owner write can fail AFTER snapshots fit. A must never see B's dataset.
+{
+  const k = browserDataIsolationKeys
+  const s = new MemoryStorage({
+    [k.OWNER_KEY]: 'A', 'lc2-progress': 'progress-A',
+    [k.CACHE_PREFIX + 'B']: JSON.stringify({ 'lc2-progress': 'progress-B' }),
+  })
+  const set = s.setItem.bind(s)
+  s.setItem = (key, value) => {
+    if (key === k.OWNER_KEY && value === 'B') throw Error('owner quota')
+    set(key, value)
+  }
+  assert.equal(activateLocalAccount(s, 'B').blocked, true)
+  assert.equal(s.getItem(k.OWNER_KEY), 'A')
+  assert.equal(s.getItem('lc2-progress'), 'progress-A')
+  assert.equal(JSON.parse(s.getItem(k.CACHE_PREFIX + 'B'))['lc2-progress'], 'progress-B')
+  assert.equal(activateLocalAccount(s, 'A').switched, false)
+  assert.equal(s.getItem('lc2-progress'), 'progress-A')
+}
+
+// A second failure during rollback keeps both accounts durable and isolated.
+{
+  const k = browserDataIsolationKeys
+  const s = new MemoryStorage({
+    [k.OWNER_KEY]: 'A', 'lc2-progress': 'progress-A',
+    [k.CACHE_PREFIX + 'B']: JSON.stringify({ 'lc2-progress': 'progress-B' }),
+  })
+  const set = s.setItem.bind(s)
+  let failing = true
+  s.setItem = (key, value) => {
+    if (failing && ((key === 'lc2-progress' && value === 'progress-B') || (key === k.OWNER_KEY && value === 'A'))) throw Error('restore quota')
+    set(key, value)
+  }
+  assert.equal(activateLocalAccount(s, 'B').blocked, true)
+  assert.equal(s.getItem('lc2-progress'), null)
+  failing = false
+  activateLocalAccount(s, 'A')
+  assert.equal(s.getItem('lc2-progress'), 'progress-A')
+  activateLocalAccount(s, 'B')
+  assert.equal(s.getItem('lc2-progress'), 'progress-B')
+}
+console.log('account transition: owner-write failure and double rollback failure preserve A/B snapshots PASS')
+
+// Corrupt or malformed B caches must fail closed, preserving A and the original
+// bytes of B's cache for recovery instead of reporting an empty B as restored.
+for (const corrupt of [
+  '{', 'null', '[]',
+  JSON.stringify({ 'lc2-progress': 7 }),
+  JSON.stringify({ 'lc2-account-cache:other': 'nested-cache' }),
+]) {
+  const k = browserDataIsolationKeys
+  const s = new MemoryStorage({
+    [k.OWNER_KEY]: 'A', 'lc2-progress': 'progress-A',
+    [k.CACHE_PREFIX + 'B']: corrupt,
+  })
+  const attempt = activateLocalAccount(s, 'B')
+  assert.equal(attempt.blocked, true, 'corrupt B cache must block the switch')
+  assert.equal(s.getItem(k.OWNER_KEY), 'A')
+  assert.equal(s.getItem('lc2-progress'), 'progress-A')
+  assert.equal(s.getItem(k.CACHE_PREFIX + 'B'), corrupt)
+  s.setItem(k.CACHE_PREFIX + 'B', JSON.stringify({ 'lc2-progress': 'progress-B' }))
+  assert.equal(activateLocalAccount(s, 'B').switched, true)
+  assert.equal(s.getItem('lc2-progress'), 'progress-B')
+}
+{
+  const k = browserDataIsolationKeys
+  const s = new MemoryStorage({ [k.OWNER_KEY]: 'B', [k.CACHE_PREFIX + 'B']: '{' })
+  const result = activateLocalAccount(s, 'B')
+  assert.equal(result.blocked, true, 'same-owner restore must reject invalid cache')
+  assert.equal(s.getItem(k.OWNER_KEY), 'B')
+  assert.equal(s.getItem(k.CACHE_PREFIX + 'B'), '{')
+}
+console.log('account transition: corrupt-cache fail-closed and recovery PASS')

@@ -4,6 +4,8 @@
  * falls back to English, never to a raw key.
  */
 export default {
+  authShowPassword: "إظهار كلمة المرور",
+  authHidePassword: "إخفاء كلمة المرور",
   ep1PraiseIndependent: "قدّمت نفسك دون النموذج. رائع!",
   ep1PraiseIm: "استخدمت I’m قبل اسمك. أحسنت!",
   ep1PraiseGreetAndName: "هذه المرة أضفت التحية واسمك.",
@@ -537,6 +539,7 @@ export default {
   recoverySent: "تم إرسال الرابط",
   recoverySentText: "تحقّق من بريدك الوارد. سجلّ تدريبك محفوظ وفي انتظارك.",
   authGenericError: 'تعذر إكمال العملية. حاول مرة أخرى.',
+  authCallbackError: "رابط تسجيل الدخول غير صالح أو انتهت صلاحيته. سجّل الدخول أو اطلب رابطًا جديدًا.",
   authStorageFull: 'مساحة تخزين المتصفح ممتلئة. حرّر مساحة لهذا الموقع ثم سجّل الدخول مرة أخرى.',
   confirmEmailTitle: 'أكّد بريدك الإلكتروني',
   confirmEmailText: 'أرسلنا رابط تأكيد إلى {email}. افتحه لتفعيل حسابك.',

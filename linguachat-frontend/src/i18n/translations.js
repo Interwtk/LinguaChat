@@ -1,4 +1,6 @@
 const base = {
+  authShowPassword: "Show password",
+  authHidePassword: "Hide password",
   // Setup choice (recommended vs personalize)
   recommended: 'Recommended',
   setupChoiceEyebrow: 'One quick choice',
@@ -1211,6 +1213,7 @@ const base = {
   recoverySent: 'Recovery link sent',
   recoverySentText: 'Check your inbox. Your practice history is safe and waiting.',
   authGenericError: 'We could not complete that. Please try again.',
+  authCallbackError: "This sign-in link is invalid or expired. Sign in again or request a new link.",
   authStorageFull: 'Browser storage is full. Free some storage for this site, then sign in again.',
   confirmEmailTitle: 'Confirm your email',
   confirmEmailText: 'We sent a confirmation link to {email}. Open it to activate your account.',

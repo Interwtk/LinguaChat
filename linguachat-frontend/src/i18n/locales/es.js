@@ -4,6 +4,8 @@
  * falls back to English, never to a raw key.
  */
 export default {
+  authShowPassword: "Mostrar contraseña",
+  authHidePassword: "Ocultar contraseña",
   recommended: 'Recomendado',
   setupChoiceEyebrow: 'Una decisión rápida',
   setupChoiceTitle: '¿Cómo quieres empezar?',
@@ -602,6 +604,7 @@ export default {
   recoverySent: 'Enlace enviado',
   recoverySentText: 'Revisa tu correo. Tu historial de practica esta seguro y esperando.',
   authGenericError: 'No pudimos completar eso. Inténtalo de nuevo.',
+  authCallbackError: "El enlace de acceso no es válido o venció. Inicia sesión o solicita otro enlace.",
   authStorageFull: 'El almacenamiento del navegador está lleno. Libera espacio de este sitio y vuelve a iniciar sesión.',
   confirmEmailTitle: 'Confirma tu correo',
   confirmEmailText: 'Te enviamos un enlace a {email}. Ábrelo para activar tu cuenta.',

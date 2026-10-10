@@ -444,14 +444,16 @@ export function buildSessionPlan(model, arc, {
    * cannot swap the topic of a session already under way.
    */
   const mainEpisodeId = main?.payload?.episodeId || null
-  const topicSeed = `${learnerKey}:${mainEpisodeId || dayKey}`
+  // Include the learning day even when the same unfinished episode spans days.
+  // Duration is excluded so changing today's plan length cannot change its topic.
+  const topicSeed = `${learnerKey}:${dayKey}:${mainEpisodeId || 'session'}`
   /*
    * Which of the learner's interests today is about.
    *
-   * A session's subject is promised on Home and pinned into the plan, so it stays
-   * inside what the learner actually chose — no exploring here. What it does gain
-   * is the two things a promise needs: it avoids what they have heard about
-   * recently, and it never offers a topic they waved away today.
+   * A session's subject is promised on Home and pinned into the plan. Across
+   * learning days, selected interests remain the majority but do not exclude
+   * related, unfamiliar or neutral contexts. Cooldowns and dismissals apply;
+   * no topic preference may alter the required learning objectives.
    */
   const chosenTopic = selectTopic({
     explicitInterests: getLearnerInterests(interests),

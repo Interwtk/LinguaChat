@@ -20,7 +20,7 @@ import {
 import {
   deriveInitialScaffold, updateScaffoldAfterTurn, reviveScaffoldState, makeScaffoldState,
   evidenceKindForStep, isIndependentEvidence, skillStrength, noveltyOf,
-  showsModelAnswer, showsHintByDefault, weakerOf, EVIDENCE, REASONS, LEVELS,
+  showsModelAnswer, showsStepModelAnswer, showsHintByDefault, weakerOf, EVIDENCE, REASONS, LEVELS,
   INDEPENDENT_TO_RELAX, RETRY_PRESSURE_TO_SUPPORT,
 } from '../src/learning/engine/scaffolding.js'
 import { CAN_DO_INTENT } from '../src/learning/curriculum/preA1Map.js'
@@ -370,10 +370,15 @@ const openTurn = { correct: true, assistanceUsed: false, evidenceKind: EVIDENCE.
   assert.equal(showsModelAnswer('high'), true)
   assert.equal(showsModelAnswer('medium'), true)
   assert.equal(showsModelAnswer('low'), false)
+  const ordinary = { suggestionEn: 'Hello' }
+  assert.equal(showsStepModelAnswer(ordinary, 'low'), false)
+  assert.equal(showsStepModelAnswer(ordinary, 'medium'), true)
+  assert.equal(showsStepModelAnswer(ordinary, 'high', { unaidedAttempt: true }), false)
+  assert.equal(showsStepModelAnswer(ordinary, 'low', { retry: true }), true)
   assert.equal(showsHintByDefault('high'), true)
   assert.equal(showsHintByDefault('medium'), false)
   const shell = readFileSync(new URL('../src/components/episode/EpisodeShell.jsx', import.meta.url), 'utf8')
-  assert.match(shell, /showsModelAnswer\(scaffold\)/)
+  assert.match(shell, /showsStepModelAnswer\(step, scaffold,/)
   assert.match(shell, /showsHintByDefault\(scaffold\)/)
   ok()
 }
@@ -388,6 +393,14 @@ const openTurn = { correct: true, assistanceUsed: false, evidenceKind: EVIDENCE.
   }
   // and a block's level travels with the evaluation
   assert.match(runner, /scaffoldLevel: scaffold/)
+  // Daily blocks and episodes must share one day-scoped provenance boundary.
+  assert.ok(runner.includes('const learningSessionId = `learning-day:${dailySession?.dayKey || dayKeyFor()}`'),
+    'daily practice must derive the same day-scoped learning boundary')
+  assert.ok(runner.includes('sessionId={learningSessionId}'),
+    'daily PracticeTurn must receive the shared learning-session provenance')
+  const shell = readFileSync(new URL('../src/components/episode/EpisodeShell.jsx', import.meta.url), 'utf8')
+  assert.ok(shell.includes('learning-day:${sessionActive && dailySession?.dayKey ? dailySession.dayKey : dayKeyFor()}'),
+    'episode and daily-session practice must share the same learning-day boundary')
   ok()
 }
 

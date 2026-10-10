@@ -46,6 +46,9 @@ function restoreSnapshot(storage, snapshot) {
 function snapshotAndClearActive(storage, userId) {
   const snapshot = readActiveSnapshot(storage)
   const destination = cacheKey(userId)
+  // A failed ownership rollback can leave this account's data safely cached.
+  // Do not replace that snapshot with an empty active dataset on the next switch.
+  if (Object.keys(snapshot).length === 0 && storage.getItem(destination)) return true
 
   // Move, rather than duplicate, the active dataset. This frees the browser
   // quota before serializing the previous account into its private cache.
@@ -69,7 +72,13 @@ function restoreActive(storage, userId) {
   const raw = storage.getItem(source)
   if (!raw) return true
   let snapshot
-  try { snapshot = JSON.parse(raw) } catch { return true }
+  // Reject damaged account caches before consuming them or reporting a restore.
+  try { snapshot = JSON.parse(raw) } catch { return false }
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return false
+  if (Object.entries(snapshot).some(([key, value]) =>
+    !key.startsWith(ACTIVE_PREFIX) || key === OWNER_KEY || key === LEGACY_AUTH_KEY
+    || key.startsWith(CACHE_PREFIX) || typeof value !== 'string'
+  )) return false
 
   // Consume the cached copy before restoring active keys so the same dataset
   // never occupies browser quota twice; the cached copy is consumed first
@@ -108,16 +117,36 @@ export function activateLocalAccount(storage, userId) {
       return { switched: false, claimedGuestData: false, blocked: true }
     }
   }
-  if (current === next) return { switched: false, claimedGuestData: false }
+  if (current === next) {
+    if (storage.getItem(cacheKey(userId)) && activeKeys(storage).length === 0) {
+      const restored = restoreActive(storage, userId)
+      return { switched: restored, claimedGuestData: false, ...(!restored ? { blocked: true } : {}) }
+    }
+    return { switched: false, claimedGuestData: false }
+  }
 
   if (!snapshotAndClearActive(storage, decodeURIComponent(current))) {
     return { switched: false, claimedGuestData: false, blocked: true }
   }
-  if (!restoreActive(storage, decodeURIComponent(next))) {
+  // Commit ownership while active storage is empty, before consuming B's cache.
+  // If this write fails, A's owner and B's untouched snapshot remain consistent.
+  try {
+    storage.setItem(OWNER_KEY, next)
+  } catch {
     restoreActive(storage, decodeURIComponent(current))
     return { switched: false, claimedGuestData: false, blocked: true }
   }
-  storage.setItem(OWNER_KEY, next)
+  if (!restoreActive(storage, decodeURIComponent(next))) {
+    // Failed restoration leaves active storage empty and both caches intact.
+    // Restore A only after its ownership has also been restored.
+    try {
+      storage.setItem(OWNER_KEY, current)
+      restoreActive(storage, decodeURIComponent(current))
+    } catch {
+      clearActive(storage)
+    }
+    return { switched: false, claimedGuestData: false, blocked: true }
+  }
   return { switched: true, claimedGuestData: false }
 }
 

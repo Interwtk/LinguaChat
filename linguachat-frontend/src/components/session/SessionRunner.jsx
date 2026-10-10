@@ -418,7 +418,7 @@ function blankOf(sentence) {
   }
 }
 
-function PracticeTurn({ block, topic = null, onDone }) {
+function PracticeTurn({ block, topic = null, sessionId = null, onDone }) {
   const { t, profile, nativeLanguageInfo, interfaceLanguageInfo } = useApp()
   const kind = block.objective || 'introduction'
   const format = block.format || 'free_reply'
@@ -694,7 +694,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
        * moves outside an episode and a consolidated skill still looks untouched.
        */
       const canDoId = block.payload?.canDoId
-      if (canDoId) recordCanDoAttempt(modelRef.current, canDoId, { success: true, independent, context: `session:${block.type}` })
+      if (canDoId) recordCanDoAttempt(modelRef.current, canDoId, { success: true, independent, context: `session:${block.type}`, sessionId })
       saveLearnerModel(modelRef.current)
       if (retry) mark('retried')
       setPraise(result.praiseKey || 'ep1FeedbackGood')
@@ -952,6 +952,9 @@ export function SessionRunner() {
   const nativeLang = nativeLanguageInfo.base
   const block = currentBlock(dailySession)
   const { done, total } = sessionProgress(dailySession)
+  // Match EpisodeShell exactly: all learning surfaces on one calendar day share
+  // one provenance boundary, so changing duration/surface cannot fake retrieval.
+  const learningSessionId = `learning-day:${dailySession?.dayKey || dayKeyFor()}`
   const isStoryBlock = block?.format === 'mini_story'
   // the story talks about whatever this session is already about
   const storyVars = useMemo(() => {
@@ -1021,7 +1024,7 @@ export function SessionRunner() {
            * still on screen and — far worse — its "already finished" guard was
            * still set, which left the session stuck on the second block.
            */
-          <PracticeTurn key={block.id} block={block} topic={dailySession.topic} onDone={() => advanceSession()} />
+          <PracticeTurn key={block.id} block={block} topic={dailySession.topic} sessionId={learningSessionId} onDone={() => advanceSession()} />
         )}
         {block.type === 'free_chat_option' && (
           <div className="animate-fade-up rounded-3xl p-6 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
