@@ -97,9 +97,9 @@ export function createPreferenceSync({ transport, store, readLocal, applyLocal, 
       }).catch(error => {
         if (ticket === generation) onStatus('pending')
         throw error
-      }).finally(() => { pending = null })
+      }).finally(() => { if (ticket === generation) pending = null })
       return pending
     },
-    cancel() { generation++; onStatus('local') },
+    cancel() { generation++; pending = null; onStatus('local') },
   }
 }

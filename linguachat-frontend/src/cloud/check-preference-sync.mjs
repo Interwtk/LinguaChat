@@ -43,6 +43,50 @@ function fixture({ remote = null, base = null } = {}) {
 {
   const f=fixture();f.map.set('lc-cloud-preferences:A','broken');await assert.rejects(f.sync.sync(),/invalid_sync_journal/);assert.equal(f.reads,0)
 }
+// A cancelled in-flight request must not block B or clear B's pending promise.
+{
+  let owner = 'A', releaseA, releaseB
+  const reads = [], writes = [], statuses = [], map = new Map()
+  let local = { ...defaults, tone: 'calm' }
+  const paused = {
+    A: new Promise(resolve => { releaseA = resolve }),
+    B: new Promise(resolve => { releaseB = resolve }),
+  }
+  const sync = createPreferenceSync({
+    transport: {
+      user: async () => ({ id: owner }),
+      read: async id => { reads.push(id); await paused[id]; return null },
+      compareAndSet: async (id, _rev, value) => {
+        writes.push(id)
+        return { ...clone(value), user_id: id, updated_at: '1' }
+      },
+    },
+    store: { getItem: key => map.get(key) ?? null, setItem: (key, value) => map.set(key, value) },
+    readOwner: () => owner,
+    readLocal: () => local,
+    applyLocal: value => { local = value },
+    onStatus: value => statuses.push(value),
+  })
+  const a = sync.sync()
+  for (let i = 0; i < 20 && reads.length === 0; i++) await Promise.resolve()
+  assert.deepEqual(reads, ['A'], 'A must be in-flight before the account switch')
+  owner = 'B'
+  sync.cancel()
+  const b = sync.sync()
+  assert.notEqual(a, b, 'B must have a new pending promise')
+  for (let i = 0; i < 20 && reads.length < 2; i++) await Promise.resolve()
+  assert.deepEqual(reads, ['A', 'B'], 'B must read without waiting for A')
+  releaseA()
+  await assert.rejects(a, /account_changed/)
+  assert.equal(sync.sync(), b, 'stale A completion must not clear B pending')
+  assert.deepEqual(writes, [], 'cancelled A must not write')
+  releaseB()
+  await b
+  assert.deepEqual(writes, ['B'], 'only B may write after the switch')
+  assert.equal(statuses.at(-1), 'synced')
+}
+console.log('preference sync: cancelled A does not block B or clear B pending PASS')
+
 console.log('preference sync: import backup, idempotency, offline recovery, concurrent CAS, deterministic conflict preservation, account cancellation, wrong-owner denial and quota fail-closed PASS')
 
 for (const corrupt of [
