@@ -72,7 +72,13 @@ function restoreActive(storage, userId) {
   const raw = storage.getItem(source)
   if (!raw) return true
   let snapshot
-  try { snapshot = JSON.parse(raw) } catch { return true }
+  // Reject damaged account caches before consuming them or reporting a restore.
+  try { snapshot = JSON.parse(raw) } catch { return false }
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return false
+  if (Object.entries(snapshot).some(([key, value]) =>
+    !key.startsWith(ACTIVE_PREFIX) || key === OWNER_KEY || key === LEGACY_AUTH_KEY
+    || key.startsWith(CACHE_PREFIX) || typeof value !== 'string'
+  )) return false
 
   // Consume the cached copy before restoring active keys so the same dataset
   // never occupies browser quota twice; the cached copy is consumed first
