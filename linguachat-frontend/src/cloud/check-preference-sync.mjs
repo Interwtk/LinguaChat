@@ -102,3 +102,29 @@ for (const corrupt of [
   assert.equal(f.local.tone,'calm')
   assert.equal(f.map.get('lc-cloud-preferences:A'),raw,'keep corrupt journal for recovery')
 }
+
+// A malformed successful CAS response cannot contaminate local preferences or base.
+{
+  const map = new Map()
+  let local = { ...defaults, tone: 'calm' }, applied = 0
+  const sync = createPreferenceSync({
+    transport: {
+      user: async () => ({ id: 'A' }),
+      read: async () => null,
+      compareAndSet: async (_id, _rev, value) => ({
+        ...value, user_id: 'A', updated_at: '1', tone: 'invalid-tone',
+      }),
+    },
+    store: { getItem: key => map.get(key) ?? null, setItem: (key, value) => map.set(key, value) },
+    readOwner: () => 'A',
+    readLocal: () => local,
+    applyLocal: value => { applied++; local = value },
+  })
+  await assert.rejects(sync.sync(), /invalid_remote_preferences/)
+  assert.equal(applied, 0)
+  assert.equal(local.tone, 'calm')
+  const journal = JSON.parse(map.get('lc-cloud-preferences:A'))
+  assert.equal(journal.base, null)
+  assert.equal(journal.backup.tone, 'calm')
+}
+console.log('preference sync: malformed successful CAS response fails closed PASS')

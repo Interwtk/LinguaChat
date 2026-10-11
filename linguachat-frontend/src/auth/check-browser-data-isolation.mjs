@@ -185,3 +185,14 @@ for (const corrupt of [
   assert.equal(s.getItem(k.CACHE_PREFIX + 'B'), '{')
 }
 console.log('account transition: corrupt-cache fail-closed and recovery PASS')
+
+// A corrupt owner must fail closed without touching local learner data.
+for (const corruptOwner of ['%', 'user%ZZ', 'A%2f']) {
+  const k = browserDataIsolationKeys
+  const s = new MemoryStorage({ [k.OWNER_KEY]: corruptOwner, 'lc2-progress': 'progress-A' })
+  const before = [...s.map.entries()]
+  const result = activateLocalAccount(s, 'B')
+  assert.equal(result.blocked, true, 'invalid owner marker must be rejected')
+  assert.deepEqual([...s.map.entries()], before, 'invalid owner must not mutate learner data')
+}
+console.log('account transition: corrupt owner markers fail closed PASS')

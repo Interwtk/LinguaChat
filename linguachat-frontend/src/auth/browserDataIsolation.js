@@ -103,6 +103,18 @@ function restoreActive(storage, userId) {
 export function activateLocalAccount(storage, userId) {
   const next = normalizeUserId(userId)
   const current = storage.getItem(OWNER_KEY)
+  // Persisted owner IDs are untrusted; reject malformed/noncanonical encoding.
+  let previousUserId = null
+  if (current && current !== next) {
+    try {
+      previousUserId = decodeURIComponent(current)
+      if (normalizeUserId(previousUserId) !== current) {
+        return { switched: false, claimedGuestData: false, blocked: true }
+      }
+    } catch {
+      return { switched: false, claimedGuestData: false, blocked: true }
+    }
+  }
   storage.removeItem(LEGACY_AUTH_KEY)
 
   if (!current) {
@@ -125,7 +137,7 @@ export function activateLocalAccount(storage, userId) {
     return { switched: false, claimedGuestData: false }
   }
 
-  if (!snapshotAndClearActive(storage, decodeURIComponent(current))) {
+  if (!snapshotAndClearActive(storage, previousUserId)) {
     return { switched: false, claimedGuestData: false, blocked: true }
   }
   // Commit ownership while active storage is empty, before consuming B's cache.
@@ -133,7 +145,7 @@ export function activateLocalAccount(storage, userId) {
   try {
     storage.setItem(OWNER_KEY, next)
   } catch {
-    restoreActive(storage, decodeURIComponent(current))
+    restoreActive(storage, previousUserId)
     return { switched: false, claimedGuestData: false, blocked: true }
   }
   if (!restoreActive(storage, decodeURIComponent(next))) {
@@ -141,7 +153,7 @@ export function activateLocalAccount(storage, userId) {
     // Restore A only after its ownership has also been restored.
     try {
       storage.setItem(OWNER_KEY, current)
-      restoreActive(storage, decodeURIComponent(current))
+      restoreActive(storage, previousUserId)
     } catch {
       clearActive(storage)
     }

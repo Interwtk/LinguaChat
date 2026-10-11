@@ -74,6 +74,8 @@ export function createPreferenceSync({ transport, store, readLocal, applyLocal, 
         if (!accepted) continue // concurrent insert/update: refetch before retry
       }
       if (accepted.user_id !== id) throw new Error('account_changed')
+      // Validate a successful CAS response before importing it or recording a new base.
+      if (!validFields(fields(accepted))) throw new Error('invalid_remote_preferences')
       // Edits made while the request was in flight win locally and remain dirty.
       const latest = fields(readLocal())
       const imported = { ...fields(accepted) }
