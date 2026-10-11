@@ -21,7 +21,13 @@ const validJournal = (journal, id) => object(journal) && journal.version === 1 &
 // The losing local choice remains in the account journal for explicit recovery.
 export function reconcilePreferences(base, local, remote) {
   if (!remote) return { value: fields(local), conflicts: {} }
-  if (!base) return { value: { ...fields(local), ...fields(remote) }, conflicts: fields(local) }
+  if (!base) {
+    const localFields = fields(local), remoteFields = fields(remote)
+    return {
+      value: { ...localFields, ...remoteFields },
+      conflicts: Object.fromEntries(Object.entries(localFields).filter(([key, value]) => !same(value, remoteFields[key]))),
+    }
+  }
   const value = {}, conflicts = {}
   for (const key of FIELDS) {
     const localChanged = !same(local[key], base[key])

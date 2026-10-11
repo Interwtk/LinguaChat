@@ -4,6 +4,14 @@ import { toCloudPreferenceFields } from '../services/cloudPreferenceMapping.js'
 
 const defaults = toCloudPreferenceFields()
 const clone = x => structuredClone(x)
+{
+  const local = { ...defaults, tone: 'calm' }
+  const identical = reconcilePreferences(null, local, { ...local })
+  assert.deepEqual(identical.conflicts, {}, 'matching first-import values are not conflicts')
+  const divergent = reconcilePreferences(null, local, { ...local, tone: 'professional' })
+  assert.deepEqual(divergent.conflicts, { tone: 'calm' }, 'only divergent first-import values are conflicts')
+  assert.equal(divergent.value.tone, 'professional', 'remote first-import value still wins')
+}
 function fixture({ remote = null, base = null } = {}) {
   let owner = 'A', local = { ...defaults, tone: 'calm' }, writes = 0, reads = 0, fail = false, pause = null, collision = null
   const map = new Map(), statuses = []
