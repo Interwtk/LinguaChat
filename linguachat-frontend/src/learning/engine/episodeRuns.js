@@ -52,8 +52,20 @@ export function resolveRunMode(model, episodeId, { source = 'practice', wantsOth
  * in a reproducible test.)
  */
 export function makeRunId(model, episodeId, atMs = Date.now()) {
-  const sameDay = runsFor(model, episodeId).filter(r => String(r.runId).includes(dayKeyFor(atMs))).length
-  return `${episodeId}:${dayKeyFor(atMs)}:${sameDay + 1}`
+  const day = dayKeyFor(atMs)
+  const prefix = `${episodeId}:${day}:`
+  // The run history is capped at 12. Counting retained runs would reuse the
+  // thirteenth id forever and overwrite genuine later practice evidence.
+  // Keep the highest retained sequence instead; the newest run survives trim.
+  const highest = runsFor(model, episodeId).reduce((max, run) => {
+    const id = String(run.runId || '')
+    if (!id.startsWith(prefix)) return max
+    const suffix = id.slice(prefix.length)
+    if (!/^[1-9]\\d*$/.test(suffix)) return max
+    const sequence = Number(suffix)
+    return Number.isSafeInteger(sequence) ? Math.max(max, sequence) : max
+  }, 0)
+  return `${prefix}${highest + 1}`
 }
 
 /*
