@@ -61,7 +61,7 @@ export function makeRunId(model, episodeId, atMs = Date.now()) {
     const id = String(run.runId || '')
     if (!id.startsWith(prefix)) return max
     const suffix = id.slice(prefix.length)
-    if (!/^[1-9]\\d*$/.test(suffix)) return max
+    if (!/^[1-9]\d*$/.test(suffix)) return max
     const sequence = Number(suffix)
     return Number.isSafeInteger(sequence) ? Math.max(max, sequence) : max
   }, 0)
