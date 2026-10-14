@@ -425,7 +425,14 @@ export function mergeEpisodeRuns(mine, theirs) {
     const byId = new Map()
     for (const run of [...(b[episodeId] || []), ...(a[episodeId] || [])]) {
       const prev = byId.get(run.runId)
-      byId.set(run.runId, prev ? { ...prev, ...run, completedAt: run.completedAt || prev.completedAt, rewarded: prev.rewarded || run.rewarded } : run)
+      // A finished run is authoritative for its evidence. An older in-progress
+      // snapshot may not erase its independent production, assistance or formats.
+      const authoritative = prev?.completedAt && !run.completedAt ? prev : run
+      byId.set(run.runId, prev ? {
+        ...prev, ...run, ...authoritative,
+        completedAt: run.completedAt || prev.completedAt,
+        rewarded: prev.rewarded || run.rewarded,
+      } : run)
     }
     out[episodeId] = [...byId.values()].slice(-RUNS_PER_EPISODE)
   }
