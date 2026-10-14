@@ -40,10 +40,10 @@ export const TOPIC_SOURCES = ['explicit', 'related', 'exploration', 'neutral']
  * These are a starting shape for "mostly what you chose, sometimes something
  * next to it, occasionally something new" — a product judgement, not a measured
  * optimum. Nothing has been A/B tested; the only claim they make is that the
- * three cases all happen. Change them freely; the tests assert the SHAPE (each
+ * four cases all happen. Change them freely; the tests assert the SHAPE (each
  * source occurs, explicit dominates), never the exact numbers.
  */
-export const TOPIC_MIX = { explicit: 70, related: 20, exploration: 10 }
+export const TOPIC_MIX = { explicit: 67, related: 20, exploration: 10, neutral: 3 }
 /* Daily plans stay interest-led, but sample other contexts across learning days. */
 export const DAILY_TOPIC_MIX = { explicit: 70, related: 20, exploration: 7, neutral: 3 }
 

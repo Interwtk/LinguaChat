@@ -56,7 +56,7 @@ Kept visible rather than quietly tidied:
 
 - **Deterministic.** No `Math.random()`, no `Date.now()` inside the engine. The same learner, day and context get the same topic, so a reload cannot change what a story is about. Every day-dependent test injects its clock.
 - **Cooldown.** Recently used topics wait; with everything on cooldown the list comes back rather than starving.
-- **Mix.** Mostly what they chose, sometimes something related, occasionally something new. The weights are `TOPIC_MIX = { explicit: 70, related: 20, exploration: 10 }` and are labelled **UNMEASURED PRODUCT CONSTANTS** in the source. Nothing has been tested; the checks assert the *shape* (all three happen, explicit dominates), never the numbers.
+- **Mix.** Mostly what they chose, sometimes something related, occasionally something new. The weights are `TOPIC_MIX = { explicit: 67, related: 20, exploration: 10, neutral: 3 }` and are labelled **UNMEASURED PRODUCT CONSTANTS** in the source. Nothing has been tested; the checks assert the *shape* (all four happen, explicit dominates), never the numbers.
 - **Compatibility.** A caller says which semantic types it can use. An interest that cannot supply one is skipped, not forced.
 - **Neutral fallback.** With nothing suitable, an everyday context. A correct neutral conversation beats a wrong personalised one.
 
@@ -65,7 +65,7 @@ Kept visible rather than quietly tidied:
 | surface | strength | behaviour |
 |---|---|---|
 | free chat | **strong** | the full mix; may explore outside what was chosen |
-| daily session, generic practice | **medium** | inside what they chose, rotated, dismissals respected, no exploring |
+| daily session, generic practice | **medium** | interest-led, rotated, dismissals respected; samples adjacent, unfamiliar and neutral contexts across days |
 | curriculum stories | per template | only what the template declares (see below) |
 | a story that must stay controlled | none | the situation is the lesson |
 
@@ -127,7 +127,7 @@ The onboarding catalogue contains no category that could profile politics, relig
 - an empty selection persists instead of springing back to a default
 - selection is deterministic and uses neither the clock nor randomness
 - the topic just used is not the next one; over thirty contexts most of a five-interest list is used; with twenty interests the first indices do not monopolise
-- one interest still meets other subjects sometimes; related and exploration contexts both really occur
+- one interest still meets other subjects sometimes; related, exploration and neutral contexts all occur in free chat
 - a declined topic is not chosen again today, is not deselected, and may return tomorrow — while the cooldown survives the day boundary
 - a slot needing a countable thing is never handed an abstraction
 - the provider payload is exactly one topic and one phrase, travels only with the opening message, and never carries the reason

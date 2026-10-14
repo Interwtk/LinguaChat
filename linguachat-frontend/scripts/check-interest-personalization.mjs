@@ -251,21 +251,25 @@ const TOMORROW = TODAY + DAY
   assert.ok(sources.size > 1, 'and some must be something else, or the topic is a cage')
 
   /* the mix is a product judgement, and says so */
-  assert.equal(TOPIC_MIX.explicit + TOPIC_MIX.related + TOPIC_MIX.exploration, 100)
+  assert.equal(Object.values(TOPIC_MIX).reduce((sum, n) => sum + n, 0), 100)
   assert.equal(Object.values(DAILY_TOPIC_MIX).reduce((sum, n) => sum + n, 0), 100)
-  assert.ok(TOPIC_MIX.explicit > TOPIC_MIX.related + TOPIC_MIX.exploration,
+  assert.ok(TOPIC_MIX.explicit > TOPIC_MIX.related + TOPIC_MIX.exploration + TOPIC_MIX.neutral,
     'what the learner chose must dominate')
   const engine = read('src/learning/engine/topicSelection.js')
   assert.match(engine, /UNMEASURED PRODUCT CONSTANTS/,
     'the weights must not read as if they were measured')
 
-  /* related and exploration both actually happen, for a normal profile */
+  /* Every source, including neutral, is sampled for a normal free-chat profile. */
   const observed = new Set()
-  for (let i = 0; i < 60; i += 1) {
-    observed.add(selectTopic({ explicitInterests: ['games', 'music'], seed: `mix:${i}` }).source)
+  for (let i = 0; i < 400; i += 1) {
+    const args = { explicitInterests: ['games', 'music'], seed: `mix:${i}` }
+    const choice = selectTopic(args)
+    assert.deepEqual(choice, selectTopic(args), 'free-chat topic selection must remain stable')
+    if (choice.source === 'neutral') assert.equal(choice.interestId, null)
+    observed.add(choice.source)
   }
-  for (const source of ['explicit', 'related', 'exploration']) {
-    assert.ok(observed.has(source), `${source} contexts never happen`)
+  for (const source of TOPIC_SOURCES) {
+    assert.ok(observed.has(source), `free chat never samples ${source}`)
   }
   ok()
 }
