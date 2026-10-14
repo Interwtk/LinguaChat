@@ -404,7 +404,11 @@ export function mergeLanguageItems(mine, theirs) {
       independentCorrect: maxNum('independentCorrect'),
       guidedCorrect: maxNum('guidedCorrect'),
       recognisedCorrect: maxNum('recognisedCorrect'),
-      streak: maxNum('streak'),
+      // A failed attempt resets the consecutive-success streak. Merging a
+      // newer failure with a stale snapshot must not resurrect the old streak.
+      // Equal timestamps are ambiguous without per-attempt ids; be conservative.
+      streak: fresher ? Math.max(0, Number(fresher.streak) || 0)
+        : Math.min(Math.max(0, Number(x.streak) || 0), Math.max(0, Number(y.streak) || 0)),
       nextReviewAt,
       lastSeenAt: latestSeen,
     }
