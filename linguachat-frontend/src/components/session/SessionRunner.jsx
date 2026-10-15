@@ -805,7 +805,7 @@ function PracticeTurn({ block, topic = null, sessionId = null, listeningBaseline
       <div className="flex gap-3 mb-3">
         <LinguaAvatar size={32} online className="mt-0.5" />
         {listeningEnabled
-          ? <ListeningTurn text={plainText(linguaSaid)} onSignals={signals => { audioRef.current = signals }} />
+          ? <ListeningTurn turnId={eventId} text={plainText(linguaSaid)} onSignals={signals => { audioRef.current = signals }} />
           : <div className="bubble-lingua"><En style={{ fontWeight: 700 }}>{linguaSaid}</En></div>}
       </div>
       <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginBottom: 10 }}>{t(howKey)}</p>

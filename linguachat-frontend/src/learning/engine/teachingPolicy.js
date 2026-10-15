@@ -20,8 +20,14 @@ export function observeTeaching(model, observation) {
 export function teachingEstimates(model, capability, candidates, dimension = 'format') {
   const history = teachingHistory(model?.teachingHistory).filter(x => x.capability === capability)
   const outcomes = Object.fromEntries(candidates.map(f => [f, []]))
+  const measuredSessions = new Set()
   history.forEach((probe, i) => {
     if (!probe.independent || probe.retried || probe.assisted || typeof probe.success !== 'boolean') return
+    // Several blocks/reopens on one learning-day are one retention occasion.
+    // Keep the first valid probe, including a failure; a later same-day success
+    // must not rewrite it or manufacture confidence through massed repetition.
+    if (measuredSessions.has(probe.session)) return
+    measuredSessions.add(probe.session)
     const prior = history.slice(0, i).reverse().find(x => x.session !== probe.session && x.at < probe.at)
     if (!prior || !outcomes[prior[dimension]]) return
     // Product window, not a scientific estimate. Older hypotheses can reverse.

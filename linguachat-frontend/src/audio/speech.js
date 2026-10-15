@@ -16,17 +16,27 @@ export function createSpeechController(host = globalThis.window) {
       if (!supported || !String(text).trim()) return false
       active?.stop(); controller.stop(); active = controller; notify = onState
       const token = ++serial
+      const finish = (state, completed = false) => {
+        if (serial !== token) return
+        serial++ // Browser error/end/late-start events are terminal exactly once.
+        if (active === controller) active = null
+        utterance = null
+        notify(state)
+        if (completed) onFinished()
+      }
+      try {
       utterance = new Utterance(String(text).slice(0, 1500))
       const voices = synth.getVoices?.() || []
-      const english = voices.filter(v => /^en(?:-|_)/i.test(v.lang))
+      const english = voices.filter(v => /^en(?:[-_]|$)/i.test(v.lang))
       utterance.voice = english.find(v => v.localService && /^en[-_]US$/i.test(v.lang))
         || english.find(v => v.localService) || english.find(v => /^en[-_](US|GB)$/i.test(v.lang)) || english[0] || null
       utterance.lang = utterance.voice?.lang || 'en-US'
       utterance.rate = slow ? 0.75 : 1
       utterance.onstart = () => { if (serial === token) notify('playing') }
-      utterance.onend = () => { if (serial !== token) return; active = null; notify('stopped'); onFinished() }
-      utterance.onerror = () => { if (serial === token) { active = null; notify('error') } }
-      try { notify('playing'); synth.speak(utterance); return true } catch { active = null; notify('error'); return false }
+      utterance.onend = () => finish('stopped', true)
+      utterance.onerror = () => finish('error')
+      notify('playing'); synth.speak(utterance); return true
+      } catch { finish('error'); return false }
     },
   }
   return controller

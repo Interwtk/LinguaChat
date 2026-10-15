@@ -2,7 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { createSpeechController } from '../../audio/speech.js'
 
-export function ListeningTurn({ text, onSignals }) {
+export function ListeningTurn({ text, turnId = text, onSignals }) {
+  // A new turn owns fresh playback evidence and a hidden transcript, even when
+  // React reuses the surrounding message/practice component.
+  return <ListeningTurnContent key={JSON.stringify([turnId, text])} text={text} onSignals={onSignals} />
+}
+
+function ListeningTurnContent({ text, onSignals }) {
   const { t } = useApp()
   const controller = useRef(null)
   if (!controller.current) controller.current = createSpeechController()

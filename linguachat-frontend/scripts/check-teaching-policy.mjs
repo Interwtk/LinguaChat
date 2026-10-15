@@ -27,3 +27,16 @@ assert.ok(chooseTeaching(explanations,'same-can-do',['concise','worked_example']
 const channels = { teachingHistory: a.teachingHistory.map(x => ({...x, channel: x.format === 'word_order' ? 'reading' : 'listening'})) }
 assert.ok(chooseTeaching(channels,'same-can-do',['reading','listening'],'stable','channel'))
 console.log('PASS: the same longitudinal policy supports explanation and listening/reading channel choices')
+
+const repeated = {}
+observeTeaching(repeated, { id: 'instruction', capability: 'greeting', format: 'free_reply', session: 'learning-day:1', at: 1, success: null })
+const probe = { capability: 'greeting', format: 'recall', session: 'learning-day:2', independent: true, assisted: false, retried: false }
+observeTeaching(repeated, { ...probe, id: 'unknown', at: 2, success: null })
+observeTeaching(repeated, { ...probe, id: 'helped', at: 3, success: true, assisted: true })
+observeTeaching(repeated, { ...probe, id: 'first-valid-failure', at: 4, success: false })
+for (let i = 0; i < 20; i++) observeTeaching(repeated, { ...probe, id: `reopen:${i}`, at: 5 + i, success: true })
+const estimate = teachingEstimates(repeated, 'greeting', ['free_reply'])[0]
+assert.equal(estimate.count, 1, 'Reopening blocks on the same learning-day cannot manufacture longitudinal confidence')
+assert.equal(estimate.retention, 1 / 3, 'Later massed successes must preserve the first independent failure')
+assert.equal(chooseTeaching(repeated, 'greeting', ['free_reply', 'word_order'], 'stable'), null, 'One retention occasion cannot establish a preference')
+console.log('PASS: one first valid retention probe per capability/learning-day; unknown and assisted are not failures')
