@@ -87,7 +87,9 @@ export function createLearnerModel() {
      */
     levelMilestones: {},
   }
-  try { if (globalThis.localStorage?.getItem('lc2-auth-owner-id')) return bindLearnerObject(model) } catch {}
+  // Guest-created models must retain their original lease. After the first
+  // authenticated claim, an old guest callback must not write into that account.
+  try { if (globalThis.localStorage?.getItem) return bindLearnerObject(model) } catch {}
   return model
 }
 const emptyModel = createLearnerModel
