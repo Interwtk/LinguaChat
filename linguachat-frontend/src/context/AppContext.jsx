@@ -1,3 +1,4 @@
+import { readSetupCheckpoint, SETUP_STEPS } from '../auth/setupCheckpoint.js'
 import { captureLearnerAccess, revokeLocalLease } from '../auth/localLease.js'
 import { learnerStorage as localStorage } from '../auth/localLease.js'
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
@@ -284,7 +285,9 @@ export function AppProvider({ children }) {
     if (action === 'confirmed') clearAuthCallback()
     const onboarded = storedOnboardingComplete()
     setOnboardingCompleted(onboarded)
-    setAuthStep(onboarded ? null : 'placement')
+    const checkpoint = readSetupCheckpoint(localStorage)
+    if (!onboarded && checkpoint.result) setProfile(previous => ({ ...previous, placementResult: checkpoint.result, level: checkpoint.result.level }))
+    setAuthStep(onboarded ? null : checkpoint.step)
   }, [getAuthService])
 
   useEffect(() => {
@@ -327,6 +330,11 @@ export function AppProvider({ children }) {
       subscription?.unsubscribe?.()
     }
   }, [getAuthService, applyProviderSession])
+  useEffect(() => {
+    if (authUser?.id && SETUP_STEPS.includes(authStep)) {
+      try { localStorage.setItem('lc2-onboarding-step', authStep) } catch {}
+    }
+  }, [authUser?.id, authStep])
   const [view, setView] = useState('today')
   const [sessionId, setSessionId] = useState(getOrCreateSessionId)
   const [messages, setMessages] = useState(() => loadStoredMessages(createWelcomeMessage(languagePreferences.interfaceLanguage.base)))
@@ -497,7 +505,6 @@ export function AppProvider({ children }) {
   const login = useCallback(async (email, password) => {
     authCallbackErrorRef.current = null
     clearVerifiedRecovery()
-    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     // The provider's onAuthStateChange listener is the single session authority.
@@ -509,7 +516,6 @@ export function AppProvider({ children }) {
   const signup = useCallback(async (name, email, password) => {
     authCallbackErrorRef.current = null
     clearVerifiedRecovery()
-    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     // Do not mutate profile/session state from the promise result. If signup
@@ -527,7 +533,6 @@ export function AppProvider({ children }) {
   const requestPasswordReset = useCallback(async (email) => {
     authCallbackErrorRef.current = null
     clearVerifiedRecovery()
-    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     return getAuthService().requestPasswordReset(email)
@@ -535,14 +540,12 @@ export function AppProvider({ children }) {
 
   const resendConfirmation = useCallback(async (email) => {
     clearVerifiedRecovery()
-    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     return getAuthService().resendConfirmation(email)
   }, [getAuthService])
 
   const changePassword = useCallback(async (password) => {
-    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     const user = await getAuthService().changePassword(password)
