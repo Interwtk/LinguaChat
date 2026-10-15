@@ -117,3 +117,12 @@ for (let boundary = 2; boundary <= 16; boundary++) {
   }
 }
 console.log('PASS: model load retains the same captured lease through read, migration and object binding')
+
+const storageDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+try {
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('Browser storage denied') } })
+  assert.doesNotThrow(() => saveLearnerModel(loadLearnerModel()), 'Denied browser Storage getter must fail closed without crashing model initialization')
+} finally {
+  Object.defineProperty(globalThis, 'localStorage', storageDescriptor)
+}
+console.log('PASS: denied Storage property access fails closed without crashing learner initialization')

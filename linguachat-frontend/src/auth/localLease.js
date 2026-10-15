@@ -7,7 +7,8 @@ export const HEAD_PREFIX = 'lc2-data-head:'
 const fallback = new WeakMap()
 const bindings = new WeakMap()
 function session() { try { return globalThis.sessionStorage } catch { return null } }
-export function currentLease(storage = globalThis.localStorage) {
+function browserStorage() { try { return globalThis.localStorage } catch { return null } }
+export function currentLease(storage = browserStorage()) {
   try { return JSON.stringify([storage.getItem(OWNER_KEY), storage.getItem(GENERATION_KEY)]) } catch { return null }
 }
 export function bindLocalLease(storage, lease = currentLease(storage)) {
@@ -19,7 +20,7 @@ export function bindLocalLease(storage, lease = currentLease(storage)) {
   if (currentLease(storage) !== lease) throw new Error('Activation superseded')
   return lease
 }
-export function validLocalLease(storage = globalThis.localStorage, expected) {
+export function validLocalLease(storage = browserStorage(), expected) {
   try {
     const current = currentLease(storage)
     const tab = session()
@@ -120,7 +121,7 @@ export const learnerStorage = {
   removeItem(key) { writeScoped(globalThis.localStorage, key, null, currentLease(), true) },
 }
 // Capture before async work, never acquire a new lease after an await.
-export function captureLearnerAccess(storage = globalThis.localStorage, lease = currentLease(storage)) {
+export function captureLearnerAccess(storage = browserStorage(), lease = currentLease(storage)) {
   return {
     valid: () => validLocalLease(storage, lease),
     bind(value) {
@@ -138,11 +139,11 @@ export function captureLearnerAccess(storage = globalThis.localStorage, lease = 
 
 export function captureLearnerObjectAccess(value) {
   const allowed = validLearnerObject(value)
-  const access = captureLearnerAccess(globalThis.localStorage, bindings.has(value) ? bindings.get(value) : currentLease())
+  const access = captureLearnerAccess(browserStorage(), bindings.has(value) ? bindings.get(value) : currentLease())
   return allowed ? access : { valid: () => false }
 }
 
-export function revokeLocalLease(storage = globalThis.localStorage) {
+export function revokeLocalLease(storage = browserStorage()) {
   try { session()?.removeItem(TAB_KEY) } catch {}
   fallback.delete(storage)
   try {
