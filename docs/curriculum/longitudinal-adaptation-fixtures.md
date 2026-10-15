@@ -98,6 +98,38 @@ Use the original `teachingEstimates()` implementation on a fixed existing can-do
 
 **Expected:** a bounded history may limit certainty about *lifetime* context novelty, but reaching a storage cap must not silently reclassify already verified transfer evidence as zero failures/successes. Keep independently verified transfer evidence attributable across the boundary; when novelty cannot be proven after truncation, expose **unknown/unverified**, not a fabricated zero. Never claim novel transfer from a context merely absent from the retained window. Preserve deduplication, chronology, shared CEFR standards and alternative sampling. Add an executable 79→80→81 regression before claiming this fixture PASS.
 
+## F15 — independent probes must not become teaching exposures
+
+At a fixed existing `goal-1`, record (1) an actual `word_order` instructional exposure in session `s0` and context `cafe`, (2) an unassisted `recall` assessment in `s1` and context `clinic`, and (3) another unassisted `recall` assessment in `s2` without intervening instruction. Use strictly increasing timestamps, distinct IDs, and identical evaluation rubrics. Compare the teaching-option estimates before and after event 3.
+
+**Reproduced at integration HEAD `09879ee4037841ee61187200db97b1f0b7fdf66f`:** `teachingEstimates()` assigns the third probe to the previous `recall` assessment, increasing `recall`'s instructional count from 0 to 1 even though no `recall` teaching occurred. The fetched module was evaluated in an isolated JavaScript harness; not E2E.
+
+**Expected:** only events explicitly proven to be *instructional exposures* are eligible antecedents for attribution. A probe can evaluate a preceding teaching choice but must not itself become that teaching choice. If the latest qualifying exposure is outside the supported attribution window, classify the outcome as **unattributed**, not as evidence favoring an assessment format. Preserve independent assessment evidence separately from instructional-effect estimates.
+
+## F16 — immediate success cannot establish delayed retention
+
+Seed an actual instructional exposure in `s0` at `2026-10-15T01:00:00.000Z`, followed by three correct, independent probes in distinct real sessions at +1 ms, +2 ms and +3 ms. Fix candidate set, objective, assessment difficulty, context provenance and random seed. Separately test three genuinely delayed probes after a declared interval and intervening material.
+
+**Reproduced at integration HEAD `09879ee4037841ee61187200db97b1f0b7fdf66f`:** the original estimator counts the three immediate probes as independent outcome observations; the decision policy can label its selection `later-independent-retrieval` despite no meaningful delay. Independent *correctness* alone is not evidence of durable retention.
+
+**Expected:** report immediate independent performance separately from delayed retrieval. Require an explicit, reviewed delay/intervening-learning policy before an observation contributes to durable-retention estimates; no universal interval is invented by this fixture. Missing timing/provenance is **unknown**, not delayed. Do not lower CEFR mastery gates or treat assisted repair as independent.
+
+## F17 — unknown prior context is not verified transfer
+
+Record one `word_order` instructional event in `s0` with `context=null` and a later unassisted correct probe in `s1` with `context='clinic'`. Then run the controls: known `cafe`→`clinic` with verified novel context, and known `clinic`→`clinic` with no novelty. Keep all other fields equal.
+
+**Reproduced at integration HEAD `09879ee4037841ee61187200db97b1f0b7fdf66f`:** `teachingEstimates()` reports `transfer=1` for the unknown→`clinic` pair because `null !== 'clinic'`. This proves neither a new context nor transfer.
+
+**Expected:** require two known, valid and meaningfully distinct context families, plus appropriate independent assessment provenance, before crediting cross-context transfer. Unknown prior context produces **unverified transfer**, not success or failure. Context-family changes cannot alter the shared CEFR objective, assessment demand or evidence threshold.
+
+## F18 — string-valued independence must never become independent evidence
+
+Using the same objective, instruction, distinct sessions, contexts and timestamps, run two otherwise identical correct probes: `independent: false` (boolean control) and `independent: 'false'` (legacy/corrupt string). Set `assisted: false`, `retried: false` and `success: true`. Exercise `teachingHistory()` and `teachingEstimates()` with the original module, then repeat with absent and malformed independence metadata.
+
+**Reproduced at integration HEAD `09879ee4037841ee61187200db97b1f0b7fdf66f`:** `teachingHistory()` accepts `independent: 'false'`, and the estimator treats that nonempty string as truthy: the string case counts one independent outcome and one apparent transfer, while the boolean-false control counts neither. This is a type/provenance validation defect; it does not establish that normal UI events produce the malformed value. Reproduction used the fetched original module in an isolated JavaScript harness, not browser E2E.
+
+**Expected:** only a validated boolean `true`, with verified unaided provenance, can count as independent. Strings, missing fields and ambiguous legacy values must remain **unknown/not independently proven**, without manufacturing mastery, retention or transfer. Keep legitimate boolean-false assisted/known-dependent evidence distinct from missingness. Require executable regressions before claiming PASS.
+
 ## Release evidence gate
 
 For each implemented fixture, record: code commit SHA, test command, deterministic seed, observed output, expected output, PASS/FAIL/UNSUPPORTED, and whether the test is unit, integration or end-to-end. A passing fixture only proves its local invariant. The adaptive-tutor claim additionally requires longitudinal comparison against a balanced baseline on **later independent retrieval and unseen-context transfer**, skill-family coverage, uncertainty calibration, and a separately reviewed learner pilot. No claim of proven improvement follows from adaptive scaffolding or topic sampling alone.
