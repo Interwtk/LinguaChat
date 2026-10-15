@@ -1,6 +1,5 @@
 import { teachingHistory } from './teachingPolicy.js'
-import { bindLearnerObject, validLearnerObject } from '../../auth/localLease.js'
-import { learnerStorage as localStorage } from '../../auth/localLease.js'
+import { bindLearnerObject, captureLearnerAccess, captureLearnerObjectAccess } from '../../auth/localLease.js'
 /*
  * learnerModel (v2) — what the learner can do, with safe migration from v1.
  *
@@ -314,11 +313,12 @@ function migrate(parsed) {
 }
 
 export function loadLearnerModel() {
+  const access = captureLearnerAccess()
   try {
-    const stored = localStorage.getItem(KEY)
-    if (stored) return bindLearnerObject(migrate(JSON.parse(stored)))
+    const stored = access.getItem(KEY)
+    if (stored) return access.bind(migrate(JSON.parse(stored)))
   } catch {}
-  return bindLearnerObject(emptyModel())
+  return access.bind(emptyModel())
 }
 
 /*
@@ -333,9 +333,9 @@ export function loadLearnerModel() {
  * event id, so taking the larger of the two values is exactly the union of what
  * both copies saw: never double-counted, never lost.
  */
-function mergeActivityEvidence(model) {
+function mergeActivityEvidence(model, access) {
   let stored = null
-  try { stored = JSON.parse(localStorage.getItem(KEY) || 'null') } catch { return model }
+  try { stored = JSON.parse(access.getItem(KEY) || 'null') } catch { return model }
   if (!stored || typeof stored !== 'object' || stored.version !== MODEL_VERSION) return model
 
   const mine = model.activityPreferences || {}
@@ -515,9 +515,15 @@ export function mergeCanDoEvidence(mine = {}, theirs = {}) {
 }
 
 export function saveLearnerModel(model) {
-  if (!validLearnerObject(model)) return model
-  bindLearnerObject(model)
-  const merged = mergeActivityEvidence(model)
+  const access = captureLearnerObjectAccess(model)
+  if (!access.valid()) return model
+  const merged = mergeActivityEvidence(model, access)
+  if (!access.valid()) return model
+  // Never reacquire/rebind to a new owner between validation, merge and write.
+  // Only expose merged data to the caller after a durable scoped commit.
+  try {
+    if (!access.setItem(KEY, JSON.stringify({ ...merged, version: MODEL_VERSION }))) return model
+  } catch { return model }
   // keep the caller's own object in step with what was written
   model.activityPreferences = merged.activityPreferences
   model.canDo = merged.canDo
@@ -527,7 +533,6 @@ export function saveLearnerModel(model) {
   model.learnerFacts = merged.learnerFacts
   model.episodes = merged.episodes
   model.languageItems = merged.languageItems
-  try { localStorage.setItem(KEY, JSON.stringify({ ...merged, version: MODEL_VERSION })) } catch {}
   return model
 }
 

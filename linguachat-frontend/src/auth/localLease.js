@@ -34,6 +34,12 @@ export function bindLearnerObject(value) {
   return value
 }
 export function validLearnerObject(value) {
+  // A clone/JSON round-trip loses object provenance. Never interpret that as
+  // permission to adopt whichever account happens to be active at save time.
+  // Legitimate authenticated models are bound by create/load, before mutation.
+  try {
+    if (globalThis.localStorage?.getItem(OWNER_KEY) && !bindings.has(value)) return false
+  } catch { return false }
   const expected = bindings.get(value)
   return validLocalLease(globalThis.localStorage, expected)
 }
@@ -114,10 +120,13 @@ export const learnerStorage = {
   removeItem(key) { writeScoped(globalThis.localStorage, key, null, currentLease(), true) },
 }
 // Capture before async work, never acquire a new lease after an await.
-export function captureLearnerAccess(storage = globalThis.localStorage) {
-  const lease = currentLease(storage)
+export function captureLearnerAccess(storage = globalThis.localStorage, lease = currentLease(storage)) {
   return {
     valid: () => validLocalLease(storage, lease),
+    bind(value) {
+      if (value && typeof value === 'object') bindings.set(value, lease)
+      return value
+    },
     getItem: key => readScoped(storage, key, lease),
     setItem(key, value) {
       if (!validLocalLease(storage, lease)) return false
@@ -125,6 +134,12 @@ export function captureLearnerAccess(storage = globalThis.localStorage) {
       return true
     },
   }
+}
+
+export function captureLearnerObjectAccess(value) {
+  const allowed = validLearnerObject(value)
+  const access = captureLearnerAccess(globalThis.localStorage, bindings.has(value) ? bindings.get(value) : currentLease())
+  return allowed ? access : { valid: () => false }
 }
 
 export function revokeLocalLease(storage = globalThis.localStorage) {
