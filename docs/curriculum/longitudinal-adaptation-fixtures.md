@@ -84,6 +84,12 @@ A newer snapshot records a legitimate, dated level milestone; an older snapshot 
 
 **Expected:** the saved milestone and the caller's in-memory milestone agree after merge; the stale snapshot cannot remove a real milestone. Migration alone cannot invent graduation. No A1–C2 milestone is issued while those levels are unavailable.
 
+## F13 — concurrent can-do successes must not silently disappear
+
+From the same initial learner snapshot, component A records a successful **independent** attempt for existing versioned `goal-1` in `cafe` at `2026-10-12T10:00:00Z` (event `can-A`, session `sA`). Component B independently records a successful **independent** attempt for the same goal in `clinic` at `2026-10-13T10:00:00Z` (event `can-B`, session `sB`). Neither component has observed the other's attempt. Save A→B and B→A, reload, and repeat the last save. Record the union of proven events separately from any derived mastery status.
+
+**Expected:** both distinct independent events and their two context families remain attributable after either save order; neither can silently overwrite the other or be counted twice. If the current model stores only aggregate counters and cannot prove the union, mark the fixture **UNSUPPORTED / evidence conflict** and do not fabricate mastery. Once event-level provenance exists, derived independent-success and context counts must be order-invariant. Do not automatically promote to `can_do` unless the existing goal-specific mastery rule and evidence gate are met. This is different from F05 (activity-format signals) and F08 (same-session repetition): it protects concurrent evidence for the **same can-do objective**.
+
 ## Release evidence gate
 
 For each implemented fixture, record: code commit SHA, test command, deterministic seed, observed output, expected output, PASS/FAIL/UNSUPPORTED, and whether the test is unit, integration or end-to-end. A passing fixture only proves its local invariant. The adaptive-tutor claim additionally requires longitudinal comparison against a balanced baseline on **later independent retrieval and unseen-context transfer**, skill-family coverage, uncertainty calibration, and a separately reviewed learner pilot. No claim of proven improvement follows from adaptive scaffolding or topic sampling alone.
