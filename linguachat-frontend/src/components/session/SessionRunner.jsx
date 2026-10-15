@@ -714,7 +714,7 @@ function PracticeTurn({ block, topic = null, sessionId = null, listeningBaseline
       // the same distinction a step makes: a correct reply that used none of the
       // taught language is not recorded as practice of it
       for (const id of (result.targetEvidence === false ? [] : practisedItems)) {
-        recordItemAttempt(modelRef.current, id, { correct: true, independent, evidenceKind: evidenceKindForStep(stepShape) })
+        recordItemAttempt(modelRef.current, id, { correct: true, independent, evidenceKind: evidenceKindForStep(stepShape), capability: kind })
       }
       saveLearnerModel(modelRef.current)
       setScaffoldState(prev => updateScaffoldAfterTurn(prev, {
@@ -735,7 +735,7 @@ function PracticeTurn({ block, topic = null, sessionId = null, listeningBaseline
       setTimeout(complete, 700)
     } else {
       for (const id of practisedItems) {
-        recordItemAttempt(modelRef.current, id, { correct: false, independent: false, evidenceKind: evidenceKindForStep(stepShape) })
+        recordItemAttempt(modelRef.current, id, { correct: false, independent: false, evidenceKind: evidenceKindForStep(stepShape), capability: kind })
       }
       setScaffoldState(prev => updateScaffoldAfterTurn(prev, { correct: false, evidenceKind: evidenceKindForStep(stepShape) }))
       markRecurringError(modelRef.current, result.errorType)
@@ -760,7 +760,7 @@ function PracticeTurn({ block, topic = null, sessionId = null, listeningBaseline
     })
     const evidence = evidenceKindForStep({ type: format === 'choice' ? 'choice' : 'word_order', format })
     for (const id of practisedItems) {
-      recordItemAttempt(modelRef.current, id, { correct, independent: false, evidenceKind: evidence })
+      recordItemAttempt(modelRef.current, id, { correct, independent: false, evidenceKind: evidence, capability: kind })
     }
     saveLearnerModel(modelRef.current)
     if (correct) { setLive(t('ep1Correct')); setTimeout(complete, 600) }

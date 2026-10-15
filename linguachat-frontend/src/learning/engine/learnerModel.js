@@ -1,4 +1,4 @@
-import { teachingHistory } from './teachingPolicy.js'
+import { teachingHistory, retentionProfile } from './teachingPolicy.js'
 import { bindLearnerObject, captureLearnerAccess, captureLearnerObjectAccess } from '../../auth/localLease.js'
 /*
  * learnerModel (v2) — what the learner can do, with safe migration from v1.
@@ -577,13 +577,29 @@ export function reviewDelayDays({ correct, independent, streak, owned = false })
   return REVIEW_STEPS_DAYS[step]
 }
 
-export function scheduleReview(prev, { correct, independent, atMs = Date.now(), owned = null }) {
+export function scheduleReview(prev, { correct, independent, atMs = Date.now(), owned = null, retention = null }) {
   const streak = correct ? (prev?.streak || 0) + 1 : 0
   const isOwned = owned === null
     ? (prev?.learningState === 'can_use' || (Number(prev?.independentCorrect) || 0) >= INDEPENDENT_USES_TO_CAN_USE)
     : owned
+  let days = reviewDelayDays({ correct, independent, streak, owned: isOwned })
+  let dueAt = atMs + days * DAY
+  if (correct && retention?.samples) {
+    if (!retention.lastSuccess) {
+      dueAt = Math.min(dueAt, retention.lastAt + DAY)
+    } else if (independent) {
+      // Same-day streaks never widen this ladder. Only distinct later probes do.
+      days = REVIEW_STEPS_DAYS[Math.min(Math.max(retention.successes, 1), REVIEW_STEPS_DAYS.length) - 1]
+      dueAt = Math.min(atMs, retention.lastAt) + days * DAY
+    } else {
+      // Recognition/help may confirm an owned item, but cannot postpone its
+      // independent retrieval check on the strength of assisted correctness.
+      const previousDue = Date.parse(prev?.nextReviewAt)
+      dueAt = Math.min(dueAt, Number.isFinite(previousDue) ? previousDue : atMs + DAY)
+    }
+  }
   return {
-    nextReviewAt: new Date(atMs + reviewDelayDays({ correct, independent, streak, owned: isOwned }) * DAY).toISOString(),
+    nextReviewAt: new Date(dueAt).toISOString(),
     streak,
   }
 }
@@ -656,14 +672,15 @@ export function recordItemSeen(model, itemId, atMs = Date.now()) {
   return model
 }
 
-export function recordItemAttempt(model, itemId, { correct, independent = false, evidenceKind = 'open', atMs = Date.now() } = {}) {
+export function recordItemAttempt(model, itemId, { correct, independent = false, evidenceKind = 'open', atMs = Date.now(), capability = null } = {}) {
   const prev = { ...emptyItem(), ...(model.languageItems[itemId] || {}) }
   const correctCount = prev.correct + (correct ? 1 : 0)
   const incorrectCount = prev.incorrect + (correct ? 0 : 1)
   const independentCorrect = prev.independentCorrect + (correct && independent && evidenceKind === 'open' ? 1 : 0)
   const guidedCorrect = prev.guidedCorrect + (correct && evidenceKind === 'guided' ? 1 : 0)
   const recognisedCorrect = prev.recognisedCorrect + (correct && evidenceKind === 'recognition' ? 1 : 0)
-  const review = scheduleReview(prev, { correct, independent, atMs })
+  const review = scheduleReview(prev, { correct, independent, atMs,
+    retention: capability ? retentionProfile(model, capability, atMs) : null })
 
   // learning state only ever climbs
   const earned = stateFromEvidence({ evidenceKind, correct, independent, independentCorrect })
@@ -731,11 +748,12 @@ export function recordDelayedRetrievalEvidence(model, canDoIds, { atMs = Date.no
   return model
 }
 
-export function markRecurringError(model, errorType) {
+export function markRecurringError(model, errorType, atMs = Date.now()) {
   if (!errorType) return model
   const existing = model.recurringErrors.find(e => e.errorType === errorType)
-  if (existing) existing.count += 1
-  else model.recurringErrors = [{ errorType, count: 1 }, ...model.recurringErrors].slice(0, 20)
+  const lastSeenAt = new Date(atMs).toISOString()
+  if (existing) { existing.count += 1; existing.lastSeenAt = lastSeenAt }
+  else model.recurringErrors = [{ errorType, count: 1, lastSeenAt }, ...model.recurringErrors].slice(0, 20)
   return model
 }
 

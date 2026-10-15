@@ -20,7 +20,23 @@ export function observeTeaching(model, observation) {
 export function teachingEstimates(model, capability, candidates, dimension = 'format') {
   const history = teachingHistory(model?.teachingHistory).filter(x => x.capability === capability)
   const outcomes = Object.fromEntries(candidates.map(f => [f, []]))
-  const measuredSessions = new Set()
+  for (const { probe, prior, index: i } of retentionProbes(history)) {
+    if (!outcomes[prior[dimension]]) continue
+    // Product window, not a scientific estimate. Older hypotheses can reverse.
+    outcomes[prior[dimension]].push({ success: probe.success, transfer: history.length < 80
+      && Boolean(probe.context) && prior.context !== probe.context
+      && !history.slice(0, i).some(x => x.context === probe.context) })
+  }
+  return candidates.map(format => {
+    const samples = outcomes[format].slice(-12)
+    return { format, count: samples.length,
+      retention: (1 + samples.filter(x => x.success).length) / (2 + samples.length),
+      transfer: samples.filter(x => x.transfer && x.success).length }
+  })
+}
+
+function retentionProbes(history) {
+  const measuredSessions = new Set(), probes = []
   history.forEach((probe, i) => {
     if (!probe.independent || probe.retried || probe.assisted || typeof probe.success !== 'boolean') return
     // Several blocks/reopens on one learning-day are one retention occasion.
@@ -29,18 +45,21 @@ export function teachingEstimates(model, capability, candidates, dimension = 'fo
     if (measuredSessions.has(probe.session)) return
     measuredSessions.add(probe.session)
     const prior = history.slice(0, i).reverse().find(x => x.session !== probe.session && x.at < probe.at)
-    if (!prior || !outcomes[prior[dimension]]) return
-    // Product window, not a scientific estimate. Older hypotheses can reverse.
-    outcomes[prior[dimension]].push({ success: probe.success, transfer: history.length < 80
-      && Boolean(probe.context) && prior.context !== probe.context
-      && !history.slice(0, i).some(x => x.context === probe.context) })
+    if (prior) probes.push({ probe, prior, index: i })
   })
-  return candidates.map(format => {
-    const samples = outcomes[format].slice(-12)
-    return { format, count: samples.length,
-      retention: (1 + samples.filter(x => x.success).length) / (2 + samples.length),
-      transfer: samples.filter(x => x.transfer && x.success).length }
-  })
+  return probes
+}
+
+// Scheduling heuristics, not mastery or a learner type. A short recent window
+// permits recovery/reversal; one valid probe per learning-day caps repetition.
+export function retentionProfile(model, capability, atMs = Date.now()) {
+  const history = teachingHistory(model?.teachingHistory).filter(x => x.capability === capability && x.at <= atMs)
+  const recent = retentionProbes(history).map(x => x.probe).slice(-6)
+  const last = recent.at(-1)
+  let successes = 0
+  for (let i = recent.length - 1; i >= 0 && recent[i].success; i--) successes++
+  return { samples: recent.length, lastAt: last?.at ?? null, lastSuccess: last?.success ?? null, successes,
+    priority: !last ? 0 : !last.success ? 2 : successes >= 3 ? -1 : 0 }
 }
 export function chooseTeaching(model, capability, candidates, seed = '', dimension = 'format') {
   if (!capability || candidates.length < 2) return null

@@ -14,7 +14,8 @@ import { learnerStorage as localStorage } from '../../auth/localLease.js'
  * Duration is a promise, not a countdown: it caps how many blocks are planned,
  * it never interrupts an activity in progress.
  */
-import { getDueReviews, getEpisodeState } from './learnerModel.js'
+import { getDueReviews, getEpisodeState, REVIEW_STEPS_DAYS } from './learnerModel.js'
+import { retentionProfile } from './teachingPolicy.js'
 import { derivePreA1Readiness, readinessFocus, skillEvidence } from '../curriculum/readiness.js'
 import { reconcileLevelMilestones } from '../curriculum/graduation.js'
 import { integratedEpisodes, requiredLevelItems } from '../curriculum/preA1Map.js'
@@ -213,7 +214,8 @@ function planningScaffold(model) {
  * slipping before it spends it on anything optional.
  */
 function reviewBlocks(model, atMs, ctx, limit = 1) {
-  const allDue = getDueReviews(model, atMs).filter(id => practiceKindForItem(id))
+  const allDue = getDueReviews(model, atMs).filter(id => practiceKindForItem(id)
+    && !(model.signalLog || []).includes(`${dayKeyFor(atMs)}:session:review:${id}:completed`))
   /*
    * Oldest-first is fair, and on its own it is not enough: a level tracks far
    * more incidental vocabulary than core language, so the words the level is
@@ -222,7 +224,14 @@ function reviewBlocks(model, atMs, ctx, limit = 1) {
    * Core language is repaired first; everything else keeps its place in line.
    */
   const core = new Set(requiredLevelItems())
-  const due = [...allDue.filter(id => core.has(id)), ...allDue.filter(id => !core.has(id))]
+  const order = ids => ids.sort((a, b) => {
+    // Weekly overdue bands outrank adaptation, so healthy items never starve.
+    const age = id => Math.floor((atMs - Date.parse(model.languageItems[id].nextReviewAt)) / (7 * 86400000))
+    return age(b) - age(a)
+      || reviewPriority(model, practiceKindForItem(b), atMs) - reviewPriority(model, practiceKindForItem(a), atMs)
+      || Date.parse(model.languageItems[a].nextReviewAt) - Date.parse(model.languageItems[b].nextReviewAt)
+  })
+  const due = [...order(allDue.filter(id => core.has(id))), ...order(allDue.filter(id => !core.has(id)))]
   return due.slice(0, Math.max(1, limit)).map((itemId) => {
     const objective = practiceKindForItem(itemId)
     /*
@@ -349,6 +358,7 @@ function targetedRetryBlock(model, ctx) {
 
 function fragileSkillBlock(model, ctx) {
   const entry = Object.entries(model.canDo || {})
+    .sort(([a], [b]) => reviewPriority(model, practiceKindForCanDo(b), ctx.atMs) - reviewPriority(model, practiceKindForCanDo(a), ctx.atMs))
     .find(([id, c]) => c && c.status === 'learning' && practiceKindForCanDo(id))
   if (!entry) return null
   const [canDoId] = entry
@@ -366,8 +376,24 @@ function fragileSkillBlock(model, ctx) {
  * session, reusing something the learner already met, in the way that suits
  * them. It is additional practice — it never replaces anything required.
  */
-function extraPracticeBlock(model, ctx) {
-  const entry = Object.entries(model.canDo || {}).find(([id, c]) => c && practiceKindForCanDo(id))
+function reviewPriority(model, capability, atMs) {
+  const recurring = (model.recurringErrors || []).some(e => e?.count >= 2
+    && practiceKindForError(e.errorType) === capability
+    && Date.parse(e.lastSeenAt) <= atMs && Date.parse(e.lastSeenAt) >= atMs - 7 * 86400000)
+  return retentionProfile(model, capability, atMs).priority + (recurring ? 1 : 0)
+}
+
+function extraPracticeBlock(model, ctx, alreadyPractised = new Set()) {
+  const entry = Object.entries(model.canDo || {}).filter(([id, c]) => {
+    const objective = practiceKindForCanDo(id)
+    if (!c || !objective || alreadyPractised.has(objective)) return false
+    const retention = retentionProfile(model, objective, ctx.atMs)
+    if (!retention.samples) return true // Unknown is not failure or mastery.
+    const days = retention.lastSuccess
+      ? REVIEW_STEPS_DAYS[Math.min(Math.max(retention.successes, 1), REVIEW_STEPS_DAYS.length) - 1] : 1
+    return ctx.atMs >= retention.lastAt + days * 86400000
+  }).sort(([a], [b]) => reviewPriority(model, practiceKindForCanDo(b), ctx.atMs) - reviewPriority(model, practiceKindForCanDo(a), ctx.atMs))
+    .at(0)
   if (!entry) return null
   const objective = practiceKindForCanDo(entry[0])
   return {
@@ -429,7 +455,7 @@ export function buildSessionPlan(model, arc, {
     }
     // Deep sessions have room for one extra turn shaped by preference.
     if (mode === 'deep' && !fragile && room()) {
-      const extra = extraPracticeBlock(model, ctx)
+      const extra = extraPracticeBlock(model, ctx, new Set(blocks.map(b => practiceKindForCanDo(b.objective) || b.objective)))
       if (extra) blocks.push(extra)
     }
   }
