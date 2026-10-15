@@ -6,25 +6,28 @@ export function teachingHistory(raw) {
   return (Array.isArray(raw) ? raw : []).filter(x => x && typeof x.id === 'string'
     && typeof x.capability === 'string' && typeof x.format === 'string'
     && typeof x.session === 'string' && Number.isFinite(x.at)
-    && (typeof x.success === 'boolean' || x.success === null)).slice(-80)
+    && (typeof x.success === 'boolean' || x.success === null))
+    .sort((a, b) => a.at - b.at || a.id.localeCompare(b.id)).slice(-80)
 }
 export function observeTeaching(model, observation) {
   const history = teachingHistory(model.teachingHistory)
   if (history.some(x => x.id === observation.id)) return false
   const clean = teachingHistory([observation])[0]
   if (!clean) return false
-  model.teachingHistory = [...history, clean].slice(-80)
+  model.teachingHistory = teachingHistory([...history, clean])
   return true
 }
-export function teachingEstimates(model, capability, candidates) {
+export function teachingEstimates(model, capability, candidates, dimension = 'format') {
   const history = teachingHistory(model?.teachingHistory).filter(x => x.capability === capability)
   const outcomes = Object.fromEntries(candidates.map(f => [f, []]))
   history.forEach((probe, i) => {
     if (!probe.independent || probe.retried || probe.assisted || typeof probe.success !== 'boolean') return
     const prior = history.slice(0, i).reverse().find(x => x.session !== probe.session && x.at < probe.at)
-    if (!prior || !outcomes[prior.format]) return
+    if (!prior || !outcomes[prior[dimension]]) return
     // Product window, not a scientific estimate. Older hypotheses can reverse.
-    outcomes[prior.format].push({ success: probe.success, transfer: prior.context !== probe.context })
+    outcomes[prior[dimension]].push({ success: probe.success, transfer: history.length < 80
+      && Boolean(probe.context) && prior.context !== probe.context
+      && !history.slice(0, i).some(x => x.context === probe.context) })
   })
   return candidates.map(format => {
     const samples = outcomes[format].slice(-12)
@@ -33,9 +36,9 @@ export function teachingEstimates(model, capability, candidates) {
       transfer: samples.filter(x => x.transfer && x.success).length }
   })
 }
-export function chooseTeaching(model, capability, candidates, seed = '') {
+export function chooseTeaching(model, capability, candidates, seed = '', dimension = 'format') {
   if (!capability || candidates.length < 2) return null
-  const estimates = teachingEstimates(model, capability, candidates)
+  const estimates = teachingEstimates(model, capability, candidates, dimension)
   if (!estimates.some(x => x.count >= 3)) return null
   const n = seedFrom(String(seed))
   // Exploration remains reachable even after strong early evidence.

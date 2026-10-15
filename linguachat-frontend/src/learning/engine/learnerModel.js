@@ -87,7 +87,8 @@ export function createLearnerModel() {
      */
     levelMilestones: {},
   }
-  return globalThis.localStorage?.getItem('lc2-auth-owner-id') ? bindLearnerObject(model) : model
+  try { if (globalThis.localStorage?.getItem('lc2-auth-owner-id')) return bindLearnerObject(model) } catch {}
+  return model
 }
 const emptyModel = createLearnerModel
 
@@ -358,7 +359,7 @@ function mergeActivityEvidence(model) {
     activityPreferences: merged,
     // Preserve capabilities from independent snapshots without summing mastery evidence.
     // Same-id concurrent attempts need per-event provenance before safe reconciliation.
-    canDo: { ...(stored.canDo || {}), ...(model.canDo || {}) },
+    canDo: mergeCanDoEvidence(model.canDo, stored.canDo),
     signalLog: log,
     recentFormats: (Array.isArray(recent) ? recent : []).filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12),
     episodeRuns: mergeEpisodeRuns(model.episodeRuns, stored.episodeRuns),
@@ -483,6 +484,30 @@ export function mergeEpisodeState(mine, theirs) {
       stepIndex: Math.max(Number(x.stepIndex) || 0, Number(y.stepIndex) || 0),
       awarded: Boolean(x.awarded || y.awarded),
     }
+  }
+  return out
+}
+
+// Counter maxima preserve already-earned evidence without inventing distinct
+// concurrent attempts. Provenance follows independent practice, never assisted recency.
+export function mergeCanDoEvidence(mine = {}, theirs = {}) {
+  const out = {}
+  for (const id of new Set([...Object.keys(mine), ...Object.keys(theirs)])) {
+    const a = mine[id], b = theirs[id]
+    if (!a || !b) { out[id] = a || b; continue }
+    const recent = (a.lastPracticedAt || '') >= (b.lastPracticedAt || '') ? a : b
+    const independent = (a.independentPracticedAt || '') >= (b.independentPracticedAt || '') ? a : b
+    const entry = { ...b, ...a, ...recent }
+    for (const field of ['attempts', 'successes', 'independentSuccesses']) entry[field] = Math.max(Number(a[field]) || 0, Number(b[field]) || 0)
+    entry.contexts = [...new Set([...(a.contexts || []), ...(b.contexts || [])])]
+    entry.status = entry.successes >= 2 && entry.independentSuccesses >= 1 ? 'can_do' : entry.attempts ? 'learning' : 'new'
+    if (independent.independentPracticedAt) {
+      entry.independentPracticedAt = independent.independentPracticedAt
+      entry.independentPracticeSessionId = independent.independentPracticeSessionId
+    }
+    entry.delayedRetrievalAt = [...new Set([...(a.delayedRetrievalAt || []), ...(b.delayedRetrievalAt || [])])].sort().reverse().slice(0, 10)
+    entry.delayedRetrievalSessions = [...new Set([...(a.delayedRetrievalSessions || []), ...(b.delayedRetrievalSessions || [])])].slice(-10)
+    out[id] = entry
   }
   return out
 }

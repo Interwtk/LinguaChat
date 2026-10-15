@@ -289,11 +289,13 @@ export function AppProvider({ children }) {
     let alive = true
     let subscription = null
     let service
+    let authEvents = 0
 
     try {
       service = getAuthService()
       const registration = service.onAuthStateChange((event, session) => {
         if (!alive) return
+        authEvents += 1
         if (!authIsolationBlockedRef.current) setAuthProviderError('')
         applyProviderSession(session, event)
       })
@@ -304,9 +306,10 @@ export function AppProvider({ children }) {
       return () => {}
     }
 
+    const restorationRevision = authEvents
     service.getSession()
       .then((session) => {
-        if (!alive) return
+        if (!alive || authEvents !== restorationRevision) return
         if (!authIsolationBlockedRef.current) setAuthProviderError('')
         applyProviderSession(session, 'INITIAL_SESSION')
       })
@@ -1191,6 +1194,7 @@ export function AppProvider({ children }) {
         id: `l${Date.now()}`,
         role: 'lingua',
         text: response.reply,
+        audioEligible: profile.style !== 'translation',
         feedback: {
           correction:  response.correction  || null,
           why:         response.explanation || null,

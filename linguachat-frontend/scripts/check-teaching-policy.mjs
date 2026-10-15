@@ -21,3 +21,9 @@ assert.equal(observeTeaching(a,a.teachingHistory.at(-1)),false)
 assert.ok(a.teachingHistory.length<=80)
 assert.equal(chooseTeaching({},'same-can-do',pool),null)
 console.log('PASS: different longitudinal histories, unknown data, assisted exclusion, exploration, reversal, bounded idempotence')
+
+const explanations = { teachingHistory: a.teachingHistory.map(x => ({...x, instruction: x.format === 'word_order' ? 'concise' : 'worked_example'})) }
+assert.ok(chooseTeaching(explanations,'same-can-do',['concise','worked_example'],'stable','instruction'))
+const channels = { teachingHistory: a.teachingHistory.map(x => ({...x, channel: x.format === 'word_order' ? 'reading' : 'listening'})) }
+assert.ok(chooseTeaching(channels,'same-can-do',['reading','listening'],'stable','channel'))
+console.log('PASS: the same longitudinal policy supports explanation and listening/reading channel choices')

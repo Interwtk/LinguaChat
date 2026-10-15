@@ -8,7 +8,7 @@ export function ListeningTurn({ text, onSignals }) {
   if (!controller.current) controller.current = createSpeechController()
   const [state, setState] = useState('stopped')
   const [transcript, setTranscript] = useState(!controller.current.supported)
-  const stats = useRef({ plays: 0, completed: 0, slow: false, transcript: !controller.current.supported })
+  const stats = useRef({ plays: 0, completed: 0, slow: false, unavailable: !controller.current.supported, transcript: !controller.current.supported })
   const callback = useRef(onSignals); callback.current = onSignals
   const publish = () => callback.current?.({ ...stats.current })
   useEffect(() => {
@@ -19,7 +19,7 @@ export function ListeningTurn({ text, onSignals }) {
     stats.current.plays++; stats.current.slow ||= slow; publish()
     controller.current.play(text, { slow, onState: next => {
       setState(next)
-      if (next === 'error') { stats.current.transcript = true; setTranscript(true); publish() }
+      if (next === 'error') { stats.current.unavailable = true; stats.current.transcript = true; setTranscript(true); publish() }
     }, onFinished: () => { stats.current.completed++; publish() } })
   }
   return <section aria-label={t('listeningAudio')} className="rounded-2xl p-3 my-2" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>

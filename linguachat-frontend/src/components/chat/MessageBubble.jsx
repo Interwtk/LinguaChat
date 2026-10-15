@@ -52,7 +52,7 @@ export function MessageBubble({ message, previousUserText = null }) {
           onClick={() => hasFeedback && selectMessage(message)}
           title={hasFeedback ? 'Click to see notes' : ''}
         >
-          <ListeningTurn text={message.text} />
+          {message.audioEligible ? <ListeningTurn text={message.text} /> : message.text}
         </div>
 
         {hasFeedback && <TutorFeedback feedback={message.feedback} original={previousUserText} />}

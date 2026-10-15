@@ -72,9 +72,10 @@ older adults, and never childish. **Do not redesign for taste.**
   and must not be inferred from planning/history.
 - **No migration to Next.js.** Vite + React stays; FastAPI stays as the
   pedagogical backend.
-- **Voice and media are out of scope:** no WebRTC, STT, TTS, pronunciation
-  scoring, live calls or video calls. Their surfaces may exist only as honest
-  "coming soon" UI and must not pretend to work.
+- **Free listening exception authorized 2026-10-15:** browser/device TTS through
+  `src/audio/speech.js` is allowed for listening turns. No paid TTS, microphone,
+  STT, WebRTC, pronunciation scoring or live/video calls. Transcript/replay/slow
+  support must never masquerade as first-listen independent evidence.
 
 ## Provider safety
 
