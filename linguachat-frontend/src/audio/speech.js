@@ -9,12 +9,17 @@ export function createSpeechController(host = globalThis.window) {
     supported,
     stop() {
       serial++
-      if (active === controller) { synth?.cancel(); active = null }
+      if (active === controller) {
+        try { synth?.cancel(); active = null }
+        catch { utterance = null; notify('error'); return false }
+      }
       utterance = null; notify('stopped')
+      return true
     },
     play(text, { slow = false, onState = () => {}, onFinished = () => {} } = {}) {
       if (!supported || !String(text).trim()) return false
-      active?.stop(); controller.stop(); active = controller; notify = onState
+      if (active?.stop() === false) { onState('error'); return false }
+      controller.stop(); active = controller; notify = onState
       const token = ++serial
       const finish = (state, completed = false) => {
         if (serial !== token) return

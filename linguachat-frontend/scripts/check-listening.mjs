@@ -38,3 +38,19 @@ genericEnglish.play('English voice')
 assert.equal(queued.at(-1).lang,'en')
 genericEnglish.stop()
 console.log('PASS: terminal events exactly once, late events fenced, generic English and device-error fallback')
+
+const engine = { ...host.speechSynthesis }
+const brokenHost = { ...host, speechSynthesis: engine }
+const playing = createSpeechController(brokenHost), next = createSpeechController(brokenHost)
+playing.play('Playing on device')
+engine.cancel = () => { throw new Error('Device cancellation failed') }
+const queuedBefore = queued.length
+assert.doesNotThrow(() => playing.stop(), 'A device cancellation error must not crash route cleanup')
+assert.equal(next.play('Must not overlap', { onState:s=>state=s }), false, 'Failed cancellation cannot allow overlapping audio')
+assert.equal(queued.length,queuedBefore)
+assert.equal(state,'error','The next turn must expose the graceful transcript fallback')
+engine.cancel = () => { cancels++ }
+assert.equal(playing.stop(),true)
+assert.equal(next.play('Recovered device'),true)
+next.stop()
+console.log('PASS: device cancellation failure is closed, no overlap/crash, and subsequent recovery remains possible')
