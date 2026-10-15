@@ -1,3 +1,7 @@
+import { ListeningTurn } from '../chat/ListeningTurn.jsx'
+import { listeningEvidence } from '../../audio/speech.js'
+import { observeTeaching } from '../../learning/engine/teachingPolicy.js'
+import { captureLearnerAccess } from '../../auth/localLease.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { ChattoMascot } from '../mascot/ChattoMascot'
@@ -444,6 +448,7 @@ function PracticeTurn({ block, topic = null, sessionId = null, onDone }) {
   const scaffold = scaffoldState.currentLevel
   const name = (profile.name || '').trim() || 'Alex'
   const partner = useMemo(() => partnerFor(profile.name || 'guest'), [profile.name])
+  const audioRef = useRef({})
   const modelRef = useRef(loadLearnerModel())
   // The session's own subject matter, so a practice turn talks about the same
   // thing Home promised this morning.
@@ -611,6 +616,7 @@ function PracticeTurn({ block, topic = null, sessionId = null, onDone }) {
   }
 
   async function submit({ fromSuggestion = false } = {}) {
+    const access = captureLearnerAccess()
     const text = reply
     if (!text.trim()) return
     const token = guardRef.current.begin()
@@ -619,7 +625,10 @@ function PracticeTurn({ block, topic = null, sessionId = null, onDone }) {
     // Same context the model answer was built from, so a correction can never
     // name something the prompt never mentioned.
     const stepShape = { type: 'free_reply', format }
-    const independent = isIndependentEvidence({ step: stepShape, assistanceUsed: fromSuggestion, correct: true })
+    const audio = listeningEvidence(audioRef.current)
+    const assisted = fromSuggestion || Boolean(retry) || !audio.independent
+      || (showsModelAnswer(scaffold) && block.payload?.requiredPractice !== 'recall' && isOpenFormat)
+    const independent = isIndependentEvidence({ step: stepShape, assistanceUsed: assisted, correct: true })
     /*
      * A quantity turn is graded against a specific thing and number, and an
      * identification against a specific object. Passing them keeps the verdict
@@ -666,18 +675,25 @@ function PracticeTurn({ block, topic = null, sessionId = null, onDone }) {
         ...spellContext,
         ...subtypeContext,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
-        targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
+        targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: assisted,
         previousAttempts: 0, turnContext, signal: controller.signal,
         remote: (payload, signal) => evaluateLearningResponse(payload, { signal }),
       })
     } catch {
       result = { ...preview, source: 'fallback' }
     }
-    if (!guardRef.current.isCurrent(token)) return
+    if (!access.valid() || !guardRef.current.isCurrent(token)) return
     guardRef.current.settle()
     abortRef.current = null
     setReviewing(false)
 
+    observeTeaching(modelRef.current, {
+      id: `${eventId}:first-attempt`, capability: kind, format, session: sessionId || eventId,
+      context: topic?.interestId || 'neutral', at: Date.now(),
+      success: result.targetEvidence === false ? null : Boolean(result.completedObjective),
+      independent, assisted, retried: Boolean(retry), listening: audio,
+    })
+    saveLearnerModel(modelRef.current)
     if (result.completedObjective) {
       // the same distinction a step makes: a correct reply that used none of the
       // taught language is not recorded as practice of it
@@ -765,7 +781,7 @@ function PracticeTurn({ block, topic = null, sessionId = null, onDone }) {
 
       <div className="flex gap-3 mb-3">
         <LinguaAvatar size={32} online className="mt-0.5" />
-        <div className="bubble-lingua"><En style={{ fontWeight: 700 }}>{linguaSaid}</En></div>
+        <ListeningTurn text={plainText(linguaSaid)} onSignals={signals => { audioRef.current = signals }} />
       </div>
       <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginBottom: 10 }}>{t(howKey)}</p>
 

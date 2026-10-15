@@ -1,3 +1,4 @@
+import { ListeningTurn } from './ListeningTurn.jsx'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { TutorFeedback } from './TutorFeedback'
 import { LearningAction } from './LearningAction'
@@ -51,7 +52,7 @@ export function MessageBubble({ message, previousUserText = null }) {
           onClick={() => hasFeedback && selectMessage(message)}
           title={hasFeedback ? 'Click to see notes' : ''}
         >
-          {message.text}
+          <ListeningTurn text={message.text} />
         </div>
 
         {hasFeedback && <TutorFeedback feedback={message.feedback} original={previousUserText} />}

@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : '/api')
 const VALID_MODES = new Set(['chat', 'translation', 'correction'])
 const CONNECTION_MESSAGE = 'Lingua tuvo un problema de conexion. Puedes seguir practicando en modo local.'
 const LOCAL_FALLBACK_MESSAGE = 'Lingua esta usando practica local mientras OpenAI no esta disponible.'

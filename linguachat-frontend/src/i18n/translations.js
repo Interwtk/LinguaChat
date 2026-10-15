@@ -1,4 +1,15 @@
 const base = {
+  listeningAudio: "Audio · Lingua",
+  listeningPlay: "Play",
+  listeningReplay: "Replay",
+  listeningSlow: "Slower",
+  listeningStop: "Stop",
+  listeningTranscript: "Show transcript",
+  listeningHide: "Hide transcript",
+  listeningPlaying: "Playing",
+  listeningStopped: "Stopped",
+  listeningUnavailable: "Audio unavailable. You can read the transcript.",
+
   authShowPassword: "Show password",
   authHidePassword: "Hide password",
   // Setup choice (recommended vs personalize)

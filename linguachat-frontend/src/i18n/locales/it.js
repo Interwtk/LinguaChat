@@ -4,6 +4,17 @@
  * falls back to English, never to a raw key.
  */
 export default {
+  listeningAudio: "Audio · Lingua",
+  listeningPlay: "Riproduci",
+  listeningReplay: "Ripeti",
+  listeningSlow: "Più lentamente",
+  listeningStop: "Ferma",
+  listeningTranscript: "Mostra trascrizione",
+  listeningHide: "Nascondi trascrizione",
+  listeningPlaying: "Riproduzione",
+  listeningStopped: "Fermato",
+  listeningUnavailable: "Audio non disponibile. Puoi leggere la trascrizione.",
+
   authShowPassword: "Mostra password",
   authHidePassword: "Nascondi password",
   ep1PraiseIndependent: "Ti sei presentato senza il modello. Bravo!",

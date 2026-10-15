@@ -6,6 +6,7 @@
  * not a browser E2E test and not a proof of transaction atomicity.
  */
 import assert from 'node:assert/strict'
+import { captureLearnerAccess } from './localLease.js'
 import { activateLocalAccount, browserDataIsolationKeys } from './browserDataIsolation.js'
 
 class MemoryStorage {
@@ -25,6 +26,7 @@ const saveProfile = profile => shared.setItem(profileKey, JSON.stringify(profile
 assert.equal(activateLocalAccount(shared, 'A').claimedGuestData, true)
 saveProfile({ user: 'A', revision: 1 })
 const staleA = structuredClone(readProfile())
+const staleAccess = captureLearnerAccess(shared)
 assert.equal(activateLocalAccount(shared, 'B').switched, true)
 saveProfile({ user: 'B', revision: 1 })
 assert.equal(activateLocalAccount(shared, 'A').switched, true)
@@ -33,7 +35,9 @@ const before = shared.getItem(profileKey)
 assert.equal(shared.getItem(browserDataIsolationKeys.OWNER_KEY), 'A')
 
 // An owner-only guard accepts a stale A snapshot after A→B→A.
-if (shared.getItem(browserDataIsolationKeys.OWNER_KEY) === staleA.user) {
+if (process.argv.includes('--secure')) {
+  assert.equal(staleAccess.setItem(profileKey, JSON.stringify(staleA)), false)
+} else if (shared.getItem(browserDataIsolationKeys.OWNER_KEY) === staleA.user) {
   saveProfile(staleA)
 }
 const after = shared.getItem(profileKey)

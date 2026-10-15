@@ -1,3 +1,6 @@
+import { teachingHistory } from './teachingPolicy.js'
+import { bindLearnerObject, validLearnerObject } from '../../auth/localLease.js'
+import { learnerStorage as localStorage } from '../../auth/localLease.js'
 /*
  * learnerModel (v2) — what the learner can do, with safe migration from v1.
  *
@@ -36,8 +39,9 @@ const emptyActivityStat = () => ({
 export const SIGNAL_LOG_LIMIT = 160
 
 export function createLearnerModel() {
-  return {
+  const model = {
     version: MODEL_VERSION,
+    teachingHistory: [],
     canDo: {},
     languageItems: {},
     recurringErrors: [],
@@ -83,6 +87,7 @@ export function createLearnerModel() {
      */
     levelMilestones: {},
   }
+  return globalThis.localStorage?.getItem('lc2-auth-owner-id') ? bindLearnerObject(model) : model
 }
 const emptyModel = createLearnerModel
 
@@ -113,6 +118,7 @@ function carryForward(parsed, { keepPreferences, keepSignals, keepRuns }) {
       ? parsed.recentFormats.filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12) : [],
     recentInterests: keepPreferences && Array.isArray(parsed.recentInterests)
       ? parsed.recentInterests.filter(i => typeof i === 'string').slice(0, 8) : [],
+    teachingHistory: teachingHistory(parsed.teachingHistory),
     signalLog: keepSignals ? sanitizeSignalLog(parsed.signalLog) : [],
     episodeRuns: keepRuns ? sanitizeEpisodeRuns(parsed.episodeRuns) : {},
     activeRun: keepRuns ? sanitizeRun(parsed.activeRun) : null,
@@ -307,9 +313,9 @@ function migrate(parsed) {
 export function loadLearnerModel() {
   try {
     const stored = localStorage.getItem(KEY)
-    if (stored) return migrate(JSON.parse(stored))
+    if (stored) return bindLearnerObject(migrate(JSON.parse(stored)))
   } catch {}
-  return emptyModel()
+  return bindLearnerObject(emptyModel())
 }
 
 /*
@@ -348,6 +354,7 @@ function mergeActivityEvidence(model) {
 
   return {
     ...model,
+    teachingHistory: teachingHistory([...new Map([...teachingHistory(stored.teachingHistory), ...teachingHistory(model.teachingHistory)].map(x => [x.id, x])).values()].sort((a,b) => a.at-b.at)),
     activityPreferences: merged,
     // Preserve capabilities from independent snapshots without summing mastery evidence.
     // Same-id concurrent attempts need per-event provenance before safe reconciliation.
@@ -404,7 +411,11 @@ export function mergeLanguageItems(mine, theirs) {
       independentCorrect: maxNum('independentCorrect'),
       guidedCorrect: maxNum('guidedCorrect'),
       recognisedCorrect: maxNum('recognisedCorrect'),
-      streak: maxNum('streak'),
+      // A failed attempt resets the consecutive-success streak. Merging a
+      // newer failure with a stale snapshot must not resurrect the old streak.
+      // Equal timestamps are ambiguous without per-attempt ids; be conservative.
+      streak: fresher ? Math.max(0, Number(fresher.streak) || 0)
+        : Math.min(Math.max(0, Number(x.streak) || 0), Math.max(0, Number(y.streak) || 0)),
       nextReviewAt,
       lastSeenAt: latestSeen,
     }
@@ -425,7 +436,14 @@ export function mergeEpisodeRuns(mine, theirs) {
     const byId = new Map()
     for (const run of [...(b[episodeId] || []), ...(a[episodeId] || [])]) {
       const prev = byId.get(run.runId)
-      byId.set(run.runId, prev ? { ...prev, ...run, completedAt: run.completedAt || prev.completedAt, rewarded: prev.rewarded || run.rewarded } : run)
+      // A finished run is authoritative for its evidence. An older in-progress
+      // snapshot may not erase its independent production, assistance or formats.
+      const authoritative = prev?.completedAt && !run.completedAt ? prev : run
+      byId.set(run.runId, prev ? {
+        ...prev, ...run, ...authoritative,
+        completedAt: run.completedAt || prev.completedAt,
+        rewarded: prev.rewarded || run.rewarded,
+      } : run)
     }
     out[episodeId] = [...byId.values()].slice(-RUNS_PER_EPISODE)
   }
@@ -470,6 +488,8 @@ export function mergeEpisodeState(mine, theirs) {
 }
 
 export function saveLearnerModel(model) {
+  if (!validLearnerObject(model)) return model
+  bindLearnerObject(model)
   const merged = mergeActivityEvidence(model)
   // keep the caller's own object in step with what was written
   model.activityPreferences = merged.activityPreferences

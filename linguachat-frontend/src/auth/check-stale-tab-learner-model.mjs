@@ -26,9 +26,9 @@ a.signalLog = ['account-A-event']
 assert.equal(activateLocalAccount(localStorage, 'A').claimedGuestData, true)
 saveLearnerModel(a)
 
+assert.equal(activateLocalAccount(localStorage, 'B').switched, true)
 const b = createLearnerModel()
 b.signalLog = ['account-B-event']
-assert.equal(activateLocalAccount(localStorage, 'B').switched, true)
 saveLearnerModel(b)
 const before = localStorage.getItem(modelKey)
 assert.deepEqual(loadLearnerModel().signalLog, ['account-B-event'])

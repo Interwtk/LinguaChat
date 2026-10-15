@@ -1,3 +1,4 @@
+import { GENERATION_KEY, bindLocalLease, validLocalLease } from './localLease.js'
 const OWNER_KEY = 'lc2-auth-owner-id'
 const CACHE_PREFIX = 'lc2-account-cache:'
 const ACTIVE_PREFIX = 'lc2-'
@@ -14,7 +15,7 @@ function activeKeys(storage) {
   for (let i = 0; i < storage.length; i += 1) {
     const key = storage.key(i)
     if (!key?.startsWith(ACTIVE_PREFIX)) continue
-    if (key === OWNER_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
+    if (key === OWNER_KEY || key === GENERATION_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
     keys.push(key)
   }
   return keys
@@ -38,7 +39,7 @@ function clearActive(storage) {
 function restoreSnapshot(storage, snapshot) {
   if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return
   for (const [key, value] of Object.entries(snapshot)) {
-    if (!key.startsWith(ACTIVE_PREFIX) || key === OWNER_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
+    if (!key.startsWith(ACTIVE_PREFIX) || key === OWNER_KEY || key === GENERATION_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
     if (typeof value === 'string') storage.setItem(key, value)
   }
 }
@@ -76,7 +77,7 @@ function restoreActive(storage, userId) {
   try { snapshot = JSON.parse(raw) } catch { return false }
   if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return false
   if (Object.entries(snapshot).some(([key, value]) =>
-    !key.startsWith(ACTIVE_PREFIX) || key === OWNER_KEY || key === LEGACY_AUTH_KEY
+    !key.startsWith(ACTIVE_PREFIX) || key === OWNER_KEY || key === GENERATION_KEY || key === LEGACY_AUTH_KEY
     || key.startsWith(CACHE_PREFIX) || typeof value !== 'string'
   )) return false
 
@@ -100,7 +101,7 @@ function restoreActive(storage, userId) {
  * the previous account and restores only the next account's browser snapshot.
  * Provider/session tokens are untouched because they do not use the lc2- prefix.
  */
-export function activateLocalAccount(storage, userId) {
+function activateAccount(storage, userId) {
   const next = normalizeUserId(userId)
   const current = storage.getItem(OWNER_KEY)
   // Persisted owner IDs are untrusted; reject malformed/noncanonical encoding.
@@ -163,3 +164,21 @@ export function activateLocalAccount(storage, userId) {
 }
 
 export const browserDataIsolationKeys = Object.freeze({ OWNER_KEY, CACHE_PREFIX })
+
+// Rotate before touching active data. A failed switch never revalidates old tabs.
+export function activateLocalAccount(storage, userId) {
+  const next = normalizeUserId(userId)
+  try {
+    const owner = storage.getItem(OWNER_KEY)
+    if (owner && normalizeUserId(decodeURIComponent(owner)) !== owner) return { blocked: true, switched: false, claimedGuestData: false }
+    if (storage.getItem(OWNER_KEY) !== next || !storage.getItem(GENERATION_KEY)) {
+      const generation = globalThis.crypto?.randomUUID?.() || `${Date.now()}:${Math.random()}`
+      storage.setItem(GENERATION_KEY, generation)
+      if (storage.getItem(GENERATION_KEY) !== generation) throw new Error('Generation unavailable')
+    }
+    const wasValid = validLocalLease(storage)
+    const result = activateAccount(storage, userId)
+    if (!result.blocked) bindLocalLease(storage)
+    return !result.blocked && owner === next && !wasValid ? { ...result, reloadRequired: true } : result
+  } catch { return { switched: false, claimedGuestData: false, blocked: true } }
+}
