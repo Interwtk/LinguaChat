@@ -200,6 +200,7 @@ export function AppProvider({ children }) {
   // The flag is reset only when the learner explicitly starts another Auth operation or
   // when a provider session is safely activated.
   const authIsolationBlockedRef = useRef(false)
+  const accountBoundRef = useRef(false)
   const [authProviderError, setAuthProviderError] = useState('')
 
   const getAuthService = useCallback(() => {
@@ -231,7 +232,7 @@ export function AppProvider({ children }) {
 
     if (event === 'PASSWORD_RECOVERY') rememberVerifiedRecovery(session.user.id)
 
-    const isolation = activateLocalAccount(globalThis.localStorage, session.user.id)
+    const isolation = activateLocalAccount(globalThis.localStorage, session.user.id, { deferRebind: accountBoundRef.current })
     if (isolation.blocked) {
       clearAuthCallback()
       authIsolationBlockedRef.current = true
@@ -243,6 +244,7 @@ export function AppProvider({ children }) {
       getAuthService().signOut().catch(() => {})
       return
     }
+    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     if (isolation.switched || isolation.reloadRequired) {
@@ -495,6 +497,7 @@ export function AppProvider({ children }) {
   const login = useCallback(async (email, password) => {
     authCallbackErrorRef.current = null
     clearVerifiedRecovery()
+    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     // The provider's onAuthStateChange listener is the single session authority.
@@ -506,6 +509,7 @@ export function AppProvider({ children }) {
   const signup = useCallback(async (name, email, password) => {
     authCallbackErrorRef.current = null
     clearVerifiedRecovery()
+    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     // Do not mutate profile/session state from the promise result. If signup
@@ -523,6 +527,7 @@ export function AppProvider({ children }) {
   const requestPasswordReset = useCallback(async (email) => {
     authCallbackErrorRef.current = null
     clearVerifiedRecovery()
+    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     return getAuthService().requestPasswordReset(email)
@@ -530,12 +535,14 @@ export function AppProvider({ children }) {
 
   const resendConfirmation = useCallback(async (email) => {
     clearVerifiedRecovery()
+    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     return getAuthService().resendConfirmation(email)
   }, [getAuthService])
 
   const changePassword = useCallback(async (password) => {
+    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
     const user = await getAuthService().changePassword(password)

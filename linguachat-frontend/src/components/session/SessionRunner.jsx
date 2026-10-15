@@ -20,7 +20,7 @@ import { selectRepresentativeFormat } from '../../learning/engine/formatChoice.j
 import { evaluateLearningResponse } from '../../services/api'
 import { currentBlock, sessionProgress, dayKeyFor } from '../../learning/engine/session.js'
 import {
-  loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, markRecurringError, recordActivitySignalOnce,
+  loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, recordDelayedRetrievalEvidence, markRecurringError, recordActivitySignalOnce,
 } from '../../learning/engine/learnerModel.js'
 import { selectCompatibleContext, asSubjectValue, thingById } from '../../learning/engine/semanticContext.js'
 import { factsOfType } from '../../learning/engine/learnerFacts.js'
@@ -707,7 +707,7 @@ function PracticeTurn({ block, topic = null, sessionId = null, listeningBaseline
       id: `${eventId}:first-attempt`, capability: kind, format, session: sessionId || eventId,
       context: topic?.interestId || 'neutral', at: Date.now(),
       success: result.targetEvidence === false ? null : Boolean(result.completedObjective),
-      independent, assisted, instruction, channel, retried: Boolean(retry), listening: listeningEnabled ? audio : null,
+      independent, assisted, instruction, channel, retried: Boolean(retry), listening: listeningEnabled && !audioRef.current.unavailable ? { ...audio, firstListenSuccess: audio.independent && Boolean(result.completedObjective) && result.targetEvidence !== false } : null,
     })
     saveLearnerModel(modelRef.current)
     if (result.completedObjective) {
@@ -726,6 +726,7 @@ function PracticeTurn({ block, topic = null, sessionId = null, listeningBaseline
        * moves outside an episode and a consolidated skill still looks untouched.
        */
       const canDoId = block.payload?.canDoId
+      if (canDoId && independent) recordDelayedRetrievalEvidence(modelRef.current, [canDoId], { independent, sessionId })
       if (canDoId) recordCanDoAttempt(modelRef.current, canDoId, { success: true, independent, context: `session:${block.type}`, sessionId })
       saveLearnerModel(modelRef.current)
       if (retry) mark('retried')

@@ -1,4 +1,4 @@
-import { GENERATION_KEY, bindLocalLease, validLocalLease } from './localLease.js'
+import { GENERATION_KEY, bindLocalLease, validLocalLease, prepareLearnerNamespace, currentLease, NAMESPACE_PREFIX, HEAD_PREFIX } from './localLease.js'
 const OWNER_KEY = 'lc2-auth-owner-id'
 const CACHE_PREFIX = 'lc2-account-cache:'
 const ACTIVE_PREFIX = 'lc2-'
@@ -15,7 +15,7 @@ function activeKeys(storage) {
   for (let i = 0; i < storage.length; i += 1) {
     const key = storage.key(i)
     if (!key?.startsWith(ACTIVE_PREFIX)) continue
-    if (key === OWNER_KEY || key === GENERATION_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
+    if (key.startsWith(NAMESPACE_PREFIX) || key.startsWith(HEAD_PREFIX) || key === OWNER_KEY || key === GENERATION_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
     keys.push(key)
   }
   return keys
@@ -39,7 +39,7 @@ function clearActive(storage) {
 function restoreSnapshot(storage, snapshot) {
   if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return
   for (const [key, value] of Object.entries(snapshot)) {
-    if (!key.startsWith(ACTIVE_PREFIX) || key === OWNER_KEY || key === GENERATION_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
+    if (!key.startsWith(ACTIVE_PREFIX) || key.startsWith(NAMESPACE_PREFIX) || key.startsWith(HEAD_PREFIX) || key === OWNER_KEY || key === GENERATION_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
     if (typeof value === 'string') storage.setItem(key, value)
   }
 }
@@ -77,7 +77,7 @@ function restoreActive(storage, userId) {
   try { snapshot = JSON.parse(raw) } catch { return false }
   if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return false
   if (Object.entries(snapshot).some(([key, value]) =>
-    !key.startsWith(ACTIVE_PREFIX) || key === OWNER_KEY || key === GENERATION_KEY || key === LEGACY_AUTH_KEY
+    !key.startsWith(ACTIVE_PREFIX) || key.startsWith(NAMESPACE_PREFIX) || key.startsWith(HEAD_PREFIX) || key === OWNER_KEY || key === GENERATION_KEY || key === LEGACY_AUTH_KEY
     || key.startsWith(CACHE_PREFIX) || typeof value !== 'string'
   )) return false
 
@@ -166,7 +166,7 @@ function activateAccount(storage, userId) {
 export const browserDataIsolationKeys = Object.freeze({ OWNER_KEY, CACHE_PREFIX })
 
 // Rotate before touching active data. A failed switch never revalidates old tabs.
-export function activateLocalAccount(storage, userId) {
+export function activateLocalAccount(storage, userId, { deferRebind = false } = {}) {
   const next = normalizeUserId(userId)
   try {
     const owner = storage.getItem(OWNER_KEY)
@@ -176,9 +176,15 @@ export function activateLocalAccount(storage, userId) {
       storage.setItem(GENERATION_KEY, generation)
       if (storage.getItem(GENERATION_KEY) !== generation) throw new Error('Generation unavailable')
     }
+    const expectedLease = JSON.stringify([next, storage.getItem(GENERATION_KEY)])
     const wasValid = validLocalLease(storage)
     const result = activateAccount(storage, userId)
-    if (!result.blocked) bindLocalLease(storage)
+    if (!result.blocked) {
+      if (currentLease(storage) !== expectedLease) throw new Error('Activation superseded')
+      prepareLearnerNamespace(storage, expectedLease)
+      if (deferRebind && !wasValid) return { ...result, reloadRequired: true }
+      bindLocalLease(storage, expectedLease)
+    }
     return !result.blocked && owner === next && !wasValid ? { ...result, reloadRequired: true } : result
   } catch { return { switched: false, claimedGuestData: false, blocked: true } }
 }
