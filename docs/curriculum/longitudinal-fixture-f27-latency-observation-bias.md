@@ -1,0 +1,40 @@
+# F27 — Response latency is optional, noisy evidence, never a learner label or mastery shortcut
+
+**Status:** design-only curricular acceptance fixture; **UNSUPPORTED** until executed against a named engine HEAD. This is neither a reproduced defect nor evidence that an adaptive method improves retention. Pre-A1 is frozen; A1–C2 remain unavailable.
+
+**Contract:** `docs/curriculum/longitudinal-instructional-adaptation.md`. F21 isolates clustered independent probes; F24 addresses policy-selection bias; F26 addresses *elapsed time before delayed retrieval*. F27 instead tests **response latency within an attempt**: a slow, fast or unmeasured response can reflect device performance, accessibility, task length, interruptions or assistance rather than durable language learning.
+
+## Controlled setup
+
+Select a versioned CEFR can-do with an existing supported independent assessment. Fix the objective, rubric, difficulty band, independent-evidence gate, task semantics, candidate instructional options and seed. Do not create universal speed thresholds. Run a deterministic balanced-policy baseline and the proposed adaptive policy on comparable eligible tasks, with equivalent delayed independent and unseen-context probes.
+
+Use an append-only ledger with stable learner/objective/version, event/run IDs, task and context family, supported modality, prompt exposure, first input, first submission, retries, hint/scaffold/model exposure, answer quality, error type, device/connection state when actually recorded, focus/background interruptions when observable, accessibility accommodations when voluntarily available and appropriate, response-clock source, latency observability, independent delayed outcome, unseen transfer, assignment/offer/completion and policy version/seed. **Do not collect sensitive accessibility diagnoses for this fixture.** Store only necessary operational flags and use synthetic data. Distinguish server round-trip time, audio playback time, user-visible prompt duration, active response time and total wall time. Mark missing or unreliable fields UNKNOWN; do not estimate invented milliseconds.
+
+## Synthetic histories
+
+- **A — Device and network confound.** Two learners provide equally strong independent answers and comparable later retrieval. One uses a slow device/connection and has inflated wall time from network delay; the other has fast delivery. An adaptive preference or lower mastery judgment must not be attributed to the slower learner solely from wall time.
+- **B — Accessibility and modality confound.** A learner using a supported input accommodation takes longer to compose a high-quality independent response than on a shorter recognition task. Compare like-for-like demands and preserve the shared CEFR rubric. No fixed speed penalty or permanent learner-type inference is allowed; an unsupported modality remains explicitly unsupported.
+- **C — Interrupted and asynchronous response.** The app is backgrounded or an activity remains open overnight before a correct first submission. Active response time is unavailable or interrupted. The system must mark latency UNKNOWN/CONFOUNDED rather than interpret long wall time as hesitation, failure or need for simpler work.
+- **D — Assistance creates apparent speed.** After a model answer or hint is displayed, a learner submits a rapid correct response. Another learner independently produces a slower but correct response. The fast assisted result cannot outrank independent production or count as independent mastery, transfer or delayed retrieval.
+- **E — Contradictory speed and durable learning.** A learner answers recognition questions quickly and correctly but fails later unaided production and unseen transfer; after a different explanation/scaffold sequence, immediate answers are slower but delayed independent transfer improves. The policy should prioritize the latter outcomes, revise its hypothesis with uncertainty and keep exploring suitable alternatives.
+- **F — Missing-not-at-random latency.** Speech tasks, offline sessions and accessibility-supported activities often lack trustworthy timing, while online multiple-choice tasks have abundant latency data. The policy must report timing availability by option/modality/context and not select the best-measured format as though missing latency proved poor learning.
+
+## Acceptance assertions
+
+1. **Measurement provenance.** For each attempt, report whether latency is OBSERVED, MISSING, INTERRUPTED or UNRELIABLE, and what clock/interval it measures. Never derive response speed from an untrusted server receipt timestamp, offline replay, prompt-load time or a changed timezone.
+2. **No universal speed gate.** Identical independent language evidence and CEFR requirements yield the same mastery decision despite device/network delays, accommodations or absent latency. Speed alone cannot pass/fail a can-do or permanently classify a learner.
+3. **First-attempt integrity.** Distinguish pre-hint independent production from post-hint copying, retries and model exposure. Rapid assisted correctness cannot replace independent first-attempt, delayed retrieval or unseen transfer evidence.
+4. **Outcome priority.** In E, contradictory later independent evidence can reverse an earlier provisional teaching choice even if immediate response times favor the original method. Preserve uncertainty and balanced exploration rather than maximizing speed.
+5. **Missingness-aware comparisons.** Report assigned/offered/completed tasks and observed/reliable latency counts by instructional option, modality, context and supported access mode. Do not impute unobserved timing as zero, slow, or unsuccessful; do not compare unlike tasks as if timing were exchangeable.
+6. **Accessibility and modality safety.** Supported accommodations may alter interaction time without reducing linguistic requirements. Unavailable listening/speaking modalities cannot be marked complete; avoid collecting diagnoses or using accommodation status as a mastery shortcut.
+7. **Interest separation.** A learner's engagement with a familiar topic can affect response time but cannot prove an instructional method superior. Keep adjacent, neutral and unfamiliar contexts eligible and preserve matched assessment difficulty.
+8. **Reproducibility.** Given the same accepted event ledger, fixed clock, objective, policy version, eligible candidate set and seed, the policy emits identical evidence classifications, reason codes, uncertainty and review obligations. Replays and transport reordering do not change accepted first attempts.
+9. **Safe fallback.** With unreliable or incomparable timing, ignore the latency signal and use trustworthy independent outcomes and the balanced curriculum. Do not fabricate a learner preference, claim causal superiority or relax CEFR evidence standards.
+
+## Required evidence and release gate
+
+For A–F publish the exact tested HEAD, executable test command, synthetic ledger, policy version/seed, task difficulty and context controls, latency source and reliability classifications, first-attempt/assistance provenance, per-option timing missingness, delayed independent and unseen transfer outcomes, decisions, uncertainty, and PASS/FAIL/UNSUPPORTED per assertion. Include matched comparisons that hold CEFR demands fixed, plus device/network and interruption perturbations. An offline deterministic PASS establishes contract behavior only.
+
+A claim that personalization improves **durable independent learning** still requires a separately reviewed longitudinal learner evaluation with comparable follow-up opportunity, actual delay, unseen-context transfer, balanced skill coverage and calibrated uncertainty. Do not claim that adaptive scaffolding, fast answers or this document completes the tutor vision.
+
+**Boundary:** curriculum acceptance documentation only. No engine, Auth, cloud, infrastructure, production, Supabase, paid Claude, EvoLabs or auto-merge changes. Integration/watchdog is the sole owner-action aggregator.
