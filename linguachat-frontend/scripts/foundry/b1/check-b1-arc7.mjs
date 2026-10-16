@@ -22,7 +22,7 @@ import {
 import { B1_REQUIRED_CAN_DOS, B1_SHOULD_CAN_DOS, b1Episodes } from '../../../src/learning/levels/b1/b1Map.js'
 import { evaluateB1Free } from '../../../src/learning/levels/b1/evaluators.js'
 import { B1_ARC_SEVEN_COPY as B1_ARC7_COPY } from '../../../src/learning/levels/b1/i18nDraft.js'
-import { createLearnerModel } from '../../../src/learning/engine/learnerModel.js'
+import { createLearnerModel, recordCanDoAttempt } from '../../../src/learning/engine/learnerModel.js'
 import { playEpisode, answerFor, STRONG } from './lib/journey.mjs'
 
 const BLUEPRINT = JSON.parse(readFileSync(new URL('../../../../docs/curriculum/blueprints/b1.json', import.meta.url), 'utf8'))
@@ -70,11 +70,39 @@ const REQUIRED_CANDO_MATCHERS = {
   sustain_topic_change: s => s.evalKind === 'change_topic',
   ask_follow_up_questions: s => s.evalKind === 'ask_follow_up',
 }
+const PRIOR_EVIDENCE_MATCHERS = {
+  ...REQUIRED_CANDO_MATCHERS,
+  // Arc 1's final unaided narration step proves BOTH narration can-dos with
+  // narrativeForm=sequence_with_interruption; count that combined evidence
+  // for the earlier-evidence side without weakening Arc 7's exact prompts.
+  narrate_connected_event: s => s.evalKind === 'narrate_past_event' && ['sequence', 'sequence_with_interruption'].includes(s.narrativeForm),
+  narrate_interrupted_action: s => s.evalKind === 'narrate_past_event' && ['interruption', 'sequence_with_interruption'].includes(s.narrativeForm),
+}
 const ALL_STEPS = B1_ARC7.flatMap(ep => ep.steps)
 {
   assert.deepEqual(new Set(Object.keys(REQUIRED_CANDO_MATCHERS)), new Set(B1_REQUIRED_CAN_DOS), 'every required B1 capability must have a matcher, and vice versa')
   for (const [canDoId, matches] of Object.entries(REQUIRED_CANDO_MATCHERS)) {
     assert.ok(ALL_STEPS.some(matches), `the_long_conversation must exercise required capability ${canDoId}`)
+  }
+  ok()
+}
+
+/* ---- 2b) delayed retrieval is longitudinal, not merely independent Arc 7 work ---- */
+{
+  const earlierEpisodes = b1Episodes().filter(ep => ep.arc !== B1_ARC7_ID)
+  for (const [canDoId, matches] of Object.entries(REQUIRED_CANDO_MATCHERS)) {
+    const priorMatches = PRIOR_EVIDENCE_MATCHERS[canDoId]
+    const earlierUnaided = earlierEpisodes.flatMap(ep => ep.steps || []).some(step => priorMatches(step) && !step.suggestionEn)
+    assert.ok(earlierUnaided, `${canDoId} must have unaided evidence in arcs 1-6 before Arc 7 retrieval`)
+
+    const retrievalSteps = ALL_STEPS.filter(matches)
+    assert.ok(retrievalSteps.length > 0, `${canDoId} must be retrieved in Arc 7`)
+    for (const step of retrievalSteps) {
+      assert.equal(step.canDoId, canDoId, `${canDoId} retrieval step must identify the capability explicitly`)
+      assert.equal(step.evidenceType, 'delayedRetrieval', `${canDoId} Arc 7 evidence must be tagged delayedRetrieval`)
+      assert.deepEqual(step.delayedRetrievalChecks, [canDoId], `${canDoId} must be recorded by the live delayed-retrieval completion path`)
+      assert.equal(step.suggestionEn, undefined, `${canDoId} delayed retrieval must remain unaided`)
+    }
   }
   ok()
 }
@@ -149,8 +177,63 @@ function freshModel() { return createLearnerModel() }
 {
   const model = freshModel()
   const trace = []
-  playEpisode(model, 'the_long_conversation_begins', { profile: STRONG, atMs: START, trace })
-  playEpisode(model, 'the_long_conversation_continues', { profile: STRONG, atMs: START + DAY, trace })
+
+  // Build the SAME learner's earlier evidence first. Playing the actual Arc 1-6
+  // episodes exercises their evaluators; the explicit can-do record mirrors the
+  // product shell's finish() bookkeeping for those completed episodes.
+  const earlierEpisodes = b1Episodes().filter(ep => ep.arc !== B1_ARC7_ID)
+  for (const [index, ep] of earlierEpisodes.entries()) {
+    const atMs = START + (index * DAY)
+    const run = playEpisode(model, ep.id, { profile: STRONG, atMs })
+    recordCanDoAttempt(model, ep.canDoId, {
+      success: true,
+      independent: run.independentEvidence,
+      context: ep.id,
+      atMs, sessionId: `journey:${Math.floor(atMs / DAY)}`,
+    })
+  }
+
+  const arc7Start = START + ((earlierEpisodes.length + 7) * DAY)
+  const priorEvidence = {}
+  for (const canDoId of B1_REQUIRED_CAN_DOS) {
+    const entry = model.canDo?.[canDoId]
+    assert.ok(entry, `${canDoId}: prior Arc 1-6 run must create can-do evidence on this learner`)
+    assert.ok(entry.attempts > 0, `${canDoId}: prior evidence must include a real attempt`)
+    assert.ok(entry.successes > 0, `${canDoId}: prior evidence must include a successful use`)
+    assert.ok(entry.independentSuccesses > 0, `${canDoId}: prior evidence must include unaided success`)
+    assert.ok(Number.isFinite(Date.parse(entry.lastPracticedAt)), `${canDoId}: prior evidence needs a valid practice timestamp`)
+    assert.ok(Date.parse(entry.lastPracticedAt) < arc7Start, `${canDoId}: prior evidence must predate Arc 7`)
+    assert.equal((entry.delayedRetrievalAt || []).length, 0, `${canDoId}: delayed retrieval must not exist before Arc 7`)
+    priorEvidence[canDoId] = {
+      attempts: entry.attempts,
+      successes: entry.successes,
+      independentSuccesses: entry.independentSuccesses,
+      lastPracticedAt: entry.lastPracticedAt,
+    }
+  }
+
+  const completionCounts = {}
+  for (const [index, ep] of B1_ARC7.entries()) {
+    const atMs = arc7Start + index * DAY
+    const run = playEpisode(model, ep.id, { profile: STRONG, atMs, trace })
+    // Mirror EpisodeShell.finish() for the capstone too: primary can-do practice
+    // legitimately increments counters, but must preserve step retrieval stamps.
+    recordCanDoAttempt(model, ep.canDoId, {
+      success: true, independent: run.independentEvidence, context: ep.id, atMs, sessionId: `journey:${Math.floor(atMs / DAY)}`,
+    })
+    completionCounts[ep.canDoId] = (completionCounts[ep.canDoId] || 0) + 1
+  }
+  for (const canDoId of B1_REQUIRED_CAN_DOS) {
+    const entry = model.canDo?.[canDoId]
+    const stamps = entry?.delayedRetrievalAt || []
+    assert.ok(stamps.length >= 1, `${canDoId}: live journey path must record delayedRetrievalAt`)
+    assert.ok(stamps.every(value => Number.isFinite(Date.parse(value))), `${canDoId}: delayed retrieval timestamps must be valid ISO dates`)
+    assert.ok(stamps.every(value => Date.parse(value) >= arc7Start), `${canDoId}: retrieval evidence must be recorded in the later Arc 7 session`)
+    assert.ok(stamps.every(value => Date.parse(value) > Date.parse(priorEvidence[canDoId].lastPracticedAt)), `${canDoId}: retrieval must occur after the learner's prior evidence`)
+    assert.equal(entry.attempts, priorEvidence[canDoId].attempts + (completionCounts[canDoId] || 0), `${canDoId}: delayed retrieval bookkeeping must not fabricate attempts`)
+    assert.equal(entry.successes, priorEvidence[canDoId].successes + (completionCounts[canDoId] || 0), `${canDoId}: delayed retrieval bookkeeping must not fabricate successes`)
+    assert.equal(entry.independentSuccesses, priorEvidence[canDoId].independentSuccesses + (completionCounts[canDoId] || 0), `${canDoId}: delayed retrieval bookkeeping must not inflate independent mastery`)
+  }
   for (const r of trace) {
     // b1.json arc 7 autonomyTarget: "unaided throughout" — every free_reply
     // step here has no suggestionEn at all, so a strong learner's whole
@@ -162,6 +245,25 @@ function freshModel() { return createLearnerModel() }
     assert.ok(r.objectives.length >= 6, `${r.episodeId}: expected at least 6 distinct objectives exercised, got ${r.objectives.length}`)
   }
   console.log('  delayed retrieval: PROVEN — every required B1 capability replayed and passed, unaided, inside one held conversation nobody scripted turn-by-turn.')
+  ok()
+}
+
+/* Real episode journeys must refuse same-session and assisted retrieval. */
+for (const assisted of [false, true]) {
+  const model = freshModel()
+  for (const ep of b1Episodes().filter(ep => ep.arc !== B1_ARC7_ID)) {
+    const run = playEpisode(model, ep.id, { profile: STRONG, atMs: START })
+    recordCanDoAttempt(model, ep.canDoId, {
+      success: true, independent: run.independentEvidence, context: ep.id,
+      atMs: START, sessionId: `journey:${Math.floor(START / DAY)}`,
+    })
+  }
+  const profile = assisted ? { ...STRONG, retries: () => true } : STRONG
+  for (const ep of B1_ARC7) playEpisode(model, ep.id, {
+    profile, atMs: START + (assisted ? 7 * DAY : 1000),
+  })
+  for (const id of B1_REQUIRED_CAN_DOS) assert.equal(model.canDo[id]?.delayedRetrievalAt, undefined,
+    `${id}: ${assisted ? 'corrected retry' : 'same-session capstone'} cannot earn delayed retrieval`)
   ok()
 }
 
