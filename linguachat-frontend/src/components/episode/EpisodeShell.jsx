@@ -19,7 +19,7 @@ import {
 } from '../../learning/engine/learnerModel.js'
 import {
   deriveInitialScaffold, updateScaffoldAfterTurn, reviveScaffoldState,
-  evidenceKindForStep, isIndependentEvidence, showsModelAnswer, showsHintByDefault,
+  evidenceKindForStep, isIndependentEvidence, showsStepModelAnswer, showsHintByDefault,
 } from '../../learning/engine/scaffolding.js'
 import { dayKeyFor } from '../../learning/engine/session.js'
 import { seedFrom } from '../../learning/engine/variation.js'
@@ -977,7 +977,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
               </div>
             )}
 
-            {step.suggestionEn && ((showsModelAnswer(scaffold) && !unaidedAttempt) || retry) && !reviewing && (
+            {showsStepModelAnswer(step, scaffold, { unaidedAttempt, retry, reviewing }) && (
               <button type="button" onClick={() => { setReply(resolve(step.suggestionEn, vars)); setUsedSuggestion(true); signal('assistance') }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--ink)' }}>
                 {t('ep1UseSuggestion')}: <En>{resolve(step.suggestionEn, vars)}</En>
               </button>
