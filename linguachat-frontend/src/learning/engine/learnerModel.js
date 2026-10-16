@@ -533,6 +533,8 @@ export function saveLearnerModel(model) {
   model.learnerFacts = merged.learnerFacts
   model.episodes = merged.episodes
   model.languageItems = merged.languageItems
+  model.teachingHistory = merged.teachingHistory
+  model.levelMilestones = merged.levelMilestones
   return model
 }
 
