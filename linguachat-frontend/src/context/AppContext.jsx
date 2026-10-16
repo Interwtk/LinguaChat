@@ -1,4 +1,5 @@
 import { readSetupCheckpoint, SETUP_STEPS } from '../auth/setupCheckpoint.js'
+import { readVerifiedProfile } from '../auth/profileRestore.js'
 import { captureLearnerAccess, revokeLocalLease } from '../auth/localLease.js'
 import { learnerStorage as localStorage } from '../auth/localLease.js'
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
@@ -202,6 +203,7 @@ export function AppProvider({ children }) {
   // when a provider session is safely activated.
   const authIsolationBlockedRef = useRef(false)
   const accountBoundRef = useRef(false)
+  const profileRestoredRef = useRef(false)
   const [authProviderError, setAuthProviderError] = useState('')
 
   const getAuthService = useCallback(() => {
@@ -253,10 +255,21 @@ export function AppProvider({ children }) {
       return
     }
 
+    let restoredProfile = null
+    if (!profileRestoredRef.current) {
+      try { restoredProfile = readVerifiedProfile(captureLearnerAccess()) }
+      catch {
+        setAuthProviderError('storage_full')
+        setAuthStep('entry')
+        return
+      }
+      profileRestoredRef.current = true
+    }
     const user = providerUser(session.user)
     setAuthUser(user)
     setProfile(previous => ({
       ...previous,
+      ...restoredProfile,
       name: user?.name || previous.name,
       email: user?.email || previous.email,
     }))
