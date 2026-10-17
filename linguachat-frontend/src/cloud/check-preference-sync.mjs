@@ -136,3 +136,44 @@ for (const corrupt of [
   assert.equal(journal.backup.tone, 'calm')
 }
 console.log('preference sync: malformed successful CAS response fails closed PASS')
+
+// If persisting the accepted baseline fails, do not import remote values into
+// local UI state: a retry must still have a coherent first-import journal.
+{
+  const map = new Map()
+  const remote = { ...defaults, tone: 'professional', user_id: 'A', updated_at: '1' }
+  let local = { ...defaults, tone: 'calm' }, applied = 0, writes = 0, storeWrites = 0, fail = true
+  const store = {
+    getItem: key => map.get(key) ?? null,
+    setItem: (key, value) => {
+      storeWrites++
+      if (fail && storeWrites === 3) throw new Error('quota_on_base')
+      map.set(key, value)
+    },
+  }
+  const sync = createPreferenceSync({
+    transport: {
+      user: async () => ({ id: 'A' }),
+      read: async () => clone(remote),
+      compareAndSet: async () => { writes++; throw new Error('unexpected_remote_write') },
+    },
+    store,
+    readOwner: () => 'A',
+    readLocal: () => local,
+    applyLocal: value => { applied++; local = value },
+  })
+  await assert.rejects(sync.sync(), /quota_on_base/)
+  assert.equal(applied, 0, 'failed baseline persistence must not import into local state')
+  assert.equal(local.tone, 'calm')
+  const journal = JSON.parse(map.get('lc-cloud-preferences:A'))
+  assert.equal(journal.base, null)
+  assert.equal(journal.backup.tone, 'calm')
+  assert.equal(journal.conflicts.tone, 'calm')
+  fail = false
+  await sync.sync()
+  assert.equal(applied, 1)
+  assert.equal(local.tone, 'professional')
+  assert.equal(JSON.parse(map.get('lc-cloud-preferences:A')).base.tone, 'professional')
+  assert.equal(writes, 0)
+}
+console.log('preference sync: quota failure before local import and durable retry PASS')
