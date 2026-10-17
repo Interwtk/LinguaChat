@@ -87,9 +87,12 @@ export function createPreferenceSync({ transport, store, readLocal, applyLocal, 
       const imported = { ...fields(accepted) }
       for (const key of FIELDS) if (!same(latest[key], local[key])) imported[key] = latest[key]
       check(id, ticket)
-      applyLocal(copy(imported))
+      // Persist the accepted baseline before importing remote values locally.
+      // A quota failure must not change UI preferences without a durable journal.
       journal.base = fields(accepted)
       store.setItem(key, JSON.stringify(journal))
+      check(id, ticket)
+      applyLocal(copy(imported))
       if (same(imported, journal.base)) return { status: 'synced', conflicts: copy(journal.conflicts) }
     }
     throw new Error('sync_busy')
