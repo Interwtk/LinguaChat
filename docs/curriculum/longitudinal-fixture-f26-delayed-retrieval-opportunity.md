@@ -1,0 +1,40 @@
+# F26 — Delayed retrieval must reflect elapsed time, independent attempts and review opportunity
+
+**Status:** design-only curricular acceptance fixture; **UNSUPPORTED** until executed against a named engine HEAD. This document does not report a reproduced defect, a shipped capability, or improved learner retention. Pre-A1 is frozen; A1–C2 are unavailable.
+
+**Contract:** `docs/curriculum/longitudinal-instructional-adaptation.md`. F21 addresses clustered same-session probes, F24 assignment bias, and F25 protected skill coverage. F26 isolates a different risk: **a calendar-day change, missing review opportunity, offline timestamp or changed review schedule cannot by itself establish delayed independent retention**. The tutor should adapt review spacing using observed retrieval, without treating a missed opportunity as failure or an immediate repetition as durable memory.
+
+## Controlled setup
+
+Choose one existing versioned CEFR can-do and its real, supported independent assessment. Preserve the objective, difficulty, evaluator, skill-family requirements, prerequisite state and mastery gate. Declare a fixed test clock, learner-local timezone, monotonic event ordering where available, assessment availability, and policy version/seed. Use a balanced fixed-spacing baseline and an adaptive policy over the same eligible objectives and supported activities. Do **not** introduce a universal retention interval or mastery threshold.
+
+Use an append-only ledger with stable event/run IDs, learner/objective versions, session ID, learning-day ID, event occurrence time and server receipt time, timezone/clock provenance, instruction and first-attempt timestamps, intervening distinct activities, assistance/model exposure, due/assigned/offered/completed review states, reasons for missed or deferred opportunities, independent retrieval outcomes, unseen-context transfer and observation quality. Separate the *scheduled interval*, *actual elapsed interval*, *practice interference/intervening material*, and *number of independently assessed occasions*. Deduplicate retries and offline replays before estimating retention. Where trusted time or provenance is unavailable, mark the delayed classification **UNKNOWN**, not PASS.
+
+## Histories
+
+- **A — Midnight boundary illusion.** Instruction ends at 23:58 local time and an unaided response occurs at 00:02 in the same uninterrupted session, with no intervening material. It crosses a learning-day boundary but is not automatically a meaningful delayed retrieval occasion. Compare with an otherwise matched, genuinely later independent probe after intervening material.
+- **B — Missed review is not a failed review.** A review becomes due during a period when the learner does not open the app, is offline, or lacks the required accessible modality. The system logs a due-but-unoffered or offered-but-uncompleted obligation. It must not fabricate a negative retrieval outcome, nor silently erase the review debt.
+- **C — Offline replay and clock disorder.** A device uploads an old correct assisted attempt after a newer independent probe; two copies have the same event ID and device time differs from trusted receipt time. Replaying or reordering the upload must not add independent occasions, backdate evidence into a false delay, or reverse a supported result without explicit conflict handling.
+- **D — Same elapsed time, different intervening practice.** Two learners return after the same elapsed duration, but one completed varied intervening language tasks while the other immediately repeats a rehearsed item. The classification must record intervening material and task similarity; an exact or near-identical repeat cannot be labeled unseen-context transfer.
+- **E — Adaptive spacing under contradictory evidence.** Multiple trusted delayed independent probes initially support a longer review interval, then later probes show weaker retention or failed unseen transfer. The hypothesis and review plan should revise without changing the CEFR gate. A successful assisted repair cannot reset the independent retention clock or postpone an overdue probe as though mastery were proven.
+- **F — Scheduling and completion bias.** One teaching option is assigned more difficult or longer-delay reviews; another receives mostly easy short-delay probes. A third group rarely completes offered probes. Naive completed-only success rates favor the latter option. Report offered/completed/independent outcomes and actual intervals by option; without comparable opportunities, do not claim a superior teaching method.
+
+## Acceptance assertions
+
+1. **Delay has provenance.** A calendar rollover, session restart or arbitrary day count alone cannot certify delayed retention. Record actual elapsed time and intervening activity; when they are insufficient or unreliable, classify delay as **UNKNOWN/INSUFFICIENT**, not confirmed.
+2. **Independent remains independent.** Assistance, model exposure, immediate re-tries and rehearsed repetitions cannot fill a delayed-independent or unseen-transfer requirement. Preserve first-attempt and assistance provenance across rescheduling.
+3. **No invented failure from absence.** B records due, offered, attempted, completed and unavailable states distinctly. Missing retrieval outcomes are neither positive nor negative; deferred review remains visible and eligible for rescheduling.
+4. **Replay invariance.** C yields identical accepted independent-evidence counts and review obligations after idempotent replay or transport reordering. Conflicting timestamps or event IDs are quarantined or marked uncertain, not silently double counted.
+5. **Clock safety.** Clock skew, timezone change, daylight-saving transitions and untrusted offline times must not create negative intervals, false long delays or manufactured independent occasions. Prefer explicit uncertainty to fabricated timestamps.
+6. **Intervening-context integrity.** D reports task similarity, intervening practice and unseen-context status separately from elapsed time. Familiar-item recall may be valid practice, but is not automatically independent transfer.
+7. **Reversible spacing, unchanged mastery.** E may adjust review spacing and scaffold plans using comparable delayed evidence, while keeping CEFR can-do, rubric, required skill coverage and graduation standards unchanged. Assisted repair does not count as an independent success.
+8. **Opportunity-aware comparison.** F reports scheduled/offered/completed independent probes, actual delay distribution, missingness and difficulty by instructional option. Do not infer method superiority from completed-only outcomes with unequal follow-up.
+9. **Deterministic fallback.** With identical trusted ledger, clock, policy version, candidate set and seed, evidence classification and due-review state are reproducible. With incomplete timing or opportunity data, use the shared balanced curriculum and normal review policy, not a false confident personalization.
+
+## Evidence and release gate
+
+For A–F provide the exact tested HEAD, executable command, fixed clock/timezone, policy version/seed, raw synthetic event IDs and time provenance, accepted/rejected evidence, elapsed intervals, intervening activities, review assignment/offer/completion ledger, per-option delayed independent and unseen transfer outcomes, missingness, uncertainty and PASS/FAIL/UNSUPPORTED for every assertion. Tests must include offline replay, a day boundary and a clock discrepancy without relying on live learner data.
+
+A deterministic fixture PASS would establish **only contract behavior**. A claim of better durable independent learning requires a separately reviewed longitudinal learner evaluation against a balanced baseline with comparable actual follow-up intervals, protected CEFR/skill coverage, calibrated uncertainty and unseen-context transfer.
+
+**Boundary:** curriculum documentation/acceptance only. No engine, Auth, cloud, Supabase, infrastructure, production, paid Claude, EvoLabs or auto-merge changes. Integration/watchdog remains the sole owner-action aggregator.

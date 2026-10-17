@@ -1,3 +1,4 @@
+import { learnerStorage as localStorage } from '../auth/localLease.js'
 const STORAGE_KEYS = {
   sessionId: 'lc2-session-id',
   messages: 'lc2-chat-messages',

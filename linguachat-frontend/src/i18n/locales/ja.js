@@ -4,6 +4,19 @@
  * falls back to English, never to a raw key.
  */
 export default {
+  listeningAudio: "音声 · Lingua",
+  listeningPlay: "再生",
+  listeningReplay: "もう一度",
+  listeningSlow: "ゆっくり",
+  listeningStop: "停止",
+  listeningTranscript: "文字を表示",
+  listeningHide: "文字を隠す",
+  listeningPlaying: "再生中",
+  listeningStopped: "停止中",
+  listeningUnavailable: "音声を利用できません。文字を読めます。",
+
+  authShowPassword: "パスワードを表示",
+  authHidePassword: "パスワードを非表示",
   ep1PraiseIndependent: "モデルなしで自己紹介できました。すごい！",
   ep1PraiseIm: "名前の前に I’m を使えました。いいね！",
   ep1PraiseGreetAndName: "今回はあいさつと名前を両方言えました。",
@@ -532,6 +545,7 @@ export default {
   recoverySent: "リンクを送信しました",
   recoverySentText: "受信トレイを確認してください。練習履歴は安全に保存されています。",
   authGenericError: '処理を完了できませんでした。もう一度お試しください。',
+  authCallbackError: "ログインリンクが無効か期限切れです。ログインするか、新しいリンクをリクエストしてください。",
   authStorageFull: 'ブラウザの保存領域がいっぱいです。このサイトの保存領域を空けてから、もう一度ログインしてください。',
   confirmEmailTitle: 'メールアドレスを確認',
   confirmEmailText: '{email} に確認リンクを送信しました。リンクを開いてアカウントを有効化してください。',

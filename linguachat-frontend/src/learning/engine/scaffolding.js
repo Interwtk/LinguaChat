@@ -222,7 +222,12 @@ function hasOverdueReview(model, episode, atMs) {
 /* Did the learner recently lean on help, or fight the same error? */
 function recentStrain(model) {
   const runs = Object.values(model?.episodeRuns || {}).flat()
-  const recent = runs.filter(r => r?.completedAt).slice(-3)
+  // Runs are grouped by episode in storage, not by when they happened.
+  // Sort before sampling so a later struggle is never hidden by key order.
+  const recent = runs
+    .filter(r => r?.completedAt && Number.isFinite(Date.parse(r.completedAt)))
+    .sort((a, b) => Date.parse(a.completedAt) - Date.parse(b.completedAt))
+    .slice(-3)
   const assistance = recent.reduce((a, r) => a + (r.assistanceUsed || 0), 0)
   const retries = recent.reduce((a, r) => a + (r.retriedSteps || 0), 0)
   const errors = (model?.recurringErrors || []).reduce((a, e) => a + (e.count || 0), 0)
@@ -541,3 +546,11 @@ export function updateScaffoldAfterTurn(state, {
 /* What the UI should show at a given level. */
 export const showsModelAnswer = (level) => level !== 'low'
 export const showsHintByDefault = (level) => level === 'high'
+
+// Authored assisted-open turns must expose the support their evidence requires.
+export function showsStepModelAnswer(step, scaffold, { unaidedAttempt = false, retry = false, reviewing = false } = {}) {
+  return Boolean(step?.suggestionEn && !reviewing && (
+    (step.assisted === true && step.evidenceType === 'assistedOpen')
+    || (showsModelAnswer(scaffold) && !unaidedAttempt) || retry
+  ))
+}
