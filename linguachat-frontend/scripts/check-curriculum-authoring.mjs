@@ -1,3 +1,4 @@
+import './foundry/b2/check-b2-evidence-paths.mjs'
 /*
  * check-curriculum-authoring — what an episode must declare to be playable, and
  * what a level must not borrow from another one.

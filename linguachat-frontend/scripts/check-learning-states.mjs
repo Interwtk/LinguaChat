@@ -14,6 +14,7 @@
  * a cause — a field that looks functional and is read by nothing.
  */
 import assert from 'node:assert/strict'
+import { createEmptyProgress, recordPractice } from '../src/services/localProgress.js'
 import { readFileSync } from 'node:fs'
 import { ARC, getEpisode } from '../src/learning/episodes/index.js'
 import { SEED_VOCAB_BY_ID } from '../src/data/vocabulary.js'
@@ -406,6 +407,28 @@ const ok = () => { n++ }
   }
   // the episode that captures a place says so
   assert.ok(personalisesOf('where_from').includes('fact:place'))
+  ok()
+}
+
+// Instructions are not vocabulary, regardless of the UI language. Unknown
+// chat payloads must preserve the learner's existing vocabulary untouched.
+{
+  const previous = createEmptyProgress()
+  previous.learnedItems = [{ id: 'water', word: 'water', mastery: 0.45, seen: 1 }]
+  for (const instruction of ['Escribe una frase simple con I like.', 'Write a sentence about music.']) {
+    for (const fields of [{ suggestion: instruction }, { learning_action: { prompt: instruction } }]) {
+      const next = recordPractice(previous, { userMessage: 'Hello', response: { mode: 'chat', reply: 'Hello!', ...fields } })
+      assert.deepEqual(next.learnedItems, previous.learnedItems, 'instruction must not become or reinforce vocabulary')
+    }
+  }
+  for (const response of [
+    { mode: 'chat', reply: 'Try again', correction: 'I like music.' },
+    { mode: 'translation', reply: 'music (música)' },
+  ]) {
+    const next = recordPractice(previous, { userMessage: 'music', response })
+    assert.equal(next.learnedItems.length, 2, 'explicit correction/translation remains available')
+    assert.ok(next.learnedItems.some(item => item.id === 'water'), 'existing vocabulary is preserved')
+  }
   ok()
 }
 

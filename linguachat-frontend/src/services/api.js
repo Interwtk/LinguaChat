@@ -1,7 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : '/api')
 const VALID_MODES = new Set(['chat', 'translation', 'correction'])
 const CONNECTION_MESSAGE = 'Lingua tuvo un problema de conexion. Puedes seguir practicando en modo local.'
-const LOCAL_FALLBACK_MESSAGE = 'Lingua esta usando practica local mientras OpenAI no esta disponible.'
 
 /* ─── Spanish detection ─── */
 const SPANISH_WORDS = /\b(como se dice|que significa|como|quiero|viajar|hablar|necesito|puedo|tengo|hace|gracias|por favor|bueno|malo|mucho|poco|hola|adios|ayuda|dinero|trabajo|familia|comida|agua|casa|tiempo|amigo|amor|feliz|triste)\b/i
@@ -365,12 +364,13 @@ export async function sendChatMessage({
 
     const payload = await res.json().catch(() => null)
     if (!res.ok) throw new Error(payload?.reply || `Backend error ${res.status}`)
-    const isLocalFallback = res.headers.get('X-LinguaChat-Provider') === 'local'
+    const provider = res.headers.get('X-LinguaChat-Provider') || 'unknown'
 
     return {
       ...normalizeChatResponse(payload),
-      isFallback: isLocalFallback,
-      connectionMessage: isLocalFallback ? LOCAL_FALLBACK_MESSAGE : null,
+      provider,
+      isFallback: false,
+      connectionMessage: null,
     }
   } catch {
     await randomDelay(450, 850)

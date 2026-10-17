@@ -157,7 +157,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
    * nothing at all until this sprint. What must stay true is that a closed
    * activity is never independent, whatever it records against.
    */
-  assert.match(runner, /recordItemAttempt\(modelRef\.current, id, \{ correct, independent: false, evidenceKind: evidence \}\)/,
+  assert.match(runner, /recordItemAttempt\(modelRef\.current, id, \{ correct, independent: false, evidenceKind: evidence, capability: kind \}\)/,
     'a closed activity shows the answer, so it is assisted by definition')
   assert.match(runner, /const evidence = evidenceKindForStep\(/,
     'a closed activity must say what kind of evidence it produced')

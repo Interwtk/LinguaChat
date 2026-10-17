@@ -1,3 +1,4 @@
+import { learnerStorage as localStorage } from '../auth/localLease.js'
 const STORAGE_KEYS = {
   sessionId: 'lc2-session-id',
   messages: 'lc2-chat-messages',
@@ -83,12 +84,8 @@ function learnedCandidate(response) {
   if (response.mode === 'translation') {
     return { phrase: response.reply.split('(')[0].trim(), kind: 'translation', mastery: 0.45, marker: 'Aa' }
   }
-  if (response.suggestion) {
-    return { phrase: response.suggestion, kind: 'practice phrase', mastery: 0.35, marker: 'Try' }
-  }
-  if (response.learning_action?.prompt) {
-    return { phrase: response.learning_action.prompt, kind: 'mini goal', mastery: 0.3, marker: 'Go' }
-  }
+  // Suggestions and action prompts are teaching instructions, not typed
+  // vocabulary. Do not manufacture learned items from these arbitrary fields.
   return null
 }
 

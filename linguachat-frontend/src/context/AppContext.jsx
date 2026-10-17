@@ -1,5 +1,12 @@
+import { readSetupCheckpoint, SETUP_STEPS } from '../auth/setupCheckpoint.js'
+import { readVerifiedProfile } from '../auth/profileRestore.js'
+import { captureLearnerAccess, revokeLocalLease } from '../auth/localLease.js'
+import { learnerStorage as localStorage } from '../auth/localLease.js'
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { getBrowserAuthService } from '../auth/provider.js'
+import { authCallbackError } from '../auth/callbackError.js'
+import { CLOUD_PREFERENCES_RELEASED, connectPreferenceSync, schedulePreferenceSync } from '../cloud/runtime.js'
+import { toCloudPreferenceFields, fromCloudPreferenceFields } from '../services/cloudPreferenceMapping.js'
 import { activateLocalAccount } from '../auth/browserDataIsolation.js'
 import { sendChatMessage } from '../services/api'
 import {
@@ -108,6 +115,8 @@ function clearAuthCallback() {
   try {
     const url = new URL(window.location.href)
     for (const key of ['auth', 'code', 'error', 'error_code', 'error_description']) url.searchParams.delete(key)
+    const hash = new URLSearchParams(url.hash.slice(1))
+    if (hash.has('error') || hash.has('error_code')) url.hash = ''
     window.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash)
   } catch {}
 }
@@ -151,6 +160,7 @@ const createWelcomeMessage = (language) => ({
 })
 
 export function AppProvider({ children }) {
+  const authCallbackErrorRef = useRef(authCallbackError(window.location.href))
   // Auth/setup flow: null = main app, 'entry'/'login'/'signup'/'forgot'/'placement'/'tutor-personality'/'learning-prefs' = flow screens
   const [authStep, setAuthStep] = useState('entry')
   const [languagePreferences, setLanguagePreferences] = useState(ensureLanguagePreferences)
@@ -192,6 +202,8 @@ export function AppProvider({ children }) {
   // The flag is reset only when the learner explicitly starts another Auth operation or
   // when a provider session is safely activated.
   const authIsolationBlockedRef = useRef(false)
+  const accountBoundRef = useRef(false)
+  const profileRestoredRef = useRef(false)
   const [authProviderError, setAuthProviderError] = useState('')
 
   const getAuthService = useCallback(() => {
@@ -204,9 +216,12 @@ export function AppProvider({ children }) {
 
   const applyProviderSession = useCallback((session, event = 'SESSION') => {
     if (!session?.user) {
+      if (event === 'SIGNED_OUT') revokeLocalLease()
+      preferenceSyncRef.current?.stop()
       // Invalid/expired auth callbacks must not survive into a later normal login.
       // Otherwise a stale ?auth=reset can incorrectly reopen the reset screen.
       clearVerifiedRecovery()
+      if (authCallbackErrorRef.current) setAuthProviderError(authCallbackErrorRef.current)
       if (currentAuthAction()) clearAuthCallback()
       try {
         localStorage.removeItem('lc2-auth')
@@ -216,10 +231,11 @@ export function AppProvider({ children }) {
       setAuthStep('entry')
       return
     }
+    authCallbackErrorRef.current = null
 
     if (event === 'PASSWORD_RECOVERY') rememberVerifiedRecovery(session.user.id)
 
-    const isolation = activateLocalAccount(localStorage, session.user.id)
+    const isolation = activateLocalAccount(globalThis.localStorage, session.user.id, { deferRebind: accountBoundRef.current })
     if (isolation.blocked) {
       clearAuthCallback()
       authIsolationBlockedRef.current = true
@@ -231,17 +247,29 @@ export function AppProvider({ children }) {
       getAuthService().signOut().catch(() => {})
       return
     }
+    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
-    if (isolation.switched) {
+    if (isolation.switched || isolation.reloadRequired) {
       window.location.reload()
       return
     }
 
+    let restoredProfile = null
+    if (!profileRestoredRef.current) {
+      try { restoredProfile = readVerifiedProfile(captureLearnerAccess()) }
+      catch {
+        setAuthProviderError('storage_full')
+        setAuthStep('entry')
+        return
+      }
+      profileRestoredRef.current = true
+    }
     const user = providerUser(session.user)
     setAuthUser(user)
     setProfile(previous => ({
       ...previous,
+      ...restoredProfile,
       name: user?.name || previous.name,
       email: user?.email || previous.email,
     }))
@@ -270,18 +298,22 @@ export function AppProvider({ children }) {
     if (action === 'confirmed') clearAuthCallback()
     const onboarded = storedOnboardingComplete()
     setOnboardingCompleted(onboarded)
-    setAuthStep(onboarded ? null : 'placement')
+    const checkpoint = readSetupCheckpoint(localStorage)
+    if (!onboarded && checkpoint.result) setProfile(previous => ({ ...previous, placementResult: checkpoint.result, level: checkpoint.result.level }))
+    setAuthStep(onboarded ? null : checkpoint.step)
   }, [getAuthService])
 
   useEffect(() => {
     let alive = true
     let subscription = null
     let service
+    let authEvents = 0
 
     try {
       service = getAuthService()
       const registration = service.onAuthStateChange((event, session) => {
         if (!alive) return
+        authEvents += 1
         if (!authIsolationBlockedRef.current) setAuthProviderError('')
         applyProviderSession(session, event)
       })
@@ -292,15 +324,17 @@ export function AppProvider({ children }) {
       return () => {}
     }
 
+    const restorationRevision = authEvents
     service.getSession()
       .then((session) => {
-        if (!alive) return
+        if (!alive || authEvents !== restorationRevision) return
         if (!authIsolationBlockedRef.current) setAuthProviderError('')
         applyProviderSession(session, 'INITIAL_SESSION')
       })
       .catch((error) => {
         if (!alive) return
-        setAuthProviderError(error?.message || 'Could not restore your session.')
+        setAuthProviderError(authCallbackErrorRef.current || error?.message || 'Could not restore your session.')
+        if (authCallbackErrorRef.current) clearAuthCallback()
         setAuthStep('entry')
       })
 
@@ -309,6 +343,11 @@ export function AppProvider({ children }) {
       subscription?.unsubscribe?.()
     }
   }, [getAuthService, applyProviderSession])
+  useEffect(() => {
+    if (authUser?.id && SETUP_STEPS.includes(authStep)) {
+      try { localStorage.setItem('lc2-onboarding-step', authStep) } catch {}
+    }
+  }, [authUser?.id, authStep])
   const [view, setView] = useState('today')
   const [sessionId, setSessionId] = useState(getOrCreateSessionId)
   const [messages, setMessages] = useState(() => loadStoredMessages(createWelcomeMessage(languagePreferences.interfaceLanguage.base)))
@@ -440,7 +479,44 @@ export function AppProvider({ children }) {
     }))
   }, [])
 
+  const preferenceSnapshotRef = useRef(null)
+  preferenceSnapshotRef.current = () => {
+    let options = {}
+    try { options = JSON.parse(localStorage.getItem('lc2-cloud-preference-options') || '{}') || {} } catch {}
+    return toCloudPreferenceFields(tutorPreferences, { ...options, user_language: interfaceLanguage })
+  }
+  const preferenceSyncRef = useRef(null)
+  useEffect(() => {
+    if (!CLOUD_PREFERENCES_RELEASED || !authUser?.id || authStep !== null) return undefined
+    let cancelled = false, controller = null
+    const syncAccess = captureLearnerAccess()
+    connectPreferenceSync({
+      store: localStorage,
+      readOwner: () => {
+        if (!syncAccess.valid()) return ''
+        try { return decodeURIComponent(localStorage.getItem('lc2-auth-owner-id') || '') } catch { return '' }
+      },
+      readLocal: () => preferenceSnapshotRef.current(),
+      applyLocal: row => {
+        if (!syncAccess.valid()) throw new Error('Stale preference session')
+        localStorage.setItem('lc2-cloud-preference-options', JSON.stringify({
+          english_variant: row.english_variant, conversation_register: row.conversation_register,
+        }))
+        preferenceSnapshotRef.current = () => row
+        setTutorPreferencesState(previous => saveTutorPreferences(fromCloudPreferenceFields(row, previous)))
+        updateNativeLanguage(row.user_language)
+      },
+    }).then(sync => {
+      if (cancelled) { sync.cancel(); return }
+      controller = schedulePreferenceSync(sync, window)
+      preferenceSyncRef.current = controller
+    }).catch(() => { /* Local preferences remain usable; a later login retries initialization. */ })
+    return () => { cancelled = true; controller?.stop(); preferenceSyncRef.current = null }
+  }, [authUser?.id, authStep, updateNativeLanguage])
+  useEffect(() => { preferenceSyncRef.current?.changed() }, [tutorPreferences, interfaceLanguage])
+
   const login = useCallback(async (email, password) => {
+    authCallbackErrorRef.current = null
     clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
@@ -451,6 +527,7 @@ export function AppProvider({ children }) {
   }, [getAuthService])
 
   const signup = useCallback(async (name, email, password) => {
+    authCallbackErrorRef.current = null
     clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
@@ -467,6 +544,7 @@ export function AppProvider({ children }) {
   }, [getAuthService, interfaceLanguageInfo.base])
 
   const requestPasswordReset = useCallback(async (email) => {
+    authCallbackErrorRef.current = null
     clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
@@ -869,6 +947,7 @@ export function AppProvider({ children }) {
     }])
     setIsTyping(true)
 
+    const missionAccess = captureLearnerAccess()
     let response = null
     let evaluation = null
     try {
@@ -877,6 +956,7 @@ export function AppProvider({ children }) {
         text: m.text,
         correction: m.feedback?.correction || null,
       }))
+      const requestAccess = captureLearnerAccess()
       response = await sendChatMessage({
         message: answerText,
         level: profile.level,
@@ -899,8 +979,10 @@ export function AppProvider({ children }) {
         activeCompanion,
         missionContext: missionContextFromDetails(details),
       })
+      if (!requestAccess.valid()) return
     } catch {}
 
+    if (!missionAccess.valid()) return
     if (response?.mission_feedback) {
       evaluation = {
         passed: Boolean(response.mission_feedback.should_advance),
@@ -1044,6 +1126,7 @@ export function AppProvider({ children }) {
   }, [appendLinguaMessages])
 
   const sendMessage = useCallback(async (text) => {
+    const chatAccess = captureLearnerAccess()
     if (!text.trim()) return
 
     const missionDetails = getActiveMissionDetails(activeMission)
@@ -1077,6 +1160,7 @@ export function AppProvider({ children }) {
        * before their first message it does not, and after it, it does.
        */
       const learnerHasSpoken = messages.some(m => m.role === 'user')
+      const requestAccess = captureLearnerAccess()
       const response = await sendChatMessage({
         message: text.trim(),
         level: profile.level,
@@ -1113,6 +1197,7 @@ export function AppProvider({ children }) {
          */
         topicContext: learnerHasSpoken ? null : providerTopicContext(conversationTopic),
       })
+      if (!requestAccess.valid()) return
 
       setConnectionNotice(response.connectionMessage)
       setMemoryNotice(response.correction
@@ -1132,6 +1217,7 @@ export function AppProvider({ children }) {
         id: `l${Date.now()}`,
         role: 'lingua',
         text: response.reply,
+        audioEligible: profile.style !== 'translation',
         feedback: {
           correction:  response.correction  || null,
           why:         response.explanation || null,
@@ -1146,6 +1232,7 @@ export function AppProvider({ children }) {
       setMessages(prev => [...prev, linguaMsg])
       setSelectedMessage(linguaMsg)
     } catch {
+      if (!chatAccess.valid()) return
       setConnectionNotice('Lingua had trouble connecting. You can keep exploring the demo.')
       setMessages(prev => [...prev, {
         id: `e${Date.now()}`,
@@ -1155,7 +1242,7 @@ export function AppProvider({ children }) {
         ts: Date.now(),
       }])
     } finally {
-      setIsTyping(false)
+      if (chatAccess.valid()) setIsTyping(false)
     }
   }, [activeCompanion, activeMission, conversationTopic, interfaceLanguageInfo, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage, tutorPreferences])
 

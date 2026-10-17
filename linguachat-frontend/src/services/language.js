@@ -1,3 +1,4 @@
+import { learnerStorage as localStorage } from '../auth/localLease.js'
 import { SUPPORTED_LOCALES } from '../i18n/translations.js'
 
 const NATIVE_CODE_KEY = 'lc2-native-language-code'
