@@ -15,6 +15,9 @@ const validFields = (value, partial = false) => {
 const validJournal = (journal, id) => object(journal) && journal.version === 1 && journal.userId === id
   && (journal.base === null || validFields(journal.base))
   && validFields(journal.backup) && validFields(journal.conflicts, true)
+  && (!Object.hasOwn(journal, 'pendingImport') || journal.pendingImport === null
+    || (journal.base !== null && object(journal.pendingImport) && validFields(journal.pendingImport.before)
+      && validFields(journal.pendingImport.value)))
 
 // Three-way merge. Disjoint edits survive. For simultaneous edits of one field,
 // the already committed remote value wins, irrespective of the device clock.
@@ -58,6 +61,22 @@ export function createPreferenceSync({ transport, store, readLocal, applyLocal, 
     const initial = fields(readLocal())
     journal ||= { version: 1, userId: id, base: null, backup: initial, conflicts: {} }
     store.setItem(key, JSON.stringify(journal))
+    // Recover a staged import before old local values can be misread as new edits.
+    if (journal.pendingImport) {
+      const { before, value } = journal.pendingImport
+      const current = fields(readLocal())
+      const recovered = { ...value }
+      for (const field of FIELDS) {
+        if (!same(current[field], before[field]) && !same(current[field], value[field])) {
+          recovered[field] = current[field]
+        }
+      }
+      check(id, ticket)
+      applyLocal(copy(recovered))
+      check(id, ticket)
+      journal.pendingImport = null
+      store.setItem(key, JSON.stringify(journal))
+    }
     for (let attempt = 0; attempt < 4; attempt++) {
       check(id, ticket)
       const remote = await transport.read(id)
@@ -87,12 +106,15 @@ export function createPreferenceSync({ transport, store, readLocal, applyLocal, 
       const imported = { ...fields(accepted) }
       for (const key of FIELDS) if (!same(latest[key], local[key])) imported[key] = latest[key]
       check(id, ticket)
-      // Persist the accepted baseline before importing remote values locally.
-      // A quota failure must not change UI preferences without a durable journal.
+      // Stage accepted base and pending import before touching local preferences.
       journal.base = fields(accepted)
+      journal.pendingImport = { before: latest, value: imported }
       store.setItem(key, JSON.stringify(journal))
       check(id, ticket)
       applyLocal(copy(imported))
+      check(id, ticket)
+      journal.pendingImport = null
+      store.setItem(key, JSON.stringify(journal))
       if (same(imported, journal.base)) return { status: 'synced', conflicts: copy(journal.conflicts) }
     }
     throw new Error('sync_busy')

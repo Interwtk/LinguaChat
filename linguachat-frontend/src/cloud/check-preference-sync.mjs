@@ -177,3 +177,91 @@ console.log('preference sync: malformed successful CAS response fails closed PAS
   assert.equal(writes, 0)
 }
 console.log('preference sync: quota failure before local import and durable retry PASS')
+
+// Failed applyLocal must be recovered before a retry can write stale values.
+{
+  const map = new Map()
+  let local = { ...defaults, tone: 'calm' }
+  let remote = { ...defaults, tone: 'professional', user_id: 'A', updated_at: '1' }
+  let applied = 0, writes = 0
+  const sync = createPreferenceSync({
+    transport: {
+      user: async () => ({ id: 'A' }),
+      read: async () => clone(remote),
+      compareAndSet: async (id, revision, value) => {
+        assert.equal(id, 'A')
+        assert.equal(revision, remote.updated_at)
+        writes++
+        remote = { ...clone(value), user_id: id, updated_at: String(writes + 1) }
+        return clone(remote)
+      },
+    },
+    store: { getItem: key => map.get(key) ?? null, setItem: (key, value) => map.set(key, value) },
+    readOwner: () => 'A',
+    readLocal: () => local,
+    applyLocal: value => {
+      applied++
+      if (applied === 1) throw new Error('apply_failed')
+      local = value
+    },
+  })
+  await assert.rejects(sync.sync(), /apply_failed/)
+  assert.equal(local.tone, 'calm')
+  assert.equal(remote.tone, 'professional')
+  assert.equal(JSON.parse(map.get('lc-cloud-preferences:A')).pendingImport.value.tone, 'professional')
+  local = { ...local, pace: 'fast' }
+  await sync.sync()
+  assert.equal(local.tone, 'professional', 'failed import must not overwrite remote tone')
+  assert.equal(local.pace, 'fast', 'real local edit must survive recovery')
+  assert.equal(remote.tone, 'professional')
+  assert.equal(remote.pace, 'fast')
+  assert.equal(writes, 1, 'only the genuine local edit should be written remotely')
+  assert.equal(JSON.parse(map.get('lc-cloud-preferences:A')).pendingImport, null)
+}
+console.log('preference sync: failed applyLocal recovery does not clobber remote PASS')
+
+// Cleanup failure after a successful import must preserve later local edits.
+{
+  const map = new Map()
+  let local = { ...defaults, tone: 'calm' }
+  let remote = { ...defaults, tone: 'professional', user_id: 'A', updated_at: '1' }
+  let failCleanup = true, writes = 0
+  const store = {
+    getItem: key => map.get(key) ?? null,
+    setItem: (key, value) => {
+      const journal = JSON.parse(value)
+      if (failCleanup && journal.base?.tone === 'professional' && journal.pendingImport === null) {
+        throw new Error('cleanup_failed')
+      }
+      map.set(key, value)
+    },
+  }
+  const sync = createPreferenceSync({
+    transport: {
+      user: async () => ({ id: 'A' }),
+      read: async () => clone(remote),
+      compareAndSet: async (id, revision, value) => {
+        assert.equal(id, 'A')
+        assert.equal(revision, remote.updated_at)
+        writes++
+        remote = { ...clone(value), user_id: id, updated_at: String(writes + 1) }
+        return clone(remote)
+      },
+    },
+    store,
+    readOwner: () => 'A',
+    readLocal: () => local,
+    applyLocal: value => { local = value },
+  })
+  await assert.rejects(sync.sync(), /cleanup_failed/)
+  assert.equal(local.tone, 'professional')
+  assert.equal(JSON.parse(map.get('lc-cloud-preferences:A')).pendingImport.value.tone, 'professional')
+  local = { ...local, pace: 'fast' }
+  failCleanup = false
+  await sync.sync()
+  assert.equal(local.tone, 'professional')
+  assert.equal(remote.pace, 'fast')
+  assert.equal(writes, 1)
+  assert.equal(JSON.parse(map.get('lc-cloud-preferences:A')).pendingImport, null)
+}
+console.log('preference sync: cleanup failure recovery preserves later local edit PASS')
