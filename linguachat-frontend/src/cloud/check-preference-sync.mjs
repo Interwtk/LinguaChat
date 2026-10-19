@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict'
-import { createPreferenceSync, reconcilePreferences } from './preferenceSync.js'
+import { createPreferenceSync as createSync, reconcilePreferences } from './preferenceSync.js'
 import { toCloudPreferenceFields } from '../services/cloudPreferenceMapping.js'
 
+const createPreferenceSync = options => createSync({ captureAccess: () => ({ valid: () => true }), ...options })
+const revision = n => new Date(Date.UTC(2026, 0, 1, 0, 0, 0, Number(n))).toISOString()
 const defaults = toCloudPreferenceFields()
 const clone = x => structuredClone(x)
 {
@@ -20,7 +22,7 @@ function fixture({ remote = null, base = null } = {}) {
   const transport = {
     user: async()=>({id:owner}),
     read: async(id)=> { reads++; if(fail) throw Error('offline'); if(pause) await pause; assert.equal(id, owner); return clone(remote) },
-    compareAndSet: async(id,rev,v)=>{assert.equal(id,owner); writes++; if(collision){remote=collision;collision=null;return null} if((remote?.updated_at ?? null)!==rev)return null;remote={...clone(v),user_id:id,updated_at:String(writes)}; return clone(remote)},
+    compareAndSet: async(id,rev,v)=>{assert.equal(id,owner); writes++; if(collision){remote=collision;collision=null;return null} if((remote?.updated_at ?? null)!==rev)return null;remote={...clone(v),user_id:id,updated_at:revision(writes)}; return clone(remote)},
   }
   const sync = createPreferenceSync({transport,store,readOwner:()=>owner,readLocal:()=>local,applyLocal:v=>local=v,onStatus:s=>statuses.push(s)})
   return {sync,store,map,statuses, set owner(v){owner=v},set local(v){local=v},get local(){return local},get remote(){return remote},get writes(){return writes},get reads(){return reads},set fail(v){fail=v},set pause(v){pause=v},set collision(v){collision=v}}
@@ -32,18 +34,18 @@ function fixture({ remote = null, base = null } = {}) {
   f.fail=false;await f.sync.sync();assert.equal(f.remote.pace,'fast')
 }
 {
-  const f=fixture({remote:{...defaults,tone:'professional',user_id:'A',updated_at:'1'}});await f.sync.sync();assert.equal(f.local.tone,'professional');assert.equal(f.writes,0);assert.equal(JSON.parse(f.map.get('lc-cloud-preferences:A')).backup.tone,'calm')
+  const f=fixture({remote:{...defaults,tone:'professional',user_id:'A',updated_at:revision(1)}});await f.sync.sync();assert.equal(f.local.tone,'professional');assert.equal(f.writes,0);assert.equal(JSON.parse(f.map.get('lc-cloud-preferences:A')).backup.tone,'calm')
 }
 {
   const base={...defaults};const local={...base,pace:'fast',tone:'calm'};const remote={...base,tone:'professional'}
   const merged=reconcilePreferences(base,local,remote);assert.equal(merged.value.pace,'fast');assert.equal(merged.value.tone,'professional');assert.equal(merged.conflicts.tone,'calm')
-  const f=fixture({base,remote:{...base,user_id:'A',updated_at:'1'}});f.local=local;f.collision={...remote,user_id:'A',updated_at:'2'};await f.sync.sync();assert.equal(f.remote.pace,'fast');assert.equal(f.remote.tone,'professional');assert.equal(f.writes,2)
+  const f=fixture({base,remote:{...base,user_id:'A',updated_at:revision(1)}});f.local=local;f.collision={...remote,user_id:'A',updated_at:revision(2)};await f.sync.sync();assert.equal(f.remote.pace,'fast');assert.equal(f.remote.tone,'professional');assert.equal(f.writes,2)
 }
 {
   const f=fixture();let release;f.pause=new Promise(r=>release=r);const pending=f.sync.sync();assert.equal(f.sync.sync(),pending,'coalesce concurrent sync');await Promise.resolve();await Promise.resolve();f.owner='B';f.sync.cancel();release();await assert.rejects(pending);assert.equal(f.writes,0);assert.equal(f.local.tone,'calm');assert.equal(f.map.has('lc-cloud-preferences:B'),false)
 }
 {
-  const f=fixture({remote:{...defaults,user_id:'B',updated_at:'1'}});await assert.rejects(f.sync.sync(),/account_changed/);assert.equal(f.writes,0)
+  const f=fixture({remote:{...defaults,user_id:'B',updated_at:revision(1)}});await assert.rejects(f.sync.sync(),/account_changed/);assert.equal(f.writes,0)
 }
 {
   const f=fixture();f.store.setItem=()=>{throw Error('quota')};await assert.rejects(f.sync.sync(),/quota/);assert.equal(f.reads,0);assert.equal(f.writes,0)
@@ -66,7 +68,7 @@ function fixture({ remote = null, base = null } = {}) {
       read: async id => { reads.push(id); await paused[id]; return null },
       compareAndSet: async (id, _rev, value) => {
         writes.push(id)
-        return { ...clone(value), user_id: id, updated_at: '1' }
+        return { ...clone(value), user_id: id, updated_at: revision(1) }
       },
     },
     store: { getItem: key => map.get(key) ?? null, setItem: (key, value) => map.set(key, value) },
@@ -120,7 +122,7 @@ for (const corrupt of [
       user: async () => ({ id: 'A' }),
       read: async () => null,
       compareAndSet: async (_id, _rev, value) => ({
-        ...value, user_id: 'A', updated_at: '1', tone: 'invalid-tone',
+        ...value, user_id: 'A', updated_at: revision(1), tone: 'invalid-tone',
       }),
     },
     store: { getItem: key => map.get(key) ?? null, setItem: (key, value) => map.set(key, value) },
@@ -141,7 +143,7 @@ console.log('preference sync: malformed successful CAS response fails closed PAS
 // local UI state: a retry must still have a coherent first-import journal.
 {
   const map = new Map()
-  const remote = { ...defaults, tone: 'professional', user_id: 'A', updated_at: '1' }
+  const remote = { ...defaults, tone: 'professional', user_id: 'A', updated_at: revision(1) }
   let local = { ...defaults, tone: 'calm' }, applied = 0, writes = 0, storeWrites = 0, fail = true
   const store = {
     getItem: key => map.get(key) ?? null,
@@ -182,7 +184,7 @@ console.log('preference sync: quota failure before local import and durable retr
 {
   const map = new Map()
   let local = { ...defaults, tone: 'calm' }
-  let remote = { ...defaults, tone: 'professional', user_id: 'A', updated_at: '1' }
+  let remote = { ...defaults, tone: 'professional', user_id: 'A', updated_at: revision(1) }
   let applied = 0, writes = 0
   const sync = createPreferenceSync({
     transport: {
@@ -192,7 +194,7 @@ console.log('preference sync: quota failure before local import and durable retr
         assert.equal(id, 'A')
         assert.equal(revision, remote.updated_at)
         writes++
-        remote = { ...clone(value), user_id: id, updated_at: String(writes + 1) }
+        remote = { ...clone(value), user_id: id, updated_at: new Date(Date.UTC(2026, 0, 1, 0, 0, 0, writes + 1)).toISOString() }
         return clone(remote)
       },
     },
@@ -224,7 +226,7 @@ console.log('preference sync: failed applyLocal recovery does not clobber remote
 {
   const map = new Map()
   let local = { ...defaults, tone: 'calm' }
-  let remote = { ...defaults, tone: 'professional', user_id: 'A', updated_at: '1' }
+  let remote = { ...defaults, tone: 'professional', user_id: 'A', updated_at: revision(1) }
   let failCleanup = true, writes = 0
   const store = {
     getItem: key => map.get(key) ?? null,
@@ -244,7 +246,7 @@ console.log('preference sync: failed applyLocal recovery does not clobber remote
         assert.equal(id, 'A')
         assert.equal(revision, remote.updated_at)
         writes++
-        remote = { ...clone(value), user_id: id, updated_at: String(writes + 1) }
+        remote = { ...clone(value), user_id: id, updated_at: new Date(Date.UTC(2026, 0, 1, 0, 0, 0, writes + 1)).toISOString() }
         return clone(remote)
       },
     },
@@ -265,3 +267,5 @@ console.log('preference sync: failed applyLocal recovery does not clobber remote
   assert.equal(JSON.parse(map.get('lc-cloud-preferences:A')).pendingImport, null)
 }
 console.log('preference sync: cleanup failure recovery preserves later local edit PASS')
+
+await import('./check-preference-faults.mjs')

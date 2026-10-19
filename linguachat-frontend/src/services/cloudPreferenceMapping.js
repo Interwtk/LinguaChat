@@ -59,3 +59,13 @@ export function fromCloudPreferenceFields(row, currentLocal = {}) {
   if (Array.isArray(row.interests)) accepted.interests = normalizeInterests(row.interests)
   return { ...currentLocal, ...accepted }
 }
+
+// Validate without silently normalizing malformed input into a new preference.
+export function validCloudPreferenceFields(value, partial = false) {
+  const keys = Object.keys(toCloudPreferenceFields())
+  if (!value || typeof value !== 'object' || Array.isArray(value)
+    || Object.keys(value).some(key => !keys.includes(key))
+    || (!partial && keys.some(key => !Object.hasOwn(value, key)))) return false
+  const normalized = toCloudPreferenceFields(fromCloudPreferenceFields(value), value)
+  return Object.keys(value).every(key => JSON.stringify(value[key]) === JSON.stringify(normalized[key]))
+}

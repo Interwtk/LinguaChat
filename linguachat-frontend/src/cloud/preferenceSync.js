@@ -1,22 +1,20 @@
-import { toCloudPreferenceFields, fromCloudPreferenceFields } from '../services/cloudPreferenceMapping.js'
+import { toCloudPreferenceFields, validCloudPreferenceFields as validFields } from '../services/cloudPreferenceMapping.js'
+import { captureLearnerAccess } from '../auth/localLease.js'
+import { preferenceRevisionTime } from './preferenceTransport.js'
 
 const FIELDS = Object.keys(toCloudPreferenceFields())
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
 const copy = value => JSON.parse(JSON.stringify(value))
-const fields = row => Object.fromEntries(FIELDS.filter(key => Object.hasOwn(row || {}, key)).map(key => [key, row[key]]))
+const fields = row => Object.fromEntries(FIELDS.filter(key => Object.hasOwn(row || {}, key)).map(key => [key, Array.isArray(row[key]) ? [...row[key]] : row[key]]))
 
 const object = value => value && typeof value === 'object' && !Array.isArray(value)
-const validFields = (value, partial = false) => {
-  if (!object(value) || Object.keys(value).some(key => !FIELDS.includes(key))) return false
-  if (!partial && FIELDS.some(key => !Object.hasOwn(value, key))) return false
-  const normalized = toCloudPreferenceFields(fromCloudPreferenceFields(value), value)
-  return Object.keys(value).every(key => same(value[key], normalized[key]))
-}
 const validJournal = (journal, id) => object(journal) && journal.version === 1 && journal.userId === id
+  && Object.keys(journal).every(key => ['version', 'userId', 'base', 'backup', 'conflicts', 'pendingImport'].includes(key))
   && (journal.base === null || validFields(journal.base))
   && validFields(journal.backup) && validFields(journal.conflicts, true)
   && (!Object.hasOwn(journal, 'pendingImport') || journal.pendingImport === null
-    || (journal.base !== null && object(journal.pendingImport) && validFields(journal.pendingImport.before)
+    || (journal.base !== null && object(journal.pendingImport)
+      && Object.keys(journal.pendingImport).every(key => ['before', 'value'].includes(key)) && validFields(journal.pendingImport.before)
       && validFields(journal.pendingImport.value)))
 
 // Three-way merge. Disjoint edits survive. For simultaneous edits of one field,
@@ -43,92 +41,115 @@ export function reconcilePreferences(base, local, remote) {
 
 // A fixture-friendly coordinator; the transport alone owns verified identity.
 // It never reads/writes the learner model, messages, XP or mastery.
-export function createPreferenceSync({ transport, store, readLocal, applyLocal, readOwner, onStatus = () => {} }) {
-  let generation = 0, pending = null
-  const check = (id, ticket) => {
-    if (ticket !== generation || readOwner() !== id) throw new Error('account_changed')
-  }
-  async function run(ticket) {
+export function createPreferenceSync({ transport, store, readLocal, applyLocal, readOwner, captureAccess = captureLearnerAccess, onStatus = () => {} }) {
+  let generation = 0, pending = null, pendingCurrent = () => false
+  async function run(id, check) {
+    check()
     const user = await transport.user()
     if (!user?.id) throw new Error('signed_out')
-    const id = user.id
-    check(id, ticket)
+    check()
+    if (user.id !== id) throw new Error('account_changed')
     const key = 'lc-cloud-preferences:' + encodeURIComponent(id)
+    const persist = () => { check(); store.setItem(key, JSON.stringify(journal)); check() }
+    const localFields = () => {
+      check()
+      const value = fields(readLocal())
+      check()
+      if (!validFields(value)) throw new Error('invalid_local_preferences')
+      return value
+    }
     let journal
-    try { journal = JSON.parse(store.getItem(key) || 'null') } catch { throw new Error('invalid_sync_journal') }
+    let raw
+    check(); raw = store.getItem(key); check()
+    try { journal = raw === null ? null : JSON.parse(raw) } catch { throw new Error('invalid_sync_journal') }
     if (journal !== null && !validJournal(journal, id)) throw new Error('invalid_sync_journal')
     // Backup before any network write or local import. Quota errors fail closed.
-    const initial = fields(readLocal())
+    const initial = localFields()
     journal ||= { version: 1, userId: id, base: null, backup: initial, conflicts: {} }
-    store.setItem(key, JSON.stringify(journal))
+    persist()
     // Recover a staged import before old local values can be misread as new edits.
     if (journal.pendingImport) {
       const { before, value } = journal.pendingImport
-      const current = fields(readLocal())
+      const current = localFields()
       const recovered = { ...value }
+      const conflicts = { ...journal.conflicts }
       for (const field of FIELDS) {
         if (!same(current[field], before[field]) && !same(current[field], value[field])) {
           recovered[field] = current[field]
         }
+        // A crash after apply followed by a user reverting to `before` is
+        // indistinguishable from an unapplied import. Preserve that choice as
+        // recovery evidence; never silently discard it while replaying the WAL.
+        if (same(current[field], before[field]) && !same(current[field], value[field])) conflicts[field] = current[field]
       }
-      check(id, ticket)
+      if (!same(conflicts, journal.conflicts)) { journal.conflicts = conflicts; persist() }
+      check()
       applyLocal(copy(recovered))
-      check(id, ticket)
+      check()
       journal.pendingImport = null
-      store.setItem(key, JSON.stringify(journal))
+      persist()
     }
     for (let attempt = 0; attempt < 4; attempt++) {
-      check(id, ticket)
-      const remote = await transport.read(id)
-      check(id, ticket)
+      check()
+      const remote = await transport.read(id, check)
+      check()
       if (remote && remote.user_id !== id) throw new Error('account_changed')
       if (remote) {
-        const normalized = toCloudPreferenceFields(fromCloudPreferenceFields(remote), remote)
-        if (!same(fields(remote), normalized)) throw new Error('invalid_remote_preferences')
+        if (!validFields(fields(remote))) throw new Error('invalid_remote_preferences')
+        preferenceRevisionTime(remote.updated_at)
       }
-      const local = fields(readLocal())
+      const local = localFields()
       const merged = reconcilePreferences(journal.base, local, remote)
       if (Object.keys(merged.conflicts).length) {
         journal.conflicts = { ...journal.conflicts, ...merged.conflicts }
-        store.setItem(key, JSON.stringify(journal))
+        persist()
       }
       let accepted = remote
       if (!remote || !same(fields(remote), merged.value)) {
-        accepted = await transport.compareAndSet(id, remote?.updated_at ?? null, merged.value)
-        check(id, ticket)
+        check()
+        accepted = await transport.compareAndSet(id, remote?.updated_at ?? null, merged.value, check)
+        check()
         if (!accepted) continue // concurrent insert/update: refetch before retry
       }
       if (accepted.user_id !== id) throw new Error('account_changed')
       // Validate a successful CAS response before importing it or recording a new base.
       if (!validFields(fields(accepted))) throw new Error('invalid_remote_preferences')
+      preferenceRevisionTime(accepted.updated_at)
       // Edits made while the request was in flight win locally and remain dirty.
-      const latest = fields(readLocal())
+      const latest = localFields()
       const imported = { ...fields(accepted) }
       for (const key of FIELDS) if (!same(latest[key], local[key])) imported[key] = latest[key]
-      check(id, ticket)
+      check()
       // Stage accepted base and pending import before touching local preferences.
       journal.base = fields(accepted)
       journal.pendingImport = { before: latest, value: imported }
-      store.setItem(key, JSON.stringify(journal))
-      check(id, ticket)
+      persist()
+      check()
       applyLocal(copy(imported))
-      check(id, ticket)
+      check()
       journal.pendingImport = null
-      store.setItem(key, JSON.stringify(journal))
-      if (same(imported, journal.base)) return { status: 'synced', conflicts: copy(journal.conflicts) }
+      persist()
+      if (same(localFields(), journal.base)) return { status: 'synced', conflicts: copy(journal.conflicts) }
     }
     throw new Error('sync_busy')
   }
   return {
     sync() {
-      if (pending) return pending
+      if (pending && pendingCurrent()) return pending
+      if (pending) { generation++; pending = null }
       const ticket = generation
+      // Capture both identity and the existing local lease before the first await.
+      const id = readOwner(), access = captureAccess()
+      const current = () => ticket === generation && readOwner() === id && access.valid()
+      const check = () => { if (!current()) throw new Error('account_changed') }
+      pendingCurrent = current
       onStatus('syncing')
-      pending = run(ticket).then(result => {
-        if (ticket === generation) onStatus(result.status)
+      pending = run(id, check).then(result => {
+        check()
+        onStatus(result.status)
         return result
       }).catch(error => {
-        if (ticket === generation) onStatus('pending')
+        if (current()) onStatus('pending')
         throw error
       }).finally(() => { if (ticket === generation) pending = null })
       return pending

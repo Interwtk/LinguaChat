@@ -491,7 +491,12 @@ export function AppProvider({ children }) {
     let cancelled = false, controller = null
     const syncAccess = captureLearnerAccess()
     connectPreferenceSync({
-      store: localStorage,
+      store: {
+        getItem: key => syncAccess.getItem(key),
+        setItem: (key, value) => {
+          if (!syncAccess.setItem(key, value)) throw new Error('Stale preference session')
+        },
+      },
       readOwner: () => {
         if (!syncAccess.valid()) return ''
         try { return decodeURIComponent(localStorage.getItem('lc2-auth-owner-id') || '') } catch { return '' }
