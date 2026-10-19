@@ -11,6 +11,7 @@ Run from `linguachat-frontend`:
 node src/cloud/check-preference-sync.mjs
 node src/cloud/check-preference-transport.mjs
 node src/cloud/check-sync-runtime.mjs
+npm run check:preference-import
 ```
 
 The sync check includes `check-preference-faults.mjs`, using Node's built-in test
@@ -52,23 +53,67 @@ same-field remote-wins conflict plus a subsequent legitimate edit, four-attempt
 CAS exhaustion, wrong-account/stale-generation work, malformed input and Storage
 denial. The runtime checks also exercise offline/reconnect, stale callbacks and stop.
 
+## Durable local application import
+
+The real AppContext adapter previously returned success after tutor or language
+Storage failures: the normal save helpers swallowed those exceptions, and React
+updates performed persistence later. The baseline reproduced this at the tutor
+write and all seven compatibility language keys. This boundary now uses the
+dedicated synchronous `src/cloud/preferenceImport.js` adapter instead.
+
+This is logical, recoverable atomicity, **not physical multi-key atomicity**:
+
+1. Validate the cloud fields and capture the existing own-account learner access.
+   Snapshot local preferences, retaining non-cloud tutor/options properties.
+2. Persist and read back `lc2-cloud-preference-import` before data writes. Its
+   strict version-1 shape is `userId`, `phase`, `before`, `value`, `conflicts`.
+   Phase is `prepared` or `applied`; all preference objects use the cloud allowlist.
+3. Write options, normalized tutor preferences, all native/interface/legacy
+   language keys and fixed English target through that same captured access.
+   Verify each write and then the complete set. Exceptions propagate.
+4. Persist any ambiguous recovery choices in the bounded account-local
+   `lc2-cloud-preference-import-conflicts` record, then persist an `applied` marker.
+   Remove the pending journal only after full durable confirmation. Removal and
+   readback failures also throw. Only then return a fresh durable snapshot to React.
+
+Recovery replays a prepared target, retaining distinct later field edits and all
+current non-cloud properties. Preserved edits are staged before replay so another
+crash cannot erase them. An `applied` marker proves the prior set was durable:
+current preferences after that marker are retained as later edits. When a pending
+import exists, `apply` finishes that intent first; the unchanged coordinator sees
+any remaining dirty edit on its subsequent local read. Completed retries do no
+data writes. The protocol uses no clock or global revision and keeps one pending
+record plus at most one losing choice per allowed field.
+
+AppContext recovers before language normalization at startup and retries under
+verified account activation before opening private UI. Failed recovery skips
+normalizers/default writes and keeps the entry screen. Cloud `readLocal` reads
+durable Storage rather than a pinned remote object. `applyLocal` publishes pure
+React state updates only after strict persistence succeeds; equal state retains
+its identity so the dirty effect settles. The redundant tutor save effect was
+removed: the normal interactive setters already persist their own updates.
+
+The dedicated check executes the actual AppContext apply callback against the
+real adapter and captured physical storage. Its 37 cases cover before/after each
+data write, journal prepare/completion/cleanup, restart, repeated recovery failure,
+denied reads/removal, corrupt/foreign journals, A→B and A→B→A, local-only fields,
+post-crash edits, exact-revert evidence, actual startup failure, fixed target,
+cleanup-boundary edits and adapter/coordinator/scheduler integration. A normal
+tutor edit and manual language change remain visible to `readLocal`, sync, and
+reach an empty timer queue. These checks run in `check:all` and
+`check:cloud-preferences`; no authenticated remote service is used.
+
 ## Remaining rollout blockers
 
-- The generic `applyLocal` contract is synchronous, durable and lease-bound.
-  AppContext's future adapter still writes multiple preference/language keys,
-  defers a tutor save through a React updater, and uses save helpers that swallow
-  Storage errors. Its complete atomic durability is **not proven** by the
-  coordinator fixtures. Its journal writes now use captured learner access;
-  the gate stays closed until the import adapter itself is made durable and
-  exercised under partial local-save failures. Existing non-cloud fields must
-  continue to survive the import mapping.
 - With only `pendingImport.before/value`, an unapplied import and an applied
   import followed by an explicit revert to exactly `before` are indistinguishable.
   Recovery conservatively replays the staged value and durably retains the
   ambiguous prior choice in `conflicts` before applying. Distinct later edits
   survive automatically. Automatic intent recovery for the exact revert is **not
-  claimed**; it needs an atomic local import marker/revision. Conflicts remain
-  recovery data, not a shipped conflict-resolution UI.
+  claimed**. The local adapter's `applied` marker resolves cases where it is
+  present, but crashes before that marker or after its cleanup retain the
+  conservative conflict rule. Conflicts remain recovery data, not a shipped
+  conflict-resolution UI.
 - Journal growth is bounded by preference fields and normalized interests; each
   conflict field retains its latest losing choice, not an unlimited edit history.
   Device clocks provide CAS revision tokens only, never account ownership.
