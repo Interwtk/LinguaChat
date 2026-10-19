@@ -1,7 +1,7 @@
 import { learnerStorage as localStorage } from '../auth/localLease.js'
 import { KNOWN_INTERESTS, MAX_SELECTED_INTERESTS, normalizeInterests } from '../learning/engine/interests.js'
 
-const TUTOR_PREFERENCES_KEY = 'lc2-tutor-preferences'
+export const TUTOR_PREFERENCES_KEY = 'lc2-tutor-preferences'
 const ACTIVE_COMPANION_KEY = 'lc2-active-companion'
 const TEXT_SIZE_KEY = 'lc2-text-size'
 
@@ -179,14 +179,18 @@ export function loadTutorPreferences() {
   }
 }
 
-export function saveTutorPreferences(preferences) {
-  const next = {
+export function normalizeTutorPreferences(preferences) {
+  return {
     ...DEFAULT_TUTOR_PREFERENCES,
     ...(preferences || {}),
     interests: Array.isArray(preferences?.interests)
       ? normalizeInterests(preferences.interests)
       : normalizeInterests(DEFAULT_TUTOR_PREFERENCES.interests),
   }
+}
+
+export function saveTutorPreferences(preferences) {
+  const next = normalizeTutorPreferences(preferences)
   try { localStorage.setItem(TUTOR_PREFERENCES_KEY, JSON.stringify(next)) } catch {}
   return next
 }

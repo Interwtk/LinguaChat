@@ -134,6 +134,11 @@ export function captureLearnerAccess(storage = browserStorage(), lease = current
       writeScoped(storage, key, value, lease)
       return true
     },
+    removeItem(key) {
+      if (!validLocalLease(storage, lease)) return false
+      writeScoped(storage, key, null, lease, true)
+      return true
+    },
   }
 }
 

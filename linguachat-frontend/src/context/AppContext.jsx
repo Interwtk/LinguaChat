@@ -6,11 +6,12 @@ import { createContext, useContext, useState, useEffect, useCallback, useMemo, u
 import { getBrowserAuthService } from '../auth/provider.js'
 import { authCallbackError } from '../auth/callbackError.js'
 import { CLOUD_PREFERENCES_RELEASED, connectPreferenceSync, schedulePreferenceSync } from '../cloud/runtime.js'
-import { toCloudPreferenceFields, fromCloudPreferenceFields } from '../services/cloudPreferenceMapping.js'
+import { createPreferenceImport, recoverCurrentPreferenceImport } from '../cloud/preferenceImport.js'
 import { activateLocalAccount } from '../auth/browserDataIsolation.js'
 import { sendChatMessage } from '../services/api'
 import {
   ensureLanguagePreferences,
+  languagePreferencePersistence,
   setNativeLanguage as persistNativeLanguage,
 } from '../services/language'
 import {
@@ -163,7 +164,18 @@ export function AppProvider({ children }) {
   const authCallbackErrorRef = useRef(authCallbackError(window.location.href))
   // Auth/setup flow: null = main app, 'entry'/'login'/'signup'/'forgot'/'placement'/'tutor-personality'/'learning-prefs' = flow screens
   const [authStep, setAuthStep] = useState('entry')
-  const [languagePreferences, setLanguagePreferences] = useState(ensureLanguagePreferences)
+  const preferenceImportBlockedRef = useRef(false)
+  const [languagePreferences, setLanguagePreferences] = useState(() => {
+    try {
+      recoverCurrentPreferenceImport()
+      return ensureLanguagePreferences()
+    } catch {
+      // Do not normalize partial keys or persist React defaults over a WAL.
+      // Verified session activation retries recovery before private UI opens.
+      preferenceImportBlockedRef.current = true
+      return languagePreferencePersistence('en').preferences
+    }
+  })
   const nativeLanguageInfo = languagePreferences.nativeLanguage
   const interfaceLanguageInfo = languagePreferences.interfaceLanguage
   const targetLanguage = languagePreferences.targetLanguage
@@ -252,6 +264,22 @@ export function AppProvider({ children }) {
     setAuthProviderError('')
     if (isolation.switched || isolation.reloadRequired) {
       window.location.reload()
+      return
+    }
+
+    try {
+      const importer = createPreferenceImport({ userId: session.user.id, access: captureLearnerAccess() })
+      const recovered = importer.recover()
+      if (recovered || preferenceImportBlockedRef.current) {
+        const durable = recovered || importer.read()
+        setTutorPreferencesState(durable.tutorPreferences)
+        setLanguagePreferences(durable.languagePreferences)
+      }
+      preferenceImportBlockedRef.current = false
+    } catch {
+      preferenceImportBlockedRef.current = true
+      setAuthProviderError('storage_full')
+      setAuthStep('entry')
       return
     }
 
@@ -354,7 +382,8 @@ export function AppProvider({ children }) {
   const [localProgress, setLocalProgress] = useState(loadLocalProgress)
   const [activeMission, setActiveMission] = useState(loadActiveMission)
   const [completedMissions, setCompletedMissions] = useState(loadCompletedMissions)
-  const [tutorPreferences, setTutorPreferencesState] = useState(loadTutorPreferences)
+  const [tutorPreferences, setTutorPreferencesState] = useState(() => preferenceImportBlockedRef.current
+    ? { ...DEFAULT_TUTOR_PREFERENCES } : loadTutorPreferences())
   /*
    * Which conversation this is, for the purpose of choosing a subject. Bumped
    * when the learner asks for another topic, so the choice is re-derived without
@@ -422,10 +451,6 @@ export function AppProvider({ children }) {
   }, [completedMissions])
 
   useEffect(() => {
-    saveTutorPreferences(tutorPreferences)
-  }, [tutorPreferences])
-
-  useEffect(() => {
     saveActiveCompanion(activeCompanion)
   }, [activeCompanion])
 
@@ -479,17 +504,12 @@ export function AppProvider({ children }) {
     }))
   }, [])
 
-  const preferenceSnapshotRef = useRef(null)
-  preferenceSnapshotRef.current = () => {
-    let options = {}
-    try { options = JSON.parse(localStorage.getItem('lc2-cloud-preference-options') || '{}') || {} } catch {}
-    return toCloudPreferenceFields(tutorPreferences, { ...options, user_language: interfaceLanguage })
-  }
   const preferenceSyncRef = useRef(null)
   useEffect(() => {
     if (!CLOUD_PREFERENCES_RELEASED || !authUser?.id || authStep !== null) return undefined
     let cancelled = false, controller = null
     const syncAccess = captureLearnerAccess()
+    const importer = createPreferenceImport({ userId: authUser.id, access: syncAccess })
     connectPreferenceSync({
       store: {
         getItem: key => syncAccess.getItem(key),
@@ -501,15 +521,15 @@ export function AppProvider({ children }) {
         if (!syncAccess.valid()) return ''
         try { return decodeURIComponent(localStorage.getItem('lc2-auth-owner-id') || '') } catch { return '' }
       },
-      readLocal: () => preferenceSnapshotRef.current(),
+      readLocal: () => importer.read().fields,
       applyLocal: row => {
-        if (!syncAccess.valid()) throw new Error('Stale preference session')
-        localStorage.setItem('lc2-cloud-preference-options', JSON.stringify({
-          english_variant: row.english_variant, conversation_register: row.conversation_register,
-        }))
-        preferenceSnapshotRef.current = () => row
-        setTutorPreferencesState(previous => saveTutorPreferences(fromCloudPreferenceFields(row, previous)))
-        updateNativeLanguage(row.user_language)
+        const durable = importer.apply(row)
+        // Pure state publication follows strict persistence. Equal results keep
+        // their identity, so the dirty effect settles after one follow-up pass.
+        setTutorPreferencesState(previous => JSON.stringify(previous) === JSON.stringify(durable.tutorPreferences)
+          ? previous : durable.tutorPreferences)
+        setLanguagePreferences(previous => JSON.stringify(previous) === JSON.stringify(durable.languagePreferences)
+          ? previous : durable.languagePreferences)
       },
     }).then(sync => {
       if (cancelled) { sync.cancel(); return }
@@ -517,7 +537,7 @@ export function AppProvider({ children }) {
       preferenceSyncRef.current = controller
     }).catch(() => { /* Local preferences remain usable; a later login retries initialization. */ })
     return () => { cancelled = true; controller?.stop(); preferenceSyncRef.current = null }
-  }, [authUser?.id, authStep, updateNativeLanguage])
+  }, [authUser?.id, authStep])
   useEffect(() => { preferenceSyncRef.current?.changed() }, [tutorPreferences, interfaceLanguage])
 
   const login = useCallback(async (email, password) => {
