@@ -87,6 +87,7 @@ export function createPreferenceImport({ userId, access = captureLearnerAccess()
   const recover = () => {
     const journal = readJournal()
     if (!journal) return null
+    readConflicts() // existing recovery evidence must be valid before any replay
     const current = snapshot().fields
     for (const field of Object.keys(journal.value)) {
       if (journal.phase === 'applied' || (!same(current[field], journal.before[field]) && !same(current[field], journal.value[field]))) {

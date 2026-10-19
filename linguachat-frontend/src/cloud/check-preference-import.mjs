@@ -150,6 +150,12 @@ test('denied reads and malformed recovery evidence cannot publish success',()=>{
   }
   const f=fixture();learnerStorage.setItem(LOCAL_IMPORT_CONFLICTS_KEY,'{}')
   assert.throws(()=>f.publish(f.target),/Invalid local import conflicts/);assert.equal(f.published,0)
+  // Recovery must validate existing evidence even when this replay generates
+  // no new conflicts (for example an applied marker awaiting cleanup).
+  learnerStorage.setItem(LOCAL_IMPORT_KEY,JSON.stringify({version:1,userId:'A',phase:'applied',before:f.target,value:f.target,conflicts:{}}))
+  let mutations=0;f.store.before=op=>{if(op!=='get')mutations++}
+  assert.throws(()=>f.importer().recover(),/Invalid local import conflicts/)
+  assert.equal(mutations,0)
 })
 
 test('prepared exact revert remains recoverable conflict; applied marker proves a later revert',()=>{
