@@ -16,7 +16,7 @@ Updated after the A1–C2 Curriculum Foundry, final supervisor acceptance, relea
 ## Hard technical boundaries
 
 - The owner has authorized only the **LinguaChat project's public browser Supabase/Auth client**, limited to `linguachat-frontend/src/auth/` and `linguachat-frontend/src/cloud/` and public `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` variables. `LC-OPS-027` is merged and the first Auth implementation landed in PR #130. This still does **not** authorize backend Supabase, service-role/private keys, direct Postgres, Storage, pgvector, Edge Functions, EvoLabs project reuse, production deployment, billing or paid providers.
-- No voice, calls, video calls, WebRTC, STT, TTS or pronunciation scoring.
+- Free browser/device TTS for listening is owner-authorized (2026-10-15), through `src/audio/speech.js` and `ListeningTurn`: Play/Replay/Slow/Stop and hidden transcript. Replay/slow/transcript are assistance; playback is not mastery. No paid TTS, microphone, calls, video calls, WebRTC, STT or pronunciation scoring.
 - No real OpenAI or other paid-provider runtime calls. `LINGUACHAT_PROVIDER=local` remains the execution contract.
 - Do not open any A1–C2 level merely because its curriculum exists in runtime.
 
