@@ -694,7 +694,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
        * moves outside an episode and a consolidated skill still looks untouched.
        */
       const canDoId = block.payload?.canDoId
-      if (canDoId) recordCanDoAttempt(modelRef.current, canDoId, { success: true, independent, context: `session:${block.type}` })
+      if (canDoId) recordCanDoAttempt(modelRef.current, canDoId, { success: true, independent, context: `session:${block.type}`, sessionId: learningSessionId })
       saveLearnerModel(modelRef.current)
       if (retry) mark('retried')
       setPraise(result.praiseKey || 'ep1FeedbackGood')
@@ -952,6 +952,9 @@ export function SessionRunner() {
   const nativeLang = nativeLanguageInfo.base
   const block = currentBlock(dailySession)
   const { done, total } = sessionProgress(dailySession)
+  // One real learning-session boundary for the whole day, matching EpisodeShell.
+  // Reloads, surface changes and duration changes must not manufacture retrieval.
+  const learningSessionId = `learning-day:${dailySession?.dayKey || dayKeyFor()}`
   const isStoryBlock = block?.format === 'mini_story'
   // the story talks about whatever this session is already about
   const storyVars = useMemo(() => {
