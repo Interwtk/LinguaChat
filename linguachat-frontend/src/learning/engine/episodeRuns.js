@@ -13,7 +13,7 @@
  *     A first completion is rewarded once. Everything after it is practice —
  *     real practice, that can produce new evidence, but never a second prize.
  */
-import { getEpisodeState, sanitizeRun, RUNS_PER_EPISODE } from './learnerModel.js'
+import { getEpisodeState, sanitizeRun, RUNS_PER_EPISODE, recordDelayedRetrievalEvidence, recordCanDoAttempt } from './learnerModel.js'
 import { dayKeyFor } from './session.js'
 import { reconcileLevelMilestones } from '../curriculum/graduation.js'
 
@@ -52,8 +52,20 @@ export function resolveRunMode(model, episodeId, { source = 'practice', wantsOth
  * in a reproducible test.)
  */
 export function makeRunId(model, episodeId, atMs = Date.now()) {
-  const sameDay = runsFor(model, episodeId).filter(r => String(r.runId).includes(dayKeyFor(atMs))).length
-  return `${episodeId}:${dayKeyFor(atMs)}:${sameDay + 1}`
+  const day = dayKeyFor(atMs)
+  const prefix = `${episodeId}:${day}:`
+  // The run history is capped at 12. Counting retained runs would reuse the
+  // thirteenth id forever and overwrite genuine later practice evidence.
+  // Keep the highest retained sequence instead; the newest run survives trim.
+  const highest = runsFor(model, episodeId).reduce((max, run) => {
+    const id = String(run.runId || '')
+    if (!id.startsWith(prefix)) return max
+    const suffix = id.slice(prefix.length)
+    if (!/^[1-9]\d*$/.test(suffix)) return max
+    const sequence = Number(suffix)
+    return Number.isSafeInteger(sequence) ? Math.max(max, sequence) : max
+  }, 0)
+  return `${prefix}${highest + 1}`
 }
 
 /*
@@ -92,6 +104,7 @@ export function beginEpisodeRun(model, episodeId, { source = 'practice', wantsOt
     formatsUsed: continues ? active.formatsUsed : [],
     rewarded: continues ? active.rewarded : false,
     scaffold: continues ? active.scaffold : null,
+    pendingRetrieval: continues ? active.pendingRetrieval : [],
   })
   model.activeRun = run
   return run
@@ -104,18 +117,38 @@ export function updateActiveRun(model, patch) {
   return model.activeRun
 }
 
+// Pending observations belong to this run, never to earned can-do evidence.
+export function stageDelayedRetrieval(model, canDoIds, { independent = false, sessionId = null, atMs = Date.now() } = {}) {
+  const active = sanitizeRun(model.activeRun)
+  if (!active || active.completedAt || !independent || !sessionId) return active
+  const pending = [...active.pendingRetrieval]
+  for (const canDoId of Array.isArray(canDoIds) ? canDoIds : []) {
+    if (!canDoId || pending.some(p => p.canDoId === canDoId && p.sessionId === sessionId)) continue
+    pending.push({ canDoId, sessionId, atMs })
+  }
+  return updateActiveRun(model, { pendingRetrieval: pending })
+}
+
 /*
  * File a finished run into the history. Idempotent by run id: completing twice
  * (double tap, Back, a late remount) records one run, exactly as it records
  * one reward.
  */
-export function completeEpisodeRun(model, { independentEvidence = false, branchId = null, rewarded = false, atMs = Date.now() } = {}) {
+export function completeEpisodeRun(model, { independentEvidence = false, branchId = null, rewarded = false, atMs = Date.now(), canDoId = null, sessionId = null } = {}) {
   const active = sanitizeRun(model.activeRun)
   if (!active) return null
+  for (const observation of active.pendingRetrieval) {
+    recordDelayedRetrievalEvidence(model, [observation.canDoId], { ...observation, independent: true })
+  }
+  if (canDoId) recordCanDoAttempt(model, canDoId, {
+    success: true, independent: Boolean(independentEvidence || active.independentEvidence),
+    context: active.episodeId, atMs, sessionId,
+  })
   const finished = sanitizeRun({
     ...active,
     branchId: branchId || active.branchId,
     completedAt: new Date(atMs).toISOString(),
+    pendingRetrieval: [],
     independentEvidence: Boolean(independentEvidence || active.independentEvidence),
     rewarded: Boolean(rewarded),
   })

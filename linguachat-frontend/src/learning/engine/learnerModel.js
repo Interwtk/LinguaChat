@@ -1,3 +1,5 @@
+import { teachingHistory, retentionProfile } from './teachingPolicy.js'
+import { bindLearnerObject, captureLearnerAccess, captureLearnerObjectAccess } from '../../auth/localLease.js'
 /*
  * learnerModel (v2) — what the learner can do, with safe migration from v1.
  *
@@ -36,8 +38,9 @@ const emptyActivityStat = () => ({
 export const SIGNAL_LOG_LIMIT = 160
 
 export function createLearnerModel() {
-  return {
+  const model = {
     version: MODEL_VERSION,
+    teachingHistory: [],
     canDo: {},
     languageItems: {},
     recurringErrors: [],
@@ -83,6 +86,10 @@ export function createLearnerModel() {
      */
     levelMilestones: {},
   }
+  // Guest-created models must retain their original lease. After the first
+  // authenticated claim, an old guest callback must not write into that account.
+  try { if (globalThis.localStorage?.getItem) return bindLearnerObject(model) } catch {}
+  return model
 }
 const emptyModel = createLearnerModel
 
@@ -113,6 +120,7 @@ function carryForward(parsed, { keepPreferences, keepSignals, keepRuns }) {
       ? parsed.recentFormats.filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12) : [],
     recentInterests: keepPreferences && Array.isArray(parsed.recentInterests)
       ? parsed.recentInterests.filter(i => typeof i === 'string').slice(0, 8) : [],
+    teachingHistory: teachingHistory(parsed.teachingHistory),
     signalLog: keepSignals ? sanitizeSignalLog(parsed.signalLog) : [],
     episodeRuns: keepRuns ? sanitizeEpisodeRuns(parsed.episodeRuns) : {},
     activeRun: keepRuns ? sanitizeRun(parsed.activeRun) : null,
@@ -305,11 +313,12 @@ function migrate(parsed) {
 }
 
 export function loadLearnerModel() {
+  const access = captureLearnerAccess()
   try {
-    const stored = localStorage.getItem(KEY)
-    if (stored) return migrate(JSON.parse(stored))
+    const stored = access.getItem(KEY)
+    if (stored) return access.bind(migrate(JSON.parse(stored)))
   } catch {}
-  return emptyModel()
+  return access.bind(emptyModel())
 }
 
 /*
@@ -324,9 +333,9 @@ export function loadLearnerModel() {
  * event id, so taking the larger of the two values is exactly the union of what
  * both copies saw: never double-counted, never lost.
  */
-function mergeActivityEvidence(model) {
+function mergeActivityEvidence(model, access) {
   let stored = null
-  try { stored = JSON.parse(localStorage.getItem(KEY) || 'null') } catch { return model }
+  try { stored = JSON.parse(access.getItem(KEY) || 'null') } catch { return model }
   if (!stored || typeof stored !== 'object' || stored.version !== MODEL_VERSION) return model
 
   const mine = model.activityPreferences || {}
@@ -348,7 +357,11 @@ function mergeActivityEvidence(model) {
 
   return {
     ...model,
+    teachingHistory: teachingHistory([...new Map([...teachingHistory(stored.teachingHistory), ...teachingHistory(model.teachingHistory)].map(x => [x.id, x])).values()].sort((a,b) => a.at-b.at)),
     activityPreferences: merged,
+    // Preserve capabilities from independent snapshots without summing mastery evidence.
+    // Same-id concurrent attempts need per-event provenance before safe reconciliation.
+    canDo: mergeCanDoEvidence(model.canDo, stored.canDo),
     signalLog: log,
     recentFormats: (Array.isArray(recent) ? recent : []).filter(f => ACTIVITY_FORMATS.includes(f)).slice(0, 12),
     episodeRuns: mergeEpisodeRuns(model.episodeRuns, stored.episodeRuns),
@@ -401,7 +414,11 @@ export function mergeLanguageItems(mine, theirs) {
       independentCorrect: maxNum('independentCorrect'),
       guidedCorrect: maxNum('guidedCorrect'),
       recognisedCorrect: maxNum('recognisedCorrect'),
-      streak: maxNum('streak'),
+      // A failed attempt resets the consecutive-success streak. Merging a
+      // newer failure with a stale snapshot must not resurrect the old streak.
+      // Equal timestamps are ambiguous without per-attempt ids; be conservative.
+      streak: fresher ? Math.max(0, Number(fresher.streak) || 0)
+        : Math.min(Math.max(0, Number(x.streak) || 0), Math.max(0, Number(y.streak) || 0)),
       nextReviewAt,
       lastSeenAt: latestSeen,
     }
@@ -422,7 +439,14 @@ export function mergeEpisodeRuns(mine, theirs) {
     const byId = new Map()
     for (const run of [...(b[episodeId] || []), ...(a[episodeId] || [])]) {
       const prev = byId.get(run.runId)
-      byId.set(run.runId, prev ? { ...prev, ...run, completedAt: run.completedAt || prev.completedAt, rewarded: prev.rewarded || run.rewarded } : run)
+      // A finished run is authoritative for its evidence. An older in-progress
+      // snapshot may not erase its independent production, assistance or formats.
+      const authoritative = prev?.completedAt && !run.completedAt ? prev : run
+      byId.set(run.runId, prev ? {
+        ...prev, ...run, ...authoritative,
+        completedAt: run.completedAt || prev.completedAt,
+        rewarded: prev.rewarded || run.rewarded,
+      } : run)
     }
     out[episodeId] = [...byId.values()].slice(-RUNS_PER_EPISODE)
   }
@@ -466,17 +490,51 @@ export function mergeEpisodeState(mine, theirs) {
   return out
 }
 
+// Counter maxima preserve already-earned evidence without inventing distinct
+// concurrent attempts. Provenance follows independent practice, never assisted recency.
+export function mergeCanDoEvidence(mine = {}, theirs = {}) {
+  const out = {}
+  for (const id of new Set([...Object.keys(mine), ...Object.keys(theirs)])) {
+    const a = mine[id], b = theirs[id]
+    if (!a || !b) { out[id] = a || b; continue }
+    const recent = (a.lastPracticedAt || '') >= (b.lastPracticedAt || '') ? a : b
+    const independent = (a.independentPracticedAt || '') >= (b.independentPracticedAt || '') ? a : b
+    const entry = { ...b, ...a, ...recent }
+    for (const field of ['attempts', 'successes', 'independentSuccesses']) entry[field] = Math.max(Number(a[field]) || 0, Number(b[field]) || 0)
+    entry.contexts = [...new Set([...(a.contexts || []), ...(b.contexts || [])])]
+    entry.status = entry.successes >= 2 && entry.independentSuccesses >= 1 ? 'can_do' : entry.attempts ? 'learning' : 'new'
+    if (independent.independentPracticedAt) {
+      entry.independentPracticedAt = independent.independentPracticedAt
+      entry.independentPracticeSessionId = independent.independentPracticeSessionId
+    }
+    entry.delayedRetrievalAt = [...new Set([...(a.delayedRetrievalAt || []), ...(b.delayedRetrievalAt || [])])].sort().reverse().slice(0, 10)
+    entry.delayedRetrievalSessions = [...new Set([...(a.delayedRetrievalSessions || []), ...(b.delayedRetrievalSessions || [])])].slice(-10)
+    out[id] = entry
+  }
+  return out
+}
+
 export function saveLearnerModel(model) {
-  const merged = mergeActivityEvidence(model)
+  const access = captureLearnerObjectAccess(model)
+  if (!access.valid()) return model
+  const merged = mergeActivityEvidence(model, access)
+  if (!access.valid()) return model
+  // Never reacquire/rebind to a new owner between validation, merge and write.
+  // Only expose merged data to the caller after a durable scoped commit.
+  try {
+    if (!access.setItem(KEY, JSON.stringify({ ...merged, version: MODEL_VERSION }))) return model
+  } catch { return model }
   // keep the caller's own object in step with what was written
   model.activityPreferences = merged.activityPreferences
+  model.canDo = merged.canDo
   model.signalLog = merged.signalLog
   model.recentFormats = merged.recentFormats
   model.episodeRuns = merged.episodeRuns
   model.learnerFacts = merged.learnerFacts
   model.episodes = merged.episodes
   model.languageItems = merged.languageItems
-  try { localStorage.setItem(KEY, JSON.stringify({ ...merged, version: MODEL_VERSION })) } catch {}
+  model.teachingHistory = merged.teachingHistory
+  model.levelMilestones = merged.levelMilestones
   return model
 }
 
@@ -521,13 +579,29 @@ export function reviewDelayDays({ correct, independent, streak, owned = false })
   return REVIEW_STEPS_DAYS[step]
 }
 
-export function scheduleReview(prev, { correct, independent, atMs = Date.now(), owned = null }) {
+export function scheduleReview(prev, { correct, independent, atMs = Date.now(), owned = null, retention = null }) {
   const streak = correct ? (prev?.streak || 0) + 1 : 0
   const isOwned = owned === null
     ? (prev?.learningState === 'can_use' || (Number(prev?.independentCorrect) || 0) >= INDEPENDENT_USES_TO_CAN_USE)
     : owned
+  let days = reviewDelayDays({ correct, independent, streak, owned: isOwned })
+  let dueAt = atMs + days * DAY
+  if (correct && retention?.samples) {
+    if (!retention.lastSuccess) {
+      dueAt = Math.min(dueAt, retention.lastAt + DAY)
+    } else if (independent) {
+      // Same-day streaks never widen this ladder. Only distinct later probes do.
+      days = REVIEW_STEPS_DAYS[Math.min(Math.max(retention.successes, 1), REVIEW_STEPS_DAYS.length) - 1]
+      dueAt = Math.min(atMs, retention.lastAt) + days * DAY
+    } else {
+      // Recognition/help may confirm an owned item, but cannot postpone its
+      // independent retrieval check on the strength of assisted correctness.
+      const previousDue = Date.parse(prev?.nextReviewAt)
+      dueAt = Math.min(dueAt, Number.isFinite(previousDue) ? previousDue : atMs + DAY)
+    }
+  }
   return {
-    nextReviewAt: new Date(atMs + reviewDelayDays({ correct, independent, streak, owned: isOwned }) * DAY).toISOString(),
+    nextReviewAt: new Date(dueAt).toISOString(),
     streak,
   }
 }
@@ -600,14 +674,15 @@ export function recordItemSeen(model, itemId, atMs = Date.now()) {
   return model
 }
 
-export function recordItemAttempt(model, itemId, { correct, independent = false, evidenceKind = 'open', atMs = Date.now() } = {}) {
+export function recordItemAttempt(model, itemId, { correct, independent = false, evidenceKind = 'open', atMs = Date.now(), capability = null } = {}) {
   const prev = { ...emptyItem(), ...(model.languageItems[itemId] || {}) }
   const correctCount = prev.correct + (correct ? 1 : 0)
   const incorrectCount = prev.incorrect + (correct ? 0 : 1)
   const independentCorrect = prev.independentCorrect + (correct && independent && evidenceKind === 'open' ? 1 : 0)
   const guidedCorrect = prev.guidedCorrect + (correct && evidenceKind === 'guided' ? 1 : 0)
   const recognisedCorrect = prev.recognisedCorrect + (correct && evidenceKind === 'recognition' ? 1 : 0)
-  const review = scheduleReview(prev, { correct, independent, atMs })
+  const review = scheduleReview(prev, { correct, independent, atMs,
+    retention: capability ? retentionProfile(model, capability, atMs) : null })
 
   // learning state only ever climbs
   const earned = stateFromEvidence({ evidenceKind, correct, independent, independentCorrect })
@@ -633,7 +708,7 @@ export const learningStateOf = (model, itemId) => model?.languageItems?.[itemId]
 export const canUseItem = (model, itemId) => learningStateOf(model, itemId) === 'can_use'
 
 // ---- can-do goals ----
-export function recordCanDoAttempt(model, canDoId, { success, independent = false, context = null, atMs = Date.now() }) {
+export function recordCanDoAttempt(model, canDoId, { success, independent = false, context = null, atMs = Date.now(), sessionId = null }) {
   const prev = model.canDo[canDoId] || { status: 'new', attempts: 0, successes: 0, independentSuccesses: 0, contexts: [], lastPracticedAt: null }
   const attempts = prev.attempts + 1
   const successes = prev.successes + (success ? 1 : 0)
@@ -643,53 +718,44 @@ export function recordCanDoAttempt(model, canDoId, { success, independent = fals
   let status = 'learning'
   if (successes >= 2 && independentSuccesses >= 1) status = 'can_do'
   else if (attempts > 0) status = 'learning'
-  model.canDo[canDoId] = { status, attempts, successes, independentSuccesses, contexts, lastPracticedAt: new Date(atMs).toISOString() }
+  const independentPractice = success && independent && sessionId
+    ? { independentPracticeSessionId: sessionId, independentPracticedAt: new Date(atMs).toISOString() }
+    : {}
+  // Episode completion updates practice counters without discarding evidence
+  // recorded by earlier steps (including delayed retrieval in this very run).
+  model.canDo[canDoId] = { ...prev, ...independentPractice, status, attempts, successes, independentSuccesses, contexts, lastPracticedAt: new Date(atMs).toISOString() }
   return model
 }
 
-/*
- * `coreEngineRequirements[3]` (C2's capstone) — several OTHER capabilities'
- * delayed-retrieval evidence, recorded against the SAME task completion.
- * Every earlier level's own completion records evidence for exactly one
- * canDoId (`recordCanDoAttempt` above, called once per episode finish);
- * C2's capstone (`levels/c2/arcs/c2Arc8IntegratedMediation.js`'s `MEDIATE_01`)
- * is the first episode whose one independent step also names SEVEN OTHER
- * capabilities it re-demonstrates unaided (`step.delayedRetrievalChecks`,
- * matching `c2EvaluationContracts.js`'s `C2_CAPSTONE_DELAYED_RETRIEVAL_CHECKS`
- * exactly), and none of those seven capabilities' own dedicated arc-level
- * completion runs again inside this same task.
- *
- * Deliberately does NOT touch `attempts`/`successes`/`independentSuccesses` —
- * this canDo was not actually practiced end-to-end in this task the way its
- * own arc's episode practices it; recording a fabricated attempt/success
- * here would silently inflate mastery evidence for a capability this task
- * only warms up, not on masters from scratch. `delayedRetrievalAt` is
- * purely evidentiary bookkeeping (capped at the last 10 timestamps, the
- * same bound `recurringErrors` above already uses), additive to whatever
- * canDo state already exists — including none at all, if this is reached
- * before the capability's own arc.
- *
- * Schema change is additive only: every existing single-capability episode
- * (every level below C2) never calls this, so their own `model.canDo`
- * entries never gain a `delayedRetrievalAt` field and keep recording
- * identically to before.
- */
-export function recordDelayedRetrievalEvidence(model, canDoIds, { atMs = Date.now() } = {}) {
+/* Delayed retrieval is additive bookkeeping, never an invented practice or
+ * mastery counter. A capability must already have independent practice in an
+ * earlier session; legacy records without a session remain ineligible until
+ * new real practice establishes that provenance. Keep the last ten stamps. */
+export function recordDelayedRetrievalEvidence(model, canDoIds, { atMs = Date.now(), independent = false, sessionId = null } = {}) {
+  // Authored metadata is not learner evidence. Require an unaided answer and
+  // an earlier independent success in a different actual learning session.
+  if (!independent || !sessionId) return model
   const ids = Array.isArray(canDoIds) ? canDoIds : []
   for (const canDoId of ids) {
     if (!canDoId) continue
-    const prev = model.canDo[canDoId] || { status: 'new', attempts: 0, successes: 0, independentSuccesses: 0, contexts: [], lastPracticedAt: null }
+    const prev = model.canDo[canDoId]
+    if (!prev?.independentSuccesses || !prev.independentPracticeSessionId ||
+        prev.independentPracticeSessionId === sessionId ||
+        !(Date.parse(prev.independentPracticedAt) < atMs) ||
+        prev.delayedRetrievalSessions?.includes(sessionId)) continue
     const delayedRetrievalAt = [new Date(atMs).toISOString(), ...(prev.delayedRetrievalAt || [])].slice(0, 10)
-    model.canDo[canDoId] = { ...prev, delayedRetrievalAt }
+    const delayedRetrievalSessions = [sessionId, ...(prev.delayedRetrievalSessions || [])].slice(0, 10)
+    model.canDo[canDoId] = { ...prev, delayedRetrievalAt, delayedRetrievalSessions }
   }
   return model
 }
 
-export function markRecurringError(model, errorType) {
+export function markRecurringError(model, errorType, atMs = Date.now()) {
   if (!errorType) return model
   const existing = model.recurringErrors.find(e => e.errorType === errorType)
-  if (existing) existing.count += 1
-  else model.recurringErrors = [{ errorType, count: 1 }, ...model.recurringErrors].slice(0, 20)
+  const lastSeenAt = new Date(atMs).toISOString()
+  if (existing) { existing.count += 1; existing.lastSeenAt = lastSeenAt }
+  else model.recurringErrors = [{ errorType, count: 1, lastSeenAt }, ...model.recurringErrors].slice(0, 20)
   return model
 }
 
@@ -766,6 +832,9 @@ export function sanitizeRun(raw) {
      * from its own reading of the evidence.
      */
     scaffold: sanitizeScaffold(raw.scaffold),
+    pendingRetrieval: Array.isArray(raw.pendingRetrieval) ? raw.pendingRetrieval
+      .filter(p => p && str(p.canDoId, 100) && str(p.sessionId, 100) && Number.isFinite(p.atMs))
+      .slice(0, 100).map(p => ({ canDoId: str(p.canDoId, 100), sessionId: str(p.sessionId, 100), atMs: p.atMs })) : [],
   }
 }
 
@@ -910,7 +979,7 @@ export function recordActivitySignal(model, format, signal) {
  * counted once. Returns true only when the signal was actually new.
  */
 export function recordActivitySignalOnce(model, eventId, format, signal) {
-  if (!eventId || !ACTIVITY_FORMATS.includes(format) || !SIGNAL_KINDS.includes(signal)) return false
+  if (typeof eventId !== 'string' || eventId.length === 0 || eventId.length > 120 || !ACTIVITY_FORMATS.includes(format) || !SIGNAL_KINDS.includes(signal)) return false
   model.signalLog = Array.isArray(model.signalLog) ? model.signalLog : []
   if (model.signalLog.includes(eventId)) return false
   recordActivitySignal(model, format, signal)

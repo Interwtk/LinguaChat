@@ -1,3 +1,4 @@
+import { learnerStorage as localStorage } from '../auth/localLease.js'
 import { SUPPORTED_LOCALES } from '../i18n/translations.js'
 
 const NATIVE_CODE_KEY = 'lc2-native-language-code'
@@ -163,20 +164,23 @@ function readLanguage(codeKey, legacyKey = null) {
  * The ONE storage writer. There is deliberately no writer that touches only the
  * native keys or only the interface keys: `user_language` is a single learner
  * choice, and native/interface are legacy storage names for that same choice
- * kept for compatibility. Writing both together, always, is what makes it
- * impossible for a supported product API to leave them pointing at two
- * different languages.
+ * kept for compatibility. The interactive writer remains best-effort; cloud
+ * imports use these same pure entries through the strict, recoverable adapter.
  */
+export function languagePreferencePersistence(language) {
+  const info = makeLanguageInfo(language)
+  return {
+    preferences: { nativeLanguage: info, interfaceLanguage: info, targetLanguage: TARGET_LANGUAGE },
+    entries: [
+      [NATIVE_CODE_KEY, info.code], [NATIVE_BASE_KEY, info.base], [NATIVE_NAME_KEY, info.name],
+      [LEGACY_NATIVE_KEY, info.base], [INTERFACE_CODE_KEY, info.code],
+      [INTERFACE_BASE_KEY, info.base], [INTERFACE_NAME_KEY, info.name], [TARGET_KEY, TARGET_LANGUAGE.code],
+    ],
+  }
+}
+
 function writeUserLanguage(info) {
-  try {
-    localStorage.setItem(NATIVE_CODE_KEY, info.code)
-    localStorage.setItem(NATIVE_BASE_KEY, info.base)
-    localStorage.setItem(NATIVE_NAME_KEY, info.name)
-    localStorage.setItem(LEGACY_NATIVE_KEY, info.base)
-    localStorage.setItem(INTERFACE_CODE_KEY, info.code)
-    localStorage.setItem(INTERFACE_BASE_KEY, info.base)
-    localStorage.setItem(INTERFACE_NAME_KEY, info.name)
-  } catch {}
+  try { for (const [key, value] of languagePreferencePersistence(info).entries) localStorage.setItem(key, value) } catch {}
 }
 
 /*

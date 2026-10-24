@@ -1,3 +1,7 @@
+import { ListeningTurn } from '../chat/ListeningTurn.jsx'
+import { listeningEvidence } from '../../audio/speech.js'
+import { observeTeaching, chooseTeaching } from '../../learning/engine/teachingPolicy.js'
+import { captureLearnerAccess } from '../../auth/localLease.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { ChattoMascot } from '../mascot/ChattoMascot'
@@ -10,13 +14,13 @@ import { evaluateEpisodeResponse } from '../../learning/engine/hybridEvaluation.
 import { evaluateFree, shouldEscalate, TAUGHT_NUMBERS } from '../../learning/engine/responseEvaluation.js'
 import { repairKindForItem } from '../../learning/engine/session.js'
 import { createSubmissionGuard } from '../../learning/engine/submitGuard.js'
-import { partnerFor, placeFor } from '../../learning/engine/variation.js'
+import { partnerFor, placeFor, seedFrom } from '../../learning/engine/variation.js'
 import { getInterestContext } from '../../learning/engine/interests.js'
 import { selectRepresentativeFormat } from '../../learning/engine/formatChoice.js'
 import { evaluateLearningResponse } from '../../services/api'
 import { currentBlock, sessionProgress, dayKeyFor } from '../../learning/engine/session.js'
 import {
-  loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, markRecurringError, recordActivitySignalOnce,
+  loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, recordDelayedRetrievalEvidence, markRecurringError, recordActivitySignalOnce,
 } from '../../learning/engine/learnerModel.js'
 import { selectCompatibleContext, asSubjectValue, thingById } from '../../learning/engine/semanticContext.js'
 import { factsOfType } from '../../learning/engine/learnerFacts.js'
@@ -418,7 +422,7 @@ function blankOf(sentence) {
   }
 }
 
-function PracticeTurn({ block, topic = null, onDone }) {
+function PracticeTurn({ block, topic = null, sessionId = null, listeningBaseline = false, onDone }) {
   const { t, profile, nativeLanguageInfo, interfaceLanguageInfo } = useApp()
   const kind = block.objective || 'introduction'
   const format = block.format || 'free_reply'
@@ -444,7 +448,24 @@ function PracticeTurn({ block, topic = null, onDone }) {
   const scaffold = scaffoldState.currentLevel
   const name = (profile.name || '').trim() || 'Alex'
   const partner = useMemo(() => partnerFor(profile.name || 'guest'), [profile.name])
+  const audioRef = useRef({})
   const modelRef = useRef(loadLearnerModel())
+  const decisionSeed = `${sessionId}:${block.id}`
+  const teaching = modelRef.current
+  const decisionRef = useRef(null)
+  if (!decisionRef.current) {
+  const instruction = block.payload?.requiredPractice === 'recall' ? 'concise'
+    : showsModelAnswer(scaffold) ? 'worked_example'
+      : chooseTeaching(teaching, kind, ['concise', 'worked_example'], decisionSeed, 'instruction')?.format
+        || (seedFrom(decisionSeed + ':instruction') % 2 ? 'concise' : 'worked_example')
+  const channel = listeningBaseline ? 'listening'
+    : chooseTeaching(teaching, kind, ['reading', 'listening'], decisionSeed, 'channel')?.format
+      || (seedFrom(decisionSeed + ':channel') % 2 ? 'reading' : 'listening')
+  decisionRef.current = { instruction, channel }
+  }
+  const { instruction, channel } = decisionRef.current
+  const listeningEnabled = channel === 'listening'
+
   // The session's own subject matter, so a practice turn talks about the same
   // thing Home promised this morning.
   const ctx = useMemo(() => getInterestContext(topic?.interestId ? [topic.interestId] : [], `session:${topic?.interestId || ''}`), [topic])
@@ -611,6 +632,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
   }
 
   async function submit({ fromSuggestion = false } = {}) {
+    const access = captureLearnerAccess()
     const text = reply
     if (!text.trim()) return
     const token = guardRef.current.begin()
@@ -619,7 +641,10 @@ function PracticeTurn({ block, topic = null, onDone }) {
     // Same context the model answer was built from, so a correction can never
     // name something the prompt never mentioned.
     const stepShape = { type: 'free_reply', format }
-    const independent = isIndependentEvidence({ step: stepShape, assistanceUsed: fromSuggestion, correct: true })
+    const audio = listeningEvidence(audioRef.current)
+    const assisted = fromSuggestion || Boolean(retry) || (listeningEnabled && !audioRef.current.unavailable && !audio.independent)
+      || (instruction === 'worked_example' && block.payload?.requiredPractice !== 'recall' && isOpenFormat)
+    const independent = isIndependentEvidence({ step: stepShape, assistanceUsed: assisted, correct: true })
     /*
      * A quantity turn is graded against a specific thing and number, and an
      * identification against a specific object. Passing them keeps the verdict
@@ -666,23 +691,30 @@ function PracticeTurn({ block, topic = null, onDone }) {
         ...spellContext,
         ...subtypeContext,
         nativeLanguage: nativeLang, interfaceLanguage: interfaceLanguageInfo?.base || nativeLang,
-        targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: fromSuggestion,
+        targetLanguage: 'en', scaffoldLevel: scaffold, assistanceUsed: assisted,
         previousAttempts: 0, turnContext, signal: controller.signal,
         remote: (payload, signal) => evaluateLearningResponse(payload, { signal }),
       })
     } catch {
       result = { ...preview, source: 'fallback' }
     }
-    if (!guardRef.current.isCurrent(token)) return
+    if (!access.valid() || !guardRef.current.isCurrent(token)) return
     guardRef.current.settle()
     abortRef.current = null
     setReviewing(false)
 
+    observeTeaching(modelRef.current, {
+      id: `${eventId}:first-attempt`, capability: kind, format, session: sessionId || eventId,
+      context: topic?.interestId || 'neutral', at: Date.now(),
+      success: result.targetEvidence === false ? null : Boolean(result.completedObjective),
+      independent, assisted, instruction, channel, retried: Boolean(retry), listening: listeningEnabled && !audioRef.current.unavailable ? { ...audio, firstListenSuccess: audio.independent && Boolean(result.completedObjective) && result.targetEvidence !== false } : null,
+    })
+    saveLearnerModel(modelRef.current)
     if (result.completedObjective) {
       // the same distinction a step makes: a correct reply that used none of the
       // taught language is not recorded as practice of it
       for (const id of (result.targetEvidence === false ? [] : practisedItems)) {
-        recordItemAttempt(modelRef.current, id, { correct: true, independent, evidenceKind: evidenceKindForStep(stepShape) })
+        recordItemAttempt(modelRef.current, id, { correct: true, independent, evidenceKind: evidenceKindForStep(stepShape), capability: kind })
       }
       saveLearnerModel(modelRef.current)
       setScaffoldState(prev => updateScaffoldAfterTurn(prev, {
@@ -694,7 +726,8 @@ function PracticeTurn({ block, topic = null, onDone }) {
        * moves outside an episode and a consolidated skill still looks untouched.
        */
       const canDoId = block.payload?.canDoId
-      if (canDoId) recordCanDoAttempt(modelRef.current, canDoId, { success: true, independent, context: `session:${block.type}` })
+      if (canDoId && independent) recordDelayedRetrievalEvidence(modelRef.current, [canDoId], { independent, sessionId })
+      if (canDoId) recordCanDoAttempt(modelRef.current, canDoId, { success: true, independent, context: `session:${block.type}`, sessionId })
       saveLearnerModel(modelRef.current)
       if (retry) mark('retried')
       setPraise(result.praiseKey || 'ep1FeedbackGood')
@@ -702,7 +735,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
       setTimeout(complete, 700)
     } else {
       for (const id of practisedItems) {
-        recordItemAttempt(modelRef.current, id, { correct: false, independent: false, evidenceKind: evidenceKindForStep(stepShape) })
+        recordItemAttempt(modelRef.current, id, { correct: false, independent: false, evidenceKind: evidenceKindForStep(stepShape), capability: kind })
       }
       setScaffoldState(prev => updateScaffoldAfterTurn(prev, { correct: false, evidenceKind: evidenceKindForStep(stepShape) }))
       markRecurringError(modelRef.current, result.errorType)
@@ -719,9 +752,15 @@ function PracticeTurn({ block, topic = null, onDone }) {
    * recorded as assisted — never as independent evidence.
    */
   function settleClosed(correct) {
+    if (!captureLearnerAccess().valid()) return
+    observeTeaching(modelRef.current, {
+      id: `${eventId}:first-attempt`, capability: kind, format, session: sessionId || eventId,
+      context: topic?.interestId || 'neutral', at: Date.now(), success: Boolean(correct),
+      independent: false, assisted: true, instruction, channel, retried: Boolean(retry), listening: listeningEnabled ? listeningEvidence(audioRef.current) : null,
+    })
     const evidence = evidenceKindForStep({ type: format === 'choice' ? 'choice' : 'word_order', format })
     for (const id of practisedItems) {
-      recordItemAttempt(modelRef.current, id, { correct, independent: false, evidenceKind: evidence })
+      recordItemAttempt(modelRef.current, id, { correct, independent: false, evidenceKind: evidence, capability: kind })
     }
     saveLearnerModel(modelRef.current)
     if (correct) { setLive(t('ep1Correct')); setTimeout(complete, 600) }
@@ -765,7 +804,9 @@ function PracticeTurn({ block, topic = null, onDone }) {
 
       <div className="flex gap-3 mb-3">
         <LinguaAvatar size={32} online className="mt-0.5" />
-        <div className="bubble-lingua"><En style={{ fontWeight: 700 }}>{linguaSaid}</En></div>
+        {listeningEnabled
+          ? <ListeningTurn turnId={eventId} text={plainText(linguaSaid)} onSignals={signals => { audioRef.current = signals }} />
+          : <div className="bubble-lingua"><En style={{ fontWeight: 700 }}>{linguaSaid}</En></div>}
       </div>
       <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginBottom: 10 }}>{t(howKey)}</p>
 
@@ -788,7 +829,7 @@ function PracticeTurn({ block, topic = null, onDone }) {
         * Nobody is left stranded: the retry after a wrong answer still shows
         * the model sentence, which is support arriving when it is needed.
         */}
-      {!reviewing && isOpenFormat && showsModelAnswer(scaffold) && block.payload?.requiredPractice !== 'recall' && (
+      {!reviewing && isOpenFormat && instruction === 'worked_example' && block.payload?.requiredPractice !== 'recall' && (
         <button type="button" onClick={() => { setReply(modelAnswer); setUsedSuggestion(true); mark('assistance') }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]"
           style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--ink)' }}>
           {t('ep1UseSuggestion')}: <En>{modelAnswer}</En>
@@ -952,6 +993,9 @@ export function SessionRunner() {
   const nativeLang = nativeLanguageInfo.base
   const block = currentBlock(dailySession)
   const { done, total } = sessionProgress(dailySession)
+  // Match EpisodeShell exactly: all learning surfaces on one calendar day share
+  // one provenance boundary, so changing duration/surface cannot fake retrieval.
+  const learningSessionId = `learning-day:${dailySession?.dayKey || dayKeyFor()}`
   const isStoryBlock = block?.format === 'mini_story'
   // the story talks about whatever this session is already about
   const storyVars = useMemo(() => {
@@ -1021,7 +1065,7 @@ export function SessionRunner() {
            * still on screen and — far worse — its "already finished" guard was
            * still set, which left the session stuck on the second block.
            */
-          <PracticeTurn key={block.id} block={block} topic={dailySession.topic} onDone={() => advanceSession()} />
+          <PracticeTurn key={block.id} block={block} topic={dailySession.topic} sessionId={learningSessionId} listeningBaseline={block.id === dailySession.blocks.find(b => ['review', 'targeted_retry', 'recall', 'extra_practice'].includes(b.type) && b.format !== 'mini_story')?.id} onDone={() => advanceSession()} />
         )}
         {block.type === 'free_chat_option' && (
           <div className="animate-fade-up rounded-3xl p-6 text-center" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>

@@ -291,8 +291,10 @@ const html = read('index.html')
    */
   has('there is no disabled microphone pretending voice exists',
     !/Voice input - coming soon/.test(room))
+  has('native speech synthesis is isolated behind the reusable device adapter',
+    ALL.filter(f => /speechSynthesis/.test(f.text)).every(f => /audio\/speech\.js$/.test(f.path || f.file || f.name || '')))
   has('and no voice provider was smuggled in',
-    !ALL.some(f => /SpeechRecognition|speechSynthesis|webkitSpeechRecognition/.test(f.text)))
+    !ALL.some(f => /SpeechRecognition|webkitSpeechRecognition/.test(f.text)))
 }
 
 /* ---- 8) focus mode hides panels and nothing else ---- */
@@ -461,7 +463,7 @@ const html = read('index.html')
   has('the upcoming state is announced, not only shown', /aria-label=\{`\$\{label\} — \$\{t\('upcoming'\)\}`\}/.test(call))
   has('the surface says the feature is not ready', /callUpcomingBody/.test(call) && /videoUpcomingBody/.test(call))
   /* and no media API was smuggled in anywhere */
-  const media = ALL.filter(f => /getUserMedia|RTCPeerConnection|SpeechRecognition|speechSynthesis|MediaRecorder/.test(f.text))
+  const media = ALL.filter(f => /getUserMedia|RTCPeerConnection|SpeechRecognition|MediaRecorder/.test(f.text))
   assert.deepEqual(media.map(f => f.path), [], 'a media API appeared in a UI-only sprint')
   n++
 }

@@ -1,3 +1,4 @@
+import { learnerStorage as localStorage } from '../auth/localLease.js'
 import { PRACTICE_MISSIONS } from '../data/practiceMissions'
 
 const ACTIVE_KEY = 'lc2-active-mission'

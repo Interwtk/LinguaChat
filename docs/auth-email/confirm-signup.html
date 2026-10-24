@@ -3,33 +3,55 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ if eq .Data.language "es" }}Confirma tu cuenta{{ else if eq .Data.language "pt" }}Confirme sua conta{{ else if eq .Data.language "fr" }}Confirmez votre compte{{ else if eq .Data.language "it" }}Conferma il tuo account{{ else if eq .Data.language "de" }}Bestätige dein Konto{{ else if eq .Data.language "ja" }}アカウントを確認{{ else if eq .Data.language "ar" }}أكّد حسابك{{ else }}Confirm your account{{ end }} · LinguaChat</title>
+  <meta name="color-scheme" content="dark">
+  <title>{{ if eq .Data.language "es" }}Confirma tu correo{{ else if eq .Data.language "pt" }}Confirme seu e-mail{{ else if eq .Data.language "fr" }}Confirmez votre e-mail{{ else if eq .Data.language "it" }}Conferma la tua e-mail{{ else if eq .Data.language "de" }}Bestätige deine E-Mail{{ else if eq .Data.language "ja" }}メールを確認{{ else if eq .Data.language "ar" }}أكّد بريدك الإلكتروني{{ else }}Confirm your email{{ end }} · LinguaChat</title>
 </head>
-<body style="margin:0;padding:0;background:#EDEAE3;font-family:Arial,Helvetica,sans-serif;color:#1C2333;">
-  <div role="article" lang="{{ if eq .Data.language "es" }}es{{ else if eq .Data.language "pt" }}pt{{ else if eq .Data.language "fr" }}fr{{ else if eq .Data.language "it" }}it{{ else if eq .Data.language "de" }}de{{ else if eq .Data.language "ja" }}ja{{ else if eq .Data.language "ar" }}ar{{ else }}en{{ end }}" dir="{{ if eq .Data.language "ar" }}rtl{{ else }}ltr{{ end }}" style="padding:32px 12px;">
-    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#FFFFFF;border:1px solid #E7E2DB;border-radius:20px;">
-      <tr><td style="padding:28px 28px 12px;">
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-          <td style="width:40px;height:40px;background:#6D7F67;border-radius:13px;text-align:center;color:#fff;font-weight:800;font-size:20px;">L</td>
-          <td style="padding-left:12px;font-weight:800;font-size:19px;letter-spacing:-.4px;color:#1C2333;">LinguaChat</td>
-        </tr></table>
-      </td></tr>
-      <tr><td style="padding:12px 28px 0;">
-        <p style="margin:0 0 12px;color:#A9563A;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;">{{ if eq .Data.language "es" }}Tu nueva aventura{{ else if eq .Data.language "pt" }}Sua nova jornada{{ else if eq .Data.language "fr" }}Votre nouvelle aventure{{ else if eq .Data.language "it" }}La tua nuova avventura{{ else if eq .Data.language "de" }}Dein neues Abenteuer{{ else if eq .Data.language "ja" }}新しい一歩{{ else if eq .Data.language "ar" }}رحلتك الجديدة{{ else }}Your new adventure{{ end }}</p>
-        <h1 style="margin:0 0 16px;font-size:29px;line-height:1.2;color:#1C2333;">{{ if eq .Data.language "es" }}¡Ya casi estamos!{{ else if eq .Data.language "pt" }}Está quase pronto!{{ else if eq .Data.language "fr" }}Vous y êtes presque !{{ else if eq .Data.language "it" }}Ci siamo quasi!{{ else if eq .Data.language "de" }}Fast geschafft!{{ else if eq .Data.language "ja" }}あと少しです！{{ else if eq .Data.language "ar" }}أوشكت على الانتهاء!{{ else }}Almost there!{{ end }}</h1>
-        <p style="font-size:16px;line-height:1.65;color:#5D6473;margin:0 0 22px;">{{ if eq .Data.language "es" }}Solo falta confirmar tu correo para comenzar a practicar inglés a tu ritmo. Así cuidamos tu cuenta y tu progreso.{{ else if eq .Data.language "pt" }}Só falta confirmar seu e-mail para começar a praticar inglês no seu ritmo. Assim protegemos sua conta e seu progresso.{{ else if eq .Data.language "fr" }}Il ne reste qu’à confirmer votre e-mail pour commencer à pratiquer l’anglais à votre rythme. Cela protège votre compte et vos progrès.{{ else if eq .Data.language "it" }}Devi solo confermare la tua e-mail per iniziare a praticare l’inglese al tuo ritmo. Così proteggiamo il tuo account e i tuoi progressi.{{ else if eq .Data.language "de" }}Bestätige nur noch deine E-Mail, um Englisch in deinem Tempo zu üben. So schützen wir dein Konto und deinen Fortschritt.{{ else if eq .Data.language "ja" }}メールアドレスを確認すると、自分のペースで英語の練習を始められます。アカウントと学習状況を安全に保つための確認です。{{ else if eq .Data.language "ar" }}ما عليك سوى تأكيد بريدك الإلكتروني لتبدأ ممارسة الإنجليزية بالوتيرة التي تناسبك. يساعد ذلك على حماية حسابك وتقدّمك.{{ else }}Confirm your email to start practicing English at your own pace. This helps protect your account and progress.{{ end }}</p>
-        <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr>
-          <td style="background:#A9563A;border-radius:12px;">
-            <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:15px 23px;color:#FFFFFF;font-weight:700;font-size:15px;text-decoration:none;">{{ if eq .Data.language "es" }}Confirmar mi correo{{ else if eq .Data.language "pt" }}Confirmar meu e-mail{{ else if eq .Data.language "fr" }}Confirmer mon e-mail{{ else if eq .Data.language "it" }}Conferma la mia e-mail{{ else if eq .Data.language "de" }}E-Mail bestätigen{{ else if eq .Data.language "ja" }}メールを確認する{{ else if eq .Data.language "ar" }}تأكيد بريدي الإلكتروني{{ else }}Confirm my email{{ end }}</a>
-          </td>
-        </tr></table>
-        <p style="font-size:13px;line-height:1.5;color:#5D6473;margin:23px 0 8px;">{{ if eq .Data.language "es" }}Si el botón no funciona, copia este enlace en tu navegador:{{ else if eq .Data.language "pt" }}Se o botão não funcionar, copie este link no navegador:{{ else if eq .Data.language "fr" }}Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :{{ else if eq .Data.language "it" }}Se il pulsante non funziona, copia questo link nel browser:{{ else if eq .Data.language "de" }}Falls die Schaltfläche nicht funktioniert, kopiere diesen Link in deinen Browser:{{ else if eq .Data.language "ja" }}ボタンが動作しない場合は、このリンクをブラウザにコピーしてください：{{ else if eq .Data.language "ar" }}إذا لم يعمل الزر، انسخ هذا الرابط إلى متصفحك:{{ else }}If the button does not work, copy this link into your browser:{{ end }}</p>
-        <p style="overflow-wrap:anywhere;word-break:break-word;font-size:12px;line-height:1.6;margin:0 0 23px;"><a href="{{ .ConfirmationURL }}" style="color:#A9563A;text-decoration:underline;">{{ .ConfirmationURL }}</a></p>
-      </td></tr>
-      <tr><td style="padding:19px 28px;background:#FBF6EF;border-top:1px solid #E7E2DB;border-radius:0 0 20px 20px;">
-        <p style="font-size:13px;color:#5D6473;line-height:1.6;margin:0;">{{ if eq .Data.language "es" }}Si tú no creaste esta cuenta, ignora el mensaje. Nunca compartas el enlace con otras personas.{{ else if eq .Data.language "pt" }}Se você não criou esta conta, ignore esta mensagem. Nunca compartilhe o link com outras pessoas.{{ else if eq .Data.language "fr" }}Si vous n’avez pas créé ce compte, ignorez ce message. Ne partagez jamais ce lien.{{ else if eq .Data.language "it" }}Se non hai creato questo account, ignora questo messaggio. Non condividere mai il link.{{ else if eq .Data.language "de" }}Wenn du dieses Konto nicht erstellt hast, ignoriere diese Nachricht. Teile den Link niemals mit anderen.{{ else if eq .Data.language "ja" }}このアカウントを作成していない場合は、このメールを無視してください。リンクは他の人と共有しないでください。{{ else if eq .Data.language "ar" }}إذا لم تنشئ هذا الحساب، فتجاهل هذه الرسالة. لا تشارك الرابط مع أي شخص.{{ else }}If you did not create this account, ignore this message. Never share this link with anyone.{{ end }}</p>
-        <p style="font-size:12px;color:#5E6D58;font-weight:700;margin:14px 0 0;">LinguaChat · {{ if eq .Data.language "es" }}Practica sin miedo.{{ else if eq .Data.language "pt" }}Pratique sem medo.{{ else if eq .Data.language "fr" }}Pratiquez sans peur.{{ else if eq .Data.language "it" }}Fai pratica senza paura.{{ else if eq .Data.language "de" }}Übe ohne Angst.{{ else if eq .Data.language "ja" }}失敗を恐れず練習しよう。{{ else if eq .Data.language "ar" }}تدرّب بلا خوف.{{ else }}Practice without fear.{{ end }}</p>
-      </td></tr>
+<body style="margin:0;padding:0;background:#1C2333;font-family:Arial,Helvetica,sans-serif;color:#ECE9E3;-webkit-text-size-adjust:100%;">
+  <div role="article" lang="{{ if eq .Data.language "es" }}es{{ else if eq .Data.language "pt" }}pt{{ else if eq .Data.language "fr" }}fr{{ else if eq .Data.language "it" }}it{{ else if eq .Data.language "de" }}de{{ else if eq .Data.language "ja" }}ja{{ else if eq .Data.language "ar" }}ar{{ else }}en{{ end }}" dir="{{ if eq .Data.language "ar" }}rtl{{ else }}ltr{{ end }}" style="padding:36px 14px;background:#1C2333;">
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="max-width:560px;margin:0 auto;">
+      <tr>
+        <td style="padding:0 4px 16px;">
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+            <tr>
+              <td style="width:42px;height:42px;background:#D98A66;border-radius:14px;text-align:center;color:#1C2333;font-weight:900;font-size:21px;">L</td>
+              <td style="padding-left:12px;">
+                <div style="font-size:18px;line-height:1.15;font-weight:800;color:#F1EEE8;letter-spacing:-.3px;">LinguaChat</div>
+                <div style="font-size:12px;line-height:1.4;color:#9BB093;margin-top:3px;">{{ if eq .Data.language "es" }}Tu espacio para aprender a tu manera{{ else if eq .Data.language "pt" }}Seu espaço para aprender do seu jeito{{ else if eq .Data.language "fr" }}Votre espace pour apprendre à votre façon{{ else if eq .Data.language "it" }}Il tuo spazio per imparare a modo tuo{{ else if eq .Data.language "de" }}Dein Raum, um auf deine Art zu lernen{{ else if eq .Data.language "ja" }}自分に合った学び方を見つける場所{{ else if eq .Data.language "ar" }}مساحتك للتعلّم بطريقتك{{ else }}Your space to learn your way{{ end }}</div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td style="background:#262E42;border:1px solid #3D4658;border-radius:22px;padding:30px 28px;">
+          <p style="margin:0 0 12px;color:#E8A57F;font-size:12px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;">{{ if eq .Data.language "es" }}Un paso más{{ else if eq .Data.language "pt" }}Mais um passo{{ else if eq .Data.language "fr" }}Encore une étape{{ else if eq .Data.language "it" }}Ancora un passo{{ else if eq .Data.language "de" }}Noch ein Schritt{{ else if eq .Data.language "ja" }}あと一歩{{ else if eq .Data.language "ar" }}خطوة واحدة أخرى{{ else }}One more step{{ end }}</p>
+          <h1 style="margin:0 0 14px;font-size:30px;line-height:1.18;color:#F1EEE8;font-weight:850;letter-spacing:-.6px;">{{ if eq .Data.language "es" }}Confirma tu correo y arrancamos.{{ else if eq .Data.language "pt" }}Confirme seu e-mail e começamos.{{ else if eq .Data.language "fr" }}Confirmez votre e-mail et c’est parti.{{ else if eq .Data.language "it" }}Conferma la tua e-mail e iniziamo.{{ else if eq .Data.language "de" }}Bestätige deine E-Mail und leg los.{{ else if eq .Data.language "ja" }}メールを確認して始めましょう。{{ else if eq .Data.language "ar" }}أكّد بريدك الإلكتروني ولنبدأ.{{ else }}Confirm your email and let’s begin.{{ end }}</h1>
+          <p style="font-size:16px;line-height:1.65;color:#A9B0BE;margin:0 0 24px;">{{ if eq .Data.language "es" }}Este enlace confirma que la cuenta es tuya. Después podrás continuar con tu práctica y LinguaChat irá adaptándose a cómo aprendes.{{ else if eq .Data.language "pt" }}Este link confirma que a conta é sua. Depois, você poderá continuar praticando e o LinguaChat irá se adaptar à forma como você aprende.{{ else if eq .Data.language "fr" }}Ce lien confirme que ce compte vous appartient. Vous pourrez ensuite continuer à pratiquer pendant que LinguaChat s’adapte à votre façon d’apprendre.{{ else if eq .Data.language "it" }}Questo link conferma che l’account è tuo. Poi potrai continuare a esercitarti mentre LinguaChat si adatta al tuo modo di imparare.{{ else if eq .Data.language "de" }}Dieser Link bestätigt, dass das Konto dir gehört. Danach kannst du weiter üben, während sich LinguaChat an deine Lernweise anpasst.{{ else if eq .Data.language "ja" }}このリンクでアカウントが本人のものであることを確認します。その後、LinguaChat があなたの学び方に合わせながら練習を続けられます。{{ else if eq .Data.language "ar" }}يؤكد هذا الرابط أن الحساب يخصك. بعد ذلك يمكنك متابعة التدريب بينما يتكيف LinguaChat مع الطريقة التي تتعلم بها.{{ else }}This link confirms the account belongs to you. Then you can keep practicing while LinguaChat adapts to the way you learn.{{ end }}</p>
+
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+            <tr>
+              <td style="background:#D98A66;border-radius:14px;">
+                <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:15px 22px;color:#1C2333;font-weight:800;font-size:15px;text-decoration:none;">{{ if eq .Data.language "es" }}Confirmar mi correo{{ else if eq .Data.language "pt" }}Confirmar meu e-mail{{ else if eq .Data.language "fr" }}Confirmer mon e-mail{{ else if eq .Data.language "it" }}Conferma la mia e-mail{{ else if eq .Data.language "de" }}E-Mail bestätigen{{ else if eq .Data.language "ja" }}メールを確認する{{ else if eq .Data.language "ar" }}تأكيد بريدي الإلكتروني{{ else }}Confirm my email{{ end }}</a>
+              </td>
+            </tr>
+          </table>
+
+          <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin-top:26px;background:#232B3D;border:1px solid #3D4658;border-radius:14px;">
+            <tr>
+              <td style="padding:14px 16px;">
+                <p style="margin:0;color:#C3C9D4;font-size:13px;line-height:1.55;">{{ if eq .Data.language "es" }}¿El botón no abre? Copia el enlace de abajo en tu navegador.{{ else if eq .Data.language "pt" }}O botão não abriu? Copie o link abaixo no navegador.{{ else if eq .Data.language "fr" }}Le bouton ne s’ouvre pas ? Copiez le lien ci-dessous dans votre navigateur.{{ else if eq .Data.language "it" }}Il pulsante non si apre? Copia il link qui sotto nel browser.{{ else if eq .Data.language "de" }}Der Button öffnet sich nicht? Kopiere den Link unten in deinen Browser.{{ else if eq .Data.language "ja" }}ボタンが開かない場合は、下のリンクをブラウザにコピーしてください。{{ else if eq .Data.language "ar" }}إذا لم يفتح الزر، انسخ الرابط أدناه إلى متصفحك.{{ else }}Button not opening? Copy the link below into your browser.{{ end }}</p>
+                <p style="overflow-wrap:anywhere;word-break:break-word;font-size:12px;line-height:1.55;margin:8px 0 0;"><a href="{{ .ConfirmationURL }}" style="color:#E8A57F;text-decoration:underline;">{{ .ConfirmationURL }}</a></p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:18px 6px 0;text-align:center;">
+          <p style="font-size:12px;color:#A9B0BE;line-height:1.55;margin:0;">{{ if eq .Data.language "es" }}Si tú no creaste esta cuenta, puedes ignorar este correo. No compartas el enlace.{{ else if eq .Data.language "pt" }}Se você não criou esta conta, ignore este e-mail. Não compartilhe o link.{{ else if eq .Data.language "fr" }}Si vous n’avez pas créé ce compte, ignorez cet e-mail. Ne partagez pas le lien.{{ else if eq .Data.language "it" }}Se non hai creato questo account, ignora questa e-mail. Non condividere il link.{{ else if eq .Data.language "de" }}Wenn du dieses Konto nicht erstellt hast, ignoriere diese E-Mail. Teile den Link nicht.{{ else if eq .Data.language "ja" }}このアカウントを作成していない場合は、このメールを無視してください。リンクは共有しないでください。{{ else if eq .Data.language "ar" }}إذا لم تنشئ هذا الحساب، فتجاهل هذا البريد. لا تشارك الرابط.{{ else }}If you did not create this account, ignore this email. Do not share the link.{{ end }}</p>
+          <p style="font-size:12px;color:#9BB093;font-weight:700;margin:9px 0 0;">LinguaChat · {{ if eq .Data.language "es" }}Aprende a tu manera.{{ else if eq .Data.language "pt" }}Aprenda do seu jeito.{{ else if eq .Data.language "fr" }}Apprenez à votre façon.{{ else if eq .Data.language "it" }}Impara a modo tuo.{{ else if eq .Data.language "de" }}Lerne auf deine Art.{{ else if eq .Data.language "ja" }}自分らしく学ぼう。{{ else if eq .Data.language "ar" }}تعلّم بطريقتك.{{ else }}Learn your way.{{ end }}</p>
+        </td>
+      </tr>
     </table>
   </div>
 </body>

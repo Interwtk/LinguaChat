@@ -1,3 +1,4 @@
+import { GENERATION_KEY, bindLocalLease, validLocalLease, prepareLearnerNamespace, currentLease, NAMESPACE_PREFIX, HEAD_PREFIX } from './localLease.js'
 const OWNER_KEY = 'lc2-auth-owner-id'
 const CACHE_PREFIX = 'lc2-account-cache:'
 const ACTIVE_PREFIX = 'lc2-'
@@ -14,7 +15,7 @@ function activeKeys(storage) {
   for (let i = 0; i < storage.length; i += 1) {
     const key = storage.key(i)
     if (!key?.startsWith(ACTIVE_PREFIX)) continue
-    if (key === OWNER_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
+    if (key.startsWith(NAMESPACE_PREFIX) || key.startsWith(HEAD_PREFIX) || key === OWNER_KEY || key === GENERATION_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
     keys.push(key)
   }
   return keys
@@ -38,7 +39,7 @@ function clearActive(storage) {
 function restoreSnapshot(storage, snapshot) {
   if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return
   for (const [key, value] of Object.entries(snapshot)) {
-    if (!key.startsWith(ACTIVE_PREFIX) || key === OWNER_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
+    if (!key.startsWith(ACTIVE_PREFIX) || key.startsWith(NAMESPACE_PREFIX) || key.startsWith(HEAD_PREFIX) || key === OWNER_KEY || key === GENERATION_KEY || key === LEGACY_AUTH_KEY || key.startsWith(CACHE_PREFIX)) continue
     if (typeof value === 'string') storage.setItem(key, value)
   }
 }
@@ -46,6 +47,9 @@ function restoreSnapshot(storage, snapshot) {
 function snapshotAndClearActive(storage, userId) {
   const snapshot = readActiveSnapshot(storage)
   const destination = cacheKey(userId)
+  // A failed ownership rollback can leave this account's data safely cached.
+  // Do not replace that snapshot with an empty active dataset on the next switch.
+  if (Object.keys(snapshot).length === 0 && storage.getItem(destination)) return true
 
   // Move, rather than duplicate, the active dataset. This frees the browser
   // quota before serializing the previous account into its private cache.
@@ -69,7 +73,13 @@ function restoreActive(storage, userId) {
   const raw = storage.getItem(source)
   if (!raw) return true
   let snapshot
-  try { snapshot = JSON.parse(raw) } catch { return true }
+  // Reject damaged account caches before consuming them or reporting a restore.
+  try { snapshot = JSON.parse(raw) } catch { return false }
+  if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) return false
+  if (Object.entries(snapshot).some(([key, value]) =>
+    !key.startsWith(ACTIVE_PREFIX) || key.startsWith(NAMESPACE_PREFIX) || key.startsWith(HEAD_PREFIX) || key === OWNER_KEY || key === GENERATION_KEY || key === LEGACY_AUTH_KEY
+    || key.startsWith(CACHE_PREFIX) || typeof value !== 'string'
+  )) return false
 
   // Consume the cached copy before restoring active keys so the same dataset
   // never occupies browser quota twice; the cached copy is consumed first
@@ -91,9 +101,21 @@ function restoreActive(storage, userId) {
  * the previous account and restores only the next account's browser snapshot.
  * Provider/session tokens are untouched because they do not use the lc2- prefix.
  */
-export function activateLocalAccount(storage, userId) {
+function activateAccount(storage, userId) {
   const next = normalizeUserId(userId)
   const current = storage.getItem(OWNER_KEY)
+  // Persisted owner IDs are untrusted; reject malformed/noncanonical encoding.
+  let previousUserId = null
+  if (current && current !== next) {
+    try {
+      previousUserId = decodeURIComponent(current)
+      if (normalizeUserId(previousUserId) !== current) {
+        return { switched: false, claimedGuestData: false, blocked: true }
+      }
+    } catch {
+      return { switched: false, claimedGuestData: false, blocked: true }
+    }
+  }
   storage.removeItem(LEGACY_AUTH_KEY)
 
   if (!current) {
@@ -108,17 +130,61 @@ export function activateLocalAccount(storage, userId) {
       return { switched: false, claimedGuestData: false, blocked: true }
     }
   }
-  if (current === next) return { switched: false, claimedGuestData: false }
+  if (current === next) {
+    if (storage.getItem(cacheKey(userId)) && activeKeys(storage).length === 0) {
+      const restored = restoreActive(storage, userId)
+      return { switched: restored, claimedGuestData: false, ...(!restored ? { blocked: true } : {}) }
+    }
+    return { switched: false, claimedGuestData: false }
+  }
 
-  if (!snapshotAndClearActive(storage, decodeURIComponent(current))) {
+  if (!snapshotAndClearActive(storage, previousUserId)) {
+    return { switched: false, claimedGuestData: false, blocked: true }
+  }
+  // Commit ownership while active storage is empty, before consuming B's cache.
+  // If this write fails, A's owner and B's untouched snapshot remain consistent.
+  try {
+    storage.setItem(OWNER_KEY, next)
+  } catch {
+    restoreActive(storage, previousUserId)
     return { switched: false, claimedGuestData: false, blocked: true }
   }
   if (!restoreActive(storage, decodeURIComponent(next))) {
-    restoreActive(storage, decodeURIComponent(current))
+    // Failed restoration leaves active storage empty and both caches intact.
+    // Restore A only after its ownership has also been restored.
+    try {
+      storage.setItem(OWNER_KEY, current)
+      restoreActive(storage, previousUserId)
+    } catch {
+      clearActive(storage)
+    }
     return { switched: false, claimedGuestData: false, blocked: true }
   }
-  storage.setItem(OWNER_KEY, next)
   return { switched: true, claimedGuestData: false }
 }
 
 export const browserDataIsolationKeys = Object.freeze({ OWNER_KEY, CACHE_PREFIX })
+
+// Rotate before touching active data. A failed switch never revalidates old tabs.
+export function activateLocalAccount(storage, userId, { deferRebind = false } = {}) {
+  const next = normalizeUserId(userId)
+  try {
+    const owner = storage.getItem(OWNER_KEY)
+    if (owner && normalizeUserId(decodeURIComponent(owner)) !== owner) return { blocked: true, switched: false, claimedGuestData: false }
+    if (storage.getItem(OWNER_KEY) !== next || !storage.getItem(GENERATION_KEY)) {
+      const generation = globalThis.crypto?.randomUUID?.() || `${Date.now()}:${Math.random()}`
+      storage.setItem(GENERATION_KEY, generation)
+      if (storage.getItem(GENERATION_KEY) !== generation) throw new Error('Generation unavailable')
+    }
+    const expectedLease = JSON.stringify([next, storage.getItem(GENERATION_KEY)])
+    const wasValid = validLocalLease(storage)
+    const result = activateAccount(storage, userId)
+    if (!result.blocked) {
+      if (currentLease(storage) !== expectedLease) throw new Error('Activation superseded')
+      prepareLearnerNamespace(storage, expectedLease)
+      if (deferRebind && !wasValid) return { ...result, reloadRequired: true }
+      bindLocalLease(storage, expectedLease)
+    }
+    return !result.blocked && owner === next && !wasValid ? { ...result, reloadRequired: true } : result
+  } catch { return { switched: false, claimedGuestData: false, blocked: true } }
+}

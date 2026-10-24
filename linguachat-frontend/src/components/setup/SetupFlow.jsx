@@ -448,11 +448,14 @@ function TutorPersonality() {
             {PERSONALITIES.map(p => {
               const isSelected = selected === p.id
               return (
-                <div
+                <button
+                  type="button"
+                  aria-pressed={isSelected}
                   key={p.id}
                   onClick={() => setSelected(p.id)}
                   className="rounded-2xl p-5 cursor-pointer transition-all"
                   style={{
+                    textAlign: 'start', width: '100%', font: 'inherit',
                     background: isSelected ? p.soft : 'var(--surface)',
                     border: `2px solid ${isSelected ? p.aura : 'var(--border)'}`,
                     boxShadow: isSelected ? `0 0 0 4px ${p.aura}22` : 'none',
@@ -476,7 +479,7 @@ function TutorPersonality() {
                       "{t(p.sampleKey)}"
                     </p>
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>
