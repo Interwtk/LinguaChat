@@ -4,6 +4,19 @@
  * falls back to English, never to a raw key.
  */
 export default {
+  listeningAudio: "Audio · Lingua",
+  listeningPlay: "Abspielen",
+  listeningReplay: "Wiederholen",
+  listeningSlow: "Langsamer",
+  listeningStop: "Stoppen",
+  listeningTranscript: "Transkript anzeigen",
+  listeningHide: "Transkript ausblenden",
+  listeningPlaying: "Wiedergabe",
+  listeningStopped: "Gestoppt",
+  listeningUnavailable: "Audio nicht verfügbar. Du kannst das Transkript lesen.",
+
+  authShowPassword: "Passwort anzeigen",
+  authHidePassword: "Passwort verbergen",
   ep1PraiseIndependent: "Du hast dich ohne Vorlage vorgestellt. Super!",
   ep1PraiseIm: "Du hast I’m vor deinem Namen benutzt. Gut!",
   ep1PraiseGreetAndName: "Diesmal hast du Begrüßung und Namen hinzugefügt.",
@@ -533,6 +546,7 @@ export default {
   recoverySent: "Link gesendet",
   recoverySentText: "Sieh in deinem Posteingang nach. Dein Übungsverlauf ist sicher und wartet.",
   authGenericError: 'Das konnte nicht abgeschlossen werden. Bitte versuche es erneut.',
+  authCallbackError: "Dieser Anmeldelink ist ungültig oder abgelaufen. Melde dich an oder fordere einen neuen Link an.",
   authStorageFull: 'Der Browserspeicher ist voll. Gib Speicher für diese Website frei und melde dich erneut an.',
   confirmEmailTitle: 'Bestätige deine E-Mail-Adresse',
   confirmEmailText: 'Wir haben einen Bestätigungslink an {email} gesendet. Öffne ihn, um dein Konto zu aktivieren.',

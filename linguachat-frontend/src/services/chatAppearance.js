@@ -1,3 +1,4 @@
+import { learnerStorage as localStorage } from '../auth/localLease.js'
 /*
  * How the CHAT looks. Not what the learner is learning.
  *

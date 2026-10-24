@@ -11,6 +11,8 @@
 import assert from 'node:assert/strict'
 
 import { ALL_EPISODES, ALL_ARCS } from './check-b2-arc-content.mjs'
+import { isIndependentEvidence, showsStepModelAnswer } from '../../../src/learning/engine/scaffolding.js'
+import { evaluateB2Free } from '../../../src/learning/levels/b2/evaluators.js'
 import { B2_CAN_DOS } from '../../../src/learning/levels/b2/b2Capabilities.js'
 
 let groups = 0
@@ -74,6 +76,47 @@ for (const ep of ALL_EPISODES) {
     const hasProduction = steps.some((s) => s.type === 'free_reply' || s.type === 'recall')
     assert.ok(hasProduction, `${canDo.id} has no production (free_reply/recall) step — recognition-only evidence never satisfies a required capability`)
   }
+  ok()
+}
+
+/* Authored independence must agree with what the learner can actually see. */
+{
+  for (const ep of ALL_EPISODES) for (const step of ep.steps) {
+    if (step.type !== 'free_reply') continue
+    const label = `${ep.id}/${step.evalKind}/${step.evidenceType}`
+    if (step.evidenceType === 'assistedOpen') assert.ok(step.suggestionEn?.trim(), `${label}: assisted turn needs a model`)
+    if (['independent', 'delayedRetrieval'].includes(step.evidenceType)) assert.equal(step.suggestionEn, undefined, `${label}: unaided evidence cannot expose a model`)
+  }
+  ok()
+}
+
+/* Exercise real evaluators: supplied models are assisted, never mastery. */
+{
+  let assisted = 0, independent = 0
+  for (const ep of ALL_ARCS.the_long_conversation) for (const step of ep.steps) {
+    if (step.type !== 'free_reply') continue
+    if (step.evidenceType === 'assistedOpen') {
+      const result = evaluateB2Free(step.evalKind, step.suggestionEn, { ...step, independent: isIndependentEvidence({ step, assistanceUsed: false, correct: true }) })
+      assert.equal(result.completedObjective, true, `${ep.id}: authored suggestion must satisfy its evaluator`)
+      assert.equal(result.masteryEvidence.independent, false, 'using the model must never claim independence')
+      for (const scaffold of ['high', 'medium', 'low']) {
+        assert.equal(showsStepModelAnswer(step, scaffold), true, 'assisted model remains visible after support fades')
+        assert.equal(showsStepModelAnswer(step, scaffold, { unaidedAttempt: true }), true)
+        assert.equal(showsStepModelAnswer(step, scaffold, { reviewing: true }), false)
+      }
+      assisted++
+    }
+    if (step.evidenceType === 'independent' && step.evalKind === 'shift_register') {
+      const result = evaluateB2Free(step.evalKind, 'Before we move on, let us confirm the plan together.', { ...step, independent: true })
+      assert.equal(result.completedObjective, true)
+      assert.equal(result.masteryEvidence.independent, true)
+      const nonsense = evaluateB2Free(step.evalKind, 'banana banana', { ...step, independent: true })
+      assert.equal(nonsense.completedObjective, false)
+      independent++
+    }
+  }
+  assert.equal(assisted, 6)
+  assert.equal(independent, 4)
   ok()
 }
 

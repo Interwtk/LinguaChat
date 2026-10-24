@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { ThemeToggle } from '../ui/ThemeToggle'
@@ -38,11 +38,12 @@ function AuthShell({ children, back, onBack }) {
 }
 
 function AuthInput({ label, type = 'text', value, onChange, placeholder, autoComplete }) {
+  const id = useId()
   return (
     <div className="flex flex-col gap-1.5">
-      <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--ink)' }}>{label}</label>
+      <label htmlFor={id} style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--ink)' }}>{label}</label>
       <input
-        type={type} value={value} onChange={onChange}
+        id={id} type={type} value={value} onChange={onChange}
         placeholder={placeholder} autoComplete={autoComplete}
         className="w-full rounded-xl px-4 py-3 text-sm outline-none"
         style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)', fontFamily: 'inherit' }}
@@ -54,20 +55,22 @@ function AuthInput({ label, type = 'text', value, onChange, placeholder, autoCom
 }
 
 function PasswordField({ label, value, onChange, placeholder, autoComplete }) {
+  const id = useId()
+  const { t } = useApp()
   const [show, setShow] = useState(false)
   return (
     <div className="flex flex-col gap-1.5">
-      <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--ink)' }}>{label}</label>
+      <label htmlFor={id} style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--ink)' }}>{label}</label>
       <div style={{ position: 'relative' }}>
         <input
-          type={show ? 'text' : 'password'} value={value} onChange={onChange}
+          id={id} type={show ? 'text' : 'password'} value={value} onChange={onChange}
           placeholder={placeholder} autoComplete={autoComplete}
           className="w-full rounded-xl px-4 py-3 text-sm outline-none"
           style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)', fontFamily: 'inherit', paddingRight: 44 }}
           onFocus={e => { e.target.style.borderColor = 'var(--accent)' }}
           onBlur={e => { e.target.style.borderColor = 'var(--border)' }}
         />
-        <button type="button" onClick={() => setShow(s => !s)}
+        <button type="button" aria-label={t(show ? 'authHidePassword' : 'authShowPassword')} aria-pressed={show} aria-controls={id} onClick={() => setShow(s => !s)}
           style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', display: 'flex', alignItems: 'center' }}>
           {show
             ? <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
@@ -104,7 +107,7 @@ function EntryScreen() {
   const { setAuthStep, authProviderError, t } = useApp()
   const providerErrorText = authProviderError === 'storage_full'
     ? t('authStorageFull')
-    : authProviderError
+    : authProviderError === 'callback_error' ? t('authCallbackError') : authProviderError
   return (
     <AuthShell>
       <div className="flex flex-col items-center text-center animate-fade-up">
@@ -172,7 +175,7 @@ function LoginForm() {
         </div>
         <h2 style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--ink)', marginBottom: 6 }}>{t('loginTitle')}</h2>
         <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 28 }}>{t('loginSubtitle')}</p>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form aria-busy={loading} onSubmit={handleSubmit} className="flex flex-col gap-4">
           <AuthInput label={t('email')} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
           <div>
             <PasswordField label={t('password')} value={password} onChange={e => setPassword(e.target.value)} placeholder={t('password')} autoComplete="current-password" />
@@ -183,7 +186,7 @@ function LoginForm() {
               </button>
             </div>
           </div>
-          {error && <p style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500 }}>{error}</p>}
+          {error && <p role="alert" style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500 }}>{error}</p>}
           <button type="submit" disabled={loading}
             className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98]"
             style={{ background: 'var(--accent)', opacity: loading ? 0.7 : 1 }}>
@@ -250,7 +253,7 @@ function SignupForm() {
           <h2 style={{ fontWeight: 800, fontSize: '1.375rem', color: 'var(--ink)', marginBottom: 8 }}>{t('confirmEmailTitle')}</h2>
           <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: 20 }}>{t('confirmEmailText', { email: email.trim() })}</p>
           {resent && <p style={{ fontSize: '0.8125rem', color: 'var(--positive)', fontWeight: 600, marginBottom: 12 }}>{t('confirmationResent')}</p>}
-          {error && <p style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500, marginBottom: 12 }}>{error}</p>}
+          {error && <p role="alert" style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500, marginBottom: 12 }}>{error}</p>}
           <button type="button" onClick={handleResend}
             className="px-6 py-3 rounded-2xl font-bold text-sm transition-all hover:opacity-80 active:scale-[0.98]"
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)' }}>
@@ -276,7 +279,7 @@ function SignupForm() {
         </div>
         <h2 style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--ink)', marginBottom: 6 }}>{t('signupTitle')}</h2>
         <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 28 }}>{t('signupSubtitle')}</p>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form aria-busy={loading} onSubmit={handleSubmit} className="flex flex-col gap-4">
           <AuthInput label={t('yourName')} value={name} onChange={e => setName(e.target.value)} placeholder={t('namePlaceholder')} autoComplete="given-name" />
           <AuthInput label={t('email')} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
           <div>
@@ -285,19 +288,13 @@ function SignupForm() {
           </div>
           <PasswordField label={t('confirmPassword')} value={confirm} onChange={e => setConfirm(e.target.value)} placeholder={t('confirmPassword')} autoComplete="new-password" />
           <label className="flex items-start gap-3 cursor-pointer" style={{ marginTop: 4 }}>
-            <div onClick={() => setAgreed(a => !a)} style={{
-              width: 20, height: 20, borderRadius: 6, flexShrink: 0, marginTop: 1,
-              border: agreed ? '1.5px solid var(--accent)' : '2px solid var(--border)',
-              background: agreed ? 'var(--accent)' : 'transparent',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', cursor: 'pointer',
-            }}>
-              {agreed && <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-            </div>
+            <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
+              style={{ width: 20, height: 20, flexShrink: 0, marginTop: 1, accentColor: 'var(--accent)', cursor: 'pointer' }} />
             <span style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>
               {t('commitment')}
             </span>
           </label>
-          {error && <p style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500 }}>{error}</p>}
+          {error && <p role="alert" style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500 }}>{error}</p>}
           <button type="submit" disabled={loading}
             className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98]"
             style={{ background: 'var(--accent)', opacity: loading ? 0.7 : 1 }}>
@@ -348,9 +345,9 @@ function ForgotPassword() {
             </div>
             <h2 style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--ink)', marginBottom: 6 }}>{t('forgotTitle')}</h2>
             <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 28 }}>{t('forgotSubtitle')}</p>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <form aria-busy={loading} onSubmit={handleSubmit} className="flex flex-col gap-4">
               <AuthInput label={t('email')} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
-              {error && <p style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500 }}>{error}</p>}
+              {error && <p role="alert" style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500 }}>{error}</p>}
               <button type="submit" disabled={loading}
                 className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98]"
                 style={{ background: 'var(--accent)', opacity: loading ? 0.7 : 1 }}>
@@ -406,13 +403,13 @@ function ResetPassword() {
       <div className="animate-fade-up">
         <h2 style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--ink)', marginBottom: 6 }}>{t('resetPasswordTitle')}</h2>
         <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 28 }}>{t('resetPasswordSubtitle')}</p>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <form aria-busy={loading} onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <PasswordField label={t('password')} value={password} onChange={e => setPassword(e.target.value)} placeholder={t('password')} autoComplete="new-password" />
             <PasswordStrength password={password} />
           </div>
           <PasswordField label={t('confirmPassword')} value={confirm} onChange={e => setConfirm(e.target.value)} placeholder={t('confirmPassword')} autoComplete="new-password" />
-          {error && <p style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500 }}>{error}</p>}
+          {error && <p role="alert" style={{ fontSize: '0.8125rem', color: 'var(--accent)', fontWeight: 500 }}>{error}</p>}
           <button type="submit" disabled={loading}
             className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 active:scale-[0.98]"
             style={{ background: 'var(--accent)', opacity: loading ? 0.7 : 1 }}>
