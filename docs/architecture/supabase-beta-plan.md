@@ -1,26 +1,30 @@
 # LinguaChat — Supabase beta persistence plan
 
-Status: design only until a LinguaChat-specific Supabase project is positively
-identified or created. Do **not** point LinguaChat at an EvoLabs project by guess.
+Status: the LinguaChat Supabase project identity is positively verified.
+Client-side work may target only that project; schema/RLS/DDL and cloud-progress
+persistence remain separately owner-gated. Do **not** point LinguaChat at any
+EvoLabs project by guess.
 
 Owner authorization changed on 2026-08-20: Supabase is no longer permanently
 postponed. It may be introduced gradually for the public/friends beta, but only
-through dedicated `LC-CLOUD-*` tasks with measured storage budgets, RLS and rollback.
+through dedicated `LC-CLOUD-*` work with measured storage budgets, RLS and rollback.
 Voice/video/media remain deferred.
 
 ## 1. Current connected-account reality
 
-The connected Supabase account currently exposes:
+Read-only connected-account verification on 2026-10-06 identifies exactly this
+LinguaChat project:
 
-- `Evolabs Platform` — active;
-- `SG-Evolabs-Auth-Testing` — inactive.
+- name: `LinguaChat`;
+- project ref/id: `dcwrkhgmjvduiuczhcsr`;
+- region: `ca-central-1`;
+- status at verification: `ACTIVE_HEALTHY`.
 
-Neither the live LinguaChat repository nor its current configuration contains a
-LinguaChat Supabase project ref. The inactive project must not be restored merely
-because it is the only paused project: its name indicates EvoLabs testing.
-
-A LinguaChat cloud task remains blocked until the exact project is identified or a
-new project is deliberately created in a user-confirmed Supabase organization.
+This establishes the non-secret project identity required for client-side cloud
+work. It does **not** authorize schema creation, RLS/policy mutation, direct
+Postgres/backend Supabase, Storage, production deployment or progress-cloud
+persistence. Those gates remain explicit elsewhere in this plan and in
+`LC-CLOUD-001`. No EvoLabs project may be substituted for this project.
 
 ## 2. Free-plan budget to design against
 
