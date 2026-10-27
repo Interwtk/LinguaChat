@@ -435,8 +435,8 @@ test('onboarding completion commits profile before marker and never navigates on
     if(failure!=='readback')assert.equal(learnerStorage.getItem('lc2-onboarded'),null)
     f.store.before=null
     assert.equal(complete(),true,'retry after storage recovery should finish')
-    assert.equal(writes.at(-1),failure==='profile'?'profile':failure==='personalized'?'personalized':'onboarded',
-      'injected write history remains inspectable')
+    assert.deepEqual(writes.slice(-4),['profile','welcome','personalized','onboarded'],
+      'the retry must commit the verified profile before the completion marker')
     assert.equal(learnerStorage.getItem('lc2-onboarded'),'true')
     assert.deepEqual(JSON.parse(learnerStorage.getItem('lc2-profile')),profile)
     assert.deepEqual(published,[['completed',true],['view','today'],['welcome',true],['step',null]])
