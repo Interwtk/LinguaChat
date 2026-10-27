@@ -620,25 +620,48 @@ export function AppProvider({ children }) {
   }, [])
 
   // User finished the guided personalization step (tutor preferences are already
-  // persisted live). Mark onboarding complete and arm Chatto's Home welcome once.
+  // persisted live). Commit the onboarding marker LAST so partial Storage
+  // failures cannot open Home or skip unfinished setup after a reload.
   const completePersonalization = useCallback(() => {
     try {
       // Onboarding records setup only. Authentication authority belongs solely
       // to the provider session gate; finishing personalization must never mint
       // or persist an authenticated state on its own.
-      localStorage.setItem('lc2-onboarded', 'true')
-      localStorage.setItem('lc2-personalization-completed', 'true')
       localStorage.setItem('lc2-welcome-seen', 'false')
-    } catch {}
+      localStorage.setItem('lc2-personalization-completed', 'true')
+      if (localStorage.getItem('lc2-welcome-seen') !== 'false'
+        || localStorage.getItem('lc2-personalization-completed') !== 'true') {
+        throw new Error('Onboarding preferences not durable')
+      }
+      localStorage.setItem('lc2-onboarded', 'true')
+      if (localStorage.getItem('lc2-onboarded') !== 'true') {
+        throw new Error('Onboarding completion not durable')
+      }
+    } catch {
+      setTutorPreferenceSaveFailed(true)
+      return false
+    }
+    setTutorPreferenceSaveFailed(false)
     setOnboardingCompleted(true)
     setView('today')
     setShowWelcome(true)
     setAuthStep(null)
+    return true
   }, [])
 
-  // Recommended path: skip the guided questions and start Lingua with a
-  // balanced, friendly setup. Mirrors the defaults the manual flow produces.
+  // Recommended path: a one-click choice is still a real preference save.
+  // Fail closed on quota errors or stale accounts instead of showing Home with
+  // defaults that were never persisted.
   const applyRecommendedSetup = useCallback(() => {
+    let durable
+    try {
+      durable = updateTutorPreferencesDurably(DEFAULT_TUTOR_PREFERENCES)
+    } catch {
+      setTutorPreferenceSaveFailed(true)
+      return false
+    }
+    if (!completePersonalization()) return false
+    setTutorPreferencesState(durable)
     setProfile(prev => ({
       ...prev,
       tutorPersonality: prev.tutorPersonality || 'Gentle Guide',
@@ -651,8 +674,7 @@ export function AppProvider({ children }) {
       goal: prev.goal || 'Travel',
       dailyGoal: 10,
     }))
-    setTutorPreferencesState(saveTutorPreferences(DEFAULT_TUTOR_PREFERENCES))
-    completePersonalization()
+    return true
   }, [completePersonalization])
 
   const dismissWelcome = useCallback(() => {
