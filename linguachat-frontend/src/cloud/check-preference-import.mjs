@@ -208,6 +208,40 @@ test('actual adapter + coordinator + scheduler: manual edits stay visible and di
   assert.equal(writes,2);assert.equal(timers.size,0);controller.stop()
 })
 
+test('intervening tutor edit aborts multi-key import and survives WAL recovery',()=>{
+  const f=fixture();let armed=true
+  f.store.after=(op,k)=>{
+    if(armed&&op==='set'&&suffix(k,'lc2-cloud-preference-options')){
+      armed=false
+      saveTutorPreferences({...loadTutorPreferences(),pace:'fast'})
+    }
+  }
+  assert.throws(()=>f.publish(f.target),/Concurrent local preference edit/)
+  assert.equal(armed,false);assert.equal(f.published,0)
+  assert.ok(learnerStorage.getItem(LOCAL_IMPORT_KEY),'unfinished import remains recoverable')
+  f.store.after=null
+  f.importer().recover()
+  assertDurable(f,{...f.target,pace:'fast'})
+})
+
+test('intervening local-only options edit is not overwritten by a later import key',()=>{
+  const f=fixture();let armed=true
+  f.store.after=(op,k)=>{
+    if(armed&&op==='set'&&suffix(k,'lc2-tutor-preferences')){
+      armed=false
+      const options=JSON.parse(learnerStorage.getItem('lc2-cloud-preference-options'))
+      learnerStorage.setItem('lc2-cloud-preference-options',JSON.stringify({...options,local_option:'other-tab'}))
+    }
+  }
+  assert.throws(()=>f.publish(f.target),/Concurrent local preference edit/)
+  assert.equal(armed,false);assert.equal(f.published,0)
+  f.store.after=null
+  f.importer().recover()
+  assert.equal(f.importer().read().fields.tone,f.target.tone)
+  assert.equal(JSON.parse(learnerStorage.getItem('lc2-cloud-preference-options')).local_option,'other-tab')
+  assert.equal(learnerStorage.getItem(LOCAL_IMPORT_KEY),null)
+})
+
 test('publication reflects a real edit made at the final cleanup boundary',()=>{
   const f=fixture();let armed=true
   f.store.after=(op,k)=>{
