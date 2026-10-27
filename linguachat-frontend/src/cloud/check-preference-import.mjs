@@ -219,13 +219,17 @@ test('ordinary tutor updates rebase on newer same-account storage rather than st
   let reactState=f.reactTutor
   // Another tab saves a new pace after this tab's React state was published.
   saveTutorPreferences({...loadTutorPreferences(),pace:'fast'})
-  appUpdateTutor(updater=>{reactState=updater(reactState)},saveTutorPreferences,loadTutorPreferences,{tone:'fun'})
+  let writes=0
+  f.store.before=(op,k)=>{if(op==='set'&&suffix(k,'lc2-tutor-preferences'))writes++}
+  appUpdateTutor(next=>{assert.equal(typeof next,'object','React receives a value, never an impure updater');reactState=next},saveTutorPreferences,loadTutorPreferences,{tone:'fun'})
+  assert.equal(writes,1,'one user edit produces exactly one durable write')
   assert.equal(reactState.pace,'fast')
   assert.equal(reactState.tone,'fun')
   assert.equal(loadTutorPreferences().pace,'fast')
   assert.equal(loadTutorPreferences().tone,'fun')
   // Explicitly choosing no interests is different from omitting that field.
-  appUpdateTutor(updater=>{reactState=updater(reactState)},saveTutorPreferences,loadTutorPreferences,{interests:[]})
+  appUpdateTutor(next=>{assert.equal(typeof next,'object');reactState=next},saveTutorPreferences,loadTutorPreferences,{interests:[]})
+  assert.equal(writes,2,'an explicit empty-interest edit writes only once')
   assert.deepEqual(loadTutorPreferences().interests,[])
   assert.equal(loadTutorPreferences().pace,'fast')
 })
