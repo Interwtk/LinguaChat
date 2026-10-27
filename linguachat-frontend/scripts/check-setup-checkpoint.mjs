@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { readSetupCheckpoint, SETUP_STEPS } from '../src/auth/setupCheckpoint.js'
 import { readVerifiedProfile } from '../src/auth/profileRestore.js'
+import { commitOnboarding } from '../src/auth/onboardingCommit.js'
 const values=new Map(),store={getItem:k=>values.get(k)??null}
 assert.equal(readSetupCheckpoint(store).step,'placement')
 values.set('lc2-placement-result',JSON.stringify({level:'A1',strengths:['hello']}))
@@ -34,5 +35,53 @@ ownValues.set('lc2-profile','[]');assert.throws(()=>readVerifiedProfile(ownAcces
 assert.match(provider,/if \(!profileRestoredRef.current\)/,'token refresh must preserve unsaved in-memory profile edits after hydration')
 assert.ok(provider.indexOf('if (isolation.switched || isolation.reloadRequired)') < provider.indexOf('readVerifiedProfile(captureLearnerAccess())'),'hydrate only after account activation/reload fencing')
 assert.match(setup,/<button\s+type="button"\s+aria-pressed=\{isSelected\}\s+key=\{p.id\}/)
+// A successful marker is meaningful only if the complete profile was written
+// and read back first. Inject storage failures without a browser dependency.
+const committed = new Map()
+const writeOrder = []
+const durableAccess = {
+  valid: () => true,
+  getItem: key => committed.get(key) ?? null,
+  setItem: (key, value) => { writeOrder.push(key); committed.set(key, value); return true },
+}
+const onboardingProfile = { level: 'A1', placementResult: { level: 'A1' }, tutorPersonality: 'Gentle Guide', goal: 'Travel' }
+assert.equal(commitOnboarding(durableAccess, onboardingProfile), true)
+assert.deepEqual(writeOrder, ['lc2-profile', 'lc2-welcome-seen', 'lc2-personalization-completed', 'lc2-onboarded'])
+assert.deepEqual(JSON.parse(committed.get('lc2-profile')), onboardingProfile)
+assert.equal(committed.get('lc2-onboarded'), 'true')
+for (const failedKey of ['lc2-profile', 'lc2-welcome-seen', 'lc2-personalization-completed']) {
+  const state = new Map()
+  const access = {
+    valid: () => true,
+    getItem: key => state.get(key) ?? null,
+    setItem: (key, value) => {
+      if (key === failedKey) return false
+      state.set(key, value)
+      return true
+    },
+  }
+  assert.throws(() => commitOnboarding(access, onboardingProfile), /durable/)
+  assert.equal(state.has('lc2-onboarded'), false, 'partial setup must never publish completion')
+}
+const staleState = new Map()
+let leaseValid = true
+assert.throws(() => commitOnboarding({
+  valid: () => leaseValid,
+  setItem: (key, value) => { staleState.set(key, value); leaseValid = false; return true },
+  getItem: key => staleState.get(key) ?? null,
+}, onboardingProfile), /durable/)
+assert.equal(staleState.has('lc2-onboarded'), false, 'revoked lease must not publish completion')
+const readbackState = new Map()
+assert.throws(() => commitOnboarding({
+  valid: () => true,
+  setItem: (key, value) => { readbackState.set(key, value); return true },
+  getItem: key => key === 'lc2-profile' ? null : readbackState.get(key) ?? null,
+}, onboardingProfile), /durable/)
+assert.equal(readbackState.has('lc2-onboarded'), false, 'missing profile read-back must block completion')
+assert.match(context, /commitOnboarding\(captureLearnerAccess\(\), profileToCommit\)/)
+assert.match(context, /if \(tutorPreferenceSaveFailed && !preferencesVerified\) return false/)
+assert.match(context, /completePersonalization\(\{ profileToCommit: recommendedProfile, preferencesVerified: true \}\)/)
+console.log('PASS: onboarding commits verified profile before completion; failed, unreadable and revoked writes cannot finish setup')
+
 console.log('PASS: setup resume, safe fallback, auth-route exclusion and native keyboard personality controls')
 console.log('PASS: verified own-profile restore, legacy placement recovery, corrupt/denied/stale reads fail closed; auth identity cannot persist pre-auth defaults')
