@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { ChattoMascot } from '../mascot/ChattoMascot'
-import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS, MAX_INTERESTS, toggleInterestId } from '../../services/tutorPreferences'
+import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS, MAX_INTERESTS, setInterestSelected } from '../../services/tutorPreferences'
 
 function ChipRow({ label, value, options, onChange, t }) {
   return (
@@ -67,7 +67,8 @@ export function TutorPersonalizationStep() {
   function toggleInterest(interest) {
     // Compute the toggle from the latest durable account preferences, not a
     // possibly stale React snapshot from this tab.
-    updateTutorPreferences(current => ({ interests: toggleInterestId(current.interests, interest) }))
+    const shouldSelect = !(tutorPreferences.interests || []).includes(interest)
+    updateTutorPreferences(current => ({ interests: setInterestSelected(current.interests, interest, shouldSelect) }))
     react()
   }
 
