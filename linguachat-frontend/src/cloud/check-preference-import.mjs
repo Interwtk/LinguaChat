@@ -274,6 +274,29 @@ test('both interest pickers use durable intent instead of stale React arrays',()
   assert.deepEqual(loadTutorPreferences().interests,[])
 })
 
+test('stale interest click already satisfied by another tab does not rewrite tutor storage',()=>{
+  const f=fixture()
+  // This tab rendered an old interest list. Another tab has already selected
+  // sports; the delayed click should refresh React, not write stale bytes.
+  let reactState={...loadTutorPreferences(),interests:[]}
+  saveTutorPreferences({...loadTutorPreferences(),interests:['travel','music','sports']})
+  const durableBefore=learnerStorage.getItem('lc2-tutor-preferences')
+  let writes=0,saveFailed=null
+  f.store.before=(op,k)=>{if(op==='set'&&suffix(k,'lc2-tutor-preferences'))writes++}
+  const succeeded=appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,
+    failed=>{saveFailed=failed},
+    current=>({interests:setInterestSelected(current.interests,'sports',true)}))
+  f.store.before=null
+  assert.equal(succeeded,true)
+  assert.equal(saveFailed,false)
+  assert.equal(writes,0,'an already satisfied click must not rewrite storage')
+  assert.equal(learnerStorage.getItem('lc2-tutor-preferences'),durableBefore)
+  assert.deepEqual(reactState.interests,['travel','music','sports'])
+  // An explicit repeat of the same selection is also a no-op.
+  updateTutorPreferencesDurably({interests:['travel','music','sports']})
+  assert.equal(learnerStorage.getItem('lc2-tutor-preferences'),durableBefore)
+})
+
 test('interactive tutor save fails closed on denied reads, writes, and lost account lease',()=>{
   for(const failure of ['read','write','lease','corrupt']){
     const f=fixture()
