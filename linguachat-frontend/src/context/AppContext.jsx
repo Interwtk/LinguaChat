@@ -910,10 +910,18 @@ export function AppProvider({ children }) {
 
   const completeOnboarding = useCallback((profileData) => {
     const merged = { ...DEFAULT_PROFILE, ...profileData }
+    try {
+      // Keep the legacy completion entry point under the same durable contract.
+      commitOnboarding(captureLearnerAccess(), merged)
+    } catch {
+      setTutorPreferenceSaveFailed(true)
+      return false
+    }
+    setTutorPreferenceSaveFailed(false)
     setProfile(merged)
     setOnboardingCompleted(true)
-    try { localStorage.setItem('lc2-onboarded', 'true') } catch {}
     setView('today')
+    return true
   }, [])
 
   const updateProfile = useCallback((updates) => {
