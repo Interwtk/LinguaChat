@@ -65,7 +65,9 @@ export function TutorPersonalizationStep() {
    * a learner who wanted plain everyday conversation could not say so.
    */
   function toggleInterest(interest) {
-    updateTutorPreferences({ interests: toggleInterestId(tutorPreferences.interests, interest) })
+    // Compute the toggle from the latest durable account preferences, not a
+    // possibly stale React snapshot from this tab.
+    updateTutorPreferences(current => ({ interests: toggleInterestId(current.interests, interest) }))
     react()
   }
 
