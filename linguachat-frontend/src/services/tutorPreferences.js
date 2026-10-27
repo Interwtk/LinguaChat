@@ -209,6 +209,29 @@ export function saveTutorPreferences(preferences, { requireDurable = false, acce
   return next
 }
 
+// Read and write against one captured learner lease. Unlike the legacy
+// best-effort helpers, a user-triggered edit must fail closed on malformed or
+// unreadable bytes and must not publish an unpersisted React state.
+export function updateTutorPreferencesDurably(updates) {
+  const access = captureLearnerAccess()
+  if (!access.valid()) throw new Error('Stale tutor preference edit')
+  const raw = access.getItem(TUTOR_PREFERENCES_KEY)
+  if (!access.valid()) throw new Error('Stale tutor preference edit')
+  let parsed = {}
+  if (raw !== null) {
+    parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('Invalid tutor preferences')
+    }
+  }
+  const durable = normalizeTutorPreferences(parsed)
+  return saveTutorPreferences({
+    ...durable,
+    ...updates,
+    interests: updates?.interests ?? durable.interests,
+  }, { requireDurable: true, access })
+}
+
 // Always resolve to Lingua. Any legacy stored value ('lingo' / 'chatto') is
 // silently migrated to 'lingua' so a stale key can never resurface a selector.
 export function loadActiveCompanion() {
