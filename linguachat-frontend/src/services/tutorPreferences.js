@@ -225,10 +225,17 @@ export function updateTutorPreferencesDurably(updates) {
     }
   }
   const durable = normalizeTutorPreferences(parsed)
+  // A click may be rendered from an older React snapshot while another tab
+  // has already saved interests. Resolve the requested change against this
+  // captured account's latest durable state, not against the stale UI array.
+  const patch = typeof updates === 'function' ? updates(durable) : updates
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+    throw new Error('Invalid tutor preference edit')
+  }
   return saveTutorPreferences({
     ...durable,
-    ...updates,
-    interests: updates?.interests ?? durable.interests,
+    ...patch,
+    interests: patch.interests ?? durable.interests,
   }, { requireDurable: true, access })
 }
 
