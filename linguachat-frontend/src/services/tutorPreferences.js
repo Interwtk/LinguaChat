@@ -158,6 +158,14 @@ export function toggleInterestId(interests, id) {
   return [...current, id]
 }
 
+// Preserve the user's explicit click intent across tabs. If another tab has
+// already selected (or deselected) this same chip, do not reverse its choice.
+export function setInterestSelected(interests, id, selected) {
+  const current = normalizeInterests(interests)
+  if (current.includes(id) === Boolean(selected)) return current
+  return toggleInterestId(current, id)
+}
+
 export function loadTutorPreferences() {
   try {
     const stored = localStorage.getItem(TUTOR_PREFERENCES_KEY)
