@@ -27,7 +27,7 @@ const updatePrefix = '  const updateTutorPreferences = useCallback((updates) => 
 const updateStart = source.indexOf(updatePrefix)
 assert.ok(updateStart >= 0, 'normal tutor updater must be present')
 const updateBody = source.slice(updateStart + updatePrefix.length, source.indexOf('\n  }, [])', updateStart))
-const appUpdateTutor = new Function('setTutorPreferencesState','updateTutorPreferencesDurably','setAuthProviderError','updates',updateBody)
+const appUpdateTutor = new Function('setTutorPreferencesState','updateTutorPreferencesDurably','setTutorPreferenceSaveFailed','updates',updateBody)
 const suffix = (physical,logical) => physical.endsWith(':'+logical)
 const dataKeys = ['lc2-cloud-preference-options','lc2-tutor-preferences','lc2-native-language-code',
   'lc2-native-language-base','lc2-native-language-name','lc2-native-language','lc2-interface-language-code',
@@ -221,14 +221,14 @@ test('ordinary tutor updates rebase on newer same-account storage rather than st
   saveTutorPreferences({...loadTutorPreferences(),pace:'fast'})
   let writes=0
   f.store.before=(op,k)=>{if(op==='set'&&suffix(k,'lc2-tutor-preferences'))writes++}
-  appUpdateTutor(next=>{assert.equal(typeof next,'object','React receives a value, never an impure updater');reactState=next},updateTutorPreferencesDurably,()=>{throw Error('unexpected save error')},{tone:'fun'})
+  appUpdateTutor(next=>{assert.equal(typeof next,'object','React receives a value, never an impure updater');reactState=next},updateTutorPreferencesDurably,failed=>{if(failed)throw Error('unexpected save error')},{tone:'fun'})
   assert.equal(writes,1,'one user edit produces exactly one durable write')
   assert.equal(reactState.pace,'fast')
   assert.equal(reactState.tone,'fun')
   assert.equal(loadTutorPreferences().pace,'fast')
   assert.equal(loadTutorPreferences().tone,'fun')
   // Explicitly choosing no interests is different from omitting that field.
-  appUpdateTutor(next=>{assert.equal(typeof next,'object');reactState=next},updateTutorPreferencesDurably,()=>{throw Error('unexpected save error')},{interests:[]})
+  appUpdateTutor(next=>{assert.equal(typeof next,'object');reactState=next},updateTutorPreferencesDurably,failed=>{if(failed)throw Error('unexpected save error')},{interests:[]})
   assert.equal(writes,2,'an explicit empty-interest edit writes only once')
   assert.deepEqual(loadTutorPreferences().interests,[])
   assert.equal(loadTutorPreferences().pace,'fast')
@@ -247,7 +247,7 @@ test('both interest pickers use durable intent instead of stale React arrays',()
   saveTutorPreferences({...reactState,interests:['travel','music','sports']})
   let writes=0,invocations=0
   f.store.before=(op,k)=>{if(op==='set'&&suffix(k,'lc2-tutor-preferences'))writes++}
-  appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,()=>{throw Error('unexpected save error')},
+  appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,failed=>{if(failed)throw Error('unexpected save error')},
     current=>{invocations++;return {interests:setInterestSelected(current.interests,'travel',false)}})
   assert.equal(invocations,1,'one click resolves one durable intent')
   assert.equal(writes,1,'one click writes only once')
@@ -257,18 +257,18 @@ test('both interest pickers use durable intent instead of stale React arrays',()
   // A second tab already removed music. Clicking the stale selected chip to
   // remove it must not add it back.
   saveTutorPreferences({...loadTutorPreferences(),interests:['sports']})
-  appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,()=>{throw Error('unexpected save error')},
+  appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,failed=>{if(failed)throw Error('unexpected save error')},
     current=>({interests:setInterestSelected(current.interests,'music',false)}))
   assert.deepEqual(reactState.interests,['sports'])
   // Conversely, a stale unselected chip clicked to add must not remove a
   // selection another tab already made.
   saveTutorPreferences({...loadTutorPreferences(),interests:['travel','sports']})
-  appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,()=>{throw Error('unexpected save error')},
+  appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,failed=>{if(failed)throw Error('unexpected save error')},
     current=>({interests:setInterestSelected(current.interests,'travel',true)}))
   assert.deepEqual(reactState.interests,['travel','sports'])
   // Empty is still a valid deliberate selection after the last toggle.
   saveTutorPreferences({...loadTutorPreferences(),interests:['music']})
-  appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,()=>{throw Error('unexpected save error')},
+  appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,failed=>{if(failed)throw Error('unexpected save error')},
     current=>({interests:setInterestSelected(current.interests,'music',false)}))
   assert.deepEqual(reactState.interests,[])
   assert.deepEqual(loadTutorPreferences().interests,[])
@@ -278,17 +278,18 @@ test('interactive tutor save fails closed on denied reads, writes, and lost acco
   for(const failure of ['read','write','lease','corrupt']){
     const f=fixture()
     const before=learnerStorage.getItem('lc2-tutor-preferences')
-    let reactState=loadTutorPreferences(),published=0,error=''
+    let reactState=loadTutorPreferences(),published=0,saveFailed=null
     if(failure==='corrupt')learnerStorage.setItem('lc2-tutor-preferences','{')
     if(failure==='read')f.store.before=(op,k)=>{if(op==='get'&&suffix(k,'lc2-tutor-preferences'))throw Error('read_denied')}
     if(failure==='write')f.store.before=(op,k)=>{if(op==='set'&&suffix(k,'lc2-tutor-preferences'))throw Error('quota_exceeded')}
     if(failure==='lease')f.store.before=(op,k)=>{
       if(op==='set'&&suffix(k,'lc2-tutor-preferences'))activateLocalAccount(f.store,'B')
     }
-    appUpdateTutor(next=>{reactState=next;published++},updateTutorPreferencesDurably,value=>{error=value},{tone:'fun'})
+    const succeeded=appUpdateTutor(next=>{reactState=next;published++},updateTutorPreferencesDurably,value=>{saveFailed=value},{tone:'fun'})
+    assert.equal(succeeded,false,`${failure}: failed write must report failure`)
     f.store.before=null
     assert.equal(published,0,`${failure}: failed write must not publish React state`)
-    assert.equal(error,'storage_full')
+    assert.equal(saveFailed,true,`${failure}: preference surface must receive an error`)
     assert.notEqual(reactState.tone,'fun')
     if(failure==='corrupt')assert.equal(learnerStorage.getItem('lc2-tutor-preferences'),'{')
     if(failure==='write'||failure==='read')assert.equal(learnerStorage.getItem('lc2-tutor-preferences'),before)
