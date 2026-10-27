@@ -6,6 +6,13 @@ export function commitOnboarding(access, profile) {
   if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
     throw new Error('Invalid onboarding profile')
   }
+  // A learner may repeat onboarding with an existing completion marker.
+  // Invalidate that marker first; otherwise a failed profile write would
+  // leave the old `true` behind and incorrectly skip the unfinished retry.
+  if (!access.valid() || access.setItem('lc2-onboarded', 'false') === false
+    || !access.valid() || access.getItem('lc2-onboarded') !== 'false' || !access.valid()) {
+    throw new Error('Onboarding state not durable')
+  }
   const writes = [
     ['lc2-profile', JSON.stringify(profile)],
     ['lc2-welcome-seen', 'false'],
