@@ -246,11 +246,16 @@ export function updateTutorPreferencesDurably(updates) {
   if (!access.valid() || access.getItem(TUTOR_PREFERENCES_KEY) !== raw || !access.valid()) {
     throw new Error('Concurrent tutor preference edit')
   }
-  return saveTutorPreferences({
+  const next = normalizeTutorPreferences({
     ...durable,
     ...patch,
     interests: patch.interests ?? durable.interests,
-  }, { requireDurable: true, access })
+  })
+  // A stale UI can repeat a click that another tab already applied. Avoid
+  // rewriting identical preferences: an unnecessary write can erase a later
+  // change even though this user requested no new state transition.
+  if (JSON.stringify(next) === JSON.stringify(durable)) return durable
+  return saveTutorPreferences(next, { requireDurable: true, access })
 }
 
 // Always resolve to Lingua. Any legacy stored value ('lingo' / 'chatto') is
