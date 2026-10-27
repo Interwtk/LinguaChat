@@ -8,7 +8,7 @@ import {
   TUTOR_OPTION_GROUPS,
   INTEREST_OPTIONS,
   MAX_INTERESTS,
-  toggleInterestId,
+  setInterestSelected,
   GOAL_OPTIONS,
   CORRECTION_OPTIONS,
   VIBE_OPTIONS,
@@ -216,7 +216,8 @@ export function LanguageIdentity() {
   function toggleInterest(interest) {
     // Compute the toggle from the latest durable account preferences, not a
     // possibly stale React snapshot from this tab.
-    updateTutorPreferences(current => ({ interests: toggleInterestId(current.interests, interest) }))
+    const shouldSelect = !(tutorPreferences.interests || []).includes(interest)
+    updateTutorPreferences(current => ({ interests: setInterestSelected(current.interests, interest, shouldSelect) }))
   }
 
   return (
