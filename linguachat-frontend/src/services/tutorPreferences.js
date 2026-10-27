@@ -240,6 +240,12 @@ export function updateTutorPreferencesDurably(updates) {
   if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
     throw new Error('Invalid tutor preference edit')
   }
+  // A second tab can publish a newer value while the update callback runs.
+  // Refuse to replace those bytes with a patch based on the older snapshot.
+  // This narrows the race window; localStorage still has no atomic CAS.
+  if (!access.valid() || access.getItem(TUTOR_PREFERENCES_KEY) !== raw || !access.valid()) {
+    throw new Error('Concurrent tutor preference edit')
+  }
   return saveTutorPreferences({
     ...durable,
     ...patch,
