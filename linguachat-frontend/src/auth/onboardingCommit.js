@@ -6,6 +6,19 @@ export function commitOnboarding(access, profile) {
   if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
     throw new Error('Invalid onboarding profile')
   }
+  // Serialize and validate before invalidating an earlier successful setup.
+  // A circular object, throwing getter or custom toJSON returning a scalar
+  // must not clear the old completion marker or publish an unreadable profile.
+  let serializedProfile
+  try {
+    serializedProfile = JSON.stringify(profile)
+    const persistedProfile = JSON.parse(serializedProfile)
+    if (!persistedProfile || typeof persistedProfile !== 'object' || Array.isArray(persistedProfile)) {
+      throw new Error('Invalid onboarding profile')
+    }
+  } catch {
+    throw new Error('Invalid onboarding profile')
+  }
   // A learner may repeat onboarding with an existing completion marker.
   // Invalidate that marker first; otherwise a failed profile write would
   // leave the old `true` behind and incorrectly skip the unfinished retry.
@@ -14,7 +27,7 @@ export function commitOnboarding(access, profile) {
     throw new Error('Onboarding state not durable')
   }
   const writes = [
-    ['lc2-profile', JSON.stringify(profile)],
+    ['lc2-profile', serializedProfile],
     ['lc2-welcome-seen', 'false'],
     ['lc2-personalization-completed', 'true'],
     ['lc2-onboarded', 'true'],
