@@ -1,4 +1,4 @@
-import { learnerStorage as localStorage } from '../auth/localLease.js'
+import { learnerStorage as localStorage, captureLearnerAccess } from '../auth/localLease.js'
 import { KNOWN_INTERESTS, MAX_SELECTED_INTERESTS, normalizeInterests } from '../learning/engine/interests.js'
 
 export const TUTOR_PREFERENCES_KEY = 'lc2-tutor-preferences'
@@ -189,8 +189,22 @@ export function normalizeTutorPreferences(preferences) {
   }
 }
 
-export function saveTutorPreferences(preferences) {
+export function saveTutorPreferences(preferences, { requireDurable = false, access = null } = {}) {
   const next = normalizeTutorPreferences(preferences)
+  if (requireDurable) {
+    // Interactive edits must never be presented as saved if a tab lost its
+    // account lease, storage rejected the write, or the read-back differs.
+    // Capture once: a late callback cannot adopt a different learner account.
+    const scoped = access || captureLearnerAccess()
+    if (!scoped.valid()) throw new Error('Stale tutor preference edit')
+    const serialized = JSON.stringify(next)
+    if (scoped.setItem(TUTOR_PREFERENCES_KEY, serialized) === false
+      || !scoped.valid() || scoped.getItem(TUTOR_PREFERENCES_KEY) !== serialized) {
+      throw new Error('Tutor preference edit not durable')
+    }
+    return next
+  }
+  // Legacy setup and non-critical callers retain their best-effort behavior.
   try { localStorage.setItem(TUTOR_PREFERENCES_KEY, JSON.stringify(next)) } catch {}
   return next
 }
