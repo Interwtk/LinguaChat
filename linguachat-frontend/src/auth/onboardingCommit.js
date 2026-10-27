@@ -1,0 +1,22 @@
+// Onboarding is complete only after the learner's profile and setup flags
+// have been durably published under the same captured account lease.
+// The completion marker is deliberately last: a failed earlier write must
+// never allow a reload to skip unfinished setup.
+export function commitOnboarding(access, profile) {
+  if (!profile || typeof profile !== 'object' || Array.isArray(profile)) {
+    throw new Error('Invalid onboarding profile')
+  }
+  const writes = [
+    ['lc2-profile', JSON.stringify(profile)],
+    ['lc2-welcome-seen', 'false'],
+    ['lc2-personalization-completed', 'true'],
+    ['lc2-onboarded', 'true'],
+  ]
+  for (const [key, value] of writes) {
+    if (!access.valid() || access.setItem(key, value) === false
+      || !access.valid() || access.getItem(key) !== value || !access.valid()) {
+      throw new Error('Onboarding state not durable')
+    }
+  }
+  return true
+}
