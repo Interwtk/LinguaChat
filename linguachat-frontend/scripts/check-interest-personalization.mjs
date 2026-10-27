@@ -47,7 +47,7 @@ const {
   personalizeStory, templateProblems, invariantDrift, PERSONALIZATION_MODES, KNOWN_SLOT_TYPES,
 } = await import('../src/learning/engine/storyPersonalization.js')
 const {
-  INTEREST_OPTIONS, MAX_INTERESTS, toggleInterestId, loadTutorPreferences, saveTutorPreferences,
+  INTEREST_OPTIONS, MAX_INTERESTS, toggleInterestId, setInterestSelected, loadTutorPreferences, saveTutorPreferences,
   DEFAULT_TUTOR_PREFERENCES,
 } = await import('../src/services/tutorPreferences.js')
 const {
@@ -148,13 +148,19 @@ const TOMORROW = TODAY + DAY
   const full = KNOWN_INTERESTS.slice(0, MAX_SELECTED_INTERESTS)
   assert.equal(toggleInterestId(full, full[0]).length, full.length - 1, 'at the cap, removing still works')
 
-  /* both selectors must call it, so they cannot drift apart again */
+  assert.deepEqual(setInterestSelected(['music','sports'], 'sports', true), ['music','sports'], 'already-selected intent must not remove it')
+  assert.deepEqual(setInterestSelected(['music','sports'], 'music', false), ['sports'], 'deselect intent preserves unrelated interests')
+  assert.deepEqual(setInterestSelected(['music'], 'music', false), [], 'deselecting the last interest is allowed')
+
+  /* both selectors must use the same durable intent, so they cannot drift */
   for (const path of [
     'src/components/onboarding/TutorPersonalizationStep.jsx',
     'src/components/identity/LanguageIdentity.jsx',
   ]) {
     const src = read(path)
-    assert.match(src, /toggleInterestId\(/, `${path} must use the shared toggle`)
+    assert.match(src, /setInterestSelected\(current\.interests, interest, shouldSelect\)/, `${path} must use the shared durable selection intent`)
+    assert.match(src, /const shouldSelect = !\(tutorPreferences\.interests \|\| \[\]\)\.includes\(interest\)/,
+      `${path} must derive the user's intended chip state from the rendered selection`)
     assert.ok(!/interests: next\.length \? next : \['travel'\]/.test(src),
       `${path} still forces an interest when the learner picks none`)
     assert.ok(!/\.slice\(0, 6\)/.test(src), `${path} still caps the list at six`)
