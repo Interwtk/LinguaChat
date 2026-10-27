@@ -23,6 +23,11 @@ const applyBody = source.slice(start,source.indexOf('\n      },',start))
 // Execute the actual AppContext callback with its real adapter. State publication
 // remains observable without adding a DOM/test dependency or duplicating the body.
 const appApply = new Function('importer','setTutorPreferencesState','setLanguagePreferences','row',applyBody)
+const updatePrefix = '  const updateTutorPreferences = useCallback((updates) => {'
+const updateStart = source.indexOf(updatePrefix)
+assert.ok(updateStart >= 0, 'normal tutor updater must be present')
+const updateBody = source.slice(updateStart + updatePrefix.length, source.indexOf('\n  }, [])', updateStart))
+const appUpdateTutor = new Function('setTutorPreferencesState','saveTutorPreferences','loadTutorPreferences','updates',updateBody)
 const suffix = (physical,logical) => physical.endsWith(':'+logical)
 const dataKeys = ['lc2-cloud-preference-options','lc2-tutor-preferences','lc2-native-language-code',
   'lc2-native-language-base','lc2-native-language-name','lc2-native-language','lc2-interface-language-code',
@@ -206,6 +211,23 @@ test('actual adapter + coordinator + scheduler: manual edits stay visible and di
   const info=setNativeLanguage('ar');language={...language,nativeLanguage:info,interfaceLanguage:info};controller.changed()
   assert.equal(f.importer().read().fields.user_language,'ar');await drain();assert.equal(remote.user_language,'ar')
   assert.equal(writes,2);assert.equal(timers.size,0);controller.stop()
+})
+
+test('ordinary tutor updates rebase on newer same-account storage rather than stale React state',()=>{
+  const f=fixture()
+  f.publish(f.target)
+  let reactState=f.reactTutor
+  // Another tab saves a new pace after this tab's React state was published.
+  saveTutorPreferences({...loadTutorPreferences(),pace:'fast'})
+  appUpdateTutor(updater=>{reactState=updater(reactState)},saveTutorPreferences,loadTutorPreferences,{tone:'fun'})
+  assert.equal(reactState.pace,'fast')
+  assert.equal(reactState.tone,'fun')
+  assert.equal(loadTutorPreferences().pace,'fast')
+  assert.equal(loadTutorPreferences().tone,'fun')
+  // Explicitly choosing no interests is different from omitting that field.
+  appUpdateTutor(updater=>{reactState=updater(reactState)},saveTutorPreferences,loadTutorPreferences,{interests:[]})
+  assert.deepEqual(loadTutorPreferences().interests,[])
+  assert.equal(loadTutorPreferences().pace,'fast')
 })
 
 test('intervening tutor edit aborts multi-key import and survives WAL recovery',()=>{
