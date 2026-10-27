@@ -49,6 +49,35 @@ assert.equal(commitOnboarding(durableAccess, onboardingProfile), true)
 assert.deepEqual(writeOrder, ['lc2-onboarded', 'lc2-profile', 'lc2-welcome-seen', 'lc2-personalization-completed', 'lc2-onboarded'])
 assert.deepEqual(JSON.parse(committed.get('lc2-profile')), onboardingProfile)
 assert.equal(committed.get('lc2-onboarded'), 'true')
+// Invalid or non-object serialized profiles must not destroy an earlier
+// successful onboarding. Preflight is read-only, even when JSON serialization
+// itself throws or a custom toJSON changes the top-level shape.
+const circularProfile = { level: 'A1' }
+circularProfile.self = circularProfile
+const invalidProfiles = [
+  ['circular', circularProfile],
+  ['null serialization', { toJSON: () => null }],
+  ['array serialization', { toJSON: () => [] }],
+  ['scalar serialization', { toJSON: () => 42 }],
+  ['undefined serialization', { toJSON: () => undefined }],
+  ['throwing getter', { get level() { throw new Error('blocked') } }],
+]
+for (const [label, invalidProfile] of invalidProfiles) {
+  const previous = new Map([
+    ['lc2-onboarded', 'true'],
+    ['lc2-profile', JSON.stringify(onboardingProfile)],
+  ])
+  let writes = 0
+  const access = {
+    valid: () => true,
+    getItem: key => previous.get(key) ?? null,
+    setItem: (key, value) => { writes++; previous.set(key, value); return true },
+  }
+  assert.throws(() => commitOnboarding(access, invalidProfile), /Invalid onboarding profile/, label)
+  assert.equal(writes, 0, `${label}: invalid serialization must not mutate durable setup`)
+  assert.equal(previous.get('lc2-onboarded'), 'true', `${label}: retain earlier completed setup`)
+  assert.deepEqual(JSON.parse(previous.get('lc2-profile')), onboardingProfile)
+}
 for (const failedKey of ['lc2-profile', 'lc2-welcome-seen', 'lc2-personalization-completed']) {
   const state = new Map()
   const access = {
