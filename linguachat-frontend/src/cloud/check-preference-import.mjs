@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createPreferenceImport, recoverCurrentPreferenceImport, LOCAL_IMPORT_KEY, LOCAL_IMPORT_CONFLICTS_KEY } from './preferenceImport.js'
 import { captureLearnerAccess, learnerStorage } from '../auth/localLease.js'
 import { activateLocalAccount } from '../auth/browserDataIsolation.js'
-import { DEFAULT_TUTOR_PREFERENCES, loadTutorPreferences, saveTutorPreferences, updateTutorPreferencesDurably } from '../services/tutorPreferences.js'
+import { DEFAULT_TUTOR_PREFERENCES, loadTutorPreferences, saveTutorPreferences, updateTutorPreferencesDurably, toggleInterestId } from '../services/tutorPreferences.js'
 import { setNativeLanguage, ensureLanguagePreferences, languagePreferencePersistence } from '../services/language.js'
 import { toCloudPreferenceFields } from '../services/cloudPreferenceMapping.js'
 import { createPreferenceSync } from './preferenceSync.js'
@@ -232,6 +232,34 @@ test('ordinary tutor updates rebase on newer same-account storage rather than st
   assert.equal(writes,2,'an explicit empty-interest edit writes only once')
   assert.deepEqual(loadTutorPreferences().interests,[])
   assert.equal(loadTutorPreferences().pace,'fast')
+})
+
+test('both interest pickers use durable intent instead of stale React arrays',()=>{
+  for(const path of ['../components/identity/LanguageIdentity.jsx','../components/onboarding/TutorPersonalizationStep.jsx']){
+    const ui=readFileSync(new URL(path,import.meta.url),'utf8')
+    assert.ok(ui.includes('updateTutorPreferences(current => ({ interests: toggleInterestId(current.interests, interest) }))'),path)
+    assert.ok(!ui.includes('toggleInterestId(tutorPreferences.interests, interest)'),path)
+  }
+  const f=fixture()
+  let reactState=loadTutorPreferences()
+  // This tab still shows [travel,music]. Another tab added sports before
+  // the user clicked travel; that unrelated new selection must survive.
+  saveTutorPreferences({...reactState,interests:['travel','music','sports']})
+  let writes=0,invocations=0
+  f.store.before=(op,k)=>{if(op==='set'&&suffix(k,'lc2-tutor-preferences'))writes++}
+  appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,()=>{throw Error('unexpected save error')},
+    current=>{invocations++;return {interests:toggleInterestId(current.interests,'travel')}})
+  assert.equal(invocations,1,'one click resolves one durable intent')
+  assert.equal(writes,1,'one click writes only once')
+  assert.deepEqual(reactState.interests,['music','sports'])
+  assert.deepEqual(loadTutorPreferences().interests,['music','sports'])
+  f.store.before=null
+  // Empty is still a valid deliberate selection after the last toggle.
+  saveTutorPreferences({...loadTutorPreferences(),interests:['music']})
+  appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,()=>{throw Error('unexpected save error')},
+    current=>({interests:toggleInterestId(current.interests,'music')}))
+  assert.deepEqual(reactState.interests,[])
+  assert.deepEqual(loadTutorPreferences().interests,[])
 })
 
 test('interactive tutor save fails closed on denied reads, writes, and lost account lease',()=>{
