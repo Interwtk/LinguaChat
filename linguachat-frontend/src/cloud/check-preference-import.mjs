@@ -432,7 +432,7 @@ test('onboarding completion commits profile before marker and never navigates on
     assert.deepEqual(published,[],failure+': no Home before durable completion')
     assert.deepEqual(errors,[true],failure+': the UI must report the failure')
     assert.equal(writes.at(-1),failure==='profile'?'profile':failure==='personalized'?'personalized':'onboarded')
-    if(failure!=='readback')assert.equal(learnerStorage.getItem('lc2-onboarded'),null)
+    if(failure!=='readback')assert.equal(learnerStorage.getItem('lc2-onboarded'),failure==='marker'?null:'false', 'failed retry must never leave a true completion marker')
     // Keep observing write order after removing only the injected failure.
     f.store.before=(op,k)=>{
       if(op==='set'&&suffix(k,'lc2-profile'))writes.push('profile')
@@ -441,8 +441,8 @@ test('onboarding completion commits profile before marker and never navigates on
       if(op==='set'&&suffix(k,'lc2-onboarded'))writes.push('onboarded')
     }
     assert.equal(complete(),true,'retry after storage recovery should finish')
-    assert.deepEqual(writes.slice(-4),['profile','welcome','personalized','onboarded'],
-      'the retry must commit the verified profile before the completion marker')
+    assert.deepEqual(writes.slice(-5),['onboarded','profile','welcome','personalized','onboarded'],
+      'the retry must invalidate prior completion, then commit the verified profile before the final marker')
     assert.equal(learnerStorage.getItem('lc2-onboarded'),'true')
     assert.deepEqual(JSON.parse(learnerStorage.getItem('lc2-profile')),profile)
     assert.deepEqual(published,[['completed',true],['view','today'],['welcome',true],['step',null]])
