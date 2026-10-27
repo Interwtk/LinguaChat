@@ -53,6 +53,7 @@ import {
   saveActiveCompanion,
   saveTextSize,
   saveTutorPreferences,
+  updateTutorPreferencesDurably,
 } from '../services/tutorPreferences'
 // the planner works from the shape of the level; the episode itself loads when it starts
 import { playableLevelId, episodesOfLevel } from '../learning/curriculum/levels.js'
@@ -902,16 +903,14 @@ export function AppProvider({ children }) {
   }, [])
 
   const updateTutorPreferences = useCallback((updates) => {
-    // React may replay a state updater (including in Strict Mode), so never
-    // perform a Storage write inside setState's updater function.
-    // Rebase explicit edits on the latest durable same-account snapshot.
-    const durable = loadTutorPreferences()
-    const next = saveTutorPreferences({
-      ...durable,
-      ...updates,
-      interests: updates?.interests ?? durable.interests,
-    })
-    setTutorPreferencesState(next)
+    // Keep React publication outside the storage transaction. A denied read,
+    // quota failure, or stale tab must not display a preference as saved.
+    try {
+      const next = updateTutorPreferencesDurably(updates)
+      setTutorPreferencesState(next)
+    } catch {
+      setAuthProviderError('storage_full')
+    }
   }, [])
 
   const setActiveCompanion = useCallback((companion) => {
