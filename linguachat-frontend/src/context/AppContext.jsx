@@ -52,7 +52,6 @@ import {
   loadTutorPreferences,
   saveActiveCompanion,
   saveTextSize,
-  saveTutorPreferences,
   updateTutorPreferencesDurably,
 } from '../services/tutorPreferences'
 // the planner works from the shape of the level; the episode itself loads when it starts
