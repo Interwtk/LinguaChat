@@ -218,6 +218,7 @@ export function AppProvider({ children }) {
   const accountBoundRef = useRef(false)
   const profileRestoredRef = useRef(false)
   const [authProviderError, setAuthProviderError] = useState('')
+  const [tutorPreferenceSaveFailed, setTutorPreferenceSaveFailed] = useState(false)
 
   const getAuthService = useCallback(() => {
     if (!authServiceRef.current) {
@@ -886,6 +887,7 @@ export function AppProvider({ children }) {
   const logout = useCallback(async () => {
     clearVerifiedRecovery()
     setAuthProviderError('')
+    setTutorPreferenceSaveFailed(false)
     await getAuthService().signOut()
     applyProviderSession(null, 'SIGNED_OUT')
   }, [getAuthService, applyProviderSession])
@@ -905,11 +907,16 @@ export function AppProvider({ children }) {
   const updateTutorPreferences = useCallback((updates) => {
     // Keep React publication outside the storage transaction. A denied read,
     // quota failure, or stale tab must not display a preference as saved.
+    // Report the result so the interface cannot celebrate a failed edit.
     try {
       const next = updateTutorPreferencesDurably(updates)
       setTutorPreferencesState(next)
+      setTutorPreferenceSaveFailed(false)
+      return true
     } catch {
-      setAuthProviderError('storage_full')
+      // This error belongs on the preference screen, not the sign-in screen.
+      setTutorPreferenceSaveFailed(true)
+      return false
     }
   }, [])
 
@@ -1341,7 +1348,7 @@ export function AppProvider({ children }) {
       darkMode, toggleDark, setThemeDark,
       onboardingCompleted, completeOnboarding,
       profile, updateProfile,
-      tutorPreferences, updateTutorPreferences,
+      tutorPreferences, updateTutorPreferences, tutorPreferenceSaveFailed,
       conversationTopic, useAnotherConversationTopic,
       activeCompanion, setActiveCompanion,
       textSize, setTextSize,

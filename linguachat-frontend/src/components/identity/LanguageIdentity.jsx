@@ -105,6 +105,7 @@ export function LanguageIdentity() {
     setThemeDark,
     tutorPreferences,
     updateTutorPreferences,
+    tutorPreferenceSaveFailed,
     textSize,
     setTextSize,
     t,
@@ -608,6 +609,12 @@ export function LanguageIdentity() {
           <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 16 }}>
             {t('personalizeTutorDescription')}
           </p>
+
+          {tutorPreferenceSaveFailed && (
+            <p role="alert" style={{ fontSize: 13, color: 'var(--ink)', background: 'var(--surface-soft)', border: '1px solid var(--accent)', borderRadius: 12, padding: '10px 12px', marginBottom: 16 }}>
+              {t('authGenericError')}
+            </p>
+          )}
 
           <div className="flex flex-col gap-4">
             {TUTOR_OPTION_GROUPS.map(group => (

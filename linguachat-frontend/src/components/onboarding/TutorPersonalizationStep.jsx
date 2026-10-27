@@ -40,6 +40,7 @@ export function TutorPersonalizationStep() {
     t,
     tutorPreferences,
     updateTutorPreferences,
+    tutorPreferenceSaveFailed,
     textSize,
     setTextSize,
     completePersonalization,
@@ -56,8 +57,7 @@ export function TutorPersonalizationStep() {
   }
 
   function choose(key, id) {
-    updateTutorPreferences({ [key]: id })
-    react()
+    if (updateTutorPreferences({ [key]: id })) react()
   }
 
   /*
@@ -68,8 +68,7 @@ export function TutorPersonalizationStep() {
     // Compute the toggle from the latest durable account preferences, not a
     // possibly stale React snapshot from this tab.
     const shouldSelect = !(tutorPreferences.interests || []).includes(interest)
-    updateTutorPreferences(current => ({ interests: setInterestSelected(current.interests, interest, shouldSelect) }))
-    react()
+    if (updateTutorPreferences(current => ({ interests: setInterestSelected(current.interests, interest, shouldSelect) }))) react()
   }
 
   const selectedInterests = tutorPreferences.interests || []
@@ -175,6 +174,12 @@ export function TutorPersonalizationStep() {
                     })}
                   </div>
                 </div>
+
+                {tutorPreferenceSaveFailed && (
+                  <p role="alert" style={{ fontSize: 13, color: 'var(--ink)', background: 'var(--surface-soft)', border: '1px solid var(--accent)', borderRadius: 12, padding: '10px 12px', marginBottom: 18 }}>
+                    {t('authGenericError')}
+                  </p>
+                )}
 
                 {/* Text size */}
                 <div style={{ marginBottom: 18 }}>

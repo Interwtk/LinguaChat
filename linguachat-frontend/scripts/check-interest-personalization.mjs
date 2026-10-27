@@ -611,4 +611,27 @@ const TOMORROW = TODAY + DAY
   ok()
 }
 
+/* ---- 17) failed preference saves are visible and never celebrated ---- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const onboarding = read('src/components/onboarding/TutorPersonalizationStep.jsx')
+  const identity = read('src/components/identity/LanguageIdentity.jsx')
+  assert.match(context, /const \[tutorPreferenceSaveFailed, setTutorPreferenceSaveFailed\] = useState\(false\)/)
+  assert.match(context, /setTutorPreferencesState\(next\)\s+setTutorPreferenceSaveFailed\(false\)\s+return true/,
+    'confirmed durable writes clear the error and report success')
+  assert.match(context, /setTutorPreferenceSaveFailed\(true\)\s+return false/,
+    'failed writes report failure without publishing a false success')
+  for (const [label, surface] of [['onboarding', onboarding], ['profile', identity]]) {
+    assert.match(surface, /tutorPreferenceSaveFailed && \([\s\S]*?role="alert"/,
+      `${label} must announce failed preference writes`)
+    assert.match(surface, /t\('authGenericError'\)/,
+      `${label} must reuse translated retry guidance`)
+  }
+  assert.match(onboarding, /if \(updateTutorPreferences\(\{ \[key\]: id \}\)\) react\(\)/,
+    'failed single-choice writes cannot trigger a cheer')
+  assert.match(onboarding, /if \(updateTutorPreferences\(current => \(\{ interests:[^\n]+\}\)\)\) react\(\)/,
+    'failed interest writes cannot trigger a cheer')
+  ok()
+}
+
 console.log(`\ncheck-interest-personalization — OK  (${groups} personalization groups verified)`)
