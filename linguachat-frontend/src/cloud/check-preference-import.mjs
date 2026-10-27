@@ -393,3 +393,64 @@ test('fixed English target is recovered when its own write fails',()=>{
   assert.throws(()=>f.publish(f.target),/target_write_denied/);assert.equal(f.published,0)
   f.store.before=null;f.importer().recover();assertDurable(f)
 })
+
+test('onboarding completion commits its marker last and never navigates on Storage failure',()=>{
+  const completionPrefix='  const completePersonalization = useCallback(() => {'
+  const begin=source.indexOf(completionPrefix)
+  assert.ok(begin>=0,'completion callback must exist')
+  const body=source.slice(begin+completionPrefix.length,source.indexOf('\n  }, [])',begin))
+  const complete=new Function('localStorage','setTutorPreferenceSaveFailed','setOnboardingCompleted',
+    'setView','setShowWelcome','setAuthStep',body)
+  for(const failure of ['early','marker','readback']){
+    const f=fixture(),writes=[],published=[],errors=[]
+    f.store.before=(op,k)=>{
+      if(op==='set'&&suffix(k,'lc2-welcome-seen'))writes.push('welcome')
+      if(op==='set'&&suffix(k,'lc2-personalization-completed'))writes.push('personalized')
+      if(op==='set'&&suffix(k,'lc2-onboarded'))writes.push('onboarded')
+      if(failure==='early'&&op==='set'&&suffix(k,'lc2-personalization-completed'))throw Error('quota')
+      if(failure==='marker'&&op==='set'&&suffix(k,'lc2-onboarded'))throw Error('quota')
+      if(failure==='readback'&&op==='get'&&suffix(k,'lc2-onboarded'))throw Error('read_denied')
+    }
+    const run=()=>complete(learnerStorage,v=>errors.push(v),v=>published.push(['completed',v]),
+      v=>published.push(['view',v]),v=>published.push(['welcome',v]),v=>published.push(['step',v]))
+    assert.equal(run(),false,failure)
+    assert.deepEqual(published,[],failure+': no Home before durable completion')
+    assert.deepEqual(errors,[true],failure+': the UI must report the failure')
+    if(failure!=='readback')assert.equal(f.store.get([...f.store.keys()].find(k=>suffix(k,'lc2-onboarded'))),undefined)
+    f.store.before=null
+    assert.equal(run(),true,'retry after storage recovery should finish')
+    assert.equal(writes.at(-1),failure==='early'?'personalized':'onboarded')
+    assert.equal(learnerStorage.getItem('lc2-onboarded'),'true')
+    assert.deepEqual(published,[['completed',true],['view','today'],['welcome',true],['step',null]])
+    assert.equal(errors.at(-1),false)
+  }
+})
+
+test('recommended setup does not publish React defaults when the durable save fails',()=>{
+  const prefix='  const applyRecommendedSetup = useCallback(() => {'
+  const begin=source.indexOf(prefix)
+  assert.ok(begin>=0,'recommended callback must exist')
+  const body=source.slice(begin+prefix.length,source.indexOf('\n  }, [completePersonalization])',begin))
+  const recommended=new Function('updateTutorPreferencesDurably','DEFAULT_TUTOR_PREFERENCES',
+    'setTutorPreferenceSaveFailed','completePersonalization','setTutorPreferencesState','setProfile',body)
+  const f=fixture()
+  let profile={goal:'Work'},reactTutor=loadTutorPreferences(),completions=0
+  const errors=[],publications=[]
+  const run=complete=>recommended(updateTutorPreferencesDurably,DEFAULT_TUTOR_PREFERENCES,
+    v=>errors.push(v),()=>{completions++;return complete},
+    v=>{reactTutor=v;publications.push('tutor')},
+    fn=>{profile=fn(profile);publications.push('profile')})
+  f.store.before=(op,k)=>{if(op==='set'&&suffix(k,'lc2-tutor-preferences'))throw Error('quota')}
+  assert.equal(run(true),false)
+  assert.equal(completions,0);assert.deepEqual(publications,[])
+  assert.deepEqual(errors,[true])
+  f.store.before=null
+  assert.equal(run(false),false,'failed onboarding completion cannot publish profile or React defaults')
+  assert.deepEqual(publications,[])
+  assert.equal(run(true),true)
+  assert.equal(completions,2)
+  assert.deepEqual(publications,['tutor','profile'])
+  assert.equal(reactTutor.tone,DEFAULT_TUTOR_PREFERENCES.tone)
+  assert.equal(loadTutorPreferences().tone,DEFAULT_TUTOR_PREFERENCES.tone)
+  assert.equal(profile.preferences.correctionIntensity,'Balanced')
+})
