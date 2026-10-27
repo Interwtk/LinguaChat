@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import { createPreferenceImport, recoverCurrentPreferenceImport, LOCAL_IMPORT_KEY, LOCAL_IMPORT_CONFLICTS_KEY } from './preferenceImport.js'
 import { captureLearnerAccess, learnerStorage } from '../auth/localLease.js'
 import { activateLocalAccount } from '../auth/browserDataIsolation.js'
-import { DEFAULT_TUTOR_PREFERENCES, loadTutorPreferences, saveTutorPreferences, updateTutorPreferencesDurably, toggleInterestId } from '../services/tutorPreferences.js'
+import { DEFAULT_TUTOR_PREFERENCES, loadTutorPreferences, saveTutorPreferences, updateTutorPreferencesDurably, setInterestSelected } from '../services/tutorPreferences.js'
 import { setNativeLanguage, ensureLanguagePreferences, languagePreferencePersistence } from '../services/language.js'
 import { toCloudPreferenceFields } from '../services/cloudPreferenceMapping.js'
 import { createPreferenceSync } from './preferenceSync.js'
@@ -237,7 +237,7 @@ test('ordinary tutor updates rebase on newer same-account storage rather than st
 test('both interest pickers use durable intent instead of stale React arrays',()=>{
   for(const path of ['../components/identity/LanguageIdentity.jsx','../components/onboarding/TutorPersonalizationStep.jsx']){
     const ui=readFileSync(new URL(path,import.meta.url),'utf8')
-    assert.ok(ui.includes('updateTutorPreferences(current => ({ interests: toggleInterestId(current.interests, interest) }))'),path)
+    assert.ok(ui.includes('updateTutorPreferences(current => ({ interests: setInterestSelected(current.interests, interest, shouldSelect) }))'),path)
     assert.ok(!ui.includes('toggleInterestId(tutorPreferences.interests, interest)'),path)
   }
   const f=fixture()
@@ -248,16 +248,28 @@ test('both interest pickers use durable intent instead of stale React arrays',()
   let writes=0,invocations=0
   f.store.before=(op,k)=>{if(op==='set'&&suffix(k,'lc2-tutor-preferences'))writes++}
   appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,()=>{throw Error('unexpected save error')},
-    current=>{invocations++;return {interests:toggleInterestId(current.interests,'travel')}})
+    current=>{invocations++;return {interests:setInterestSelected(current.interests,'travel',false)}})
   assert.equal(invocations,1,'one click resolves one durable intent')
   assert.equal(writes,1,'one click writes only once')
   assert.deepEqual(reactState.interests,['music','sports'])
   assert.deepEqual(loadTutorPreferences().interests,['music','sports'])
   f.store.before=null
+  // A second tab already removed music. Clicking the stale selected chip to
+  // remove it must not add it back.
+  saveTutorPreferences({...loadTutorPreferences(),interests:['sports']})
+  appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,()=>{throw Error('unexpected save error')},
+    current=>({interests:setInterestSelected(current.interests,'music',false)}))
+  assert.deepEqual(reactState.interests,['sports'])
+  // Conversely, a stale unselected chip clicked to add must not remove a
+  // selection another tab already made.
+  saveTutorPreferences({...loadTutorPreferences(),interests:['travel','sports']})
+  appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,()=>{throw Error('unexpected save error')},
+    current=>({interests:setInterestSelected(current.interests,'travel',true)}))
+  assert.deepEqual(reactState.interests,['travel','sports'])
   // Empty is still a valid deliberate selection after the last toggle.
   saveTutorPreferences({...loadTutorPreferences(),interests:['music']})
   appUpdateTutor(next=>{reactState=next},updateTutorPreferencesDurably,()=>{throw Error('unexpected save error')},
-    current=>({interests:toggleInterestId(current.interests,'music')}))
+    current=>({interests:setInterestSelected(current.interests,'music',false)}))
   assert.deepEqual(reactState.interests,[])
   assert.deepEqual(loadTutorPreferences().interests,[])
 })
