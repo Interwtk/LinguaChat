@@ -208,7 +208,7 @@ export function TutorPersonalizationStep() {
               </div>
 
               <button
-                onClick={completePersonalization}
+                onClick={() => completePersonalization()}
                 className="group w-full mt-5 py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-95 hover:-translate-y-px active:scale-[0.98] flex items-center justify-center gap-2"
                 style={{ background: 'var(--accent)' }}
               >
