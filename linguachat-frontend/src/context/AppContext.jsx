@@ -902,17 +902,16 @@ export function AppProvider({ children }) {
   }, [])
 
   const updateTutorPreferences = useCallback((updates) => {
-    // React state may lag a same-account edit from another tab or a recovered
-    // import. Rebase each explicit change on the latest durable local snapshot
-    // instead of writing an old whole-object state over those newer choices.
-    setTutorPreferencesState(() => {
-      const durable = loadTutorPreferences()
-      return saveTutorPreferences({
-        ...durable,
-        ...updates,
-        interests: updates?.interests ?? durable.interests,
-      })
+    // React may replay a state updater (including in Strict Mode), so never
+    // perform a Storage write inside setState's updater function.
+    // Rebase explicit edits on the latest durable same-account snapshot.
+    const durable = loadTutorPreferences()
+    const next = saveTutorPreferences({
+      ...durable,
+      ...updates,
+      interests: updates?.interests ?? durable.interests,
     })
+    setTutorPreferencesState(next)
   }, [])
 
   const setActiveCompanion = useCallback((companion) => {
