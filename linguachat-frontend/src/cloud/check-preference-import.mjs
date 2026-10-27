@@ -414,7 +414,7 @@ test('onboarding completion commits profile before marker and never navigates on
     '{ profileToCommit = profile, preferencesVerified = false } = {}')
   for(const failure of ['profile','personalized','marker','readback']){
     const f=fixture(),writes=[],published=[],errors=[]
-    const profile={level:'A1',goal:'Travel',preferences:{goals:['Travel']}}
+    const profile={level:'B1',goal:'Travel',preferences:{goals:['Travel']}}
     const complete=createCompletion(profile,false,commitOnboarding,captureLearnerAccess,
       v=>errors.push(v),v=>published.push(['completed',v]),
       v=>published.push(['view',v]),v=>published.push(['welcome',v]),v=>published.push(['step',v]))
@@ -433,7 +433,13 @@ test('onboarding completion commits profile before marker and never navigates on
     assert.deepEqual(errors,[true],failure+': the UI must report the failure')
     assert.equal(writes.at(-1),failure==='profile'?'profile':failure==='personalized'?'personalized':'onboarded')
     if(failure!=='readback')assert.equal(learnerStorage.getItem('lc2-onboarded'),null)
-    f.store.before=null
+    // Keep observing write order after removing only the injected failure.
+    f.store.before=(op,k)=>{
+      if(op==='set'&&suffix(k,'lc2-profile'))writes.push('profile')
+      if(op==='set'&&suffix(k,'lc2-welcome-seen'))writes.push('welcome')
+      if(op==='set'&&suffix(k,'lc2-personalization-completed'))writes.push('personalized')
+      if(op==='set'&&suffix(k,'lc2-onboarded'))writes.push('onboarded')
+    }
     assert.equal(complete(),true,'retry after storage recovery should finish')
     assert.deepEqual(writes.slice(-4),['profile','welcome','personalized','onboarded'],
       'the retry must commit the verified profile before the completion marker')
