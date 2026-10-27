@@ -46,7 +46,7 @@ const durableAccess = {
 }
 const onboardingProfile = { level: 'A1', placementResult: { level: 'A1' }, tutorPersonality: 'Gentle Guide', goal: 'Travel' }
 assert.equal(commitOnboarding(durableAccess, onboardingProfile), true)
-assert.deepEqual(writeOrder, ['lc2-profile', 'lc2-welcome-seen', 'lc2-personalization-completed', 'lc2-onboarded'])
+assert.deepEqual(writeOrder, ['lc2-onboarded', 'lc2-profile', 'lc2-welcome-seen', 'lc2-personalization-completed', 'lc2-onboarded'])
 assert.deepEqual(JSON.parse(committed.get('lc2-profile')), onboardingProfile)
 assert.equal(committed.get('lc2-onboarded'), 'true')
 for (const failedKey of ['lc2-profile', 'lc2-welcome-seen', 'lc2-personalization-completed']) {
@@ -61,7 +61,7 @@ for (const failedKey of ['lc2-profile', 'lc2-welcome-seen', 'lc2-personalization
     },
   }
   assert.throws(() => commitOnboarding(access, onboardingProfile), /durable/)
-  assert.equal(state.has('lc2-onboarded'), false, 'partial setup must never publish completion')
+  assert.equal(state.get('lc2-onboarded'), 'false', 'partial setup must leave completion explicitly invalid')
 }
 const staleState = new Map()
 let leaseValid = true
@@ -70,14 +70,46 @@ assert.throws(() => commitOnboarding({
   setItem: (key, value) => { staleState.set(key, value); leaseValid = false; return true },
   getItem: key => staleState.get(key) ?? null,
 }, onboardingProfile), /durable/)
-assert.equal(staleState.has('lc2-onboarded'), false, 'revoked lease must not publish completion')
+assert.equal(staleState.get('lc2-onboarded'), 'false', 'revoked lease must not publish completion')
 const readbackState = new Map()
 assert.throws(() => commitOnboarding({
   valid: () => true,
   setItem: (key, value) => { readbackState.set(key, value); return true },
   getItem: key => key === 'lc2-profile' ? null : readbackState.get(key) ?? null,
 }, onboardingProfile), /durable/)
-assert.equal(readbackState.has('lc2-onboarded'), false, 'missing profile read-back must block completion')
+assert.equal(readbackState.get('lc2-onboarded'), 'false', 'missing profile read-back must block completion')
+// Re-onboarding must not inherit a stale success marker when a retry fails.
+// Clearing that marker is the first verified write, even for returning users.
+for (const failedKey of ['lc2-profile', 'lc2-welcome-seen', 'lc2-personalization-completed']) {
+  const previous = new Map([['lc2-onboarded', 'true']])
+  const attempts = []
+  assert.throws(() => commitOnboarding({
+    valid: () => true,
+    getItem: key => previous.get(key) ?? null,
+    setItem: (key, value) => {
+      attempts.push([key, value])
+      if (key === failedKey) return false
+      previous.set(key, value)
+      return true
+    },
+  }, onboardingProfile), /durable/)
+  assert.deepEqual(attempts[0], ['lc2-onboarded', 'false'])
+  assert.equal(previous.get('lc2-onboarded'), 'false', 'failed retry must not keep previous completion')
+}
+const deniedReset = new Map([['lc2-onboarded', 'true']])
+let deniedWrites = 0
+assert.throws(() => commitOnboarding({
+  valid: () => true,
+  getItem: key => deniedReset.get(key) ?? null,
+  setItem: (key, value) => {
+    deniedWrites++
+    if (key === 'lc2-onboarded' && value === 'false') return false
+    deniedReset.set(key, value)
+    return true
+  },
+}, onboardingProfile), /durable/)
+assert.equal(deniedWrites, 1, 'failed marker invalidation must stop before profile mutation')
+assert.equal(deniedReset.has('lc2-profile'), false)
 assert.match(context, /commitOnboarding\(captureLearnerAccess\(\), profileToCommit\)/)
 assert.match(context, /if \(tutorPreferenceSaveFailed && !preferencesVerified\) return false/)
 assert.match(context, /completePersonalization\(\{ profileToCommit: recommendedProfile, preferencesVerified: true \}\)/)
