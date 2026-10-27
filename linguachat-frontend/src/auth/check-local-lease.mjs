@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { activateLocalAccount } from './browserDataIsolation.js'
 import { learnerStorage, captureLearnerAccess, GENERATION_KEY, NAMESPACE_PREFIX, HEAD_PREFIX, revokeLocalLease } from './localLease.js'
+import { updateTutorPreferencesDurably, TUTOR_PREFERENCES_KEY } from '../services/tutorPreferences.js'
 class Store { values = new Map(); get length(){return this.values.size} key(i){return [...this.values.keys()][i]} getItem(k){return this.values.get(k)??null} setItem(k,v){this.values.set(k,String(v))} removeItem(k){this.values.delete(k)} }
 const shared = globalThis.localStorage = new Store()
 const a = globalThis.sessionStorage = new Store()
@@ -95,3 +96,21 @@ console.log('PASS: logout rotates physical generation, preserves progress and fe
 
 assert.throws(() => learnerStorage.setItem('lc2-auth-owner-id','B'), /Reserved/)
 console.log('PASS: ordinary learner writers cannot change account-control metadata')
+
+// A tab may edit the same preference key after our snapshot is read but before
+// a user intent is applied. Never acknowledge a patch that erases that edit.
+{
+ const store=globalThis.localStorage=new Store()
+ globalThis.sessionStorage=new Store()
+ activateLocalAccount(store,'A')
+ learnerStorage.setItem(TUTOR_PREFERENCES_KEY,JSON.stringify({tone:'friendly',interests:['travel']}))
+ assert.throws(()=>updateTutorPreferencesDurably(current=>{
+  // Deterministic second-writer interleaving during the update callback.
+  learnerStorage.setItem(TUTOR_PREFERENCES_KEY,JSON.stringify({...current,tone:'calm'}))
+  return {interests:['music']}
+ }),/Concurrent tutor preference edit/)
+ const persisted=JSON.parse(learnerStorage.getItem(TUTOR_PREFERENCES_KEY))
+ assert.equal(persisted.tone,'calm')
+ assert.deepEqual(persisted.interests,['travel'])
+}
+console.log('PASS: concurrent tutor preference edit is retained rather than overwritten')
