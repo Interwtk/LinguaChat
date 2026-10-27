@@ -1,5 +1,6 @@
 import { readSetupCheckpoint, SETUP_STEPS } from '../auth/setupCheckpoint.js'
 import { readVerifiedProfile } from '../auth/profileRestore.js'
+import { commitOnboarding } from '../auth/onboardingCommit.js'
 import { captureLearnerAccess, revokeLocalLease } from '../auth/localLease.js'
 import { learnerStorage as localStorage } from '../auth/localLease.js'
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
@@ -621,21 +622,15 @@ export function AppProvider({ children }) {
   // User finished the guided personalization step (tutor preferences are already
   // persisted live). Commit the onboarding marker LAST so partial Storage
   // failures cannot open Home or skip unfinished setup after a reload.
-  const completePersonalization = useCallback(() => {
+  const completePersonalization = useCallback(({ profileToCommit = profile, preferencesVerified = false } = {}) => {
+    // A failed preference edit must not be silently accepted by Save and Start.
+    // The recommended path may override this only after its own durable save.
+    if (tutorPreferenceSaveFailed && !preferencesVerified) return false
     try {
-      // Onboarding records setup only. Authentication authority belongs solely
-      // to the provider session gate; finishing personalization must never mint
-      // or persist an authenticated state on its own.
-      localStorage.setItem('lc2-welcome-seen', 'false')
-      localStorage.setItem('lc2-personalization-completed', 'true')
-      if (localStorage.getItem('lc2-welcome-seen') !== 'false'
-        || localStorage.getItem('lc2-personalization-completed') !== 'true') {
-        throw new Error('Onboarding preferences not durable')
-      }
-      localStorage.setItem('lc2-onboarded', 'true')
-      if (localStorage.getItem('lc2-onboarded') !== 'true') {
-        throw new Error('Onboarding completion not durable')
-      }
+      // The profile effect runs after React renders. Persist it synchronously
+      // before marking onboarding complete so a crash/reload cannot lose the
+      // level or guided choices while still skipping setup.
+      commitOnboarding(captureLearnerAccess(), profileToCommit)
     } catch {
       setTutorPreferenceSaveFailed(true)
       return false
@@ -646,11 +641,10 @@ export function AppProvider({ children }) {
     setShowWelcome(true)
     setAuthStep(null)
     return true
-  }, [])
+  }, [profile, tutorPreferenceSaveFailed])
 
   // Recommended path: a one-click choice is still a real preference save.
-  // Fail closed on quota errors or stale accounts instead of showing Home with
-  // defaults that were never persisted.
+  // Persist the complete recommended profile BEFORE the completion marker.
   const applyRecommendedSetup = useCallback(() => {
     let durable
     try {
@@ -659,22 +653,23 @@ export function AppProvider({ children }) {
       setTutorPreferenceSaveFailed(true)
       return false
     }
-    if (!completePersonalization()) return false
-    setTutorPreferencesState(durable)
-    setProfile(prev => ({
-      ...prev,
-      tutorPersonality: prev.tutorPersonality || 'Gentle Guide',
+    const recommendedProfile = {
+      ...profile,
+      tutorPersonality: profile.tutorPersonality || 'Gentle Guide',
       preferences: {
         goals: ['Travel'],
         dailyGoal: 10,
         correctionIntensity: 'Balanced',
         practiceVibe: 'Motivational',
       },
-      goal: prev.goal || 'Travel',
+      goal: profile.goal || 'Travel',
       dailyGoal: 10,
-    }))
+    }
+    if (!completePersonalization({ profileToCommit: recommendedProfile, preferencesVerified: true })) return false
+    setTutorPreferencesState(durable)
+    setProfile(recommendedProfile)
     return true
-  }, [completePersonalization])
+  }, [completePersonalization, profile])
 
   const dismissWelcome = useCallback(() => {
     setShowWelcome(false)
