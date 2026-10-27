@@ -69,8 +69,26 @@ export function createPreferenceImport({ userId, access = captureLearnerAccess()
   }
   const persistJournal = journal => set(LOCAL_IMPORT_KEY, JSON.stringify(journal))
   const finish = journal => {
-    const desired = writesFor(journal.value, snapshot())
-    for (const [key, value] of desired.entries) if (get(key) !== value) set(key, value)
+    const start = snapshot()
+    const desired = writesFor(journal.value, start)
+    // Storage has no cross-tab CAS. Detect intervening changes to any physical
+    // preference key before continuing a multi-key import; leave the WAL for
+    // recovery rather than silently overwriting a second tab's edit.
+    const expected = new Map(desired.entries.map(([key]) => [key, get(key)]))
+    const confirmed = snapshot()
+    if (!same(start.fields, confirmed.fields)
+      || !same(desired.entries, writesFor(journal.value, confirmed).entries)) {
+      throw new Error('Concurrent local preference edit')
+    }
+    for (const [key, value] of desired.entries) {
+      for (const [observedKey, observedValue] of expected) {
+        if (get(observedKey) !== observedValue) throw new Error('Concurrent local preference edit')
+      }
+      if (expected.get(key) !== value) {
+        set(key, value)
+        expected.set(key, value)
+      }
+    }
     // Confirm the whole set, not just the final write, before acknowledging apply.
     for (const [key, value] of desired.entries) if (get(key) !== value) throw new Error('Incomplete preference import')
     if (Object.keys(journal.conflicts).length) {
