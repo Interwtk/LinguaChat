@@ -596,17 +596,18 @@ export function AppProvider({ children }) {
     return user
   }, [getAuthService, applyProviderSession])
 
-  const completePlacement = useCallback((result) => {
+  const completePlacement = useCallback((result, access = captureLearnerAccess()) => {
     try {
-      // Never reveal an unsaved level. Failed, unreadable or stale-account
-      // writes leave the learner on the test so the result can be retried.
-      persistPlacementResult(captureLearnerAccess(), result)
+      // The quiz captures its lease before delayed feedback. Never rebind an
+      // old answer to a newly activated account at the moment of publication.
+      persistPlacementResult(access, result)
+      if (!access.valid()) throw new Error('Stale placement account')
     } catch {
       setAuthProviderError('storage_full')
       return false
     }
     setAuthProviderError('')
-    setProfile(prev => ({ ...prev, level: result.level, placementResult: result }))
+    setProfile(prev => access.valid() ? { ...prev, level: result.level, placementResult: result } : prev)
     setAuthStep('level-reveal')
     return true
   }, [])
