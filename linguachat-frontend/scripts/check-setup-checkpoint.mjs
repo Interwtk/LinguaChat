@@ -317,6 +317,8 @@ assert.match(context, /completePersonalization\(\{ profileToCommit: recommendedP
 assert.ok(context.includes('persistPlacementResult(access, result)'), 'placement reveal must use the captured account lease')
 assert.match(context, /completePlacement = useCallback\(\(result, access = captureLearnerAccess\(\)\)/, 'direct placement calls must also capture their own lease')
 assert.match(context, /setProfile\(prev => access\.valid\(\) \?/, 'deferred profile publication must reject a revoked lease')
+assert.match(context, /setAuthStep\(prev => access\.valid\(\) \? 'level-reveal' : prev\)/, 'deferred placement navigation must not advance another account')
+assert.match(context, /setAuthProviderError\(prev => access\.valid\(\) \? '' : prev\)/, 'deferred placement success must not clear another account error')
 assert.ok(setup.includes('if (!completePlacement(calculatePlacementResult'), 'failed placement save must remain retryable')
 assert.match(setup, /placementSaveFailed &&/, 'failed placement save must show an error')
 
