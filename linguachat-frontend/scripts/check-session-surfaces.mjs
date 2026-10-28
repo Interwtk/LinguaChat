@@ -335,4 +335,142 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+/* ---------- 5. mission HTTP, timers and queued React setters ---------- */
+
+// Execute the real mission callback and message helper. Merely checking a
+// lease before scheduling a timeout is insufficient: the account (or mission)
+// can change before the timeout fires or before React flushes its updaters.
+{
+  const context = read('src/context/AppContext.jsx')
+  const missionSignature = '  const submitMissionStep = useCallback(async (value, displayText = null) => {'
+  const missionStart = context.indexOf(missionSignature)
+  const missionEnd = context.indexOf('\n  }, [activeCompanion, activeMission, appendLinguaMessages,', missionStart)
+  const appendSignature = '  const appendLinguaMessages = useCallback((nextMessages, access = captureLearnerAccess()) => {'
+  const appendStart = context.indexOf(appendSignature)
+  const appendEnd = context.indexOf('\n  }, [])', appendStart)
+  assert.ok(missionStart >= 0 && missionEnd > missionStart, 'real mission callback must be inspectable')
+  assert.ok(appendStart >= 0 && appendEnd > appendStart, 'real message helper must be inspectable')
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
+  const submit = new AsyncFunction('value', 'displayText', 'deps',
+    'with (deps) { ' + context.slice(missionStart + missionSignature.length, missionEnd) + ' }')
+  const append = new Function('nextMessages', 'access', 'deps',
+    'with (deps) { ' + context.slice(appendStart + appendSignature.length, appendEnd) + ' }')
+
+  async function checkMissionLease(mode) {
+    let owner = 'A'
+    let resolveReply
+    let advances = 0
+    let completions = 0
+    const generation = { current: 0 }
+    const queued = []
+    const timers = []
+    const enqueue = key => update => queued.push([key, update])
+    const state = {
+      messages: [{ role: 'lingua', text: 'B original' }],
+      typing: false,
+      selected: 'B selected',
+      feedback: 'B feedback',
+      active: { missionId: 'B', currentStepIndex: 0 },
+      progress: { owner: 'B' },
+      completed: [{ owner: 'B' }],
+      celebration: 'B celebration',
+    }
+    const original = structuredClone(state)
+    const steps = mode === 'complete' ? [{ id: 's1', xp: 4 }] : [{ id: 's1', xp: 4 }, { id: 's2', xp: 4 }]
+    const details = { mission: { id: 'A-mission', title: 'A mission', targetSkill: 'speaking', rewardXp: 8, steps }, step: steps[0] }
+    const reply = {
+      reply: 'A reply',
+      mission_feedback: { should_advance: mode !== 'retry', feedback: 'A feedback' },
+    }
+    const deps = {
+      activeMission: { missionId: 'A-mission', currentStepIndex: 0 },
+      missionGenerationRef: generation,
+      captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      getActiveMissionDetails: () => details,
+      setMessages: enqueue('messages'),
+      setIsTyping: enqueue('typing'),
+      setMissionFeedback: enqueue('feedback'),
+      setActiveMission: enqueue('active'),
+      setLocalProgress: enqueue('progress'),
+      setCompletedMissions: enqueue('completed'),
+      setMissionCelebration: enqueue('celebration'),
+      setSelectedMessage: enqueue('selected'),
+      setTimeout: fn => { timers.push(fn) },
+      appendLinguaMessages: (messages, access) => append(messages, access, deps),
+      messages: [],
+      sendChatMessage: () => mode === 'inflight' || mode === 'cancelled'
+        ? new Promise(resolve => { resolveReply = resolve })
+        : Promise.resolve(reply),
+      profile: { level: 'A1', style: 'friendly', goal: '', tutorPersonality: '' },
+      sessionId: 'A-session',
+      nativeLanguageInfo: { base: 'es' },
+      interfaceLanguageInfo: { base: 'es' },
+      targetLanguage: 'en',
+      tutorPreferences: {},
+      activeCompanion: null,
+      missionContextFromDetails: () => ({}),
+      evaluateMissionStep: () => ({ passed: true, feedback: 'local' }),
+      advanceMission: () => {
+        advances++
+        return { activeMission: { missionId: 'A-mission', currentStepIndex: 1 }, earnedThisStep: 4 }
+      },
+      completeMission: () => {
+        completions++
+        return { missionId: 'A-mission', earnedXp: 4 }
+      },
+      recordMissionProgress: () => ({ owner: 'A' }),
+      createMissionFeedbackMessage: () => ({ missionType: 'feedback' }),
+      createMissionStepMessage: () => ({ missionType: 'step' }),
+      createMissionCompleteMessage: () => ({ missionType: 'complete' }),
+    }
+    const pending = submit('answer', null, deps)
+    if (mode === 'inflight') {
+      owner = 'B'
+      assert.equal(typeof resolveReply, 'function')
+      resolveReply(reply)
+    }
+    if (mode === 'cancelled') {
+      generation.current++ // abandon/restart before the old HTTP request returns
+      resolveReply(reply)
+    }
+    await pending
+    if (mode === 'stale-flush' || mode === 'stale-timer') owner = 'B'
+    if (mode === 'stale-timer') {
+      assert.equal(timers.length, 1, 'successful mission schedules delayed feedback')
+    }
+    for (const timer of timers) timer()
+    assert.ok(queued.length >= 2, mode + ': real React updates must be exercised')
+    for (const [key, update] of queued) {
+      assert.equal(typeof update, 'function', mode + ': queued React update must be guarded')
+      state[key] = update(state[key])
+    }
+    if (['inflight', 'cancelled', 'stale-flush', 'stale-timer'].includes(mode)) {
+      assert.deepEqual(state, original, mode + ': old mission must not modify new account/mission')
+      if (mode === 'inflight' || mode === 'cancelled') assert.equal(advances, 0, 'stale HTTP cannot advance a mission')
+    } else if (mode === 'retry') {
+      assert.equal(state.messages.length, 3, 'failed answer receives feedback')
+      assert.equal(advances, 0, 'failed answer does not advance')
+      assert.equal(state.typing, false)
+    } else {
+      assert.equal(state.progress.owner, 'A', 'valid mission earns progress')
+      assert.equal(state.typing, false)
+      assert.equal(state.messages.length, 4, 'valid mission receives feedback and next step/completion')
+      assert.equal(advances, 1)
+      if (mode === 'complete') {
+        assert.equal(completions, 1)
+        assert.equal(state.active, null)
+        assert.equal(state.messages.at(-1).missionType, 'complete')
+      } else {
+        assert.equal(state.active.currentStepIndex, 1)
+        assert.equal(state.messages.at(-1).missionType, 'step')
+      }
+    }
+  }
+
+  for (const mode of ['current', 'retry', 'complete', 'inflight', 'cancelled', 'stale-flush', 'stale-timer']) {
+    await checkMissionLease(mode)
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)
