@@ -457,6 +457,52 @@ assert.throws(() => updateTutorPreferencesDurably({ tone: 'fun' }, { access: tut
 assert.equal(JSON.parse(ownTutorValues.get('lc2-tutor-preferences')).tone, 'calm')
 assert.equal(otherTutorValues.size, 0, 'old onboarding click must never write B preferences')
 
+// Execute the real settings callback with queued React updaters. Storage can
+// commit for A and then React can flush after B becomes active. Neither the
+// saved preference nor an A-only error may leak into B's UI.
+for (const scenario of ['saved-current', 'saved-stale', 'denied-current', 'denied-stale']) {
+  const denied = scenario.startsWith('denied')
+  const stale = scenario.endsWith('stale')
+  const bytes = new Map()
+  let owner = 'A'
+  const access = {
+    valid: () => owner === 'A',
+    getItem: key => bytes.get(key) ?? null,
+    setItem: (key, value) => {
+      if (denied) return false
+      bytes.set(key, value)
+      return true
+    },
+  }
+  const queued = []
+  const callback = new Function(
+    'updates', 'captureLearnerAccess', 'updateTutorPreferencesDurably',
+    'setTutorPreferencesState', 'setTutorPreferenceSaveFailed',
+    onboardingCallbackBody('updateTutorPreferences'),
+  )
+  const saved = callback(
+    { tone: 'calm' }, () => access, updateTutorPreferencesDurably,
+    updater => queued.push(['preferences', updater]),
+    updater => queued.push(['failed', updater]),
+  )
+  assert.equal(saved, !denied, scenario + ': caller must know if durable save failed')
+  assert.ok(queued.length, scenario + ': React updates must be queued')
+  if (stale) owner = 'B'
+  const state = { preferences: { tone: stale ? 'fun' : 'friendly' }, failed: false }
+  for (const [key, updater] of queued) {
+    assert.equal(typeof updater, 'function', scenario + ': React update must check lease at flush')
+    state[key] = updater(state[key])
+  }
+  if (stale) {
+    assert.deepEqual(state, { preferences: { tone: 'fun' }, failed: false },
+      scenario + ': B must not inherit A preferences or errors')
+  } else {
+    assert.equal(state.preferences.tone, denied ? 'friendly' : 'calm', scenario)
+    assert.equal(state.failed, denied, scenario)
+  }
+  assert.equal(bytes.has('lc2-tutor-preferences'), !denied, scenario)
+}
+
 console.log('PASS: onboarding commits verified profile before completion; failed, unreadable and revoked writes cannot finish setup')
 
 console.log('PASS: setup resume, safe fallback, auth-route exclusion and native keyboard personality controls')
