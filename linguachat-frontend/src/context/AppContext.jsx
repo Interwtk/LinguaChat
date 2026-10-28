@@ -1212,8 +1212,9 @@ export function AppProvider({ children }) {
   }, [appendLinguaMessages])
 
   const sendMessage = useCallback(async (text) => {
+    // Keep the originating account lease through the request AND React's deferred flush.
     const chatAccess = captureLearnerAccess()
-    if (!text.trim()) return
+    if (!chatAccess.valid() || !text.trim()) return
 
     const missionDetails = getActiveMissionDetails(activeMission)
     if (missionDetails?.step) {
@@ -1227,9 +1228,9 @@ export function AppProvider({ children }) {
       text: text.trim(),
       ts: Date.now(),
     }
-    setMessages(prev => [...prev, userMsg])
-    setIsTyping(true)
-    setSelectedMessage(null)
+    setMessages(prev => chatAccess.valid() ? [...prev, userMsg] : prev)
+    setIsTyping(prev => chatAccess.valid() ? true : prev)
+    setSelectedMessage(prev => chatAccess.valid() ? null : prev)
 
     try {
       const history = messages.slice(-8).map(m => ({
@@ -1246,7 +1247,7 @@ export function AppProvider({ children }) {
        * before their first message it does not, and after it, it does.
        */
       const learnerHasSpoken = messages.some(m => m.role === 'user')
-      const requestAccess = captureLearnerAccess()
+      const requestAccess = chatAccess
       const response = await sendChatMessage({
         message: text.trim(),
         level: profile.level,
@@ -1285,19 +1286,19 @@ export function AppProvider({ children }) {
       })
       if (!requestAccess.valid()) return
 
-      setConnectionNotice(response.connectionMessage)
-      setMemoryNotice(response.correction
+      setConnectionNotice(prev => chatAccess.valid() ? response.connectionMessage : prev)
+      setMemoryNotice(prev => chatAccess.valid() ? (response.correction
         ? 'Your recent corrections are saved on this device.'
-        : "I'll remember what we practiced today.")
-      setLocalProgress(previous => recordPractice(previous, {
+        : "I'll remember what we practiced today.") : prev)
+      setLocalProgress(previous => chatAccess.valid() ? recordPractice(previous, {
         userMessage: text.trim(),
         response,
-      }))
+      }) : previous)
       /*
        * Cooldown, not history: one id, so the next conversation prefers a
        * different one. No message, no reply and no prompt is recorded anywhere.
        */
-      if (!learnerHasSpoken && conversationTopic?.interestId) recordTopicUse(conversationTopic.interestId)
+      if (chatAccess.valid() && !learnerHasSpoken && conversationTopic?.interestId) recordTopicUse(conversationTopic.interestId)
 
       const linguaMsg = {
         id: `l${Date.now()}`,
@@ -1315,20 +1316,20 @@ export function AppProvider({ children }) {
         },
         ts: Date.now(),
       }
-      setMessages(prev => [...prev, linguaMsg])
-      setSelectedMessage(linguaMsg)
+      setMessages(prev => chatAccess.valid() ? [...prev, linguaMsg] : prev)
+      setSelectedMessage(prev => chatAccess.valid() ? linguaMsg : prev)
     } catch {
       if (!chatAccess.valid()) return
-      setConnectionNotice('Lingua had trouble connecting. You can keep exploring the demo.')
-      setMessages(prev => [...prev, {
+      setConnectionNotice(prev => chatAccess.valid() ? 'Lingua had trouble connecting. You can keep exploring the demo.' : prev)
+      setMessages(prev => chatAccess.valid() ? [...prev, {
         id: `e${Date.now()}`,
         role: 'lingua',
         text: 'You can keep practicing with the demo while the connection recovers.',
         feedback: null,
         ts: Date.now(),
-      }])
+      }] : prev)
     } finally {
-      if (chatAccess.valid()) setIsTyping(false)
+      setIsTyping(prev => chatAccess.valid() ? false : prev)
     }
   }, [activeCompanion, activeMission, conversationTopic, interfaceLanguageInfo, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage, tutorPreferences])
 
