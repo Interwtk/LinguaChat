@@ -385,6 +385,61 @@ assert.match(onboardingUi, /completePersonalization\(\{ profileToCommit: recomme
 assert.match(onboardingUi, /setTutorPreferencesState\(prev => access\.valid\(\) \? durable : prev\)/)
 assert.match(onboardingUi, /setProfile\(prev => access\.valid\(\) \? recommendedProfile : prev\)/)
 
+// Execute the actual intermediate and legacy onboarding callbacks, then
+// revoke the captured lease before React flushes queued state updaters.
+// The new account must not inherit a tutor, preferences, route or completion.
+function onboardingCallbackBody(name) {
+  const start = context.indexOf(`const ${name} = useCallback(`)
+  assert.ok(start >= 0, `${name} must exist`)
+  const arrow = context.indexOf('=> {', start)
+  const end = context.indexOf('\n  }, [])', arrow)
+  assert.ok(arrow > start && end > arrow, `${name} must retain its callback shape`)
+  return context.slice(arrow + 5, end)
+}
+function exerciseDeferredOnboarding(name, payload, extra = {}) {
+  let owner = 'A'
+  const store = new Map()
+  const access = {
+    valid: () => owner === 'A',
+    getItem: key => store.get(key) ?? null,
+    setItem: (key, value) => { store.set(key, value); return true },
+  }
+  const queue = []
+  const enqueue = key => updater => queue.push([key, updater])
+  const state = {
+    profile: { level: 'B1', name: 'Account B' },
+    authStep: 'entry',
+    onboarded: false,
+    view: 'entry',
+    saveFailed: true,
+  }
+  const initial = structuredClone(state)
+  const setters = {
+    setProfile: enqueue('profile'),
+    setAuthStep: enqueue('authStep'),
+    setOnboardingCompleted: enqueue('onboarded'),
+    setView: enqueue('view'),
+    setTutorPreferenceSaveFailed: enqueue('saveFailed'),
+  }
+  const names = ['captureLearnerAccess', 'DEFAULT_PROFILE', 'commitOnboarding', ...Object.keys(setters)]
+  const args = [() => access, {}, commitOnboarding, ...Object.values(setters)]
+  const callback = new Function(name === 'completeTutorPersonality' ? 'personality'
+    : name === 'completeLearningPrefs' ? 'prefs' : 'profileData', ...names, onboardingCallbackBody(name))
+  assert.equal(callback(payload, ...args), true, `${name} should accept the originating valid lease`)
+  assert.ok(queue.length > 0, `${name} should enqueue UI updates`)
+  owner = 'B'
+  for (const [key, update] of queue) {
+    state[key] = typeof update === 'function' ? update(state[key]) : update
+  }
+  assert.deepEqual(state, initial, `${name} must not publish deferred state into B`)
+  assert.equal(access.valid(), false)
+}
+exerciseDeferredOnboarding('completeTutorPersonality', 'Gentle Guide')
+exerciseDeferredOnboarding('completeLearningPrefs', {
+  goals: ['Travel'], dailyGoal: 10, correctionIntensity: 'Balanced', practiceVibe: 'Motivational',
+})
+exerciseDeferredOnboarding('completeOnboarding', { level: 'A1', placementResult: { level: 'A1' } })
+
 // Prove a stale recommended click cannot save preferences to account B after
 // switching away from the account A that began onboarding.
 const ownTutorValues = new Map()
