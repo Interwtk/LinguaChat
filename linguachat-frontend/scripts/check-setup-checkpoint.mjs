@@ -327,7 +327,7 @@ assert.throws(() => commitOnboarding({
 }, onboardingProfile), /durable/)
 assert.equal(deniedWrites, 1, 'failed marker invalidation must stop before profile mutation')
 assert.equal(deniedReset.has('lc2-profile'), false)
-assert.match(context, /commitOnboarding\(captureLearnerAccess\(\), profileToCommit\)/)
+assert.match(context, /commitOnboarding\(access, profileToCommit\)/, 'onboarding commit must use the originating learner lease')
 assert.match(context, /if \(tutorPreferenceSaveFailed && !preferencesVerified\) return false/)
 assert.match(context, /completePersonalization\(\{ profileToCommit: recommendedProfile, preferencesVerified: true \}\)/)
 assert.ok(context.includes('persistPlacementResult(access, result)'), 'placement reveal must use the captured account lease')
