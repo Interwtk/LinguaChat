@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { ThemeToggle } from '../ui/ThemeToggle'
@@ -53,25 +53,46 @@ function SetupShell({ children, step, totalSteps }) {
 }
 
 function PlacementTest() {
-  const { completePlacement, t, interfaceLanguage } = useApp()
+  const { authUser, completePlacement, t, interfaceLanguage } = useApp()
   const [phase, setPhase] = useState('intro')
   const [placementState, setPlacementState] = useState(() => getInitialPlacementState('A2'))
   const [selectedOption, setSelectedOption] = useState(null)
   const [feedback, setFeedback] = useState(null)
   const [placementSaveFailed, setPlacementSaveFailed] = useState(false)
   const question = useMemo(() => getNextQuestion(placementState), [placementState])
+  const feedbackTimer = useRef(null)
+  const activeAccountId = authUser?.id ?? null
+  const currentAccountId = useRef(activeAccountId)
+  currentAccountId.current = activeAccountId
+
+  // A pending answer belongs to the account that submitted it. Cancel its
+  // delayed publication when setup unmounts or a different account takes over.
+  useEffect(() => {
+    setPhase('intro')
+    setPlacementState(getInitialPlacementState('A2'))
+    setSelectedOption(null)
+    setFeedback(null)
+    setPlacementSaveFailed(false)
+    return () => {
+      if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
+      feedbackTimer.current = null
+    }
+  }, [activeAccountId])
 
   function start() {
     setPhase('quiz')
   }
 
   function chooseOption(optionId) {
-    if (selectedOption || phase !== 'quiz') return
+    if (selectedOption || feedbackTimer.current !== null || phase !== 'quiz') return
+    const scheduledAccountId = currentAccountId.current
     setPlacementSaveFailed(false)
     const evaluated = evaluateAnswer(question, optionId, placementState)
     setSelectedOption(optionId)
     setFeedback(evaluated.feedback)
-    window.setTimeout(() => {
+    feedbackTimer.current = window.setTimeout(() => {
+      feedbackTimer.current = null
+      if (scheduledAccountId !== currentAccountId.current) return
       if (shouldFinishPlacement(evaluated.nextState)) {
         if (!completePlacement(calculatePlacementResult(evaluated.nextState, interfaceLanguage))) {
           setPlacementSaveFailed(true)
