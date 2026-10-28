@@ -21,6 +21,14 @@ export function readVerifiedProfile(access) {
   const invalidLevel = profile?.level != null && !validLevels.includes(profile.level)
   const inconsistent = placement != null && (!validPlacement || placement.level !== profile?.level)
   if ((inconsistent || invalidLevel) && !checkpoint) throw new Error('Invalid profile placement')
+  // An older incomplete profile can be restored while setup is still open.
+  // But a durable completed marker must never open Home with a missing or
+  // unverified placement after a partial write or legacy migration.
+  const completed = access.getItem('lc2-onboarded') === 'true'
+  if (!access.valid()) throw new Error('Profile ownership changed')
+  if (completed && !checkpoint && (!profile || !validPlacement || placement.level !== profile.level)) {
+    throw new Error('Invalid completed profile placement')
+  }
   // The separately persisted account-scoped checkpoint can repair legacy
   // mismatches without discarding unrelated profile choices.
   return checkpoint && (!placement || inconsistent || invalidLevel)
