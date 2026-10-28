@@ -606,9 +606,11 @@ export function AppProvider({ children }) {
       setAuthProviderError('storage_full')
       return false
     }
-    setAuthProviderError('')
+    // React may apply these queued updates after an account/lease switch.
+    // Fence every publication, not only the durable write and profile update.
+    setAuthProviderError(prev => access.valid() ? '' : prev)
     setProfile(prev => access.valid() ? { ...prev, level: result.level, placementResult: result } : prev)
-    setAuthStep('level-reveal')
+    setAuthStep(prev => access.valid() ? 'level-reveal' : prev)
     return true
   }, [])
 
