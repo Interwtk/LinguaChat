@@ -26,7 +26,7 @@ export function readVerifiedProfile(access) {
   // unverified placement after a partial write or legacy migration.
   const completed = access.getItem('lc2-onboarded') === 'true'
   if (!access.valid()) throw new Error('Profile ownership changed')
-  if (completed && !checkpoint && (!profile || !validPlacement || placement.level !== profile.level)) {
+  if (completed && (!profile || (!checkpoint && (!validPlacement || placement.level !== profile.level)))) {
     throw new Error('Invalid completed profile placement')
   }
   // The separately persisted account-scoped checkpoint can repair legacy

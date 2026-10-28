@@ -59,6 +59,18 @@ for (const invalidPlacement of invalidPlacements) {
 }
 ownValues.set('lc2-profile',JSON.stringify({level:'Z9',placementResult:null,goal:'Travel'}))
 assert.equal(readVerifiedProfile(ownAccess).level,'A1')
+// A placement checkpoint can repair a partial profile, but must never
+// masquerade as the missing durable profile of a completed account.
+ownValues.set('lc2-onboarded', 'true')
+ownValues.delete('lc2-profile')
+assert.throws(() => readVerifiedProfile(ownAccess), /Invalid completed profile placement/, 'checkpoint alone cannot replace completed profile')
+ownValues.set('lc2-profile', 'null')
+assert.throws(() => readVerifiedProfile(ownAccess), /Invalid completed profile placement/, 'serialized null is not a completed profile')
+ownValues.set('lc2-profile', JSON.stringify({ level: 'B1', placementResult: null, goal: 'Travel' }))
+const recoveredCompleted = readVerifiedProfile(ownAccess)
+assert.equal(recoveredCompleted.level, 'A1', 'existing partial profile may recover from own checkpoint')
+assert.equal(recoveredCompleted.goal, 'Travel')
+ownValues.delete('lc2-onboarded')
 ownValues.delete('lc2-placement-result')
 for (const invalidPlacement of invalidPlacements) {
   ownValues.set('lc2-profile',JSON.stringify({level:invalidPlacement.level,placementResult:invalidPlacement,goal:'Travel'}))
