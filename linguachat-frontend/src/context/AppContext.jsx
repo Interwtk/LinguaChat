@@ -1,4 +1,4 @@
-import { readSetupCheckpoint, SETUP_STEPS } from '../auth/setupCheckpoint.js'
+import { readSetupCheckpoint, persistPlacementResult, SETUP_STEPS } from '../auth/setupCheckpoint.js'
 import { readVerifiedProfile } from '../auth/profileRestore.js'
 import { commitOnboarding } from '../auth/onboardingCommit.js'
 import { captureLearnerAccess, revokeLocalLease } from '../auth/localLease.js'
@@ -597,10 +597,18 @@ export function AppProvider({ children }) {
   }, [getAuthService, applyProviderSession])
 
   const completePlacement = useCallback((result) => {
+    try {
+      // Never reveal an unsaved level. Failed, unreadable or stale-account
+      // writes leave the learner on the test so the result can be retried.
+      persistPlacementResult(captureLearnerAccess(), result)
+    } catch {
+      setAuthProviderError('storage_full')
+      return false
+    }
+    setAuthProviderError('')
     setProfile(prev => ({ ...prev, level: result.level, placementResult: result }))
-    localStorage.setItem('lc2-placement', JSON.stringify(result))
-    localStorage.setItem('lc2-placement-result', JSON.stringify(result))
     setAuthStep('level-reveal')
+    return true
   }, [])
 
   const completeTutorPersonality = useCallback((personality) => {
