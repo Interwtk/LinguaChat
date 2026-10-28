@@ -57,8 +57,20 @@ export function loadChatAppearance() {
   }
 }
 
-export function saveChatAppearance(appearance) {
+export function saveChatAppearance(appearance, { access = null } = {}) {
   const clean = sanitizeChatAppearance(appearance)
+  if (access) {
+    // The interactive caller supplies its original account lease. A denied,
+    // revoked or unverified write must not be presented as a saved preference.
+    try {
+      if (!access.valid()) return null
+      const serialized = JSON.stringify(clean)
+      if (access.setItem(KEY, serialized) === false
+        || !access.valid() || access.getItem(KEY) !== serialized) return null
+    } catch { return null }
+    return clean
+  }
+  // Preserve the legacy best-effort contract for noninteractive callers.
   try { localStorage.setItem(KEY, JSON.stringify(clean)) } catch {}
   return clean
 }

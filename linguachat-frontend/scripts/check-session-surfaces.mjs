@@ -647,4 +647,79 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+/* ---------- 8. visual preferences must not repaint a different account ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const appearanceSource = read('src/services/chatAppearance.js')
+  const preferencesSource = read('src/services/tutorPreferences.js')
+  function body(source, signature, end = '\n}') {
+    const start = source.indexOf(signature)
+    const finish = source.indexOf(end, start + signature.length)
+    assert.ok(start >= 0 && finish > start, signature + ' must remain inspectable')
+    return source.slice(start + signature.length, finish)
+  }
+  const setAppearance = new Function('next', 'deps', 'with (deps) { ' +
+    body(context, '  const setChatAppearance = useCallback((next) => {', '\n  }, [])') + ' }')
+  const setSize = new Function('size', 'deps', 'with (deps) { ' +
+    body(context, '  const setTextSize = useCallback((size) => {', '\n  }, [])') + ' }')
+  const saveAppearance = new Function('appearance', 'options', 'deps',
+    'with (deps) { const { access = null } = options || {}; ' +
+    body(appearanceSource, 'export function saveChatAppearance(appearance, { access = null } = {}) {') + ' }')
+  const saveSize = new Function('size', 'options', 'deps',
+    'with (deps) { const { access = null } = options || {}; ' +
+    body(preferencesSource, 'export function saveTextSize(size, { access = null } = {}) {') + ' }')
+
+  for (const mode of ['current', 'stale-flush', 'denied', 'revoked-write', 'rejected-write', 'mismatch-readback', 'storage-throws']) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    const storage = {}
+    let writes = 0
+    const queued = []
+    const state = { appearance: { background: 'dots' }, size: 'large' }
+    const original = structuredClone(state)
+    const access = {
+      valid: () => owner === 'A',
+      setItem: (key, value) => {
+        writes++
+        if (mode === 'storage-throws') throw new Error('Storage unavailable')
+        if (mode === 'rejected-write') return false
+        storage[key] = value
+        if (mode === 'revoked-write') owner = 'B'
+        return true
+      },
+      getItem: key => mode === 'mismatch-readback' ? 'other-tab-value' : storage[key],
+    }
+    const deps = {
+      captureLearnerAccess: () => access,
+      saveChatAppearance: (next, options) => saveAppearance(next, options, {
+        KEY: 'appearance', sanitizeChatAppearance: value => ({ ...value }),
+      }),
+      saveTextSize: (size, options) => saveSize(size, options, { TEXT_SIZE_KEY: 'size' }),
+      setChatAppearanceState: update => queued.push(['appearance', update]),
+      setTextSizeState: update => queued.push(['size', update]),
+    }
+    const appearanceResult = setAppearance({ background: 'paper' }, deps)
+    const sizeResult = setSize('normal', deps)
+    if (mode === 'stale-flush') owner = 'B'
+    for (const [key, update] of queued) {
+      assert.equal(typeof update, 'function', mode + ': React must receive a lease-checked updater')
+      state[key] = update(state[key])
+    }
+    if (mode === 'current') {
+      assert.equal(appearanceResult, true)
+      assert.equal(sizeResult, true)
+      assert.deepEqual(state, { appearance: { background: 'paper' }, size: 'normal' })
+      assert.equal(writes, 2)
+      assert.equal(queued.length, 2)
+    } else {
+      assert.equal(appearanceResult, mode === 'stale-flush')
+      assert.equal(sizeResult, mode === 'stale-flush')
+      assert.deepEqual(state, original, mode + ': A appearance cannot repaint B')
+      assert.equal(queued.length, mode === 'stale-flush' ? 2 : 0)
+      if (mode === 'denied') assert.equal(writes, 0)
+      if (mode === 'revoked-write') assert.equal(writes, 1)
+    }
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)

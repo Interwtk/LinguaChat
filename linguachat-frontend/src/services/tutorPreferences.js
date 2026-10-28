@@ -282,8 +282,15 @@ export function loadTextSize() {
   }
 }
 
-export function saveTextSize(size) {
+export function saveTextSize(size, { access = null } = {}) {
   const next = size === 'large' ? 'large' : 'normal'
+  if (access) {
+    try {
+      if (!access.valid() || access.setItem(TEXT_SIZE_KEY, next) === false
+        || !access.valid() || access.getItem(TEXT_SIZE_KEY) !== next) return null
+    } catch { return null }
+    return next
+  }
   try { localStorage.setItem(TEXT_SIZE_KEY, next) } catch {}
   return next
 }

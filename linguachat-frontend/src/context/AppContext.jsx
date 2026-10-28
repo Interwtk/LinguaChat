@@ -198,7 +198,13 @@ export function AppProvider({ children }) {
    */
   const [chatAppearance, setChatAppearanceState] = useState(loadChatAppearance)
   const setChatAppearance = useCallback((next) => {
-    setChatAppearanceState(saveChatAppearance(next))
+    // The account that clicked owns the write and the later React update.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const saved = saveChatAppearance(next, { access })
+    if (!saved || !access.valid()) return false
+    setChatAppearanceState(previous => access.valid() ? saved : previous)
+    return access.valid()
   }, [])
   const [onboardingCompleted, setOnboardingCompleted] = useState(() => {
     try { return localStorage.getItem('lc2-onboarded') === 'true' } catch { return false }
@@ -981,7 +987,12 @@ export function AppProvider({ children }) {
   }, [])
 
   const setTextSize = useCallback((size) => {
-    setTextSizeState(saveTextSize(size))
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const saved = saveTextSize(size, { access })
+    if (!saved || !access.valid()) return false
+    setTextSizeState(previous => access.valid() ? saved : previous)
+    return access.valid()
   }, [])
 
   const navigateTo = useCallback((destination) => {
