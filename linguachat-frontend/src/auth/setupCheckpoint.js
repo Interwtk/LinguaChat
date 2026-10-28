@@ -8,6 +8,13 @@ export function isValidPlacementResult(result) {
         && result[key].every(value => typeof value === 'string')))
 }
 
+// Placement answers belong to the lease under which the quiz began. A renewed
+// lease for the same account must not inherit answers from an earlier session.
+export function retainPlacementAnswerLease(previousAccess, candidateAccess) {
+  if (!candidateAccess?.valid() || (previousAccess && !previousAccess.valid())) return null
+  return previousAccess || candidateAccess
+}
+
 export function readSetupCheckpoint(store) {
   try {
     const result = JSON.parse(store.getItem('lc2-placement-result') || 'null')
