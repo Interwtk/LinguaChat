@@ -30,11 +30,18 @@ export function persistPlacementResult(access, result) {
   } catch {
     throw new Error('Invalid placement result')
   }
-  // Keep the authoritative checkpoint and the legacy reader in sync. Verify
-  // each write while the same account lease is still valid.
-  for (const key of ['lc2-placement-result', 'lc2-placement']) {
-    if (!access.valid() || access.setItem(key, serialized) === false
-      || !access.valid() || access.getItem(key) !== serialized || !access.valid()) {
+  // A partial write must never publish an uncommitted placement on reload.
+  // Invalidate the authoritative checkpoint first, update the legacy mirror,
+  // and publish the new authoritative value only after both are verified.
+  // A failure at any boundary leaves setup at placement (not level-reveal).
+  const writes = [
+    ['lc2-placement-result', 'null'],
+    ['lc2-placement', serialized],
+    ['lc2-placement-result', serialized],
+  ]
+  for (const [key, value] of writes) {
+    if (!access.valid() || access.setItem(key, value) === false
+      || !access.valid() || access.getItem(key) !== value || !access.valid()) {
       throw new Error('Placement state not durable')
     }
   }
