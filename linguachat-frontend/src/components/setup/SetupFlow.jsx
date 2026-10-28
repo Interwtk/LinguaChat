@@ -67,16 +67,9 @@ function PlacementTest() {
 
   // A pending answer belongs to the account that submitted it. Cancel its
   // delayed publication when setup unmounts or a different account takes over.
-  useEffect(() => {
-    setPhase('intro')
-    setPlacementState(getInitialPlacementState('A2'))
-    setSelectedOption(null)
-    setFeedback(null)
-    setPlacementSaveFailed(false)
-    return () => {
-      if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
-      feedbackTimer.current = null
-    }
+  useEffect(() => () => {
+    if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
+    feedbackTimer.current = null
   }, [activeAccountId])
 
   function start() {
@@ -675,9 +668,10 @@ function Section({ label, children }) {
 
 /* ---- ROUTER ---- */
 export function SetupFlow() {
-  const { authStep } = useApp()
+  const { authStep, authUser } = useApp()
   const screens = {
-    placement: <PlacementTest />,
+    // Remount the quiz when account identity changes, discarding prior answers.
+    placement: <PlacementTest key={authUser?.id ?? 'guest'} />,
     'level-reveal': <LevelReveal />,
     'setup-choice': <SetupChoice />,
     'tutor-personality': <TutorPersonality />,
