@@ -77,7 +77,7 @@ assert.throws(() => persistPlacementResult({
 assert.throws(() => persistPlacementResult({
   valid: () => false,
   setItem: () => { throw Error('stale lease wrote') },
-}, placement), /not durable())
+}, placement), /not durable/)
 
 const setup=readFileSync(new URL('../src/components/setup/SetupFlow.jsx',import.meta.url),'utf8')
 const context=readFileSync(new URL('../src/context/AppContext.jsx',import.meta.url),'utf8')
