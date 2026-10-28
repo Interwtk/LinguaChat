@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { readSetupCheckpoint, persistPlacementResult, retainPlacementAnswerLease, SETUP_STEPS } from '../src/auth/setupCheckpoint.js'
 import { readVerifiedProfile } from '../src/auth/profileRestore.js'
 import { commitOnboarding } from '../src/auth/onboardingCommit.js'
+import { updateTutorPreferencesDurably } from '../src/services/tutorPreferences.js'
 const values=new Map(),store={getItem:k=>values.get(k)??null}
 assert.equal(readSetupCheckpoint(store).step,'placement')
 values.set('lc2-placement-result',JSON.stringify({level:'A1',strengths:['hello']}))
@@ -362,6 +363,44 @@ assert.match(delayedPlacement, /if \(!answerAccess\.valid\(\)\) \{\s*quizAccess\
 const beforeFeedback = placementUi.slice(placementUi.indexOf('const answerAccess = retainPlacementAnswerLease('), placementUi.indexOf('feedbackTimer.current = window.setTimeout('))
 assert.ok(beforeFeedback.includes("setPlacementState(getInitialPlacementState('A2'))"), 'lease denied before feedback must discard stale answers')
 assert.match(setup, /placement: <PlacementTest key=\{authUser\?\.id \?\? 'guest'\} \/>/, 'switching accounts must remount the quiz without prior answers')
+
+// The final onboarding click may enqueue React state changes that React
+// applies after a different account becomes active. Each publication must
+// check the same lease used by the durable commit.
+const onboardingUi = context.slice(context.indexOf('const completePersonalization = useCallback('), context.indexOf('const dismissWelcome = useCallback('))
+assert.match(onboardingUi, /commitOnboarding\(access, profileToCommit\)/)
+for (const [setter, expected] of [
+  ['setTutorPreferenceSaveFailed', 'false'],
+  ['setOnboardingCompleted', 'true'],
+  ['setView', "'today'"],
+  ['setShowWelcome', 'true'],
+  ['setAuthStep', 'null'],
+]) {
+  assert.ok(onboardingUi.includes(`${setter}(prev => access.valid() ? ${expected} : prev)`),
+    `${setter} must not publish stale onboarding completion into another account`)
+}
+assert.match(onboardingUi, /updateTutorPreferencesDurably\(DEFAULT_TUTOR_PREFERENCES, \{ access \}\)/,
+  'recommended preference save must reuse the originating lease')
+assert.match(onboardingUi, /completePersonalization\(\{ profileToCommit: recommendedProfile, preferencesVerified: true, access \}\)/)
+assert.match(onboardingUi, /setTutorPreferencesState\(prev => access\.valid\(\) \? durable : prev\)/)
+assert.match(onboardingUi, /setProfile\(prev => access\.valid\(\) \? recommendedProfile : prev\)/)
+
+// Prove a stale recommended click cannot save preferences to account B after
+// switching away from the account A that began onboarding.
+const ownTutorValues = new Map()
+const otherTutorValues = new Map()
+let tutorOwner = 'A'
+const tutorAccess = {
+  valid: () => tutorOwner === 'A',
+  getItem: key => ownTutorValues.get(key) ?? null,
+  setItem: (key, value) => { ownTutorValues.set(key, value); return true },
+}
+assert.equal(updateTutorPreferencesDurably({ tone: 'calm' }, { access: tutorAccess }).tone, 'calm')
+assert.equal(JSON.parse(ownTutorValues.get('lc2-tutor-preferences')).tone, 'calm')
+tutorOwner = 'B'
+assert.throws(() => updateTutorPreferencesDurably({ tone: 'fun' }, { access: tutorAccess }), /Stale tutor preference edit/)
+assert.equal(JSON.parse(ownTutorValues.get('lc2-tutor-preferences')).tone, 'calm')
+assert.equal(otherTutorValues.size, 0, 'old onboarding click must never write B preferences')
 
 console.log('PASS: onboarding commits verified profile before completion; failed, unreadable and revoked writes cannot finish setup')
 
