@@ -220,8 +220,9 @@ export function saveTutorPreferences(preferences, { requireDurable = false, acce
 // Read and write against one captured learner lease. Unlike the legacy
 // best-effort helpers, a user-triggered edit must fail closed on malformed or
 // unreadable bytes and must not publish an unpersisted React state.
-export function updateTutorPreferencesDurably(updates) {
-  const access = captureLearnerAccess()
+export function updateTutorPreferencesDurably(updates, { access = captureLearnerAccess() } = {}) {
+  // A multi-step onboarding action can supply its original lease; never
+  // recapture a different account between the preference and profile writes.
   if (!access.valid()) throw new Error('Stale tutor preference edit')
   const raw = access.getItem(TUTOR_PREFERENCES_KEY)
   if (!access.valid()) throw new Error('Stale tutor preference edit')
