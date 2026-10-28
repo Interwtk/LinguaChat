@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { captureLearnerAccess } from '../../auth/localLease.js'
+import { retainPlacementAnswerLease } from '../../auth/setupCheckpoint.js'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { LanguageSwitcher } from '../ui/LanguageSwitcher'
@@ -62,6 +63,7 @@ function PlacementTest() {
   const [placementSaveFailed, setPlacementSaveFailed] = useState(false)
   const question = useMemo(() => getNextQuestion(placementState), [placementState])
   const feedbackTimer = useRef(null)
+  const quizAccess = useRef(null)
   const activeAccountId = authUser?.id ?? null
   const currentAccountId = useRef(activeAccountId)
   currentAccountId.current = activeAccountId
@@ -71,6 +73,7 @@ function PlacementTest() {
   useEffect(() => () => {
     if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
     feedbackTimer.current = null
+    quizAccess.current = null
   }, [activeAccountId])
 
   function start() {
@@ -82,8 +85,9 @@ function PlacementTest() {
     const scheduledAccountId = currentAccountId.current
     // Capture the storage generation before feedback's delay. Never borrow
     // whichever account happens to be active when the timer finally fires.
-    const answerAccess = captureLearnerAccess()
-    if (!answerAccess.valid()) {
+    const answerAccess = retainPlacementAnswerLease(quizAccess.current, captureLearnerAccess())
+    if (!answerAccess) {
+      quizAccess.current = null
       // Never reuse answers gathered under a revoked storage generation.
       setPlacementState(getInitialPlacementState('A2'))
       setSelectedOption(null)
@@ -91,6 +95,7 @@ function PlacementTest() {
       setPlacementSaveFailed(true)
       return
     }
+    quizAccess.current = answerAccess
     setPlacementSaveFailed(false)
     const evaluated = evaluateAnswer(question, optionId, placementState)
     setSelectedOption(optionId)
@@ -99,6 +104,7 @@ function PlacementTest() {
       feedbackTimer.current = null
       if (scheduledAccountId !== currentAccountId.current) return
       if (!answerAccess.valid()) {
+        quizAccess.current = null
         // The same account can acquire a new lease without changing its id.
         // Clear the old generation's answers instead of leaving the quiz locked.
         setPlacementState(getInitialPlacementState('A2'))
@@ -111,7 +117,10 @@ function PlacementTest() {
         if (!completePlacement(calculatePlacementResult(evaluated.nextState, interfaceLanguage), answerAccess)) {
           // A lease revoked during durable publication also invalidates the
           // answers collected before that publication attempt.
-          if (!answerAccess.valid()) setPlacementState(getInitialPlacementState('A2'))
+          if (!answerAccess.valid()) {
+            quizAccess.current = null
+            setPlacementState(getInitialPlacementState('A2'))
+          }
           setPlacementSaveFailed(true)
           setSelectedOption(null)
           setFeedback(null)
