@@ -35,7 +35,30 @@ ownValues.set('lc2-profile',JSON.stringify({level:'B1',placementResult:{level:'A
 assert.equal(readVerifiedProfile(ownAccess).level,'A1')
 assert.equal(readVerifiedProfile(ownAccess).placementResult.level,'A1')
 assert.equal(readVerifiedProfile(ownAccess).goal,'Travel')
+// A plausible-looking level match must not bypass placement validation.
+// The account-scoped verified checkpoint repairs malformed legacy evidence.
+const invalidPlacements = [
+  { level: 'Z9' },
+  { level: 'A1', strengths: 'not-an-array' },
+  { level: 'A1', focusAreas: [42] },
+]
+for (const invalidPlacement of invalidPlacements) {
+  ownValues.set('lc2-profile',JSON.stringify({level:invalidPlacement.level,placementResult:invalidPlacement,goal:'Travel'}))
+  const repaired = readVerifiedProfile(ownAccess)
+  assert.equal(repaired.level,'A1')
+  assert.deepEqual(repaired.placementResult,{level:'A1',strengths:['hello']})
+  assert.equal(repaired.goal,'Travel')
+}
+ownValues.set('lc2-profile',JSON.stringify({level:'Z9',placementResult:null,goal:'Travel'}))
+assert.equal(readVerifiedProfile(ownAccess).level,'A1')
 ownValues.delete('lc2-placement-result')
+for (const invalidPlacement of invalidPlacements) {
+  ownValues.set('lc2-profile',JSON.stringify({level:invalidPlacement.level,placementResult:invalidPlacement,goal:'Travel'}))
+  assert.throws(()=>readVerifiedProfile(ownAccess),/Invalid profile placement/)
+}
+ownValues.set('lc2-profile',JSON.stringify({level:'Z9',placementResult:null,goal:'Travel'}))
+assert.throws(()=>readVerifiedProfile(ownAccess),/Invalid profile placement/)
+ownValues.set('lc2-profile',JSON.stringify({level:'B1',placementResult:{level:'A1'},goal:'Travel'}))
 assert.throws(()=>readVerifiedProfile(ownAccess),/Invalid profile placement/)
 ownValues.set('lc2-profile',JSON.stringify({level:'A1',placementResult:[],goal:'Travel'}))
 assert.throws(()=>readVerifiedProfile(ownAccess),/Invalid profile placement/)
