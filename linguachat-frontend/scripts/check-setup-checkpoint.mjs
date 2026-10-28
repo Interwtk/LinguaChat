@@ -317,6 +317,16 @@ assert.match(context, /completePersonalization\(\{ profileToCommit: recommendedP
 assert.ok(context.includes('persistPlacementResult(captureLearnerAccess(), result)'), 'placement reveal must require a durable checkpoint')
 assert.ok(setup.includes('if (!completePlacement(calculatePlacementResult'), 'failed placement save must remain retryable')
 assert.match(setup, /placementSaveFailed &&/, 'failed placement save must show an error')
+
+const placementUi = setup.slice(setup.indexOf('function PlacementTest()'), setup.indexOf('/* ---- LEVEL REVEAL ---- */'))
+assert.match(placementUi, /const activeAccountId = authUser\?\.id \?\? null/, 'quiz must track the verified account identity')
+assert.match(placementUi, /feedbackTimer\.current !== null\) window\.clearTimeout\(feedbackTimer\.current\)/, 'unmount or account switch must cancel pending feedback')
+assert.match(placementUi, /selectedOption \|\| feedbackTimer\.current !== null \|\| phase !== 'quiz'/, 'double click must not schedule duplicate feedback')
+assert.match(placementUi, /if \(scheduledAccountId !== currentAccountId\.current\) return/, 'delayed callback must reject a different account')
+assert.ok(placementUi.indexOf('if (scheduledAccountId !== currentAccountId.current) return')
+  < placementUi.indexOf('completePlacement(calculatePlacementResult'), 'identity fence must precede any placement commit')
+assert.match(setup, /placement: <PlacementTest key=\{authUser\?\.id \?\? 'guest'\} \/>/, 'switching accounts must remount the quiz without prior answers')
+
 console.log('PASS: onboarding commits verified profile before completion; failed, unreadable and revoked writes cannot finish setup')
 
 console.log('PASS: setup resume, safe fallback, auth-route exclusion and native keyboard personality controls')
