@@ -329,7 +329,7 @@ assert.equal(deniedWrites, 1, 'failed marker invalidation must stop before profi
 assert.equal(deniedReset.has('lc2-profile'), false)
 assert.match(context, /commitOnboarding\(access, profileToCommit\)/, 'onboarding commit must use the originating learner lease')
 assert.match(context, /if \(tutorPreferenceSaveFailed && !preferencesVerified\) return false/)
-assert.match(context, /completePersonalization\(\{ profileToCommit: recommendedProfile, preferencesVerified: true \}\)/)
+assert.match(context, /completePersonalization\(\{ profileToCommit: recommendedProfile, preferencesVerified: true, access \}\)/)
 assert.ok(context.includes('persistPlacementResult(access, result)'), 'placement reveal must use the captured account lease')
 assert.match(context, /completePlacement = useCallback\(\(result, access = captureLearnerAccess\(\)\)/, 'direct placement calls must also capture their own lease')
 assert.match(context, /setProfile\(prev => access\.valid\(\) \?/, 'deferred profile publication must reject a revoked lease')
