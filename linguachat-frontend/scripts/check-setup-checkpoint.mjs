@@ -358,8 +358,8 @@ assert.ok(staleCallback.includes("setPlacementState(getInitialPlacementState('A2
   && staleCallback.includes('setPlacementSaveFailed(true)'), 'same-id revoked lease must reset answers and unlock retry')
 assert.ok(delayedPlacement.indexOf('if (!answerAccess.valid()) {')
   < delayedPlacement.indexOf('completePlacement(calculatePlacementResult'), 'lease fence must precede durable placement')
-assert.match(delayedPlacement, /if \(!answerAccess\.valid\(\)\) setPlacementState\(getInitialPlacementState\('A2'\)\)/, 'lease revoked during failed durable publication must discard old answers')
-const beforeFeedback = placementUi.slice(placementUi.indexOf('const answerAccess = captureLearnerAccess()'), placementUi.indexOf('feedbackTimer.current = window.setTimeout('))
+assert.match(delayedPlacement, /if \(!answerAccess\.valid\(\)\) \{\s*quizAccess\.current = null\s*setPlacementState\(getInitialPlacementState\('A2'\)\)/, 'lease revoked during failed durable publication must discard old answers')
+const beforeFeedback = placementUi.slice(placementUi.indexOf('const answerAccess = retainPlacementAnswerLease('), placementUi.indexOf('feedbackTimer.current = window.setTimeout('))
 assert.ok(beforeFeedback.includes("setPlacementState(getInitialPlacementState('A2'))"), 'lease denied before feedback must discard stale answers')
 assert.match(setup, /placement: <PlacementTest key=\{authUser\?\.id \?\? 'guest'\} \/>/, 'switching accounts must remount the quiz without prior answers')
 
