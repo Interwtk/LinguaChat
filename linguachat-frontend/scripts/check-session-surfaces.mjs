@@ -473,4 +473,81 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+/* ---------- 6. profile and chat controls must not cross accounts ---------- */
+
+// Exercise the actual React callbacks: a setter queued by A can be flushed
+// only after B is activated. Both a stale flush and a denied initial capture
+// must leave B's visible state unchanged.
+{
+  const context = read('src/context/AppContext.jsx')
+  function extract(signature, ending, args) {
+    const start = context.indexOf(signature)
+    const end = context.indexOf(ending, start)
+    assert.ok(start >= 0 && end > start, signature + ' must remain inspectable')
+    return new Function(...args, 'deps', 'with (deps) { ' + context.slice(start + signature.length, end) + ' }')
+  }
+  const updateProfile = extract(
+    '  const updateProfile = useCallback((updates) => {',
+    '\n  }, [])', ['updates'])
+  const selectMessage = extract(
+    '  const selectMessage = useCallback((msg) => {',
+    '\n  }, [])', ['msg'])
+  const clearMessages = extract(
+    '  const clearMessages = useCallback(() => {',
+    '\n  }, [interfaceLanguageInfo.base])', [])
+
+  function checkDeferredControls(mode) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    const queued = []
+    const enqueue = key => update => queued.push([key, update])
+    const state = {
+      profile: { name: 'B profile', level: 'B1' },
+      messages: [{ role: 'user', text: 'B private message' }],
+      selected: { id: 'B-msg', text: 'B private message' },
+    }
+    const original = structuredClone(state)
+    const deps = {
+      captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      setProfile: enqueue('profile'),
+      setMessages: enqueue('messages'),
+      setSelectedMessage: enqueue('selected'),
+      createWelcomeMessage: language => ({ role: 'lingua', text: 'Welcome ' + language }),
+      interfaceLanguageInfo: { base: 'es' },
+    }
+    updateProfile({ name: 'A profile', level: 'A1' }, deps)
+    selectMessage({ id: 'A-msg', text: 'A private message' }, deps)
+    clearMessages(deps)
+    if (mode === 'stale-flush') owner = 'B'
+    if (mode === 'denied') {
+      assert.equal(queued.length, 0, 'denied capture must not schedule any state update')
+    } else {
+      assert.equal(queued.length, 4, 'profile, selection and chat clear must queue protected updates')
+    }
+    for (const [key, update] of queued) {
+      assert.equal(typeof update, 'function', mode + ': no raw React state replacement is allowed')
+      state[key] = update(state[key])
+    }
+    if (mode === 'current') {
+      assert.deepEqual(state.profile, { name: 'A profile', level: 'A1' })
+      assert.deepEqual(state.messages, [{ role: 'lingua', text: 'Welcome es' }])
+      assert.equal(state.selected, null)
+    } else {
+      assert.deepEqual(state, original, mode + ': A cannot overwrite B after lease loss')
+    }
+  }
+  for (const mode of ['current', 'stale-flush', 'denied']) checkDeferredControls(mode)
+
+  // The selection toggle itself still works on the originating account.
+  let selected = { id: 'A-msg' }
+  const deps = {
+    captureLearnerAccess: () => ({ valid: () => true }),
+    setSelectedMessage: updater => { selected = updater(selected) },
+  }
+  selectMessage({ id: 'A-msg' }, deps)
+  assert.equal(selected, null, 'selecting the active message toggles it off')
+  selectMessage({ id: 'A-other' }, deps)
+  assert.equal(selected.id, 'A-other', 'a new message can still be selected')
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)
