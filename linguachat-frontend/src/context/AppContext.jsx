@@ -633,35 +633,38 @@ export function AppProvider({ children }) {
   // User finished the guided personalization step (tutor preferences are already
   // persisted live). Commit the onboarding marker LAST so partial Storage
   // failures cannot open Home or skip unfinished setup after a reload.
-  const completePersonalization = useCallback(({ profileToCommit = profile, preferencesVerified = false } = {}) => {
+  const completePersonalization = useCallback(({ profileToCommit = profile, preferencesVerified = false, access = captureLearnerAccess() } = {}) => {
     // A failed preference edit must not be silently accepted by Save and Start.
     // The recommended path may override this only after its own durable save.
     if (tutorPreferenceSaveFailed && !preferencesVerified) return false
     try {
-      // The profile effect runs after React renders. Persist it synchronously
-      // before marking onboarding complete so a crash/reload cannot lose the
-      // level or guided choices while still skipping setup.
-      commitOnboarding(captureLearnerAccess(), profileToCommit)
+      // Persist before marking setup complete, under the originating lease.
+      // Queued React updates may run after an account switch: fence each one.
+      commitOnboarding(access, profileToCommit)
+      if (!access.valid()) throw new Error('Stale onboarding account')
     } catch {
-      setTutorPreferenceSaveFailed(true)
+      setTutorPreferenceSaveFailed(prev => access.valid() ? true : prev)
       return false
     }
-    setTutorPreferenceSaveFailed(false)
-    setOnboardingCompleted(true)
-    setView('today')
-    setShowWelcome(true)
-    setAuthStep(null)
+    setTutorPreferenceSaveFailed(prev => access.valid() ? false : prev)
+    setOnboardingCompleted(prev => access.valid() ? true : prev)
+    setView(prev => access.valid() ? 'today' : prev)
+    setShowWelcome(prev => access.valid() ? true : prev)
+    setAuthStep(prev => access.valid() ? null : prev)
     return true
   }, [profile, tutorPreferenceSaveFailed])
 
-  // Recommended path: a one-click choice is still a real preference save.
-  // Persist the complete recommended profile BEFORE the completion marker.
+  // Recommended setup must keep the same lease across preference save,
+  // onboarding commit and deferred React publications.
   const applyRecommendedSetup = useCallback(() => {
+    const access = captureLearnerAccess()
     let durable
     try {
-      durable = updateTutorPreferencesDurably(DEFAULT_TUTOR_PREFERENCES)
+      if (!access.valid()) throw new Error('Stale recommended setup')
+      durable = updateTutorPreferencesDurably(DEFAULT_TUTOR_PREFERENCES, { access })
+      if (!access.valid()) throw new Error('Stale recommended setup')
     } catch {
-      setTutorPreferenceSaveFailed(true)
+      setTutorPreferenceSaveFailed(prev => access.valid() ? true : prev)
       return false
     }
     const recommendedProfile = {
@@ -676,10 +679,10 @@ export function AppProvider({ children }) {
       goal: profile.goal || 'Travel',
       dailyGoal: 10,
     }
-    if (!completePersonalization({ profileToCommit: recommendedProfile, preferencesVerified: true })) return false
-    setTutorPreferencesState(durable)
-    setProfile(recommendedProfile)
-    return true
+    if (!completePersonalization({ profileToCommit: recommendedProfile, preferencesVerified: true, access })) return false
+    setTutorPreferencesState(prev => access.valid() ? durable : prev)
+    setProfile(prev => access.valid() ? recommendedProfile : prev)
+    return access.valid()
   }, [completePersonalization, profile])
 
   const dismissWelcome = useCallback(() => {
