@@ -242,4 +242,97 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+
+/* ---------- 4. free-chat callbacks must not cross accounts ---------- */
+
+// Exercise the real async callback, not a parallel mock of its logic. React can
+// flush queued state setters after an account switch, even if the HTTP reply
+// arrived while the original account was still active.
+{
+  const context = read('src/context/AppContext.jsx')
+  const signature = '  const sendMessage = useCallback(async (text) => {'
+  const start = context.indexOf(signature)
+  const end = context.indexOf('\n  }, [activeCompanion, activeMission, conversationTopic', start)
+  assert.ok(start >= 0 && end > start, 'free chat must retain an inspectable async callback')
+  const AsyncFunction = Object.getPrototypeOf(async function () {}).constructor
+  const send = new AsyncFunction('text', 'deps', 'with (deps) { ' + context.slice(start + signature.length, end) + ' }')
+  const reply = { reply: 'Reply from A', connectionMessage: 'Connected as A', correction: null }
+
+  async function checkChatLease(mode) {
+    let owner = 'A'
+    let resolveReply
+    const queued = []
+    const enqueue = key => update => queued.push([key, update])
+    const state = {
+      messages: [{ role: 'lingua', text: 'B original' }],
+      typing: false,
+      selected: 'B selected',
+      connection: 'B connection',
+      memory: 'B memory',
+      progress: { owner: 'B' },
+    }
+    const original = structuredClone(state)
+    const deps = {
+      captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      getActiveMissionDetails: () => null,
+      activeMission: null,
+      submitMissionStep: () => { throw new Error('unexpected mission') },
+      setMessages: enqueue('messages'),
+      setIsTyping: enqueue('typing'),
+      setSelectedMessage: enqueue('selected'),
+      setConnectionNotice: enqueue('connection'),
+      setMemoryNotice: enqueue('memory'),
+      setLocalProgress: enqueue('progress'),
+      messages: [],
+      sendChatMessage: () => mode === 'inflight'
+        ? new Promise(resolve => { resolveReply = resolve })
+        : mode === 'stale-error'
+          ? Promise.reject(new Error('offline'))
+          : Promise.resolve(reply),
+      profile: { level: 'A1', style: 'friendly', goal: '', tutorPersonality: '' },
+      sessionId: 'A-session',
+      nativeLanguageInfo: { base: 'es' },
+      interfaceLanguageInfo: { base: 'es' },
+      targetLanguage: 'en',
+      tutorPreferences: {},
+      activeCompanion: null,
+      selectLearnerFact: () => null,
+      loadLearnerModel: () => ({}),
+      asSubjectValue: () => false,
+      loadMemoryContext: () => ({ dismissedFactIds: [] }),
+      conversationTopic: { interestId: 'technology' },
+      providerTopicContext: () => ({}),
+      recordPractice: () => ({ owner: 'A' }),
+      recordTopicUse: () => {},
+    }
+    const pending = send('Hello', deps)
+    if (mode === 'inflight') {
+      owner = 'B'
+      assert.equal(typeof resolveReply, 'function', 'the HTTP request must have started')
+      resolveReply(reply)
+    }
+    await pending
+    if (mode !== 'current') owner = 'B'
+    assert.ok(queued.length > 0, mode + ': React callbacks must have been queued')
+    for (const [key, update] of queued) {
+      assert.equal(typeof update, 'function', mode + ': every queued update must check the lease')
+      state[key] = update(state[key])
+    }
+    if (mode === 'current') {
+      assert.equal(state.messages.length, 3, 'the valid account still sees its own user/reply messages')
+      assert.equal(state.progress.owner, 'A', 'valid practice still updates progress')
+      assert.equal(state.connection, 'Connected as A')
+      assert.equal(state.typing, false)
+    } else {
+      assert.deepEqual(state, original, mode + ': A must not modify B after the lease is revoked')
+    }
+  }
+
+  await checkChatLease('current')
+  await checkChatLease('stale-success')
+  await checkChatLease('stale-error')
+  await checkChatLease('inflight')
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)
