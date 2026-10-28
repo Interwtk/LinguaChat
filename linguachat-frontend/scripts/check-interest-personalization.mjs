@@ -617,10 +617,10 @@ const TOMORROW = TODAY + DAY
   const onboarding = read('src/components/onboarding/TutorPersonalizationStep.jsx')
   const identity = read('src/components/identity/LanguageIdentity.jsx')
   assert.match(context, /const \[tutorPreferenceSaveFailed, setTutorPreferenceSaveFailed\] = useState\(false\)/)
-  assert.match(context, /setTutorPreferencesState\(next\)\s+setTutorPreferenceSaveFailed\(false\)\s+return true/,
-    'confirmed durable writes clear the error and report success')
-  assert.match(context, /setTutorPreferenceSaveFailed\(true\)\s+return false/,
-    'failed writes report failure without publishing a false success')
+  assert.match(context, /setTutorPreferencesState\(prev => access\.valid\(\) \? next : prev\)\s+setTutorPreferenceSaveFailed\(prev => access\.valid\(\) \? false : prev\)\s+return access\.valid\(\)/,
+    'confirmed durable writes publish only to the originating account and clear its error')
+  assert.match(context, /setTutorPreferenceSaveFailed\(prev => access\.valid\(\) \? true : prev\)\s+return false/,
+    'failed writes cannot publish an error to a different account')
   for (const [label, surface] of [['onboarding', onboarding], ['profile', identity]]) {
     assert.match(surface, /tutorPreferenceSaveFailed && \([\s\S]*?role="alert"/,
       `${label} must announce failed preference writes`)
