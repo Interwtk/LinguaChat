@@ -550,4 +550,101 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+/* ---------- 7. reset progress must never clear or repaint another account ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const signature = '  const resetLocalProgress = useCallback(() => {'
+  const start = context.indexOf(signature)
+  const end = context.indexOf('\n  }, [t, interfaceLanguageInfo.base])', start)
+  assert.ok(start >= 0 && end > start, 'reset progress callback must remain inspectable')
+  const reset = new Function('deps', 'with (deps) { ' + context.slice(start + signature.length, end) + ' }')
+
+  function checkReset(mode) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let confirmations = 0, progressClears = 0, missionClears = 0, sessions = 0
+    const queued = []
+    const state = {
+      session: 'B-session',
+      messages: [{ text: 'B private conversation' }],
+      progress: { xp: 90 },
+      selected: { id: 'B-message' },
+      connection: 'B connection',
+      memory: 'B memory',
+      active: { missionId: 'B-mission' },
+      completed: ['B-mission'],
+      feedback: 'B feedback',
+      celebration: 'B celebration',
+      view: 'chat',
+    }
+    const original = structuredClone(state)
+    const generation = { current: 7 }
+    const enqueue = key => update => queued.push([key, update])
+    const deps = {
+      captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      window: { confirm: () => {
+        confirmations++
+        if (mode === 'revoked-confirm') owner = 'B'
+        return mode !== 'cancelled'
+      } },
+      t: key => key,
+      clearStoredProgress: () => { progressClears++; if (mode === 'revoked-clear') owner = 'B' },
+      createSessionId: () => { sessions++; return 'A-new-session' },
+      createWelcomeMessage: lang => ({ text: 'Welcome ' + lang }),
+      createEmptyProgress: () => ({ xp: 0 }),
+      clearMissionStorage: () => { missionClears++ },
+      missionGenerationRef: generation,
+      interfaceLanguageInfo: { base: 'es' },
+      setSessionId: enqueue('session'),
+      setMessages: enqueue('messages'),
+      setLocalProgress: enqueue('progress'),
+      setSelectedMessage: enqueue('selected'),
+      setConnectionNotice: enqueue('connection'),
+      setMemoryNotice: enqueue('memory'),
+      setActiveMission: enqueue('active'),
+      setCompletedMissions: enqueue('completed'),
+      setMissionFeedback: enqueue('feedback'),
+      setMissionCelebration: enqueue('celebration'),
+      setView: enqueue('view'),
+    }
+    reset(deps)
+    if (mode === 'stale-flush') owner = 'B'
+    for (const [key, update] of queued) {
+      assert.equal(typeof update, 'function', mode + ': reset must queue lease-checked functional updates')
+      state[key] = update(state[key])
+    }
+    if (mode === 'current') {
+      assert.equal(confirmations, 1)
+      assert.equal(progressClears, 1)
+      assert.equal(missionClears, 1)
+      assert.equal(sessions, 1)
+      assert.equal(generation.current, 8)
+      assert.equal(queued.length, 11)
+      assert.deepEqual(state, {
+        session: 'A-new-session',
+        messages: [{ text: 'Welcome es' }],
+        progress: { xp: 0 },
+        selected: null, connection: null, memory: null, active: null,
+        completed: [], feedback: null, celebration: null, view: 'today',
+      })
+    } else {
+      assert.deepEqual(state, original, mode + ': A reset must not change B UI')
+      assert.equal(queued.length, mode === 'stale-flush' ? 11 : 0)
+      if (mode === 'stale-flush') {
+        assert.equal(progressClears, 1)
+        assert.equal(missionClears, 1)
+      } else {
+        assert.equal(progressClears, mode === 'revoked-clear' ? 1 : 0)
+        assert.equal(missionClears, 0)
+        assert.equal(sessions, 0)
+        assert.equal(generation.current, 7)
+      }
+      if (mode === 'denied') assert.equal(confirmations, 0)
+    }
+  }
+  for (const mode of ['current', 'stale-flush', 'denied', 'cancelled', 'revoked-confirm', 'revoked-clear']) {
+    checkReset(mode)
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)
