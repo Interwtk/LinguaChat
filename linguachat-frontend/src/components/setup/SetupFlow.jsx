@@ -58,6 +58,7 @@ function PlacementTest() {
   const [placementState, setPlacementState] = useState(() => getInitialPlacementState('A2'))
   const [selectedOption, setSelectedOption] = useState(null)
   const [feedback, setFeedback] = useState(null)
+  const [placementSaveFailed, setPlacementSaveFailed] = useState(false)
   const question = useMemo(() => getNextQuestion(placementState), [placementState])
 
   function start() {
@@ -66,12 +67,17 @@ function PlacementTest() {
 
   function chooseOption(optionId) {
     if (selectedOption || phase !== 'quiz') return
+    setPlacementSaveFailed(false)
     const evaluated = evaluateAnswer(question, optionId, placementState)
     setSelectedOption(optionId)
     setFeedback(evaluated.feedback)
     window.setTimeout(() => {
       if (shouldFinishPlacement(evaluated.nextState)) {
-        completePlacement(calculatePlacementResult(evaluated.nextState, interfaceLanguage))
+        if (!completePlacement(calculatePlacementResult(evaluated.nextState, interfaceLanguage))) {
+          setPlacementSaveFailed(true)
+          setSelectedOption(null)
+          setFeedback(null)
+        }
         return
       }
       setPlacementState(evaluated.nextState)
@@ -137,6 +143,11 @@ function PlacementTest() {
             </span>
           </div>
 
+          {placementSaveFailed && (
+            <p role="alert" className="rounded-2xl p-3 mb-4" style={{ color: 'var(--ink)', background: 'var(--info-soft)', border: '1px solid var(--info)' }}>
+              {t('authGenericError')}
+            </p>
+          )}
           <div className="rounded-3xl p-5 md:p-6 mb-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', fontWeight: 600, marginBottom: 8 }}>
               {t(question.instructionKey)}
