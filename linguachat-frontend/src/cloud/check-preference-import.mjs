@@ -411,13 +411,18 @@ test('onboarding completion commits profile before marker and never navigates on
   const createCompletion=appCallback('completePersonalization','[profile, tutorPreferenceSaveFailed]',
     ['profile','tutorPreferenceSaveFailed','commitOnboarding','captureLearnerAccess',
       'setTutorPreferenceSaveFailed','setOnboardingCompleted','setView','setShowWelcome','setAuthStep'],
-    '{ profileToCommit = profile, preferencesVerified = false } = {}')
+    '{ profileToCommit = profile, preferencesVerified = false, access = captureLearnerAccess() } = {}')
+  const resolve=(next,prev)=>typeof next==='function'?next(prev):next
   for(const failure of ['profile','personalized','marker','readback']){
     const f=fixture(),writes=[],published=[],errors=[]
     const profile={level:'B1',placementResult:{level:'B1'},goal:'Travel',preferences:{goals:['Travel']}}
+    let errorState=false
     const complete=createCompletion(profile,false,commitOnboarding,captureLearnerAccess,
-      v=>errors.push(v),v=>published.push(['completed',v]),
-      v=>published.push(['view',v]),v=>published.push(['welcome',v]),v=>published.push(['step',v]))
+      v=>{errorState=resolve(v,errorState);errors.push(errorState)},
+      v=>published.push(['completed',resolve(v,false)]),
+      v=>published.push(['view',resolve(v,'entry')]),
+      v=>published.push(['welcome',resolve(v,false)]),
+      v=>published.push(['step',resolve(v,'personalize')]))
     f.store.before=(op,k)=>{
       if(op==='set'&&suffix(k,'lc2-profile'))writes.push('profile')
       if(op==='set'&&suffix(k,'lc2-welcome-seen'))writes.push('welcome')
@@ -433,7 +438,6 @@ test('onboarding completion commits profile before marker and never navigates on
     assert.deepEqual(errors,[true],failure+': the UI must report the failure')
     assert.equal(writes.at(-1),failure==='profile'?'profile':failure==='personalized'?'personalized':'onboarded')
     if(failure!=='readback')assert.equal(learnerStorage.getItem('lc2-onboarded'),failure==='marker'?null:'false', 'failed retry must never leave a true completion marker')
-    // Keep observing write order after removing only the injected failure.
     f.store.before=(op,k)=>{
       if(op==='set'&&suffix(k,'lc2-profile'))writes.push('profile')
       if(op==='set'&&suffix(k,'lc2-welcome-seen'))writes.push('welcome')
@@ -448,24 +452,49 @@ test('onboarding completion commits profile before marker and never navigates on
     assert.deepEqual(published,[['completed',true],['view','today'],['welcome',true],['step',null]])
     assert.equal(errors.at(-1),false)
   }
+  // React may execute queued functional updaters after the account lease is
+  // revoked. A successful durable A commit must not open B's Home or clear B's
+  // setup/error state.
+  const profile={level:'A1',placementResult:{level:'A1'}}
+  const stored=new Map(),queued=[]
+  let valid=true
+  const access={
+    valid:()=>valid,
+    getItem:k=>stored.get(k)??null,
+    setItem:(k,v)=>{stored.set(k,v);return true},
+  }
+  const complete=createCompletion(profile,false,commitOnboarding,captureLearnerAccess,
+    v=>queued.push(['error',v]),v=>queued.push(['completed',v]),
+    v=>queued.push(['view',v]),v=>queued.push(['welcome',v]),
+    v=>queued.push(['step',v]))
+  assert.equal(complete({access}),true)
+  assert.equal(stored.get('lc2-onboarded'),'true')
+  valid=false
+  const previous={error:true,completed:false,view:'entry',welcome:false,step:'personalize'}
+  for(const [key,updater] of queued){
+    assert.equal(typeof updater,'function',key+' must be deferred and lease-guarded')
+    assert.equal(updater(previous[key]),previous[key],key+' must not affect the next account')
+  }
 })
 
 test('recommended setup does not publish React defaults when the durable save fails',()=>{
   const createRecommended=appCallback('applyRecommendedSetup','[completePersonalization, profile]',
-    ['updateTutorPreferencesDurably','DEFAULT_TUTOR_PREFERENCES','profile',
+    ['captureLearnerAccess','updateTutorPreferencesDurably','DEFAULT_TUTOR_PREFERENCES','profile',
       'setTutorPreferenceSaveFailed','completePersonalization','setTutorPreferencesState','setProfile'],'')
   const f=fixture()
   let profile={goal:'Work'},reactTutor=loadTutorPreferences(),completions=0
   const errors=[],publications=[]
-  const run=finish=>createRecommended(updateTutorPreferencesDurably,DEFAULT_TUTOR_PREFERENCES,profile,
-    v=>errors.push(v),options=>{
+  const resolve=(next,prev)=>typeof next==='function'?next(prev):next
+  const run=finish=>createRecommended(captureLearnerAccess,updateTutorPreferencesDurably,DEFAULT_TUTOR_PREFERENCES,profile,
+    v=>errors.push(resolve(v,false)),options=>{
       completions++
       assert.equal(options.preferencesVerified,true)
       assert.equal(options.profileToCommit.goal,'Work')
+      assert.ok(options.access.valid(),'recommended setup must forward its captured lease')
       return finish
     },
-    v=>{reactTutor=v;publications.push('tutor')},
-    v=>{profile=v;publications.push('profile')})()
+    v=>{reactTutor=resolve(v,reactTutor);publications.push('tutor')},
+    v=>{profile=resolve(v,profile);publications.push('profile')})()
   f.store.before=(op,k)=>{if(op==='set'&&suffix(k,'lc2-tutor-preferences'))throw Error('quota')}
   assert.equal(run(true),false)
   assert.equal(completions,0);assert.deepEqual(publications,[])
@@ -479,4 +508,23 @@ test('recommended setup does not publish React defaults when the durable save fa
   assert.equal(reactTutor.tone,DEFAULT_TUTOR_PREFERENCES.tone)
   assert.equal(loadTutorPreferences().tone,DEFAULT_TUTOR_PREFERENCES.tone)
   assert.equal(profile.preferences.correctionIntensity,'Balanced')
+
+  // A late account switch between the recommended preference write and
+  // completion must neither claim success nor publish A's React defaults to B.
+  const staleValues=new Map(),stalePublications=[]
+  let staleValid=true
+  const staleAccess={
+    valid:()=>staleValid,
+    getItem:k=>staleValues.get(k)??null,
+    setItem:(k,v)=>{staleValues.set(k,v);return true},
+  }
+  const staleRun=createRecommended(()=>staleAccess,updateTutorPreferencesDurably,DEFAULT_TUTOR_PREFERENCES,profile,
+    v=>stalePublications.push(['error',v]),
+    options=>{assert.equal(options.access,staleAccess);staleValid=false;return true},
+    v=>stalePublications.push(['tutor',v]),v=>stalePublications.push(['profile',v]))
+  assert.equal(staleRun(),false)
+  for(const [key,updater] of stalePublications){
+    assert.equal(typeof updater,'function')
+    assert.equal(updater(key==='tutor'?{tone:'fun'}:{level:'B1'}).tone,key==='tutor'?'fun':undefined)
+  }
 })
