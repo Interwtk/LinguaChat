@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { readSetupCheckpoint, persistPlacementResult, SETUP_STEPS } from '../src/auth/setupCheckpoint.js'
+import { readSetupCheckpoint, persistPlacementResult, retainPlacementAnswerLease, SETUP_STEPS } from '../src/auth/setupCheckpoint.js'
 import { readVerifiedProfile } from '../src/auth/profileRestore.js'
 import { commitOnboarding } from '../src/auth/onboardingCommit.js'
 const values=new Map(),store={getItem:k=>values.get(k)??null}
@@ -21,6 +21,21 @@ values.set('lc2-placement-result','{');assert.equal(readSetupCheckpoint(store).s
 assert.equal(readSetupCheckpoint({getItem(){throw Error('blocked')}}).step,'placement')
 // Placement must be durable under the same account lease before revealing a
 // level. Denied, corrupted, revoked and invalid writes must not advance setup.
+// Same-account lease renewal between questions must discard the old quiz
+// before accepting another answer, even with no feedback timer pending.
+let quizGeneration = 'A'
+const quizLeaseA = { valid: () => quizGeneration === 'A' }
+const quizLeaseB = { valid: () => quizGeneration === 'B' }
+assert.equal(retainPlacementAnswerLease(null, quizLeaseA), quizLeaseA)
+assert.equal(retainPlacementAnswerLease(quizLeaseA, quizLeaseA), quizLeaseA)
+quizGeneration = 'B'
+assert.equal(retainPlacementAnswerLease(quizLeaseA, quizLeaseB), null,
+  'new lease must not continue answers gathered under an earlier lease')
+assert.equal(retainPlacementAnswerLease(null, quizLeaseB), quizLeaseB,
+  'a clean retry must accept the current generation')
+assert.equal(retainPlacementAnswerLease(quizLeaseB, { valid: () => false }), null,
+  'a denied new capture must fail closed')
+
 const placement = { level: 'A2', strengths: ['listening'], focusAreas: ['grammar'] }
 const placementValues = new Map()
 const placementWrites = []
@@ -327,7 +342,11 @@ assert.match(placementUi, /const activeAccountId = authUser\?\.id \?\? null/, 'q
 assert.match(placementUi, /feedbackTimer\.current !== null\) window\.clearTimeout\(feedbackTimer\.current\)/, 'unmount or account switch must cancel pending feedback')
 assert.match(placementUi, /selectedOption \|\| feedbackTimer\.current !== null \|\| phase !== 'quiz'/, 'double click must not schedule duplicate feedback')
 assert.match(placementUi, /if \(scheduledAccountId !== currentAccountId\.current\) return/, 'delayed callback must reject a different account')
-assert.match(placementUi, /const answerAccess = captureLearnerAccess\(\)/, 'quiz must capture storage ownership before delayed feedback')
+assert.match(placementUi, /const quizAccess = useRef\(null\)/, 'quiz must remember its originating lease across answers')
+assert.match(placementUi, /retainPlacementAnswerLease\(quizAccess\.current, captureLearnerAccess\(\)\)/,
+  'every answer must reject same-account lease rotation between questions')
+assert.match(placementUi, /quizAccess\.current = answerAccess/, 'accepted quiz must retain the original lease')
+assert.match(placementUi, /quizAccess\.current = null/, 'stale quiz must clear its lease before retry')
 assert.match(placementUi, /completePlacement\(calculatePlacementResult\(evaluated\.nextState, interfaceLanguage\), answerAccess\)/, 'delayed commit must use its originating lease')
 const delayedPlacement = placementUi.slice(placementUi.indexOf('feedbackTimer.current = window.setTimeout('))
 const staleCallback = delayedPlacement.slice(delayedPlacement.indexOf('if (!answerAccess.valid()) {'), delayedPlacement.indexOf('if (shouldFinishPlacement('))
