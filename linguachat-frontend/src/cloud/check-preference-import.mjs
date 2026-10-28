@@ -414,7 +414,7 @@ test('onboarding completion commits profile before marker and never navigates on
     '{ profileToCommit = profile, preferencesVerified = false } = {}')
   for(const failure of ['profile','personalized','marker','readback']){
     const f=fixture(),writes=[],published=[],errors=[]
-    const profile={level:'B1',goal:'Travel',preferences:{goals:['Travel']}}
+    const profile={level:'B1',placementResult:{level:'B1'},goal:'Travel',preferences:{goals:['Travel']}}
     const complete=createCompletion(profile,false,commitOnboarding,captureLearnerAccess,
       v=>errors.push(v),v=>published.push(['completed',v]),
       v=>published.push(['view',v]),v=>published.push(['welcome',v]),v=>published.push(['step',v]))
