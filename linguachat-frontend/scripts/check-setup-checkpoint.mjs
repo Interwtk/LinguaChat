@@ -26,6 +26,21 @@ ownValues.set('lc2-profile',JSON.stringify({level:'B1',placementResult:null,goal
 ownValues.set('lc2-placement-result',JSON.stringify({level:'A1',strengths:['hello']}))
 assert.equal(readVerifiedProfile(ownAccess).level,'A1','recover independently saved placement after legacy default overwrite')
 assert.equal(readVerifiedProfile(ownAccess).goal,'Travel')
+// A partially persisted identity must not hydrate a contradictory placement.
+// Recover from the account-scoped checkpoint when available; otherwise fail
+// closed rather than silently accepting a different course level.
+ownValues.set('lc2-profile',JSON.stringify({level:'B1',placementResult:{level:'B1'},goal:'Travel'}))
+assert.equal(readVerifiedProfile(ownAccess).level,'B1')
+ownValues.set('lc2-profile',JSON.stringify({level:'B1',placementResult:{level:'A1'},goal:'Travel'}))
+assert.equal(readVerifiedProfile(ownAccess).level,'A1')
+assert.equal(readVerifiedProfile(ownAccess).placementResult.level,'A1')
+assert.equal(readVerifiedProfile(ownAccess).goal,'Travel')
+ownValues.delete('lc2-placement-result')
+assert.throws(()=>readVerifiedProfile(ownAccess),/Invalid profile placement/)
+ownValues.set('lc2-profile',JSON.stringify({level:'A1',placementResult:[],goal:'Travel'}))
+assert.throws(()=>readVerifiedProfile(ownAccess),/Invalid profile placement/)
+ownValues.set('lc2-profile',JSON.stringify(savedProfile))
+assert.deepEqual(readVerifiedProfile(ownAccess),savedProfile)
 assert.throws(()=>readVerifiedProfile({...ownAccess,valid:()=>false}),/Stale/)
 let valid=true
 assert.throws(()=>readVerifiedProfile({valid:()=>valid,getItem(){valid=false;return JSON.stringify(savedProfile)}}),/ownership/)

@@ -9,9 +9,18 @@ export function readVerifiedProfile(access) {
   if (profile !== null && (typeof profile !== 'object' || Array.isArray(profile))) throw new Error('Invalid profile')
   const checkpoint = readSetupCheckpoint(access).result
   if (!access.valid()) throw new Error('Profile ownership changed')
-  // Recover placement when an older identity update persisted default profile
-  // fields. The separate account-scoped checkpoint remains authoritative here.
-  return checkpoint && !profile?.placementResult
+  // An older identity update may persist a default level, or a partial
+  // restore may leave a placement result inconsistent with its profile level.
+  // Never hydrate that contradictory result as a verified learner identity.
+  const placement = profile?.placementResult
+  const inconsistent = placement != null && (
+    typeof placement !== 'object' || Array.isArray(placement)
+    || placement.level !== profile?.level
+  )
+  if (inconsistent && !checkpoint) throw new Error('Invalid profile placement')
+  // The separately persisted account-scoped checkpoint can repair legacy
+  // mismatches without discarding unrelated profile choices.
+  return checkpoint && (!placement || inconsistent)
     ? { ...profile, placementResult: checkpoint, level: checkpoint.level }
     : profile
 }
