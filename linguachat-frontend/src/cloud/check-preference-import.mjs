@@ -455,7 +455,7 @@ test('onboarding completion commits profile before marker and never navigates on
   // React may execute queued functional updaters after the account lease is
   // revoked. A successful durable A commit must not open B's Home or clear B's
   // setup/error state.
-  const profile={level:'A1',placementResult:{level:'A1'}}
+  const profile={level:'B1',placementResult:{level:'B1'}}
   const stored=new Map(),queued=[]
   let valid=true
   const access={
