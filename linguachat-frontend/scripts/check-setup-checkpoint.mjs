@@ -30,7 +30,7 @@ const placementAccess = {
   setItem: (key, value) => { placementWrites.push(key); placementValues.set(key, value); return true },
 }
 assert.equal(persistPlacementResult(placementAccess, placement), true)
-assert.deepEqual(placementWrites, ['lc2-placement-result', 'lc2-placement'])
+assert.deepEqual(placementWrites, ['lc2-placement-result', 'lc2-placement', 'lc2-placement-result'])
 assert.deepEqual(JSON.parse(placementValues.get('lc2-placement-result')), placement)
 assert.deepEqual(JSON.parse(placementValues.get('lc2-placement')), placement)
 assert.equal(readSetupCheckpoint(placementAccess).result.level, 'A2')
@@ -61,6 +61,29 @@ for (const deniedKey of ['lc2-placement-result', 'lc2-placement']) {
       return true
     },
   }, placement), /not durable/)
+}
+// Regression: the old implementation published the authoritative result
+// before the legacy mirror, so a failed mirror write advanced setup on reload.
+// A prior successful placement must also not survive a failed new attempt.
+for (const failure of ['legacy-write', 'final-publish', 'mirror-readback']) {
+  const state = new Map([['lc2-placement-result', JSON.stringify({ level: 'B1' })]])
+  const writes = []
+  const access = {
+    valid: () => true,
+    getItem: key => failure === 'mirror-readback' && key === 'lc2-placement'
+      ? null : state.get(key) ?? null,
+    setItem: (key, value) => {
+      writes.push([key, value])
+      if (failure === 'legacy-write' && key === 'lc2-placement') return false
+      if (failure === 'final-publish' && key === 'lc2-placement-result' && value !== 'null') return false
+      state.set(key, value)
+      return true
+    },
+  }
+  assert.throws(() => persistPlacementResult(access, placement), /not durable/, failure)
+  assert.deepEqual(writes[0], ['lc2-placement-result', 'null'])
+  assert.equal(readSetupCheckpoint(access).step, 'placement', failure + ': no unsaved level after reload')
+  assert.equal(readSetupCheckpoint(access).result, null, failure + ': no stale level after failed retry')
 }
 const corruptPlacementState = new Map()
 assert.throws(() => persistPlacementResult({
