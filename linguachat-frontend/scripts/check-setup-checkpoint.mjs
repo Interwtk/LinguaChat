@@ -66,6 +66,12 @@ ownValues.delete('lc2-profile')
 assert.throws(() => readVerifiedProfile(ownAccess), /Invalid completed profile placement/, 'checkpoint alone cannot replace completed profile')
 ownValues.set('lc2-profile', 'null')
 assert.throws(() => readVerifiedProfile(ownAccess), /Invalid completed profile placement/, 'serialized null is not a completed profile')
+// A verified checkpoint alone cannot fill an absent learner level in a
+// completed profile. An empty or identity-only JSON object is not durable setup.
+for (const incompleteProfile of [{}, { goal: 'Travel' }, { name: 'QA' }, { placementResult: { level: 'A1' } }, { level: null, goal: 'Travel' }]) {
+  ownValues.set('lc2-profile', JSON.stringify(incompleteProfile))
+  assert.throws(() => readVerifiedProfile(ownAccess), /Invalid completed profile placement/, 'completed profile requires its own durable learner level')
+}
 ownValues.set('lc2-profile', JSON.stringify({ level: 'B1', placementResult: null, goal: 'Travel' }))
 const recoveredCompleted = readVerifiedProfile(ownAccess)
 assert.equal(recoveredCompleted.level, 'A1', 'existing partial profile may recover from own checkpoint')
