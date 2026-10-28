@@ -951,7 +951,11 @@ export function AppProvider({ children }) {
   }, [])
 
   const updateProfile = useCallback((updates) => {
-    setProfile(prev => ({ ...prev, ...updates }))
+    // Profile edits are account-scoped, even when React applies their updater
+    // after an auth event or another tab revokes the originating lease.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return
+    setProfile(prev => access.valid() ? { ...prev, ...updates } : prev)
   }, [])
 
   const updateTutorPreferences = useCallback((updates) => {
@@ -1375,12 +1379,17 @@ export function AppProvider({ children }) {
   }, [activeMission, appendLinguaMessages, messages])
 
   const selectMessage = useCallback((msg) => {
-    setSelectedMessage(prev => prev?.id === msg.id ? null : msg)
+    const access = captureLearnerAccess()
+    if (!access.valid() || !msg) return
+    setSelectedMessage(prev => access.valid() ? (prev?.id === msg.id ? null : msg) : prev)
   }, [])
 
   const clearMessages = useCallback(() => {
-    setMessages([createWelcomeMessage(interfaceLanguageInfo.base)])
-    setSelectedMessage(null)
+    const access = captureLearnerAccess()
+    if (!access.valid()) return
+    const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
+    setMessages(prev => access.valid() ? [welcome] : prev)
+    setSelectedMessage(prev => access.valid() ? null : prev)
   }, [interfaceLanguageInfo.base])
 
   const resetLocalProgress = useCallback(() => {
