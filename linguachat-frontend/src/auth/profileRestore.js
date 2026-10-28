@@ -13,14 +13,22 @@ export function readVerifiedProfile(access) {
   // restore may leave a placement result inconsistent with its profile level.
   // Never hydrate that contradictory result as a verified learner identity.
   const placement = profile?.placementResult
-  const inconsistent = placement != null && (
-    typeof placement !== 'object' || Array.isArray(placement)
-    || placement.level !== profile?.level
-  )
-  if (inconsistent && !checkpoint) throw new Error('Invalid profile placement')
+  const validLevels = ['Pre-A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+  // A matching level alone is not proof of a valid placement: a malformed
+  // legacy payload (including an unknown level or invalid evidence arrays)
+  // must never be restored as an authenticated learner result.
+  const validPlacement = placement != null
+    && typeof placement === 'object' && !Array.isArray(placement)
+    && validLevels.includes(placement.level)
+    && ['strengths', 'placementStrengths', 'focusAreas', 'placementFocusAreas'].every(key =>
+      placement[key] == null || (Array.isArray(placement[key])
+        && placement[key].every(value => typeof value === 'string')))
+  const invalidLevel = profile?.level != null && !validLevels.includes(profile.level)
+  const inconsistent = placement != null && (!validPlacement || placement.level !== profile?.level)
+  if ((inconsistent || invalidLevel) && !checkpoint) throw new Error('Invalid profile placement')
   // The separately persisted account-scoped checkpoint can repair legacy
   // mismatches without discarding unrelated profile choices.
-  return checkpoint && (!placement || inconsistent)
+  return checkpoint && (!placement || inconsistent || invalidLevel)
     ? { ...profile, placementResult: checkpoint, level: checkpoint.level }
     : profile
 }
