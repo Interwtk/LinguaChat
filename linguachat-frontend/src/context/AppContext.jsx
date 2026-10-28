@@ -506,12 +506,17 @@ export function AppProvider({ children }) {
    * interface and native apart because there is only ever one value to set.
    */
   const updateNativeLanguage = useCallback((language) => {
-    const userLanguage = persistNativeLanguage(language)
-    setLanguagePreferences(previous => ({
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const userLanguage = persistNativeLanguage(language, { access })
+    if (!userLanguage || !access.valid()) return false
+    // React can flush this updater after an account or tab lease was revoked.
+    setLanguagePreferences(previous => access.valid() ? ({
       ...previous,
       nativeLanguage: userLanguage,
       interfaceLanguage: userLanguage,
-    }))
+    }) : previous)
+    return access.valid()
   }, [])
 
   const preferenceSyncRef = useRef(null)

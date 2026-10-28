@@ -212,8 +212,46 @@ export function getStoredNativeLanguage() {
   return readLanguage(NATIVE_CODE_KEY, LEGACY_NATIVE_KEY) || FALLBACK_LANGUAGE
 }
 
-export function setNativeLanguage(language) {
+export function setNativeLanguage(language, { access = null } = {}) {
   const info = makeLanguageInfo(language)
+  if (access) {
+    // Interactive edits must retain their original account lease through every
+    // Storage operation. Keep the canonical code as the final commit marker:
+    // a failed intermediate write must not advertise a new user_language.
+    try {
+      if (!isSupportedLanguage(info.base) || !access.valid()) return null
+      const entries = languagePreferencePersistence(info).entries
+      const ordered = [
+        ...entries.filter(([key]) => key !== NATIVE_CODE_KEY),
+        ...entries.filter(([key]) => key === NATIVE_CODE_KEY),
+      ]
+      const expected = new Map()
+      for (const [key] of ordered) {
+        expected.set(key, access.getItem(key))
+        if (!access.valid()) return null
+      }
+      for (const [key, value] of ordered) {
+        // Storage has no atomic CAS. Refuse a detected concurrent edit instead
+        // of silently overwriting another tab's preference.
+        for (const [observed, previous] of expected) {
+          if (!access.valid() || access.getItem(observed) !== previous) return null
+        }
+        if (expected.get(key) === value) continue
+        if (access.setItem(key, value) === false || !access.valid()
+          || access.getItem(key) !== value) return null
+        expected.set(key, value)
+      }
+      for (const [key, value] of entries) {
+        if (!access.valid() || access.getItem(key) !== value) return null
+      }
+      return access.valid() ? info : null
+    } catch {
+      // A later ensureLanguagePreferences() reconciles legacy mirrors from the
+      // canonical code; never publish an unverified partial edit to React.
+      return null
+    }
+  }
+  // Legacy initialization/compatibility callers keep their best-effort API.
   writeUserLanguage(info)
   return info
 }
