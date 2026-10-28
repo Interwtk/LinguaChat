@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
+import { captureLearnerAccess } from '../../auth/localLease.js'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { LanguageSwitcher } from '../ui/LanguageSwitcher'
@@ -79,15 +80,22 @@ function PlacementTest() {
   function chooseOption(optionId) {
     if (selectedOption || feedbackTimer.current !== null || phase !== 'quiz') return
     const scheduledAccountId = currentAccountId.current
+    // Capture the storage generation before feedback's delay. Never borrow
+    // whichever account happens to be active when the timer finally fires.
+    const answerAccess = captureLearnerAccess()
+    if (!answerAccess.valid()) {
+      setPlacementSaveFailed(true)
+      return
+    }
     setPlacementSaveFailed(false)
     const evaluated = evaluateAnswer(question, optionId, placementState)
     setSelectedOption(optionId)
     setFeedback(evaluated.feedback)
     feedbackTimer.current = window.setTimeout(() => {
       feedbackTimer.current = null
-      if (scheduledAccountId !== currentAccountId.current) return
+      if (scheduledAccountId !== currentAccountId.current || !answerAccess.valid()) return
       if (shouldFinishPlacement(evaluated.nextState)) {
-        if (!completePlacement(calculatePlacementResult(evaluated.nextState, interfaceLanguage))) {
+        if (!completePlacement(calculatePlacementResult(evaluated.nextState, interfaceLanguage), answerAccess)) {
           setPlacementSaveFailed(true)
           setSelectedOption(null)
           setFeedback(null)
