@@ -1393,21 +1393,30 @@ export function AppProvider({ children }) {
   }, [interfaceLanguageInfo.base])
 
   const resetLocalProgress = useCallback(() => {
-    if (!window.confirm(t('resetProgressConfirm'))) return
+    // A confirmation dialog and React's queued state updates can outlive the
+    // account that requested the reset. Never clear B or publish A's reset to B.
+    const access = captureLearnerAccess()
+    if (!access.valid() || !window.confirm(t('resetProgressConfirm')) || !access.valid()) return
     clearStoredProgress()
-    setSessionId(createSessionId())
-    setMessages([createWelcomeMessage(interfaceLanguageInfo.base)])
-    setLocalProgress(createEmptyProgress())
-    setSelectedMessage(null)
-    setConnectionNotice(null)
-    setMemoryNotice(null)
+    if (!access.valid()) return
+    const nextSessionId = createSessionId()
+    if (!access.valid()) return
+    const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
+    const emptyProgress = createEmptyProgress()
     ++missionGenerationRef.current
     clearMissionStorage()
-    setActiveMission(null)
-    setCompletedMissions([])
-    setMissionFeedback(null)
-    setMissionCelebration(null)
-    setView('today')
+    if (!access.valid()) return
+    setSessionId(prev => access.valid() ? nextSessionId : prev)
+    setMessages(prev => access.valid() ? [welcome] : prev)
+    setLocalProgress(prev => access.valid() ? emptyProgress : prev)
+    setSelectedMessage(prev => access.valid() ? null : prev)
+    setConnectionNotice(prev => access.valid() ? null : prev)
+    setMemoryNotice(prev => access.valid() ? null : prev)
+    setActiveMission(prev => access.valid() ? null : prev)
+    setCompletedMissions(prev => access.valid() ? [] : prev)
+    setMissionFeedback(prev => access.valid() ? null : prev)
+    setMissionCelebration(prev => access.valid() ? null : prev)
+    setView(prev => access.valid() ? 'today' : prev)
   }, [t, interfaceLanguageInfo.base])
 
   const activeMissionDetails = getActiveMissionDetails(activeMission)
