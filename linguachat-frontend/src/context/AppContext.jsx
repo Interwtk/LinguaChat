@@ -615,19 +615,26 @@ export function AppProvider({ children }) {
   }, [])
 
   const completeTutorPersonality = useCallback((personality) => {
-    setProfile(prev => ({ ...prev, tutorPersonality: personality }))
-    setAuthStep('learning-prefs')
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    // React may apply these updates after the learner lease is revoked.
+    setProfile(prev => access.valid() ? { ...prev, tutorPersonality: personality } : prev)
+    setAuthStep(prev => access.valid() ? 'learning-prefs' : prev)
+    return access.valid()
   }, [])
 
   const completeLearningPrefs = useCallback((prefs) => {
-    setProfile(prev => ({
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    setProfile(prev => access.valid() ? {
       ...prev,
       preferences: prefs,
       goal: prefs.goals?.[0] || 'Travel',
       dailyGoal: prefs.dailyGoal || 10,
-    }))
+    } : prev)
     // Final onboarding beat: guided AI personalization with Chatto.
-    setAuthStep('personalize')
+    setAuthStep(prev => access.valid() ? 'personalize' : prev)
+    return access.valid()
   }, [])
 
   // User finished the guided personalization step (tutor preferences are already
@@ -923,19 +930,22 @@ export function AppProvider({ children }) {
   }, [getAuthService, applyProviderSession])
 
   const completeOnboarding = useCallback((profileData) => {
+    const access = captureLearnerAccess()
     const merged = { ...DEFAULT_PROFILE, ...profileData }
     try {
-      // Keep the legacy completion entry point under the same durable contract.
-      commitOnboarding(captureLearnerAccess(), merged)
+      // Legacy completion must retain its original lease through the durable
+      // commit and all queued React updates, just like guided onboarding.
+      commitOnboarding(access, merged)
+      if (!access.valid()) throw new Error('Stale onboarding account')
     } catch {
-      setTutorPreferenceSaveFailed(true)
+      setTutorPreferenceSaveFailed(prev => access.valid() ? true : prev)
       return false
     }
-    setTutorPreferenceSaveFailed(false)
-    setProfile(merged)
-    setOnboardingCompleted(true)
-    setView('today')
-    return true
+    setTutorPreferenceSaveFailed(prev => access.valid() ? false : prev)
+    setProfile(prev => access.valid() ? merged : prev)
+    setOnboardingCompleted(prev => access.valid() ? true : prev)
+    setView(prev => access.valid() ? 'today' : prev)
+    return access.valid()
   }, [])
 
   const updateProfile = useCallback((updates) => {
