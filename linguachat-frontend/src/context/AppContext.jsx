@@ -418,6 +418,8 @@ export function AppProvider({ children }) {
   const [mobileSheet, setMobileSheet] = useState(null) // 'journey' | 'notes' | null
   const messagesEndRef = useRef(null)
   const restoredMissionRef = useRef(false)
+  // A delayed mission reply must not revive an abandoned/replaced mission.
+  const missionGenerationRef = useRef(0)
 
   useEffect(() => {
     const root = document.documentElement
@@ -983,11 +985,12 @@ export function AppProvider({ children }) {
     setMobileSheet(null)
   }, [])
 
-  const appendLinguaMessages = useCallback((nextMessages) => {
+  const appendLinguaMessages = useCallback((nextMessages, access = captureLearnerAccess()) => {
     const list = Array.isArray(nextMessages) ? nextMessages.filter(Boolean) : [nextMessages].filter(Boolean)
-    if (!list.length) return
-    setMessages(previous => [...previous, ...list])
-    setSelectedMessage(list[list.length - 1])
+    if (!list.length || !access.valid()) return
+    // React may flush these after a logout, account switch or mission cancellation.
+    setMessages(previous => access.valid() ? [...previous, ...list] : previous)
+    setSelectedMessage(previous => access.valid() ? list[list.length - 1] : previous)
   }, [])
 
   const missionContextFromDetails = useCallback((details) => {
@@ -1006,34 +1009,43 @@ export function AppProvider({ children }) {
   }, [])
 
   const startPracticeMission = useCallback((mission = null) => {
+    const access = captureLearnerAccess()
+    if (!access.valid()) return
+    const generation = ++missionGenerationRef.current
+    const publication = { valid: () => access.valid() && missionGenerationRef.current === generation }
     const selectedMission = mission || getMissionForToday(profile.level, profile.goal)
     const active = createActiveMission(selectedMission)
-    setActiveMission(active)
-    setMissionFeedback(null)
-    setMissionCelebration(null)
+    if (!publication.valid()) return
+    setActiveMission(previous => publication.valid() ? active : previous)
+    setMissionFeedback(previous => publication.valid() ? null : previous)
+    setMissionCelebration(previous => publication.valid() ? null : previous)
     appendLinguaMessages([
       createMissionIntroMessage(selectedMission),
       createMissionStepMessage(getActiveMissionDetails(active)),
-    ])
-    setView('practice')
-    setMobileSheet(null)
+    ], publication)
+    setView(previous => publication.valid() ? 'practice' : previous)
+    setMobileSheet(previous => publication.valid() ? null : previous)
   }, [appendLinguaMessages, profile.goal, profile.level])
 
   const submitMissionStep = useCallback(async (value, displayText = null) => {
     const details = getActiveMissionDetails(activeMission)
     if (!details?.step) return
+    // Capture BEFORE queuing the learner's answer or starting the HTTP request.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return
+    const generation = ++missionGenerationRef.current
+    const publication = { valid: () => access.valid() && missionGenerationRef.current === generation }
     const answerText = displayText || value
-    setMessages(previous => [...previous, {
+    setMessages(previous => publication.valid() ? [...previous, {
       id: `u${Date.now()}`,
       role: 'user',
       text: answerText,
       ts: Date.now(),
       missionId: details.mission.id,
       missionStepId: details.step.id,
-    }])
-    setIsTyping(true)
+    }] : previous)
+    setIsTyping(previous => publication.valid() ? true : previous)
 
-    const missionAccess = captureLearnerAccess()
     let response = null
     let evaluation = null
     try {
@@ -1042,7 +1054,6 @@ export function AppProvider({ children }) {
         text: m.text,
         correction: m.feedback?.correction || null,
       }))
-      const requestAccess = captureLearnerAccess()
       response = await sendChatMessage({
         message: answerText,
         level: profile.level,
@@ -1065,10 +1076,12 @@ export function AppProvider({ children }) {
         activeCompanion,
         missionContext: missionContextFromDetails(details),
       })
-      if (!requestAccess.valid()) return
-    } catch {}
+      if (!publication.valid()) return
+    } catch {
+      // The local mission evaluator remains available when the network fails.
+    }
 
-    if (!missionAccess.valid()) return
+    if (!publication.valid()) return
     if (response?.mission_feedback) {
       evaluation = {
         passed: Boolean(response.mission_feedback.should_advance),
@@ -1082,9 +1095,10 @@ export function AppProvider({ children }) {
     }
 
     if (!evaluation.passed) {
-      setMissionFeedback({ passed: false, text: evaluation.feedback })
+      setMissionFeedback(previous => publication.valid() ? { passed: false, text: evaluation.feedback } : previous)
       setTimeout(() => {
-        setIsTyping(false)
+        if (!publication.valid()) return
+        setIsTyping(previous => publication.valid() ? false : previous)
         appendLinguaMessages({
           id: `mission-feedback-${details.step.id}-${Date.now()}`,
           role: 'lingua',
@@ -1099,40 +1113,44 @@ export function AppProvider({ children }) {
           missionStepId: details.step.id,
           missionType: 'feedback',
           ts: Date.now(),
-        })
+        }, publication)
       }, 650)
       return
     }
 
+    if (!publication.valid()) return
     const advanced = advanceMission(activeMission, details.step, value, evaluation)
-    setLocalProgress(previous => recordMissionProgress(previous, {
+    if (!publication.valid()) return
+    setLocalProgress(previous => publication.valid() ? recordMissionProgress(previous, {
       mission: details.mission,
       step: details.step,
       earnedXp: advanced.earnedThisStep,
       completed: false,
-    }))
+    }) : previous)
 
     if (advanced.activeMission.currentStepIndex >= details.mission.steps.length) {
       const completed = completeMission(advanced.activeMission)
-      setActiveMission(null)
-      setCompletedMissions(previous => [completed, ...previous].slice(0, 50))
-      setLocalProgress(previous => recordMissionProgress(previous, {
+      if (!publication.valid()) return
+      setActiveMission(previous => publication.valid() ? null : previous)
+      setCompletedMissions(previous => publication.valid() ? [completed, ...previous].slice(0, 50) : previous)
+      setLocalProgress(previous => publication.valid() ? recordMissionProgress(previous, {
         mission: details.mission,
         step: details.step,
         earnedXp: Math.max(0, details.mission.rewardXp - completed.earnedXp),
         completed: true,
-      }))
-      setMissionCelebration({
+      }) : previous)
+      setMissionCelebration(previous => publication.valid() ? {
         title: details.mission.title,
         xp: details.mission.rewardXp,
         message: 'Mision completada. Lingua guardo tu avance en este dispositivo.',
-      })
-      setMissionFeedback({
+      } : previous)
+      setMissionFeedback(previous => publication.valid() ? {
         passed: evaluation.passed,
         text: evaluation.feedback,
-      })
+      } : previous)
       setTimeout(() => {
-        setIsTyping(false)
+        if (!publication.valid()) return
+        setIsTyping(previous => publication.valid() ? false : previous)
         appendLinguaMessages([
           response
             ? {
@@ -1154,18 +1172,19 @@ export function AppProvider({ children }) {
               }
             : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
           createMissionCompleteMessage(details.mission, completed),
-        ])
+        ], publication)
       }, 650)
       return
     }
 
-    setActiveMission(advanced.activeMission)
-    setMissionFeedback({
+    setActiveMission(previous => publication.valid() ? advanced.activeMission : previous)
+    setMissionFeedback(previous => publication.valid() ? {
       passed: evaluation.passed,
       text: evaluation.feedback,
-    })
+    } : previous)
     setTimeout(() => {
-      setIsTyping(false)
+      if (!publication.valid()) return
+      setIsTyping(previous => publication.valid() ? false : previous)
       appendLinguaMessages([
         response
           ? {
@@ -1187,7 +1206,7 @@ export function AppProvider({ children }) {
             }
           : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
         createMissionStepMessage(getActiveMissionDetails(advanced.activeMission)),
-      ])
+      ], publication)
     }, 650)
   }, [activeCompanion, activeMission, appendLinguaMessages, interfaceLanguageInfo, messages, missionContextFromDetails, nativeLanguageInfo, profile, sessionId, targetLanguage, tutorPreferences])
 
@@ -1197,10 +1216,16 @@ export function AppProvider({ children }) {
   }, [submitMissionStep])
 
   const abandonMission = useCallback(() => {
+    const access = captureLearnerAccess()
+    if (!access.valid()) return
+    const generation = ++missionGenerationRef.current
+    const publication = { valid: () => access.valid() && missionGenerationRef.current === generation }
     saveActiveMission(null)
-    setActiveMission(null)
-    setMissionFeedback(null)
-    setMissionCelebration(null)
+    if (!publication.valid()) return
+    setActiveMission(previous => publication.valid() ? null : previous)
+    setMissionFeedback(previous => publication.valid() ? null : previous)
+    setMissionCelebration(previous => publication.valid() ? null : previous)
+    setIsTyping(previous => publication.valid() ? false : previous)
     appendLinguaMessages({
       id: `mission-exit-${Date.now()}`,
       role: 'lingua',
@@ -1208,7 +1233,7 @@ export function AppProvider({ children }) {
       feedback: null,
       missionType: 'exit',
       ts: Date.now(),
-    })
+    }, publication)
   }, [appendLinguaMessages])
 
   const sendMessage = useCallback(async (text) => {
@@ -1367,6 +1392,7 @@ export function AppProvider({ children }) {
     setSelectedMessage(null)
     setConnectionNotice(null)
     setMemoryNotice(null)
+    ++missionGenerationRef.current
     clearMissionStorage()
     setActiveMission(null)
     setCompletedMissions([])
