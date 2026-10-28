@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
-import { readSetupCheckpoint, SETUP_STEPS } from '../src/auth/setupCheckpoint.js'
+import { readSetupCheckpoint, persistPlacementResult, SETUP_STEPS } from '../src/auth/setupCheckpoint.js'
 import { readVerifiedProfile } from '../src/auth/profileRestore.js'
 import { commitOnboarding } from '../src/auth/onboardingCommit.js'
 const values=new Map(),store={getItem:k=>values.get(k)??null}
@@ -19,6 +19,66 @@ for (const invalid of [
 }
 values.set('lc2-placement-result','{');assert.equal(readSetupCheckpoint(store).step,'placement')
 assert.equal(readSetupCheckpoint({getItem(){throw Error('blocked')}}).step,'placement')
+// Placement must be durable under the same account lease before revealing a
+// level. Denied, corrupted, revoked and invalid writes must not advance setup.
+const placement = { level: 'A2', strengths: ['listening'], focusAreas: ['grammar'] }
+const placementValues = new Map()
+const placementWrites = []
+const placementAccess = {
+  valid: () => true,
+  getItem: key => placementValues.get(key) ?? null,
+  setItem: (key, value) => { placementWrites.push(key); placementValues.set(key, value); return true },
+}
+assert.equal(persistPlacementResult(placementAccess, placement), true)
+assert.deepEqual(placementWrites, ['lc2-placement-result', 'lc2-placement'])
+assert.deepEqual(JSON.parse(placementValues.get('lc2-placement-result')), placement)
+assert.deepEqual(JSON.parse(placementValues.get('lc2-placement')), placement)
+assert.equal(readSetupCheckpoint(placementAccess).result.level, 'A2')
+const circularPlacement = { level: 'A1' }
+circularPlacement.self = circularPlacement
+for (const invalid of [
+  { level: 'Z9' },
+  { level: 'A1', strengths: [42] },
+  circularPlacement,
+  { level: 'A1', toJSON: () => null },
+  { level: 'A1', toJSON: () => ({ level: 'Z9' }) },
+]) {
+  let writes = 0
+  assert.throws(() => persistPlacementResult({
+    valid: () => true,
+    setItem: () => { writes++; return true },
+  }, invalid), /Invalid placement result/)
+  assert.equal(writes, 0, 'invalid placement must not touch storage')
+}
+for (const deniedKey of ['lc2-placement-result', 'lc2-placement']) {
+  const state = new Map()
+  assert.throws(() => persistPlacementResult({
+    valid: () => true,
+    getItem: key => state.get(key) ?? null,
+    setItem: (key, value) => {
+      if (key === deniedKey) return false
+      state.set(key, value)
+      return true
+    },
+  }, placement), /not durable/)
+}
+const corruptPlacementState = new Map()
+assert.throws(() => persistPlacementResult({
+  valid: () => true,
+  getItem: key => key === 'lc2-placement-result' ? '{' : corruptPlacementState.get(key) ?? null,
+  setItem: (key, value) => { corruptPlacementState.set(key, value); return true },
+}, placement), /not durable/)
+let placementLeaseValid = true
+assert.throws(() => persistPlacementResult({
+  valid: () => placementLeaseValid,
+  getItem: () => null,
+  setItem: () => { placementLeaseValid = false; return true },
+}, placement), /not durable/)
+assert.throws(() => persistPlacementResult({
+  valid: () => false,
+  setItem: () => { throw Error('stale lease wrote') },
+}, placement), /not durable())
+
 const setup=readFileSync(new URL('../src/components/setup/SetupFlow.jsx',import.meta.url),'utf8')
 const context=readFileSync(new URL('../src/context/AppContext.jsx',import.meta.url),'utf8')
 const provider=context.slice(context.indexOf('const applyProviderSession ='))
@@ -231,6 +291,9 @@ assert.equal(deniedReset.has('lc2-profile'), false)
 assert.match(context, /commitOnboarding\(captureLearnerAccess\(\), profileToCommit\)/)
 assert.match(context, /if \(tutorPreferenceSaveFailed && !preferencesVerified\) return false/)
 assert.match(context, /completePersonalization\(\{ profileToCommit: recommendedProfile, preferencesVerified: true \}\)/)
+assert.match(context, /persistPlacementResult\\(captureLearnerAccess\\(\\), result\\)/, 'placement reveal must require a durable checkpoint')
+assert.match(setup, /if \\(!completePlacement\\(calculatePlacementResult/, 'failed placement save must remain retryable')
+assert.match(setup, /placementSaveFailed &&/, 'failed placement save must show an error')
 console.log('PASS: onboarding commits verified profile before completion; failed, unreadable and revoked writes cannot finish setup')
 
 console.log('PASS: setup resume, safe fallback, auth-route exclusion and native keyboard personality controls')
