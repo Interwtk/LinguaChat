@@ -1,3 +1,5 @@
+import { isValidPlacementResult } from './setupCheckpoint.js'
+
 // Onboarding is complete only after the learner's profile and setup flags
 // have been durably published under the same captured account lease.
 // The completion marker is deliberately last: a failed earlier write must
@@ -15,11 +17,8 @@ export function commitOnboarding(access, profile) {
     const persistedProfile = JSON.parse(serializedProfile)
     // A JSON object alone is insufficient: publishing an empty or mismatched
     // profile as complete would skip placement after a crash/reload.
-    const validLevels = ['Pre-A1', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2']
     if (!persistedProfile || typeof persistedProfile !== 'object' || Array.isArray(persistedProfile)
-      || !validLevels.includes(persistedProfile.level)
-      || !persistedProfile.placementResult || typeof persistedProfile.placementResult !== 'object'
-      || Array.isArray(persistedProfile.placementResult)
+      || !isValidPlacementResult(persistedProfile.placementResult)
       || persistedProfile.placementResult.level !== persistedProfile.level) {
       throw new Error('Invalid onboarding profile')
     }

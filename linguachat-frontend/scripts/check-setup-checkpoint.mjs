@@ -9,6 +9,14 @@ values.set('lc2-placement-result',JSON.stringify({level:'A1',strengths:['hello']
 assert.equal(readSetupCheckpoint(store).step,'setup-choice')
 for(const step of SETUP_STEPS){values.set('lc2-onboarding-step',step);assert.equal(readSetupCheckpoint(store).step,step)}
 for(const step of ['reset','confirmed','entry']){values.set('lc2-onboarding-step',step);assert.equal(readSetupCheckpoint(store).step,'setup-choice')}
+for (const invalid of [
+  { level: 'A1', strengths: 'wrong' },
+  { level: 'A1', focusAreas: [42] },
+  { level: 'Z9' },
+]) {
+  values.set('lc2-placement-result', JSON.stringify(invalid))
+  assert.equal(readSetupCheckpoint(store).step, 'placement')
+}
 values.set('lc2-placement-result','{');assert.equal(readSetupCheckpoint(store).step,'placement')
 assert.equal(readSetupCheckpoint({getItem(){throw Error('blocked')}}).step,'placement')
 const setup=readFileSync(new URL('../src/components/setup/SetupFlow.jsx',import.meta.url),'utf8')
@@ -109,6 +117,10 @@ const invalidProfiles = [
   ['array placement', { level: 'A1', placementResult: [] }],
   ['unknown level', { level: 'Z9', placementResult: { level: 'Z9' } }],
   ['mismatched level', { level: 'B1', placementResult: { level: 'A1' } }],
+  ['invalid strengths', { level: 'A1', placementResult: { level: 'A1', strengths: 'wrong' } }],
+  ['invalid focus areas', { level: 'A1', placementResult: { level: 'A1', focusAreas: [42] } }],
+  ['invalid placement strengths', { level: 'A1', placementResult: { level: 'A1', placementStrengths: [null] } }],
+  ['invalid placement focus areas', { level: 'A1', placementResult: { level: 'A1', placementFocusAreas: 'wrong' } }],
 ]
 for (const [label, invalidProfile] of invalidProfiles) {
   const previous = new Map([

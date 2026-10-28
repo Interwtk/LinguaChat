@@ -1,4 +1,4 @@
-import { readSetupCheckpoint } from './setupCheckpoint.js'
+import { isValidPlacementResult, readSetupCheckpoint } from './setupCheckpoint.js'
 
 // Read only after verified account activation, through its captured lease.
 // A new tab's pre-auth React defaults are not the account's durable profile.
@@ -17,12 +17,7 @@ export function readVerifiedProfile(access) {
   // A matching level alone is not proof of a valid placement: a malformed
   // legacy payload (including an unknown level or invalid evidence arrays)
   // must never be restored as an authenticated learner result.
-  const validPlacement = placement != null
-    && typeof placement === 'object' && !Array.isArray(placement)
-    && validLevels.includes(placement.level)
-    && ['strengths', 'placementStrengths', 'focusAreas', 'placementFocusAreas'].every(key =>
-      placement[key] == null || (Array.isArray(placement[key])
-        && placement[key].every(value => typeof value === 'string')))
+  const validPlacement = isValidPlacementResult(placement)
   const invalidLevel = profile?.level != null && !validLevels.includes(profile.level)
   const inconsistent = placement != null && (!validPlacement || placement.level !== profile?.level)
   if ((inconsistent || invalidLevel) && !checkpoint) throw new Error('Invalid profile placement')
