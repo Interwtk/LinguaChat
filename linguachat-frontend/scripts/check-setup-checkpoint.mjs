@@ -70,8 +70,19 @@ ownValues.set('lc2-profile',JSON.stringify({level:'B1',placementResult:{level:'A
 assert.throws(()=>readVerifiedProfile(ownAccess),/Invalid profile placement/)
 ownValues.set('lc2-profile',JSON.stringify({level:'A1',placementResult:[],goal:'Travel'}))
 assert.throws(()=>readVerifiedProfile(ownAccess),/Invalid profile placement/)
-ownValues.set('lc2-profile',JSON.stringify(savedProfile))
-assert.deepEqual(readVerifiedProfile(ownAccess),savedProfile)
+// A completed account must not silently open Home with only a default
+// level and no verified placement, even if the legacy completion flag survived.
+const unfinishedProfile = { level: 'A1', placementResult: null, goal: 'Travel' }
+ownValues.set('lc2-profile', JSON.stringify(unfinishedProfile))
+ownValues.set('lc2-onboarded', 'false')
+assert.deepEqual(readVerifiedProfile(ownAccess), unfinishedProfile, 'unfinished setup may resume without placement')
+ownValues.set('lc2-onboarded', 'true')
+assert.throws(() => readVerifiedProfile(ownAccess), /Invalid completed profile placement/, 'completed setup requires verified placement')
+ownValues.delete('lc2-profile')
+assert.throws(() => readVerifiedProfile(ownAccess), /Invalid completed profile placement/, 'completed setup requires a durable profile')
+ownValues.set('lc2-profile', JSON.stringify(savedProfile))
+assert.deepEqual(readVerifiedProfile(ownAccess), savedProfile, 'completed setup with valid placement remains restorable')
+ownValues.delete('lc2-onboarded')
 assert.throws(()=>readVerifiedProfile({...ownAccess,valid:()=>false}),/Stale/)
 let valid=true
 assert.throws(()=>readVerifiedProfile({valid:()=>valid,getItem(){valid=false;return JSON.stringify(savedProfile)}}),/ownership/)
