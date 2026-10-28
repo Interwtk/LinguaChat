@@ -49,6 +49,10 @@ assert.equal(commitOnboarding(durableAccess, onboardingProfile), true)
 assert.deepEqual(writeOrder, ['lc2-onboarded', 'lc2-profile', 'lc2-welcome-seen', 'lc2-personalization-completed', 'lc2-onboarded'])
 assert.deepEqual(JSON.parse(committed.get('lc2-profile')), onboardingProfile)
 assert.equal(committed.get('lc2-onboarded'), 'true')
+// Pre-A1 is a valid placed learner; the guard must not lock out the first course.
+const preA1Profile = { ...onboardingProfile, level: 'Pre-A1', placementResult: { level: 'Pre-A1' } }
+assert.equal(commitOnboarding(durableAccess, preA1Profile), true)
+assert.deepEqual(JSON.parse(committed.get('lc2-profile')), preA1Profile)
 // Invalid or non-object serialized profiles must not destroy an earlier
 // successful onboarding. Preflight is read-only, even when JSON serialization
 // itself throws or a custom toJSON changes the top-level shape.
@@ -61,6 +65,12 @@ const invalidProfiles = [
   ['scalar serialization', { toJSON: () => 42 }],
   ['undefined serialization', { toJSON: () => undefined }],
   ['throwing getter', { get level() { throw new Error('blocked') } }],
+  ['empty object', {}],
+  ['missing placement', { level: 'A1' }],
+  ['null placement', { level: 'A1', placementResult: null }],
+  ['array placement', { level: 'A1', placementResult: [] }],
+  ['unknown level', { level: 'Z9', placementResult: { level: 'Z9' } }],
+  ['mismatched level', { level: 'B1', placementResult: { level: 'A1' } }],
 ]
 for (const [label, invalidProfile] of invalidProfiles) {
   const previous = new Map([
