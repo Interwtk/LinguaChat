@@ -84,6 +84,10 @@ function PlacementTest() {
     // whichever account happens to be active when the timer finally fires.
     const answerAccess = captureLearnerAccess()
     if (!answerAccess.valid()) {
+      // Never reuse answers gathered under a revoked storage generation.
+      setPlacementState(getInitialPlacementState('A2'))
+      setSelectedOption(null)
+      setFeedback(null)
       setPlacementSaveFailed(true)
       return
     }
@@ -93,9 +97,21 @@ function PlacementTest() {
     setFeedback(evaluated.feedback)
     feedbackTimer.current = window.setTimeout(() => {
       feedbackTimer.current = null
-      if (scheduledAccountId !== currentAccountId.current || !answerAccess.valid()) return
+      if (scheduledAccountId !== currentAccountId.current) return
+      if (!answerAccess.valid()) {
+        // The same account can acquire a new lease without changing its id.
+        // Clear the old generation's answers instead of leaving the quiz locked.
+        setPlacementState(getInitialPlacementState('A2'))
+        setSelectedOption(null)
+        setFeedback(null)
+        setPlacementSaveFailed(true)
+        return
+      }
       if (shouldFinishPlacement(evaluated.nextState)) {
         if (!completePlacement(calculatePlacementResult(evaluated.nextState, interfaceLanguage), answerAccess)) {
+          // A lease revoked during durable publication also invalidates the
+          // answers collected before that publication attempt.
+          if (!answerAccess.valid()) setPlacementState(getInitialPlacementState('A2'))
           setPlacementSaveFailed(true)
           setSelectedOption(null)
           setFeedback(null)
