@@ -953,17 +953,19 @@ export function AppProvider({ children }) {
   }, [])
 
   const updateTutorPreferences = useCallback((updates) => {
-    // Keep React publication outside the storage transaction. A denied read,
-    // quota failure, or stale tab must not display a preference as saved.
-    // Report the result so the interface cannot celebrate a failed edit.
+    // Capture the account before the durable edit. React may apply queued
+    // updates after a different account has become active, so a successful
+    // storage transaction alone cannot authorize publishing its UI state.
+    const access = captureLearnerAccess()
     try {
-      const next = updateTutorPreferencesDurably(updates)
-      setTutorPreferencesState(next)
-      setTutorPreferenceSaveFailed(false)
-      return true
+      const next = updateTutorPreferencesDurably(updates, { access })
+      if (!access.valid()) throw new Error('Stale tutor preference edit')
+      setTutorPreferencesState(prev => access.valid() ? next : prev)
+      setTutorPreferenceSaveFailed(prev => access.valid() ? false : prev)
+      return access.valid()
     } catch {
-      // This error belongs on the preference screen, not the sign-in screen.
-      setTutorPreferenceSaveFailed(true)
+      // An error from A must not appear on B's preference screen either.
+      setTutorPreferenceSaveFailed(prev => access.valid() ? true : prev)
       return false
     }
   }, [])
