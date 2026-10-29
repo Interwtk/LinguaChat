@@ -1241,4 +1241,103 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+/* ---------- duration changes cannot replan a different learner's session ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const signature = '  const chooseDuration = useCallback((mode) => {'
+  const start = context.indexOf(signature)
+  const end = context.indexOf('\n  }, [dailySession, sessionContext])', start)
+  assert.ok(start >= 0 && end > start, 'duration callback must remain inspectable')
+  const choose = new Function('mode', 'deps',
+    'with (deps) { ' + context.slice(start + signature.length, end) + ' }')
+
+  for (const mode of [
+    'current', 'stale-flush', 'denied', 'invalid', 'revoked-model',
+    'revoked-plan', 'rejected-duration', 'mismatched-duration',
+    'throwing-duration', 'revoked-duration', 'rejected-session',
+    'revoked-session', 'active-session',
+  ]) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let models = 0, plans = 0, sessionSaves = 0, writes = 0
+    const queued = []
+    const original = {
+      duration: 'standard',
+      daily: { id: 'original', status: mode === 'active-session' ? 'active' : 'planned' },
+    }
+    const state = structuredClone(original)
+    const storage = new Map()
+    const access = {
+      valid: () => owner === 'A',
+      setItem(key, value) {
+        writes++
+        if (mode === 'rejected-duration') return false
+        if (mode === 'revoked-duration') owner = 'B'
+        storage.set(key, value)
+        return true
+      },
+      getItem(key) {
+        if (mode === 'throwing-duration') throw new Error('Storage denied')
+        if (mode === 'mismatched-duration') return 'another-tab-value'
+        return storage.get(key) ?? null
+      },
+    }
+    const deps = {
+      DURATION_PREF_KEY: 'duration',
+      ARC: [],
+      dailySession: original.daily,
+      captureLearnerAccess: () => access,
+      isDurationMode: value => value === 'quick',
+      loadLearnerModel: () => {
+        models++
+        if (mode === 'revoked-model') owner = 'B'
+        return {}
+      },
+      getOrCreateSession: () => {
+        plans++
+        if (mode === 'revoked-plan') owner = 'B'
+        return { id: 'new', status: 'planned', durationMode: 'quick' }
+      },
+      sessionContext: () => ({}),
+      saveSession: (next, options) => {
+        assert.equal(options.access, access, 'save must retain initiating lease')
+        sessionSaves++
+        if (mode === 'revoked-session') owner = 'B'
+        return mode === 'rejected-session' ? null : next
+      },
+      setPreferredDuration: update => queued.push(['duration', update]),
+      setDailySession: update => queued.push(['daily', update]),
+    }
+    const result = choose(mode === 'invalid' ? 'unknown' : 'quick', deps)
+    if (mode === 'stale-flush') owner = 'B'
+    for (const [key, update] of queued) {
+      assert.equal(typeof update, 'function', mode + ': queued UI must recheck lease')
+      state[key] = update(state[key])
+    }
+    const accepted = ['current', 'stale-flush', 'active-session'].includes(mode)
+    assert.equal(result, accepted, mode + ': duration result')
+    if (mode === 'current') {
+      assert.equal(state.duration, 'quick')
+      assert.equal(state.daily.id, 'new')
+      assert.equal(sessionSaves, 1)
+    } else if (mode === 'active-session') {
+      assert.equal(state.duration, 'quick')
+      assert.deepEqual(state.daily, original.daily, 'an active session cannot be replanned')
+      assert.equal(models, 0)
+      assert.equal(plans, 0)
+      assert.equal(sessionSaves, 0)
+    } else {
+      assert.deepEqual(state, original, mode + ': A must not replan B or publish an unsaved preference')
+      assert.equal(queued.length, mode === 'stale-flush' ? 2 : 0)
+    }
+    if (mode === 'denied' || mode === 'invalid') {
+      assert.equal(writes, 0)
+      assert.equal(models, 0)
+    }
+    if (mode === 'revoked-model') assert.equal(plans, 0)
+    if (mode === 'revoked-plan') assert.equal(writes, 0)
+    if (mode === 'rejected-duration') assert.equal(sessionSaves, 0)
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)
