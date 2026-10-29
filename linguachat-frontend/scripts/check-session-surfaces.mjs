@@ -25,6 +25,23 @@ let n = 0
 const ok = () => { n++ }
 const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, type, format, source })
 
+/* ---------- Mission persistence must not be replayed by React effects ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  // start/advance/complete/reset already commit under the captured account
+  // lease. A delayed passive effect must not resurrect a completed cursor or
+  // overwrite a newer completed-history snapshot from another tab.
+  assert.doesNotMatch(context, /useEffect\(\(\) => \{\s*saveActiveMission\(activeMission\)/,
+    'passive mission persistence can resurrect a completed active cursor')
+  assert.doesNotMatch(context, /useEffect\(\(\) => \{\s*saveCompletedMissions\(completedMissions\)/,
+    'passive history persistence can replace newer durable completions')
+  assert.match(context, /completeMission\(advanced\.activeMission, \{ access \}\)/,
+    'mission completion must persist under the original account lease')
+  assert.match(context, /clearMissionStorage\(\{ access \}\)/,
+    'mission reset must retain its original account lease')
+  ok()
+}
+
 /* ---------- 1. the closing question ---------- */
 
 // 1) it is NOT simply the first block
