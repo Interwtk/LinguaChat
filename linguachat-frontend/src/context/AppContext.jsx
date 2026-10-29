@@ -1406,7 +1406,7 @@ export function AppProvider({ children }) {
        * before their first message it does not, and after it, it does.
        */
       const learnerHasSpoken = messages.some(m => m.role === 'user')
-        const response = await sendChatMessage({
+      const response = await sendChatMessage({
         message: text.trim(),
         level: profile.level,
         mode: profile.style,
@@ -1457,7 +1457,7 @@ export function AppProvider({ children }) {
        * different one. No message, no reply and no prompt is recorded anywhere.
        */
       if (chatStillCurrent() && !learnerHasSpoken && conversationTopic?.interestId) {
-        recordTopicUse(conversationTopic.interestId, { access: { ...chatAccess, valid: chatStillCurrent } })
+        recordTopicUse(conversationTopic.interestId, { access: chatAccess })
       }
 
       const linguaMsg = {
