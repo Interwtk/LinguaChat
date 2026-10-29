@@ -514,16 +514,23 @@ export function mergeCanDoEvidence(mine = {}, theirs = {}) {
   return out
 }
 
-export function saveLearnerModel(model) {
+export function saveLearnerModel(model, { verified = false } = {}) {
+  // Most callers preserve the historical model return value. Award/finish paths
+  // opt into a boolean result so rejected or mismatched writes cannot grant XP.
+  const failure = () => verified ? false : model
   const access = captureLearnerObjectAccess(model)
-  if (!access.valid()) return model
+  if (!access.valid()) return failure()
   const merged = mergeActivityEvidence(model, access)
-  if (!access.valid()) return model
+  if (!access.valid()) return failure()
   // Never reacquire/rebind to a new owner between validation, merge and write.
   // Only expose merged data to the caller after a durable scoped commit.
   try {
-    if (!access.setItem(KEY, JSON.stringify({ ...merged, version: MODEL_VERSION }))) return model
-  } catch { return model }
+    const serialized = JSON.stringify({ ...merged, version: MODEL_VERSION })
+    if (!access.setItem(KEY, serialized)) return failure()
+    if (verified && (!access.valid() || access.getItem(KEY) !== serialized || !access.valid())) {
+      return false
+    }
+  } catch { return failure() }
   // keep the caller's own object in step with what was written
   model.activityPreferences = merged.activityPreferences
   model.canDo = merged.canDo
@@ -535,7 +542,7 @@ export function saveLearnerModel(model) {
   model.languageItems = merged.languageItems
   model.teachingHistory = merged.teachingHistory
   model.levelMilestones = merged.levelMilestones
-  return model
+  return verified ? true : model
 }
 
 // ---- review scheduling ----
