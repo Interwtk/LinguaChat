@@ -72,13 +72,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
 /* ---------- onboarding checkpoint effects must not adopt another account ---------- */
 {
   const context = read('src/context/AppContext.jsx')
-  assert.doesNotMatch(context, /localStorage\\.setItem\\('lc2-onboarding-step'/,
+  assert.doesNotMatch(context, /localStorage\.setItem\('lc2-onboarding-step'/,
     'setup checkpoint must not use a late, dynamically scoped storage write')
-  const signature = '  useEffect(() => {\\n    // This passive setup checkpoint belongs to the original account lease.'
+  const signature = '  useEffect(() => {\n    // This passive setup checkpoint belongs to the original account lease.'
   const start = context.indexOf(signature)
-  const end = context.indexOf('\\n  }, [authUser?.id, authStep])', start)
+  const end = context.indexOf('\n  }, [authUser?.id, authStep])', start)
   assert.ok(start >= 0 && end > start, 'account-fenced setup effect must remain inspectable')
-  const body = context.slice(start + '  useEffect(() => {\\n'.length, end)
+  const body = context.slice(start + '  useEffect(() => {\n'.length, end)
   const persistSetup = new Function('deps', 'with (deps) { ' + body + ' }')
   for (const mode of [
     'current', 'switched-account', 'revoked-tab', 'guest-claim',
