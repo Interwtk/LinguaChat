@@ -429,10 +429,12 @@ export function AppProvider({ children }) {
   // The account lease alone cannot distinguish two conversations of one account.
   const chatGenerationRef = useRef(0)
 
+  // The DOM follows the committed theme. Storage writes belong to the
+  // initiating account, never to an effect that can run after a lease switch.
+  const darkModeRef = useRef(darkMode)
   useEffect(() => {
     const root = document.documentElement
     darkMode ? root.classList.add('dark') : root.classList.remove('dark')
-    try { localStorage.setItem('lc2-dark', darkMode) } catch {}
   }, [darkMode])
 
   useEffect(() => {
@@ -463,8 +465,26 @@ export function AppProvider({ children }) {
   // Companion and text size are persisted by their lease-verified setters.
   // A delayed effect could replay A's state into B after an account switch.
 
-  const toggleDark = useCallback(() => setDarkMode(d => !d), [])
-  const setThemeDark = useCallback((value) => setDarkMode(Boolean(value)), [])
+  const persistThemeDark = useCallback((next) => {
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const value = Boolean(next)
+    try {
+      const serialized = String(value)
+      if (access.setItem('lc2-dark', serialized) === false
+        || !access.valid() || access.getItem('lc2-dark') !== serialized
+        || !access.valid()) return false
+    } catch {
+      return false
+    }
+    // Keep rapid consecutive toggles based on the last verified write. React
+    // can flush this updater after a logout or an account switch.
+    darkModeRef.current = value
+    setDarkMode(previous => access.valid() ? value : previous)
+    return access.valid()
+  }, [])
+  const toggleDark = useCallback(() => persistThemeDark(!darkModeRef.current), [persistThemeDark])
+  const setThemeDark = useCallback((value) => persistThemeDark(value), [persistThemeDark])
 
   const nativeLanguage = nativeLanguageInfo.base
   const interfaceLanguage = interfaceLanguageInfo.base
