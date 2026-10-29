@@ -1103,7 +1103,7 @@ export function AppProvider({ children }) {
 
   const startPracticeMission = useCallback((mission = null) => {
     const access = captureLearnerAccess()
-    if (!access.valid()) return
+    if (!access.valid()) return false
     const generation = ++missionGenerationRef.current
     const publication = { valid: () => access.valid() && missionGenerationRef.current === generation }
     const selectedMission = mission || getMissionForToday(profile.level, profile.goal)
@@ -1312,7 +1312,7 @@ export function AppProvider({ children }) {
 
   const abandonMission = useCallback(() => {
     const access = captureLearnerAccess()
-    if (!access.valid()) return
+    if (!access.valid()) return false
     const generation = ++missionGenerationRef.current
     const publication = { valid: () => access.valid() && missionGenerationRef.current === generation }
     if (!publication.valid() || saveActiveMission(null, { access }) !== true
