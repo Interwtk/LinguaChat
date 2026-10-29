@@ -634,4 +634,63 @@ const TOMORROW = TODAY + DAY
   ok()
 }
 
+/* ---- 18) topic memory belongs to the account that made the choice ---- */
+{
+  const makeLease = (mode = 'ok') => {
+    const data = new Map()
+    let active = true
+    const access = {
+      valid: () => active,
+      getItem: key => {
+        if (mode === 'read-error') throw new Error('read rejected')
+        if (mode === 'wrong-readback') return null
+        return data.get(key) ?? null
+      },
+      setItem: (key, value) => {
+        if (mode === 'write-rejected') return false
+        data.set(key, value)
+        if (mode === 'revoke-on-write') active = false
+        return true
+      },
+    }
+    return { access, data, revoke: () => { active = false } }
+  }
+  const a = makeLease()
+  const b = makeLease()
+  const dismissed = dismissTopic('music', { atMs: TODAY, access: a.access })
+  assert.ok(dismissed && isTopicDismissed(dismissed, 'music'),
+    'a valid lease may dismiss a topic for its own account')
+  assert.ok(JSON.parse(a.data.get(MEMORY_CONTEXT_KEY)).dismissedTopicIds.includes('music'))
+  assert.equal(b.data.has(MEMORY_CONTEXT_KEY), false, 'a topic dismissal cannot touch B')
+  const recorded = recordTopicUse('games', { atMs: TODAY, access: a.access })
+  assert.equal(recorded.recentTopics[0].id, 'games', 'a valid lease records topic cooldown')
+  assert.equal(b.data.has(MEMORY_CONTEXT_KEY), false, 'cooldown cannot touch B')
+
+  a.revoke()
+  const snapshot = a.data.get(MEMORY_CONTEXT_KEY)
+  assert.equal(dismissTopic('travel', { atMs: TODAY, access: a.access }), null,
+    'a revoked lease cannot dismiss a topic')
+  assert.equal(recordTopicUse('history', { atMs: TODAY, access: a.access }), null,
+    'a revoked lease cannot record topic cooldown')
+  assert.equal(a.data.get(MEMORY_CONTEXT_KEY), snapshot, 'revocation preserves the stored memory')
+
+  for (const mode of ['write-rejected', 'wrong-readback', 'read-error', 'revoke-on-write']) {
+    const attempt = makeLease(mode)
+    assert.equal(dismissTopic('music', { atMs: TODAY, access: attempt.access }), null,
+      `dismissal must fail closed on ${mode}`)
+    const second = makeLease(mode)
+    assert.equal(recordTopicUse('music', { atMs: TODAY, access: second.access }), null,
+      `cooldown must fail closed on ${mode}`)
+  }
+
+  const context = read('src/context/AppContext.jsx')
+  assert.match(context, /dismissTopic\(conversationTopic\.interestId, \{ access \}\)/,
+    'topic dismissal must carry its originating lease')
+  assert.match(context, /setTopicRound\(round => access\.valid\(\) \? round \+ 1 : round\)/,
+    'queued React topic rotation must be lease fenced')
+  assert.match(context, /recordTopicUse\(conversationTopic\.interestId, \{ access: chatAccess \}\)/,
+    'async chat topic cooldown must carry the chat account lease')
+  ok()
+}
+
 console.log(`\ncheck-interest-personalization — OK  (${groups} personalization groups verified)`)
