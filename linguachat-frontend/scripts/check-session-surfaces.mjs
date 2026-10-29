@@ -924,6 +924,21 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+/* ---------- 8a. profile hydration must not replay through a passive effect ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  // The pre-auth default or a queued A profile must never overwrite the
+  // account-scoped restored profile when a lease is activated or replaced.
+  // Onboarding commits and verified profile edits own the durable writes.
+  assert.doesNotMatch(context, /localStorage\.setItem\(['"]lc2-profile['"]/,
+    'unscoped profile persistence can overwrite a verified account profile')
+  assert.match(context, /access\.setItem\('lc2-profile', serialized\)/,
+    'profile edits must retain their captured account lease')
+  assert.match(context, /commitOnboarding\(access, profileToCommit\)/,
+    'onboarding must commit its profile explicitly before entering Home')
+  ok()
+}
+
 /* ---------- 8b. profile edits must be durably account-scoped ---------- */
 {
   const context = read('src/context/AppContext.jsx')
