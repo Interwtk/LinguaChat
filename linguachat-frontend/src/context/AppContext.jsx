@@ -429,7 +429,7 @@ export function AppProvider({ children }) {
   // The account lease alone cannot distinguish two conversations of one account.
   const chatGenerationRef = useRef(0)
 
-  // The DOM follows the committed theme. Storage writes belong to the
+  // The DOM follows the committed theme; persistence belongs to the
   // initiating account, never to an effect that can run after a lease switch.
   const darkModeRef = useRef(darkMode)
   useEffect(() => {
