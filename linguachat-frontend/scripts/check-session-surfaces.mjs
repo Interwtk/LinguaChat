@@ -789,4 +789,109 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+
+/* ---------- 10. daily-session completion must not award another account ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const sessionSource = read('src/learning/engine/session.js')
+  const extract = (source, signature, ending) => {
+    const start = source.indexOf(signature)
+    const end = source.indexOf(ending, start + signature.length)
+    assert.ok(start >= 0 && end > start, signature + ' must remain inspectable')
+    return source.slice(start + signature.length, end)
+  }
+  const finish = new Function('deps', 'with (deps) { ' +
+    extract(context, '  const finishSession = useCallback(() => {', '\n  }, [dailySession])') + ' }')
+  const save = new Function('session', 'options', 'deps',
+    'with (deps) { const { access = null } = options || {}; ' +
+    extract(sessionSource, 'export function saveSession(session, { access = null } = {}) {', '\n}') + ' }')
+
+  for (const mode of [
+    'current', 'stale-flush', 'denied', 'revoked-load', 'revoked-complete',
+    'revoked-model-save', 'rejected-save', 'mismatch-save', 'revoked-save',
+  ]) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let loads = 0
+    let completions = 0
+    let modelSaves = 0
+    let writes = 0
+    const storage = {}
+    const queued = []
+    const state = {
+      daily: { status: 'planned' }, progress: { xp: 3 }, active: true,
+      episode: 'episode-A', arc: 2, view: 'practice',
+    }
+    const original = structuredClone(state)
+    const access = {
+      valid: () => owner === 'A',
+      setItem: (key, value) => {
+        writes++
+        if (mode === 'rejected-save') return false
+        storage[key] = value
+        if (mode === 'revoked-save') owner = 'B'
+        return true
+      },
+      getItem: key => mode === 'mismatch-save' ? 'another-tab-value' : storage[key],
+    }
+    const queue = key => update => queued.push([key, update])
+    const deps = {
+      SESSION_BONUS_XP: 15,
+      dailySession: { id: 'A-session', status: 'planned' },
+      captureLearnerAccess: () => access,
+      loadLearnerModel: () => {
+        loads++
+        if (mode === 'revoked-load') owner = 'B'
+        return {}
+      },
+      completeSession: session => {
+        completions++
+        if (mode === 'revoked-complete') owner = 'B'
+        return { session: { ...session, status: 'completed' }, awarded: true }
+      },
+      saveLearnerModel: () => {
+        modelSaves++
+        if (mode === 'revoked-model-save') owner = 'B'
+      },
+      saveSession: (session, options) => save(session, options, {
+        SESSION_KEY: 'daily-session',
+        localStorage: { setItem: () => { throw new Error('unscoped write') } },
+      }),
+      setDailySession: queue('daily'),
+      setLocalProgress: queue('progress'),
+      setSessionActive: queue('active'),
+      setEpisodeActiveId: queue('episode'),
+      setEpisodeArcVersion: queue('arc'),
+      setView: queue('view'),
+    }
+    const result = finish(deps)
+    if (mode === 'stale-flush') owner = 'B'
+    for (const [key, update] of queued) {
+      assert.equal(typeof update, 'function', mode + ': React must receive a guarded updater')
+      state[key] = update(state[key])
+    }
+    if (mode === 'current') {
+      assert.equal(result, true)
+      assert.equal(state.daily.status, 'completed')
+      assert.equal(state.progress.xp, 18)
+      assert.equal(state.active, false)
+      assert.equal(state.episode, null)
+      assert.equal(state.arc, 3)
+      assert.equal(state.view, 'today')
+      assert.equal(writes, 1)
+      assert.equal(loads, 1)
+      assert.equal(completions, 1)
+      assert.equal(modelSaves, 1)
+      assert.equal(queued.length, 6)
+    } else {
+      assert.deepEqual(state, original, mode + ': A completion cannot mutate B UI')
+      assert.equal(queued.length, mode === 'stale-flush' ? 6 : 0)
+      if (mode === 'denied') assert.equal(loads, 0)
+      if (mode === 'revoked-load') assert.equal(completions, 0)
+      if (mode === 'revoked-complete') assert.equal(modelSaves, 0)
+      if (mode === 'revoked-model-save') assert.equal(writes, 0)
+    }
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)
