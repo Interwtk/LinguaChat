@@ -386,8 +386,16 @@ export function AppProvider({ children }) {
     }
   }, [getAuthService, applyProviderSession])
   useEffect(() => {
-    if (authUser?.id && SETUP_STEPS.includes(authStep)) {
-      try { localStorage.setItem('lc2-onboarding-step', authStep) } catch {}
+    // This passive setup checkpoint belongs to the original account lease.
+    // A delayed React effect must not acquire B's lease after switching from A.
+    if (!authUser?.id || !SETUP_STEPS.includes(authStep)) return
+    const access = passiveStorageAccessRef.current
+    if (!access.valid()) return
+    try {
+      if (access.setItem('lc2-onboarding-step', authStep) === false || !access.valid()) return
+      if (access.getItem('lc2-onboarding-step') !== authStep || !access.valid()) return
+    } catch {
+      // A denied or revoked store cannot advance another account's checkpoint.
     }
   }, [authUser?.id, authStep])
   const [view, setView] = useState('today')
