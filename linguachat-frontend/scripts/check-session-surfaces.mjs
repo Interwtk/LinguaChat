@@ -2001,4 +2001,45 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+/* ---------- navigation must not move another account after a queued React flush ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const signature = '  const navigateTo = useCallback((destination) => {'
+  const start = context.indexOf(signature)
+  const end = context.indexOf('\n  }, [])', start)
+  assert.ok(start >= 0 && end > start, 'navigateTo must remain inspectable')
+  const navigate = new Function('destination', 'deps',
+    'with (deps) { ' + context.slice(start + signature.length, end) + ' }')
+
+  for (const mode of ['current', 'denied', 'stale-flush', 'revoked-after-first-queue']) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    const queued = []
+    const state = { view: 'today', sheet: 'journey' }
+    const original = structuredClone(state)
+    const result = navigate('words', {
+      captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      setView: updater => {
+        queued.push(['view', updater])
+        if (mode === 'revoked-after-first-queue') owner = 'B'
+      },
+      setMobileSheet: updater => queued.push(['sheet', updater]),
+    })
+    if (mode === 'stale-flush') owner = 'B'
+    for (const [key, updater] of queued) {
+      assert.equal(typeof updater, 'function', mode + ': queued navigation must recheck the lease')
+      state[key] = updater(state[key])
+    }
+    if (mode === 'current') {
+      assert.equal(result, true)
+      assert.deepEqual(state, { view: 'words', sheet: null })
+      assert.equal(queued.length, 2)
+    } else {
+      assert.equal(result, mode === 'stale-flush', mode + ': result')
+      assert.deepEqual(state, original, mode + ': stale navigation cannot move B')
+      assert.equal(queued.length, mode === 'denied' ? 0 : mode === 'revoked-after-first-queue' ? 1 : 2)
+    }
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)
