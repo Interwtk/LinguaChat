@@ -74,7 +74,7 @@ import {
 import { selectTopic, providerTopicContext } from '../learning/engine/topicSelection.js'
 import { asSubjectValue } from '../learning/engine/semanticContext.js'
 import {
-  loadSession, saveSession, clearSession, getOrCreateSession, startSession,
+  loadSession, saveSession, getOrCreateSession, startSession,
   advanceBlock, completeSession, isDurationMode,
 } from '../learning/engine/session.js'
 
