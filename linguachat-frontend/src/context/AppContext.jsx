@@ -1107,8 +1107,9 @@ export function AppProvider({ children }) {
     const generation = ++missionGenerationRef.current
     const publication = { valid: () => access.valid() && missionGenerationRef.current === generation }
     const selectedMission = mission || getMissionForToday(profile.level, profile.goal)
-    const active = createActiveMission(selectedMission)
-    if (!publication.valid()) return
+    if (!publication.valid()) return false
+    const active = createActiveMission(selectedMission, { access })
+    if (!active || !publication.valid()) return false
     setActiveMission(previous => publication.valid() ? active : previous)
     setMissionFeedback(previous => publication.valid() ? null : previous)
     setMissionCelebration(previous => publication.valid() ? null : previous)
@@ -1118,6 +1119,7 @@ export function AppProvider({ children }) {
     ], publication)
     setView(previous => publication.valid() ? 'practice' : previous)
     setMobileSheet(previous => publication.valid() ? null : previous)
+    return publication.valid()
   }, [appendLinguaMessages, profile.goal, profile.level])
 
   const submitMissionStep = useCallback(async (value, displayText = null) => {
@@ -1313,8 +1315,8 @@ export function AppProvider({ children }) {
     if (!access.valid()) return
     const generation = ++missionGenerationRef.current
     const publication = { valid: () => access.valid() && missionGenerationRef.current === generation }
-    saveActiveMission(null)
-    if (!publication.valid()) return
+    if (!publication.valid() || saveActiveMission(null, { access }) !== true
+      || !publication.valid()) return false
     setActiveMission(previous => publication.valid() ? null : previous)
     setMissionFeedback(previous => publication.valid() ? null : previous)
     setMissionCelebration(previous => publication.valid() ? null : previous)
@@ -1327,6 +1329,7 @@ export function AppProvider({ children }) {
       missionType: 'exit',
       ts: Date.now(),
     }, publication)
+    return publication.valid()
   }, [appendLinguaMessages])
 
   const sendMessage = useCallback(async (text) => {
