@@ -706,17 +706,36 @@ export function AppProvider({ children }) {
   }, [completePersonalization, profile])
 
   const dismissWelcome = useCallback(() => {
-    setShowWelcome(false)
-    try { localStorage.setItem('lc2-welcome-seen', 'true') } catch {}
-    // Arm Chatto's one-time guided tour once the welcome is closed (new users).
+    // A welcome click belongs to the account that made it. A later React flush
+    // must not close B's welcome or start B's tour after A has signed out.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
     try {
-      if (localStorage.getItem('lc2-tutorial-seen') !== 'true') setShowTutorial(true)
-    } catch {}
+      if (access.setItem('lc2-welcome-seen', 'true') === false
+        || !access.valid() || access.getItem('lc2-welcome-seen') !== 'true') return false
+      // Only start Chatto's tour if this same account has not seen it.
+      const needsTour = access.getItem('lc2-tutorial-seen') !== 'true'
+      if (!access.valid()) return false
+      setShowWelcome(prev => access.valid() ? false : prev)
+      if (needsTour) setShowTutorial(prev => access.valid() ? true : prev)
+      return access.valid()
+    } catch {
+      // A denied/failed write is not a completed welcome.
+      return false
+    }
   }, [])
 
   const dismissTutorial = useCallback(() => {
-    setShowTutorial(false)
-    try { localStorage.setItem('lc2-tutorial-seen', 'true') } catch {}
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    try {
+      if (access.setItem('lc2-tutorial-seen', 'true') === false
+        || !access.valid() || access.getItem('lc2-tutorial-seen') !== 'true') return false
+      setShowTutorial(prev => access.valid() ? false : prev)
+      return access.valid()
+    } catch {
+      return false
+    }
   }, [])
 
   // ── LinguaLoop episodes ──
