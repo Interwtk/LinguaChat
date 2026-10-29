@@ -795,12 +795,6 @@ export function AppProvider({ children }) {
   // The plan itself lives in the session engine; the context only owns "which
   // session is on screen" and persists every transition immediately so a reload
   // or a breakpoint change resumes at the same block.
-  const persistSession = useCallback((next) => {
-    setDailySession(next)
-    if (next) saveSession(next); else clearSession()
-    return next
-  }, [])
-
   /*
    * A PURE preview of today's session for Home to render. It must not persist
    * or setState: Home reads it during render, and writing state there would be
@@ -861,14 +855,31 @@ export function AppProvider({ children }) {
   }, [dailySession, preferredDuration, sessionContext])
 
   const chooseDuration = useCallback((mode) => {
-    if (!isDurationMode(mode)) return
-    try { localStorage.setItem(DURATION_PREF_KEY, mode) } catch { /* noop */ }
-    setPreferredDuration(mode)
-    // Changing duration only replans while the session has not started yet.
-    if (dailySession && dailySession.status !== 'planned') return
-    const next = getOrCreateSession(loadLearnerModel(), ARC, { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
-    persistSession(next)
-  }, [dailySession, persistSession, sessionContext])
+    if (!isDurationMode(mode)) return false
+    // Duration and its planned session belong to the learner who clicked.
+    // Never adopt another account if Storage, planning or React runs later.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const replan = !dailySession || dailySession.status === 'planned'
+    let next = null
+    if (replan) {
+      const model = loadLearnerModel()
+      if (!access.valid()) return false
+      next = getOrCreateSession(model, ARC, { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
+      if (!next || !access.valid()) return false
+    }
+    // A denied, failed or conflicting write must not look saved in the UI.
+    try {
+      if (access.setItem(DURATION_PREF_KEY, mode) === false || !access.valid()
+        || access.getItem(DURATION_PREF_KEY) !== mode || !access.valid()) return false
+    } catch { return false }
+    // A started session keeps its original plan. A planned session changes only
+    // after its new plan has been durably written under the same account lease.
+    if (replan && (!saveSession(next, { access }) || !access.valid())) return false
+    setPreferredDuration(previous => access.valid() ? mode : previous)
+    if (replan) setDailySession(previous => access.valid() ? next : previous)
+    return access.valid()
+  }, [dailySession, sessionContext])
 
   const beginSession = useCallback(() => {
     // The click owns the entire plan/start transaction. A revoked A lease must
