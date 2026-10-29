@@ -1060,4 +1060,110 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+
+/* ---------- 13. daily session start and exit retain the initiating lease ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const extract = (signature, suffix) => {
+    const start = context.indexOf(signature)
+    const end = context.indexOf(suffix, start + signature.length)
+    assert.ok(start >= 0 && end > start, signature + ' must remain inspectable')
+    return context.slice(start + signature.length, end)
+  }
+  const begin = new Function('deps', 'with (deps) { ' +
+    extract('  const beginSession = useCallback(() => {', '\\n  }, [dailySession, preferredDuration, sessionContext])') + ' }')
+  const exit = new Function('deps', 'with (deps) { ' +
+    extract('  const exitSession = useCallback(() => {', '\\n  }, [])') + ' }')
+
+  for (const mode of ['current', 'denied', 'rejected-save', 'revoked-before-save', 'revoked-after-save', 'revoked-during-model', 'stale-flush']) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let saved = 0, facts = 0, modelSaves = 0
+    const queued = []
+    const planned = { id: 'daily-A', status: 'planned', topic: { source: 'fact', factValue: 'music' } }
+    const state = { session: planned, active: false, view: 'today', sheet: 'open' }
+    const original = structuredClone(state)
+    const deps = {
+      captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      dailySession: planned,
+      preferredDuration: 'standard',
+      sessionContext: () => ({}),
+      ARC: [],
+      getOrCreateSession: () => { throw new Error('existing plan should be used') },
+      loadLearnerModel: () => {
+        if (mode === 'revoked-during-model') owner = 'B'
+        return {}
+      },
+      startSession: plan => {
+        if (mode === 'revoked-before-save') owner = 'B'
+        return { ...plan, status: 'active' }
+      },
+      saveSession: (next, { access }) => {
+        assert.ok(access.valid())
+        saved++
+        if (mode === 'revoked-after-save') owner = 'B'
+        return mode === 'rejected-save' ? null : next
+      },
+      markFactUsed: () => { facts++ },
+      rotateFactUsage: () => { facts++ },
+      saveLearnerModel: () => { modelSaves++ },
+      setDailySession: update => queued.push(['session', update]),
+      setSessionActive: update => queued.push(['active', update]),
+      setView: update => queued.push(['view', update]),
+      setMobileSheet: update => queued.push(['sheet', update]),
+    }
+    const result = begin(deps)
+    if (mode === 'stale-flush') owner = 'B'
+    for (const [key, update] of queued) {
+      assert.equal(typeof update, 'function', 'React publication must recheck the lease')
+      state[key] = update(state[key])
+    }
+    if (mode === 'current') {
+      assert.equal(result.status, 'active')
+      assert.equal(saved, 1)
+      assert.equal(facts, 2)
+      assert.equal(modelSaves, 1)
+      assert.equal(state.session.status, 'active')
+      assert.equal(state.active, true)
+      assert.equal(state.view, 'practice')
+      assert.equal(state.sheet, null)
+    } else {
+      if (mode !== 'stale-flush') assert.equal(result, false, mode)
+      assert.deepEqual(state, original, mode + ': A cannot start B session')
+      assert.equal(queued.length, mode === 'stale-flush' ? 4 : 0)
+      if (mode === 'denied' || mode === 'revoked-before-save') assert.equal(saved, 0)
+      if (mode === 'rejected-save' || mode === 'revoked-after-save' || mode === 'revoked-during-model') {
+        assert.equal(facts, 0)
+        assert.equal(modelSaves, 0)
+      }
+    }
+  }
+
+  for (const mode of ['current', 'denied', 'stale-flush']) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    const queued = []
+    const state = { active: true, episode: 'episode-A', view: 'practice' }
+    const original = structuredClone(state)
+    const deps = {
+      captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      setSessionActive: update => queued.push(['active', update]),
+      setEpisodeActiveId: update => queued.push(['episode', update]),
+      setView: update => queued.push(['view', update]),
+    }
+    const result = exit(deps)
+    if (mode === 'stale-flush') owner = 'B'
+    for (const [key, update] of queued) {
+      assert.equal(typeof update, 'function')
+      state[key] = update(state[key])
+    }
+    if (mode === 'current') {
+      assert.equal(result, true)
+      assert.deepEqual(state, { active: false, episode: null, view: 'today' })
+    } else {
+      assert.equal(result, mode === 'stale-flush')
+      assert.deepEqual(state, original, mode + ': A cannot exit B session')
+    }
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)
