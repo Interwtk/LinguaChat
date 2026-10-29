@@ -25,6 +25,83 @@ let n = 0
 const ok = () => { n++ }
 const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, type, format, source })
 
+/* ---------- Theme changes must persist under the initiating account lease ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  // A passive effect can run after account A has lost its lease and overwrite
+  // account B's saved theme. Theme UI must only change after a verified write.
+  assert.doesNotMatch(context,
+    /useEffect\(\(\) => \{\s*const root = document\.documentElement\s*darkMode \?[^\n]*\n\s*try \{ localStorage\.setItem\('lc2-dark'/,
+    'theme persistence must not be replayed by a passive React effect')
+  assert.match(context, /const toggleDark = useCallback\(\(\) => persistThemeDark\(!darkModeRef\.current\)/,
+    'rapid toggles must use the last verified theme rather than a stale render')
+  assert.match(context, /const setThemeDark = useCallback\(\(value\) => persistThemeDark\(value\)/,
+    'explicit theme changes must use the same verified writer')
+  const signature = '  const persistThemeDark = useCallback((next) => {'
+  const start = context.indexOf(signature)
+  const end = context.indexOf('\n  }, [])', start)
+  assert.ok(start >= 0 && end > start, 'verified theme callback must remain inspectable')
+  const persist = new Function('next', 'deps',
+    'with (deps) { ' + context.slice(start + signature.length, end) + ' }')
+
+  for (const mode of [
+    'current', 'second-toggle', 'stale-flush', 'denied', 'rejected-write',
+    'mismatched-read', 'throwing-read', 'revoked-write', 'revoked-read',
+  ]) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let writes = 0
+    const storage = new Map()
+    const darkModeRef = { current: mode === 'second-toggle' }
+    const queued = []
+    const access = {
+      valid: () => owner === 'A',
+      setItem(key, value) {
+        assert.equal(key, 'lc2-dark')
+        writes++
+        if (mode === 'rejected-write') return false
+        storage.set(key, value)
+        if (mode === 'revoked-write') owner = 'B'
+        return true
+      },
+      getItem(key) {
+        if (mode === 'throwing-read') throw new Error('Storage denied')
+        const value = mode === 'mismatched-read' ? 'unexpected' : storage.get(key) ?? null
+        if (mode === 'revoked-read') owner = 'B'
+        return value
+      },
+    }
+    const deps = {
+      captureLearnerAccess: () => access,
+      darkModeRef,
+      setDarkMode: updater => queued.push(updater),
+    }
+    const target = mode === 'second-toggle' ? false : true
+    const result = persist(target, deps)
+    if (mode === 'stale-flush') owner = 'B'
+    let state = mode === 'second-toggle'
+    for (const update of queued) {
+      assert.equal(typeof update, 'function', mode + ': React must recheck the lease')
+      state = update(state)
+    }
+    const accepted = ['current', 'second-toggle', 'stale-flush'].includes(mode)
+    assert.equal(result, accepted, mode + ': persistence result')
+    assert.equal(queued.length, accepted ? 1 : 0, mode + ': no false UI success')
+    if (mode === 'current' || mode === 'second-toggle') {
+      assert.equal(state, target)
+      assert.equal(darkModeRef.current, target)
+      assert.equal(storage.get('lc2-dark'), String(target))
+    } else if (mode === 'stale-flush') {
+      assert.equal(state, false, 'a delayed A theme must not repaint B')
+      assert.equal(darkModeRef.current, true, 'verified A write stays associated with A')
+    } else {
+      assert.equal(state, false, mode + ': failed save must not change UI')
+      assert.equal(darkModeRef.current, false, mode + ': failed save must not change ref')
+    }
+    if (mode === 'denied') assert.equal(writes, 0)
+  }
+  ok()
+}
+
 /* ---------- Mission persistence must not be replayed by React effects ---------- */
 {
   const context = read('src/context/AppContext.jsx')
