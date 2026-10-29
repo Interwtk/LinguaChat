@@ -852,27 +852,37 @@ export function AppProvider({ children }) {
   }, [dailySession, persistSession, sessionContext])
 
   const beginSession = useCallback(() => {
+    // The click owns the entire plan/start transaction. A revoked A lease must
+    // not publish a session in B, even when React flushes its updater later.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
     const planned = dailySession && dailySession.status !== 'completed'
       ? dailySession
       : getOrCreateSession(loadLearnerModel(), ARC, { durationMode: preferredDuration, ...sessionContext() })
-    const next = persistSession(startSession(planned))
+    if (!access.valid() || !planned) return false
+    const next = startSession(planned)
+    // Save first: a denied/full Storage write must not show a started session.
+    if (!next || !access.valid() || !saveSession(next, { access }) || !access.valid()) return false
     /*
-     * A remembered fact only counts as "used" when the session actually
-     * starts — never while Home is merely rendering a preview. That keeps the
-     * cooldown honest and keeps rendering free of side effects.
+     * A remembered fact only counts as used when the session actually starts.
+     * Keep the same lease through the fact's model read and save.
      */
-    if (next?.topic?.source === 'fact' && next.topic.factValue && planned.status === 'planned') {
+    if (next.topic?.source === 'fact' && next.topic.factValue && planned.status === 'planned') {
       const model = loadLearnerModel()
+      if (!access.valid()) return false
       const fact = { type: 'like', value: next.topic.factValue }
       markFactUsed(model, fact)
       rotateFactUsage(model, fact)
+      if (!access.valid()) return false
       saveLearnerModel(model)
+      if (!access.valid()) return false
     }
-    setSessionActive(true)
-    setView('practice')
-    setMobileSheet(null)
-    return next
-  }, [dailySession, preferredDuration, persistSession, sessionContext])
+    setDailySession(previous => access.valid() ? next : previous)
+    setSessionActive(previous => access.valid() ? true : previous)
+    setView(previous => access.valid() ? 'practice' : previous)
+    setMobileSheet(previous => access.valid() ? null : previous)
+    return access.valid() ? next : false
+  }, [dailySession, preferredDuration, sessionContext])
 
   const advanceSession = useCallback(() => {
     // A delayed React updater must never advance B's daily plan after A signs out.
@@ -912,9 +922,12 @@ export function AppProvider({ children }) {
   }, [dailySession])
 
   const exitSession = useCallback(() => {
-    setSessionActive(false)
-    setEpisodeActiveId(null)
-    setView('today')
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    setSessionActive(previous => access.valid() ? false : previous)
+    setEpisodeActiveId(previous => access.valid() ? null : previous)
+    setView(previous => access.valid() ? 'today' : previous)
+    return access.valid()
   }, [])
 
   /*
