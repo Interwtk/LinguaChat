@@ -448,7 +448,7 @@ const TOMORROW = TODAY + DAY
     'the opening message must be recognised by the learner having spoken')
   assert.match(context, /topicContext: learnerHasSpoken \? null : providerTopicContext\(conversationTopic\)/,
     'and the topic travels only before they have')
-  assert.match(context, /recordTopicUse\(conversationTopic\.interestId\)/, 'what was discussed is remembered')
+  assert.match(context, /recordTopicUse\(conversationTopic\.interestId, \{ access: chatAccess \}\)/, 'what was discussed is remembered for the originating account')
 
   /* the provider is never asked to choose, and never told why */
   const engine = read('src/learning/engine/topicSelection.js')
