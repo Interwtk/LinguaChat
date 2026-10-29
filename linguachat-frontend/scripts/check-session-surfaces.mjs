@@ -69,6 +69,57 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+/* ---------- onboarding checkpoint effects must not adopt another account ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  assert.doesNotMatch(context, /localStorage\\.setItem\\('lc2-onboarding-step'/,
+    'setup checkpoint must not use a late, dynamically scoped storage write')
+  const signature = '  useEffect(() => {\\n    // This passive setup checkpoint belongs to the original account lease.'
+  const start = context.indexOf(signature)
+  const end = context.indexOf('\\n  }, [authUser?.id, authStep])', start)
+  assert.ok(start >= 0 && end > start, 'account-fenced setup effect must remain inspectable')
+  const body = context.slice(start + '  useEffect(() => {\\n'.length, end)
+  const persistSetup = new Function('deps', 'with (deps) { ' + body + ' }')
+  for (const mode of [
+    'current', 'switched-account', 'revoked-tab', 'guest-claim',
+    'no-user', 'not-setup', 'rejected-write', 'mismatch-read',
+    'revoked-after-write', 'denied-storage',
+  ]) {
+    let valid = !['switched-account', 'revoked-tab'].includes(mode)
+    const store = new Map()
+    let writes = 0, reads = 0
+    const captured = {
+      valid: () => valid,
+      setItem(key, value) {
+        assert.equal(key, 'lc2-onboarding-step')
+        writes++
+        if (mode === 'denied-storage') throw new Error('Storage denied')
+        if (mode === 'rejected-write') return false
+        store.set(key, value)
+        if (mode === 'revoked-after-write') valid = false
+        return true
+      },
+      getItem(key) {
+        reads++
+        return mode === 'mismatch-read' ? 'other-step' : store.get(key) ?? null
+      },
+    }
+    persistSetup({
+      authUser: mode === 'no-user' ? null : { id: 'account-A' },
+      authStep: mode === 'not-setup' ? 'entry' : 'level-reveal',
+      SETUP_STEPS: ['level-reveal', 'setup-choice'],
+      passiveStorageAccessRef: { current: captured },
+    })
+    const shouldWrite = !['switched-account', 'revoked-tab', 'no-user', 'not-setup'].includes(mode)
+    assert.equal(writes, shouldWrite ? 1 : 0, mode + ': stale or irrelevant effect must not write')
+    const shouldRead = ['current', 'guest-claim', 'mismatch-read'].includes(mode)
+    assert.equal(reads, shouldRead ? 1 : 0, mode + ': readback must follow a valid committed write')
+    if (mode === 'current' || mode === 'guest-claim')
+      assert.equal(store.get('lc2-onboarding-step'), 'level-reveal')
+  }
+  ok()
+}
+
 /* ---------- Theme changes must persist under the initiating account lease ---------- */
 {
   const context = read('src/context/AppContext.jsx')
