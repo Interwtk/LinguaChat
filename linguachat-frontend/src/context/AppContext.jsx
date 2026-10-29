@@ -941,8 +941,7 @@ export function AppProvider({ children }) {
       if (!access.valid()) return false
       const { session, awarded } = completeSession(dailySession, model)
       if (!access.valid()) return false
-      saveLearnerModel(model)
-      if (!access.valid()) return false
+      if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
       if (!saveSession(session, { access }) || !access.valid()) return false
       setDailySession(previous => access.valid() ? session : previous)
       if (awarded) setLocalProgress(previous => access.valid()
@@ -994,8 +993,7 @@ export function AppProvider({ children }) {
       recordItemSeen(model, grant.vocabId)
     }
     if (!access.valid()) return false
-    saveLearnerModel(model)
-    if (!access.valid()) return false
+    if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
     setLocalProgress(previous => {
       if (!access.valid()) return previous
       const existing = new Set((previous.learnedItems || []).map(i => i.vocabId).filter(Boolean))
