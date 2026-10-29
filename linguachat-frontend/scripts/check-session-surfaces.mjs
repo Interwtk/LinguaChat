@@ -1558,15 +1558,15 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const persist = new Function('activeMission', 'options', 'deps',
     'with (deps) { const { access = null } = options || {}; ' +
     extract('export function saveActiveMission(activeMission, { access = null } = {}) {',
-      '\\n}\\n\\nexport function loadCompletedMissions') + ' }')
+      '\n}\n\nexport function loadCompletedMissions') + ' }')
   const complete = new Function('activeMission', 'options', 'deps',
     'with (deps) { const { access = null } = options || {}; ' +
     extract('export function completeMission(activeMission, { access = null } = {}) {',
-      '\\n}\\n\\nexport function clearMissionStorage') + ' }')
+      '\n}\n\nexport function clearMissionStorage') + ' }')
   const advance = new Function('activeMission', 'step', 'answerValue', 'evaluation', 'options', 'deps',
     'with (deps) { const { access = null, deferSave = false } = options || {}; ' +
     extract('export function advanceMission(activeMission, step, answerValue, evaluation, { access = null, deferSave = false } = {}) {',
-      '\\n}\\n\\nexport function completeMission') + ' }')
+      '\n}\n\nexport function completeMission') + ' }')
 
   for (const mode of [
     'current', 'denied', 'rejected-completed', 'mismatched-completed',
