@@ -41,7 +41,6 @@ import {
   getMissionForToday,
   loadActiveMission,
   loadCompletedMissions,
-  saveCompletedMissions,
   saveActiveMission,
   startMission as createActiveMission,
   clearMissionStorage,
@@ -455,13 +454,10 @@ export function AppProvider({ children }) {
     saveLocalProgress(localProgress)
   }, [localProgress])
 
-  useEffect(() => {
-    saveActiveMission(activeMission)
-  }, [activeMission])
-
-  useEffect(() => {
-    saveCompletedMissions(completedMissions)
-  }, [completedMissions])
+  // Mission starts, advances, completions and resets already persist under
+  // their originating account lease before updating React. Replaying mission
+  // state in passive effects could resurrect a completed cursor or overwrite
+  // a newer completion history from another tab.
 
   // Companion and text size are persisted by their lease-verified setters.
   // A delayed effect could replay A's state into B after an account switch.
