@@ -1166,4 +1166,79 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+
+/* ---------- 12. welcome and Chatto tour stay with their account ---------- */
+
+// Exercise the actual callbacks, including delayed React updaters and Storage
+// failures. A stale A click must neither dismiss B's overlays nor start B's
+// tour; a rejected write must not be presented as a completed step.
+{
+  const context = read('src/context/AppContext.jsx')
+  function callback(name) {
+    const signature = `  const ${name} = useCallback(() => {`
+    const start = context.indexOf(signature)
+    const end = context.indexOf('\n  }, [])', start)
+    assert.ok(start >= 0 && end > start, name + ': callback must be inspectable')
+    return new Function('deps', 'with (deps) { ' + context.slice(start + signature.length, end) + ' }')
+  }
+  const welcome = callback('dismissWelcome')
+  const tutorial = callback('dismissTutorial')
+  for (const action of ['welcome', 'tutorial']) {
+    for (const mode of ['current', 'denied', 'stale-flush', 'rejected-write',
+      'mismatched-read', 'throwing-read', 'revoked-during-write', 'already-seen']) {
+      if (action === 'tutorial' && mode === 'already-seen') continue
+      let owner = mode === 'denied' ? 'B' : 'A'
+      const storage = new Map()
+      if (mode === 'already-seen') storage.set('lc2-tutorial-seen', 'true')
+      const state = action === 'welcome'
+        ? { welcome: true, tutorial: false }
+        : { welcome: false, tutorial: true }
+      const original = structuredClone(state)
+      const queued = []
+      let writes = 0
+      const writtenKey = action === 'welcome' ? 'lc2-welcome-seen' : 'lc2-tutorial-seen'
+      const access = {
+        valid: () => owner === 'A',
+        setItem(key, value) {
+          writes++
+          if (mode === 'rejected-write') return false
+          if (mode === 'revoked-during-write') owner = 'B'
+          storage.set(key, value)
+          return true
+        },
+        getItem(key) {
+          if (key === writtenKey && mode === 'throwing-read') throw new Error('Storage denied')
+          if (key === writtenKey && mode === 'mismatched-read') return null
+          return storage.get(key) ?? null
+        },
+      }
+      const deps = {
+        captureLearnerAccess: () => access,
+        setShowWelcome: fn => queued.push(['welcome', fn]),
+        setShowTutorial: fn => queued.push(['tutorial', fn]),
+      }
+      const result = (action === 'welcome' ? welcome : tutorial)(deps)
+      if (mode === 'stale-flush') owner = 'B'
+      for (const [key, update] of queued) {
+        assert.equal(typeof update, 'function', action + ': deferred UI must be lease-checked')
+        state[key] = update(state[key])
+      }
+      const accepted = ['current', 'stale-flush', 'already-seen'].includes(mode)
+      assert.equal(result, accepted, action + '/' + mode + ': completion result')
+      if (mode === 'current') {
+        assert.deepEqual(state, action === 'welcome'
+          ? { welcome: false, tutorial: true }
+          : { welcome: false, tutorial: false })
+      } else if (mode === 'already-seen') {
+        assert.deepEqual(state, { welcome: false, tutorial: false },
+          'a learner who already finished the tour must not restart it')
+      } else {
+        assert.deepEqual(state, original, action + '/' + mode + ': no B UI mutation')
+      }
+      if (mode === 'denied') assert.equal(writes, 0, 'denied lease must not write')
+    }
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)
