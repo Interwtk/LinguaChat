@@ -442,9 +442,10 @@ export function AppProvider({ children }) {
     root.dataset.textSize = textSize
   }, [interfaceLanguageInfo, textSize])
 
-  useEffect(() => {
-    try { localStorage.setItem('lc2-profile', JSON.stringify(profile)) } catch {}
-  }, [profile])
+  // Profile hydration is read-only. Guided onboarding commits explicitly and
+  // updateProfile verifies its account-scoped write before publishing React
+  // state. A passive effect could replay pre-auth defaults or stale A state
+  // over a newer durable profile after a lease change.
 
   useEffect(() => {
     saveStoredMessages(messages)
