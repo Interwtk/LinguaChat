@@ -524,18 +524,22 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   function checkDeferredControls(mode) {
     let owner = mode === 'denied' ? 'B' : 'A'
     const queued = []
+    const chatGenerationRef = { current: 0 }
     const enqueue = key => update => queued.push([key, update])
     const state = {
       profile: { name: 'B profile', level: 'B1' },
       messages: [{ role: 'user', text: 'B private message' }],
       selected: { id: 'B-msg', text: 'B private message' },
+      typing: true,
     }
     const original = structuredClone(state)
     const deps = {
       captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      chatGenerationRef,
       setProfile: enqueue('profile'),
       setMessages: enqueue('messages'),
       setSelectedMessage: enqueue('selected'),
+      setIsTyping: enqueue('typing'),
       createWelcomeMessage: language => ({ role: 'lingua', text: 'Welcome ' + language }),
       // This older deferred-React regression supplies a successful durable
       // writer; the new dedicated block below tests real read-back failures.
@@ -549,8 +553,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     if (mode === 'denied') {
       assert.equal(queued.length, 0, 'denied capture must not schedule any state update')
     } else {
-      assert.equal(queued.length, 4, 'profile, selection and chat clear must queue protected updates')
+      assert.equal(queued.length, 5, 'profile, selection, typing and chat clear must queue protected updates')
     }
+    assert.equal(chatGenerationRef.current, mode === 'denied' ? 0 : 1)
     for (const [key, update] of queued) {
       assert.equal(typeof update, 'function', mode + ': no raw React state replacement is allowed')
       state[key] = update(state[key])
@@ -559,6 +564,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.deepEqual(state.profile, { name: 'A profile', level: 'A1' })
       assert.deepEqual(state.messages, [{ role: 'lingua', text: 'Welcome es' }])
       assert.equal(state.selected, null)
+      assert.equal(state.typing, false)
     } else {
       assert.deepEqual(state, original, mode + ': A cannot overwrite B after lease loss')
     }
