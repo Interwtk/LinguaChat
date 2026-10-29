@@ -905,8 +905,9 @@ export function AppProvider({ children }) {
       markFactUsed(model, fact)
       rotateFactUsage(model, fact)
       if (!access.valid()) return false
-      saveLearnerModel(model)
-      if (!access.valid()) return false
+      // A rejected or mismatched fact-usage write must not publish a started
+      // session as though its learner memory had been persisted.
+      if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
     }
     setDailySession(previous => access.valid() ? next : previous)
     setSessionActive(previous => access.valid() ? true : previous)
