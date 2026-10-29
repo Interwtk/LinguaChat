@@ -1044,12 +1044,28 @@ export function AppProvider({ children }) {
   }, [])
 
   const updateProfile = useCallback((updates) => {
-    // Profile edits are account-scoped, even when React applies their updater
-    // after an auth event or another tab revokes the originating lease.
+    // An interactive edit must be durable before it can appear saved. A queued
+    // React updater from A must not publish into B after an account switch.
     const access = captureLearnerAccess()
-    if (!access.valid()) return
-    setProfile(prev => access.valid() ? { ...prev, ...updates } : prev)
-  }, [])
+    if (!access.valid() || !updates || typeof updates !== 'object' || Array.isArray(updates)) return false
+    try {
+      // Merge against the latest account-scoped stored profile, not a possibly
+      // stale render. Corrupt or denied reads fail closed instead of overwriting.
+      const raw = access.getItem('lc2-profile')
+      if (!access.valid()) return false
+      const stored = raw === null ? profile : JSON.parse(raw)
+      if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return false
+      const next = { ...profile, ...stored, ...updates }
+      const serialized = JSON.stringify(next)
+      if (!access.valid() || access.setItem('lc2-profile', serialized) === false
+        || !access.valid() || access.getItem('lc2-profile') !== serialized
+        || !access.valid()) return false
+      setProfile(previous => access.valid() ? next : previous)
+      return access.valid()
+    } catch {
+      return false
+    }
+  }, [profile])
 
   const updateTutorPreferences = useCallback((updates) => {
     // Capture the account before the durable edit. React may apply queued
