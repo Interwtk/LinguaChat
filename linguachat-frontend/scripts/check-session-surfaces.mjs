@@ -722,4 +722,71 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+
+/* ---------- 9. episode XP/items cannot cross an account lease ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const signature = '  const awardEpisode = useCallback((episode, { grants = [] } = {}) => {'
+  const start = context.indexOf(signature)
+  const end = context.indexOf('\n  }, [])', start)
+  assert.ok(start >= 0 && end > start, 'episode award callback must remain inspectable')
+  const award = new Function('episode', 'options', 'deps',
+    'with (deps) { const { grants = [] } = options || {}; ' +
+    context.slice(start + signature.length, end) + ' }')
+
+  for (const mode of ['current', 'stale-flush', 'denied', 'revoked-load', 'revoked-grant', 'revoked-save']) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let loads = 0, seen = 0, saves = 0
+    const queued = []
+    const model = { seen: [] }
+    const progress = mode === 'current'
+      ? { xp: 9, learnedItems: [{ vocabId: 'existing' }] }
+      : { xp: 90, learnedItems: [{ vocabId: 'B-private' }] }
+    const original = structuredClone(progress)
+    const deps = {
+      captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      loadLearnerModel: () => {
+        loads++
+        if (mode === 'revoked-load') owner = 'B'
+        return model
+      },
+      recordItemSeen: (learner, id) => {
+        seen++
+        learner.seen.push(id)
+        if (mode === 'revoked-grant') owner = 'B'
+      },
+      saveLearnerModel: () => {
+        saves++
+        if (mode === 'revoked-save') owner = 'B'
+      },
+      setLocalProgress: updater => queued.push(updater),
+    }
+    const result = award({ xp: 5 }, {
+      grants: [{ vocabId: 'new-word' }, { vocabId: 'existing' }],
+    }, deps)
+    if (mode === 'stale-flush') owner = 'B'
+    for (const update of queued) {
+      assert.equal(typeof update, 'function', mode + ': React update must be lease-checked')
+      Object.assign(progress, update(progress))
+    }
+    if (mode === 'current') {
+      assert.equal(result, true)
+      assert.equal(loads, 1)
+      assert.equal(seen, 2)
+      assert.equal(saves, 1)
+      assert.equal(queued.length, 1)
+      assert.equal(progress.xp, 14)
+      assert.deepEqual(progress.learnedItems.map(item => item.vocabId), ['new-word', 'existing'])
+    } else {
+      assert.deepEqual(progress, original, mode + ': stale episode must not award B')
+      assert.equal(queued.length, mode === 'stale-flush' ? 1 : 0)
+      if (mode === 'denied') assert.equal(loads, 0)
+      if (mode === 'revoked-load') assert.equal(seen, 0)
+      if (mode === 'revoked-grant') assert.equal(saves, 0)
+      if (mode === 'revoked-save') assert.equal(saves, 1)
+    }
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)

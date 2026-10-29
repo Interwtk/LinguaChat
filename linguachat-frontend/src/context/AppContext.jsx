@@ -918,10 +918,22 @@ export function AppProvider({ children }) {
    * learner downloads long before any of this can happen.
    */
   const awardEpisode = useCallback((episode, { grants = [] } = {}) => {
+    // An episode can finish while its originating account is being replaced.
+    // Keep that original lease across the model read, award and queued React
+    // updater: a late completion from A must never award XP or items to B.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
     const model = loadLearnerModel()
-    for (const grant of grants) recordItemSeen(model, grant.vocabId)
+    if (!access.valid()) return false
+    for (const grant of grants) {
+      if (!access.valid()) return false
+      recordItemSeen(model, grant.vocabId)
+    }
+    if (!access.valid()) return false
     saveLearnerModel(model)
+    if (!access.valid()) return false
     setLocalProgress(previous => {
+      if (!access.valid()) return previous
       const existing = new Set((previous.learnedItems || []).map(i => i.vocabId).filter(Boolean))
       const additions = grants
         .filter(grant => !existing.has(grant.vocabId))
@@ -932,6 +944,7 @@ export function AppProvider({ children }) {
         xp: (previous.xp || 0) + (episode.xp || 0),
       }
     })
+    return access.valid()
   }, [])
 
   const logout = useCallback(async () => {
