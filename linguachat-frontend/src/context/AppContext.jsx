@@ -871,27 +871,27 @@ export function AppProvider({ children }) {
   }, [])
 
   const finishSession = useCallback(() => {
-    // Decide synchronously from the current session: reading the award flag out
-    // of a setState updater would run before React applies it, and the bonus
-    // would silently never be granted. completeSession stays idempotent, so a
-    // double tap still awards exactly once.
+    // Keep the session's original account lease through the model, durable
+    // completion and deferred React updates. A's bonus must not land on B.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
     if (dailySession) {
-      /*
-       * The learner model goes in so a session that consolidated the last
-       * missing capability records the milestone here, at the moment the
-       * evidence changed, rather than the next time a screen renders.
-       */
       const model = loadLearnerModel()
+      if (!access.valid()) return false
       const { session, awarded } = completeSession(dailySession, model)
+      if (!access.valid()) return false
       saveLearnerModel(model)
-      saveSession(session)
-      setDailySession(session)
-      if (awarded) setLocalProgress(p => ({ ...p, xp: (p.xp || 0) + SESSION_BONUS_XP }))
+      if (!access.valid()) return false
+      if (!saveSession(session, { access }) || !access.valid()) return false
+      setDailySession(previous => access.valid() ? session : previous)
+      if (awarded) setLocalProgress(previous => access.valid()
+        ? { ...previous, xp: (previous.xp || 0) + SESSION_BONUS_XP } : previous)
     }
-    setSessionActive(false)
-    setEpisodeActiveId(null)
-    setEpisodeArcVersion(v => v + 1)
-    setView('today')
+    setSessionActive(previous => access.valid() ? false : previous)
+    setEpisodeActiveId(previous => access.valid() ? null : previous)
+    setEpisodeArcVersion(previous => access.valid() ? previous + 1 : previous)
+    setView(previous => access.valid() ? 'today' : previous)
+    return access.valid()
   }, [dailySession])
 
   const exitSession = useCallback(() => {
