@@ -1340,4 +1340,131 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+
+/* ---------- practice mission start/exit must commit to the initiating account ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const missions = read('src/services/missions.js')
+  const extract = (source, signature, ending) => {
+    const start = source.indexOf(signature)
+    const end = source.indexOf(ending, start + signature.length)
+    assert.ok(start >= 0 && end > start, signature + ' must remain inspectable')
+    return source.slice(start + signature.length, end)
+  }
+  const persist = new Function('activeMission', 'options', 'deps',
+    'with (deps) { const { access = null } = options || {}; ' +
+    extract(missions, 'export function saveActiveMission(activeMission, { access = null } = {}) {',
+      '\n}\n\nexport function loadCompletedMissions') + ' }')
+  const create = new Function('mission', 'options', 'deps',
+    'with (deps) { const { access = null } = options || {}; ' +
+    extract(missions, 'export function startMission(mission, { access = null } = {}) {',
+      '\n}\n\nexport function getActiveMissionDetails') + ' }')
+  const start = new Function('mission', 'deps', 'with (deps) { ' +
+    extract(context, '  const startPracticeMission = useCallback((mission = null) => {',
+      '\n  }, [appendLinguaMessages, profile.goal, profile.level])') + ' }')
+  const abandon = new Function('deps', 'with (deps) { ' +
+    extract(context, '  const abandonMission = useCallback(() => {',
+      '\n  }, [appendLinguaMessages])') + ' }')
+
+  for (const action of ['start', 'abandon']) {
+    for (const mode of [
+      'current', 'stale-flush', 'denied', 'rejected-write', 'mismatched-read',
+      'throwing-read', 'revoked-write',
+    ]) {
+      let owner = mode === 'denied' ? 'B' : 'A'
+      let writes = 0, appends = 0, generations = 0
+      const storage = new Map()
+      if (action === 'abandon') storage.set('active-mission', '{"missionId":"old"}')
+      const queued = []
+      const state = {
+        mission: action === 'start' ? null : { missionId: 'old' },
+        feedback: 'previous', celebration: 'previous',
+        view: 'today', sheet: 'open', typing: true,
+      }
+      const original = structuredClone(state)
+      const access = {
+        valid: () => owner === 'A',
+        setItem(key, value) {
+          writes++
+          if (mode === 'rejected-write') return false
+          storage.set(key, value)
+          if (mode === 'revoked-write') owner = 'B'
+          return true
+        },
+        removeItem(key) {
+          writes++
+          if (mode === 'rejected-write') return false
+          storage.delete(key)
+          if (mode === 'revoked-write') owner = 'B'
+          return true
+        },
+        getItem(key) {
+          if (mode === 'throwing-read') throw new Error('Storage denied')
+          if (mode === 'mismatched-read') return 'other-tab-value'
+          return storage.get(key) ?? null
+        },
+      }
+      const persistFor = (value, options) => persist(value, options, {
+        ACTIVE_KEY: 'active-mission',
+        localStorage: { setItem: () => { throw new Error('unscoped mission write') },
+          removeItem: () => { throw new Error('unscoped mission clear') } },
+      })
+      const mission = { id: 'mission-A', title: 'Practice' }
+      const deps = {
+        captureLearnerAccess: () => access,
+        missionGenerationRef: { current: generations },
+        profile: { level: 'A1', goal: 'travel' },
+        getMissionForToday: () => mission,
+        createActiveMission: (selected, options) => create(selected, options, {
+          saveActiveMission: persistFor,
+        }),
+        saveActiveMission: persistFor,
+        getActiveMissionDetails: active => ({ mission, step: { id: 'step-A' }, active }),
+        createMissionIntroMessage: () => ({ id: 'intro-A' }),
+        createMissionStepMessage: () => ({ id: 'step-A' }),
+        appendLinguaMessages: (_messages, publication) => {
+          appends++
+          queued.push(['messages', () => publication.valid()])
+        },
+        setActiveMission: fn => queued.push(['mission', fn]),
+        setMissionFeedback: fn => queued.push(['feedback', fn]),
+        setMissionCelebration: fn => queued.push(['celebration', fn]),
+        setIsTyping: fn => queued.push(['typing', fn]),
+        setView: fn => queued.push(['view', fn]),
+        setMobileSheet: fn => queued.push(['sheet', fn]),
+      }
+      const result = action === 'start' ? start(null, deps) : abandon(deps)
+      if (mode === 'stale-flush') owner = 'B'
+      for (const [key, update] of queued) {
+        assert.equal(typeof update, 'function', action + '/' + mode + ': guarded React update')
+        if (key === 'messages') {
+          assert.equal(update(), mode === 'current', 'stale mission messages cannot publish')
+        } else {
+          state[key] = update(state[key])
+        }
+      }
+      assert.equal(result, mode === 'current' || mode === 'stale-flush', action + '/' + mode)
+      if (mode === 'current') {
+        assert.equal(state.mission?.missionId, action === 'start' ? 'mission-A' : undefined)
+        assert.equal(state.feedback, null)
+        assert.equal(state.celebration, null)
+        assert.equal(state.view, action === 'start' ? 'practice' : 'today')
+        assert.equal(appends, 1)
+        assert.equal(writes, 1)
+        if (action === 'abandon') assert.equal(state.typing, false)
+      } else {
+        assert.deepEqual(state, original, action + '/' + mode + ': A cannot publish to B')
+        assert.equal(appends, mode === 'stale-flush' ? 1 : 0)
+        if (mode === 'denied') assert.equal(writes, 0)
+      }
+    }
+  }
+  // A null mission or revoked lease must not be saved, even if a caller
+  // bypasses the UI and invokes the service directly.
+  const denied = { valid: () => false, setItem: () => { throw new Error('write') } }
+  assert.equal(create(null, { access: denied }, { saveActiveMission: () => true }), null)
+  assert.equal(create({ id: 'x' }, { access: denied }, { saveActiveMission: () => true }), null)
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)
