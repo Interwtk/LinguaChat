@@ -1654,4 +1654,80 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+
+/* ---------- clearing chat must persist to the originating account first ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const progress = read('src/services/localProgress.js')
+  const signature = '  const clearMessages = useCallback(() => {'
+  const start = context.indexOf(signature)
+  const end = context.indexOf('\n  }, [interfaceLanguageInfo.base])', start)
+  assert.ok(start >= 0 && end > start, 'clearMessages must remain inspectable')
+  const clear = new Function('deps', 'with (deps) { ' +
+    context.slice(start + signature.length, end) + ' }')
+  const saveStart = progress.indexOf('export function saveStoredMessages(messages, { access = null } = {}) {')
+  const saveEnd = progress.indexOf('\n}\n\nexport function createEmptyProgress', saveStart)
+  assert.ok(saveStart >= 0 && saveEnd > saveStart, 'durable chat writer must remain inspectable')
+  const save = new Function('messages', 'options', 'deps', 'with (deps) { ' +
+    'const { access = null } = options || {}; ' +
+    progress.slice(saveStart + 'export function saveStoredMessages(messages, { access = null } = {}) {'.length, saveEnd) + ' }')
+
+  for (const mode of [
+    'current', 'stale-flush', 'denied', 'rejected-write', 'mismatched-read',
+    'throwing-read', 'revoked-during-write', 'revoked-after-read',
+  ]) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let writes = 0
+    const stored = new Map([['chat', '[{"id":"old-A"}]']])
+    const queued = []
+    const state = { messages: [{ id: 'old-A' }], selected: { id: 'old-A' } }
+    const original = structuredClone(state)
+    const access = {
+      valid: () => owner === 'A',
+      setItem(key, value) {
+        writes++
+        if (mode === 'rejected-write') return false
+        stored.set(key, value)
+        if (mode === 'revoked-during-write') owner = 'B'
+        return true
+      },
+      getItem(key) {
+        if (mode === 'throwing-read') throw new Error('Storage denied')
+        if (mode === 'mismatched-read') return 'unexpected'
+        const value = stored.get(key) ?? null
+        if (mode === 'revoked-after-read') owner = 'B'
+        return value
+      },
+    }
+    const deps = {
+      captureLearnerAccess: () => access,
+      interfaceLanguageInfo: { base: 'es' },
+      createWelcomeMessage: () => ({ id: 'welcome-es' }),
+      saveStoredMessages: (messages, options) => save(messages, options, {
+        STORAGE_KEYS: { messages: 'chat' },
+        writeJSON: () => { throw new Error('Durable path bypassed') },
+      }),
+      setMessages: update => queued.push(['messages', update]),
+      setSelectedMessage: update => queued.push(['selected', update]),
+    }
+    const result = clear(deps)
+    if (mode === 'stale-flush') owner = 'B'
+    for (const [key, update] of queued) {
+      assert.equal(typeof update, 'function', mode + ': React update must be fenced')
+      state[key] = update(state[key])
+    }
+    const accepted = mode === 'current' || mode === 'stale-flush'
+    assert.equal(result, accepted, mode + ': clear result')
+    if (mode === 'current') {
+      assert.deepEqual(state, { messages: [{ id: 'welcome-es' }], selected: null })
+      assert.equal(stored.get('chat'), JSON.stringify([{ id: 'welcome-es' }]))
+    } else {
+      assert.deepEqual(state, original, mode + ': no unsaved or foreign UI reset')
+    }
+    if (mode === 'denied') assert.equal(writes, 0)
+    if (mode === 'stale-flush') assert.equal(writes, 1, 'A was saved, B UI stays untouched')
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)

@@ -163,8 +163,22 @@ export function loadStoredMessages(welcomeMessage) {
   return Array.isArray(messages) && messages.length ? messages : [welcomeMessage]
 }
 
-export function saveStoredMessages(messages) {
-  writeJSON(STORAGE_KEYS.messages, messages.slice(-100))
+export function saveStoredMessages(messages, { access = null } = {}) {
+  const retained = messages.slice(-100)
+  if (access) {
+    // Clearing chat is a user-visible durable action. A rejected or stale
+    // account-scoped write must not look successful until a refresh.
+    try {
+      const serialized = JSON.stringify(retained)
+      if (!access.valid() || access.setItem(STORAGE_KEYS.messages, serialized) === false
+        || !access.valid() || access.getItem(STORAGE_KEYS.messages) !== serialized) return false
+      return access.valid()
+    } catch {
+      return false
+    }
+  }
+  // Keep the existing best-effort path for passive state persistence.
+  writeJSON(STORAGE_KEYS.messages, retained)
 }
 
 export function createEmptyProgress() {

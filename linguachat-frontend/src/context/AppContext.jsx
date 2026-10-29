@@ -1513,10 +1513,14 @@ export function AppProvider({ children }) {
 
   const clearMessages = useCallback(() => {
     const access = captureLearnerAccess()
-    if (!access.valid()) return
+    if (!access.valid()) return false
     const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
+    // Persist with the originating account lease BEFORE publishing an empty
+    // chat. Otherwise denied storage resurrects the old conversation on reload.
+    if (!saveStoredMessages([welcome], { access }) || !access.valid()) return false
     setMessages(prev => access.valid() ? [welcome] : prev)
     setSelectedMessage(prev => access.valid() ? null : prev)
+    return access.valid()
   }, [interfaceLanguageInfo.base])
 
   const resetLocalProgress = useCallback(() => {
