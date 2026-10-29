@@ -315,7 +315,21 @@ export function completeMission(activeMission, { access = null } = {}) {
   return completed
 }
 
-export function clearMissionStorage() {
+export function clearMissionStorage({ access = null } = {}) {
+  if (access) {
+    // Reset both mission stores only while the originating account still
+    // owns the lease, and verify each removal before reporting success.
+    try {
+      if (!access.valid()) return false
+      for (const key of [ACTIVE_KEY, COMPLETED_KEY]) {
+        if (!access.valid() || access.removeItem(key) === false
+          || !access.valid() || access.getItem(key) !== null) return false
+      }
+      return access.valid()
+    } catch {
+      return false
+    }
+  }
   try {
     localStorage.removeItem(ACTIVE_KEY)
     localStorage.removeItem(COMPLETED_KEY)
