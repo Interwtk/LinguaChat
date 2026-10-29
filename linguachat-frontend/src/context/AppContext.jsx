@@ -735,27 +735,41 @@ export function AppProvider({ children }) {
      * checked against the level registry and the curriculum, and a refusal
      * leaves the learner where they were.
      */
+    // Capture the initiating learner: a delayed episode navigation cannot land on B.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return { ok: false, reason: 'stale_account' }
     const request = episodeRequest({ episodeId })
+    if (!access.valid()) return { ok: false, reason: 'stale_account' }
     if (!request.ok) {
       if (import.meta.env?.DEV) console.warn('[startEpisode] refused', episodeId, request.reason)
       return request
     }
-    setEpisodeRunOptions({
+    const runOptions = {
       source: options.source || 'practice',
       wantsOtherBranch: Boolean(options.wantsOtherBranch),
-    })
-    setEpisodeActiveId(request.episodeId)
-    setView('practice')
-    setMobileSheet(null)
-    return request
+    }
+    // React can apply functional updaters after the click's account lease expires.
+    setEpisodeRunOptions(previous => access.valid() ? runOptions : previous)
+    setEpisodeActiveId(previous => access.valid() ? request.episodeId : previous)
+    setView(previous => access.valid() ? 'practice' : previous)
+    setMobileSheet(previous => access.valid() ? null : previous)
+    return access.valid() ? request : { ok: false, reason: 'stale_account' }
   }, [])
 
-  const exitEpisode = useCallback(() => setEpisodeActiveId(null), [])
+  const exitEpisode = useCallback(() => {
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    setEpisodeActiveId(previous => access.valid() ? null : previous)
+    return access.valid()
+  }, [])
 
   const finishEpisode = useCallback(() => {
-    setEpisodeActiveId(null)
-    setEpisodeArcVersion(v => v + 1) // let Home/Practice re-read learner state
-    setView('today')
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    setEpisodeActiveId(previous => access.valid() ? null : previous)
+    setEpisodeArcVersion(previous => access.valid() ? previous + 1 : previous)
+    setView(previous => access.valid() ? 'today' : previous)
+    return access.valid()
   }, [])
 
   // ── adaptive daily session ──
