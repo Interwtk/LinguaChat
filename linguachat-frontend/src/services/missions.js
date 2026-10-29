@@ -49,7 +49,27 @@ export function loadActiveMission() {
   return readJSON(ACTIVE_KEY, null)
 }
 
-export function saveActiveMission(activeMission) {
+export function saveActiveMission(activeMission, { access = null } = {}) {
+  if (access) {
+    // Interactive mission actions must retain the account lease that began
+    // the action. A revoked tab, denied write or mismatched read-back must
+    // never be presented as saved to the learner.
+    try {
+      if (!access.valid()) return false
+      if (!activeMission) {
+        if (access.removeItem(ACTIVE_KEY) === false
+          || !access.valid() || access.getItem(ACTIVE_KEY) !== null) return false
+      } else {
+        const serialized = JSON.stringify(activeMission)
+        if (access.setItem(ACTIVE_KEY, serialized) === false
+          || !access.valid() || access.getItem(ACTIVE_KEY) !== serialized) return false
+      }
+      return access.valid()
+    } catch {
+      return false
+    }
+  }
+  // Preserve the best-effort legacy path for non-interactive callers.
   if (!activeMission) {
     try { localStorage.removeItem(ACTIVE_KEY) } catch {}
     return
@@ -81,7 +101,8 @@ export function getMissionForToday(level = 'A2', preferredType = null) {
   return easy || candidates[0] || PRACTICE_MISSIONS[0]
 }
 
-export function startMission(mission) {
+export function startMission(mission, { access = null } = {}) {
+  if (!mission || (access && !access.valid())) return null
   const active = {
     missionId: mission.id,
     currentStepIndex: 0,
@@ -90,7 +111,7 @@ export function startMission(mission) {
     startedAt: Date.now(),
     completedAt: null,
   }
-  saveActiveMission(active)
+  if (saveActiveMission(active, { access }) === false) return null
   return active
 }
 
