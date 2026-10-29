@@ -973,4 +973,91 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+
+/* ---------- 12. episode navigation belongs to the account that clicked ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const extract = (signature) => {
+    const start = context.indexOf(signature)
+    const end = context.indexOf('\n  }, [])', start + signature.length)
+    assert.ok(start >= 0 && end > start, signature + ' must remain inspectable')
+    // import.meta is valid in the source module, but not in a Function constructor.
+    return context.slice(start + signature.length, end).replace('import.meta.env?.DEV', 'false')
+  }
+  const startEpisode = new Function('episodeId', 'options', 'deps',
+    'with (deps) { ' + extract('  const startEpisode = useCallback((episodeId, options = {}) => {') + ' }')
+  const exitEpisode = new Function('deps',
+    'with (deps) { ' + extract('  const exitEpisode = useCallback(() => {') + ' }')
+  const finishEpisode = new Function('deps',
+    'with (deps) { ' + extract('  const finishEpisode = useCallback(() => {') + ' }')
+
+  for (const mode of ['current', 'stale-flush', 'denied', 'revoked-request', 'invalid']) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let requests = 0
+    const queued = []
+    const state = { options: { source: 'previous' }, episode: null, view: 'today', sheet: 'open' }
+    const original = structuredClone(state)
+    const deps = {
+      captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      episodeRequest: ({ episodeId }) => {
+        requests++
+        if (mode === 'revoked-request') owner = 'B'
+        return mode === 'invalid' ? { ok: false, reason: 'invalid_episode' } : { ok: true, episodeId }
+      },
+      setEpisodeRunOptions: update => queued.push(['options', update]),
+      setEpisodeActiveId: update => queued.push(['episode', update]),
+      setView: update => queued.push(['view', update]),
+      setMobileSheet: update => queued.push(['sheet', update]),
+    }
+    const result = startEpisode('episode-A', { source: 'home', wantsOtherBranch: true }, deps)
+    if (mode === 'stale-flush') owner = 'B'
+    for (const [key, update] of queued) {
+      assert.equal(typeof update, 'function', mode + ': React updater must check the captured lease')
+      state[key] = update(state[key])
+    }
+    if (mode === 'current') {
+      assert.equal(result.ok, true)
+      assert.deepEqual(state, { options: { source: 'home', wantsOtherBranch: true }, episode: 'episode-A', view: 'practice', sheet: null })
+      assert.equal(queued.length, 4)
+    } else {
+      assert.equal(result.ok, mode === 'stale-flush')
+      assert.deepEqual(state, original, mode + ': A must not navigate B')
+      assert.equal(queued.length, mode === 'stale-flush' ? 4 : 0)
+      if (mode === 'denied') assert.equal(requests, 0)
+      if (mode === 'invalid') assert.equal(result.reason, 'invalid_episode')
+    }
+  }
+
+  for (const action of ['exit', 'finish']) {
+    for (const mode of ['current', 'stale-flush', 'denied']) {
+      let owner = mode === 'denied' ? 'B' : 'A'
+      const queued = []
+      const state = { episode: 'episode-A', arc: 7, view: 'practice' }
+      const original = structuredClone(state)
+      const deps = {
+        captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+        setEpisodeActiveId: update => queued.push(['episode', update]),
+        setEpisodeArcVersion: update => queued.push(['arc', update]),
+        setView: update => queued.push(['view', update]),
+      }
+      const result = action === 'exit' ? exitEpisode(deps) : finishEpisode(deps)
+      if (mode === 'stale-flush') owner = 'B'
+      for (const [key, update] of queued) {
+        assert.equal(typeof update, 'function')
+        state[key] = update(state[key])
+      }
+      if (mode === 'current') {
+        assert.equal(result, true)
+        assert.equal(state.episode, null)
+        assert.equal(state.arc, action === 'finish' ? 8 : 7)
+        assert.equal(state.view, action === 'finish' ? 'today' : 'practice')
+      } else {
+        assert.equal(result, mode === 'stale-flush')
+        assert.deepEqual(state, original, action + ': stale A cannot mutate B')
+      }
+    }
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)
