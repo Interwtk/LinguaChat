@@ -1377,7 +1377,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const exit = new Function('deps', 'with (deps) { ' +
     extract('  const exitSession = useCallback(() => {', '\n  }, [])') + ' }')
 
-  for (const mode of ['current', 'denied', 'rejected-save', 'revoked-before-save', 'revoked-after-save', 'revoked-during-model', 'stale-flush']) {
+  for (const mode of ['current', 'denied', 'rejected-save', 'revoked-before-save', 'revoked-after-save', 'revoked-during-model', 'rejected-model-save', 'revoked-after-model-save', 'stale-flush']) {
     let owner = mode === 'denied' ? 'B' : 'A'
     let saved = 0, facts = 0, modelSaves = 0
     const queued = []
@@ -1407,7 +1407,12 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       },
       markFactUsed: () => { facts++ },
       rotateFactUsage: () => { facts++ },
-      saveLearnerModel: () => { modelSaves++ },
+      saveLearnerModel: (_model, options) => {
+        assert.equal(options?.verified, true, 'daily fact usage requires verified model persistence')
+        modelSaves++
+        if (mode === 'revoked-after-model-save') owner = 'B'
+        return mode !== 'rejected-model-save'
+      },
       setDailySession: update => queued.push(['session', update]),
       setSessionActive: update => queued.push(['active', update]),
       setView: update => queued.push(['view', update]),
