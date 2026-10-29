@@ -162,6 +162,9 @@ const createWelcomeMessage = (language) => ({
 
 export function AppProvider({ children }) {
   const authCallbackErrorRef = useRef(authCallbackError(window.location.href))
+  // Passive chat/progress effects must never acquire another account's lease
+  // after React flushes state from a previous session.
+  const passiveStorageAccessRef = useRef(captureLearnerAccess())
   // Auth/setup flow: null = main app, 'entry'/'login'/'signup'/'forgot'/'placement'/'tutor-personality'/'learning-prefs' = flow screens
   const [authStep, setAuthStep] = useState('entry')
   const preferenceImportBlockedRef = useRef(false)
@@ -266,6 +269,10 @@ export function AppProvider({ children }) {
       getAuthService().signOut().catch(() => {})
       return
     }
+    // First sign-in may claim guest data without a reload. Rebind only then;
+    // account switches/revoked tabs must retain the old, invalid lease.
+    if (isolation.claimedGuestData && !isolation.reloadRequired)
+      passiveStorageAccessRef.current = captureLearnerAccess()
     accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
@@ -450,11 +457,11 @@ export function AppProvider({ children }) {
   // over a newer durable profile after a lease change.
 
   useEffect(() => {
-    saveStoredMessages(messages)
+    saveStoredMessages(messages, { access: passiveStorageAccessRef.current })
   }, [messages])
 
   useEffect(() => {
-    saveLocalProgress(localProgress)
+    saveLocalProgress(localProgress, { access: passiveStorageAccessRef.current })
   }, [localProgress])
 
   // Mission starts, advances, completions and resets already persist under
