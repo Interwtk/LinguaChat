@@ -237,7 +237,8 @@ export function evaluateMissionStep(step, value) {
   }
 }
 
-export function advanceMission(activeMission, step, answerValue, evaluation) {
+export function advanceMission(activeMission, step, answerValue, evaluation, { access = null } = {}) {
+  if (access && !access.valid()) return null
   const nextAnswers = [
     ...(activeMission.answers || []),
     {
@@ -257,7 +258,8 @@ export function advanceMission(activeMission, step, answerValue, evaluation) {
     currentStepIndex: nextIndex,
     earnedXp: (activeMission.earnedXp || 0) + earnedThisStep,
   }
-  saveActiveMission(nextActive)
+  // A rejected, revoked or unverified durable write cannot earn XP in React.
+  if (saveActiveMission(nextActive, { access }) === false || (access && !access.valid())) return null
   return { activeMission: nextActive, earnedThisStep }
 }
 

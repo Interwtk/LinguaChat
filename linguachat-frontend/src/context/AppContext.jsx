@@ -1214,8 +1214,17 @@ export function AppProvider({ children }) {
     }
 
     if (!publication.valid()) return
-    const advanced = advanceMission(activeMission, details.step, value, evaluation)
-    if (!publication.valid()) return
+    const advanced = advanceMission(activeMission, details.step, value, evaluation, { access })
+    if (!advanced || !publication.valid()) {
+      if (publication.valid()) {
+        setIsTyping(previous => publication.valid() ? false : previous)
+        setMissionFeedback(previous => publication.valid() ? {
+          passed: false,
+          text: 'No se pudo guardar el avance. Intenta de nuevo.',
+        } : previous)
+      }
+      return
+    }
     setLocalProgress(previous => publication.valid() ? recordMissionProgress(previous, {
       mission: details.mission,
       step: details.step,

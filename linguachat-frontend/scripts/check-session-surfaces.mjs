@@ -412,7 +412,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       evaluateMissionStep: () => ({ passed: true, feedback: 'local' }),
       advanceMission: () => {
         advances++
-        return { activeMission: { missionId: 'A-mission', currentStepIndex: 1 }, earnedThisStep: 4 }
+        return mode === 'failed-save' ? null
+          : { activeMission: { missionId: 'A-mission', currentStepIndex: 1 }, earnedThisStep: 4 }
       },
       completeMission: () => {
         completions++
@@ -447,6 +448,14 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     if (['inflight', 'cancelled', 'stale-flush', 'stale-timer'].includes(mode)) {
       assert.deepEqual(state, original, mode + ': old mission must not modify new account/mission')
       if (mode === 'inflight' || mode === 'cancelled') assert.equal(advances, 0, 'stale HTTP cannot advance a mission')
+    } else if (mode === 'failed-save') {
+      assert.equal(state.messages.length, 2, 'failed save leaves the learner answer visible')
+      assert.equal(state.typing, false, 'failed save clears typing')
+      assert.equal(state.feedback.text, 'No se pudo guardar el avance. Intenta de nuevo.')
+      assert.deepEqual(state.progress, original.progress, 'failed save grants no XP')
+      assert.deepEqual(state.active, original.active, 'failed save does not advance')
+      assert.equal(completions, 0)
+      assert.equal(timers.length, 0)
     } else if (mode === 'retry') {
       assert.equal(state.messages.length, 3, 'failed answer receives feedback')
       assert.equal(advances, 0, 'failed answer does not advance')
@@ -467,7 +476,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
   }
 
-  for (const mode of ['current', 'retry', 'complete', 'inflight', 'cancelled', 'stale-flush', 'stale-timer']) {
+  for (const mode of ['current', 'retry', 'complete', 'failed-save', 'inflight', 'cancelled', 'stale-flush', 'stale-timer']) {
     await checkMissionLease(mode)
   }
   ok()
@@ -1464,6 +1473,65 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const denied = { valid: () => false, setItem: () => { throw new Error('write') } }
   assert.equal(create(null, { access: denied }, { saveActiveMission: () => true }), null)
   assert.equal(create({ id: 'x' }, { access: denied }, { saveActiveMission: () => true }), null)
+  ok()
+}
+
+
+/* ---------- practice mission advancement must be durably saved under its original lease ---------- */
+{
+  const missions = read('src/services/missions.js')
+  const extract = (signature, ending) => {
+    const start = missions.indexOf(signature)
+    const end = missions.indexOf(ending, start + signature.length)
+    assert.ok(start >= 0 && end > start, signature + ' must remain inspectable')
+    return missions.slice(start + signature.length, end)
+  }
+  const persist = new Function('activeMission', 'options', 'deps',
+    'with (deps) { const { access = null } = options || {}; ' +
+    extract('export function saveActiveMission(activeMission, { access = null } = {}) {',
+      '\n}\n\nexport function loadCompletedMissions') + ' }')
+  const advance = new Function('activeMission', 'step', 'answerValue', 'evaluation', 'options', 'deps',
+    'with (deps) { const { access = null } = options || {}; ' +
+    extract('export function advanceMission(activeMission, step, answerValue, evaluation, { access = null } = {}) {',
+      '\n}\n\nexport function completeMission') + ' }')
+  for (const mode of ['current', 'denied', 'rejected-write', 'mismatched-read', 'throwing-read', 'revoked-write']) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let writes = 0
+    const storage = new Map()
+    const access = {
+      valid: () => owner === 'A',
+      setItem(key, value) {
+        writes++
+        if (mode === 'rejected-write') return false
+        storage.set(key, value)
+        if (mode === 'revoked-write') owner = 'B'
+        return true
+      },
+      getItem(key) {
+        if (mode === 'throwing-read') throw new Error('Storage denied')
+        if (mode === 'mismatched-read') return 'another-tab-value'
+        return storage.get(key) ?? null
+      },
+    }
+    const save = (value, options) => persist(value, options, {
+      ACTIVE_KEY: 'active-mission',
+      localStorage: { setItem: () => { throw new Error('unscoped write') } },
+    })
+    const result = advance(
+      { missionId: 'A', currentStepIndex: 0, earnedXp: 0, answers: [] },
+      { id: 's1', type: 'write_sentence', xp: 4 }, 'hello', { passed: true },
+      { access }, { saveActiveMission: save },
+    )
+    if (mode === 'current') {
+      assert.equal(result?.activeMission.currentStepIndex, 1)
+      assert.equal(result.earnedThisStep, 4)
+      assert.equal(JSON.parse(storage.get('active-mission')).earnedXp, 4)
+      assert.equal(writes, 1)
+    } else {
+      assert.equal(result, null, mode + ': unverified write cannot advance')
+      if (mode === 'denied') assert.equal(writes, 0)
+    }
+  }
   ok()
 }
 
