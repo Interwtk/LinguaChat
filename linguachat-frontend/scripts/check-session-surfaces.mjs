@@ -25,6 +25,50 @@ let n = 0
 const ok = () => { n++ }
 const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, type, format, source })
 
+/* ---------- passive chat/progress writes must retain their mount-time lease ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  assert.match(context, /const passiveStorageAccessRef = useRef\(captureLearnerAccess\(\)\)/,
+    'passive persistence must capture an account lease at mount, not after React flush')
+  assert.match(context, /if \(isolation\.claimedGuestData && !isolation\.reloadRequired\)\s*passiveStorageAccessRef\.current = captureLearnerAccess\(\)/,
+    'a first guest claim must rebind passive persistence to the new authenticated lease')
+  const messageEffect = context.match(/useEffect\(\(\) => \{\s*(saveStoredMessages\(messages, \{ access: passiveStorageAccessRef\.current \}\))\s*\}, \[messages\]\)/)
+  const progressEffect = context.match(/useEffect\(\(\) => \{\s*(saveLocalProgress\(localProgress, \{ access: passiveStorageAccessRef\.current \}\))\s*\}, \[localProgress\]\)/)
+  assert.ok(messageEffect && progressEffect,
+    'passive writers must use their captured lease, never a fresh lease or unscoped storage')
+  const runMessages = new Function('deps', 'with (deps) { ' + messageEffect[1] + ' }')
+  const runProgress = new Function('deps', 'with (deps) { ' + progressEffect[1] + ' }')
+  for (const mode of ['same-account', 'switched-account', 'revoked-tab', 'claimed-guest']) {
+    let active = mode === 'same-account' || mode === 'claimed-guest'
+    const captured = { valid: () => active }
+    const passiveStorageAccessRef = { current: captured }
+    const messages = [{ id: 'old-A' }]
+    const localProgress = { xp: 42 }
+    let writes = 0
+    const deps = {
+      passiveStorageAccessRef, messages, localProgress,
+      saveStoredMessages: (_value, { access }) => {
+        assert.equal(access, captured, mode + ': chat uses the original lease')
+        if (!access.valid()) return false
+        writes++
+        return true
+      },
+      saveLocalProgress: (_value, { access }) => {
+        assert.equal(access, captured, mode + ': progress uses the original lease')
+        if (!access.valid()) return false
+        writes++
+        return true
+      },
+    }
+    // These effects run after React commits, potentially after A lost its lease.
+    if (mode === 'switched-account' || mode === 'revoked-tab') active = false
+    runMessages(deps)
+    runProgress(deps)
+    assert.equal(writes, active ? 2 : 0, mode + ': stale effects must never persist into B')
+  }
+  ok()
+}
+
 /* ---------- Theme changes must persist under the initiating account lease ---------- */
 {
   const context = read('src/context/AppContext.jsx')
