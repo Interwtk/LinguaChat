@@ -561,7 +561,18 @@ export function loadSession(arc) {
   } catch { return null }
 }
 
-export function saveSession(session) {
+export function saveSession(session, { access = null } = {}) {
+  if (access) {
+    // Completion must persist through the account lease captured before the
+    // learner model was read. A late callback cannot reacquire B's storage.
+    try {
+      const serialized = JSON.stringify(session)
+      if (!access.valid() || access.setItem(SESSION_KEY, serialized) === false
+        || !access.valid() || access.getItem(SESSION_KEY) !== serialized
+        || !access.valid()) return null
+      return session
+    } catch { return null }
+  }
   try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)) } catch { /* storage full/blocked */ }
   return session
 }
