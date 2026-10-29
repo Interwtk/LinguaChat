@@ -426,6 +426,9 @@ export function AppProvider({ children }) {
   const restoredMissionRef = useRef(false)
   // A delayed mission reply must not revive an abandoned/replaced mission.
   const missionGenerationRef = useRef(0)
+  // Clearing or resetting a conversation invalidates replies from earlier HTTP turns.
+  // The account lease alone cannot distinguish two conversations of one account.
+  const chatGenerationRef = useRef(0)
 
   useEffect(() => {
     const root = document.documentElement
@@ -1368,7 +1371,9 @@ export function AppProvider({ children }) {
   const sendMessage = useCallback(async (text) => {
     // Keep the originating account lease through the request AND React's deferred flush.
     const chatAccess = captureLearnerAccess()
-    if (!chatAccess.valid() || !text.trim()) return
+    const chatGeneration = chatGenerationRef.current
+    const chatStillCurrent = () => chatAccess.valid() && chatGenerationRef.current === chatGeneration
+    if (!chatStillCurrent() || !text.trim()) return
 
     const missionDetails = getActiveMissionDetails(activeMission)
     if (missionDetails?.step) {
@@ -1382,9 +1387,9 @@ export function AppProvider({ children }) {
       text: text.trim(),
       ts: Date.now(),
     }
-    setMessages(prev => chatAccess.valid() ? [...prev, userMsg] : prev)
-    setIsTyping(prev => chatAccess.valid() ? true : prev)
-    setSelectedMessage(prev => chatAccess.valid() ? null : prev)
+    setMessages(prev => chatStillCurrent() ? [...prev, userMsg] : prev)
+    setIsTyping(prev => chatStillCurrent() ? true : prev)
+    setSelectedMessage(prev => chatStillCurrent() ? null : prev)
 
     try {
       const history = messages.slice(-8).map(m => ({
@@ -1401,8 +1406,7 @@ export function AppProvider({ children }) {
        * before their first message it does not, and after it, it does.
        */
       const learnerHasSpoken = messages.some(m => m.role === 'user')
-      const requestAccess = chatAccess
-      const response = await sendChatMessage({
+        const response = await sendChatMessage({
         message: text.trim(),
         level: profile.level,
         mode: profile.style,
@@ -1438,13 +1442,13 @@ export function AppProvider({ children }) {
          */
         topicContext: learnerHasSpoken ? null : providerTopicContext(conversationTopic),
       })
-      if (!requestAccess.valid()) return
+      if (!chatStillCurrent()) return
 
-      setConnectionNotice(prev => chatAccess.valid() ? response.connectionMessage : prev)
-      setMemoryNotice(prev => chatAccess.valid() ? (response.correction
+      setConnectionNotice(prev => chatStillCurrent() ? response.connectionMessage : prev)
+      setMemoryNotice(prev => chatStillCurrent() ? (response.correction
         ? 'Your recent corrections are saved on this device.'
         : "I'll remember what we practiced today.") : prev)
-      setLocalProgress(previous => chatAccess.valid() ? recordPractice(previous, {
+      setLocalProgress(previous => chatStillCurrent() ? recordPractice(previous, {
         userMessage: text.trim(),
         response,
       }) : previous)
@@ -1452,8 +1456,8 @@ export function AppProvider({ children }) {
        * Cooldown, not history: one id, so the next conversation prefers a
        * different one. No message, no reply and no prompt is recorded anywhere.
        */
-      if (chatAccess.valid() && !learnerHasSpoken && conversationTopic?.interestId) {
-        recordTopicUse(conversationTopic.interestId, { access: chatAccess })
+      if (chatStillCurrent() && !learnerHasSpoken && conversationTopic?.interestId) {
+        recordTopicUse(conversationTopic.interestId, { access: { ...chatAccess, valid: chatStillCurrent } })
       }
 
       const linguaMsg = {
@@ -1472,12 +1476,12 @@ export function AppProvider({ children }) {
         },
         ts: Date.now(),
       }
-      setMessages(prev => chatAccess.valid() ? [...prev, linguaMsg] : prev)
-      setSelectedMessage(prev => chatAccess.valid() ? linguaMsg : prev)
+      setMessages(prev => chatStillCurrent() ? [...prev, linguaMsg] : prev)
+      setSelectedMessage(prev => chatStillCurrent() ? linguaMsg : prev)
     } catch {
-      if (!chatAccess.valid()) return
-      setConnectionNotice(prev => chatAccess.valid() ? 'Lingua had trouble connecting. You can keep exploring the demo.' : prev)
-      setMessages(prev => chatAccess.valid() ? [...prev, {
+      if (!chatStillCurrent()) return
+      setConnectionNotice(prev => chatStillCurrent() ? 'Lingua had trouble connecting. You can keep exploring the demo.' : prev)
+      setMessages(prev => chatStillCurrent() ? [...prev, {
         id: `e${Date.now()}`,
         role: 'lingua',
         text: 'You can keep practicing with the demo while the connection recovers.',
@@ -1485,7 +1489,7 @@ export function AppProvider({ children }) {
         ts: Date.now(),
       }] : prev)
     } finally {
-      setIsTyping(prev => chatAccess.valid() ? false : prev)
+      setIsTyping(prev => chatStillCurrent() ? false : prev)
     }
   }, [activeCompanion, activeMission, conversationTopic, interfaceLanguageInfo, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage, tutorPreferences])
 
@@ -1518,6 +1522,8 @@ export function AppProvider({ children }) {
     // Persist with the originating account lease BEFORE publishing an empty
     // chat. Otherwise denied storage resurrects the old conversation on reload.
     if (!saveStoredMessages([welcome], { access }) || !access.valid()) return false
+    ++chatGenerationRef.current
+    setIsTyping(prev => access.valid() ? false : prev)
     setMessages(prev => access.valid() ? [welcome] : prev)
     setSelectedMessage(prev => access.valid() ? null : prev)
     return access.valid()
@@ -1535,12 +1541,14 @@ export function AppProvider({ children }) {
     const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
     const emptyProgress = createEmptyProgress()
     ++missionGenerationRef.current
+    ++chatGenerationRef.current
     clearMissionStorage()
     if (!access.valid()) return
     setSessionId(prev => access.valid() ? nextSessionId : prev)
     setMessages(prev => access.valid() ? [welcome] : prev)
     setLocalProgress(prev => access.valid() ? emptyProgress : prev)
     setSelectedMessage(prev => access.valid() ? null : prev)
+    setIsTyping(prev => access.valid() ? false : prev)
     setConnectionNotice(prev => access.valid() ? null : prev)
     setMemoryNotice(prev => access.valid() ? null : prev)
     setActiveMission(prev => access.valid() ? null : prev)
