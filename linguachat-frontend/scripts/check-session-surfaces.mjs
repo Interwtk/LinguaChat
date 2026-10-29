@@ -531,6 +531,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       setMessages: enqueue('messages'),
       setSelectedMessage: enqueue('selected'),
       createWelcomeMessage: language => ({ role: 'lingua', text: 'Welcome ' + language }),
+      // This older deferred-React regression supplies a successful durable
+      // writer; the new dedicated block below tests real read-back failures.
+      saveStoredMessages: (_messages, { access }) => access.valid(),
       interfaceLanguageInfo: { base: 'es' },
     }
     updateProfile({ name: 'A profile', level: 'A1' }, deps)
