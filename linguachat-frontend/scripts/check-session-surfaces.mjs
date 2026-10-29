@@ -845,6 +845,88 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
 }
 
 
+/* ---------- 8b. profile edits must be durably account-scoped ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const signature = '  const updateProfile = useCallback((updates) => {'
+  const start = context.indexOf(signature)
+  const end = context.indexOf('\n  }, [profile])', start)
+  assert.ok(start >= 0 && end > start, 'profile edit must remain inspectable')
+  const updateProfile = new Function('updates', 'deps',
+    'with (deps) { ' + context.slice(start + signature.length, end) + ' }')
+
+  for (const mode of [
+    'current', 'stale-flush', 'denied', 'rejected-write', 'mismatch-readback',
+    'revoked-read', 'revoked-write', 'throws-read', 'corrupt-profile',
+  ]) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let reads = 0, writes = 0
+    let stored = mode === 'corrupt-profile'
+      ? '{invalid'
+      : JSON.stringify({ name: 'Old', level: 'A1', dailyGoal: 20 })
+    const queued = []
+    const access = {
+      valid: () => owner === 'A',
+      getItem: key => {
+        assert.equal(key, 'lc2-profile')
+        reads++
+        if (mode === 'throws-read') throw new Error('Storage denied')
+        if (mode === 'revoked-read') owner = 'B'
+        if (mode === 'mismatch-readback' && reads > 1) return 'another-tab-write'
+        return stored
+      },
+      setItem: (key, value) => {
+        assert.equal(key, 'lc2-profile')
+        writes++
+        if (mode === 'rejected-write') return false
+        stored = value
+        if (mode === 'revoked-write') owner = 'B'
+        return true
+      },
+    }
+    const deps = {
+      captureLearnerAccess: () => access,
+      profile: { name: 'Stale', level: 'B1', dailyGoal: 10 },
+      setProfile: updater => queued.push(updater),
+    }
+    const result = updateProfile({ name: 'New' }, deps)
+    if (mode === 'stale-flush') owner = 'B'
+    const original = mode === 'stale-flush'
+      ? { name: 'B-private', level: 'C1' }
+      : { name: 'Old', level: 'A1', dailyGoal: 20 }
+    let state = { ...original }
+    for (const updater of queued) {
+      assert.equal(typeof updater, 'function', mode + ': React update must check lease')
+      state = updater(state)
+    }
+    if (mode === 'current') {
+      assert.equal(result, true)
+      assert.equal(writes, 1)
+      assert.equal(queued.length, 1)
+      assert.deepEqual(state, { name: 'New', level: 'A1', dailyGoal: 20 })
+      assert.deepEqual(JSON.parse(stored), state, 'new name must preserve latest stored profile')
+    } else if (mode === 'stale-flush') {
+      assert.equal(result, true)
+      assert.equal(queued.length, 1)
+      assert.deepEqual(state, original, 'A edit cannot repaint B')
+    } else {
+      assert.equal(result, false, mode)
+      assert.equal(queued.length, 0, mode + ': no UI success without verified save')
+      assert.deepEqual(state, original, mode)
+      if (mode === 'denied' || mode === 'revoked-read' || mode === 'throws-read'
+        || mode === 'corrupt-profile') assert.equal(writes, 0, mode)
+    }
+  }
+  const access = { valid: () => true, getItem: () => { throw new Error('unexpected read') } }
+  assert.equal(updateProfile(null, {
+    captureLearnerAccess: () => access, profile: {}, setProfile: () => {},
+  }), false, 'invalid profile update must not read or write')
+  const identity = read('src/components/identity/LanguageIdentity.jsx')
+  assert.match(identity, /updateProfile\(\{ name: nameInput\.trim\(\) \}\) === true/,
+    'name editor must only close after verified persistence')
+  ok()
+}
+
 /* ---------- 9. episode XP/items cannot cross an account lease ---------- */
 {
   const context = read('src/context/AppContext.jsx')
