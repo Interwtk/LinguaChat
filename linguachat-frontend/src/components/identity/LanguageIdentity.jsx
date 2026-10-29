@@ -190,8 +190,10 @@ export function LanguageIdentity() {
   )
 
   function saveName() {
-    if (nameInput.trim()) updateProfile({ name: nameInput.trim() })
-    setEditingName(false)
+    // Keep the editor open when the account-scoped write could not be verified.
+    if (nameInput.trim() && updateProfile({ name: nameInput.trim() }) === true) {
+      setEditingName(false)
+    }
   }
 
   function saveMood(id) {
