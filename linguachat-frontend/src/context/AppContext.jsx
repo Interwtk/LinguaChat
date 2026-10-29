@@ -1534,16 +1534,18 @@ export function AppProvider({ children }) {
     // account that requested the reset. Never clear B or publish A's reset to B.
     const access = captureLearnerAccess()
     if (!access.valid() || !window.confirm(t('resetProgressConfirm')) || !access.valid()) return
-    clearStoredProgress()
-    if (!access.valid()) return
-    const nextSessionId = createSessionId()
-    if (!access.valid()) return
     const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
     const emptyProgress = createEmptyProgress()
+    // Destructive reset is not a best-effort UI action: every storage step
+    // must be verified for the same account before React can display success.
+    if (clearStoredProgress({ access }) === false || !access.valid()) return
+    if (clearMissionStorage({ access }) === false || !access.valid()) return
+    const nextSessionId = createSessionId({ access })
+    if (!nextSessionId || !access.valid()) return
+    if (saveStoredMessages([welcome], { access }) === false || !access.valid()) return
+    if (saveLocalProgress(emptyProgress, { access }) === false || !access.valid()) return
     ++missionGenerationRef.current
     ++chatGenerationRef.current
-    clearMissionStorage()
-    if (!access.valid()) return
     setSessionId(prev => access.valid() ? nextSessionId : prev)
     setMessages(prev => access.valid() ? [welcome] : prev)
     setLocalProgress(prev => access.valid() ? emptyProgress : prev)
