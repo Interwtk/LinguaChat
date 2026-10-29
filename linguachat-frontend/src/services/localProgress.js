@@ -144,8 +144,17 @@ function updateSessions(sessions, userMessage, response, topics, confidence) {
   return [updated, ...sessions.filter(session => session.id !== today)].slice(0, 30)
 }
 
-export function createSessionId() {
+export function createSessionId({ access = null } = {}) {
   const id = makeId()
+  if (access) {
+    try {
+      if (!access.valid() || access.setItem(STORAGE_KEYS.sessionId, id) === false
+        || !access.valid() || access.getItem(STORAGE_KEYS.sessionId) !== id) return null
+      return access.valid() ? id : null
+    } catch {
+      return null
+    }
+  }
   try { localStorage.setItem(STORAGE_KEYS.sessionId, id) } catch {}
   return id
 }
@@ -190,7 +199,17 @@ export function loadLocalProgress() {
   return saved ? { ...createEmptyProgress(), ...saved } : createEmptyProgress()
 }
 
-export function saveLocalProgress(progress) {
+export function saveLocalProgress(progress, { access = null } = {}) {
+  if (access) {
+    try {
+      const serialized = JSON.stringify(progress)
+      if (!access.valid() || access.setItem(STORAGE_KEYS.progress, serialized) === false
+        || !access.valid() || access.getItem(STORAGE_KEYS.progress) !== serialized) return false
+      return access.valid()
+    } catch {
+      return false
+    }
+  }
   writeJSON(STORAGE_KEYS.progress, progress)
 }
 
@@ -241,7 +260,21 @@ export function recordMissionProgress(previous, { mission, step, earnedXp = 0, c
   }
 }
 
-export function clearStoredProgress() {
+export function clearStoredProgress({ access = null } = {}) {
+  if (access) {
+    // Reset is an explicit destructive action. A revoked account lease or
+    // denied Storage removal must not be presented as a successful reset.
+    try {
+      if (!access.valid()) return false
+      for (const key of Object.values(STORAGE_KEYS)) {
+        if (!access.valid() || access.removeItem(key) === false
+          || !access.valid() || access.getItem(key) !== null) return false
+      }
+      return access.valid()
+    } catch {
+      return false
+    }
+  }
   try {
     Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key))
   } catch {}
