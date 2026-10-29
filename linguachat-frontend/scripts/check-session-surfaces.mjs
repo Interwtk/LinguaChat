@@ -1000,7 +1000,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     'with (deps) { const { grants = [] } = options || {}; ' +
     context.slice(start + signature.length, end) + ' }')
 
-  for (const mode of ['current', 'stale-flush', 'denied', 'revoked-load', 'revoked-grant', 'revoked-save']) {
+  for (const mode of ['current', 'stale-flush', 'denied', 'revoked-load', 'revoked-grant', 'revoked-save', 'rejected-model-save']) {
     let owner = mode === 'denied' ? 'B' : 'A'
     let loads = 0, seen = 0, saves = 0
     const queued = []
@@ -1021,9 +1021,11 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         learner.seen.push(id)
         if (mode === 'revoked-grant') owner = 'B'
       },
-      saveLearnerModel: () => {
+      saveLearnerModel: (_model, options) => {
+        assert.equal(options?.verified, true, 'episode rewards require verified model persistence')
         saves++
         if (mode === 'revoked-save') owner = 'B'
+        return mode !== 'rejected-model-save'
       },
       setLocalProgress: updater => queued.push(updater),
     }
@@ -1074,7 +1076,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
 
   for (const mode of [
     'current', 'stale-flush', 'denied', 'revoked-load', 'revoked-complete',
-    'revoked-model-save', 'rejected-save', 'mismatch-save', 'revoked-save',
+    'revoked-model-save', 'rejected-model-save', 'rejected-save', 'mismatch-save', 'revoked-save',
   ]) {
     let owner = mode === 'denied' ? 'B' : 'A'
     let loads = 0
@@ -1114,9 +1116,11 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         if (mode === 'revoked-complete') owner = 'B'
         return { session: { ...session, status: 'completed' }, awarded: true }
       },
-      saveLearnerModel: () => {
+      saveLearnerModel: (_model, options) => {
+        assert.equal(options?.verified, true, 'daily rewards require verified model persistence')
         modelSaves++
         if (mode === 'revoked-model-save') owner = 'B'
+        return mode !== 'rejected-model-save'
       },
       saveSession: (session, options) => save(session, options, {
         SESSION_KEY: 'daily-session',
@@ -1154,7 +1158,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       if (mode === 'denied') assert.equal(loads, 0)
       if (mode === 'revoked-load') assert.equal(completions, 0)
       if (mode === 'revoked-complete') assert.equal(modelSaves, 0)
-      if (mode === 'revoked-model-save') assert.equal(writes, 0)
+      if (mode === 'revoked-model-save' || mode === 'rejected-model-save') assert.equal(writes, 0)
     }
   }
   ok()
