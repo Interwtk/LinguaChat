@@ -269,7 +269,16 @@ export function loadActiveCompanion() {
   return SOLE_COMPANION
 }
 
-export function saveActiveCompanion() {
+export function saveActiveCompanion(_companion, { access = null } = {}) {
+  if (access) {
+    try {
+      if (!access.valid() || access.setItem(ACTIVE_COMPANION_KEY, SOLE_COMPANION) === false
+        || !access.valid() || access.getItem(ACTIVE_COMPANION_KEY) !== SOLE_COMPANION
+        || !access.valid()) return null
+    } catch { return null }
+    return SOLE_COMPANION
+  }
+  // Preserve the legacy migration path for callers without an active lease.
   try { localStorage.setItem(ACTIVE_COMPANION_KEY, SOLE_COMPANION) } catch {}
   return SOLE_COMPANION
 }

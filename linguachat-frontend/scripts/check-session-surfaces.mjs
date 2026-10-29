@@ -852,6 +852,61 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
 }
 
 
+/* ---------- 8a. legacy companion setter cannot repaint another account ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const preferences = read('src/services/tutorPreferences.js')
+  const extract = (source, signature) => {
+    const start = source.indexOf(signature)
+    const end = source.indexOf('\n}', start + signature.length)
+    assert.ok(start >= 0 && end > start, signature + ' must remain inspectable')
+    return source.slice(start + signature.length, end)
+  }
+  const change = new Function('companion', 'deps', 'with (deps) { ' +
+    extract(context, '  const setActiveCompanion = useCallback((companion) => {').split('\n  }, [])')[0] + ' }')
+  const save = new Function('_companion', 'options', 'deps', 'with (deps) { const { access = null } = options || {}; ' +
+    extract(preferences, 'export function saveActiveCompanion(_companion, { access = null } = {}) {') + ' }')
+  for (const mode of ['current', 'stale-flush', 'denied', 'revoked-write', 'rejected-write', 'mismatch-readback', 'storage-throws']) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let writes = 0
+    const store = new Map()
+    const queued = []
+    const access = {
+      valid: () => owner === 'A',
+      setItem: (key, value) => {
+        assert.equal(key, 'companion')
+        writes++
+        if (mode === 'storage-throws') throw new Error('Storage unavailable')
+        if (mode === 'rejected-write') return false
+        store.set(key, value)
+        if (mode === 'revoked-write') owner = 'B'
+        return true
+      },
+      getItem: key => mode === 'mismatch-readback' ? 'chatto' : store.get(key),
+    }
+    const deps = {
+      captureLearnerAccess: () => access,
+      saveActiveCompanion: (companion, options) => save(companion, options, {
+        ACTIVE_COMPANION_KEY: 'companion', SOLE_COMPANION: 'lingua',
+      }),
+      setActiveCompanionState: updater => queued.push(updater),
+    }
+    const result = change('chatto', deps)
+    if (mode === 'stale-flush') owner = 'B'
+    let state = 'chatto'
+    for (const update of queued) {
+      assert.equal(typeof update, 'function', mode + ': state must be lease-checked')
+      state = update(state)
+    }
+    const accepted = mode === 'current' || mode === 'stale-flush'
+    assert.equal(result, accepted, mode + ': result')
+    assert.equal(state, mode === 'current' ? 'lingua' : 'chatto', mode + ': no foreign repaint')
+    assert.equal(queued.length, accepted ? 1 : 0, mode + ': queued updates')
+    if (mode === 'denied') assert.equal(writes, 0)
+  }
+  ok()
+}
+
 /* ---------- 8b. profile edits must be durably account-scoped ---------- */
 {
   const context = read('src/context/AppContext.jsx')

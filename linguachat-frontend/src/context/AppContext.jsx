@@ -1086,7 +1086,14 @@ export function AppProvider({ children }) {
   }, [])
 
   const setActiveCompanion = useCallback((companion) => {
-    setActiveCompanionState(saveActiveCompanion(companion))
+    // The sole tutor is Lingua, but the legacy setter must still respect the
+    // originating account lease and refuse to publish an unverified write.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const saved = saveActiveCompanion(companion, { access })
+    if (!saved || !access.valid()) return false
+    setActiveCompanionState(previous => access.valid() ? saved : previous)
+    return access.valid()
   }, [])
 
   const setTextSize = useCallback((size) => {
