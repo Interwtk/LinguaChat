@@ -831,8 +831,14 @@ export function AppProvider({ children }) {
    * about what somebody enjoys.
    */
   const useAnotherConversationTopic = useCallback(() => {
-    if (conversationTopic?.interestId) dismissTopic(conversationTopic.interestId)
-    setTopicRound(round => round + 1)
+    // A queued topic rotation or a failed memory write must never become
+    // another account's dismissal after an auth switch.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    if (conversationTopic?.interestId && !dismissTopic(conversationTopic.interestId, { access })) return false
+    if (!access.valid()) return false
+    setTopicRound(round => access.valid() ? round + 1 : round)
+    return access.valid()
   }, [conversationTopic])
 
   // What the planner needs to pin today's subject matter: the interests the
@@ -1446,7 +1452,9 @@ export function AppProvider({ children }) {
        * Cooldown, not history: one id, so the next conversation prefers a
        * different one. No message, no reply and no prompt is recorded anywhere.
        */
-      if (chatAccess.valid() && !learnerHasSpoken && conversationTopic?.interestId) recordTopicUse(conversationTopic.interestId)
+      if (chatAccess.valid() && !learnerHasSpoken && conversationTopic?.interestId) {
+        recordTopicUse(conversationTopic.interestId, { access: chatAccess })
+      }
 
       const linguaMsg = {
         id: `l${Date.now()}`,
