@@ -376,7 +376,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       celebration: 'B celebration',
     }
     const original = structuredClone(state)
-    const steps = mode === 'complete' ? [{ id: 's1', xp: 4 }] : [{ id: 's1', xp: 4 }, { id: 's2', xp: 4 }]
+    const steps = ['complete', 'failed-completion'].includes(mode) ? [{ id: 's1', xp: 4 }] : [{ id: 's1', xp: 4 }, { id: 's2', xp: 4 }]
     const details = { mission: { id: 'A-mission', title: 'A mission', targetSkill: 'speaking', rewardXp: 8, steps }, step: steps[0] }
     const reply = {
       reply: 'A reply',
@@ -417,7 +417,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       },
       completeMission: () => {
         completions++
-        return { missionId: 'A-mission', earnedXp: 4 }
+        return mode === 'failed-completion' ? null : { missionId: 'A-mission', earnedXp: 4 }
       },
       recordMissionProgress: () => ({ owner: 'A' }),
       createMissionFeedbackMessage: () => ({ missionType: 'feedback' }),
@@ -456,6 +456,16 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.deepEqual(state.active, original.active, 'failed save does not advance')
       assert.equal(completions, 0)
       assert.equal(timers.length, 0)
+    } else if (mode === 'failed-completion') {
+      assert.equal(state.messages.length, 2, 'unsaved completion keeps the answer visible')
+      assert.equal(state.typing, false)
+      assert.equal(state.feedback.text, 'No se pudo guardar la misión completada. Intenta de nuevo.')
+      assert.deepEqual(state.progress, original.progress, 'unsaved completion cannot grant final XP')
+      assert.deepEqual(state.active, original.active, 'unsaved completion cannot close the mission')
+      assert.deepEqual(state.completed, original.completed)
+      assert.equal(state.celebration, original.celebration)
+      assert.equal(completions, 1)
+      assert.equal(timers.length, 0)
     } else if (mode === 'retry') {
       assert.equal(state.messages.length, 3, 'failed answer receives feedback')
       assert.equal(advances, 0, 'failed answer does not advance')
@@ -476,7 +486,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
   }
 
-  for (const mode of ['current', 'retry', 'complete', 'failed-save', 'inflight', 'cancelled', 'stale-flush', 'stale-timer']) {
+  for (const mode of ['current', 'retry', 'complete', 'failed-save', 'failed-completion', 'inflight', 'cancelled', 'stale-flush', 'stale-timer']) {
     await checkMissionLease(mode)
   }
   ok()
@@ -1491,8 +1501,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     extract('export function saveActiveMission(activeMission, { access = null } = {}) {',
       '\n}\n\nexport function loadCompletedMissions') + ' }')
   const advance = new Function('activeMission', 'step', 'answerValue', 'evaluation', 'options', 'deps',
-    'with (deps) { const { access = null } = options || {}; ' +
-    extract('export function advanceMission(activeMission, step, answerValue, evaluation, { access = null } = {}) {',
+    'with (deps) { const { access = null, deferSave = false } = options || {}; ' +
+    extract('export function advanceMission(activeMission, step, answerValue, evaluation, { access = null, deferSave = false } = {}) {',
       '\n}\n\nexport function completeMission') + ' }')
   for (const mode of ['current', 'denied', 'rejected-write', 'mismatched-read', 'throwing-read', 'revoked-write']) {
     let owner = mode === 'denied' ? 'B' : 'A'
@@ -1530,6 +1540,115 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     } else {
       assert.equal(result, null, mode + ': unverified write cannot advance')
       if (mode === 'denied') assert.equal(writes, 0)
+    }
+  }
+  ok()
+}
+
+
+/* ---------- final mission completion: no premature XP, idempotent durable record ---------- */
+{
+  const missions = read('src/services/missions.js')
+  const extract = (signature, ending) => {
+    const start = missions.indexOf(signature)
+    const end = missions.indexOf(ending, start + signature.length)
+    assert.ok(start >= 0 && end > start, signature + ' must remain inspectable')
+    return missions.slice(start + signature.length, end)
+  }
+  const persist = new Function('activeMission', 'options', 'deps',
+    'with (deps) { const { access = null } = options || {}; ' +
+    extract('export function saveActiveMission(activeMission, { access = null } = {}) {',
+      '\\n}\\n\\nexport function loadCompletedMissions') + ' }')
+  const complete = new Function('activeMission', 'options', 'deps',
+    'with (deps) { const { access = null } = options || {}; ' +
+    extract('export function completeMission(activeMission, { access = null } = {}) {',
+      '\\n}\\n\\nexport function clearMissionStorage') + ' }')
+  const advance = new Function('activeMission', 'step', 'answerValue', 'evaluation', 'options', 'deps',
+    'with (deps) { const { access = null, deferSave = false } = options || {}; ' +
+    extract('export function advanceMission(activeMission, step, answerValue, evaluation, { access = null, deferSave = false } = {}) {',
+      '\\n}\\n\\nexport function completeMission') + ' }')
+
+  for (const mode of [
+    'current', 'denied', 'rejected-completed', 'mismatched-completed',
+    'throwing-read', 'revoked-completed', 'rejected-clear',
+    'mismatched-clear', 'revoked-clear', 'stale-cursor', 'malformed-history',
+    'retry-clear',
+  ]) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let writes = 0, completionWrites = 0, clears = 0, completedReads = 0
+    const storage = new Map()
+    const saved = { missionId: 'A', currentStepIndex: 0, startedAt: 123, earnedXp: 0, answers: [] }
+    if (mode === 'stale-cursor') saved.startedAt = 999
+    storage.set('active-mission', JSON.stringify(saved))
+    if (mode === 'malformed-history') storage.set('completed-missions', '{broken')
+    const access = {
+      valid: () => owner === 'A',
+      getItem(key) {
+        if (mode === 'throwing-read') throw new Error('Storage denied')
+        if (key === 'completed-missions') {
+          completedReads++
+          if (mode === 'mismatched-completed' && completedReads > 1) return 'other-tab-value'
+        }
+        if (key === 'active-mission' && mode === 'mismatched-clear' && clears > 0) return 'stale-active'
+        return storage.get(key) ?? null
+      },
+      setItem(key, value) {
+        writes++
+        if (key !== 'completed-missions') throw new Error('unscoped final-step write')
+        completionWrites++
+        if (mode === 'rejected-completed') return false
+        storage.set(key, value)
+        if (mode === 'revoked-completed') owner = 'B'
+        return true
+      },
+      removeItem(key) {
+        writes++
+        clears++
+        if (key !== 'active-mission') throw new Error('wrong key cleared')
+        if (mode === 'rejected-clear' || (mode === 'retry-clear' && clears === 1)) return false
+        storage.delete(key)
+        if (mode === 'revoked-clear') owner = 'B'
+        return true
+      },
+    }
+    const save = (value, options) => persist(value, options, {
+      ACTIVE_KEY: 'active-mission',
+      localStorage: { removeItem: () => { throw new Error('unscoped clear') } },
+    })
+    const active = { ...saved, missionId: 'A', startedAt: 123, currentStepIndex: 1, earnedXp: 4,
+      answers: [{ stepId: 's1', xp: 4 }] }
+    const deps = {
+      ACTIVE_KEY: 'active-mission', COMPLETED_KEY: 'completed-missions',
+      getMissionById: () => ({ title: 'Practice', type: 'Daily', steps: [{ id: 's1' }] }),
+      saveActiveMission: save,
+      loadCompletedMissions: () => { throw new Error('unscoped history read') },
+      saveCompletedMissions: () => { throw new Error('unscoped history write') },
+    }
+    const prepared = advance(saved, { id: 's1', type: 'write_sentence', xp: 4 },
+      'hello', { passed: true }, { access, deferSave: true }, {
+        saveActiveMission: () => { throw new Error('final step persisted prematurely') },
+      })
+    assert.equal(Boolean(prepared), mode !== 'denied', mode + ': final step must be memory-only')
+    assert.equal(writes, 0, 'preparing final step must never write storage')
+    const result = complete(active, { access }, deps)
+    if (mode === 'current') {
+      assert.equal(result?.missionId, 'A')
+      assert.equal(result.earnedXp, 4)
+      assert.equal(storage.has('active-mission'), false)
+      assert.equal(JSON.parse(storage.get('completed-missions')).length, 1)
+      assert.equal(writes, 2)
+    } else if (mode === 'retry-clear') {
+      assert.equal(result, null, 'failed clear cannot announce completion')
+      assert.equal(storage.has('active-mission'), true, 'failed clear leaves retryable step')
+      const retried = complete(active, { access }, deps)
+      assert.equal(retried?.earnedXp, 4)
+      assert.equal(storage.has('active-mission'), false)
+      assert.equal(JSON.parse(storage.get('completed-missions')).length, 1)
+      assert.equal(completionWrites, 1, 'retry must not duplicate completed history')
+    } else {
+      assert.equal(result, null, mode + ': unverified completion must fail closed')
+      if (mode === 'denied' || mode === 'stale-cursor' || mode === 'throwing-read'
+        || mode === 'malformed-history') assert.equal(writes, 0)
     }
   }
   ok()
