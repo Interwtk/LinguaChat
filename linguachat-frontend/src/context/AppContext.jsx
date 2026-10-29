@@ -861,14 +861,17 @@ export function AppProvider({ children }) {
   }, [dailySession, preferredDuration, persistSession, sessionContext])
 
   const advanceSession = useCallback(() => {
-    setEpisodeArcVersion(v => v + 1)
-    setDailySession(previous => {
-      if (!previous) return previous
-      const next = advanceBlock(previous)
-      saveSession(next)
-      return next
-    })
-  }, [])
+    // A delayed React updater must never advance B's daily plan after A signs out.
+    // Persist through the lease captured by the click, outside the updater:
+    // React may replay state updaters and a failed write must not look completed.
+    const access = captureLearnerAccess()
+    if (!access.valid() || !dailySession) return false
+    const next = advanceBlock(dailySession)
+    if (!access.valid() || !saveSession(next, { access }) || !access.valid()) return false
+    setEpisodeArcVersion(previous => access.valid() ? previous + 1 : previous)
+    setDailySession(previous => access.valid() ? next : previous)
+    return access.valid()
+  }, [dailySession])
 
   const finishSession = useCallback(() => {
     // Keep the session's original account lease through the model, durable

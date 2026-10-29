@@ -894,4 +894,83 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+
+/* ---------- 11. advancing a daily block must remain in the originating account ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const sessionSource = read('src/learning/engine/session.js')
+  const extract = (source, signature, ending) => {
+    const start = source.indexOf(signature)
+    const end = source.indexOf(ending, start + signature.length)
+    assert.ok(start >= 0 && end > start, signature + ' must remain inspectable')
+    return source.slice(start + signature.length, end)
+  }
+  const advance = new Function('deps', 'with (deps) { ' +
+    extract(context, '  const advanceSession = useCallback(() => {', '\n  }, [dailySession])') + ' }')
+  const save = new Function('session', 'options', 'deps',
+    'with (deps) { const { access = null } = options || {}; ' +
+    extract(sessionSource, 'export function saveSession(session, { access = null } = {}) {', '\n}') + ' }')
+
+  for (const mode of [
+    'current', 'stale-flush', 'denied', 'no-session', 'revoked-advance',
+    'rejected-save', 'mismatch-save', 'revoked-save',
+  ]) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    let advances = 0, writes = 0
+    const storage = {}, queued = []
+    const state = {
+      daily: { id: 'A-session', currentBlockIndex: 1, status: 'active' },
+      arc: 5,
+    }
+    const original = structuredClone(state)
+    const access = {
+      valid: () => owner === 'A',
+      setItem: (key, value) => {
+        writes++
+        if (mode === 'rejected-save') return false
+        storage[key] = value
+        if (mode === 'revoked-save') owner = 'B'
+        return true
+      },
+      getItem: key => mode === 'mismatch-save' ? 'newer-tab-value' : storage[key],
+    }
+    const deps = {
+      captureLearnerAccess: () => access,
+      dailySession: mode === 'no-session' ? null : original.daily,
+      advanceBlock: session => {
+        advances++
+        if (mode === 'revoked-advance') owner = 'B'
+        return { ...session, currentBlockIndex: session.currentBlockIndex + 1 }
+      },
+      saveSession: (session, options) => save(session, options, {
+        SESSION_KEY: 'daily-session',
+        localStorage: { setItem: () => { throw new Error('unscoped write') } },
+      }),
+      setEpisodeArcVersion: update => queued.push(['arc', update]),
+      setDailySession: update => queued.push(['daily', update]),
+    }
+    const result = advance(deps)
+    if (mode === 'stale-flush') owner = 'B'
+    for (const [key, update] of queued) {
+      assert.equal(typeof update, 'function', mode + ': React must receive a lease-checked updater')
+      state[key] = update(state[key])
+    }
+    if (mode === 'current') {
+      assert.equal(result, true)
+      assert.equal(state.daily.currentBlockIndex, 2)
+      assert.equal(state.arc, 6)
+      assert.equal(writes, 1)
+      assert.equal(advances, 1)
+      assert.equal(queued.length, 2)
+    } else {
+      assert.equal(result, mode === 'stale-flush')
+      assert.deepEqual(state, original, mode + ': A cannot advance B session')
+      assert.equal(queued.length, mode === 'stale-flush' ? 2 : 0)
+      if (mode === 'denied' || mode === 'no-session') assert.equal(advances, 0)
+      if (mode === 'revoked-advance') assert.equal(writes, 0)
+    }
+  }
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)
