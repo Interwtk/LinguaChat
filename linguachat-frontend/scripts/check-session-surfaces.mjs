@@ -261,6 +261,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   async function checkChatLease(mode) {
     let owner = 'A'
     let resolveReply
+    const chatGenerationRef = { current: 0 }
     const queued = []
     const enqueue = key => update => queued.push([key, update])
     const state = {
@@ -274,6 +275,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const original = structuredClone(state)
     const deps = {
       captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      chatGenerationRef,
       getActiveMissionDetails: () => null,
       activeMission: null,
       submitMissionStep: () => { throw new Error('unexpected mission') },
@@ -284,7 +286,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       setMemoryNotice: enqueue('memory'),
       setLocalProgress: enqueue('progress'),
       messages: [],
-      sendChatMessage: () => mode === 'inflight'
+      sendChatMessage: () => ['inflight', 'cleared-inflight'].includes(mode)
         ? new Promise(resolve => { resolveReply = resolve })
         : mode === 'stale-error'
           ? Promise.reject(new Error('offline'))
@@ -306,13 +308,15 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       recordTopicUse: () => {},
     }
     const pending = send('Hello', deps)
-    if (mode === 'inflight') {
-      owner = 'B'
+    if (['inflight', 'cleared-inflight'].includes(mode)) {
+      if (mode === 'inflight') owner = 'B'
+      else chatGenerationRef.current++
       assert.equal(typeof resolveReply, 'function', 'the HTTP request must have started')
       resolveReply(reply)
     }
     await pending
-    if (mode !== 'current') owner = 'B'
+    if (mode === 'cleared-before-flush') chatGenerationRef.current++
+    if (!['current', 'cleared-inflight', 'cleared-before-flush'].includes(mode)) owner = 'B'
     assert.ok(queued.length > 0, mode + ': React callbacks must have been queued')
     for (const [key, update] of queued) {
       assert.equal(typeof update, 'function', mode + ': every queued update must check the lease')
@@ -332,6 +336,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   await checkChatLease('stale-success')
   await checkChatLease('stale-error')
   await checkChatLease('inflight')
+  await checkChatLease('cleared-inflight')
+  await checkChatLease('cleared-before-flush')
   ok()
 }
 
@@ -590,6 +596,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       messages: [{ text: 'B private conversation' }],
       progress: { xp: 90 },
       selected: { id: 'B-message' },
+      typing: true,
       connection: 'B connection',
       memory: 'B memory',
       active: { missionId: 'B-mission' },
@@ -600,6 +607,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
     const original = structuredClone(state)
     const generation = { current: 7 }
+    const chatGenerationRef = { current: 0 }
     const enqueue = key => update => queued.push([key, update])
     const deps = {
       captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
@@ -615,11 +623,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       createEmptyProgress: () => ({ xp: 0 }),
       clearMissionStorage: () => { missionClears++ },
       missionGenerationRef: generation,
+      chatGenerationRef,
       interfaceLanguageInfo: { base: 'es' },
       setSessionId: enqueue('session'),
       setMessages: enqueue('messages'),
       setLocalProgress: enqueue('progress'),
       setSelectedMessage: enqueue('selected'),
+      setIsTyping: enqueue('typing'),
       setConnectionNotice: enqueue('connection'),
       setMemoryNotice: enqueue('memory'),
       setActiveMission: enqueue('active'),
@@ -640,17 +650,19 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(missionClears, 1)
       assert.equal(sessions, 1)
       assert.equal(generation.current, 8)
-      assert.equal(queued.length, 11)
+      assert.equal(chatGenerationRef.current, 1)
+      assert.equal(queued.length, 12)
       assert.deepEqual(state, {
         session: 'A-new-session',
         messages: [{ text: 'Welcome es' }],
         progress: { xp: 0 },
-        selected: null, connection: null, memory: null, active: null,
+        selected: null, typing: false, connection: null, memory: null, active: null,
         completed: [], feedback: null, celebration: null, view: 'today',
       })
     } else {
       assert.deepEqual(state, original, mode + ': A reset must not change B UI')
-      assert.equal(queued.length, mode === 'stale-flush' ? 11 : 0)
+      assert.equal(queued.length, mode === 'stale-flush' ? 12 : 0)
+      assert.equal(chatGenerationRef.current, mode === 'stale-flush' ? 1 : 0)
       if (mode === 'stale-flush') {
         assert.equal(progressClears, 1)
         assert.equal(missionClears, 1)
@@ -1681,9 +1693,10 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ]) {
     let owner = mode === 'denied' ? 'B' : 'A'
     let writes = 0
+    const chatGenerationRef = { current: 0 }
     const stored = new Map([['chat', '[{"id":"old-A"}]']])
     const queued = []
-    const state = { messages: [{ id: 'old-A' }], selected: { id: 'old-A' } }
+    const state = { messages: [{ id: 'old-A' }], selected: { id: 'old-A' }, typing: true }
     const original = structuredClone(state)
     const access = {
       valid: () => owner === 'A',
@@ -1704,6 +1717,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
     const deps = {
       captureLearnerAccess: () => access,
+      chatGenerationRef,
       interfaceLanguageInfo: { base: 'es' },
       createWelcomeMessage: () => ({ id: 'welcome-es' }),
       saveStoredMessages: (messages, options) => save(messages, options, {
@@ -1712,6 +1726,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       }),
       setMessages: update => queued.push(['messages', update]),
       setSelectedMessage: update => queued.push(['selected', update]),
+      setIsTyping: update => queued.push(['typing', update]),
     }
     const result = clear(deps)
     if (mode === 'stale-flush') owner = 'B'
@@ -1721,8 +1736,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
     const accepted = mode === 'current' || mode === 'stale-flush'
     assert.equal(result, accepted, mode + ': clear result')
+    assert.equal(chatGenerationRef.current, accepted ? 1 : 0, mode + ': invalidate only after durable clear')
     if (mode === 'current') {
-      assert.deepEqual(state, { messages: [{ id: 'welcome-es' }], selected: null })
+      assert.deepEqual(state, { messages: [{ id: 'welcome-es' }], selected: null, typing: false })
       assert.equal(stored.get('chat'), JSON.stringify([{ id: 'welcome-es' }]))
     } else {
       assert.deepEqual(state, original, mode + ': no unsaved or foreign UI reset')
