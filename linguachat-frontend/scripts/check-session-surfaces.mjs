@@ -1071,9 +1071,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     return context.slice(start + signature.length, end)
   }
   const begin = new Function('deps', 'with (deps) { ' +
-    extract('  const beginSession = useCallback(() => {', '\\n  }, [dailySession, preferredDuration, sessionContext])') + ' }')
+    extract('  const beginSession = useCallback(() => {', '\n  }, [dailySession, preferredDuration, sessionContext])') + ' }')
   const exit = new Function('deps', 'with (deps) { ' +
-    extract('  const exitSession = useCallback(() => {', '\\n  }, [])') + ' }')
+    extract('  const exitSession = useCallback(() => {', '\n  }, [])') + ' }')
 
   for (const mode of ['current', 'denied', 'rejected-save', 'revoked-before-save', 'revoked-after-save', 'revoked-during-model', 'stale-flush']) {
     let owner = mode === 'denied' ? 'B' : 'A'
