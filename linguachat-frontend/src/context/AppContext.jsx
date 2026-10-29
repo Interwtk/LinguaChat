@@ -1099,8 +1099,14 @@ export function AppProvider({ children }) {
   }, [])
 
   const navigateTo = useCallback((destination) => {
-    setView(destination)
-    setMobileSheet(null)
+    // A navigation queued by A must not move B's screen after logout or an
+    // account/tab lease switch. React can flush these updates later.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    setView(previous => access.valid() ? destination : previous)
+    if (!access.valid()) return false
+    setMobileSheet(previous => access.valid() ? null : previous)
+    return access.valid()
   }, [])
 
   const appendLinguaMessages = useCallback((nextMessages, access = captureLearnerAccess()) => {
