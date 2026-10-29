@@ -237,8 +237,8 @@ export function evaluateMissionStep(step, value) {
   }
 }
 
-export function advanceMission(activeMission, step, answerValue, evaluation, { access = null } = {}) {
-  if (access && !access.valid()) return null
+export function advanceMission(activeMission, step, answerValue, evaluation, { access = null, deferSave = false } = {}) {
+  if ((deferSave && !access) || (access && !access.valid())) return null
   const nextAnswers = [
     ...(activeMission.answers || []),
     {
@@ -258,12 +258,15 @@ export function advanceMission(activeMission, step, answerValue, evaluation, { a
     currentStepIndex: nextIndex,
     earnedXp: (activeMission.earnedXp || 0) + earnedThisStep,
   }
-  // A rejected, revoked or unverified durable write cannot earn XP in React.
-  if (saveActiveMission(nextActive, { access }) === false || (access && !access.valid())) return null
+  // The final step is committed with the completed record, not ahead of it.
+  // Otherwise a failed completion would leave an unresumable final-step cursor.
+  if (!deferSave && saveActiveMission(nextActive, { access }) === false) return null
+  if (access && !access.valid()) return null
   return { activeMission: nextActive, earnedThisStep }
 }
 
-export function completeMission(activeMission) {
+export function completeMission(activeMission, { access = null } = {}) {
+  if (!activeMission || (access && !access.valid())) return null
   const mission = getMissionById(activeMission.missionId)
   const completed = {
     missionId: activeMission.missionId,
@@ -274,6 +277,38 @@ export function completeMission(activeMission) {
     startedAt: activeMission.startedAt,
     completedAt: Date.now(),
   }
+  if (access) {
+    // The last step was only prepared in memory. Require its previous cursor
+    // to remain durable before publishing completion for the same account.
+    try {
+      if (!mission?.steps?.length || activeMission.currentStepIndex !== mission.steps.length) return null
+      const rawActive = access.getItem(ACTIVE_KEY)
+      if (!access.valid() || !rawActive) return null
+      const savedActive = JSON.parse(rawActive)
+      if (savedActive?.missionId !== activeMission.missionId
+        || savedActive.startedAt !== activeMission.startedAt
+        || savedActive.currentStepIndex !== activeMission.currentStepIndex - 1) return null
+      const rawCompleted = access.getItem(COMPLETED_KEY)
+      if (!access.valid()) return null
+      const previous = rawCompleted === null ? [] : JSON.parse(rawCompleted)
+      if (!Array.isArray(previous)) return null
+      // If the completed record was saved but clearing the active cursor
+      // failed, retry the clear without duplicating a reward/history entry.
+      const existing = previous.find(item => item?.missionId === completed.missionId
+        && item.startedAt === completed.startedAt)
+      const result = existing || completed
+      if (!existing) {
+        const serialized = JSON.stringify([completed, ...previous].slice(0, 50))
+        if (access.setItem(COMPLETED_KEY, serialized) === false
+          || !access.valid() || access.getItem(COMPLETED_KEY) !== serialized) return null
+      }
+      if (saveActiveMission(null, { access }) === false || !access.valid()) return null
+      return result
+    } catch {
+      return null
+    }
+  }
+  // Legacy non-interactive callers keep their best-effort behavior.
   const previous = loadCompletedMissions()
   saveCompletedMissions([completed, ...previous])
   saveActiveMission(null)
