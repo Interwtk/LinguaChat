@@ -1981,4 +1981,20 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+/* ---------- no unscoped effect may replay companion/text size into another account ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  // The only writers must be the lease-verified interactive setters. An
+  // effect on mount or a late React flush could otherwise overwrite B with A.
+  assert.equal((context.match(/\\bsaveActiveCompanion\\s*\\(/g) || []).length, 1,
+    'companion must not have an unscoped persistence effect')
+  assert.equal((context.match(/\\bsaveTextSize\\s*\\(/g) || []).length, 1,
+    'text size must not have an unscoped persistence effect')
+  assert.match(context, /saveActiveCompanion\\(companion, \\{ access \\}\\)/,
+    'companion write must keep the captured lease')
+  assert.match(context, /saveTextSize\\(size, \\{ access \\}\\)/,
+    'text size write must keep the captured lease')
+  ok()
+}
+
 console.log(`check-session-surfaces — OK  (${n} surface groups verified)`)

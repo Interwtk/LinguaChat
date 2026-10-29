@@ -463,13 +463,8 @@ export function AppProvider({ children }) {
     saveCompletedMissions(completedMissions)
   }, [completedMissions])
 
-  useEffect(() => {
-    saveActiveCompanion(activeCompanion)
-  }, [activeCompanion])
-
-  useEffect(() => {
-    saveTextSize(textSize)
-  }, [textSize])
+  // Companion and text size are persisted by their lease-verified setters.
+  // A delayed effect could replay A's state into B after an account switch.
 
   const toggleDark = useCallback(() => setDarkMode(d => !d), [])
   const setThemeDark = useCallback((value) => setDarkMode(Boolean(value)), [])
