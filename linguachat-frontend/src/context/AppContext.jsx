@@ -1214,7 +1214,8 @@ export function AppProvider({ children }) {
     }
 
     if (!publication.valid()) return
-    const advanced = advanceMission(activeMission, details.step, value, evaluation, { access })
+    const isFinalStep = activeMission.currentStepIndex + 1 >= details.mission.steps.length
+    const advanced = advanceMission(activeMission, details.step, value, evaluation, { access, deferSave: isFinalStep })
     if (!advanced || !publication.valid()) {
       if (publication.valid()) {
         setIsTyping(previous => publication.valid() ? false : previous)
@@ -1225,24 +1226,35 @@ export function AppProvider({ children }) {
       }
       return
     }
-    setLocalProgress(previous => publication.valid() ? recordMissionProgress(previous, {
-      mission: details.mission,
-      step: details.step,
-      earnedXp: advanced.earnedThisStep,
-      completed: false,
-    }) : previous)
-
-    if (advanced.activeMission.currentStepIndex >= details.mission.steps.length) {
-      const completed = completeMission(advanced.activeMission)
-      if (!publication.valid()) return
+    if (isFinalStep) {
+      const completed = completeMission(advanced.activeMission, { access })
+      if (!completed || !publication.valid()) {
+        if (publication.valid()) {
+          setIsTyping(previous => publication.valid() ? false : previous)
+          setMissionFeedback(previous => publication.valid() ? {
+            passed: false,
+            text: 'No se pudo guardar la misión completada. Intenta de nuevo.',
+          } : previous)
+        }
+        return
+      }
       setActiveMission(previous => publication.valid() ? null : previous)
       setCompletedMissions(previous => publication.valid() ? [completed, ...previous].slice(0, 50) : previous)
-      setLocalProgress(previous => publication.valid() ? recordMissionProgress(previous, {
-        mission: details.mission,
-        step: details.step,
-        earnedXp: Math.max(0, details.mission.rewardXp - completed.earnedXp),
-        completed: true,
-      }) : previous)
+      setLocalProgress(previous => {
+        if (!publication.valid()) return previous
+        const withStep = recordMissionProgress(previous, {
+          mission: details.mission,
+          step: details.step,
+          earnedXp: advanced.earnedThisStep,
+          completed: false,
+        })
+        return recordMissionProgress(withStep, {
+          mission: details.mission,
+          step: details.step,
+          earnedXp: Math.max(0, details.mission.rewardXp - completed.earnedXp),
+          completed: true,
+        })
+      })
       setMissionCelebration(previous => publication.valid() ? {
         title: details.mission.title,
         xp: details.mission.rewardXp,
@@ -1281,6 +1293,12 @@ export function AppProvider({ children }) {
       return
     }
 
+    setLocalProgress(previous => publication.valid() ? recordMissionProgress(previous, {
+      mission: details.mission,
+      step: details.step,
+      earnedXp: advanced.earnedThisStep,
+      completed: false,
+    }) : previous)
     setActiveMission(previous => publication.valid() ? advanced.activeMission : previous)
     setMissionFeedback(previous => publication.valid() ? {
       passed: evaluation.passed,
