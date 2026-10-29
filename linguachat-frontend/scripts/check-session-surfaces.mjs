@@ -513,7 +513,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   }
   const updateProfile = extract(
     '  const updateProfile = useCallback((updates) => {',
-    '\n  }, [])', ['updates'])
+    '\n  }, [profile])', ['updates'])
   const selectMessage = extract(
     '  const selectMessage = useCallback((msg) => {',
     '\n  }, [])', ['msg'])
@@ -525,6 +525,12 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     let owner = mode === 'denied' ? 'B' : 'A'
     const queued = []
     const chatGenerationRef = { current: 0 }
+    const profileStore = new Map([['lc2-profile', JSON.stringify({ name: 'A old', level: 'A0' })]])
+    const access = {
+      valid: () => owner === 'A',
+      getItem: key => profileStore.get(key) ?? null,
+      setItem: (key, value) => { profileStore.set(key, value); return true },
+    }
     const enqueue = key => update => queued.push([key, update])
     const state = {
       profile: { name: 'B profile', level: 'B1' },
@@ -534,7 +540,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
     const original = structuredClone(state)
     const deps = {
-      captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      captureLearnerAccess: () => access,
+      profile: { name: 'A old', level: 'A0' },
       chatGenerationRef,
       setProfile: enqueue('profile'),
       setMessages: enqueue('messages'),
