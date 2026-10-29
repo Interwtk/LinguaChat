@@ -584,7 +584,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
-/* ---------- 7. reset progress must never clear or repaint another account ---------- */
+/* ---------- 7. reset progress must fail closed on rejected durable writes ---------- */
 {
   const context = read('src/context/AppContext.jsx')
   const signature = '  const resetLocalProgress = useCallback(() => {'
@@ -595,39 +595,59 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
 
   function checkReset(mode) {
     let owner = mode === 'denied' ? 'B' : 'A'
-    let confirmations = 0, progressClears = 0, missionClears = 0, sessions = 0
+    let confirmations = 0, progressClears = 0, missionClears = 0, sessions = 0, chatWrites = 0, progressWrites = 0
+    const access = { valid: () => owner === 'A' }
     const queued = []
     const state = {
-      session: 'B-session',
-      messages: [{ text: 'B private conversation' }],
-      progress: { xp: 90 },
-      selected: { id: 'B-message' },
-      typing: true,
-      connection: 'B connection',
-      memory: 'B memory',
-      active: { missionId: 'B-mission' },
-      completed: ['B-mission'],
-      feedback: 'B feedback',
-      celebration: 'B celebration',
-      view: 'chat',
+      session: 'B-session', messages: [{ text: 'B private conversation' }],
+      progress: { xp: 90 }, selected: { id: 'B-message' },
+      typing: true, connection: 'B connection', memory: 'B memory',
+      active: { missionId: 'B-mission' }, completed: ['B-mission'],
+      feedback: 'B feedback', celebration: 'B celebration', view: 'chat',
     }
     const original = structuredClone(state)
     const generation = { current: 7 }
     const chatGenerationRef = { current: 0 }
     const enqueue = key => update => queued.push([key, update])
     const deps = {
-      captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
+      captureLearnerAccess: () => access,
       window: { confirm: () => {
         confirmations++
         if (mode === 'revoked-confirm') owner = 'B'
         return mode !== 'cancelled'
       } },
       t: key => key,
-      clearStoredProgress: () => { progressClears++; if (mode === 'revoked-clear') owner = 'B' },
-      createSessionId: () => { sessions++; return 'A-new-session' },
+      clearStoredProgress: options => {
+        assert.equal(options.access, access, 'progress removal must retain the original lease')
+        progressClears++
+        if (mode === 'revoked-clear') owner = 'B'
+        return mode !== 'rejected-progress' && owner === 'A'
+      },
+      clearMissionStorage: options => {
+        assert.equal(options.access, access, 'mission removal must retain the original lease')
+        missionClears++
+        if (mode === 'revoked-mission') owner = 'B'
+        return mode !== 'rejected-mission' && owner === 'A'
+      },
+      createSessionId: options => {
+        assert.equal(options.access, access, 'new session ID must be written under the original lease')
+        sessions++
+        return mode === 'rejected-session' ? null : 'A-new-session'
+      },
+      saveStoredMessages: (messages, options) => {
+        assert.equal(options.access, access, 'welcome must be durably stored under the original lease')
+        assert.equal(messages[0].text, 'Welcome es')
+        chatWrites++
+        return mode !== 'rejected-chat'
+      },
+      saveLocalProgress: (progress, options) => {
+        assert.equal(options.access, access, 'empty progress must be durably stored under the original lease')
+        assert.equal(progress.xp, 0)
+        progressWrites++
+        return mode !== 'rejected-empty-progress'
+      },
       createWelcomeMessage: lang => ({ text: 'Welcome ' + lang }),
       createEmptyProgress: () => ({ xp: 0 }),
-      clearMissionStorage: () => { missionClears++ },
       missionGenerationRef: generation,
       chatGenerationRef,
       interfaceLanguageInfo: { base: 'es' },
@@ -650,39 +670,101 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(typeof update, 'function', mode + ': reset must queue lease-checked functional updates')
       state[key] = update(state[key])
     }
+    const accepted = ['current', 'stale-flush'].includes(mode)
+    assert.equal(chatGenerationRef.current, accepted ? 1 : 0, mode + ': invalidate only after durable reset')
+    assert.equal(generation.current, accepted ? 8 : 7, mode + ': mission invalidation follows durable reset')
+    assert.equal(queued.length, accepted ? 12 : 0, mode + ': no UI reset after a failed durable step')
     if (mode === 'current') {
       assert.equal(confirmations, 1)
       assert.equal(progressClears, 1)
       assert.equal(missionClears, 1)
       assert.equal(sessions, 1)
-      assert.equal(generation.current, 8)
-      assert.equal(chatGenerationRef.current, 1)
-      assert.equal(queued.length, 12)
+      assert.equal(chatWrites, 1)
+      assert.equal(progressWrites, 1)
       assert.deepEqual(state, {
-        session: 'A-new-session',
-        messages: [{ text: 'Welcome es' }],
-        progress: { xp: 0 },
-        selected: null, typing: false, connection: null, memory: null, active: null,
-        completed: [], feedback: null, celebration: null, view: 'today',
+        session: 'A-new-session', messages: [{ text: 'Welcome es' }],
+        progress: { xp: 0 }, selected: null, typing: false,
+        connection: null, memory: null, active: null, completed: [],
+        feedback: null, celebration: null, view: 'today',
       })
     } else {
-      assert.deepEqual(state, original, mode + ': A reset must not change B UI')
-      assert.equal(queued.length, mode === 'stale-flush' ? 12 : 0)
-      assert.equal(chatGenerationRef.current, mode === 'stale-flush' ? 1 : 0)
-      if (mode === 'stale-flush') {
-        assert.equal(progressClears, 1)
-        assert.equal(missionClears, 1)
-      } else {
-        assert.equal(progressClears, mode === 'revoked-clear' ? 1 : 0)
-        assert.equal(missionClears, 0)
-        assert.equal(sessions, 0)
-        assert.equal(generation.current, 7)
-      }
+      assert.deepEqual(state, original, mode + ': failed or stale reset must not repaint account UI')
       if (mode === 'denied') assert.equal(confirmations, 0)
+      if (['denied', 'cancelled', 'revoked-confirm'].includes(mode)) assert.equal(progressClears, 0)
+      if (mode === 'rejected-progress' || mode === 'revoked-clear') assert.equal(missionClears, 0)
+      if (mode === 'rejected-mission' || mode === 'revoked-mission') assert.equal(sessions, 0)
+      if (mode === 'rejected-session') assert.equal(chatWrites, 0)
+      if (mode === 'rejected-chat') assert.equal(progressWrites, 0)
     }
   }
-  for (const mode of ['current', 'stale-flush', 'denied', 'cancelled', 'revoked-confirm', 'revoked-clear']) {
-    checkReset(mode)
+  for (const mode of [
+    'current', 'stale-flush', 'denied', 'cancelled', 'revoked-confirm', 'revoked-clear',
+    'rejected-progress', 'rejected-mission', 'revoked-mission', 'rejected-session',
+    'rejected-chat', 'rejected-empty-progress',
+  ]) checkReset(mode)
+  ok()
+}
+
+/* ---------- 7b. reset storage primitives must verify each account-scoped write ---------- */
+{
+  const localSource = read('src/services/localProgress.js')
+  const missionSource = read('src/services/missions.js')
+  const extract = (source, signature) => {
+    const start = source.indexOf(signature)
+    const end = source.indexOf('\n}', start + signature.length)
+    assert.ok(start >= 0 && end > start, signature + ' must remain inspectable')
+    return new Function('options', 'deps',
+      'with (deps) { const { access = null } = options; ' + source.slice(start + signature.length, end) + ' }')
+  }
+  const clearProgress = extract(localSource, 'export function clearStoredProgress({ access = null } = {}) {')
+  const clearMission = extract(missionSource, 'export function clearMissionStorage({ access = null } = {}) {')
+  const saveProgress = new Function('progress', 'options', 'deps',
+    'with (deps) { const { access = null } = options; ' +
+    localSource.split('export function saveLocalProgress(progress, { access = null } = {}) {')[1]?.split('\n}')[0] + ' }')
+  const createId = extract(localSource, 'export function createSessionId({ access = null } = {}) {')
+  for (const mode of ['current', 'denied', 'rejected-write', 'mismatched-read', 'revoked-write', 'throwing-read']) {
+    let owner = mode === 'denied' ? 'B' : 'A'
+    const store = new Map([
+      ['lc2-session-id', 'old-session'], ['lc2-chat-messages', 'old-chat'],
+      ['lc2-local-progress', 'old-progress'], ['lc2-active-mission', 'active'],
+      ['lc2-completed-missions', 'completed'],
+    ])
+    const access = {
+      valid: () => owner === 'A',
+      removeItem: key => {
+        if (mode === 'rejected-write') return false
+        store.delete(key)
+        if (mode === 'revoked-write') owner = 'B'
+        return true
+      },
+      setItem: (key, value) => {
+        if (mode === 'rejected-write') return false
+        store.set(key, value)
+        if (mode === 'revoked-write') owner = 'B'
+        return true
+      },
+      getItem: key => {
+        if (mode === 'throwing-read') throw new Error('denied read')
+        if (mode === 'mismatched-read') return 'stale-value'
+        return store.get(key) ?? null
+      },
+    }
+    const deps = {
+      STORAGE_KEYS: { sessionId: 'lc2-session-id', messages: 'lc2-chat-messages', progress: 'lc2-local-progress' },
+      ACTIVE_KEY: 'lc2-active-mission', COMPLETED_KEY: 'lc2-completed-missions',
+      makeId: () => 'new-session',
+      localStorage: { removeItem: () => { throw new Error('unscoped write') },
+        setItem: () => { throw new Error('unscoped write') } },
+      writeJSON: () => { throw new Error('unscoped write') },
+    }
+    const expected = mode === 'current'
+    assert.equal(clearProgress({ access }, deps), expected, mode + ': progress keys')
+    owner = mode === 'denied' ? 'B' : 'A'
+    assert.equal(clearMission({ access }, deps), expected, mode + ': mission keys')
+    owner = mode === 'denied' ? 'B' : 'A'
+    assert.equal(createId({ access }, deps), expected ? 'new-session' : null, mode + ': session ID')
+    owner = mode === 'denied' ? 'B' : 'A'
+    assert.equal(saveProgress({ xp: 0 }, { access }, deps), expected, mode + ': empty progress')
   }
   ok()
 }
