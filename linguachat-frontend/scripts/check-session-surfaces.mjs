@@ -450,7 +450,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   async function checkChatLease(mode) {
     let owner = 'A'
     let resolveReply
+    let requestCount = 0
     const chatGenerationRef = { current: 0 }
+    const chatInFlightRef = { current: null }
     const queued = []
     const enqueue = key => update => queued.push([key, update])
     const state = {
@@ -464,7 +466,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const original = structuredClone(state)
     const deps = {
       captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
-      chatGenerationRef,
+      chatGenerationRef, chatInFlightRef,
       getActiveMissionDetails: () => null,
       activeMission: null,
       submitMissionStep: () => { throw new Error('unexpected mission') },
@@ -475,11 +477,14 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       setMemoryNotice: enqueue('memory'),
       setLocalProgress: enqueue('progress'),
       messages: [],
-      sendChatMessage: () => ['inflight', 'cleared-inflight'].includes(mode)
-        ? new Promise(resolve => { resolveReply = resolve })
-        : mode === 'stale-error'
-          ? Promise.reject(new Error('offline'))
-          : Promise.resolve(reply),
+      sendChatMessage: () => {
+        requestCount++
+        return ['inflight', 'cleared-inflight', 'duplicate-inflight'].includes(mode)
+          ? new Promise(resolve => { resolveReply = resolve })
+          : mode === 'stale-error'
+            ? Promise.reject(new Error('offline'))
+            : Promise.resolve(reply)
+      },
       profile: { level: 'A1', style: 'friendly', goal: '', tutorPersonality: '' },
       sessionId: 'A-session',
       nativeLanguageInfo: { base: 'es' },
@@ -497,13 +502,27 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       recordTopicUse: () => {},
     }
     const pending = send('Hello', deps)
-    if (['inflight', 'cleared-inflight'].includes(mode)) {
+    if (mode === 'duplicate-inflight') {
+      // React has not flushed isTyping yet. A second submit must not send or
+      // award a second response/XP for the same in-flight conversation turn.
+      await send('Hello', deps)
+      assert.equal(requestCount, 1, 'rapid duplicate sends share one HTTP turn')
+      assert.equal(queued.length, 3, 'duplicate must not enqueue a second user message')
+    }
+    let replacement = null
+    if (['inflight', 'cleared-inflight', 'duplicate-inflight'].includes(mode)) {
       if (mode === 'inflight') owner = 'B'
-      else chatGenerationRef.current++
+      if (mode === 'cleared-inflight') {
+        chatGenerationRef.current++
+        replacement = { generation: chatGenerationRef.current, access: { valid: () => true } }
+        chatInFlightRef.current = replacement
+      }
       assert.equal(typeof resolveReply, 'function', 'the HTTP request must have started')
       resolveReply(reply)
     }
     await pending
+    assert.equal(chatInFlightRef.current, replacement,
+      mode + ': old finally must not unlock a newer conversation')
     if (mode === 'cleared-before-flush') chatGenerationRef.current++
     if (!['current', 'cleared-inflight', 'cleared-before-flush'].includes(mode)) owner = 'B'
     assert.ok(queued.length > 0, mode + ': React callbacks must have been queued')
@@ -511,7 +530,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(typeof update, 'function', mode + ': every queued update must check the lease')
       state[key] = update(state[key])
     }
-    if (mode === 'current') {
+    if (mode === 'current' || mode === 'duplicate-inflight') {
       assert.equal(state.messages.length, 3, 'the valid account still sees its own user/reply messages')
       assert.equal(state.progress.owner, 'A', 'valid practice still updates progress')
       assert.equal(state.connection, 'Connected as A')
@@ -522,11 +541,14 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   }
 
   await checkChatLease('current')
+  await checkChatLease('duplicate-inflight')
   await checkChatLease('stale-success')
   await checkChatLease('stale-error')
   await checkChatLease('inflight')
   await checkChatLease('cleared-inflight')
   await checkChatLease('cleared-before-flush')
+  assert.match(context, /\+\+chatGenerationRef\.current\s+chatInFlightRef\.current = null/,
+    'clearing a conversation must release the old in-flight request')
   ok()
 }
 
