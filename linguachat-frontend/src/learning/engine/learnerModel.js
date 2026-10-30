@@ -453,11 +453,16 @@ export function mergeEpisodeRuns(mine, theirs) {
       // shared help). An unfinished snapshot must still never rewrite a filed
       // completion's authoritative evidence.
       if (prev?.completedAt && run.completedAt) {
-        merged.assistanceUsed = Math.max(prev.assistanceUsed, run.assistanceUsed)
-        merged.retriedSteps = Math.max(prev.retriedSteps, run.retriedSteps)
+        merged.signalKeys = [...new Set([...prev.signalKeys, ...run.signalKeys])].slice(-100)
+        // Disjoint step markers represent distinct help/retry events; taking
+        // only the maximum counter would undercount them. Legacy runs may
+        // have higher counters than their retained marker window.
+        merged.assistanceUsed = Math.max(prev.assistanceUsed, run.assistanceUsed,
+          merged.signalKeys.filter(key => key.endsWith(':assistance')).length)
+        merged.retriedSteps = Math.max(prev.retriedSteps, run.retriedSteps,
+          merged.signalKeys.filter(key => key.endsWith(':retried')).length)
         merged.independentEvidence = prev.independentEvidence || run.independentEvidence
         merged.formatsUsed = [...new Set([...prev.formatsUsed, ...run.formatsUsed])].slice(0, 10)
-        merged.signalKeys = [...new Set([...prev.signalKeys, ...run.signalKeys])].slice(-100)
       }
       byId.set(run.runId, merged)
     }
