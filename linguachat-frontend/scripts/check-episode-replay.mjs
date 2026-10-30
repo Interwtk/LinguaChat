@@ -364,6 +364,30 @@ const completed = (episodeId) => {
   ok()
 }
 
+/*
+ * The persisted run list is not guaranteed to arrive in chronological order.
+ * Older snapshots may contain >12 runs with newest records at the front.
+ * Sanitizing BEFORE reconciliation must keep the newest practices, not the
+ * final 12 array positions (which could discard the newest evidence).
+ */
+{
+  const id = 'what_you_like'
+  const count = RUNS_PER_EPISODE + 3
+  const runs = Array.from({ length: count }, (_, i) => sanitizeRun({
+    runId: `out-of-order-${i}`, episodeId: id, mode: RUN_REPLAY,
+    startedAt: new Date(AT + i * 1000).toISOString(),
+    completedAt: new Date(AT + i * 1000 + 500).toISOString(),
+  }))
+  const newestFirst = [...runs].reverse()
+  const expected = runs.slice(-RUNS_PER_EPISODE).map(r => r.runId)
+  const sanitized = sanitizeEpisodeRuns({ [id]: newestFirst })[id]
+  assert.deepEqual(sanitized.map(r => r.runId), expected,
+    'sanitizing an out-of-order history must keep the newest dated runs')
+  assert.deepEqual(mergeEpisodeRuns({ [id]: newestFirst }, { [id]: [] })[id].map(r => r.runId), expected,
+    'merge must not lose recent evidence while sanitizing its inputs')
+  ok()
+}
+
 // 11) episode progress merges forward only — a stale copy cannot un-award
 {
   const stale = { what_you_like: { status: 'in_progress', stepIndex: 2, awarded: false } }
