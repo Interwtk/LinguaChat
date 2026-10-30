@@ -325,6 +325,13 @@ const completed = (episodeId) => {
     assert.deepEqual(new Set(merged[0].formatsUsed), new Set(['free_reply', 'choice']))
     assert.deepEqual(new Set(merged[0].signalKeys), new Set(['2:assistance', '3:retried']))
   }
+  const helpedAgain = sanitizeRun({ ...common, assistanceUsed: 1, retriedSteps: 1,
+    signalKeys: ['5:assistance', '6:retried'] })
+  const disjoint = mergeEpisodeRuns({ [id]: [helped] }, { [id]: [helpedAgain] })[id][0]
+  assert.equal(disjoint.assistanceUsed, 2, 'two distinct help markers must not collapse to max(1,1)')
+  assert.equal(disjoint.retriedSteps, 1)
+  const duplicate = mergeEpisodeRuns({ [id]: [helped] }, { [id]: [helped] })[id][0]
+  assert.equal(duplicate.assistanceUsed, 1, 'the same help marker must not count twice')
   const stale = sanitizeRun({ ...common, completedAt: null, assistanceUsed: 9, signalKeys: ['4:assistance'] })
   const mergedWithStale = mergeEpisodeRuns({ [id]: [helped] }, { [id]: [stale] })[id][0]
   assert.equal(mergedWithStale.assistanceUsed, 1, 'an unfinished tab cannot change filed evidence')
