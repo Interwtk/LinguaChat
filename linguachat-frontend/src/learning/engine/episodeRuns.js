@@ -57,7 +57,14 @@ export function makeRunId(model, episodeId, atMs = Date.now()) {
   // The run history is capped at 12. Counting retained runs would reuse the
   // thirteenth id forever and overwrite genuine later practice evidence.
   // Keep the highest retained sequence instead; the newest run survives trim.
-  const highest = runsFor(model, episodeId).reduce((max, run) => {
+  // A partially persisted completion can leave the episode marked completed
+  // while an older tab still holds the first run as active, with no filed
+  // history yet. Reserve that active ID too: switching to replay must never
+  // reuse it and later mistake two distinct attempts for the same evidence.
+  const candidates = [...runsFor(model, episodeId)]
+  const active = sanitizeRun(model.activeRun)
+  if (active?.episodeId === episodeId) candidates.push(active)
+  const highest = candidates.reduce((max, run) => {
     const id = String(run.runId || '')
     if (!id.startsWith(prefix)) return max
     const suffix = id.slice(prefix.length)
