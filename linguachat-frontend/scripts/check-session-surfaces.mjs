@@ -1478,7 +1478,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     let completions = 0
     let modelSaves = 0
     let writes = 0
-    const storage = {}
+    const storage = { 'daily-session': JSON.stringify({ id: 'A-session', status: 'planned', awarded: false }) }
     const queued = []
     const state = {
       daily: { status: 'planned' }, progress: { xp: 3 }, active: true,
@@ -1494,11 +1494,14 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         if (mode === 'revoked-save') owner = 'B'
         return true
       },
-      getItem: key => mode === 'mismatch-save' ? 'another-tab-value' : storage[key],
+      getItem: key => mode === 'mismatch-save' && writes > 0 ? 'another-tab-value' : storage[key],
     }
     const queue = key => update => queued.push([key, update])
     const deps = {
       SESSION_BONUS_XP: 15,
+      SESSION_KEY: 'daily-session',
+      ARC: [],
+      normalizeSession: value => value,
       dailySession: { id: 'A-session', status: 'planned' },
       captureLearnerAccess: () => access,
       loadLearnerModel: () => {
