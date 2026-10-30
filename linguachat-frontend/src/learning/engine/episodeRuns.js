@@ -75,7 +75,14 @@ export function makeRunId(model, episodeId, atMs = Date.now()) {
  */
 export function beginEpisodeRun(model, episodeId, { source = 'practice', wantsOtherBranch = false, branchPreference = null, atMs = Date.now() } = {}) {
   const mode = resolveRunMode(model, episodeId, { source, wantsOtherBranch })
-  const active = sanitizeRun(model.activeRun)
+  let active = sanitizeRun(model.activeRun)
+  // A restored tab may carry a stale active pointer even after another copy
+  // filed this exact run. Never rejoin that finished attempt or overwrite its
+  // history/evidence with a new practice using the same runId.
+  if (active && runsFor(model, active.episodeId).some(r => r.runId === active.runId && r.completedAt)) {
+    model.activeRun = null
+    active = null
+  }
   if (active && active.episodeId === episodeId && active.mode === mode && !active.completedAt) {
     return active
   }
@@ -137,6 +144,19 @@ export function stageDelayedRetrieval(model, canDoIds, { independent = false, se
 export function completeEpisodeRun(model, { independentEvidence = false, branchId = null, rewarded = false, atMs = Date.now(), canDoId = null, sessionId = null } = {}) {
   const active = sanitizeRun(model.activeRun)
   if (!active) return null
+  // Clearing activeRun after completion only protects a single in-memory
+  // instance. A stale tab or reconciled snapshot can restore the same pointer
+  // alongside its already-filed history. Check BEFORE recording can-do or
+  // delayed-retrieval evidence, not merely before replacing the history row.
+  const filed = runsFor(model, active.episodeId).find(r => r.runId === active.runId && r.completedAt)
+  if (filed) {
+    model.activeRun = null
+    return filed
+  }
+  if (active.completedAt) {
+    model.activeRun = null
+    return null
+  }
   for (const observation of active.pendingRetrieval) {
     recordDelayedRetrievalEvidence(model, [observation.canDoId], { ...observation, independent: true })
   }
