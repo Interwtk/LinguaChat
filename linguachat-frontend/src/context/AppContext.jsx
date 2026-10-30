@@ -443,6 +443,9 @@ export function AppProvider({ children }) {
   // Clearing or resetting a conversation invalidates replies from earlier HTTP turns.
   // The account lease alone cannot distinguish two conversations of one account.
   const chatGenerationRef = useRef(0)
+  // One free-chat request per conversation at a time. A stale request may finish
+  // after Clear, but must never release the new conversation's in-flight lock.
+  const chatInFlightRef = useRef(null)
 
   // The DOM follows the committed theme; persistence belongs to the
   // initiating account, never to an effect that can run after a lease switch.
@@ -1436,6 +1439,13 @@ export function AppProvider({ children }) {
       return
     }
 
+    // React's isTyping state is asynchronous. Two rapid submits otherwise send
+    // duplicate HTTP turns and award practice XP twice before the next render.
+    const pending = chatInFlightRef.current
+    if (pending?.generation === chatGeneration && pending.access.valid()) return
+    const inFlight = { generation: chatGeneration, access: chatAccess }
+    chatInFlightRef.current = inFlight
+
     const userMsg = {
       id: `u${Date.now()}`,
       role: 'user',
@@ -1544,6 +1554,9 @@ export function AppProvider({ children }) {
         ts: Date.now(),
       }] : prev)
     } finally {
+      // Clearing chat can start a new request while this old one is pending.
+      // Only its own request may release the current lock.
+      if (chatInFlightRef.current === inFlight) chatInFlightRef.current = null
       setIsTyping(prev => chatStillCurrent() ? false : prev)
     }
   }, [activeCompanion, activeMission, conversationTopic, interfaceLanguageInfo, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage, tutorPreferences])
@@ -1578,6 +1591,7 @@ export function AppProvider({ children }) {
     // chat. Otherwise denied storage resurrects the old conversation on reload.
     if (!saveStoredMessages([welcome], { access }) || !access.valid()) return false
     ++chatGenerationRef.current
+    chatInFlightRef.current = null
     setIsTyping(prev => access.valid() ? false : prev)
     setMessages(prev => access.valid() ? [welcome] : prev)
     setSelectedMessage(prev => access.valid() ? null : prev)
@@ -1601,6 +1615,7 @@ export function AppProvider({ children }) {
     if (saveLocalProgress(emptyProgress, { access }) === false || !access.valid()) return
     ++missionGenerationRef.current
     ++chatGenerationRef.current
+    chatInFlightRef.current = null
     setSessionId(prev => access.valid() ? nextSessionId : prev)
     setMessages(prev => access.valid() ? [welcome] : prev)
     setLocalProgress(prev => access.valid() ? emptyProgress : prev)
