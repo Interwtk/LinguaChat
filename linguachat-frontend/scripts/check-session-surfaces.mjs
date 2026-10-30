@@ -1769,20 +1769,59 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const exit = new Function('deps', 'with (deps) { ' +
     extract('  const exitSession = useCallback(() => {', '\n  }, [])') + ' }')
 
-  for (const mode of ['current', 'denied', 'rejected-save', 'revoked-before-save', 'revoked-after-save', 'revoked-during-model', 'rejected-model-save', 'revoked-after-model-save', 'stale-flush']) {
+  for (const mode of [
+    'current', 'denied', 'rejected-save', 'revoked-before-save',
+    'revoked-after-save', 'revoked-during-model', 'rejected-model-save',
+    'revoked-after-model-save', 'stale-flush', 'stale-index', 'stale-id',
+    'stale-status', 'stale-block', 'missing', 'invalid-json', 'blocked-read',
+    'revoked-during-read', 'absent-current', 'first-session',
+    'old-completed', 'completed-today',
+  ]) {
     let owner = mode === 'denied' ? 'B' : 'A'
-    let saved = 0, facts = 0, modelSaves = 0
+    let saved = 0, facts = 0, modelSaves = 0, reads = 0
     const queued = []
-    const planned = { id: 'daily-A', status: 'planned', topic: { source: 'fact', factValue: 'music' } }
-    const state = { session: planned, active: false, view: 'today', sheet: 'open' }
+    const planned = {
+      id: 'daily-A', dayKey: '2026-10-30', status: 'planned',
+      currentBlockIndex: 0, blocks: [{ id: 'intro' }, { id: 'completion' }],
+      topic: { source: 'fact', factValue: 'music' },
+    }
+    const oldCompleted = { ...planned, dayKey: '2026-10-29', status: 'completed' }
+    const daily = mode === 'first-session' || mode === 'absent-current'
+      ? null : mode === 'old-completed' ? oldCompleted
+        : mode === 'completed-today' ? { ...planned, status: 'completed' } : planned
+    const stored = mode === 'stale-index' ? { ...planned, currentBlockIndex: 1, status: 'active' }
+      : mode === 'stale-id' ? { ...planned, id: 'another-session' }
+        : mode === 'stale-status' ? { ...planned, status: 'active' }
+          : mode === 'stale-block' ? { ...planned, blocks: [{ id: 'replanned' }, { id: 'completion' }] }
+            : mode === 'old-completed' ? oldCompleted : daily || planned
+    const storage = { 'daily-session': JSON.stringify(stored) }
+    if (mode === 'missing' || mode === 'first-session') delete storage['daily-session']
+    if (mode === 'invalid-json') storage['daily-session'] = '{'
+    const state = { session: daily, active: false, view: 'today', sheet: 'open' }
     const original = structuredClone(state)
+    const access = {
+      valid: () => owner === 'A',
+      getItem: key => {
+        assert.equal(key, 'daily-session')
+        reads++
+        if (mode === 'blocked-read') throw new Error('Storage denied')
+        if (mode === 'revoked-during-read') owner = 'B'
+        return storage[key] ?? null
+      },
+    }
     const deps = {
-      captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
-      dailySession: planned,
+      captureLearnerAccess: () => access,
+      SESSION_KEY: 'daily-session',
+      normalizeSession: value => value,
+      dailySession: daily,
       preferredDuration: 'standard',
       sessionContext: () => ({}),
       ARC: [],
-      getOrCreateSession: () => { throw new Error('existing plan should be used') },
+      getOrCreateSession: () => {
+        if (mode === 'first-session' || mode === 'old-completed') return planned
+        if (mode === 'completed-today') return daily
+        throw new Error('existing plan should be used')
+      },
       loadLearnerModel: () => {
         if (mode === 'revoked-during-model') owner = 'B'
         return {}
@@ -1791,11 +1830,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         if (mode === 'revoked-before-save') owner = 'B'
         return { ...plan, status: 'active' }
       },
-      saveSession: (next, { access }) => {
-        assert.ok(access.valid())
+      saveSession: (next, { access: lease }) => {
+        assert.ok(lease.valid())
         saved++
         if (mode === 'revoked-after-save') owner = 'B'
-        return mode === 'rejected-save' ? null : next
+        if (mode === 'rejected-save') return null
+        storage['daily-session'] = JSON.stringify(next)
+        return next
       },
       markFactUsed: () => { facts++ },
       rotateFactUsage: () => { facts++ },
@@ -1816,8 +1857,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(typeof update, 'function', 'React publication must recheck the lease')
       state[key] = update(state[key])
     }
-    if (mode === 'current') {
-      assert.equal(result.status, 'active')
+    if (['current', 'first-session', 'old-completed'].includes(mode)) {
+      assert.equal(result.status, 'active', mode)
       assert.equal(saved, 1)
       assert.equal(facts, 2)
       assert.equal(modelSaves, 1)
@@ -1827,14 +1868,21 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(state.sheet, null)
     } else {
       if (mode !== 'stale-flush') assert.equal(result, false, mode)
-      assert.deepEqual(state, original, mode + ': A cannot start B session')
+      assert.deepEqual(state, original, mode + ': stale start must not mutate UI')
       assert.equal(queued.length, mode === 'stale-flush' ? 4 : 0)
-      if (mode === 'denied' || mode === 'revoked-before-save') assert.equal(saved, 0)
-      if (mode === 'rejected-save' || mode === 'revoked-after-save' || mode === 'revoked-during-model') {
+      if (['denied', 'stale-index', 'stale-id', 'stale-status', 'stale-block',
+        'missing', 'invalid-json', 'blocked-read', 'revoked-during-read',
+        'absent-current', 'completed-today', 'revoked-before-save'].includes(mode)) {
+        assert.equal(saved, 0, mode + ': no stale plan may overwrite storage')
+        assert.equal(facts, 0)
+        assert.equal(modelSaves, 0)
+      }
+      if (['rejected-save', 'revoked-after-save', 'revoked-during-model'].includes(mode)) {
         assert.equal(facts, 0)
         assert.equal(modelSaves, 0)
       }
     }
+    if (mode === 'denied' || mode === 'completed-today') assert.equal(reads, 0)
   }
 
   for (const mode of ['current', 'denied', 'stale-flush']) {
