@@ -836,7 +836,7 @@ export function sanitizeRun(raw) {
     // its own assistance and retries. No answers or learner text are stored.
     signalKeys: Array.isArray(raw.signalKeys)
       ? [...new Set(raw.signalKeys.filter(k => typeof k === 'string'
-        && /^\\d{1,4}(?::alt)?:(?:completed|assistance|retried|switched)$/.test(k)))].slice(-100) : [],
+        && /^\d{1,4}(?::alt)?:(?:completed|assistance|retried|switched)$/.test(k)))].slice(-100) : [],
     rewarded: Boolean(raw.rewarded),
     /*
      * How much help this run offers, and why. It lives on the run so a resumed
