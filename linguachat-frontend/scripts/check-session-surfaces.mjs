@@ -569,6 +569,11 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     if (['duplicate-settled', 'duplicate-mid-flush', 'error-settled'].includes(mode)) {
       // A new render with the committed messages must permit the next turn.
       deps.messages = state.messages
+      // The first mid-flush request was deliberately held open; the next
+      // request is a separate turn and must be allowed to settle normally.
+      if (mode === 'duplicate-mid-flush') {
+        deps.sendChatMessage = () => { requestCount++; return Promise.resolve(reply) }
+      }
       await send('Next turn', deps)
       assert.equal(requestCount, 2, mode + ': next turn unlocks after React publishes messages')
     }
