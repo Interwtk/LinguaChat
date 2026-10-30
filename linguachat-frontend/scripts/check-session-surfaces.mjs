@@ -1453,7 +1453,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
 }
 
 
-/* ---------- 10. daily-session completion must not award another account ---------- */
+/* ---------- 10. daily completion requires the current durable completion block ---------- */
 {
   const context = read('src/context/AppContext.jsx')
   const sessionSource = read('src/learning/engine/session.js')
@@ -1469,19 +1469,44 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     'with (deps) { const { access = null } = options || {}; ' +
     extract(sessionSource, 'export function saveSession(session, { access = null } = {}) {', '\n}') + ' }')
 
+  const initial = {
+    version: 1, id: 'A-session', dayKey: '2026-10-30', durationMode: 'standard',
+    currentBlockIndex: 2, status: 'active', awarded: false,
+    blocks: [
+      { id: 'episode', type: 'start_episode' },
+      { id: 'review', type: 'review' },
+      { id: 'completion', type: 'session_completion' },
+    ],
+  }
   for (const mode of [
     'current', 'stale-flush', 'denied', 'revoked-load', 'revoked-complete',
-    'revoked-model-save', 'rejected-model-save', 'rejected-save', 'mismatch-save', 'revoked-save',
+    'revoked-model-save', 'rejected-model-save', 'rejected-save', 'mismatch-save',
+    'revoked-save', 'stale-id', 'stale-day', 'stale-index', 'stale-block',
+    'stale-status', 'already-completed', 'wrong-visible-block',
+    'wrong-durable-type', 'missing', 'invalid-json', 'blocked-read', 'revoked-read',
   ]) {
     let owner = mode === 'denied' ? 'B' : 'A'
-    let loads = 0
-    let completions = 0
-    let modelSaves = 0
-    let writes = 0
-    const storage = { 'daily-session': JSON.stringify({ id: 'A-session', status: 'planned', awarded: false }) }
+    let loads = 0, completions = 0, modelSaves = 0, writes = 0, reads = 0
+    const visible = mode === 'wrong-visible-block'
+      ? { ...initial, currentBlockIndex: 1 } : initial
+    const durable = mode === 'stale-id' ? { ...initial, id: 'other-session' }
+      : mode === 'stale-day' ? { ...initial, dayKey: '2026-10-31' }
+        : mode === 'stale-index' ? { ...initial, currentBlockIndex: 1 }
+          : mode === 'stale-block' ? { ...initial, blocks: [
+            initial.blocks[0], initial.blocks[1], { id: 'replanned', type: 'session_completion' },
+          ] }
+            : mode === 'stale-status' ? { ...initial, status: 'planned' }
+              : mode === 'already-completed' ? { ...initial, status: 'completed', awarded: true }
+                : mode === 'wrong-durable-type' ? { ...initial, blocks: [
+                  initial.blocks[0], initial.blocks[1], { id: 'completion', type: 'review' },
+                ] }
+                  : visible
+    const storage = { 'daily-session': JSON.stringify(durable) }
+    if (mode === 'missing') delete storage['daily-session']
+    if (mode === 'invalid-json') storage['daily-session'] = '{'
     const queued = []
     const state = {
-      daily: { status: 'planned' }, progress: { xp: 3 }, active: true,
+      daily: structuredClone(visible), progress: { xp: 3 }, active: true,
       episode: 'episode-A', arc: 2, view: 'practice',
     }
     const original = structuredClone(state)
@@ -1494,7 +1519,12 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         if (mode === 'revoked-save') owner = 'B'
         return true
       },
-      getItem: key => mode === 'mismatch-save' && writes > 0 ? 'another-tab-value' : storage[key],
+      getItem: key => {
+        reads++
+        if (mode === 'blocked-read') throw new Error('Storage denied')
+        if (mode === 'revoked-read') owner = 'B'
+        return mode === 'mismatch-save' && writes > 0 ? 'another-tab-value' : (storage[key] ?? null)
+      },
     }
     const queue = key => update => queued.push([key, update])
     const deps = {
@@ -1502,7 +1532,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       SESSION_KEY: 'daily-session',
       ARC: [],
       normalizeSession: value => value,
-      dailySession: { id: 'A-session', status: 'planned' },
+      dailySession: structuredClone(visible),
       captureLearnerAccess: () => access,
       loadLearnerModel: () => {
         loads++
@@ -1512,7 +1542,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       completeSession: session => {
         completions++
         if (mode === 'revoked-complete') owner = 'B'
-        return { session: { ...session, status: 'completed' }, awarded: true }
+        return { session: { ...session, status: 'completed', awarded: true }, awarded: true }
       },
       saveLearnerModel: (_model, options) => {
         assert.equal(options?.verified, true, 'daily rewards require verified model persistence')
@@ -1551,12 +1581,23 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(modelSaves, 1)
       assert.equal(queued.length, 6)
     } else {
-      assert.deepEqual(state, original, mode + ': A completion cannot mutate B UI')
+      assert.equal(result, mode === 'stale-flush', mode + ': only a valid current completion may succeed')
+      assert.deepEqual(state, original, mode + ': stale completion cannot mutate B or an older cursor')
       assert.equal(queued.length, mode === 'stale-flush' ? 6 : 0)
-      if (mode === 'denied') assert.equal(loads, 0)
+      if (mode === 'denied' || mode === 'wrong-visible-block') assert.equal(reads, 0)
       if (mode === 'revoked-load') assert.equal(completions, 0)
       if (mode === 'revoked-complete') assert.equal(modelSaves, 0)
       if (mode === 'revoked-model-save' || mode === 'rejected-model-save') assert.equal(writes, 0)
+      if ([
+        'stale-id', 'stale-day', 'stale-index', 'stale-block', 'stale-status',
+        'already-completed', 'wrong-visible-block', 'wrong-durable-type',
+        'missing', 'invalid-json', 'blocked-read', 'revoked-read',
+      ].includes(mode)) {
+        assert.equal(loads, 0, mode + ': do not read or award a model for stale completion')
+        assert.equal(completions, 0, mode)
+        assert.equal(modelSaves, 0, mode)
+        assert.equal(writes, 0, mode)
+      }
     }
   }
   ok()
