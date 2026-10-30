@@ -745,7 +745,13 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
       setEpisodeState(m, ep.id, { status: 'completed', stepIndex: ep.steps.length - 1 })
     }
     completeEpisodeRun(m, { canDoId: ep.canDoId, sessionId: learningSessionId, independentEvidence: independent, branchId: runRef.current?.branchId || null, rewarded: firstCompletion })
-    saveLearnerModel(m)
+    // The award can persist before the run history/can-do evidence does.
+    // Never leave the completion screen on a rejected final write: retry the
+    // same in-memory run without paying XP or recording evidence twice.
+    if (saveLearnerModel(m, { verified: true }) !== true) {
+      finishedRef.current = false
+      return
+    }
     if (onComplete) onComplete(ep)
     else finishEpisode()
   }
