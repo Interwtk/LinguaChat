@@ -25,6 +25,87 @@ let n = 0
 const ok = () => { n++ }
 const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, type, format, source })
 
+/* ---------- episode completion must not lose or falsely mark Garden grants ---------- */
+{
+  const episodeSource = read('src/components/episode/EpisodeShell.jsx')
+  const start = episodeSource.indexOf('  function finish() {')
+  const end = episodeSource.indexOf('\n  return (', start)
+  assert.ok(start >= 0 && end > start, 'episode finish callback must be inspectable')
+  const finish = new Function('deps',
+    'with (deps) { ' + episodeSource.slice(start, end) + '\n return finish() }')
+
+  for (const mode of ['success', 'double-click', 'rejected-award', 'retry-after-rejection', 'replay']) {
+    const model = { languageItems: {}, episodeState: { awarded: mode === 'replay' } }
+    const finishedRef = { current: false }
+    const awardedRef = { current: false }
+    const modelRef = { current: model }
+    const ep = { id: 'episode-A', xp: 10, canDoId: 'can-do-A',
+      gardenItems: ['vocab-A'], steps: [{ type: 'completion' }] }
+    let rewardCalls = 0
+    let completions = 0
+    let saves = 0
+    let exits = 0
+    let mirrored = 0
+    let savedModel = null
+    const deps = {
+      finishedRef, awardedRef, modelRef, ep,
+      learningSessionId: 'learning-day:2026-10-30',
+      runRef: { current: { independentEvidence: true, branchId: null } },
+      getEpisodeState: m => m.episodeState,
+      SEED_VOCAB_BY_ID: { 'vocab-A': { term: 'hello', kind: 'word' } },
+      awardEpisode: (_episode, { grants }) => {
+        rewardCalls++
+        assert.deepEqual(grants.map(g => g.vocabId), ['vocab-A'])
+        return mode !== 'rejected-award'
+          && (mode !== 'retry-after-rejection' || rewardCalls > 1)
+      },
+      recordItemSeen: (m, id) => { mirrored++; m.languageItems[id] = { learningState: 'seen' } },
+      setEpisodeState: (m, _id, update) => { m.episodeState = { ...m.episodeState, ...update } },
+      completeEpisodeRun: () => { completions++ },
+      saveLearnerModel: m => { saves++; savedModel = structuredClone(m); return true },
+      onComplete: null,
+      finishEpisode: () => { exits++ },
+    }
+    finish(deps)
+    if (mode === 'retry-after-rejection') {
+      assert.equal(finishedRef.current, false, 'failed reward must leave the completion retryable')
+      assert.equal(awardedRef.current, false, 'failed reward must not latch the award')
+      assert.equal(completions, 0, 'failed reward must not file can-do evidence')
+      assert.equal(saves, 0, 'failed reward must not save an awarded episode')
+      assert.equal(exits, 0, 'failed reward must not exit the completion screen')
+      finish(deps)
+    } else {
+      finish(deps) // double tap: only the first successful completion may commit
+    }
+    if (mode === 'rejected-award') {
+      assert.equal(rewardCalls, 2, 'retry must be possible after denied persistence')
+      assert.equal(finishedRef.current, false)
+      assert.equal(awardedRef.current, false)
+      assert.equal(model.episodeState.awarded, false)
+      assert.equal(completions, 0)
+      assert.equal(saves, 0)
+      assert.equal(exits, 0)
+      assert.equal(mirrored, 0)
+    } else {
+      assert.equal(finishedRef.current, true)
+      assert.equal(model.episodeState.awarded, true)
+      assert.equal(completions, 1, 'one completion must count as one evidence event')
+      assert.equal(saves, 1)
+      assert.equal(exits, 1)
+      if (mode === 'replay') {
+        assert.equal(rewardCalls, 0, 'previously awarded episode must not pay again')
+        assert.equal(mirrored, 0)
+      } else {
+        assert.equal(rewardCalls, mode === 'retry-after-rejection' ? 2 : 1)
+        assert.equal(mirrored, 1)
+        assert.equal(savedModel.languageItems['vocab-A'].learningState, 'seen',
+          'runner final save must retain the Garden item granted by context')
+      }
+    }
+  }
+  ok()
+}
+
 /* ---------- stale daily-session completion must not award bonus twice ---------- */
 {
   const context = read('src/context/AppContext.jsx')
