@@ -1466,8 +1466,11 @@ export function AppProvider({ children }) {
     // React's isTyping state is asynchronous. Two rapid submits otherwise send
     // duplicate HTTP turns and award practice XP twice before the next render.
     const pending = chatInFlightRef.current
-    if (pending?.generation === chatGeneration && pending.access.valid()) return
-    const inFlight = { generation: chatGeneration, access: chatAccess }
+    // A fast response can settle before React publishes the learner/reply
+    // messages. Keep that turn locked until the committed message list changes.
+    if (pending?.generation === chatGeneration && pending.access.valid()
+      && (!pending.committed || pending.messages === messages)) return
+    const inFlight = { generation: chatGeneration, access: chatAccess, messages, committed: false }
     chatInFlightRef.current = inFlight
 
     const userMsg = {
@@ -1578,9 +1581,13 @@ export function AppProvider({ children }) {
         ts: Date.now(),
       }] : prev)
     } finally {
-      // Clearing chat can start a new request while this old one is pending.
-      // Only its own request may release the current lock.
-      if (chatInFlightRef.current === inFlight) chatInFlightRef.current = null
+      // An old reply cannot release a replacement request after Clear. A
+      // settled current reply stays locked until React commits its messages;
+      // otherwise another click could award the same free-chat turn twice.
+      if (chatInFlightRef.current === inFlight) {
+        if (chatStillCurrent()) inFlight.committed = true
+        else chatInFlightRef.current = null
+      }
       setIsTyping(prev => chatStillCurrent() ? false : prev)
     }
   }, [activeCompanion, activeMission, conversationTopic, interfaceLanguageInfo, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage, tutorPreferences])
