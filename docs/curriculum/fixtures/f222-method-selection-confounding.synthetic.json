@@ -1,0 +1,525 @@
+{
+  "schema_id": "linguachat.curriculum.f222.machine_readable.v1",
+  "fixture_document": "docs/curriculum/longitudinal-fixture-f222-method-selection-confounding-independent-transfer.md",
+  "status": "DESIGN_ONLY_UNSUPPORTED",
+  "purpose": "Deterministic synthetic histories and matched controls for future independent harness; not implemented adaptive selection, a CEFR pass or a causal efficacy result.",
+  "seed": 22220261030,
+  "clock": {
+    "anchor": "2026-10-30T00:00:00Z",
+    "timezone": "UTC",
+    "day_semantics": "elapsed_24h_not_automatic_meaningful_delay"
+  },
+  "source_binding": {
+    "cefr_can_do_id": "REQUIRES_EXISTING_VERSIONED_SOURCE_BINDING",
+    "rubric_version": "REQUIRES_REVIEWED_RUBRIC",
+    "task_version": "SYNTHETIC_F222_V1",
+    "policy_version": "F222_DESIGN_V1",
+    "channel_version": "REQUIRES_SUPPORTED_CHANNEL_BINDING",
+    "source_resolution": "UNSUPPORTED"
+  },
+  "assertions": [
+    "Objective/rubric/skill/exit invariance and source binding required; no Pre-A1 edit or A1-C2 release.",
+    "Pre-decision snapshot contains baseline, eligible candidates, policy version, selection reason and actual delivered method/dose.",
+    "Comparability gate rejects selection bias, topic confounding and invalid cross-channel constructs; observational contrasts are not causal proof.",
+    "First unaided attempt, answer-bearing exposure, meaningful delayed retrieval and unseen independent transfer are distinct.",
+    "Soft interests cannot remove neutral/unfamiliar contexts, required objectives or receptive/productive skill debt.",
+    "Accessible learner-consented candidate sets; no fixed learning-style label or coerced modality.",
+    "Due/offered/rendered/completed/missing denominators, trusted chronology, deduplication and UNKNOWN preserved.",
+    "Matched controls permit hypothesis reversal or justified balanced fallback based on a genuinely rendered next choice.",
+    "All synthetic assertions remain UNSUPPORTED until independent exact-head executable harness, reviewed linguistic/causal oracles and source binding; no efficacy claim without longitudinal human evidence."
+  ],
+  "required_harness_outputs": [
+    "exact_curriculum_HEAD",
+    "exact_engine_HEAD",
+    "executable_command",
+    "resolved_CEFR_objective_and_rubric",
+    "independently_reviewed_item_and_channel_equivalence",
+    "trusted_pre_choice_and_render_chronology",
+    "candidate_feasibility_and_actual_method_dose",
+    "eligible_first_attempt_and_delayed_unseen_transfer",
+    "due_offered_rendered_completed_missing_counts",
+    "per_case_and_matched_control_comparability_verdict",
+    "per_assertion_PASS_FAIL_UNSUPPORTED",
+    "actual_next_instruction_rendered",
+    "independent_reviewer_signoff"
+  ],
+  "cases": [
+    {
+      "id": "A",
+      "title": "Confounding by indication: harder learners receive scaffolds",
+      "objective_binding": "EXISTING_VERSIONED_CEFR_CAN_DO_REQUIRED",
+      "rubric_binding": "INDEPENDENT_REVIEW_REQUIRED",
+      "channel_binding": "SUPPORTED_CHANNEL_REQUIRED",
+      "status": "UNSUPPORTED_UNTIL_HARNESS",
+      "baseline": [
+        {
+          "group": "S",
+          "prior_errors": 7,
+          "first_unaided_correct": 2,
+          "method": "worked_scaffold",
+          "delayed_correct": 4,
+          "delayed_total": 10
+        },
+        {
+          "group": "F",
+          "prior_errors": 1,
+          "first_unaided_correct": 8,
+          "method": "free_production",
+          "delayed_correct": 8,
+          "delayed_total": 10
+        }
+      ],
+      "events": [
+        {
+          "id": "A1",
+          "day": 0,
+          "session": "a0",
+          "type": "pre_choice_snapshot",
+          "methods_feasible": [
+            "worked_scaffold",
+            "free_production"
+          ],
+          "baseline_ability": "UNEQUAL",
+          "rubric": "REVIEW_REQUIRED"
+        },
+        {
+          "id": "A2",
+          "day": 0,
+          "session": "a0",
+          "type": "instruction_rendered",
+          "group": "S",
+          "method": "worked_scaffold",
+          "dose": 1
+        },
+        {
+          "id": "A3",
+          "day": 0,
+          "session": "a0",
+          "type": "instruction_rendered",
+          "group": "F",
+          "method": "free_production",
+          "dose": 1
+        },
+        {
+          "id": "A4",
+          "day": 10,
+          "session": "a1",
+          "type": "unseen_delayed_probe",
+          "reviewed_independent_evidence": "REQUIRED"
+        }
+      ],
+      "matched_control": {
+        "mutation": "equalize reviewed baseline proficiency, prior error burden, difficulty, accessibility, task and delay while retaining both candidate methods",
+        "unchanged": [
+          "can_do",
+          "rubric",
+          "objective_difficulty",
+          "meaningful_delay"
+        ],
+        "expected_comparability": "ELIGIBLE_FOR_CAUTION_NOT_CAUSAL_PROOF"
+      },
+      "expected": {
+        "original_comparability": "NOT_COMPARABLE",
+        "no_global_method_winner": true,
+        "retain_scaffold_option": true
+      }
+    },
+    {
+      "id": "B",
+      "title": "Topic familiarity confounded with reading/listening method",
+      "objective_binding": "EXISTING_VERSIONED_CEFR_CAN_DO_REQUIRED",
+      "rubric_binding": "INDEPENDENT_REVIEW_REQUIRED",
+      "channel_binding": "SUPPORTED_CHANNEL_REQUIRED",
+      "status": "UNSUPPORTED_UNTIL_HARNESS",
+      "events": [
+        {
+          "id": "B1",
+          "day": 0,
+          "session": "b0",
+          "type": "pre_choice_snapshot",
+          "interest": "games",
+          "receptive_skill_debt": [
+            "listening"
+          ],
+          "objective": "VERSIONED_BINDING_REQUIRED"
+        },
+        {
+          "id": "B2",
+          "day": 0,
+          "session": "b0",
+          "type": "instruction_rendered",
+          "method": "reading",
+          "context": "familiar_games",
+          "difficulty": "REVIEW_REQUIRED"
+        },
+        {
+          "id": "B3",
+          "day": 1,
+          "session": "b1",
+          "type": "instruction_rendered",
+          "method": "listening",
+          "context": "unfamiliar_transport",
+          "audio_quality": "REVIEW_REQUIRED"
+        },
+        {
+          "id": "B4",
+          "day": 9,
+          "session": "b2",
+          "type": "delayed_probe",
+          "scores": {
+            "reading": 0.9,
+            "listening": 0.6
+          },
+          "independence": "REVIEW_REQUIRED"
+        }
+      ],
+      "matched_control": {
+        "mutation": "counterbalance games, transport and neutral contexts across reading and listening using separately reviewed equivalent receptive constructs and difficulty",
+        "unchanged": [
+          "interest_softness",
+          "required_listening_coverage",
+          "CEFR_evidence_standard"
+        ],
+        "expected_comparability": "REQUIRES_REVIEWED_CONSTRUCT_EQUIVALENCE"
+      },
+      "expected": {
+        "original_comparability": "NOT_COMPARABLE",
+        "permanent_reader_label": false,
+        "listen_debt_retained": true,
+        "neutral_and_unfamiliar_rotation": true
+      }
+    },
+    {
+      "id": "C",
+      "title": "Assisted immediate accuracy cannot outrank independent delayed transfer",
+      "objective_binding": "EXISTING_VERSIONED_CEFR_CAN_DO_REQUIRED",
+      "rubric_binding": "INDEPENDENT_REVIEW_REQUIRED",
+      "channel_binding": "SUPPORTED_CHANNEL_REQUIRED",
+      "status": "UNSUPPORTED_UNTIL_HARNESS",
+      "events": [
+        {
+          "id": "C1",
+          "day": 0,
+          "session": "c0",
+          "type": "pre_choice_snapshot",
+          "methods_feasible": [
+            "worked_example",
+            "retrieval_first"
+          ],
+          "selection_reason": "balanced_exploration"
+        },
+        {
+          "id": "C2",
+          "day": 0,
+          "session": "c0",
+          "type": "answer_bearing_model_rendered",
+          "method": "worked_example"
+        },
+        {
+          "id": "C3",
+          "day": 0,
+          "session": "c0",
+          "type": "assisted_repetition",
+          "method": "worked_example",
+          "correct": 9,
+          "total": 10,
+          "independent": false
+        },
+        {
+          "id": "C4",
+          "day": 0,
+          "session": "c0",
+          "type": "first_unaided_attempt",
+          "method": "retrieval_first",
+          "correct": 6,
+          "total": 10,
+          "independent": true
+        },
+        {
+          "id": "C5",
+          "day": 10,
+          "session": "c1",
+          "type": "unseen_cross_context_transfer",
+          "independent": true,
+          "answer_exposure_before_attempt": false,
+          "semantic_review": "REQUIRED",
+          "illustrative_relative_outcome": "retrieval_first_better"
+        }
+      ],
+      "matched_control": {
+        "mutation": "insert answer-bearing transfer model render before C5 and mark C5 assisted",
+        "unchanged": [
+          "day",
+          "objective",
+          "rubric",
+          "transfer_item"
+        ],
+        "expected_delayed_eligibility": false
+      },
+      "expected": {
+        "assisted_repeats_do_not_certify_mastery": true,
+        "independent_delayed_outcome_priority": true,
+        "meaningful_delay_requires_no_intervening_answer_exposure": true
+      }
+    },
+    {
+      "id": "D",
+      "title": "Missing-not-at-random follow-up cannot be laundered into a win",
+      "objective_binding": "EXISTING_VERSIONED_CEFR_CAN_DO_REQUIRED",
+      "rubric_binding": "INDEPENDENT_REVIEW_REQUIRED",
+      "channel_binding": "SUPPORTED_CHANNEL_REQUIRED",
+      "status": "UNSUPPORTED_UNTIL_HARNESS",
+      "events": [
+        {
+          "id": "D1",
+          "day": 0,
+          "session": "d0",
+          "type": "pre_choice_snapshot",
+          "method_candidates": [
+            "X",
+            "Y"
+          ],
+          "offline_risk": "RECORDED_NOT_CAUSAL"
+        },
+        {
+          "id": "D2",
+          "day": 14,
+          "session": "d1",
+          "type": "followup_ledger",
+          "method": "X",
+          "due": 30,
+          "offered": 10,
+          "rendered": 10,
+          "completed": 10,
+          "correct": 8,
+          "missing_unrendered": 20
+        },
+        {
+          "id": "D3",
+          "day": 14,
+          "session": "d2",
+          "type": "followup_ledger",
+          "method": "Y",
+          "due": 10,
+          "offered": 10,
+          "rendered": 10,
+          "completed": 10,
+          "correct": 7,
+          "missing_unrendered": 0
+        }
+      ],
+      "matched_control": {
+        "mutation": "replace X's 20 unrendered with 20 newly rendered and independently reviewed outcomes, 10 correct and 10 incorrect",
+        "expected_new_X": {
+          "due": 30,
+          "rendered": 30,
+          "completed": 30,
+          "correct": 18
+        },
+        "expected_new_Y": {
+          "due": 10,
+          "rendered": 10,
+          "completed": 10,
+          "correct": 7
+        }
+      },
+      "expected": {
+        "original_comparison": "NOT_COMPARABLE",
+        "X_completed_rate": "8/10",
+        "X_due_coverage": "10/30",
+        "Y_completed_rate": "7/10",
+        "no_missing_imputation": true,
+        "no_offline_penalty": true
+      }
+    },
+    {
+      "id": "E",
+      "title": "Accessibility and learner agency constrain safe exploration",
+      "objective_binding": "EXISTING_VERSIONED_CEFR_CAN_DO_REQUIRED",
+      "rubric_binding": "INDEPENDENT_REVIEW_REQUIRED",
+      "channel_binding": "SUPPORTED_CHANNEL_REQUIRED",
+      "status": "UNSUPPORTED_UNTIL_HARNESS",
+      "events": [
+        {
+          "id": "E1",
+          "day": 0,
+          "session": "e0",
+          "type": "pre_choice_snapshot",
+          "speech_playback": "FAILED",
+          "learner_requested": "written_explanation",
+          "methods_feasible": [
+            "written_explanation"
+          ],
+          "consent_to_audio": false
+        },
+        {
+          "id": "E2",
+          "day": 0,
+          "session": "e0",
+          "type": "instruction_rendered",
+          "method": "written_explanation",
+          "objective": "EXISTING_VERSIONED_BINDING_REQUIRED"
+        },
+        {
+          "id": "E3",
+          "day": 7,
+          "session": "e1",
+          "type": "receptive_probe",
+          "channel": "text",
+          "independent": true,
+          "reviewed_oracle": "REQUIRED"
+        },
+        {
+          "id": "E4",
+          "day": 7,
+          "session": "e1",
+          "type": "skill_debt",
+          "listening": "PENDING",
+          "speaking": "PENDING"
+        }
+      ],
+      "matched_control": {
+        "mutation": "working audio restored and learner explicitly consents; add audio to feasible methods for future choices only",
+        "unchanged": [
+          "past_event_provenance",
+          "CEFR_objective",
+          "mastery_standard"
+        ],
+        "expected_future_feasible_methods": [
+          "written_explanation",
+          "audio_supported_method"
+        ]
+      },
+      "expected": {
+        "no_coerced_audio": true,
+        "no_learning_style_label": true,
+        "text_only_not_speaking_certification": true,
+        "only_feasible_exploration": true
+      }
+    },
+    {
+      "id": "F",
+      "title": "Simpson reversal, replay deduplication, UNKNOWN and actually rendered review",
+      "objective_binding": "EXISTING_VERSIONED_CEFR_CAN_DO_REQUIRED",
+      "rubric_binding": "INDEPENDENT_REVIEW_REQUIRED",
+      "channel_binding": "SUPPORTED_CHANNEL_REQUIRED",
+      "status": "UNSUPPORTED_UNTIL_HARNESS",
+      "illustrative_strata": [
+        {
+          "context": "hard",
+          "P": {
+            "correct": 9,
+            "total": 20
+          },
+          "Q": {
+            "correct": 2,
+            "total": 5
+          }
+        },
+        {
+          "context": "easy",
+          "P": {
+            "correct": 5,
+            "total": 5
+          },
+          "Q": {
+            "correct": 16,
+            "total": 20
+          }
+        }
+      ],
+      "events": [
+        {
+          "id": "F1",
+          "day": 0,
+          "session": "f0",
+          "sequence": 1,
+          "type": "pre_choice_snapshot",
+          "selection_policy": "VERSIONED_REQUIRED",
+          "due_listening_review": true,
+          "topic_interest": "soft_only"
+        },
+        {
+          "id": "F2",
+          "day": 0,
+          "session": "f0",
+          "sequence": 2,
+          "type": "instruction_rendered",
+          "method": "P",
+          "context": "hard"
+        },
+        {
+          "id": "F3",
+          "day": 8,
+          "session": "f1",
+          "sequence": 1,
+          "type": "unseen_transfer",
+          "stable_attempt_id": "F_TRANSFER_1",
+          "independent": true,
+          "reviewed_oracle": "REQUIRED"
+        },
+        {
+          "id": "F3_REPLAY",
+          "day": 8,
+          "session": "f1",
+          "sequence": 1,
+          "type": "replayed_event",
+          "stable_attempt_id": "F_TRANSFER_1",
+          "independent": true
+        },
+        {
+          "id": "F4",
+          "day": 8,
+          "session": "f1",
+          "sequence": 2,
+          "type": "transfer",
+          "stable_attempt_id": "F_UNKNOWN",
+          "answer_visibility": "UNKNOWN"
+        },
+        {
+          "id": "F5",
+          "day": 8,
+          "session": "f1",
+          "sequence": 3,
+          "type": "listening_review_queued",
+          "rendered": false,
+          "completed": false
+        },
+        {
+          "id": "F6",
+          "day": 8,
+          "session": "f1",
+          "sequence": 4,
+          "type": "next_instruction_rendered",
+          "method": "balanced_feasible_fallback",
+          "skill": "listening",
+          "rendered": true,
+          "independent_outcome": "PENDING"
+        }
+      ],
+      "matched_control": {
+        "mutation": "replace reviewed within-stratum delayed independent outcome counts only: hard P=1/20,Q=3/5; easy P=3/5,Q=19/20; preserve feasibility, exposures, difficulty, timing, and deduplication",
+        "expected": "REASSESS_HYPOTHESIS_OR_BALANCED_FALLBACK"
+      },
+      "expected": {
+        "pooled_rates": {
+          "P": "14/25",
+          "Q": "18/25"
+        },
+        "within_context_P_greater_than_Q": true,
+        "pooled_winner_not_causal": true,
+        "unique_F_TRANSFER_1_count": 1,
+        "UNKNOWN_not_pass": true,
+        "queued_not_completed": true,
+        "rendered_next_choice_required": true
+      }
+    }
+  ],
+  "prohibitions": [
+    "No live experiment or production tracking",
+    "No Auth/cloud/infra/Supabase/production mutation",
+    "No paid Claude or EvoLabs",
+    "No auto-merge",
+    "No Pre-A1 edits or A1-C2 activation"
+  ]
+}
