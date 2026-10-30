@@ -41,7 +41,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     let stored = {
       id: '2026-10-30:standard', version: 1, status: 'active',
       awarded: mode === 'already-awarded', dayKey: '2026-10-30',
-      durationMode: 'standard', blocks: [{ id: 'episode' }],
+      durationMode: 'standard', currentBlockIndex: 1,
+      blocks: [{ id: 'episode', type: 'start_episode' }, { id: 'completion', type: 'session_completion' }],
     }
     let xp = 0
     let writes = 0
@@ -85,12 +86,12 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const second = finish(deps)
     if (mode === 'double-click') {
       assert.equal(first, true)
-      assert.equal(second, true)
+      assert.equal(second, false, 'stale second click must not finish an already completed cursor')
       assert.equal(xp, 15, 'two completions before React flush must award once')
-      assert.equal(writes, 2)
+      assert.equal(writes, 1)
     } else if (mode === 'already-awarded') {
       assert.equal(first, true)
-      assert.equal(second, true)
+      assert.equal(second, false, 'completed cursor cannot be replayed by a stale click')
       assert.equal(xp, 0, 'durable awarded flag overrides stale React state')
     } else {
       assert.equal(first, false, mode + ': completion must fail closed')
