@@ -74,7 +74,7 @@ import { selectTopic, providerTopicContext } from '../learning/engine/topicSelec
 import { asSubjectValue } from '../learning/engine/semanticContext.js'
 import {
   loadSession, saveSession, getOrCreateSession, startSession,
-  advanceBlock, completeSession, isDurationMode,
+  advanceBlock, completeSession, isDurationMode, SESSION_KEY, normalizeSession,
 } from '../learning/engine/session.js'
 
 const DURATION_PREF_KEY = 'lc2-session-duration'
@@ -976,9 +976,19 @@ export function AppProvider({ children }) {
     const access = captureLearnerAccess()
     if (!access.valid()) return false
     if (dailySession) {
+      // React can flush the previous render after a successful completion.
+      // Read the durable session under the original lease, not stale React
+      // state, so a second click cannot award the same bonus again.
+      let storedSession
+      try {
+        const raw = access.getItem(SESSION_KEY)
+        if (!access.valid() || raw === null) return false
+        storedSession = normalizeSession(JSON.parse(raw), ARC)
+      } catch { return false }
+      if (!access.valid() || !storedSession || storedSession.id !== dailySession.id) return false
       const model = loadLearnerModel()
       if (!access.valid()) return false
-      const { session, awarded } = completeSession(dailySession, model)
+      const { session, awarded } = completeSession(storedSession, model)
       if (!access.valid()) return false
       if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
       if (!saveSession(session, { access }) || !access.valid()) return false
