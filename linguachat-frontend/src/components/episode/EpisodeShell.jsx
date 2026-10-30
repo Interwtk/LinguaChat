@@ -752,8 +752,11 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
       finishedRef.current = false
       return
     }
-    if (onComplete) onComplete(ep)
-    else finishEpisode()
+    // The episode evidence is durable, but a daily-session cursor or standalone
+    // navigation can still be refused (stale tab, denied Storage, revoked lease).
+    // Keep the button retryable without paying XP or filing the run again.
+    const navigated = onComplete ? onComplete(ep) : finishEpisode()
+    if (navigated === false) finishedRef.current = false
   }
 
   return (
