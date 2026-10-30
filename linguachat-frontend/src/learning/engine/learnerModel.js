@@ -427,6 +427,26 @@ export function mergeLanguageItems(mine, theirs) {
 }
 
 /*
+ * Both migration/sanitization and merge must retain the newest 12 practices.
+ * Sorting only AFTER sanitizeEpisodeRuns used to lose newer dated runs when
+ * an imported/stale array was out of order and exceeded the window.
+ * Undated legacy runs retain their original relative order.
+ */
+function newestEpisodeRuns(runs) {
+  const ordered = runs.map((run, index) => ({
+    run, index, at: Date.parse(run.startedAt || ''),
+  }))
+  ordered.sort((a, b) => {
+    const aDated = Number.isFinite(a.at)
+    const bDated = Number.isFinite(b.at)
+    if (aDated && bDated && a.at !== b.at) return a.at - b.at
+    if (aDated !== bDated) return aDated ? 1 : -1
+    return a.index - b.index
+  })
+  return ordered.slice(-RUNS_PER_EPISODE).map(({ run }) => run)
+}
+
+/*
  * Runs are merged by id, never summed. If one copy saw a run finish and the
  * other did not, the finished version wins — a completion is a fact, an
  * unfinished snapshot is only the absence of news.
@@ -466,22 +486,7 @@ export function mergeEpisodeRuns(mine, theirs) {
       }
       byId.set(run.runId, merged)
     }
-    // A stale tab may hold an older 12-run window than the saved copy.
-    // Iteration order is NOT practice order: appending stale-only IDs before
-    // trimming used to evict newer completions (and their support evidence).
-    // Prefer actual start times; retain insertion order for undated legacy
-    // runs and equal timestamps so their existing order stays predictable.
-    const ordered = [...byId.values()].map((run, index) => ({
-      run, index, at: Date.parse(run.startedAt || ''),
-    }))
-    ordered.sort((a, b) => {
-      const aDated = Number.isFinite(a.at)
-      const bDated = Number.isFinite(b.at)
-      if (aDated && bDated && a.at !== b.at) return a.at - b.at
-      if (aDated !== bDated) return aDated ? 1 : -1
-      return a.index - b.index
-    })
-    out[episodeId] = ordered.slice(-RUNS_PER_EPISODE).map(({ run }) => run)
+    out[episodeId] = newestEpisodeRuns([...byId.values()])
   }
   return out
 }
@@ -916,7 +921,7 @@ export function sanitizeEpisodeRuns(raw) {
       seen.add(run.runId)
       runs.push(run)
     }
-    if (runs.length) out[episodeId] = runs.slice(-RUNS_PER_EPISODE)
+    if (runs.length) out[episodeId] = newestEpisodeRuns(runs)
   }
   return out
 }
