@@ -524,10 +524,20 @@
           "reviewed_semantic_oracle": "requires_review"
         },
         {
-          "id": "F5",
+          "id": "F5-original",
           "session": "f-day11",
           "day_offset": 11,
           "sequence": 2,
+          "type": "assisted_correct_repeat",
+          "assisted": true,
+          "independent": false,
+          "calibration_eligible": false
+        },
+        {
+          "id": "F5",
+          "session": "f-day11",
+          "day_offset": 11,
+          "sequence": 2.5,
           "type": "duplicate_assisted_repeat",
           "duplicate_of": "F5-original",
           "assisted": true,
