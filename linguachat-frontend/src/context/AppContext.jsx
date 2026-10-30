@@ -969,6 +969,7 @@ export function AppProvider({ children }) {
     } catch { return false }
     if (dailySession) {
       if (!storedSession || storedSession.id !== dailySession.id
+        || storedSession.dayKey !== dailySession.dayKey
         || storedSession.status !== dailySession.status
         || storedSession.currentBlockIndex !== dailySession.currentBlockIndex
         || storedSession.blocks[storedSession.currentBlockIndex]?.id
@@ -1018,6 +1019,7 @@ export function AppProvider({ children }) {
       storedSession = normalizeSession(JSON.parse(raw), ARC)
     } catch { return false }
     if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
+      || storedSession.dayKey !== dailySession.dayKey
       || storedSession.status !== 'active'
       || storedSession.currentBlockIndex !== dailySession.currentBlockIndex
       || storedSession.blocks[storedSession.currentBlockIndex]?.id
