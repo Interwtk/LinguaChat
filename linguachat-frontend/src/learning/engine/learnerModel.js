@@ -461,7 +461,14 @@ function mergeRunCopies(prev, run) {
     rewarded: prev.rewarded || run.rewarded,
   }
   if (prev.completedAt && run.completedAt) {
-    merged.signalKeys = [...new Set([...prev.signalKeys, ...run.signalKeys])].slice(-100)
+    // Keep the latest step markers deterministically. Appending then slicing
+    // made a stale completed copy evict newer observations depending on merge
+    // direction; repeated stale merges could keep changing the retained set.
+    merged.signalKeys = [...new Set([...prev.signalKeys, ...run.signalKeys])]
+      .sort((a, b) => {
+        const stepDiff = Number(a.split(':')[0]) - Number(b.split(':')[0])
+        return stepDiff || (a < b ? -1 : a > b ? 1 : 0)
+      }).slice(-100)
     // Distinct markers represent distinct events; a max of two counters alone
     // can lose them. Keep larger legacy counters when marker history was capped.
     merged.assistanceUsed = Math.max(prev.assistanceUsed, run.assistanceUsed,
