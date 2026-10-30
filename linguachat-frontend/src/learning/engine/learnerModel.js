@@ -466,7 +466,22 @@ export function mergeEpisodeRuns(mine, theirs) {
       }
       byId.set(run.runId, merged)
     }
-    out[episodeId] = [...byId.values()].slice(-RUNS_PER_EPISODE)
+    // A stale tab may hold an older 12-run window than the saved copy.
+    // Iteration order is NOT practice order: appending stale-only IDs before
+    // trimming used to evict newer completions (and their support evidence).
+    // Prefer actual start times; retain insertion order for undated legacy
+    // runs and equal timestamps so their existing order stays predictable.
+    const ordered = [...byId.values()].map((run, index) => ({
+      run, index, at: Date.parse(run.startedAt || ''),
+    }))
+    ordered.sort((a, b) => {
+      const aDated = Number.isFinite(a.at)
+      const bDated = Number.isFinite(b.at)
+      if (aDated && bDated && a.at !== b.at) return a.at - b.at
+      if (aDated !== bDated) return aDated ? 1 : -1
+      return a.index - b.index
+    })
+    out[episodeId] = ordered.slice(-RUNS_PER_EPISODE).map(({ run }) => run)
   }
   return out
 }
