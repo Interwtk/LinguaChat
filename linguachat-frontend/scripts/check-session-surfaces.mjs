@@ -1628,7 +1628,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   }
   for (const mode of [
     'current', 'double-click', 'stale-flush', 'denied', 'no-session',
-    'stale-index', 'stale-block', 'stale-id', 'stale-status', 'completed',
+    'stale-index', 'stale-block', 'stale-id', 'stale-day', 'stale-status', 'completed',
     'missing', 'invalid-json', 'blocked-read', 'revoked-read',
     'revoked-advance', 'rejected-save', 'mismatch-save', 'revoked-save',
   ]) {
@@ -1637,6 +1637,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const durable = mode === 'stale-index' ? { ...initial, currentBlockIndex: 2 }
       : mode === 'stale-block' ? { ...initial, blocks: [{ id: 'first' }, { id: 'replanned' }, { id: 'completion' }] }
         : mode === 'stale-id' ? { ...initial, id: 'other-session' }
+          : mode === 'stale-day' ? { ...initial, dayKey: '2026-10-29' }
           : mode === 'stale-status' ? { ...initial, status: 'planned' }
             : mode === 'completed' ? { ...initial, status: 'completed' } : initial
     const storage = { 'daily-session': JSON.stringify(durable) }
@@ -1814,7 +1815,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   for (const mode of [
     'current', 'denied', 'rejected-save', 'revoked-before-save',
     'revoked-after-save', 'revoked-during-model', 'rejected-model-save',
-    'revoked-after-model-save', 'stale-flush', 'stale-index', 'stale-id',
+    'revoked-after-model-save', 'stale-flush', 'stale-index', 'stale-id', 'stale-day',
     'stale-status', 'stale-block', 'missing', 'invalid-json', 'blocked-read',
     'revoked-during-read', 'absent-current', 'first-session',
     'old-completed', 'completed-today',
@@ -1833,6 +1834,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         : mode === 'completed-today' ? { ...planned, status: 'completed' } : planned
     const stored = mode === 'stale-index' ? { ...planned, currentBlockIndex: 1, status: 'active' }
       : mode === 'stale-id' ? { ...planned, id: 'another-session' }
+        : mode === 'stale-day' ? { ...planned, dayKey: '2026-10-29' }
         : mode === 'stale-status' ? { ...planned, status: 'active' }
           : mode === 'stale-block' ? { ...planned, blocks: [{ id: 'replanned' }, { id: 'completion' }] }
             : mode === 'old-completed' ? oldCompleted : daily || planned
@@ -1912,7 +1914,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       if (mode !== 'stale-flush') assert.equal(result, false, mode)
       assert.deepEqual(state, original, mode + ': stale start must not mutate UI')
       assert.equal(queued.length, mode === 'stale-flush' ? 4 : 0)
-      if (['denied', 'stale-index', 'stale-id', 'stale-status', 'stale-block',
+      if (['denied', 'stale-index', 'stale-id', 'stale-day', 'stale-status', 'stale-block',
         'missing', 'invalid-json', 'blocked-read', 'revoked-during-read',
         'absent-current', 'completed-today', 'revoked-before-save'].includes(mode)) {
         assert.equal(saved, 0, mode + ': no stale plan may overwrite storage')
@@ -2044,7 +2046,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     'current', 'stale-flush', 'denied', 'invalid', 'revoked-model',
     'revoked-plan', 'rejected-duration', 'mismatched-duration',
     'throwing-duration', 'revoked-duration', 'rejected-session',
-    'revoked-session', 'active-session', 'stale-id', 'stale-status',
+    'revoked-session', 'active-session', 'stale-id', 'stale-day', 'stale-status',
     'stale-index', 'stale-block', 'missing', 'invalid-json',
     'blocked-session-read', 'revoked-session-read', 'absent-current',
     'first-session', 'new-day',
@@ -2065,6 +2067,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const state = structuredClone(original)
     const storage = new Map()
     const persisted = mode === 'stale-id' ? { ...planned, id: 'other' }
+      : mode === 'stale-day' ? { ...planned, dayKey: '2026-10-29' }
       : mode === 'stale-status' ? { ...planned, status: 'active' }
         : mode === 'stale-index' ? { ...planned, currentBlockIndex: 1 }
           : mode === 'stale-block' ? { ...planned, blocks: [{ id: 'other' }, { id: 'finish' }] }
