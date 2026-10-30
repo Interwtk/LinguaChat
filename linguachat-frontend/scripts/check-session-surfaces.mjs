@@ -34,8 +34,12 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const finish = new Function('deps',
     'with (deps) { ' + episodeSource.slice(start, end) + '\n return finish() }')
 
-  for (const mode of ['success', 'double-click', 'rejected-award', 'retry-after-rejection', 'replay']) {
-    const model = { languageItems: {}, episodeState: { awarded: mode === 'replay' } }
+  for (const mode of [
+    'success', 'double-click', 'rejected-award', 'retry-after-rejection', 'replay',
+    'rejected-final-save', 'retry-after-final-save',
+    'replay-rejected-final-save', 'replay-retry-after-final-save',
+  ]) {
+    const model = { languageItems: {}, episodeState: { awarded: mode.startsWith('replay') } }
     const finishedRef = { current: false }
     const awardedRef = { current: false }
     const modelRef = { current: model }
@@ -61,13 +65,25 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       },
       recordItemSeen: (m, id) => { mirrored++; m.languageItems[id] = { learningState: 'seen' } },
       setEpisodeState: (m, _id, update) => { m.episodeState = { ...m.episodeState, ...update } },
-      completeEpisodeRun: () => { completions++ },
-      saveLearnerModel: m => { saves++; savedModel = structuredClone(m); return true },
+      completeEpisodeRun: () => { if (!model.runFiled) { completions++; model.runFiled = true } },
+      saveLearnerModel: (m, options) => {
+        assert.equal(options?.verified, true, 'final episode evidence requires verified persistence')
+        saves++
+        if (mode === 'rejected-final-save' || mode === 'replay-rejected-final-save') return false
+        if ((mode === 'retry-after-final-save' || mode === 'replay-retry-after-final-save') && saves === 1) return false
+        savedModel = structuredClone(m)
+        return true
+      },
       onComplete: null,
       finishEpisode: () => { exits++ },
     }
     finish(deps)
-    if (mode === 'retry-after-rejection') {
+    if (mode === 'retry-after-final-save' || mode === 'replay-retry-after-final-save') {
+      assert.equal(finishedRef.current, false, 'failed final save must keep the completion retryable')
+      assert.equal(exits, 0, 'failed final save must not navigate away')
+      assert.equal(saves, 1)
+      finish(deps)
+    } else if (mode === 'retry-after-rejection') {
       assert.equal(finishedRef.current, false, 'failed reward must leave the completion retryable')
       assert.equal(awardedRef.current, false, 'failed reward must not latch the award')
       assert.equal(completions, 0, 'failed reward must not file can-do evidence')
@@ -86,13 +102,19 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(saves, 0)
       assert.equal(exits, 0)
       assert.equal(mirrored, 0)
+    } else if (mode === 'rejected-final-save' || mode === 'replay-rejected-final-save') {
+      assert.equal(finishedRef.current, false, 'failed durable evidence save must not latch completion')
+      assert.equal(completions, 1, 'retry must not add a second evidence event')
+      assert.equal(saves, 2, 'failed final persistence remains retryable')
+      assert.equal(exits, 0, 'never exit after rejected final persistence')
+      assert.equal(rewardCalls, mode.startsWith('replay') ? 0 : 1, 'a failed final save must not re-award XP')
     } else {
       assert.equal(finishedRef.current, true)
       assert.equal(model.episodeState.awarded, true)
       assert.equal(completions, 1, 'one completion must count as one evidence event')
-      assert.equal(saves, 1)
+      assert.equal(saves, mode.includes('retry-after-final-save') ? 2 : 1)
       assert.equal(exits, 1)
-      if (mode === 'replay') {
+      if (mode.startsWith('replay')) {
         assert.equal(rewardCalls, 0, 'previously awarded episode must not pay again')
         assert.equal(mirrored, 0)
       } else {
