@@ -25,6 +25,83 @@ let n = 0
 const ok = () => { n++ }
 const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, type, format, source })
 
+/* ---------- stale daily-session completion must not award bonus twice ---------- */
+{
+  const context = read('src/context/AppContext.jsx')
+  assert.match(context, /SESSION_KEY, normalizeSession/,
+    'daily session completion must read and validate the durable session')
+  const match = context.match(/const finishSession = useCallback\(\(\) => \{([\s\S]*?)\n  \}, \[dailySession\]\)/)
+  assert.ok(match, 'daily session completion must remain executable for regression testing')
+  const finish = new Function('deps', 'with (deps) { return (() => {' + match[1] + '\n})() }')
+  for (const mode of [
+    'double-click', 'already-awarded', 'missing', 'denied', 'invalid-json',
+    'revoked-after-read', 'different-session', 'rejected-write',
+  ]) {
+    let valid = true
+    let stored = {
+      id: '2026-10-30:standard', version: 1, status: 'active',
+      awarded: mode === 'already-awarded', dayKey: '2026-10-30',
+      durationMode: 'standard', blocks: [{ id: 'episode' }],
+    }
+    let xp = 0
+    let writes = 0
+    const deps = {
+      dailySession: { ...stored, awarded: false },
+      SESSION_KEY: 'lc2-daily-session-v1',
+      ARC: [],
+      captureLearnerAccess: () => ({
+        valid: () => valid,
+        getItem: (key) => {
+          assert.equal(key, 'lc2-daily-session-v1')
+          if (mode === 'denied') throw new Error('Storage denied')
+          if (mode === 'missing') return null
+          if (mode === 'invalid-json') return '{'
+          if (mode === 'revoked-after-read') valid = false
+          return JSON.stringify(mode === 'different-session' ? { ...stored, id: 'other' } : stored)
+        },
+      }),
+      normalizeSession: value => value,
+      loadLearnerModel: () => ({}),
+      completeSession: session => ({
+        session: { ...session, status: 'completed', awarded: true },
+        awarded: !session.awarded,
+      }),
+      saveLearnerModel: () => true,
+      saveSession: session => {
+        if (mode === 'rejected-write') return null
+        stored = session
+        writes++
+        return session
+      },
+      setDailySession: () => {},
+      setLocalProgress: updater => { xp = updater({ xp }).xp },
+      setSessionActive: () => {},
+      setEpisodeActiveId: () => {},
+      setEpisodeArcVersion: () => {},
+      setView: () => {},
+      SESSION_BONUS_XP: 15,
+    }
+    const first = finish(deps)
+    const second = finish(deps)
+    if (mode === 'double-click') {
+      assert.equal(first, true)
+      assert.equal(second, true)
+      assert.equal(xp, 15, 'two completions before React flush must award once')
+      assert.equal(writes, 2)
+    } else if (mode === 'already-awarded') {
+      assert.equal(first, true)
+      assert.equal(second, true)
+      assert.equal(xp, 0, 'durable awarded flag overrides stale React state')
+    } else {
+      assert.equal(first, false, mode + ': completion must fail closed')
+      assert.equal(second, false, mode + ': retry must fail closed')
+      assert.equal(xp, 0, mode + ': no XP for failed persistence')
+      assert.equal(writes, 0, mode + ': no successful session publication')
+    }
+  }
+  ok()
+}
+
 /* ---------- passive chat/progress writes must retain their mount-time lease ---------- */
 {
   const context = read('src/context/AppContext.jsx')
