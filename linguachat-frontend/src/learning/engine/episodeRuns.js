@@ -13,7 +13,7 @@
  *     A first completion is rewarded once. Everything after it is practice —
  *     real practice, that can produce new evidence, but never a second prize.
  */
-import { ACTIVITY_FORMATS, getEpisodeState, sanitizeRun, RUNS_PER_EPISODE, recordDelayedRetrievalEvidence, recordCanDoAttempt } from './learnerModel.js'
+import { ACTIVITY_FORMATS, getEpisodeState, sanitizeRun, sanitizeEpisodeRuns, recordDelayedRetrievalEvidence, recordCanDoAttempt } from './learnerModel.js'
 import { dayKeyFor } from './session.js'
 import { reconcileLevelMilestones } from '../curriculum/graduation.js'
 
@@ -213,7 +213,12 @@ export function completeEpisodeRun(model, { independentEvidence = false, branchI
   })
   model.episodeRuns = model.episodeRuns || {}
   const list = (model.episodeRuns[active.episodeId] || []).filter(r => r.runId !== finished.runId)
-  model.episodeRuns[active.episodeId] = [...list, finished].slice(-RUNS_PER_EPISODE)
+  // A late/stale-tab completion may have started before all retained runs.
+  // Apply the same chronological cap as migration and snapshot reconciliation;
+  // append order is not evidence of when a practice actually happened.
+  model.episodeRuns[active.episodeId] = sanitizeEpisodeRuns({
+    [active.episodeId]: [...list, finished],
+  })[active.episodeId] || []
   model.activeRun = null
   /*
    * A finished run is the moment the learner's evidence changed, which is the
