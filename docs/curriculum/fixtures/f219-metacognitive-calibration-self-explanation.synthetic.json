@@ -1,0 +1,624 @@
+{
+  "schema_id": "linguachat.curriculum.f219.machine_readable.v1",
+  "fixture_document": "docs/curriculum/longitudinal-fixture-f219-metacognitive-calibration-self-explanation-independent-transfer.md",
+  "status": "DESIGN_ONLY_UNSUPPORTED",
+  "description": "Synthetic metacognitive judgments and self-explanations are fallible instructional signals, never CEFR mastery or proof of learning efficacy.",
+  "seed": 21920261030,
+  "clock": {
+    "anchor": "2026-10-30T12:00:00Z",
+    "timezone": "UTC",
+    "day_offset_semantics": "elapsed learning-day provenance; same-day repetition is not delayed retrieval"
+  },
+  "source_binding": {
+    "cefr_can_do_id": "REQUIRES_EXISTING_VERSIONED_SOURCE_BINDING",
+    "rubric_version": "REQUIRES_REVIEWED_RUBRIC",
+    "task_version": "SYNTHETIC_F219_V1",
+    "policy_version": "F219_DESIGN_V1",
+    "channel_version": "REQUIRES_SUPPORTED_CHANNEL_BINDING",
+    "source_resolution": "UNSUPPORTED"
+  },
+  "global_invariants": [
+    "Confidence is optional, referent-anchored, timed and never a mastery or psychological diagnosis.",
+    "Only eligible pre-feedback judgments paired with reviewed first unaided outcomes enter calibration; assisted, missing and unknown-exposure outcomes do not.",
+    "Self-explanation after an answer-bearing model is coached practice, not independent communicative transfer.",
+    "Preserve due/offered/rendered/completed/missing follow-up denominators and deduplicate event replays.",
+    "Interests change soft context weights only, never CEFR objectives, teaching-method confidence or required skill and unfamiliar-topic coverage.",
+    "Contradictory evidence keeps uncertainty live and permits a reversible, actually rendered instructional choice.",
+    "Synthetic structural checks do not prove the tutoring engine or human efficacy."
+  ],
+  "required_harness_outputs": [
+    "source_binding_resolution",
+    "per_case_and_control_oracle_result",
+    "per_assertion_PASS_FAIL_UNSUPPORTED",
+    "trusted_feedback_and_answer_visibility_chronology",
+    "reviewed_first_unaided_and_explanation_provenance",
+    "confidence_eligibility_and_missingness",
+    "due_offered_rendered_completed_missing_denominators",
+    "actual_next_instruction_rendered",
+    "exact_engine_HEAD",
+    "executable_command",
+    "independent_reviewer_signoff"
+  ],
+  "acceptance_assertions": [
+    "FIXED_CEFR_OBJECTIVE_AND_REVIEWED_RUBRIC",
+    "OPTIONAL_TIMED_REFERENT_ANCHORED_CONFIDENCE",
+    "CONFIDENCE_NOT_PERFORMANCE_OR_IDENTITY",
+    "SELF_EXPLANATION_EXPOSURE_PROVENANCE",
+    "CALIBRATION_ELIGIBILITY_AND_DENOMINATORS",
+    "ACCESSIBLE_DECLINE_AND_LATENCY_FAIRNESS",
+    "INTEREST_METHOD_AND_SKILL_SEPARATION",
+    "REVERSIBLE_DELIVERED_CHOICE_WITH_UNCERTAINTY",
+    "EXECUTABLE_INDEPENDENT_REVIEW_UNSUPPORTED"
+  ],
+  "cases": [
+    {
+      "id": "A",
+      "title": "High confidence plus first-attempt error does not imply mastery or a fixed label",
+      "objective_family": "past_event_production",
+      "events": [
+        {
+          "id": "A1",
+          "session": "a-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "confidence_judgment",
+          "voluntary": true,
+          "referent": "first_unaided_past_event",
+          "scale": "0_to_1_anchored",
+          "value": 0.9,
+          "timing": "pre_feedback",
+          "answer_visible": false
+        },
+        {
+          "id": "A2",
+          "session": "a-day0",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "first_attempt",
+          "independent": true,
+          "meaning_quality": "meaning_critical_error",
+          "utterance": "Yesterday I go to the market.",
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "A3",
+          "session": "a-day0",
+          "day_offset": 0,
+          "sequence": 3,
+          "type": "model_rendered",
+          "answer_bearing": true,
+          "rendered": true
+        },
+        {
+          "id": "A4",
+          "session": "a-day0",
+          "day_offset": 0,
+          "sequence": 4,
+          "type": "corrected_repeat",
+          "utterance": "Yesterday I went to the market.",
+          "assisted": true,
+          "independent": false,
+          "mastery_credit": false
+        },
+        {
+          "id": "A5",
+          "session": "a-day8",
+          "day_offset": 8,
+          "sequence": 1,
+          "type": "unseen_transfer",
+          "new_context": true,
+          "new_item": true,
+          "independent": true,
+          "assistance": "none",
+          "reviewed_semantic_oracle": "requires_review"
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "A2",
+            "meaning_quality": "success",
+            "utterance": "Yesterday I went to the market."
+          }
+        ]
+      },
+      "expected": {
+        "single_mismatch_not_stable_label": true,
+        "corrected_repeat_not_mastery": true,
+        "control_not_error_remediation": true,
+        "delayed_transfer_requires_review": true
+      }
+    },
+    {
+      "id": "B",
+      "title": "Low confidence does not erase strong independent ability",
+      "objective_family": "information_request",
+      "events": [
+        {
+          "id": "B1",
+          "session": "b-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "confidence_judgment",
+          "voluntary": true,
+          "referent": "first_unaided_request",
+          "scale": "0_to_1_anchored",
+          "value": 0.2,
+          "timing": "pre_feedback",
+          "answer_visible": false
+        },
+        {
+          "id": "B2",
+          "session": "b-day0",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "first_attempt",
+          "independent": true,
+          "meaning_quality": "success",
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "B3",
+          "session": "b-day2",
+          "day_offset": 2,
+          "sequence": 1,
+          "type": "confidence_judgment",
+          "voluntary": true,
+          "referent": "second_unaided_request",
+          "scale": "0_to_1_anchored",
+          "value": 0.2,
+          "timing": "pre_feedback",
+          "answer_visible": false
+        },
+        {
+          "id": "B4",
+          "session": "b-day2",
+          "day_offset": 2,
+          "sequence": 2,
+          "type": "first_attempt",
+          "independent": true,
+          "meaning_quality": "success",
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "B5",
+          "session": "b-day10",
+          "day_offset": 10,
+          "sequence": 1,
+          "type": "unseen_transfer",
+          "independent": true,
+          "new_context": true,
+          "new_item": true,
+          "assistance": "none",
+          "meaning_quality": "success",
+          "reviewed_semantic_oracle": "requires_review"
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "B5",
+            "meaning_quality": "meaning_critical_error"
+          }
+        ]
+      },
+      "expected": {
+        "low_rating_not_cefr_downgrade": true,
+        "independent_outcomes_remain_authoritative": true,
+        "control_can_revise_hypothesis": true
+      }
+    },
+    {
+      "id": "C",
+      "title": "Model-exposed explanation is not independent language production",
+      "objective_family": "third_person_agreement",
+      "events": [
+        {
+          "id": "C1",
+          "session": "c-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "unaided_explanation",
+          "independent": true,
+          "explanation_quality": "incomplete",
+          "model_visible": false
+        },
+        {
+          "id": "C2",
+          "session": "c-day0",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "worked_rule_rendered",
+          "answer_bearing": true,
+          "rendered": true,
+          "leading_prompt": true
+        },
+        {
+          "id": "C3",
+          "session": "c-day0",
+          "day_offset": 0,
+          "sequence": 3,
+          "type": "polished_explanation",
+          "independent": false,
+          "assisted": true,
+          "model_visible": true,
+          "language_mastery_credit": false
+        },
+        {
+          "id": "C4",
+          "session": "c-day0-repeat",
+          "day_offset": 0,
+          "sequence": 4,
+          "type": "same_day_echo",
+          "assisted": true,
+          "independent": false,
+          "delayed_retrieval_credit": false
+        },
+        {
+          "id": "C5",
+          "session": "c-day9",
+          "day_offset": 9,
+          "sequence": 1,
+          "type": "unseen_production",
+          "independent": true,
+          "assistance": "none",
+          "new_item": true,
+          "new_context": true,
+          "meaning_quality": "success",
+          "reviewed_semantic_oracle": "requires_review"
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "C5",
+            "independent": false,
+            "assistance": "rule_card_rendered"
+          }
+        ]
+      },
+      "expected": {
+        "explanation_not_communicative_mastery": true,
+        "echo_not_delayed": true,
+        "control_not_clean_transfer": true
+      }
+    },
+    {
+      "id": "D",
+      "title": "Post-feedback confidence cannot be pooled with pre-feedback predictions",
+      "objective_family": "information_request",
+      "events": [
+        {
+          "id": "D1",
+          "session": "d-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "first_attempt",
+          "independent": true,
+          "meaning_quality": "success",
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "D2",
+          "session": "d-day0",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "feedback_queued",
+          "rendered": false,
+          "answer_bearing": true
+        },
+        {
+          "id": "D3",
+          "session": "d-day0",
+          "day_offset": 0,
+          "sequence": 3,
+          "type": "feedback_rendered",
+          "rendered": true,
+          "answer_bearing": true
+        },
+        {
+          "id": "D4",
+          "session": "d-day0",
+          "day_offset": 0,
+          "sequence": 4,
+          "type": "confidence_judgment",
+          "voluntary": true,
+          "referent": "first_unaided_request",
+          "scale": "0_to_1_anchored",
+          "value": 0.9,
+          "timing": "post_feedback",
+          "answer_visible": true,
+          "calibration_eligible": false
+        },
+        {
+          "id": "D5",
+          "session": "d-day8",
+          "day_offset": 8,
+          "sequence": 1,
+          "type": "unseen_transfer",
+          "independent": true,
+          "new_context": true,
+          "assistance": "none",
+          "reviewed_semantic_oracle": "requires_review"
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "D3",
+            "rendered": false,
+            "type": "feedback_not_rendered"
+          },
+          {
+            "event_id": "D4",
+            "timing": "pre_feedback",
+            "answer_visible": false,
+            "calibration_eligible": true
+          }
+        ]
+      },
+      "expected": {
+        "post_feedback_excluded": true,
+        "queued_not_rendered_control_eligible": true,
+        "unknown_render_order_not_presumed_clean": true
+      }
+    },
+    {
+      "id": "E",
+      "title": "Declining reflection and assistive input do not change CEFR evidence",
+      "objective_family": "mixed_productive_receptive",
+      "events": [
+        {
+          "id": "E1",
+          "session": "e-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "confidence_judgment",
+          "voluntary": false,
+          "status": "declined",
+          "value": null,
+          "calibration_eligible": false
+        },
+        {
+          "id": "E2",
+          "session": "e-day0",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "first_attempt",
+          "independent": true,
+          "latency_seconds": 190,
+          "access": "assistive_input",
+          "meaning_quality": "success",
+          "reviewed_semantic_oracle": "requires_review",
+          "confidence_inferred": false
+        },
+        {
+          "id": "E3",
+          "session": "e-day8",
+          "day_offset": 8,
+          "sequence": 1,
+          "type": "unseen_transfer",
+          "independent": true,
+          "new_context": true,
+          "new_item": true,
+          "meaning_quality": "success",
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "E4",
+          "session": "e-day8",
+          "day_offset": 8,
+          "sequence": 2,
+          "type": "interest_context_rotation",
+          "interest": "gaming",
+          "method_estimate_changed": false,
+          "adjacent_eligible": true,
+          "neutral_eligible": true,
+          "unfamiliar_eligible": true,
+          "skill_coverage_preserved": true
+        },
+        {
+          "id": "E5",
+          "session": "e-day8",
+          "day_offset": 8,
+          "sequence": 3,
+          "type": "skill_evidence_boundary",
+          "text_reflection_listening_credit": false,
+          "text_reflection_speaking_credit": false,
+          "mastery_threshold_unchanged": true
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "E1",
+            "voluntary": true,
+            "status": "submitted",
+            "value": 0.5,
+            "timing": "pre_feedback",
+            "referent": "first_unaided_task",
+            "scale": "0_to_1_anchored",
+            "calibration_eligible": true
+          },
+          {
+            "event_id": "E2",
+            "latency_seconds": 8,
+            "access": "standard_input"
+          },
+          {
+            "event_id": "E4",
+            "interest": "cooking"
+          }
+        ]
+      },
+      "expected": {
+        "decline_not_failure": true,
+        "latency_not_confidence": true,
+        "interest_only_soft_context": true,
+        "skill_boundaries_preserved": true
+      }
+    },
+    {
+      "id": "F",
+      "title": "Contradictory predictions and independent outcomes require reversible actual instruction",
+      "objective_family": "comparable_communicative_transfer",
+      "events": [
+        {
+          "id": "F1",
+          "session": "f-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "eligible_pair",
+          "confidence": 0.9,
+          "outcome": "failure",
+          "timing": "pre_feedback",
+          "answer_visible": false,
+          "independent": true,
+          "comparable": true,
+          "new_context": true,
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "F2",
+          "session": "f-day3",
+          "day_offset": 3,
+          "sequence": 1,
+          "type": "eligible_pair",
+          "confidence": 0.2,
+          "outcome": "success",
+          "timing": "pre_feedback",
+          "answer_visible": false,
+          "independent": true,
+          "comparable": true,
+          "new_context": true,
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "F3",
+          "session": "f-day7",
+          "day_offset": 7,
+          "sequence": 1,
+          "type": "eligible_pair",
+          "confidence": 0.9,
+          "outcome": "success",
+          "timing": "pre_feedback",
+          "answer_visible": false,
+          "independent": true,
+          "comparable": true,
+          "new_context": true,
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "F4",
+          "session": "f-day11",
+          "day_offset": 11,
+          "sequence": 1,
+          "type": "eligible_pair",
+          "confidence": 0.2,
+          "outcome": "failure",
+          "timing": "pre_feedback",
+          "answer_visible": false,
+          "independent": true,
+          "comparable": true,
+          "new_context": true,
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "F5",
+          "session": "f-day11",
+          "day_offset": 11,
+          "sequence": 2,
+          "type": "duplicate_assisted_repeat",
+          "duplicate_of": "F5-original",
+          "assisted": true,
+          "independent": false,
+          "calibration_eligible": false
+        },
+        {
+          "id": "F6",
+          "session": "f-day11",
+          "day_offset": 11,
+          "sequence": 3,
+          "type": "confidence_unknown_exposure",
+          "render_chronology": "UNKNOWN",
+          "calibration_eligible": false,
+          "answer_visible": "UNKNOWN"
+        },
+        {
+          "id": "F7",
+          "session": "f-day12",
+          "day_offset": 12,
+          "sequence": 1,
+          "type": "next_instruction_offered",
+          "method": "prediction_check_reflection",
+          "rendered": false
+        },
+        {
+          "id": "F8",
+          "session": "f-day12",
+          "day_offset": 12,
+          "sequence": 2,
+          "type": "next_instruction_rendered",
+          "method": "neutral_retrieval_first",
+          "rendered": true,
+          "context": "neutral",
+          "uncertainty": "high",
+          "reversible": true
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "F1",
+            "outcome": "success"
+          },
+          {
+            "event_id": "F2",
+            "outcome": "failure"
+          },
+          {
+            "event_id": "F3",
+            "outcome": "failure"
+          },
+          {
+            "event_id": "F4",
+            "outcome": "success"
+          }
+        ]
+      },
+      "expected": {
+        "eligible_comparable_pairs": 4,
+        "contradictory_pairs_preserved": true,
+        "duplicate_and_unknown_excluded": true,
+        "delivered_choice_required": true,
+        "permanent_label_forbidden": true,
+        "balanced_fallback_allowed": true,
+        "followup_due": 3,
+        "followup_rendered": 2,
+        "followup_completed": 1,
+        "followup_missing_unrendered": 1,
+        "followup_pending_rendered": 1
+      },
+      "followup_ledger": [
+        {
+          "skill": "listening",
+          "due": 2,
+          "offered": 2,
+          "rendered": 1,
+          "completed": 1,
+          "missing_unrendered": 1,
+          "pending_rendered": 0
+        },
+        {
+          "skill": "writing",
+          "due": 1,
+          "offered": 1,
+          "rendered": 1,
+          "completed": 0,
+          "missing_unrendered": 0,
+          "pending_rendered": 1
+        }
+      ]
+    }
+  ]
+}
