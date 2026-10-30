@@ -117,6 +117,37 @@ const completed = (episodeId) => {
   ok()
 }
 
+/*
+ * 4a) A remount later on the SAME local day rejoins the attempt, but a
+ * new calendar day must not reuse yesterday's unfinished practice identity.
+ * Otherwise a fresh day's evidence can inherit yesterday's assistance and
+ * runId, and a later completion may be mistaken for yesterday's attempt.
+ */
+{
+  const m = completed('what_you_like')
+  const first = beginEpisodeRun(m, 'what_you_like', { atMs: AT })
+  updateActiveRun(m, { assistanceUsed: 2 })
+  const sameDay = beginEpisodeRun(m, 'what_you_like', { atMs: AT + 60 * 60 * 1000 })
+  assert.equal(sameDay.runId, first.runId, 'same-day remount rejoins the practice')
+  assert.equal(sameDay.assistanceUsed, 2, 'same-day support evidence survives reload')
+  const tomorrow = beginEpisodeRun(m, 'what_you_like', { atMs: AT + 24 * 60 * 60 * 1000 })
+  assert.notEqual(tomorrow.runId, first.runId, 'next-day replay must have a fresh run ID')
+  assert.equal(tomorrow.mode, RUN_REPLAY)
+  assert.equal(tomorrow.assistanceUsed, 0, 'a new day must not inherit assistance from yesterday')
+
+  const midway = createLearnerModel()
+  const initial = beginEpisodeRun(midway, 'first_greeting', { atMs: AT })
+  setEpisodeState(midway, 'first_greeting', { status: 'in_progress', stepIndex: 3 })
+  const resumed = beginEpisodeRun(midway, 'first_greeting', { atMs: AT + 60 * 60 * 1000 })
+  assert.equal(resumed.mode, RUN_RESUME)
+  assert.equal(resumed.runId, initial.runId, 'same-day first-to-resume keeps its identity')
+  const nextDay = beginEpisodeRun(midway, 'first_greeting', { atMs: AT + 24 * 60 * 60 * 1000 })
+  assert.equal(nextDay.mode, RUN_RESUME, 'episode progress is still resumed')
+  assert.notEqual(nextDay.runId, initial.runId, 'cross-day first-to-resume is a new attempt')
+  assert.equal(getEpisodeState(midway, 'first_greeting').stepIndex, 3, 'episode progress must not reset')
+  ok()
+}
+
 // 5) completing is idempotent, however many times the button is pressed
 {
   const m = completed('what_you_like')
