@@ -183,6 +183,61 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+/* ---------- thrown completion dependencies must leave a safe retry path ---------- */
+{
+  const source = read('src/components/episode/EpisodeShell.jsx')
+  const start = source.indexOf('  function finish() {')
+  const end = source.indexOf('\n  return (', start)
+  assert.ok(start >= 0 && end > start)
+  const finish = new Function('deps', 'with (deps) { ' + source.slice(start, end) + '\n return finish() }')
+  for (const mode of ['award-throws-once', 'save-throws-once', 'daily-navigation-throws-once', 'standalone-navigation-throws-once']) {
+    const model = { episodeState: { awarded: false }, languageItems: {} }
+    const finishedRef = { current: false }
+    const awardedRef = { current: false }
+    let rewards = 0, evidence = 0, saves = 0, navigations = 0, exits = 0
+    const navigate = () => {
+      navigations++
+      if (mode.includes('navigation-throws') && navigations === 1) throw new Error('navigation unavailable')
+      exits++
+      return true
+    }
+    const deps = {
+      finishedRef, awardedRef, modelRef: { current: model },
+      ep: { id: 'episode-A', xp: 10, canDoId: 'can-do-A', gardenItems: [], steps: [{}] },
+      learningSessionId: 'learning-day:2026-10-30',
+      runRef: { current: { independentEvidence: true, branchId: null } },
+      getEpisodeState: m => m.episodeState,
+      SEED_VOCAB_BY_ID: {},
+      awardEpisode: () => {
+        rewards++
+        if (mode === 'award-throws-once' && rewards === 1) throw new Error('storage unavailable')
+        return true
+      },
+      recordItemSeen: () => {},
+      setEpisodeState: (m, _id, patch) => { m.episodeState = { ...m.episodeState, ...patch } },
+      completeEpisodeRun: () => { if (!model.runFiled) { model.runFiled = true; evidence++ } },
+      saveLearnerModel: (_m, { verified }) => {
+        assert.equal(verified, true)
+        saves++
+        if (mode === 'save-throws-once' && saves === 1) throw new Error('storage unavailable')
+        return true
+      },
+      onComplete: mode === 'daily-navigation-throws-once' ? navigate : null,
+      finishEpisode: mode === 'daily-navigation-throws-once' ? () => { throw new Error('wrong exit') } : navigate,
+    }
+    assert.doesNotThrow(() => finish(deps), mode + ': a thrown dependency must not crash the completion screen')
+    assert.equal(finishedRef.current, false, mode + ': failed attempt must not latch the button')
+    assert.equal(exits, 0, mode + ': must not exit on failure')
+    assert.doesNotThrow(() => finish(deps), mode + ': retry must succeed')
+    assert.equal(finishedRef.current, true)
+    assert.equal(exits, 1)
+    assert.equal(evidence, 1, mode + ': retry must not duplicate learning evidence')
+    assert.equal(rewards, mode === 'award-throws-once' ? 2 : 1, mode + ': successful award cannot repeat')
+    assert.equal(saves, mode === 'award-throws-once' ? 1 : 2)
+  }
+  ok()
+}
+
 /* ---------- stale daily-session completion must not award bonus twice ---------- */
 {
   const context = read('src/context/AppContext.jsx')
