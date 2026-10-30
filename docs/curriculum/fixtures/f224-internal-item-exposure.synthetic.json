@@ -1,0 +1,695 @@
+{
+  "schema_id": "linguachat.curriculum.f224.machine_readable.v1",
+  "fixture_document": "docs/curriculum/longitudinal-fixture-f224-internal-item-exposure-independent-transfer.md",
+  "governing_contract": "docs/curriculum/longitudinal-instructional-adaptation.md",
+  "status": "DESIGN_ONLY_UNSUPPORTED",
+  "purpose": "Six deterministic synthetic histories and matched controls for internal answer exposure, exact/semantic item reuse, delayed seen-item retrieval and genuinely unseen independent transfer. Not a runnable engine test, CEFR certification or human-learning efficacy claim.",
+  "seed": 22420261030,
+  "clock": {
+    "anchor": "2026-10-01T12:00:00Z",
+    "timezone": "UTC",
+    "day_semantics": "elapsed_24h_not_automatic_meaningful_delay",
+    "trusted_occurrence_and_arrival_separate": true,
+    "distinct_session_required_for_delayed_claim": true
+  },
+  "source_binding": {
+    "cefr_can_do_id": "REQUIRES_EXISTING_VERSIONED_SOURCE_BINDING",
+    "rubric_version": "REQUIRES_INDEPENDENT_REVIEW",
+    "task_version": "SYNTHETIC_F224_V1",
+    "policy_version": "F224_DESIGN_V1",
+    "item_family_oracle": "REQUIRES_INDEPENDENT_SEMANTIC_REVIEW",
+    "answer_exposure_oracle": "REQUIRES_TRUSTED_RENDER_PROVENANCE",
+    "channel_version": "REQUIRES_SUPPORTED_CHANNEL_BINDING",
+    "source_resolution": "UNSUPPORTED"
+  },
+  "global_rules": {
+    "outcome_separation": "first_valid_unaided_attempt,delayed_seen_item_retrieval,delayed_unseen_transfer are distinct claims",
+    "item_lineage": "surface text, hash, translation, slot swap or topic change cannot alone establish unseen novelty",
+    "exposure": "actual delivered answer-bearing model, hint, transcript, feedback, replay and cached render must be time-ordered against submission; UNKNOWN is not clean",
+    "chronology": "freeze pre-choice decisions; late arrivals may affect future decisions but never rewrite historical snapshots",
+    "method": "retain uncertain reversible hypotheses, feasible accessible alternatives, delivered method/dose and balanced skill debt",
+    "interests": "soft weighting only; adjacent, neutral and unfamiliar contexts remain eligible",
+    "missingness": "due, offered, rendered, completed and missing are distinct; queued and failed are neither success nor failure",
+    "release": "Pre-A1 frozen; A1-C2 unavailable; no Auth/cloud/infra/production/Supabase/paid Claude/EvoLabs/auto-merge mutation"
+  },
+  "assertions": [
+    {
+      "id": 1,
+      "check": "Existing versioned CEFR objective, independent rubric, prerequisites, skill debt and exit standard remain fixed; no release gate change."
+    },
+    {
+      "id": 2,
+      "check": "Exact repeats, translated prompts, slot swaps and semantic template reuse are not unseen without independent novelty/equivalence review; ambiguity UNSUPPORTED."
+    },
+    {
+      "id": 3,
+      "check": "First unaided attempt, meaningful delayed seen-item retrieval and independently reviewed unseen transfer are distinct evidence claims."
+    },
+    {
+      "id": 4,
+      "check": "Only actually delivered answer-bearing material before submission contaminates that attempt; later feedback does not retroactively contaminate earlier valid evidence; UNKNOWN is not clean."
+    },
+    {
+      "id": 5,
+      "check": "Assisted repairs do not certify independent mastery; accommodations are not cheating; text cannot discharge listening or speaking obligations."
+    },
+    {
+      "id": 6,
+      "check": "Method comparison controls item exposure/family, baseline, difficulty, channel, interest, access, timing and missingness; no naive causal winner."
+    },
+    {
+      "id": 7,
+      "check": "Deduplicate stable attempts; preserve trusted occurrence versus arrival, actual render history and due/offered/rendered/completed/missing counts."
+    },
+    {
+      "id": 8,
+      "check": "Retain uncertain reversible hypotheses and feasible alternatives; matched controls may change future actually delivered choices, never prior snapshots or fixed learning-style labels."
+    },
+    {
+      "id": 9,
+      "check": "Without source bindings, independent semantic/exposure oracles and exact-head executable harness, all synthetic verdicts are UNSUPPORTED; human efficacy requires ethically reviewed longitudinal evidence."
+    }
+  ],
+  "required_harness_outputs": [
+    "exact_curriculum_HEAD",
+    "exact_engine_HEAD",
+    "executable_command",
+    "resolved_versioned_CEFR_can_do_and_reviewed_rubric",
+    "versioned_item_family_and_semantic_novelty_oracle",
+    "trusted_prompt_model_hint_transcript_feedback_cached_render_and_submission_chronology",
+    "first_unaided_seen_item_delayed_and_unseen_transfer_eligibility_separately",
+    "pre_choice_feasible_methods_policy_uncertainty_and_actual_rendered_dose",
+    "due_offered_rendered_completed_missing_counts",
+    "matched_control_expected_vs_observed",
+    "per_case_and_assertion_PASS_FAIL_UNSUPPORTED",
+    "independent_reviewer_signoff"
+  ],
+  "cases": [
+    {
+      "id": "A",
+      "title": "Exact repeat after ten days is seen-item retrieval, not unseen transfer",
+      "binding": {
+        "objective": "EXISTING_VERSIONED_CEFR_CAN_DO_REQUIRED",
+        "rubric": "INDEPENDENT_LINGUISTIC_REVIEW_REQUIRED",
+        "item_family": "REVIEWED_LINEAGE_REQUIRED",
+        "channel": "SUPPORTED_CHANNEL_VERSION_REQUIRED",
+        "source_resolution": "UNSUPPORTED"
+      },
+      "events": [
+        {
+          "id": "A0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:00Z",
+          "session": "A_s0",
+          "type": "pre_choice_snapshot",
+          "feasible_methods": [
+            "retrieval_first",
+            "worked_example"
+          ],
+          "hypothesis_uncertainty": "HIGH",
+          "objective_version": "REQUIRED",
+          "item_family": "FAM_A",
+          "item_id": "ITEM_A1"
+        },
+        {
+          "id": "A1",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "arrived_at": "2026-10-01T12:02:00Z",
+          "session": "A_s0",
+          "type": "first_submission",
+          "attempt_id": "A_ATT_1",
+          "item_id": "ITEM_A1",
+          "item_family": "FAM_A",
+          "independent": true,
+          "answer_bearing_exposure_before": false,
+          "reviewed_meaning_function": "SUCCESS_SYNTHETIC_REVIEW_PENDING"
+        },
+        {
+          "id": "A2",
+          "occurred_at": "2026-10-01T12:03:00Z",
+          "arrived_at": "2026-10-01T12:03:00Z",
+          "session": "A_s0",
+          "type": "corrective_feedback_rendered",
+          "item_id": "ITEM_A1",
+          "answer_bearing": true,
+          "after_attempt": "A_ATT_1"
+        },
+        {
+          "id": "A3",
+          "occurred_at": "2026-10-11T12:05:00Z",
+          "arrived_at": "2026-10-11T12:05:00Z",
+          "session": "A_s1",
+          "type": "delayed_submission",
+          "attempt_id": "A_ATT_2",
+          "item_id": "ITEM_A1",
+          "item_family": "FAM_A",
+          "same_prompt_as": "A1",
+          "independent_this_attempt": true,
+          "new_answer_bearing_exposure_before": false,
+          "intervening_exposure_audit": "REQUIRED",
+          "reviewed_meaning_function": "SUCCESS_SYNTHETIC_REVIEW_PENDING"
+        }
+      ],
+      "matched_control": {
+        "mutation": "replace A3 item only with reviewer-approved genuinely unseen realization of same can-do, difficulty, channel and access; no prior answer-bearing exposure",
+        "unchanged": [
+          "elapsed_time",
+          "independent_response",
+          "objective",
+          "rubric",
+          "difficulty",
+          "channel",
+          "accessibility"
+        ],
+        "expected_unseen_transfer_eligibility": "POTENTIALLY_ELIGIBLE_PENDING_ORACLES"
+      },
+      "expected": {
+        "A1_first_unaided_preserved": true,
+        "A3_seen_item_retrieval": true,
+        "A3_unseen_transfer": false,
+        "A3_delayed_retention": "REQUIRES_INTERVENING_EXPOSURE_AND_DELAY_REVIEW",
+        "unseen_transfer_still_due": true,
+        "verdict": "UNSUPPORTED_UNTIL_HARNESS"
+      }
+    },
+    {
+      "id": "B",
+      "title": "Different words and hashes hide the same exposed answer template",
+      "binding": {
+        "objective": "EXISTING_VERSIONED_CEFR_CAN_DO_REQUIRED",
+        "rubric": "INDEPENDENT_LINGUISTIC_REVIEW_REQUIRED",
+        "item_family": "REVIEWED_LINEAGE_REQUIRED",
+        "channel": "SUPPORTED_CHANNEL_VERSION_REQUIRED",
+        "source_resolution": "UNSUPPORTED"
+      },
+      "events": [
+        {
+          "id": "B0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:00Z",
+          "session": "B_s0",
+          "type": "pre_choice_snapshot",
+          "item_family": "APPOINTMENT_CHANGE_TEMPLATE",
+          "feasible_methods": [
+            "worked_example",
+            "free_production"
+          ],
+          "interest_context": "soft_only"
+        },
+        {
+          "id": "B1",
+          "occurred_at": "2026-10-01T12:01:00Z",
+          "arrived_at": "2026-10-01T12:01:00Z",
+          "session": "B_s0",
+          "type": "answer_bearing_model_rendered",
+          "item_id": "B_MODEL",
+          "item_family": "APPOINTMENT_CHANGE_TEMPLATE",
+          "semantic_slots": [
+            "polite_open",
+            "change_request",
+            "new_time",
+            "thanks"
+          ],
+          "delivered": true
+        },
+        {
+          "id": "B2",
+          "occurred_at": "2026-10-02T12:00:00Z",
+          "arrived_at": "2026-10-02T12:00:00Z",
+          "session": "B_s1",
+          "type": "prompt_rendered",
+          "item_id": "B_PARAPHRASE",
+          "different_surface_hash": true,
+          "changed_slots": [
+            "name",
+            "venue",
+            "date"
+          ],
+          "item_family": "APPOINTMENT_CHANGE_TEMPLATE",
+          "reviewed_semantic_equivalence": "NEAR_DUPLICATE_SYNTHETIC_REVIEW_PENDING"
+        },
+        {
+          "id": "B3",
+          "occurred_at": "2026-10-02T12:02:00Z",
+          "arrived_at": "2026-10-02T12:02:00Z",
+          "session": "B_s1",
+          "type": "submission",
+          "attempt_id": "B_ATT_1",
+          "correct_surface": true,
+          "independent_response_action": true,
+          "answer_template_previously_exposed": true
+        }
+      ],
+      "matched_control": {
+        "mutation": "replace B2 with independently reviewed pragmatically distinct non-equivalent realization of same existing can-do at matched difficulty, channel, access and no answer template exposure",
+        "unchanged": [
+          "can_do",
+          "rubric",
+          "difficulty",
+          "channel",
+          "learner",
+          "timing"
+        ],
+        "expected": "UNSEEN_ELIGIBILITY_REQUIRES_REVIEWED_NOVELTY"
+      },
+      "expected": {
+        "B3_clean_unseen_transfer": false,
+        "B3_may_inform_scaffolding": true,
+        "hash_novelty_sufficient": false,
+        "reviewer_disagreement": "NOT_COMPARABLE_OR_UNSUPPORTED",
+        "verdict": "UNSUPPORTED_UNTIL_HARNESS"
+      }
+    },
+    {
+      "id": "C",
+      "title": "Feedback after first submission must not backdate contamination",
+      "binding": {
+        "objective": "EXISTING_VERSIONED_CEFR_CAN_DO_REQUIRED",
+        "rubric": "INDEPENDENT_LINGUISTIC_REVIEW_REQUIRED",
+        "item_family": "REVIEWED_LINEAGE_REQUIRED",
+        "channel": "SUPPORTED_CHANNEL_VERSION_REQUIRED",
+        "source_resolution": "UNSUPPORTED"
+      },
+      "events": [
+        {
+          "id": "C0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:00Z",
+          "session": "C_s0",
+          "type": "prompt_rendered",
+          "item_id": "C_FIRST",
+          "item_family": "FAM_C",
+          "answer_bearing": false
+        },
+        {
+          "id": "C1",
+          "occurred_at": "2026-10-01T12:02:00Z",
+          "arrived_at": "2026-10-01T12:02:00Z",
+          "session": "C_s0",
+          "type": "first_submission",
+          "attempt_id": "C_ATT_1",
+          "independent": true,
+          "reviewed_meaning_function": "INCORRECT_SYNTHETIC_REVIEW_PENDING",
+          "answer_bearing_exposure_before": false
+        },
+        {
+          "id": "C2",
+          "occurred_at": "2026-10-01T12:03:00Z",
+          "arrived_at": "2026-10-01T12:03:00Z",
+          "session": "C_s0",
+          "type": "model_and_specific_repair_rendered",
+          "answer_bearing": true,
+          "delivered": true,
+          "after_attempt": "C_ATT_1"
+        },
+        {
+          "id": "C3",
+          "occurred_at": "2026-10-01T12:04:00Z",
+          "arrived_at": "2026-10-01T12:04:00Z",
+          "session": "C_s0",
+          "type": "repair_submission",
+          "attempt_id": "C_ATT_2",
+          "surface_correct": true,
+          "assisted": true,
+          "independent": false
+        },
+        {
+          "id": "C4",
+          "occurred_at": "2026-10-10T12:04:00Z",
+          "arrived_at": "2026-10-10T12:04:00Z",
+          "session": "C_s1",
+          "type": "unseen_transfer_submission",
+          "attempt_id": "C_ATT_3",
+          "independent": true,
+          "item_id": "C_UNSEEN",
+          "novelty_oracle": "REQUIRED",
+          "answer_bearing_exposure_before": false,
+          "meaningful_delay_oracle": "REQUIRED",
+          "reviewed_meaning_function": "SUCCESS_SYNTHETIC_REVIEW_PENDING"
+        }
+      ],
+      "matched_control": {
+        "mutation": "move only C2's answer-bearing model occurrence to 2026-10-01T12:01:00Z before C1; retain identical submissions, objective, rubric and item",
+        "unchanged": [
+          "response_text",
+          "rubric",
+          "can_do",
+          "accessibility",
+          "task_difficulty"
+        ],
+        "expected_C1_first_unaided_eligibility": false
+      },
+      "expected": {
+        "C1_original_first_unaided_failure": true,
+        "C3_independent_mastery": false,
+        "C4_unseen_transfer": "POTENTIALLY_ELIGIBLE_PENDING_ORACLES",
+        "retroactive_contamination_of_C1": false,
+        "verdict": "UNSUPPORTED_UNTIL_HARNESS"
+      }
+    },
+    {
+      "id": "D",
+      "title": "Transcript leakage, failed playback and text evidence are channel-specific",
+      "binding": {
+        "objective": "EXISTING_VERSIONED_CEFR_CAN_DO_REQUIRED",
+        "rubric": "INDEPENDENT_LINGUISTIC_REVIEW_REQUIRED",
+        "item_family": "REVIEWED_LINEAGE_REQUIRED",
+        "channel": "SUPPORTED_CHANNEL_VERSION_REQUIRED",
+        "source_resolution": "UNSUPPORTED"
+      },
+      "events": [
+        {
+          "id": "D0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:00Z",
+          "session": "D_s0",
+          "type": "pre_choice_snapshot",
+          "due_listening_review": true,
+          "due_speaking_review": true,
+          "accessible_options": [
+            "audio_with_appropriate_accommodation",
+            "text_practice"
+          ],
+          "learner_consent": "REQUIRED"
+        },
+        {
+          "id": "D1",
+          "occurred_at": "2026-10-01T12:01:00Z",
+          "arrived_at": "2026-10-01T12:01:00Z",
+          "session": "D_s0",
+          "type": "listening_probe_rendered",
+          "item_id": "D_AUDIO_1",
+          "audio_delivered": true,
+          "answer_bearing_transcript_delivered": true,
+          "transcript_before_response": true
+        },
+        {
+          "id": "D2",
+          "occurred_at": "2026-10-01T12:03:00Z",
+          "arrived_at": "2026-10-01T12:03:00Z",
+          "session": "D_s0",
+          "type": "listening_response",
+          "attempt_id": "D_ATT_1",
+          "surface_correct": true,
+          "independent_listening_construct": false,
+          "reason": "ANSWER_BEARING_TRANSCRIPT_PRE_RESPONSE"
+        },
+        {
+          "id": "D3",
+          "occurred_at": "2026-10-08T12:00:00Z",
+          "arrived_at": "2026-10-08T12:00:00Z",
+          "session": "D_s1",
+          "type": "listening_probe_failed",
+          "item_id": "D_AUDIO_2",
+          "audio_playback": "FAILED",
+          "transcript_visibility": "UNKNOWN",
+          "submission": "NONE",
+          "assessment": "NOT_ASSESSED"
+        },
+        {
+          "id": "D4",
+          "occurred_at": "2026-10-08T12:05:00Z",
+          "arrived_at": "2026-10-08T12:05:00Z",
+          "session": "D_s1",
+          "type": "text_probe_submission",
+          "attempt_id": "D_ATT_TEXT",
+          "channel": "text",
+          "independent": true,
+          "reviewed_meaning_function": "SUCCESS_SYNTHETIC_REVIEW_PENDING"
+        }
+      ],
+      "matched_control": {
+        "mutation": "add a distinct accessible audio probe with verified delivery and non-answer-bearing accommodations, no prior answer exposure, independent response and reviewed listening construct",
+        "unchanged": [
+          "can_do",
+          "required_listening_skill",
+          "rubric_standard",
+          "learner_accessibility",
+          "consent"
+        ],
+        "expected": "NEW_LISTENING_EVIDENCE_POTENTIALLY_ELIGIBLE_ONLY_AFTER_REVIEW"
+      },
+      "expected": {
+        "D2_clean_listening_transfer": false,
+        "D3_language_failure": false,
+        "D3_status": "UNKNOWN_OR_NOT_ASSESSED",
+        "D4_certifies_listening": false,
+        "D4_certifies_speaking": false,
+        "accommodation_automatically_cheating": false,
+        "verdict": "UNSUPPORTED_UNTIL_HARNESS"
+      }
+    },
+    {
+      "id": "E",
+      "title": "Rehearsed item pool makes a method look better without comparability",
+      "binding": {
+        "objective": "EXISTING_VERSIONED_CEFR_CAN_DO_REQUIRED",
+        "rubric": "INDEPENDENT_LINGUISTIC_REVIEW_REQUIRED",
+        "item_family": "REVIEWED_LINEAGE_REQUIRED",
+        "channel": "SUPPORTED_CHANNEL_VERSION_REQUIRED",
+        "source_resolution": "UNSUPPORTED"
+      },
+      "pre_choice": {
+        "methods_feasible": [
+          "worked_example",
+          "retrieval_first"
+        ],
+        "baseline_proficiency": "REVIEW_REQUIRED",
+        "learner_choice": "RECORD_REQUIRED",
+        "skill_debt": [
+          "listening",
+          "writing"
+        ],
+        "interest_weights": "SOFT_ONLY",
+        "uncertainty": "HIGH"
+      },
+      "item_pools": [
+        {
+          "method": "worked_example",
+          "items": 20,
+          "seen_item_families": 20,
+          "unseen_item_families": 0,
+          "answer_template_exposure": "HIGH",
+          "immediate_successes": 18,
+          "delayed_calendar_day_successes": 17
+        },
+        {
+          "method": "retrieval_first",
+          "items": 20,
+          "seen_item_families": 0,
+          "unseen_item_families": 20,
+          "answer_template_exposure": "NONE_REPORTED_REVIEW_REQUIRED",
+          "immediate_successes": 12,
+          "delayed_calendar_day_successes": 11
+        }
+      ],
+      "events": [
+        {
+          "id": "E0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:00Z",
+          "session": "E_s0",
+          "type": "pre_choice_snapshot",
+          "selection_policy": "REQUIRED",
+          "feasible_methods": [
+            "worked_example",
+            "retrieval_first"
+          ],
+          "item_familiarity_imbalanced": true
+        },
+        {
+          "id": "E1",
+          "occurred_at": "2026-10-01T12:05:00Z",
+          "arrived_at": "2026-10-01T12:05:00Z",
+          "session": "E_s0",
+          "type": "instruction_rendered",
+          "method": "worked_example",
+          "item_family_pool": "REHEARSED_20",
+          "dose": 20
+        },
+        {
+          "id": "E2",
+          "occurred_at": "2026-10-01T13:00:00Z",
+          "arrived_at": "2026-10-01T13:00:00Z",
+          "session": "E_s0",
+          "type": "instruction_rendered",
+          "method": "retrieval_first",
+          "item_family_pool": "UNSEEN_20",
+          "dose": 20
+        },
+        {
+          "id": "E3",
+          "occurred_at": "2026-10-11T12:00:00Z",
+          "arrived_at": "2026-10-11T12:00:00Z",
+          "session": "E_s1",
+          "type": "followup_summary",
+          "meaningful_delay_review": "REQUIRED",
+          "reviewed_novelty": "REQUIRED",
+          "missingness_audit": "REQUIRED",
+          "naive_winner": "worked_example",
+          "comparison": "NOT_COMPARABLE"
+        }
+      ],
+      "matched_control": {
+        "mutation": "counterbalance independently reviewed seen/unseen families, answer exposure, objective difficulty and contexts across both feasible methods, then evaluate distinct-session delayed unaided retrieval and reviewed unseen transfer with non-completers",
+        "unchanged": [
+          "existing_can_do",
+          "rubric",
+          "required_skill_balance",
+          "accessible_feasible_methods"
+        ],
+        "expected": "CAUTIOUS_OBSERVATIONAL_COMPARISON_ONLY_IF_REVIEWED"
+      },
+      "expected": {
+        "naive_method_winner_valid": false,
+        "comparison": "NOT_COMPARABLE",
+        "unfamiliar_contexts_remain_eligible": true,
+        "no_permanent_method_lock": true,
+        "calendar_day_not_automatically_meaningful_delay": true,
+        "verdict": "UNSUPPORTED_UNTIL_HARNESS"
+      }
+    },
+    {
+      "id": "F",
+      "title": "Cached answer, replay, late exposure and queued reviews must not manufacture mastery",
+      "binding": {
+        "objective": "EXISTING_VERSIONED_CEFR_CAN_DO_REQUIRED",
+        "rubric": "INDEPENDENT_LINGUISTIC_REVIEW_REQUIRED",
+        "item_family": "REVIEWED_LINEAGE_REQUIRED",
+        "channel": "SUPPORTED_CHANNEL_VERSION_REQUIRED",
+        "source_resolution": "UNSUPPORTED"
+      },
+      "events": [
+        {
+          "id": "F0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:00Z",
+          "session": "F_s0",
+          "type": "pre_choice_snapshot",
+          "snapshot_frozen": true,
+          "methods_feasible": [
+            "P",
+            "Q"
+          ],
+          "uncertainty": "HIGH",
+          "due_listening": 1,
+          "due_writing": 1,
+          "offered": 0,
+          "rendered": 0,
+          "completed": 0,
+          "missing": 2
+        },
+        {
+          "id": "F1",
+          "occurred_at": "2026-10-09T12:00:00Z",
+          "arrived_at": "2026-10-09T12:00:00Z",
+          "session": "F_s1",
+          "type": "unseen_transfer_submission",
+          "attempt_id": "F_T1",
+          "item_id": "F_CLEAN",
+          "independent": true,
+          "reviewed_novelty": "REQUIRED",
+          "answer_visibility": "VERIFIED_NO_EXPOSURE",
+          "reviewed_meaning_function": "SUCCESS_SYNTHETIC_REVIEW_PENDING"
+        },
+        {
+          "id": "F2",
+          "occurred_at": "2026-10-09T12:00:00Z",
+          "arrived_at": "2026-10-09T12:00:02Z",
+          "session": "F_s1",
+          "type": "replayed_submission",
+          "attempt_id": "F_T1",
+          "replay": true,
+          "unique_attempt_increment": 0
+        },
+        {
+          "id": "F3",
+          "occurred_at": "2026-10-09T13:00:00Z",
+          "arrived_at": "2026-10-09T13:00:00Z",
+          "session": "F_s1",
+          "type": "submission",
+          "attempt_id": "F_T2",
+          "item_id": "F_CACHED_TEMPLATE",
+          "semantic_family": "F_CACHED_FAMILY",
+          "cached_model_exposure": "UNKNOWN_AT_INITIAL_SCORE",
+          "answer_visibility": "UNKNOWN",
+          "reviewed_meaning_function": "SURFACE_SUCCESS_ONLY"
+        },
+        {
+          "id": "F4",
+          "occurred_at": "2026-10-09T12:30:00Z",
+          "arrived_at": "2026-10-10T12:00:00Z",
+          "session": "F_s1",
+          "type": "late_arriving_answer_bearing_cached_render",
+          "item_id": "F_CACHED_TEMPLATE",
+          "semantic_family": "F_CACHED_FAMILY",
+          "answer_bearing": true,
+          "delivered": true,
+          "predates_attempt": "F_T2",
+          "cannot_rewrite_snapshot": "F0"
+        },
+        {
+          "id": "F5",
+          "occurred_at": "2026-10-10T12:01:00Z",
+          "arrived_at": "2026-10-10T12:01:00Z",
+          "session": "F_s2",
+          "type": "listening_review_queued",
+          "due": 1,
+          "offered": 0,
+          "rendered": 0,
+          "completed": 0,
+          "missing": 1
+        },
+        {
+          "id": "F6",
+          "occurred_at": "2026-10-11T12:00:00Z",
+          "arrived_at": "2026-10-11T12:00:00Z",
+          "session": "F_s3",
+          "type": "writing_instruction_rendered",
+          "method": "balanced_feasible_fallback",
+          "skill": "writing",
+          "dose": 1,
+          "due": 1,
+          "offered": 1,
+          "rendered": 1,
+          "completed": 0,
+          "missing": 1,
+          "independent_outcome": "PENDING"
+        }
+      ],
+      "matched_control": {
+        "mutation": "replace only F_T2's item family with reviewer-approved unseen and non-exposed content at matched difficulty, channel, opportunity, access and timing; F4 remains tied to original cached family",
+        "unchanged": [
+          "F_T2_attempt_id",
+          "F0_snapshot",
+          "F_T1_identity",
+          "F5_queued_status",
+          "F6_rendered_dose",
+          "can_do",
+          "rubric"
+        ],
+        "expected": "F_T2_MAY_BECOME_ELIGIBLE_AFTER_ORACLES; FUTURE_HYPOTHESIS_REASSESSMENT_ONLY"
+      },
+      "expected": {
+        "unique_F_T1_count": 1,
+        "F_T2_original_clean_unseen": false,
+        "F_T2_original_quarantined_or_excluded": true,
+        "F0_historical_choice_rewritten": false,
+        "F5_listening_completed": false,
+        "F5_listening_missing": 1,
+        "F6_writing_rendered": true,
+        "F6_independent_success": false,
+        "permanent_method_lock": false,
+        "verdict": "UNSUPPORTED_UNTIL_HARNESS"
+      }
+    }
+  ],
+  "prohibitions": [
+    "No learner tracking, live experimentation or production deployment",
+    "No Auth/cloud/infra/Supabase/production mutation",
+    "No paid Claude or EvoLabs",
+    "No auto-merge",
+    "No Pre-A1 edits or A1-C2 activation",
+    "No B2 Arc 6 recognition/open-retrieval policy decision"
+  ]
+}
