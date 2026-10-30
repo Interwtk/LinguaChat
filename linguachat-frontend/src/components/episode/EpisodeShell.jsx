@@ -26,7 +26,7 @@ import { seedFrom } from '../../learning/engine/variation.js'
 import { FormatFeedback } from './FormatFeedback'
 import { MiniStory } from '../session/MiniStory'
 import {
-  beginEpisodeRun, completeEpisodeRun, updateActiveRun, stageDelayedRetrieval, runEarnsReward, otherBranch, RUN_BRANCH_REPLAY,
+  beginEpisodeRun, completeEpisodeRun, updateActiveRun, recordRunActivitySignal, stageDelayedRetrieval, runEarnsReward, otherBranch, RUN_BRANCH_REPLAY,
 } from '../../learning/engine/episodeRuns.js'
 import {
   recordLearnerFact, selectLearnerFact, factsOfType, captureStatedLifeFact, captureStatedUsualTime,
@@ -399,16 +399,15 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
     const format = formatOfStep(step)
     if (!format) return
     const id = `${dayKeyFor()}:${ep.id}:${altStep ? 'alt' : stepIndex}:${suffix}`
-    if (!recordActivitySignalOnce(modelRef.current, id, format, kind)) return
-    // The run keeps a shape of how this attempt went — counts only, no answers.
-    const current = runRef.current
-    if (current) {
-      const patch = { formatsUsed: [...new Set([...(current.formatsUsed || []), format])] }
-      if (kind === 'assistance') patch.assistanceUsed = (current.assistanceUsed || 0) + 1
-      if (kind === 'retried') patch.retriedSteps = (current.retriedSteps || 0) + 1
-      runRef.current = updateActiveRun(modelRef.current, patch) || current
-    }
-    saveLearnerModel(modelRef.current)
+    // Per-run help and retries must survive same-day replay even if the
+    // aggregate daily preference signal was already counted. A same-run
+    // double tap/reload must not count the step twice either.
+    const perRun = recordRunActivitySignal(modelRef.current, {
+      kind, format, key: `${stepIndex}${altStep ? ':alt' : ''}:${suffix}`,
+    })
+    if (perRun) runRef.current = perRun
+    const perDay = recordActivitySignalOnce(modelRef.current, id, format, kind)
+    if (perRun || perDay) saveLearnerModel(modelRef.current)
   }
 
   function advance() {
