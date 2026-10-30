@@ -128,6 +128,61 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
+/* ---------- completion navigation failures remain retryable ---------- */
+{
+  const source = read('src/components/episode/EpisodeShell.jsx')
+  const start = source.indexOf('  function finish() {')
+  const end = source.indexOf('\n  return (', start)
+  assert.ok(start >= 0 && end > start)
+  const finish = new Function('deps', 'with (deps) { ' + source.slice(start, end) + '\n return finish() }')
+
+  for (const surface of ['daily', 'standalone']) {
+    for (const outcome of ['rejected', 'retry']) {
+      const model = { episodeState: { awarded: false }, languageItems: {} }
+      const finishedRef = { current: false }
+      const awardedRef = { current: false }
+      let rewards = 0
+      let evidence = 0
+      let saves = 0
+      let navigationAttempts = 0
+      let exits = 0
+      const navigate = () => {
+        navigationAttempts++
+        if (outcome === 'rejected' || navigationAttempts === 1) return false
+        exits++
+        return true
+      }
+      const deps = {
+        finishedRef, awardedRef, modelRef: { current: model },
+        ep: { id: 'episode-A', xp: 10, canDoId: 'can-do-A', gardenItems: [], steps: [{}] },
+        learningSessionId: 'learning-day:2026-10-30',
+        runRef: { current: { independentEvidence: true, branchId: null } },
+        getEpisodeState: m => m.episodeState,
+        SEED_VOCAB_BY_ID: {},
+        awardEpisode: () => { rewards++; return true },
+        recordItemSeen: () => {},
+        setEpisodeState: (m, _id, patch) => { m.episodeState = { ...m.episodeState, ...patch } },
+        completeEpisodeRun: () => { if (!model.runFiled) { model.runFiled = true; evidence++ } },
+        saveLearnerModel: (_m, { verified }) => { assert.equal(verified, true); saves++; return true },
+        onComplete: surface === 'daily' ? navigate : null,
+        finishEpisode: surface === 'standalone' ? navigate : () => { throw Error('wrong navigation') },
+      }
+      finish(deps)
+      assert.equal(finishedRef.current, false, surface + ': failed navigation must remain retryable')
+      assert.equal(navigationAttempts, 1)
+      assert.equal(exits, 0)
+      finish(deps)
+      assert.equal(navigationAttempts, 2, surface + ': retry must invoke navigation again')
+      assert.equal(finishedRef.current, outcome === 'retry')
+      assert.equal(exits, outcome === 'retry' ? 1 : 0)
+      assert.equal(rewards, 1, surface + ': navigation retry must not re-award XP')
+      assert.equal(evidence, 1, surface + ': navigation retry must not refile evidence')
+      assert.equal(saves, 2, surface + ': retry must confirm durable evidence before navigation')
+    }
+  }
+  ok()
+}
+
 /* ---------- stale daily-session completion must not award bonus twice ---------- */
 {
   const context = read('src/context/AppContext.jsx')
