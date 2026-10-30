@@ -1035,16 +1035,24 @@ export function AppProvider({ children }) {
     const access = captureLearnerAccess()
     if (!access.valid()) return false
     if (dailySession) {
-      // React can flush the previous render after a successful completion.
-      // Read the durable session under the original lease, not stale React
-      // state, so a second click cannot award the same bonus again.
+      // Only the actual completion block can grant the daily bonus. A stale
+      // completion screen must not finish a different block or an already
+      // completed session after another tab has advanced the durable cursor.
+      const visibleBlock = dailySession.blocks?.[dailySession.currentBlockIndex]
+      if (dailySession.status !== 'active' || visibleBlock?.type !== 'session_completion') return false
       let storedSession
       try {
         const raw = access.getItem(SESSION_KEY)
         if (!access.valid() || raw === null) return false
         storedSession = normalizeSession(JSON.parse(raw), ARC)
       } catch { return false }
-      if (!access.valid() || !storedSession || storedSession.id !== dailySession.id) return false
+      const storedBlock = storedSession?.blocks?.[storedSession.currentBlockIndex]
+      if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
+        || storedSession.dayKey !== dailySession.dayKey
+        || storedSession.status !== 'active'
+        || storedSession.currentBlockIndex !== dailySession.currentBlockIndex
+        || storedBlock?.id !== visibleBlock.id
+        || storedBlock?.type !== 'session_completion') return false
       const model = loadLearnerModel()
       if (!access.valid()) return false
       const { session, awarded } = completeSession(storedSession, model)
