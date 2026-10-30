@@ -962,8 +962,22 @@ export function AppProvider({ children }) {
     // Persist through the lease captured by the click, outside the updater:
     // React may replay state updaters and a failed write must not look completed.
     const access = captureLearnerAccess()
-    if (!access.valid() || !dailySession) return false
-    const next = advanceBlock(dailySession)
+    if (!access.valid() || !dailySession || dailySession.status !== 'active') return false
+    // Another tab (or a rapid second click before React flushes) may have
+    // already advanced this block. Never overwrite its newer durable cursor
+    // with the stale session captured by this render.
+    let storedSession
+    try {
+      const raw = access.getItem(SESSION_KEY)
+      if (!access.valid() || raw === null) return false
+      storedSession = normalizeSession(JSON.parse(raw), ARC)
+    } catch { return false }
+    if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
+      || storedSession.status !== 'active'
+      || storedSession.currentBlockIndex !== dailySession.currentBlockIndex
+      || storedSession.blocks[storedSession.currentBlockIndex]?.id
+        !== dailySession.blocks?.[dailySession.currentBlockIndex]?.id) return false
+    const next = advanceBlock(storedSession)
     if (!access.valid() || !saveSession(next, { access }) || !access.valid()) return false
     setEpisodeArcVersion(previous => access.valid() ? previous + 1 : previous)
     setDailySession(previous => access.valid() ? next : previous)
