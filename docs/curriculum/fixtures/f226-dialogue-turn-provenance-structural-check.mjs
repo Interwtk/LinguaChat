@@ -24,7 +24,7 @@ function verify(f){
  ok(f2.type==="duplicate_replay"&&f2.same_as==="F1"&&f2.attempt_id===f1.attempt_id&&f2.turn_id===f1.turn_id&&f2.independent_credit_delta===0&&f1.independent_credit_delta===1,"F replay double count");
  ok(f3.assisted===true&&f3.answer_exposure==="ANSWER_BEARING_BEFORE_TURN"&&f3.independent_credit_delta===0&&f4.rendered===false&&f4.completed===false,"F assisted/unrendered scored");
  ok(f5.rubric_bridge==="NOT_COMPARABLE_PENDING_ADJUDICATION"&&f5.historical_pre_choice_preserved===true&&f5.original_evidence_preserved===true&&Date.parse(f5.arrived_at)>Date.parse(f5.occurred_at)&&f6.outcome==="PENDING"&&f6.completed===false&&F.expected.F_D1_complete===false&&F.expected.historical_choice_rewritten===false,"F late revision/pending rewritten");
- return {cases:6,assertions:9,turns:8};
+ return {cases:6,assertions:9,dialogueEvents:8};
 }
 const raw=readFileSync(new URL('./f226-dialogue-contingency-pragmatic-repair.synthetic.json',import.meta.url),'utf8');
 const fixture=JSON.parse(raw),result=verify(fixture);
@@ -42,5 +42,5 @@ const mutations=[
 ["F backdated choice",f=>{f.cases[5].events[5].historical_pre_choice_preserved=false;}]
 ];
 for(const [name,mutate] of mutations){const f=JSON.parse(raw);mutate(f);let rejected=false;try{verify(f)}catch{rejected=true}if(!rejected)throw Error('Mutation accepted: '+name);}
-console.log(`F226 structural PASS: ${result.cases} synthetic cases, ${result.assertions} assertions, ${result.turns} intra-dialogue turns, ${mutations.length} negative mutation checks.`);
+console.log(`F226 structural PASS: ${result.cases} synthetic cases, ${result.assertions} assertions, ${result.dialogueEvents} ordered dialogue events, ${mutations.length} negative mutation checks.`);
 console.log('BOUNDARY: no real engine, independently reviewed CEFR/pragmatic/audio oracle, longitudinal efficacy or release evidence.');
