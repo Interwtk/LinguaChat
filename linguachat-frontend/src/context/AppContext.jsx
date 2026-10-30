@@ -1199,10 +1199,19 @@ export function AppProvider({ children }) {
     const access = captureLearnerAccess()
     if (!access.valid()) return
     const pending = missionInFlightRef.current
-    if (pending?.generation === missionGenerationRef.current && pending.access.valid()) return
+    // A fast HTTP reply may settle before React publishes the next mission step.
+    // Keep the accepted step locked until a different durable cursor is visible.
+    if (pending?.generation === missionGenerationRef.current && pending.access.valid()
+      && (!pending.committed || (pending.missionId === activeMission.missionId
+        && pending.startedAt === activeMission.startedAt
+        && pending.stepIndex === activeMission.currentStepIndex))) return
     const generation = ++missionGenerationRef.current
     const publication = { valid: () => access.valid() && missionGenerationRef.current === generation }
-    const inFlight = { generation, access }
+    const inFlight = {
+      generation, access, missionId: activeMission.missionId,
+      startedAt: activeMission.startedAt, stepIndex: activeMission.currentStepIndex,
+      committed: false,
+    }
     missionInFlightRef.current = inFlight
     try {
     const answerText = displayText || value
@@ -1313,6 +1322,7 @@ export function AppProvider({ children }) {
         }
         return
       }
+      inFlight.committed = true
       setActiveMission(previous => publication.valid() ? null : previous)
       setCompletedMissions(previous => publication.valid() ? [completed, ...previous].slice(0, 50) : previous)
       setLocalProgress(previous => {
@@ -1368,6 +1378,7 @@ export function AppProvider({ children }) {
       return
     }
 
+    inFlight.committed = true
     setLocalProgress(previous => publication.valid() ? recordMissionProgress(previous, {
       mission: details.mission,
       step: details.step,
@@ -1408,7 +1419,7 @@ export function AppProvider({ children }) {
     } finally {
       // An abandoned or replaced mission may have started another turn.
       // An older HTTP completion must never release that newer turn's lock.
-      if (missionInFlightRef.current === inFlight) missionInFlightRef.current = null
+      if (missionInFlightRef.current === inFlight && !inFlight.committed) missionInFlightRef.current = null
     }
   }, [activeCompanion, activeMission, appendLinguaMessages, interfaceLanguageInfo, messages, missionContextFromDetails, nativeLanguageInfo, profile, sessionId, targetLanguage, tutorPreferences])
 
