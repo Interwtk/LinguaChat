@@ -671,8 +671,21 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       resolveReply(reply)
     }
     await pending
-    assert.equal(missionInFlightRef.current, replacement,
-      mode + ': old mission completion must not release a replacement request lock')
+    if (mode === 'duplicate-settled') {
+      // The network already resolved, but React has not flushed the next cursor.
+      // A second click must not award the same step twice.
+      const queuedBefore = queued.length
+      await submit('answer', null, deps)
+      assert.equal(requests, 1, 'settled reply must not resubmit an uncommitted React cursor')
+      assert.equal(queued.length, queuedBefore, 'settled duplicate must not queue another answer')
+    }
+    if (['current', 'complete', 'duplicate-inflight', 'duplicate-settled', 'stale-flush', 'stale-timer'].includes(mode)) {
+      assert.equal(missionInFlightRef.current?.committed, true,
+        mode + ': durable step must remain locked until React advances the cursor')
+    } else {
+      assert.equal(missionInFlightRef.current, replacement,
+        mode + ': old mission completion must not release a replacement request lock')
+    }
     if (mode === 'stale-flush' || mode === 'stale-timer') owner = 'B'
     if (mode === 'stale-timer') {
       assert.equal(timers.length, 1, 'successful mission schedules delayed feedback')
@@ -722,9 +735,17 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         assert.equal(state.messages.at(-1).missionType, 'step')
       }
     }
+    if (mode === 'duplicate-settled') {
+      // Once React shows the next step, the previous committed lock may be replaced.
+      deps.activeMission = state.active
+      deps.getActiveMissionDetails = () => ({ ...details, step: steps[1] })
+      await submit('next answer', null, deps)
+      assert.equal(requests, 2, 'next mission step must remain submit-able')
+      assert.equal(generation.current, 2, 'next step owns a new request generation')
+    }
   }
 
-  for (const mode of ['current', 'retry', 'complete', 'failed-save', 'failed-completion', 'inflight', 'cancelled', 'duplicate-inflight', 'replaced-inflight', 'stale-flush', 'stale-timer']) {
+  for (const mode of ['current', 'retry', 'complete', 'failed-save', 'failed-completion', 'inflight', 'cancelled', 'duplicate-inflight', 'duplicate-settled', 'replaced-inflight', 'stale-flush', 'stale-timer']) {
     await checkMissionLease(mode)
   }
   ok()
