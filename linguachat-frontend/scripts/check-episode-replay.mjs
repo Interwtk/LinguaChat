@@ -129,6 +129,45 @@ const completed = (episodeId) => {
   ok()
 }
 
+/*
+ * 5a) A stale in-memory copy of an already-filed run must not credit the
+ * same can-do twice. This can happen after a tab restores an old activeRun
+ * while the completed history has already been reconciled into the model.
+ */
+{
+  const m = completed('first_greeting')
+  beginEpisodeRun(m, 'first_greeting', { atMs: AT })
+  const staleActive = JSON.parse(JSON.stringify(m.activeRun))
+  const first = completeEpisodeRun(m, { canDoId: 'introduce_self', independentEvidence: true, sessionId: 'session-a', atMs: AT })
+  assert.equal(m.canDo.introduce_self.attempts, 1)
+  m.activeRun = staleActive
+  const again = completeEpisodeRun(m, { canDoId: 'introduce_self', independentEvidence: true, sessionId: 'session-a', atMs: AT })
+  assert.equal(again?.runId, first.runId, 'a previously completed run is returned without replaying its evidence')
+  assert.equal(m.canDo.introduce_self.attempts, 1, 'stale completion must not grant a second can-do attempt')
+  assert.equal(m.canDo.introduce_self.independentSuccesses, 1, 'stale completion must not grant a second independent success')
+  assert.equal(runsFor(m, 'first_greeting').length, 1)
+  assert.equal(m.activeRun, null, 'the stale active pointer is discarded')
+  ok()
+}
+
+/*
+ * 5b) Reopening after a completed run must start a NEW attempt even if an
+ * old activeRun pointer is restored. Otherwise the next real practice would
+ * overwrite the previous history entry under the same runId.
+ */
+{
+  const m = completed('first_greeting')
+  const first = beginEpisodeRun(m, 'first_greeting', { atMs: AT })
+  completeEpisodeRun(m, { atMs: AT })
+  m.activeRun = JSON.parse(JSON.stringify(first))
+  const next = beginEpisodeRun(m, 'first_greeting', { atMs: AT })
+  assert.notEqual(next.runId, first.runId, 'a filed run cannot be rejoined as active')
+  assert.equal(next.mode, RUN_REPLAY)
+  completeEpisodeRun(m, { atMs: AT })
+  assert.equal(runsFor(m, 'first_greeting').length, 2, 'the old and new practices must both survive')
+  ok()
+}
+
 // 6) the other ending: offered, taken, and the first decision left intact
 {
   const m = completed('make_a_plan')
