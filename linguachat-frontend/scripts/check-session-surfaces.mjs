@@ -1988,7 +1988,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   ok()
 }
 
-/* ---------- duration changes cannot replan a different learner's session ---------- */
+/* ---------- duration changes must not overwrite another tab's daily cursor ---------- */
 {
   const context = read('src/context/AppContext.jsx')
   const signature = '  const chooseDuration = useCallback((mode) => {'
@@ -2002,17 +2002,36 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     'current', 'stale-flush', 'denied', 'invalid', 'revoked-model',
     'revoked-plan', 'rejected-duration', 'mismatched-duration',
     'throwing-duration', 'revoked-duration', 'rejected-session',
-    'revoked-session', 'active-session',
+    'revoked-session', 'active-session', 'stale-id', 'stale-status',
+    'stale-index', 'stale-block', 'missing', 'invalid-json',
+    'blocked-session-read', 'revoked-session-read', 'absent-current',
+    'first-session', 'new-day',
   ]) {
     let owner = mode === 'denied' ? 'B' : 'A'
     let models = 0, plans = 0, sessionSaves = 0, writes = 0
     const queued = []
+    const planned = {
+      version: 1, id: 'original', dayKey: '2026-10-30',
+      durationMode: 'standard', status: 'planned',
+      currentBlockIndex: 0, blocks: [{ id: 'intro' }, { id: 'finish' }],
+    }
     const original = {
       duration: 'standard',
-      daily: { id: 'original', status: mode === 'active-session' ? 'active' : 'planned' },
+      daily: ['first-session', 'new-day', 'absent-current'].includes(mode)
+        ? null : { ...planned, status: mode === 'active-session' ? 'active' : 'planned' },
     }
     const state = structuredClone(original)
     const storage = new Map()
+    const persisted = mode === 'stale-id' ? { ...planned, id: 'other' }
+      : mode === 'stale-status' ? { ...planned, status: 'active' }
+        : mode === 'stale-index' ? { ...planned, currentBlockIndex: 1 }
+          : mode === 'stale-block' ? { ...planned, blocks: [{ id: 'other' }, { id: 'finish' }] }
+            : mode === 'new-day' ? { ...planned, dayKey: '2026-10-29', status: 'completed' }
+              : mode === 'absent-current' ? planned : original.daily
+    if (persisted && !['missing', 'first-session'].includes(mode)) {
+      storage.set('daily-session', JSON.stringify(persisted))
+    }
+    if (mode === 'invalid-json') storage.set('daily-session', '{')
     const access = {
       valid: () => owner === 'A',
       setItem(key, value) {
@@ -2023,6 +2042,12 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         return true
       },
       getItem(key) {
+        if (key === 'daily-session') {
+          if (mode === 'blocked-session-read') throw new Error('Storage denied')
+          if (mode === 'revoked-session-read') owner = 'B'
+          return storage.get(key) ?? null
+        }
+        assert.equal(key, 'duration')
         if (mode === 'throwing-duration') throw new Error('Storage denied')
         if (mode === 'mismatched-duration') return 'another-tab-value'
         return storage.get(key) ?? null
@@ -2030,6 +2055,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
     const deps = {
       DURATION_PREF_KEY: 'duration',
+      SESSION_KEY: 'daily-session',
+      normalizeSession: value => value,
       ARC: [],
       dailySession: original.daily,
       captureLearnerAccess: () => access,
@@ -2042,7 +2069,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       getOrCreateSession: () => {
         plans++
         if (mode === 'revoked-plan') owner = 'B'
-        return { id: 'new', status: 'planned', durationMode: 'quick' }
+        return { ...planned, id: 'new', durationMode: 'quick' }
       },
       sessionContext: () => ({}),
       saveSession: (next, options) => {
@@ -2060,9 +2087,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(typeof update, 'function', mode + ': queued UI must recheck lease')
       state[key] = update(state[key])
     }
-    const accepted = ['current', 'stale-flush', 'active-session'].includes(mode)
+    const accepted = ['current', 'stale-flush', 'active-session', 'first-session', 'new-day'].includes(mode)
     assert.equal(result, accepted, mode + ': duration result')
-    if (mode === 'current') {
+    if (['current', 'first-session', 'new-day'].includes(mode)) {
       assert.equal(state.duration, 'quick')
       assert.equal(state.daily.id, 'new')
       assert.equal(sessionSaves, 1)
@@ -2073,7 +2100,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(plans, 0)
       assert.equal(sessionSaves, 0)
     } else {
-      assert.deepEqual(state, original, mode + ': A must not replan B or publish an unsaved preference')
+      assert.deepEqual(state, original, mode + ': stale or denied duration must not publish')
       assert.equal(queued.length, mode === 'stale-flush' ? 2 : 0)
     }
     if (mode === 'denied' || mode === 'invalid') {
@@ -2083,6 +2110,12 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     if (mode === 'revoked-model') assert.equal(plans, 0)
     if (mode === 'revoked-plan') assert.equal(writes, 0)
     if (mode === 'rejected-duration') assert.equal(sessionSaves, 0)
+    if (['stale-id', 'stale-status', 'stale-index', 'stale-block',
+      'missing', 'invalid-json', 'blocked-session-read', 'revoked-session-read',
+      'absent-current'].includes(mode)) {
+      assert.equal(writes, 0, mode + ': stale plan cannot rewrite duration')
+      assert.equal(sessionSaves, 0, mode + ': stale plan cannot replace session')
+    }
   }
   ok()
 }
