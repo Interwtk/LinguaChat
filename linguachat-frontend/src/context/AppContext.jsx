@@ -909,6 +909,30 @@ export function AppProvider({ children }) {
       if (!access.valid()) return false
       next = getOrCreateSession(model, ARC, { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
       if (!next || !access.valid()) return false
+      // Another tab can start, advance or replace today's plan while this tab
+      // still shows the old duration selector. Check the durable cursor before
+      // changing the preference or publishing a replacement plan.
+      let storedSession = null
+      try {
+        const raw = access.getItem(SESSION_KEY)
+        if (!access.valid()) return false
+        if (raw !== null) {
+          storedSession = normalizeSession(JSON.parse(raw), ARC)
+          if (!storedSession) return false
+        }
+      } catch { return false }
+      if (dailySession) {
+        if (!storedSession || storedSession.id !== dailySession.id
+          || storedSession.dayKey !== dailySession.dayKey
+          || storedSession.status !== dailySession.status
+          || storedSession.currentBlockIndex !== dailySession.currentBlockIndex
+          || storedSession.blocks[storedSession.currentBlockIndex]?.id
+            !== dailySession.blocks?.[dailySession.currentBlockIndex]?.id) return false
+      } else if (storedSession && storedSession.dayKey === next.dayKey) {
+        // A plan created in another tab today must not be overwritten by a
+        // selector mounted before that plan existed.
+        return false
+      }
     }
     // A denied, failed or conflicting write must not look saved in the UI.
     try {
