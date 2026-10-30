@@ -708,6 +708,9 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
      */
     if (finishedRef.current) return
     finishedRef.current = true
+    // Storage and navigation can throw (not only return false). Keep the
+    // completion screen retryable without re-paying XP or re-filing evidence.
+    try {
     const m = modelRef.current
     const st = getEpisodeState(m, ep.id)
     // the can-do is only credited as independent if this run actually produced
@@ -757,6 +760,11 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
     // Keep the button retryable without paying XP or filing the run again.
     const navigated = onComplete ? onComplete(ep) : finishEpisode()
     if (navigated === false) finishedRef.current = false
+    } catch {
+      // The award and run history are idempotent on retry; never strand the
+      // learner behind a latched button after an unexpected dependency error.
+      finishedRef.current = false
+    }
   }
 
   return (
