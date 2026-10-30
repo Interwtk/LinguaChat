@@ -831,6 +831,12 @@ export function sanitizeRun(raw) {
     retriedSteps: num(raw.retriedSteps),
     formatsUsed: Array.isArray(raw.formatsUsed)
       ? [...new Set(raw.formatsUsed.filter(f => ACTIVITY_FORMATS.includes(f)))].slice(0, 10) : [],
+    // One compact marker per step/action IN THIS RUN. Daily preference
+    // signals dedupe across replays, but a new practice must still remember
+    // its own assistance and retries. No answers or learner text are stored.
+    signalKeys: Array.isArray(raw.signalKeys)
+      ? [...new Set(raw.signalKeys.filter(k => typeof k === 'string'
+        && /^\\d{1,4}(?::alt)?:(?:completed|assistance|retried|switched)$/.test(k)))].slice(-100) : [],
     rewarded: Boolean(raw.rewarded),
     /*
      * How much help this run offers, and why. It lives on the run so a resumed
