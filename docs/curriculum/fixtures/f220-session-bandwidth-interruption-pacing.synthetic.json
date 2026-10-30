@@ -461,7 +461,8 @@
           {
             "event_id": "E5",
             "delayed_transfer_rendered": true,
-            "comparison_eligible": true
+            "comparison_eligible": true,
+            "type": "followup_rendered"
           }
         ],
         "insert": [
