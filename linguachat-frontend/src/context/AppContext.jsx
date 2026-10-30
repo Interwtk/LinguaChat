@@ -440,6 +440,9 @@ export function AppProvider({ children }) {
   const restoredMissionRef = useRef(false)
   // A delayed mission reply must not revive an abandoned/replaced mission.
   const missionGenerationRef = useRef(0)
+  // A pending mission answer owns its HTTP turn until it settles. React's
+  // typing state is not synchronous, so rapid submits must share one turn.
+  const missionInFlightRef = useRef(null)
   // Clearing or resetting a conversation invalidates replies from earlier HTTP turns.
   // The account lease alone cannot distinguish two conversations of one account.
   const chatGenerationRef = useRef(0)
@@ -1195,8 +1198,13 @@ export function AppProvider({ children }) {
     // Capture BEFORE queuing the learner's answer or starting the HTTP request.
     const access = captureLearnerAccess()
     if (!access.valid()) return
+    const pending = missionInFlightRef.current
+    if (pending?.generation === missionGenerationRef.current && pending.access.valid()) return
     const generation = ++missionGenerationRef.current
     const publication = { valid: () => access.valid() && missionGenerationRef.current === generation }
+    const inFlight = { generation, access }
+    missionInFlightRef.current = inFlight
+    try {
     const answerText = displayText || value
     setMessages(previous => publication.valid() ? [...previous, {
       id: `u${Date.now()}`,
@@ -1397,6 +1405,11 @@ export function AppProvider({ children }) {
         createMissionStepMessage(getActiveMissionDetails(advanced.activeMission)),
       ], publication)
     }, 650)
+    } finally {
+      // An abandoned or replaced mission may have started another turn.
+      // An older HTTP completion must never release that newer turn's lock.
+      if (missionInFlightRef.current === inFlight) missionInFlightRef.current = null
+    }
   }, [activeCompanion, activeMission, appendLinguaMessages, interfaceLanguageInfo, messages, missionContextFromDetails, nativeLanguageInfo, profile, sessionId, targetLanguage, tutorPreferences])
 
   const submitMissionOption = useCallback((option) => {
