@@ -442,11 +442,24 @@ export function mergeEpisodeRuns(mine, theirs) {
       // A finished run is authoritative for its evidence. An older in-progress
       // snapshot may not erase its independent production, assistance or formats.
       const authoritative = prev?.completedAt && !run.completedAt ? prev : run
-      byId.set(run.runId, prev ? {
+      const merged = prev ? {
         ...prev, ...run, ...authoritative,
         completedAt: run.completedAt || prev.completedAt,
         rewarded: prev.rewarded || run.rewarded,
-      } : run)
+      } : run
+      // Two completed copies of the SAME attempt may each have persisted
+      // different activity observations before their snapshots converged.
+      // Preserve both sets without summing counters (which would double count
+      // shared help). An unfinished snapshot must still never rewrite a filed
+      // completion's authoritative evidence.
+      if (prev?.completedAt && run.completedAt) {
+        merged.assistanceUsed = Math.max(prev.assistanceUsed, run.assistanceUsed)
+        merged.retriedSteps = Math.max(prev.retriedSteps, run.retriedSteps)
+        merged.independentEvidence = prev.independentEvidence || run.independentEvidence
+        merged.formatsUsed = [...new Set([...prev.formatsUsed, ...run.formatsUsed])].slice(0, 10)
+        merged.signalKeys = [...new Set([...prev.signalKeys, ...run.signalKeys])].slice(-100)
+      }
+      byId.set(run.runId, merged)
     }
     out[episodeId] = [...byId.values()].slice(-RUNS_PER_EPISODE)
   }
