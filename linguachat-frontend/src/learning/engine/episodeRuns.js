@@ -13,7 +13,7 @@
  *     A first completion is rewarded once. Everything after it is practice —
  *     real practice, that can produce new evidence, but never a second prize.
  */
-import { getEpisodeState, sanitizeRun, RUNS_PER_EPISODE, recordDelayedRetrievalEvidence, recordCanDoAttempt } from './learnerModel.js'
+import { ACTIVITY_FORMATS, getEpisodeState, sanitizeRun, RUNS_PER_EPISODE, recordDelayedRetrievalEvidence, recordCanDoAttempt } from './learnerModel.js'
 import { dayKeyFor } from './session.js'
 import { reconcileLevelMilestones } from '../curriculum/graduation.js'
 
@@ -122,6 +122,7 @@ export function beginEpisodeRun(model, episodeId, { source = 'practice', wantsOt
     assistanceUsed: continues ? active.assistanceUsed : 0,
     retriedSteps: continues ? active.retriedSteps : 0,
     formatsUsed: continues ? active.formatsUsed : [],
+    signalKeys: continues ? active.signalKeys : [],
     rewarded: continues ? active.rewarded : false,
     scaffold: continues ? active.scaffold : null,
     pendingRetrieval: continues ? active.pendingRetrieval : [],
@@ -135,6 +136,31 @@ export function updateActiveRun(model, patch) {
   if (!active) return null
   model.activeRun = sanitizeRun({ ...active, ...patch })
   return model.activeRun
+}
+
+/*
+ * Daily activity-preference signals are counted once per step/day, across
+ * replays. That global dedupe must NOT suppress help or retries in a different
+ * run of the same episode on the same day.
+ *
+ * Track a bounded set of per-run step/action markers. They survive same-day
+ * reloads but reset on a new run/day; no learner answers are stored.
+ * Returns null for duplicate/invalid signals so callers can skip the write.
+ */
+export function recordRunActivitySignal(model, { kind, format, key } = {}) {
+  const active = sanitizeRun(model.activeRun)
+  if (!active || active.completedAt || !ACTIVITY_FORMATS.includes(format)) return null
+  if (!['completed', 'assistance', 'retried', 'negative_soft'].includes(kind)) return null
+  if (typeof key !== 'string' || !/^\d{1,4}(?::alt)?:(?:completed|assistance|retried|switched)$/.test(key)) return null
+  if (key.split(':').at(-1) !== (kind === 'negative_soft' ? 'switched' : kind)) return null
+  if (active.signalKeys.includes(key)) return null
+  const patch = {
+    signalKeys: [...active.signalKeys, key].slice(-100),
+    formatsUsed: [...new Set([...active.formatsUsed, format])],
+  }
+  if (kind === 'assistance') patch.assistanceUsed = active.assistanceUsed + 1
+  if (kind === 'retried') patch.retriedSteps = active.retriedSteps + 1
+  return updateActiveRun(model, patch)
 }
 
 // Pending observations belong to this run, never to earned can-do evidence.
