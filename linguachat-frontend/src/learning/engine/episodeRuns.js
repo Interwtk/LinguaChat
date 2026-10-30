@@ -90,7 +90,13 @@ export function beginEpisodeRun(model, episodeId, { source = 'practice', wantsOt
     model.activeRun = null
     active = null
   }
-  if (active && active.episodeId === episodeId && active.mode === mode && !active.completedAt) {
+  // An unfinished run belongs to the local calendar day it started on.
+  // Resuming the episode tomorrow preserves its step progress, but must not
+  // reuse yesterday's run ID, assistance or independent-evidence counters.
+  // Missing/invalid legacy timestamps are not proof of a same-day attempt.
+  const startedAtMs = active ? Date.parse(active.startedAt) : NaN
+  const sameDay = Number.isFinite(startedAtMs) && dayKeyFor(startedAtMs) === dayKeyFor(atMs)
+  if (active && sameDay && active.episodeId === episodeId && active.mode === mode && !active.completedAt) {
     return active
   }
   /*
@@ -101,7 +107,7 @@ export function beginEpisodeRun(model, episodeId, { source = 'practice', wantsOt
    * it made a learner who reloaded mid-episode start again from whatever the
    * evidence said at that moment rather than from where they actually were.
    */
-  const continues = active && active.episodeId === episodeId && !active.completedAt
+  const continues = active && sameDay && active.episodeId === episodeId && !active.completedAt
     && ((active.mode === RUN_FIRST && mode === RUN_RESUME) || (active.mode === RUN_RESUME && mode === RUN_FIRST))
 
   const run = sanitizeRun({
