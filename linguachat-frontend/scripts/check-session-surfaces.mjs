@@ -1818,7 +1818,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       sessionContext: () => ({}),
       ARC: [],
       getOrCreateSession: () => {
-        if (mode === 'first-session' || mode === 'old-completed') return planned
+        if (mode === 'first-session' || mode === 'old-completed' || mode === 'absent-current') return planned
         if (mode === 'completed-today') return daily
         throw new Error('existing plan should be used')
       },
