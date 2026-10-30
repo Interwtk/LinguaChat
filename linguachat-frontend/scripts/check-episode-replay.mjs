@@ -341,7 +341,7 @@ const completed = (episodeId) => {
     assert.equal(kept[0].rewarded, true)
     assert.deepEqual(new Set(kept[0].signalKeys), new Set(['2:assistance', '3:retried']))
     assert.deepEqual(new Set(kept[0].formatsUsed), new Set(['choice', 'free_reply']))
-    assert.deepEqual(sanitizeEpisodeRuns({ [episodeId]: [kept, ...copies] })[episodeId][0], kept,
+    assert.deepEqual(sanitizeEpisodeRuns({ [episodeId]: [kept[0], ...copies] })[episodeId][0], kept[0],
       're-sanitizing the same copies must not inflate evidence')
   }
   const unfinishedRewarded = sanitizeRun({
