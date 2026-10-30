@@ -15,7 +15,7 @@ import { getLearnerInterests, getInterestContext, getInterestObject } from '../.
 import { evaluateLearningResponse } from '../../services/api'
 import {
   loadLearnerModel, saveLearnerModel, recordItemAttempt, markRecurringError,
-  getEpisodeState, setEpisodeState, recordActivitySignalOnce,
+  getEpisodeState, setEpisodeState, recordActivitySignalOnce, recordItemSeen,
 } from '../../learning/engine/learnerModel.js'
 import {
   deriveInitialScaffold, updateScaffoldAfterTurn, reviveScaffoldState,
@@ -721,16 +721,25 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
      */
     const firstCompletion = !st.awarded && !awardedRef.current
     if (firstCompletion) {
-      awardedRef.current = true
       /*
-       * The Garden grants, resolved here: this screen already has the seed
-       * vocabulary loaded, so the app-wide context does not have to carry it.
-       * Unknown ids are dropped exactly as before.
+       * The Garden grants are resolved here, where the vocabulary catalogue
+       * is already loaded. Unknown ids are dropped as before.
        */
       const grants = (ep.gardenItems || [])
         .filter(id => SEED_VOCAB_BY_ID[id])
         .map(id => ({ vocabId: id, word: SEED_VOCAB_BY_ID[id].term, kind: SEED_VOCAB_BY_ID[id].kind }))
-      awardEpisode(ep, { grants })  // garden + XP, idempotent by awarded flag below
+      // A denied account lease or failed model save must not mark the episode
+      // awarded. Keep the completion button retryable instead of silently
+      // losing the Garden/XP reward.
+      if (awardEpisode(ep, { grants }) !== true) {
+        finishedRef.current = false
+        return
+      }
+      awardedRef.current = true
+      // awardEpisode persists grants in a fresh model snapshot, but the runner
+      // saves its own in-memory model below. Mirror those grants here so that
+      // the runner's later save cannot erase their 'seen' learning state.
+      for (const grant of grants) recordItemSeen(m, grant.vocabId)
       setEpisodeState(m, ep.id, { status: 'completed', awarded: true, stepIndex: ep.steps.length - 1 })
     } else {
       setEpisodeState(m, ep.id, { status: 'completed', stepIndex: ep.steps.length - 1 })
