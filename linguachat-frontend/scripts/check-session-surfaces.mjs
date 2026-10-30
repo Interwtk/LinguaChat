@@ -2169,6 +2169,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     let owner = mode === 'denied' ? 'B' : 'A'
     let writes = 0
     const chatGenerationRef = { current: 0 }
+    const oldRequest = { generation: 0, access: { valid: () => true } }
+    const chatInFlightRef = { current: oldRequest }
     const stored = new Map([['chat', '[{"id":"old-A"}]']])
     const queued = []
     const state = { messages: [{ id: 'old-A' }], selected: { id: 'old-A' }, typing: true }
@@ -2192,7 +2194,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
     const deps = {
       captureLearnerAccess: () => access,
-      chatGenerationRef,
+      chatGenerationRef, chatInFlightRef,
       interfaceLanguageInfo: { base: 'es' },
       createWelcomeMessage: () => ({ id: 'welcome-es' }),
       saveStoredMessages: (messages, options) => save(messages, options, {
@@ -2212,6 +2214,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const accepted = mode === 'current' || mode === 'stale-flush'
     assert.equal(result, accepted, mode + ': clear result')
     assert.equal(chatGenerationRef.current, accepted ? 1 : 0, mode + ': invalidate only after durable clear')
+    assert.equal(chatInFlightRef.current, accepted ? null : oldRequest,
+      mode + ': only a verified clear releases its pending request')
     if (mode === 'current') {
       assert.deepEqual(state, { messages: [{ id: 'welcome-es' }], selected: null, typing: false })
       assert.equal(stored.get('chat'), JSON.stringify([{ id: 'welcome-es' }]))
