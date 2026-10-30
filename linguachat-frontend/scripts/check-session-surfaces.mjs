@@ -2046,7 +2046,10 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     'current', 'stale-flush', 'denied', 'invalid', 'revoked-model',
     'revoked-plan', 'rejected-duration', 'mismatched-duration',
     'throwing-duration', 'revoked-duration', 'rejected-session',
-    'revoked-session', 'active-session', 'stale-id', 'stale-day', 'stale-status',
+    'revoked-session', 'active-session', 'active-stale-id', 'active-stale-day',
+    'active-stale-status', 'active-stale-index', 'active-stale-block',
+    'active-missing', 'active-invalid-json', 'active-blocked-read',
+    'active-revoked-read', 'stale-id', 'stale-day', 'stale-status',
     'stale-index', 'stale-block', 'missing', 'invalid-json',
     'blocked-session-read', 'revoked-session-read', 'absent-current',
     'first-session', 'new-day',
@@ -2062,21 +2065,24 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const original = {
       duration: 'standard',
       daily: ['first-session', 'new-day', 'absent-current'].includes(mode)
-        ? null : { ...planned, status: mode === 'active-session' ? 'active' : 'planned' },
+        ? null : { ...planned, status: mode.startsWith('active-') ? 'active' : 'planned' },
     }
     const state = structuredClone(original)
     const storage = new Map()
-    const persisted = mode === 'stale-id' ? { ...planned, id: 'other' }
-      : mode === 'stale-day' ? { ...planned, dayKey: '2026-10-29' }
-      : mode === 'stale-status' ? { ...planned, status: 'active' }
-        : mode === 'stale-index' ? { ...planned, currentBlockIndex: 1 }
-          : mode === 'stale-block' ? { ...planned, blocks: [{ id: 'other' }, { id: 'finish' }] }
+    const durableBase = mode.startsWith('active-') ? { ...planned, status: 'active' } : planned
+    const persisted = ['stale-id', 'active-stale-id'].includes(mode) ? { ...durableBase, id: 'other' }
+      : ['stale-day', 'active-stale-day'].includes(mode) ? { ...durableBase, dayKey: '2026-10-29' }
+      : mode === 'stale-status' ? { ...durableBase, status: 'active' }
+        : mode === 'active-stale-status' ? { ...durableBase, status: 'planned' }
+          : ['stale-index', 'active-stale-index'].includes(mode) ? { ...durableBase, currentBlockIndex: 1 }
+            : ['stale-block', 'active-stale-block'].includes(mode)
+              ? { ...durableBase, blocks: [{ id: 'other' }, { id: 'finish' }] }
             : mode === 'new-day' ? { ...planned, dayKey: '2026-10-29', status: 'completed' }
               : mode === 'absent-current' ? planned : original.daily
-    if (persisted && !['missing', 'first-session'].includes(mode)) {
+    if (persisted && !['missing', 'active-missing', 'first-session'].includes(mode)) {
       storage.set('daily-session', JSON.stringify(persisted))
     }
-    if (mode === 'invalid-json') storage.set('daily-session', '{')
+    if (mode === 'invalid-json' || mode === 'active-invalid-json') storage.set('daily-session', '{')
     const access = {
       valid: () => owner === 'A',
       setItem(key, value) {
@@ -2088,8 +2094,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       },
       getItem(key) {
         if (key === 'daily-session') {
-          if (mode === 'blocked-session-read') throw new Error('Storage denied')
-          if (mode === 'revoked-session-read') owner = 'B'
+          if (mode === 'blocked-session-read' || mode === 'active-blocked-read') throw new Error('Storage denied')
+          if (mode === 'revoked-session-read' || mode === 'active-revoked-read') owner = 'B'
           return storage.get(key) ?? null
         }
         assert.equal(key, 'duration')
@@ -2155,11 +2161,18 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     if (mode === 'revoked-model') assert.equal(plans, 0)
     if (mode === 'revoked-plan') assert.equal(writes, 0)
     if (mode === 'rejected-duration') assert.equal(sessionSaves, 0)
-    if (['stale-id', 'stale-status', 'stale-index', 'stale-block',
+    if (['stale-id', 'stale-day', 'stale-status', 'stale-index', 'stale-block',
       'missing', 'invalid-json', 'blocked-session-read', 'revoked-session-read',
-      'absent-current'].includes(mode)) {
+      'absent-current', 'active-stale-id', 'active-stale-day',
+      'active-stale-status', 'active-stale-index', 'active-stale-block',
+      'active-missing', 'active-invalid-json', 'active-blocked-read',
+      'active-revoked-read'].includes(mode)) {
       assert.equal(writes, 0, mode + ': stale plan cannot rewrite duration')
       assert.equal(sessionSaves, 0, mode + ': stale plan cannot replace session')
+      if (mode.startsWith('active-')) {
+        assert.equal(models, 0, mode + ': active session cannot be replanned')
+        assert.equal(plans, 0, mode + ': active session cannot be regenerated')
+      }
     }
   }
   ok()

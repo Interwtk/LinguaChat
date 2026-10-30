@@ -933,6 +933,23 @@ export function AppProvider({ children }) {
         // selector mounted before that plan existed.
         return false
       }
+    } else if (dailySession) {
+      // Changing tomorrow's duration during an active session must not let a
+      // stale tab silently overwrite this account's current preference.
+      // The active plan itself stays untouched, but its durable cursor still
+      // has to match the session this tab is showing.
+      let storedSession
+      try {
+        const raw = access.getItem(SESSION_KEY)
+        if (!access.valid() || raw === null) return false
+        storedSession = normalizeSession(JSON.parse(raw), ARC)
+      } catch { return false }
+      if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
+        || storedSession.dayKey !== dailySession.dayKey
+        || storedSession.status !== dailySession.status
+        || storedSession.currentBlockIndex !== dailySession.currentBlockIndex
+        || storedSession.blocks[storedSession.currentBlockIndex]?.id
+          !== dailySession.blocks?.[dailySession.currentBlockIndex]?.id) return false
     }
     // A denied, failed or conflicting write must not look saved in the UI.
     try {
