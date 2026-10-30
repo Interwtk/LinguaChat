@@ -481,7 +481,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         requestCount++
         return ['inflight', 'cleared-inflight', 'duplicate-inflight'].includes(mode)
           ? new Promise(resolve => { resolveReply = resolve })
-          : mode === 'stale-error'
+          : ['stale-error', 'error-settled'].includes(mode)
             ? Promise.reject(new Error('offline'))
             : Promise.resolve(reply)
       },
@@ -521,8 +521,21 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       resolveReply(reply)
     }
     await pending
-    assert.equal(chatInFlightRef.current, replacement,
-      mode + ': old finally must not unlock a newer conversation')
+    if (['duplicate-settled', 'error-settled'].includes(mode)) {
+      // HTTP success or failure has settled, but React has not committed
+      // the new message list. A second click cannot start the same turn.
+      const before = queued.length
+      await send('Hello', deps)
+      assert.equal(requestCount, 1, mode + ': settled reply cannot be submitted twice before React flush')
+      assert.equal(queued.length, before, mode + ': duplicate must not enqueue another learner message')
+    }
+    if (['current', 'duplicate-inflight', 'duplicate-settled', 'error-settled', 'cleared-before-flush'].includes(mode)) {
+      assert.equal(chatInFlightRef.current?.committed, true,
+        mode + ': a settled turn stays locked until the message list commits')
+    } else {
+      assert.equal(chatInFlightRef.current, replacement,
+        mode + ': old finally must not unlock a newer conversation')
+    }
     if (mode === 'cleared-before-flush') chatGenerationRef.current++
     if (!['current', 'duplicate-inflight', 'cleared-inflight', 'cleared-before-flush'].includes(mode)) owner = 'B'
     assert.ok(queued.length > 0, mode + ': React callbacks must have been queued')
@@ -530,18 +543,30 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(typeof update, 'function', mode + ': every queued update must check the lease')
       state[key] = update(state[key])
     }
-    if (mode === 'current' || mode === 'duplicate-inflight') {
+    if (['current', 'duplicate-inflight', 'duplicate-settled'].includes(mode)) {
       assert.equal(state.messages.length, 3, 'the valid account still sees its own user/reply messages')
       assert.equal(state.progress.owner, 'A', 'valid practice still updates progress')
       assert.equal(state.connection, 'Connected as A')
       assert.equal(state.typing, false)
+    } else if (mode === 'error-settled') {
+      assert.equal(state.messages.length, 3, 'failed request retains learner message and fallback reply')
+      assert.deepEqual(state.progress, original.progress, 'failed request earns no XP')
+      assert.equal(state.typing, false)
     } else {
       assert.deepEqual(state, original, mode + ': A must not modify B after the lease is revoked')
+    }
+    if (['duplicate-settled', 'error-settled'].includes(mode)) {
+      // A new render with the committed messages must permit the next turn.
+      deps.messages = state.messages
+      await send('Next turn', deps)
+      assert.equal(requestCount, 2, mode + ': next turn unlocks after React publishes messages')
     }
   }
 
   await checkChatLease('current')
   await checkChatLease('duplicate-inflight')
+  await checkChatLease('duplicate-settled')
+  await checkChatLease('error-settled')
   await checkChatLease('stale-success')
   await checkChatLease('stale-error')
   await checkChatLease('inflight')
