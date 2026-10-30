@@ -49,7 +49,7 @@ function check(f){
  ok(['E1','E2','E3'].every(id=>event(E,id).assisted===true&&event(E,id).independent===false),'E short assisted not clean');
  ok(event(E,'E4').independent===true&&event(E,'E5').comparison_eligible===false&&event(E,'E5').delayed_transfer_rendered===false,'E comparison ineligible');
  ok(event(E,'E6').adjacent_eligible===true&&event(E,'E6').neutral_eligible===true&&event(E,'E6').unfamiliar_eligible===true&&event(E,'E6').method_estimate_changed===false,'E soft interest layer');
- ok(['E1','E2','E3'].every(id=>e(id).independent===true)&&e('E7').comparable_difficulty===true&&e('E8').comparable_difficulty===true&&e('E7').session!==e('E8').session,'E matched alternative');
+ ok(['E1','E2','E3'].every(id=>e(id).independent===true&&e(id).assisted===false)&&e('E5').type==='followup_rendered'&&e('E5').delayed_transfer_rendered===true&&e('E7').comparable_difficulty===true&&e('E8').comparable_difficulty===true&&e('E7').session!==e('E8').session,'E matched unassisted alternative');
  const valid=['F1','F2','F3','F4'].map(id=>event(F,id));
  ok(valid.every(x=>x.independent===true&&x.comparable===true)&&new Set(valid.map(x=>x.session)).size===4,'F four eligible distinct sessions');
  for(const method of ['short_retrieval_first','long_explain_then_practice'])ok(new Set(valid.filter(x=>x.method===method).map(x=>x.outcome)).size===2,'F contradictory outcomes');
@@ -79,6 +79,8 @@ const mutations=[
  ['E assisted called independent',x=>x.cases[4].events[0].independent=true],
  ['E missing followup comparable',x=>x.cases[4].events[4].comparison_eligible=true],
  ['E neutral topics excluded',x=>x.cases[4].events[5].neutral_eligible=false],
+ ['E control falsely assisted',x=>x.cases[4].matched_control.replace[0].assisted=true],
+ ['E control followup mislabeled',x=>x.cases[4].matched_control.replace[3].type='followup_missing'],
  ['F duplicate called independent',x=>x.cases[5].events[2].independent=true],
  ['F untrusted chronology clean',x=>x.cases[5].events[5].independent=true],
  ['F counterfactual unchanged',x=>x.cases[5].matched_control.replace[0].outcome='success'],
