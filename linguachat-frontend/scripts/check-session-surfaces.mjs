@@ -524,7 +524,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     assert.equal(chatInFlightRef.current, replacement,
       mode + ': old finally must not unlock a newer conversation')
     if (mode === 'cleared-before-flush') chatGenerationRef.current++
-    if (!['current', 'cleared-inflight', 'cleared-before-flush'].includes(mode)) owner = 'B'
+    if (!['current', 'duplicate-inflight', 'cleared-inflight', 'cleared-before-flush'].includes(mode)) owner = 'B'
     assert.ok(queued.length > 0, mode + ': React callbacks must have been queued')
     for (const [key, update] of queued) {
       assert.equal(typeof update, 'function', mode + ': every queued update must check the lease')
