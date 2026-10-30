@@ -339,6 +339,31 @@ const completed = (episodeId) => {
   ok()
 }
 
+/*
+ * Two tabs can each retain the last 12 practices, but one tab may have an
+ * older window. A merge must keep the latest 12 by practice time, regardless
+ * of which snapshot is passed first. Insertion-order trimming used to evict
+ * recent completed runs when stale-only IDs were appended afterward.
+ */
+{
+  const id = 'what_you_like'
+  const make = (i) => sanitizeRun({
+    runId: `${id}:2026-05-20:${i}`, episodeId: id, mode: RUN_REPLAY,
+    startedAt: new Date(AT + i * 1000).toISOString(),
+    completedAt: new Date(AT + i * 1000 + 500).toISOString(),
+  })
+  const stale = Array.from({ length: RUNS_PER_EPISODE }, (_, i) => make(i + 1))
+  const fresh = Array.from({ length: RUNS_PER_EPISODE }, (_, i) => make(i + 10))
+  for (const [a, b] of [[stale, fresh], [fresh, stale]]) {
+    const merged = mergeEpisodeRuns({ [id]: a }, { [id]: b })[id]
+    assert.deepEqual(merged.map(r => r.runId), fresh.map(r => r.runId),
+      'merging a stale 12-run window must not evict newer completed practices')
+    assert.deepEqual(mergeEpisodeRuns({ [id]: merged }, { [id]: stale })[id].map(r => r.runId),
+      fresh.map(r => r.runId), 'repeated stale merges must remain stable')
+  }
+  ok()
+}
+
 // 11) episode progress merges forward only — a stale copy cannot un-award
 {
   const stale = { what_you_like: { status: 'in_progress', stepIndex: 2, awarded: false } }
