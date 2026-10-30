@@ -318,6 +318,48 @@ const completed = (episodeId) => {
   ok()
 }
 
+/* Duplicate completed copies can already coexist inside ONE stored snapshot.
+ * Sanitization must not discard complementary evidence before the cross-tab
+ * merge has a chance to reconcile it. Reward is a monotonic fact too. */
+{
+  const episodeId = 'what_you_like'
+  const common = {
+    runId: 'completed-duplicate', episodeId, mode: RUN_REPLAY,
+    startedAt: '2026-05-20T09:00:00Z', completedAt: '2026-05-20T09:10:00Z',
+  }
+  const helped = sanitizeRun({ ...common, assistanceUsed: 1,
+    signalKeys: ['2:assistance'], formatsUsed: ['choice'], rewarded: true })
+  const retried = sanitizeRun({ ...common, retriedSteps: 1,
+    signalKeys: ['3:retried'], formatsUsed: ['free_reply'], independentEvidence: true })
+  for (const copies of [[helped, retried], [retried, helped]]) {
+    const kept = sanitizeEpisodeRuns({ [episodeId]: copies })[episodeId]
+    assert.equal(kept.length, 1)
+    assert.equal(kept[0].completedAt, common.completedAt)
+    assert.equal(kept[0].assistanceUsed, 1)
+    assert.equal(kept[0].retriedSteps, 1)
+    assert.equal(kept[0].independentEvidence, true)
+    assert.equal(kept[0].rewarded, true)
+    assert.deepEqual(new Set(kept[0].signalKeys), new Set(['2:assistance', '3:retried']))
+    assert.deepEqual(new Set(kept[0].formatsUsed), new Set(['choice', 'free_reply']))
+    assert.deepEqual(sanitizeEpisodeRuns({ [episodeId]: [kept, ...copies] })[episodeId][0], kept,
+      're-sanitizing the same copies must not inflate evidence')
+  }
+  const unfinishedRewarded = sanitizeRun({
+    ...common, completedAt: null, rewarded: true,
+    assistanceUsed: 9, signalKeys: ['4:assistance'],
+  })
+  const filed = sanitizeRun({ ...common, rewarded: false,
+    assistanceUsed: 1, signalKeys: ['2:assistance'] })
+  for (const copies of [[unfinishedRewarded, filed], [filed, unfinishedRewarded]]) {
+    const kept = sanitizeEpisodeRuns({ [episodeId]: copies })[episodeId][0]
+    assert.equal(kept.completedAt, filed.completedAt)
+    assert.equal(kept.assistanceUsed, 1, 'unfinished evidence cannot rewrite completion')
+    assert.deepEqual(kept.signalKeys, ['2:assistance'])
+    assert.equal(kept.rewarded, true, 'a previously paid reward cannot be forgotten')
+  }
+  ok()
+}
+
 // 10) two copies of the model saving over each other lose nothing
 {
   const mine = { what_you_like: [sanitizeRun({ runId: 'r1', episodeId: 'what_you_like', mode: 'replay', startedAt: 'a' })] }
