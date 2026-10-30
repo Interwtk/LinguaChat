@@ -1466,11 +1466,12 @@ export function AppProvider({ children }) {
     // React's isTyping state is asynchronous. Two rapid submits otherwise send
     // duplicate HTTP turns and award practice XP twice before the next render.
     const pending = chatInFlightRef.current
-    // A fast response can settle before React publishes the learner/reply
-    // messages. Keep that turn locked until the committed message list changes.
+    // React can publish the learner message while HTTP is still pending.
+    // Unlock only when the actual reply (or fallback) has committed, not
+    // merely when the message array changes or the request settles.
     if (pending?.generation === chatGeneration && pending.access.valid()
-      && (!pending.committed || pending.messages === messages)) return
-    const inFlight = { generation: chatGeneration, access: chatAccess, messages, committed: false }
+      && (!pending.committed || !messages.some(message => message.id === pending.replyId))) return
+    const inFlight = { generation: chatGeneration, access: chatAccess, replyId: null, committed: false }
     chatInFlightRef.current = inFlight
 
     const userMsg = {
@@ -1568,24 +1569,27 @@ export function AppProvider({ children }) {
         },
         ts: Date.now(),
       }
+      inFlight.replyId = linguaMsg.id
       setMessages(prev => chatStillCurrent() ? [...prev, linguaMsg] : prev)
       setSelectedMessage(prev => chatStillCurrent() ? linguaMsg : prev)
     } catch {
       if (!chatStillCurrent()) return
       setConnectionNotice(prev => chatStillCurrent() ? 'Lingua had trouble connecting. You can keep exploring the demo.' : prev)
-      setMessages(prev => chatStillCurrent() ? [...prev, {
+      const fallbackMsg = {
         id: `e${Date.now()}`,
         role: 'lingua',
         text: 'You can keep practicing with the demo while the connection recovers.',
         feedback: null,
         ts: Date.now(),
-      }] : prev)
+      }
+      inFlight.replyId = fallbackMsg.id
+      setMessages(prev => chatStillCurrent() ? [...prev, fallbackMsg] : prev)
     } finally {
       // An old reply cannot release a replacement request after Clear. A
       // settled current reply stays locked until React commits its messages;
       // otherwise another click could award the same free-chat turn twice.
       if (chatInFlightRef.current === inFlight) {
-        if (chatStillCurrent()) inFlight.committed = true
+        if (chatStillCurrent() && inFlight.replyId) inFlight.committed = true
         else chatInFlightRef.current = null
       }
       setIsTyping(prev => chatStillCurrent() ? false : prev)
