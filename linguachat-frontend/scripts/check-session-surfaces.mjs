@@ -1563,7 +1563,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
 }
 
 
-/* ---------- 11. advancing a daily block must remain in the originating account ---------- */
+/* ---------- 11. daily block advances must not rewind newer durable progress ---------- */
 {
   const context = read('src/context/AppContext.jsx')
   const sessionSource = read('src/learning/engine/session.js')
@@ -1579,17 +1579,29 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     'with (deps) { const { access = null } = options || {}; ' +
     extract(sessionSource, 'export function saveSession(session, { access = null } = {}) {', '\n}') + ' }')
 
+  const initial = {
+    version: 1, id: 'A-session', dayKey: '2026-10-30', durationMode: 'standard',
+    currentBlockIndex: 1, status: 'active',
+    blocks: [{ id: 'first' }, { id: 'second' }, { id: 'completion' }],
+  }
   for (const mode of [
-    'current', 'stale-flush', 'denied', 'no-session', 'revoked-advance',
-    'rejected-save', 'mismatch-save', 'revoked-save',
+    'current', 'double-click', 'stale-flush', 'denied', 'no-session',
+    'stale-index', 'stale-block', 'stale-id', 'stale-status', 'completed',
+    'missing', 'invalid-json', 'blocked-read', 'revoked-read',
+    'revoked-advance', 'rejected-save', 'mismatch-save', 'revoked-save',
   ]) {
     let owner = mode === 'denied' ? 'B' : 'A'
     let advances = 0, writes = 0
-    const storage = {}, queued = []
-    const state = {
-      daily: { id: 'A-session', currentBlockIndex: 1, status: 'active' },
-      arc: 5,
-    }
+    const durable = mode === 'stale-index' ? { ...initial, currentBlockIndex: 2 }
+      : mode === 'stale-block' ? { ...initial, blocks: [{ id: 'first' }, { id: 'replanned' }, { id: 'completion' }] }
+        : mode === 'stale-id' ? { ...initial, id: 'other-session' }
+          : mode === 'stale-status' ? { ...initial, status: 'planned' }
+            : mode === 'completed' ? { ...initial, status: 'completed' } : initial
+    const storage = { 'daily-session': JSON.stringify(durable) }
+    if (mode === 'missing') delete storage['daily-session']
+    if (mode === 'invalid-json') storage['daily-session'] = '{'
+    const queued = []
+    const state = { daily: structuredClone(initial), arc: 5 }
     const original = structuredClone(state)
     const access = {
       valid: () => owner === 'A',
@@ -1600,11 +1612,18 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         if (mode === 'revoked-save') owner = 'B'
         return true
       },
-      getItem: key => mode === 'mismatch-save' ? 'newer-tab-value' : storage[key],
+      getItem: key => {
+        if (mode === 'blocked-read') throw new Error('Storage denied')
+        if (mode === 'revoked-read') owner = 'B'
+        return mode === 'mismatch-save' && writes > 0 ? 'newer-tab-value' : (storage[key] ?? null)
+      },
     }
     const deps = {
+      SESSION_KEY: 'daily-session',
+      ARC: [],
+      normalizeSession: value => value,
       captureLearnerAccess: () => access,
-      dailySession: mode === 'no-session' ? null : original.daily,
+      dailySession: mode === 'no-session' ? null : structuredClone(initial),
       advanceBlock: session => {
         advances++
         if (mode === 'revoked-advance') owner = 'B'
@@ -1618,12 +1637,16 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       setDailySession: update => queued.push(['daily', update]),
     }
     const result = advance(deps)
+    if (mode === 'double-click') {
+      assert.equal(result, true)
+      assert.equal(advance(deps), false, 'a second click before React flush must not advance again')
+    }
     if (mode === 'stale-flush') owner = 'B'
     for (const [key, update] of queued) {
       assert.equal(typeof update, 'function', mode + ': React must receive a lease-checked updater')
       state[key] = update(state[key])
     }
-    if (mode === 'current') {
+    if (mode === 'current' || mode === 'double-click') {
       assert.equal(result, true)
       assert.equal(state.daily.currentBlockIndex, 2)
       assert.equal(state.arc, 6)
@@ -1632,9 +1655,12 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(queued.length, 2)
     } else {
       assert.equal(result, mode === 'stale-flush')
-      assert.deepEqual(state, original, mode + ': A cannot advance B session')
+      assert.deepEqual(state, original, mode + ': stale or failed advance must not mutate UI')
       assert.equal(queued.length, mode === 'stale-flush' ? 2 : 0)
-      if (mode === 'denied' || mode === 'no-session') assert.equal(advances, 0)
+      if (mode === 'denied' || mode === 'no-session' || mode.startsWith('stale-')
+        && mode !== 'stale-flush' || ['completed', 'missing', 'invalid-json', 'blocked-read', 'revoked-read'].includes(mode)) {
+        assert.equal(advances, 0, mode + ': invalid durable cursor must never be advanced')
+      }
       if (mode === 'revoked-advance') assert.equal(writes, 0)
     }
   }
