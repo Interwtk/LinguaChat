@@ -447,6 +447,34 @@ function newestEpisodeRuns(runs) {
 }
 
 /*
+ * A run ID is one practice, even when its completed record appears more than
+ * once in a stored snapshot. Share the same reconciliation for migration and
+ * cross-tab merges so neither path silently discards complementary evidence.
+ * An unfinished copy cannot rewrite a filed completion; a paid reward is
+ * monotonic even if it was recorded before completion.
+ */
+function mergeRunCopies(prev, run) {
+  const authoritative = prev.completedAt && !run.completedAt ? prev : run
+  const merged = {
+    ...prev, ...run, ...authoritative,
+    completedAt: run.completedAt || prev.completedAt,
+    rewarded: prev.rewarded || run.rewarded,
+  }
+  if (prev.completedAt && run.completedAt) {
+    merged.signalKeys = [...new Set([...prev.signalKeys, ...run.signalKeys])].slice(-100)
+    // Distinct markers represent distinct events; a max of two counters alone
+    // can lose them. Keep larger legacy counters when marker history was capped.
+    merged.assistanceUsed = Math.max(prev.assistanceUsed, run.assistanceUsed,
+      merged.signalKeys.filter(key => key.endsWith(':assistance')).length)
+    merged.retriedSteps = Math.max(prev.retriedSteps, run.retriedSteps,
+      merged.signalKeys.filter(key => key.endsWith(':retried')).length)
+    merged.independentEvidence = prev.independentEvidence || run.independentEvidence
+    merged.formatsUsed = [...new Set([...prev.formatsUsed, ...run.formatsUsed])].slice(0, 10)
+  }
+  return merged
+}
+
+/*
  * Runs are merged by id, never summed. If one copy saw a run finish and the
  * other did not, the finished version wins — a completion is a fact, an
  * unfinished snapshot is only the absence of news.
@@ -459,32 +487,7 @@ export function mergeEpisodeRuns(mine, theirs) {
     const byId = new Map()
     for (const run of [...(b[episodeId] || []), ...(a[episodeId] || [])]) {
       const prev = byId.get(run.runId)
-      // A finished run is authoritative for its evidence. An older in-progress
-      // snapshot may not erase its independent production, assistance or formats.
-      const authoritative = prev?.completedAt && !run.completedAt ? prev : run
-      const merged = prev ? {
-        ...prev, ...run, ...authoritative,
-        completedAt: run.completedAt || prev.completedAt,
-        rewarded: prev.rewarded || run.rewarded,
-      } : run
-      // Two completed copies of the SAME attempt may each have persisted
-      // different activity observations before their snapshots converged.
-      // Preserve both sets without summing counters (which would double count
-      // shared help). An unfinished snapshot must still never rewrite a filed
-      // completion's authoritative evidence.
-      if (prev?.completedAt && run.completedAt) {
-        merged.signalKeys = [...new Set([...prev.signalKeys, ...run.signalKeys])].slice(-100)
-        // Disjoint step markers represent distinct help/retry events; taking
-        // only the maximum counter would undercount them. Legacy runs may
-        // have higher counters than their retained marker window.
-        merged.assistanceUsed = Math.max(prev.assistanceUsed, run.assistanceUsed,
-          merged.signalKeys.filter(key => key.endsWith(':assistance')).length)
-        merged.retriedSteps = Math.max(prev.retriedSteps, run.retriedSteps,
-          merged.signalKeys.filter(key => key.endsWith(':retried')).length)
-        merged.independentEvidence = prev.independentEvidence || run.independentEvidence
-        merged.formatsUsed = [...new Set([...prev.formatsUsed, ...run.formatsUsed])].slice(0, 10)
-      }
-      byId.set(run.runId, merged)
+      byId.set(run.runId, prev ? mergeRunCopies(prev, run) : run)
     }
     out[episodeId] = newestEpisodeRuns([...byId.values()])
   }
@@ -918,10 +921,13 @@ export function sanitizeEpisodeRuns(raw) {
       const run = sanitizeRun(item)
       if (!run || run.episodeId !== episodeId) continue
       const previous = byId.get(run.runId)
-      // A snapshot can contain an unfinished and a filed copy of one run.
-      // A completion is a fact; never let the first array position decide
-      // whether that completion (and its recorded evidence) survives migration.
-      if (!previous || (!previous.completedAt && run.completedAt)) byId.set(run.runId, run)
+      // Keep the filed completion and reconcile distinct completed observations
+      // even when duplicate copies are already inside one persisted snapshot.
+      // Preserve the first unfinished copy absent a completion, except that a
+      // reward already paid must never be forgotten.
+      if (!previous) byId.set(run.runId, run)
+      else if (previous.completedAt || run.completedAt) byId.set(run.runId, mergeRunCopies(previous, run))
+      else if (run.rewarded && !previous.rewarded) byId.set(run.runId, { ...previous, rewarded: true })
     }
     if (byId.size) out[episodeId] = newestEpisodeRuns([...byId.values()])
   }
