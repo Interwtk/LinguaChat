@@ -18,7 +18,7 @@ import {
   mergeLearnerFacts, recordCanDoAttempt,
 } from '../src/learning/engine/learnerModel.js'
 import {
-  beginEpisodeRun, completeEpisodeRun, resolveRunMode, runEarnsReward, runsFor,
+  beginEpisodeRun, completeEpisodeRun, resolveRunMode, runEarnsReward, runsFor, recordRunActivitySignal,
   timesPractised, branchesSeen, otherBranch, lastBranchPlayed, canTryOtherBranch, updateActiveRun, stageDelayedRetrieval,
   RUN_FIRST, RUN_RESUME, RUN_REPLAY, RUN_REVIEW, RUN_BRANCH_REPLAY,
 } from '../src/learning/engine/episodeRuns.js'
@@ -412,4 +412,41 @@ console.log(`check-episode-replay — OK  (${n} replay groups verified)`)
   assert.ok(shell.includes('stageDelayedRetrieval(modelRef.current'))
   assert.ok(!shell.includes('recordDelayedRetrievalEvidence(modelRef.current'))
   console.log('partial retrieval: pending across resume, discarded on abandonment, committed once with completion PASS')
+}
+
+/*
+ * Run-specific activity signals must not be suppressed by the global daily
+ * activity-preference dedupe. Replaying the same step later today is a NEW
+ * practice, but a double click/reload within the SAME run is not.
+ */
+{
+  const m = completed('first_greeting')
+  const first = beginEpisodeRun(m, 'first_greeting', { atMs: AT })
+  assert.ok(recordRunActivitySignal(m, { kind: 'assistance', format: 'free_reply', key: '3:assistance' }))
+  assert.equal(m.activeRun.assistanceUsed, 1)
+  assert.equal(recordRunActivitySignal(m, { kind: 'assistance', format: 'free_reply', key: '3:assistance' }), null,
+    'same-run double tap must not count assistance twice')
+  assert.ok(recordRunActivitySignal(m, { kind: 'retried', format: 'free_reply', key: '3:retried' }))
+  assert.equal(m.activeRun.retriedSteps, 1)
+  const restored = migrateLearnerModel(JSON.parse(JSON.stringify(m)))
+  const resumed = beginEpisodeRun(restored, 'first_greeting', { atMs: AT })
+  assert.equal(resumed.runId, first.runId)
+  assert.equal(recordRunActivitySignal(restored, { kind: 'assistance', format: 'free_reply', key: '3:assistance' }), null,
+    'same-run reload must retain deduplication')
+  assert.equal(restored.activeRun.assistanceUsed, 1)
+  completeEpisodeRun(restored, { atMs: AT })
+  const next = beginEpisodeRun(restored, 'first_greeting', { atMs: AT })
+  assert.notEqual(next.runId, first.runId)
+  assert.ok(recordRunActivitySignal(restored, { kind: 'assistance', format: 'free_reply', key: '3:assistance' }),
+    'same-day new practice must record its own help even when daily preference signal was already counted')
+  assert.equal(restored.activeRun.assistanceUsed, 1)
+  assert.ok(recordRunActivitySignal(restored, { kind: 'retried', format: 'free_reply', key: '3:retried' }))
+  assert.equal(restored.activeRun.retriedSteps, 1)
+  assert.deepEqual(restored.activeRun.formatsUsed, ['free_reply'])
+  assert.equal(recordRunActivitySignal(restored, { kind: 'assistance', format: 'unknown', key: '4:assistance' }), null)
+  assert.equal(recordRunActivitySignal(restored, { kind: 'assistance', format: 'free_reply', key: 'invalid' }), null)
+  const shell = readFileSync(new URL('../src/components/episode/EpisodeShell.jsx', import.meta.url), 'utf8')
+  assert.ok(shell.includes('recordRunActivitySignal(modelRef.current'),
+    'the actual episode UI must record per-run help before daily preference deduplication')
+  console.log('run-specific activity signals: replay/reload/double tap/format/invalid PASS')
 }
