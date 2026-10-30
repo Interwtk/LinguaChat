@@ -87,9 +87,9 @@
       "source_binding": "REQUIRED",
       "events": [
         {
-          "id": "A0",
+          "id": "A_PRE",
           "occurred_at": "2026-10-01T12:00:00Z",
-          "session": "a0",
+          "session": "a_pre",
           "type": "pre_choice_snapshot",
           "methods_feasible": [
             "worked_example",
@@ -100,58 +100,74 @@
           "next_method_rendered": "worked_example"
         },
         {
-          "id": "A1",
+          "id": "A0",
           "occurred_at": "2026-10-04T12:00:00Z",
+          "session": "a0",
+          "type": "unseen_delayed_probe",
+          "method_prior": "worked_example",
+          "independent": true,
+          "reviewed_error": "repair_failure",
+          "answer_exposure": false,
+          "meaningful_delay_review": "REQUIRED"
+        },
+        {
+          "id": "A1",
+          "occurred_at": "2026-10-07T12:00:00Z",
           "session": "a1",
           "type": "unseen_delayed_probe",
           "method_prior": "worked_example",
           "independent": true,
           "reviewed_error": "repair_failure",
-          "answer_exposure": false
+          "answer_exposure": false,
+          "meaningful_delay_review": "REQUIRED"
         },
         {
           "id": "A2",
-          "occurred_at": "2026-10-07T12:00:00Z",
+          "occurred_at": "2026-10-10T12:00:00Z",
           "session": "a2",
           "type": "unseen_delayed_probe",
           "method_prior": "worked_example",
           "independent": true,
           "reviewed_error": "repair_failure",
-          "answer_exposure": false
+          "answer_exposure": false,
+          "meaningful_delay_review": "REQUIRED"
         },
         {
           "id": "A3",
-          "occurred_at": "2026-10-10T12:00:00Z",
+          "occurred_at": "2026-10-13T12:00:00Z",
           "session": "a3",
           "type": "unseen_delayed_probe",
           "method_prior": "retrieval_first",
           "independent": true,
           "reviewed_semantic_outcome": "success",
-          "answer_exposure": false
+          "answer_exposure": false,
+          "meaningful_delay_review": "REQUIRED"
         },
         {
           "id": "A4",
-          "occurred_at": "2026-10-13T12:00:00Z",
+          "occurred_at": "2026-10-16T12:00:00Z",
           "session": "a4",
           "type": "unseen_delayed_probe",
           "method_prior": "retrieval_first",
           "independent": true,
           "reviewed_semantic_outcome": "success",
-          "answer_exposure": false
+          "answer_exposure": false,
+          "meaningful_delay_review": "REQUIRED"
         },
         {
           "id": "A5",
-          "occurred_at": "2026-10-16T12:00:00Z",
+          "occurred_at": "2026-10-19T12:00:00Z",
           "session": "a5",
           "type": "unseen_delayed_probe",
           "method_prior": "retrieval_first",
           "independent": true,
           "reviewed_semantic_outcome": "success",
-          "answer_exposure": false
+          "answer_exposure": false,
+          "meaningful_delay_review": "REQUIRED"
         },
         {
           "id": "A6",
-          "occurred_at": "2026-10-17T12:00:00Z",
+          "occurred_at": "2026-10-20T12:00:00Z",
           "session": "a6",
           "type": "next_instruction_rendered",
           "method": "lower_scaffold_or_balanced_feasible",
@@ -187,7 +203,7 @@
         },
         {
           "id": "B1",
-          "occurred_at": "2026-10-02T12:00:00Z",
+          "occurred_at": "2026-11-15T12:00:00Z",
           "session": "b1",
           "type": "review_schedule",
           "due_count": 3,
@@ -200,7 +216,7 @@
         },
         {
           "id": "B2",
-          "occurred_at": "2026-10-03T12:00:00Z",
+          "occurred_at": "2026-11-16T12:00:00Z",
           "session": "b2",
           "type": "reentry_choice",
           "choice": "accessible_independent_reentry_probe",
