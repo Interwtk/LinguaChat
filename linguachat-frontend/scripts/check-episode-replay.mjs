@@ -291,6 +291,33 @@ const completed = (episodeId) => {
   ok()
 }
 
+/* A single persisted snapshot may contain both a stale unfinished copy and
+ * the completed copy of one attempt. Migration must keep the completion in
+ * either order, before cross-snapshot reconciliation even begins. */
+{
+  const episodeId = 'what_you_like'
+  const common = {
+    runId: 'same-attempt', episodeId, mode: RUN_REPLAY,
+    startedAt: '2026-05-20T09:00:00Z',
+  }
+  const unfinished = sanitizeRun({ ...common, completedAt: null, assistanceUsed: 9,
+    signalKeys: ['2:assistance'] })
+  const completed = sanitizeRun({ ...common, completedAt: '2026-05-20T09:10:00Z',
+    assistanceUsed: 1, signalKeys: ['3:assistance'], independentEvidence: true })
+  for (const runs of [[unfinished, completed], [completed, unfinished]]) {
+    const kept = sanitizeEpisodeRuns({ [episodeId]: runs })[episodeId]
+    assert.equal(kept.length, 1)
+    assert.equal(kept[0].completedAt, completed.completedAt,
+      'the filed completion must win over an unfinished duplicate')
+    assert.equal(kept[0].assistanceUsed, 1,
+      'stale unfinished assistance must not overwrite filed evidence')
+    assert.equal(kept[0].independentEvidence, true)
+    const merged = mergeEpisodeRuns({ [episodeId]: runs }, {})[episodeId]
+    assert.equal(merged[0].completedAt, completed.completedAt)
+  }
+  ok()
+}
+
 // 10) two copies of the model saving over each other lose nothing
 {
   const mine = { what_you_like: [sanitizeRun({ runId: 'r1', episodeId: 'what_you_like', mode: 'replay', startedAt: 'a' })] }

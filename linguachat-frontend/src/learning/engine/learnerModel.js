@@ -913,15 +913,17 @@ export function sanitizeEpisodeRuns(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out
   for (const [episodeId, list] of Object.entries(raw)) {
     if (!str(episodeId, 60) || !Array.isArray(list)) continue
-    const seen = new Set()
-    const runs = []
+    const byId = new Map()
     for (const item of list) {
       const run = sanitizeRun(item)
-      if (!run || run.episodeId !== episodeId || seen.has(run.runId)) continue
-      seen.add(run.runId)
-      runs.push(run)
+      if (!run || run.episodeId !== episodeId) continue
+      const previous = byId.get(run.runId)
+      // A snapshot can contain an unfinished and a filed copy of one run.
+      // A completion is a fact; never let the first array position decide
+      // whether that completion (and its recorded evidence) survives migration.
+      if (!previous || (!previous.completedAt && run.completedAt)) byId.set(run.runId, run)
     }
-    if (runs.length) out[episodeId] = newestEpisodeRuns(runs)
+    if (byId.size) out[episodeId] = newestEpisodeRuns([...byId.values()])
   }
   return out
 }
