@@ -360,6 +360,31 @@ const completed = (episodeId) => {
   ok()
 }
 
+/* The 100-marker retention window must be independent of merge order.
+ * A stale completed snapshot cannot reintroduce old markers and evict newer
+ * step evidence just because its array is read second. */
+{
+  const episodeId = 'what_you_like'
+  const common = { runId: 'bounded-merge', episodeId, mode: RUN_REPLAY,
+    startedAt: '2026-05-20T09:00:00Z', completedAt: '2026-05-20T09:10:00Z' }
+  const keys = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => `${from + i}:assistance`)
+  const old = sanitizeRun({ ...common, assistanceUsed: 100, signalKeys: keys(1, 100) })
+  const fresh = sanitizeRun({ ...common, assistanceUsed: 100, signalKeys: keys(51, 150) })
+  const expected = keys(51, 150)
+  for (const [a, b] of [[old, fresh], [fresh, old]]) {
+    const merged = mergeEpisodeRuns({ [episodeId]: [a] }, { [episodeId]: [b] })[episodeId][0]
+    assert.deepEqual(merged.signalKeys, expected,
+      'bounded evidence must retain newest step markers in either merge order')
+    const imported = sanitizeEpisodeRuns({ [episodeId]: [a, b] })[episodeId][0]
+    assert.deepEqual(imported.signalKeys, expected,
+      'migration must apply the same bounded reconciliation')
+    const repeated = mergeEpisodeRuns({ [episodeId]: [merged] }, { [episodeId]: [old] })[episodeId][0]
+    assert.deepEqual(repeated.signalKeys, expected,
+      'replaying a stale completed snapshot must not evict newer markers')
+  }
+  ok()
+}
+
 // 10) two copies of the model saving over each other lose nothing
 {
   const mine = { what_you_like: [sanitizeRun({ runId: 'r1', episodeId: 'what_you_like', mode: 'replay', startedAt: 'a' })] }
