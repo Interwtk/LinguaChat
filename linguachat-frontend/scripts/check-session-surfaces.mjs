@@ -578,7 +578,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     let resolveReply
     let advances = 0
     let completions = 0
+    let requests = 0
     const generation = { current: 0 }
+    const missionInFlightRef = { current: null }
     const queued = []
     const timers = []
     const enqueue = key => update => queued.push([key, update])
@@ -601,7 +603,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
     const deps = {
       activeMission: { missionId: 'A-mission', currentStepIndex: 0 },
-      missionGenerationRef: generation,
+      missionGenerationRef: generation, missionInFlightRef,
       captureLearnerAccess: () => ({ valid: () => owner === 'A' }),
       getActiveMissionDetails: () => details,
       setMessages: enqueue('messages'),
@@ -615,9 +617,12 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       setTimeout: fn => { timers.push(fn) },
       appendLinguaMessages: (messages, access) => append(messages, access, deps),
       messages: [],
-      sendChatMessage: () => mode === 'inflight' || mode === 'cancelled'
-        ? new Promise(resolve => { resolveReply = resolve })
-        : Promise.resolve(reply),
+      sendChatMessage: () => {
+        requests++
+        return ['inflight', 'cancelled', 'duplicate-inflight', 'replaced-inflight'].includes(mode)
+          ? new Promise(resolve => { resolveReply = resolve })
+          : Promise.resolve(reply)
+      },
       profile: { level: 'A1', style: 'friendly', goal: '', tutorPersonality: '' },
       sessionId: 'A-session',
       nativeLanguageInfo: { base: 'es' },
@@ -642,6 +647,20 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       createMissionCompleteMessage: () => ({ missionType: 'complete' }),
     }
     const pending = submit('answer', null, deps)
+    if (mode === 'duplicate-inflight') {
+      await submit('answer', null, deps)
+      assert.equal(requests, 1, 'rapid mission submissions must share one HTTP turn')
+      assert.equal(queued.length, 2, 'duplicate mission answer must not queue a second message')
+      assert.equal(generation.current, 1, 'duplicate must not invalidate the original answer')
+      resolveReply(reply)
+    }
+    let replacement = null
+    if (mode === 'replaced-inflight') {
+      generation.current++
+      replacement = { generation: generation.current, access: { valid: () => true } }
+      missionInFlightRef.current = replacement
+      resolveReply(reply)
+    }
     if (mode === 'inflight') {
       owner = 'B'
       assert.equal(typeof resolveReply, 'function')
@@ -652,6 +671,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       resolveReply(reply)
     }
     await pending
+    assert.equal(missionInFlightRef.current, replacement,
+      mode + ': old mission completion must not release a replacement request lock')
     if (mode === 'stale-flush' || mode === 'stale-timer') owner = 'B'
     if (mode === 'stale-timer') {
       assert.equal(timers.length, 1, 'successful mission schedules delayed feedback')
@@ -662,9 +683,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(typeof update, 'function', mode + ': queued React update must be guarded')
       state[key] = update(state[key])
     }
-    if (['inflight', 'cancelled', 'stale-flush', 'stale-timer'].includes(mode)) {
+    if (['inflight', 'cancelled', 'replaced-inflight', 'stale-flush', 'stale-timer'].includes(mode)) {
       assert.deepEqual(state, original, mode + ': old mission must not modify new account/mission')
-      if (mode === 'inflight' || mode === 'cancelled') assert.equal(advances, 0, 'stale HTTP cannot advance a mission')
+      if (['inflight', 'cancelled', 'replaced-inflight'].includes(mode)) assert.equal(advances, 0, 'stale HTTP cannot advance a mission')
     } else if (mode === 'failed-save') {
       assert.equal(state.messages.length, 2, 'failed save leaves the learner answer visible')
       assert.equal(state.typing, false, 'failed save clears typing')
@@ -703,7 +724,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
   }
 
-  for (const mode of ['current', 'retry', 'complete', 'failed-save', 'failed-completion', 'inflight', 'cancelled', 'stale-flush', 'stale-timer']) {
+  for (const mode of ['current', 'retry', 'complete', 'failed-save', 'failed-completion', 'inflight', 'cancelled', 'duplicate-inflight', 'replaced-inflight', 'stale-flush', 'stale-timer']) {
     await checkMissionLease(mode)
   }
   ok()
