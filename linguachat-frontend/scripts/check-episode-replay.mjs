@@ -308,6 +308,30 @@ const completed = (episodeId) => {
   ok()
 }
 
+/* Two completed snapshots of one practice can reach storage with distinct
+ * activity observations. Their union is evidence of the SAME run, not two
+ * separate attempts. An unfinished snapshot remains non-authoritative. */
+{
+  const id = 'what_you_like'
+  const common = { runId: 'merged-completion', episodeId: id, mode: 'replay', startedAt: '2026-05-20T09:00:00Z', completedAt: '2026-05-20T09:10:00Z' }
+  const helped = sanitizeRun({ ...common, assistanceUsed: 1, formatsUsed: ['free_reply'], signalKeys: ['2:assistance'] })
+  const retried = sanitizeRun({ ...common, retriedSteps: 1, independentEvidence: true, formatsUsed: ['choice'], signalKeys: ['3:retried'] })
+  for (const [a, b] of [[helped, retried], [retried, helped]]) {
+    const merged = mergeEpisodeRuns({ [id]: [a] }, { [id]: [b] })[id]
+    assert.equal(merged.length, 1, 'one run ID must remain one attempt')
+    assert.equal(merged[0].assistanceUsed, 1, 'merging copies must not double-count help')
+    assert.equal(merged[0].retriedSteps, 1)
+    assert.equal(merged[0].independentEvidence, true)
+    assert.deepEqual(new Set(merged[0].formatsUsed), new Set(['free_reply', 'choice']))
+    assert.deepEqual(new Set(merged[0].signalKeys), new Set(['2:assistance', '3:retried']))
+  }
+  const stale = sanitizeRun({ ...common, completedAt: null, assistanceUsed: 9, signalKeys: ['4:assistance'] })
+  const mergedWithStale = mergeEpisodeRuns({ [id]: [helped] }, { [id]: [stale] })[id][0]
+  assert.equal(mergedWithStale.assistanceUsed, 1, 'an unfinished tab cannot change filed evidence')
+  assert.deepEqual(mergedWithStale.signalKeys, ['2:assistance'])
+  ok()
+}
+
 // 11) episode progress merges forward only — a stale copy cannot un-award
 {
   const stale = { what_you_like: { status: 'in_progress', stepIndex: 2, awarded: false } }
