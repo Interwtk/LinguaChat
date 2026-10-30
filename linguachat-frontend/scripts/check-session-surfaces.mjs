@@ -736,6 +736,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     let owner = mode === 'denied' ? 'B' : 'A'
     const queued = []
     const chatGenerationRef = { current: 0 }
+    const oldRequest = { generation: 0, access: { valid: () => true } }
+    const chatInFlightRef = { current: oldRequest }
     const profileStore = new Map([['lc2-profile', JSON.stringify({ name: 'A old', level: 'A0' })]])
     const access = {
       valid: () => owner === 'A',
@@ -753,7 +755,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const deps = {
       captureLearnerAccess: () => access,
       profile: { name: 'A old', level: 'A0' },
-      chatGenerationRef,
+      chatGenerationRef, chatInFlightRef,
       setProfile: enqueue('profile'),
       setMessages: enqueue('messages'),
       setSelectedMessage: enqueue('selected'),
@@ -774,6 +776,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(queued.length, 5, 'profile, selection, typing and chat clear must queue protected updates')
     }
     assert.equal(chatGenerationRef.current, mode === 'denied' ? 0 : 1)
+    assert.equal(chatInFlightRef.current, mode === 'denied' ? oldRequest : null,
+      mode + ': only a successful clear releases its pending chat request')
     for (const [key, update] of queued) {
       assert.equal(typeof update, 'function', mode + ': no raw React state replacement is allowed')
       state[key] = update(state[key])
@@ -826,6 +830,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const original = structuredClone(state)
     const generation = { current: 7 }
     const chatGenerationRef = { current: 0 }
+    const oldRequest = { generation: 0, access: { valid: () => true } }
+    const chatInFlightRef = { current: oldRequest }
     const enqueue = key => update => queued.push([key, update])
     const deps = {
       captureLearnerAccess: () => access,
@@ -867,7 +873,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       createWelcomeMessage: lang => ({ text: 'Welcome ' + lang }),
       createEmptyProgress: () => ({ xp: 0 }),
       missionGenerationRef: generation,
-      chatGenerationRef,
+      chatGenerationRef, chatInFlightRef,
       interfaceLanguageInfo: { base: 'es' },
       setSessionId: enqueue('session'),
       setMessages: enqueue('messages'),
@@ -890,6 +896,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
     const accepted = ['current', 'stale-flush'].includes(mode)
     assert.equal(chatGenerationRef.current, accepted ? 1 : 0, mode + ': invalidate only after durable reset')
+    assert.equal(chatInFlightRef.current, accepted ? null : oldRequest,
+      mode + ': only a verified reset releases its pending chat request')
     assert.equal(generation.current, accepted ? 8 : 7, mode + ': mission invalidation follows durable reset')
     assert.equal(queued.length, accepted ? 12 : 0, mode + ': no UI reset after a failed durable step')
     if (mode === 'current') {
