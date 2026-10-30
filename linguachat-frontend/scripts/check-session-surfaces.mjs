@@ -529,7 +529,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(requestCount, 1, mode + ': settled reply cannot be submitted twice before React flush')
       assert.equal(queued.length, before, mode + ': duplicate must not enqueue another learner message')
     }
-    if (['current', 'duplicate-inflight', 'duplicate-settled', 'error-settled', 'cleared-before-flush'].includes(mode)) {
+    if (['current', 'duplicate-inflight', 'duplicate-settled', 'error-settled', 'stale-success', 'stale-error', 'cleared-before-flush'].includes(mode)) {
       assert.equal(chatInFlightRef.current?.committed, true,
         mode + ': a settled turn stays locked until the message list commits')
     } else {
