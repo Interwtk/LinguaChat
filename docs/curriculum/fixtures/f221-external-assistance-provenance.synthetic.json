@@ -519,8 +519,37 @@
         "contradictory_outcomes_preserved": true,
         "method_hypothesis_revisable": true,
         "actual_next_choice_logged": true,
-        "skill_debt_preserved": true
-      }
+        "skill_debt_preserved": true,
+        "followup_due": 2,
+        "followup_rendered": 1,
+        "followup_completed": 0,
+        "followup_missing_unrendered": 1,
+        "followup_pending_rendered": 1
+      },
+      "followup_ledger": [
+        {
+          "id": "listening_review",
+          "skill": "listening",
+          "event": "F7",
+          "due": 1,
+          "offered": 1,
+          "rendered": 0,
+          "completed": 0,
+          "missing_unrendered": 1,
+          "pending_rendered": 0
+        },
+        {
+          "id": "neutral_production_transfer",
+          "skill": "writing",
+          "event": "F8",
+          "due": 1,
+          "offered": 1,
+          "rendered": 1,
+          "completed": 0,
+          "missing_unrendered": 0,
+          "pending_rendered": 1
+        }
+      ]
     }
   ],
   "notes": [
