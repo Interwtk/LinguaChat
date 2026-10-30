@@ -931,7 +931,28 @@ export function AppProvider({ children }) {
     const planned = dailySession && dailySession.status !== 'completed'
       ? dailySession
       : getOrCreateSession(loadLearnerModel(), ARC, { durationMode: preferredDuration, ...sessionContext() })
-    if (!access.valid() || !planned) return false
+    if (!access.valid() || !planned || planned.status === 'completed') return false
+    // A second tab may have advanced or replaced the plan since this render.
+    // Starting from a stale React snapshot must not rewind its durable cursor.
+    let storedSession = null
+    try {
+      const raw = access.getItem(SESSION_KEY)
+      if (!access.valid()) return false
+      if (raw !== null) {
+        storedSession = normalizeSession(JSON.parse(raw), ARC)
+        if (!storedSession) return false
+      }
+    } catch { return false }
+    if (dailySession) {
+      if (!storedSession || storedSession.id !== dailySession.id
+        || storedSession.status !== dailySession.status
+        || storedSession.currentBlockIndex !== dailySession.currentBlockIndex
+        || storedSession.blocks[storedSession.currentBlockIndex]?.id
+          !== dailySession.blocks?.[dailySession.currentBlockIndex]?.id) return false
+    } else if (storedSession && storedSession.dayKey === planned.dayKey) {
+      // No session was visible at mount, but another tab created today's plan.
+      return false
+    }
     const next = startSession(planned)
     // Save first: a denied/full Storage write must not show a started session.
     if (!next || !access.valid() || !saveSession(next, { access }) || !access.valid()) return false
