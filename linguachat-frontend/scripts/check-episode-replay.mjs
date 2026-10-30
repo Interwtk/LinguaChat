@@ -530,3 +530,33 @@ console.log(`check-episode-replay — OK  (${n} replay groups verified)`)
     'the actual episode UI must record per-run help before daily preference deduplication')
   console.log('run-specific activity signals: replay/reload/double tap/format/invalid PASS')
 }
+
+
+/*
+ * A late completion from a stale tab can be older than every run already in
+ * the bounded history. Filing it must NOT evict a more recent practice just
+ * because the older attempt was appended last.
+ */
+{
+  const episodeId = 'first_greeting'
+  const model = completed(episodeId)
+  const oldRun = beginEpisodeRun(model, episodeId, { atMs: AT })
+  const dayMs = 86400000
+  const recent = Array.from({ length: RUNS_PER_EPISODE }, (_, index) => sanitizeRun({
+    runId: `${episodeId}:later:${index + 1}`,
+    episodeId,
+    mode: RUN_REPLAY,
+    source: 'practice',
+    startedAt: new Date(AT + (index + 1) * dayMs).toISOString(),
+    completedAt: new Date(AT + (index + 1) * dayMs + 1000).toISOString(),
+  }))
+  model.episodeRuns[episodeId] = recent
+  completeEpisodeRun(model, { atMs: AT + (RUNS_PER_EPISODE + 2) * dayMs })
+  assert.deepEqual(runsFor(model, episodeId).map(run => run.runId), recent.map(run => run.runId),
+    'late completion must not displace any of the newest dated practices')
+  assert.ok(!runsFor(model, episodeId).some(run => run.runId === oldRun.runId),
+    'the older completion should be outside the bounded history')
+  assert.deepEqual(mergeEpisodeRuns(model.episodeRuns, {})[episodeId].map(run => run.runId),
+    recent.map(run => run.runId), 'reconciliation must retain the same recent history')
+  console.log('late stale-tab completion: newest practice history retained PASS')
+}
