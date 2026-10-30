@@ -168,6 +168,25 @@ const completed = (episodeId) => {
   ok()
 }
 
+/*
+ * 5c) A completion saved before its run-history row is filed can leave an
+ * old active first-run pointer alongside a completed episode state. The next
+ * practice must not recycle that unfiled runId (or later deduplication would
+ * silently erase one of the two attempts).
+ */
+{
+  const m = createLearnerModel()
+  const first = beginEpisodeRun(m, 'first_greeting', { atMs: AT })
+  setEpisodeState(m, 'first_greeting', { status: 'completed', stepIndex: 8, awarded: true })
+  const replay = beginEpisodeRun(m, 'first_greeting', { atMs: AT })
+  assert.equal(replay.mode, RUN_REPLAY)
+  assert.notEqual(replay.runId, first.runId, 'a stale unfiled active run reserves its ID')
+  assert.equal(replay.runId, first.runId.replace(/:1$/, ':2'))
+  completeEpisodeRun(m, { atMs: AT })
+  assert.equal(runsFor(m, 'first_greeting')[0].runId, replay.runId)
+  ok()
+}
+
 // 6) the other ending: offered, taken, and the first decision left intact
 {
   const m = completed('make_a_plan')
