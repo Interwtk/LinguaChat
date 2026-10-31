@@ -433,14 +433,30 @@ export function mergeLanguageItems(mine, theirs) {
  * Undated legacy runs retain their original relative order.
  */
 function newestEpisodeRuns(runs) {
+  // Two attempts can share an identical startedAt (fast replay, imported
+  // history, or concurrent tabs). For our generated IDs the final segment is
+  // the monotonic attempt number within an episode/day. Without this tie
+  // breaker, merging a stale window in the opposite order could discard a
+  // newer run and even change which story ending is considered the latest.
+  // Legacy/undated IDs keep their historical relative order.
+  const attempt = (runId) => {
+    const match = /^(.*:\\d{4}-\\d{2}-\\d{2}):([1-9]\\d*)$/.exec(runId)
+    if (!match) return null
+    const number = Number(match[2])
+    return Number.isSafeInteger(number) ? { prefix: match[1], number } : null
+  }
   const ordered = runs.map((run, index) => ({
-    run, index, at: Date.parse(run.startedAt || ''),
+    run, index, at: Date.parse(run.startedAt || ''), attempt: attempt(run.runId),
   }))
   ordered.sort((a, b) => {
     const aDated = Number.isFinite(a.at)
     const bDated = Number.isFinite(b.at)
     if (aDated && bDated && a.at !== b.at) return a.at - b.at
     if (aDated !== bDated) return aDated ? 1 : -1
+    if (aDated && bDated && a.attempt && b.attempt &&
+        a.attempt.prefix === b.attempt.prefix && a.attempt.number !== b.attempt.number) {
+      return a.attempt.number - b.attempt.number
+    }
     return a.index - b.index
   })
   return ordered.slice(-RUNS_PER_EPISODE).map(({ run }) => run)
