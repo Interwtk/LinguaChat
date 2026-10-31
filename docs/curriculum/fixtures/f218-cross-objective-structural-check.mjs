@@ -22,6 +22,7 @@ function check(f){
   for(const x of c.events){
    ok(x.id&&!allIds.has(x.id)&&x.learner_id==='synthetic-learner-'+c.id&&x.task_version==='SYNTHETIC_F218_V1'&&x.policy_version==='F218_DESIGN_V1','event identity/version');
    ok(Number.isInteger(x.day_offset)&&Number.isInteger(x.sequence)&&x.day_offset>=0&&x.sequence>0&&x.session&&x.occurred_at,'event provenance');
+   ok(x.session===c.id.toLowerCase()+'-day'+x.day_offset,'session learning-day identity');
    ok(x.day_offset>lastDay||(x.day_offset===lastDay&&x.sequence>lastSeq),'trusted occurrence order');
    if(sessionDay.has(x.session))ok(sessionDay.get(x.session)===x.day_offset,'session/day mismatch');else sessionDay.set(x.session,x.day_offset);
    lastDay=x.day_offset;lastSeq=x.sequence;allIds.add(x.id);local.add(x.id);count++;
