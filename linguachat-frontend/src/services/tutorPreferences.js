@@ -1,6 +1,7 @@
+import { learnerStorage as localStorage, captureLearnerAccess } from '../auth/localLease.js'
 import { KNOWN_INTERESTS, MAX_SELECTED_INTERESTS, normalizeInterests } from '../learning/engine/interests.js'
 
-const TUTOR_PREFERENCES_KEY = 'lc2-tutor-preferences'
+export const TUTOR_PREFERENCES_KEY = 'lc2-tutor-preferences'
 const ACTIVE_COMPANION_KEY = 'lc2-active-companion'
 const TEXT_SIZE_KEY = 'lc2-text-size'
 
@@ -157,6 +158,14 @@ export function toggleInterestId(interests, id) {
   return [...current, id]
 }
 
+// Preserve the user's explicit click intent across tabs. If another tab has
+// already selected (or deselected) this same chip, do not reverse its choice.
+export function setInterestSelected(interests, id, selected) {
+  const current = normalizeInterests(interests)
+  if (current.includes(id) === Boolean(selected)) return current
+  return toggleInterestId(current, id)
+}
+
 export function loadTutorPreferences() {
   try {
     const stored = localStorage.getItem(TUTOR_PREFERENCES_KEY)
@@ -178,16 +187,76 @@ export function loadTutorPreferences() {
   }
 }
 
-export function saveTutorPreferences(preferences) {
-  const next = {
+export function normalizeTutorPreferences(preferences) {
+  return {
     ...DEFAULT_TUTOR_PREFERENCES,
     ...(preferences || {}),
     interests: Array.isArray(preferences?.interests)
       ? normalizeInterests(preferences.interests)
       : normalizeInterests(DEFAULT_TUTOR_PREFERENCES.interests),
   }
+}
+
+export function saveTutorPreferences(preferences, { requireDurable = false, access = null } = {}) {
+  const next = normalizeTutorPreferences(preferences)
+  if (requireDurable) {
+    // Interactive edits must never be presented as saved if a tab lost its
+    // account lease, storage rejected the write, or the read-back differs.
+    // Capture once: a late callback cannot adopt a different learner account.
+    const scoped = access || captureLearnerAccess()
+    if (!scoped.valid()) throw new Error('Stale tutor preference edit')
+    const serialized = JSON.stringify(next)
+    if (scoped.setItem(TUTOR_PREFERENCES_KEY, serialized) === false
+      || !scoped.valid() || scoped.getItem(TUTOR_PREFERENCES_KEY) !== serialized) {
+      throw new Error('Tutor preference edit not durable')
+    }
+    return next
+  }
+  // Legacy setup and non-critical callers retain their best-effort behavior.
   try { localStorage.setItem(TUTOR_PREFERENCES_KEY, JSON.stringify(next)) } catch {}
   return next
+}
+
+// Read and write against one captured learner lease. Unlike the legacy
+// best-effort helpers, a user-triggered edit must fail closed on malformed or
+// unreadable bytes and must not publish an unpersisted React state.
+export function updateTutorPreferencesDurably(updates, { access = captureLearnerAccess() } = {}) {
+  // A multi-step onboarding action can supply its original lease; never
+  // recapture a different account between the preference and profile writes.
+  if (!access.valid()) throw new Error('Stale tutor preference edit')
+  const raw = access.getItem(TUTOR_PREFERENCES_KEY)
+  if (!access.valid()) throw new Error('Stale tutor preference edit')
+  let parsed = {}
+  if (raw !== null) {
+    parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('Invalid tutor preferences')
+    }
+  }
+  const durable = normalizeTutorPreferences(parsed)
+  // A click may be rendered from an older React snapshot while another tab
+  // has already saved interests. Resolve the requested change against this
+  // captured account's latest durable state, not against the stale UI array.
+  const patch = typeof updates === 'function' ? updates(durable) : updates
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) {
+    throw new Error('Invalid tutor preference edit')
+  }
+  // A second tab can publish a newer value while the update callback runs.
+  // Refuse to replace those bytes with a patch based on the older snapshot.
+  // This narrows the race window; localStorage still has no atomic CAS.
+  if (!access.valid() || access.getItem(TUTOR_PREFERENCES_KEY) !== raw || !access.valid()) {
+    throw new Error('Concurrent tutor preference edit')
+  }
+  const next = normalizeTutorPreferences({
+    ...durable,
+    ...patch,
+    interests: patch.interests ?? durable.interests,
+  })
+  // A stale UI can repeat a click that another tab already applied. Avoid
+  // rewriting identical preferences: an unnecessary write can erase a later
+  // change even though this user requested no new state transition.
+  if (JSON.stringify(next) === JSON.stringify(durable)) return durable
+  return saveTutorPreferences(next, { requireDurable: true, access })
 }
 
 // Always resolve to Lingua. Any legacy stored value ('lingo' / 'chatto') is
@@ -200,7 +269,16 @@ export function loadActiveCompanion() {
   return SOLE_COMPANION
 }
 
-export function saveActiveCompanion() {
+export function saveActiveCompanion(_companion, { access = null } = {}) {
+  if (access) {
+    try {
+      if (!access.valid() || access.setItem(ACTIVE_COMPANION_KEY, SOLE_COMPANION) === false
+        || !access.valid() || access.getItem(ACTIVE_COMPANION_KEY) !== SOLE_COMPANION
+        || !access.valid()) return null
+    } catch { return null }
+    return SOLE_COMPANION
+  }
+  // Preserve the legacy migration path for callers without an active lease.
   try { localStorage.setItem(ACTIVE_COMPANION_KEY, SOLE_COMPANION) } catch {}
   return SOLE_COMPANION
 }
@@ -213,8 +291,15 @@ export function loadTextSize() {
   }
 }
 
-export function saveTextSize(size) {
+export function saveTextSize(size, { access = null } = {}) {
   const next = size === 'large' ? 'large' : 'normal'
+  if (access) {
+    try {
+      if (!access.valid() || access.setItem(TEXT_SIZE_KEY, next) === false
+        || !access.valid() || access.getItem(TEXT_SIZE_KEY) !== next) return null
+    } catch { return null }
+    return next
+  }
   try { localStorage.setItem(TEXT_SIZE_KEY, next) } catch {}
   return next
 }

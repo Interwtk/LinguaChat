@@ -1,0 +1,6 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>LinguaChat HTTP QA</title><body><h1>LinguaChat Preview HTTP QA</h1><button id="run">Run local-provider requests</button><pre id="result" role="status" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre><script>
+const cases=[['/api/chat',{message:'Hello, my name is Alex',level:'A1'}],['/api/learning/evaluate',{expected_intent:'introduction',learner_response:'My name is Alex',learner_name:'Alex',assistance_used:false}]];
+document.querySelector('#run').onclick=async()=>{
+ const out=document.querySelector('#result');out.textContent='';
+ for(const [path,payload] of cases){try{const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await response.json();out.textContent+=JSON.stringify({path,status:response.status,provider:response.headers.get('X-LinguaChat-Provider'),response:data},null,2)+'\n';}catch(error){out.textContent+=path+': '+error.message+'\n';}}
+};</script></body></html>

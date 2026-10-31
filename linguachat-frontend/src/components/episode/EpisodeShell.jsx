@@ -14,19 +14,19 @@ import { partnerFor, placeFor } from '../../learning/engine/variation.js'
 import { getLearnerInterests, getInterestContext, getInterestObject } from '../../learning/engine/interests.js'
 import { evaluateLearningResponse } from '../../services/api'
 import {
-  loadLearnerModel, saveLearnerModel, recordItemAttempt, recordCanDoAttempt, recordDelayedRetrievalEvidence, markRecurringError,
-  getEpisodeState, setEpisodeState, recordActivitySignalOnce,
+  loadLearnerModel, saveLearnerModel, recordItemAttempt, markRecurringError,
+  getEpisodeState, setEpisodeState, recordActivitySignalOnce, recordItemSeen,
 } from '../../learning/engine/learnerModel.js'
 import {
   deriveInitialScaffold, updateScaffoldAfterTurn, reviveScaffoldState,
-  evidenceKindForStep, isIndependentEvidence, showsModelAnswer, showsHintByDefault,
+  evidenceKindForStep, isIndependentEvidence, showsStepModelAnswer, showsHintByDefault,
 } from '../../learning/engine/scaffolding.js'
 import { dayKeyFor } from '../../learning/engine/session.js'
 import { seedFrom } from '../../learning/engine/variation.js'
 import { FormatFeedback } from './FormatFeedback'
 import { MiniStory } from '../session/MiniStory'
 import {
-  beginEpisodeRun, completeEpisodeRun, updateActiveRun, runEarnsReward, otherBranch, RUN_BRANCH_REPLAY,
+  beginEpisodeRun, completeEpisodeRun, updateActiveRun, recordRunActivitySignal, stageDelayedRetrieval, runEarnsReward, otherBranch, RUN_BRANCH_REPLAY,
 } from '../../learning/engine/episodeRuns.js'
 import {
   recordLearnerFact, selectLearnerFact, factsOfType, captureStatedLifeFact, captureStatedUsualTime,
@@ -96,7 +96,10 @@ function LinguaLine({ children }) {
  * inside a session the next block follows, standalone it returns to Home.
  */
 function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = null, runOptions = null }) {
-  const { t, profile, tutorPreferences, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode } = useApp()
+  const { t, profile, tutorPreferences, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode, dailySession, sessionActive } = useApp()
+  // One daily learning boundary across guided and standalone practice. Changing
+  // duration/surface or immediately reopening an episode is not a delayed session.
+  const learningSessionId = useRef(`learning-day:${sessionActive && dailySession?.dayKey ? dailySession.dayKey : dayKeyFor()}`).current
   const ep = episode
   const name = (profile.name || '').trim() || 'Alex'
   // deterministic roleplay partner — stable per learner, reproducible on reload
@@ -396,16 +399,15 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
     const format = formatOfStep(step)
     if (!format) return
     const id = `${dayKeyFor()}:${ep.id}:${altStep ? 'alt' : stepIndex}:${suffix}`
-    if (!recordActivitySignalOnce(modelRef.current, id, format, kind)) return
-    // The run keeps a shape of how this attempt went — counts only, no answers.
-    const current = runRef.current
-    if (current) {
-      const patch = { formatsUsed: [...new Set([...(current.formatsUsed || []), format])] }
-      if (kind === 'assistance') patch.assistanceUsed = (current.assistanceUsed || 0) + 1
-      if (kind === 'retried') patch.retriedSteps = (current.retriedSteps || 0) + 1
-      runRef.current = updateActiveRun(modelRef.current, patch) || current
-    }
-    saveLearnerModel(modelRef.current)
+    // Per-run help and retries must survive same-day replay even if the
+    // aggregate daily preference signal was already counted. A same-run
+    // double tap/reload must not count the step twice either.
+    const perRun = recordRunActivitySignal(modelRef.current, {
+      kind, format, key: `${stepIndex}${altStep ? ':alt' : ''}:${suffix}`,
+    })
+    if (perRun) runRef.current = perRun
+    const perDay = recordActivitySignalOnce(modelRef.current, id, format, kind)
+    if (perRun || perDay) saveLearnerModel(modelRef.current)
   }
 
   function advance() {
@@ -674,8 +676,8 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
        * `recordDelayedRetrievalEvidence` header for why this is additive
        * bookkeeping, never a fabricated attempt/success for those canDos.
        */
-      if (Array.isArray(step.delayedRetrievalChecks) && step.delayedRetrievalChecks.length) {
-        recordDelayedRetrievalEvidence(modelRef.current, step.delayedRetrievalChecks)
+      if (independent && Array.isArray(step.delayedRetrievalChecks) && step.delayedRetrievalChecks.length) {
+        runRef.current = stageDelayedRetrieval(modelRef.current, step.delayedRetrievalChecks, { independent, sessionId: learningSessionId }) || runRef.current
       }
       captureLifeFact(evalKind, text)
       if (attemptsRef.current > 0) signal('retried')
@@ -705,12 +707,14 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
      */
     if (finishedRef.current) return
     finishedRef.current = true
+    // Storage and navigation can throw (not only return false). Keep the
+    // completion screen retryable without re-paying XP or re-filing evidence.
+    try {
     const m = modelRef.current
     const st = getEpisodeState(m, ep.id)
     // the can-do is only credited as independent if this run actually produced
     // unaided open production, which the scaffold state has been counting
     const independent = Boolean(runRef.current?.independentEvidence)
-    recordCanDoAttempt(m, ep.canDoId, { success: true, independent, context: ep.id })
     /*
      * The reward is gated by the episode, not by the run: whatever this run
      * calls itself, an episode that has already paid out never pays again.
@@ -719,24 +723,47 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
      */
     const firstCompletion = !st.awarded && !awardedRef.current
     if (firstCompletion) {
-      awardedRef.current = true
       /*
-       * The Garden grants, resolved here: this screen already has the seed
-       * vocabulary loaded, so the app-wide context does not have to carry it.
-       * Unknown ids are dropped exactly as before.
+       * The Garden grants are resolved here, where the vocabulary catalogue
+       * is already loaded. Unknown ids are dropped as before.
        */
       const grants = (ep.gardenItems || [])
         .filter(id => SEED_VOCAB_BY_ID[id])
         .map(id => ({ vocabId: id, word: SEED_VOCAB_BY_ID[id].term, kind: SEED_VOCAB_BY_ID[id].kind }))
-      awardEpisode(ep, { grants })  // garden + XP, idempotent by awarded flag below
+      // A denied account lease or failed model save must not mark the episode
+      // awarded. Keep the completion button retryable instead of silently
+      // losing the Garden/XP reward.
+      if (awardEpisode(ep, { grants }) !== true) {
+        finishedRef.current = false
+        return
+      }
+      awardedRef.current = true
+      // awardEpisode persists grants in a fresh model snapshot, but the runner
+      // saves its own in-memory model below. Mirror those grants here so that
+      // the runner's later save cannot erase their 'seen' learning state.
+      for (const grant of grants) recordItemSeen(m, grant.vocabId)
       setEpisodeState(m, ep.id, { status: 'completed', awarded: true, stepIndex: ep.steps.length - 1 })
     } else {
       setEpisodeState(m, ep.id, { status: 'completed', stepIndex: ep.steps.length - 1 })
     }
-    completeEpisodeRun(m, { independentEvidence: independent, branchId: runRef.current?.branchId || null, rewarded: firstCompletion })
-    saveLearnerModel(m)
-    if (onComplete) onComplete(ep)
-    else finishEpisode()
+    completeEpisodeRun(m, { canDoId: ep.canDoId, sessionId: learningSessionId, independentEvidence: independent, branchId: runRef.current?.branchId || null, rewarded: firstCompletion })
+    // The award can persist before the run history/can-do evidence does.
+    // Never leave the completion screen on a rejected final write: retry the
+    // same in-memory run without paying XP or recording evidence twice.
+    if (saveLearnerModel(m, { verified: true }) !== true) {
+      finishedRef.current = false
+      return
+    }
+    // The episode evidence is durable, but a daily-session cursor or standalone
+    // navigation can still be refused (stale tab, denied Storage, revoked lease).
+    // Keep the button retryable without paying XP or filing the run again.
+    const navigated = onComplete ? onComplete(ep) : finishEpisode()
+    if (navigated === false) finishedRef.current = false
+    } catch {
+      // The award and run history are idempotent on retry; never strand the
+      // learner behind a latched button after an unexpected dependency error.
+      finishedRef.current = false
+    }
   }
 
   return (
@@ -977,7 +1004,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
               </div>
             )}
 
-            {step.suggestionEn && ((showsModelAnswer(scaffold) && !unaidedAttempt) || retry) && !reviewing && (
+            {showsStepModelAnswer(step, scaffold, { unaidedAttempt, retry, reviewing }) && (
               <button type="button" onClick={() => { setReply(resolve(step.suggestionEn, vars)); setUsedSuggestion(true); signal('assistance') }} className="rounded-full px-3.5 py-1.5 text-xs font-bold mb-3 transition-all active:scale-[0.98]" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', color: 'var(--ink)' }}>
                 {t('ep1UseSuggestion')}: <En>{resolve(step.suggestionEn, vars)}</En>
               </button>

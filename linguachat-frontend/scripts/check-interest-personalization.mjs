@@ -41,13 +41,13 @@ const {
 } = await import('../src/learning/engine/interests.js')
 const {
   selectTopic, describeTopic, providerTopicContext, supportsTypes,
-  TOPIC_SOURCES, TOPIC_MIX, PERSONALIZATION_STRENGTHS,
+  TOPIC_SOURCES, TOPIC_MIX, DAILY_TOPIC_MIX, PERSONALIZATION_STRENGTHS,
 } = await import('../src/learning/engine/topicSelection.js')
 const {
   personalizeStory, templateProblems, invariantDrift, PERSONALIZATION_MODES, KNOWN_SLOT_TYPES,
 } = await import('../src/learning/engine/storyPersonalization.js')
 const {
-  INTEREST_OPTIONS, MAX_INTERESTS, toggleInterestId, loadTutorPreferences, saveTutorPreferences,
+  INTEREST_OPTIONS, MAX_INTERESTS, toggleInterestId, setInterestSelected, loadTutorPreferences, saveTutorPreferences,
   DEFAULT_TUTOR_PREFERENCES,
 } = await import('../src/services/tutorPreferences.js')
 const {
@@ -148,13 +148,19 @@ const TOMORROW = TODAY + DAY
   const full = KNOWN_INTERESTS.slice(0, MAX_SELECTED_INTERESTS)
   assert.equal(toggleInterestId(full, full[0]).length, full.length - 1, 'at the cap, removing still works')
 
-  /* both selectors must call it, so they cannot drift apart again */
+  assert.deepEqual(setInterestSelected(['music','sports'], 'sports', true), ['music','sports'], 'already-selected intent must not remove it')
+  assert.deepEqual(setInterestSelected(['music','sports'], 'music', false), ['sports'], 'deselect intent preserves unrelated interests')
+  assert.deepEqual(setInterestSelected(['music'], 'music', false), [], 'deselecting the last interest is allowed')
+
+  /* both selectors must use the same durable intent, so they cannot drift */
   for (const path of [
     'src/components/onboarding/TutorPersonalizationStep.jsx',
     'src/components/identity/LanguageIdentity.jsx',
   ]) {
     const src = read(path)
-    assert.match(src, /toggleInterestId\(/, `${path} must use the shared toggle`)
+    assert.match(src, /setInterestSelected\(current\.interests, interest, shouldSelect\)/, `${path} must use the shared durable selection intent`)
+    assert.match(src, /const shouldSelect = !\(tutorPreferences\.interests \|\| \[\]\)\.includes\(interest\)/,
+      `${path} must derive the user's intended chip state from the rendered selection`)
     assert.ok(!/interests: next\.length \? next : \['travel'\]/.test(src),
       `${path} still forces an interest when the learner picks none`)
     assert.ok(!/\.slice\(0, 6\)/.test(src), `${path} still caps the list at six`)
@@ -207,10 +213,10 @@ const TOMORROW = TODAY + DAY
   assert.ok(covered >= 4, `rotation should reach most of the list, reached ${covered}/5`)
 
   /* and with everything on cooldown it still answers, rather than giving up */
-  const cornered = selectTopic({
-    explicitInterests: ['music'], recentTopics: ['music'], strength: 'medium', seed: 'cornered',
-  })
-  assert.equal(cornered.interestId, 'music', 'a single interest comes back when it is all there is')
+  const cornered = Array.from({ length: 100 }, (_, i) => selectTopic({
+    explicitInterests: ['music'], recentTopics: ['music'], strength: 'medium', seed: `cornered:${i}`,
+  })).find(topic => topic.source === 'explicit')
+  assert.equal(cornered?.interestId, 'music', 'a preferred topic can return after cooldown')
   ok()
 }
 
@@ -251,20 +257,49 @@ const TOMORROW = TODAY + DAY
   assert.ok(sources.size > 1, 'and some must be something else, or the topic is a cage')
 
   /* the mix is a product judgement, and says so */
-  assert.equal(TOPIC_MIX.explicit + TOPIC_MIX.related + TOPIC_MIX.exploration, 100)
-  assert.ok(TOPIC_MIX.explicit > TOPIC_MIX.related + TOPIC_MIX.exploration,
+  assert.equal(Object.values(TOPIC_MIX).reduce((sum, n) => sum + n, 0), 100)
+  assert.equal(Object.values(DAILY_TOPIC_MIX).reduce((sum, n) => sum + n, 0), 100)
+  assert.ok(TOPIC_MIX.explicit > TOPIC_MIX.related + TOPIC_MIX.exploration + TOPIC_MIX.neutral,
     'what the learner chose must dominate')
   const engine = read('src/learning/engine/topicSelection.js')
   assert.match(engine, /UNMEASURED PRODUCT CONSTANTS/,
     'the weights must not read as if they were measured')
 
-  /* related and exploration both actually happen, for a normal profile */
+  /* Every source, including neutral, is sampled for a normal free-chat profile. */
   const observed = new Set()
-  for (let i = 0; i < 60; i += 1) {
-    observed.add(selectTopic({ explicitInterests: ['games', 'music'], seed: `mix:${i}` }).source)
+  for (let i = 0; i < 400; i += 1) {
+    const args = { explicitInterests: ['games', 'music'], seed: `mix:${i}` }
+    const choice = selectTopic(args)
+    assert.deepEqual(choice, selectTopic(args), 'free-chat topic selection must remain stable')
+    if (choice.source === 'neutral') assert.equal(choice.interestId, null)
+    observed.add(choice.source)
   }
-  for (const source of ['explicit', 'related', 'exploration']) {
-    assert.ok(observed.has(source), `${source} contexts never happen`)
+  for (const source of TOPIC_SOURCES) {
+    assert.ok(observed.has(source), `free chat never samples ${source}`)
+  }
+  ok()
+}
+
+/* ---- 7b) daily interests are soft weights, not a permanent topic cage ---- */
+{
+  const counts = { explicit: 0, related: 0, exploration: 0, neutral: 0 }
+  for (let i = 0; i < 200; i += 1) {
+    const args = { explicitInterests: ['music'], strength: 'medium', seed: `medium:${i}` }
+    const choice = selectTopic(args)
+    assert.deepEqual(choice, selectTopic(args), 'the same context must stay stable')
+    counts[choice.source] += 1
+    if (choice.source === 'related') {
+      assert.ok(relatedInterests('music').includes(choice.interestId), 'related must be declared')
+    } else if (choice.source === 'exploration') {
+      assert.ok(!['music', ...relatedInterests('music')].includes(choice.interestId),
+        'exploration must go beyond chosen and adjacent topics')
+    } else if (choice.source === 'neutral') {
+      assert.equal(choice.interestId, null, 'neutral cannot impersonate a chosen interest')
+    }
+  }
+  assert.ok(counts.explicit > 100, 'selected interests should remain the majority')
+  for (const source of TOPIC_SOURCES) {
+    assert.ok(counts[source] > 0, `daily plans never sample ${source}`)
   }
   ok()
 }
@@ -413,7 +448,7 @@ const TOMORROW = TODAY + DAY
     'the opening message must be recognised by the learner having spoken')
   assert.match(context, /topicContext: learnerHasSpoken \? null : providerTopicContext\(conversationTopic\)/,
     'and the topic travels only before they have')
-  assert.match(context, /recordTopicUse\(conversationTopic\.interestId\)/, 'what was discussed is remembered')
+  assert.match(context, /recordTopicUse\(conversationTopic\.interestId, \{ access: chatAccess \}\)/, 'what was discussed is remembered for the originating account')
 
   /* the provider is never asked to choose, and never told why */
   const engine = read('src/learning/engine/topicSelection.js')
@@ -441,7 +476,7 @@ const TOMORROW = TODAY + DAY
 /* ---- 13) sessions rotate too, and still promise what they show ---- */
 {
   const session = read('src/learning/engine/session.js')
-  assert.match(session, /strength: 'medium'/, 'a session stays inside what the learner chose')
+  assert.match(session, /strength: 'medium'/, 'a daily plan uses the constrained topic mix')
   assert.match(session, /recentTopics/, 'and avoids what they heard about recently')
   const context = read('src/context/AppContext.jsx')
   assert.match(context, /recentTopics: recentTopicIds\(memory\)/, 'the app supplies the cooldown window')
@@ -573,6 +608,88 @@ const TOMORROW = TODAY + DAY
     assert.ok(!/level:\s*['"]A1['"]|a1Arc1|EPISODE_SKELETON/.test(src),
       `${path} must not define or enumerate curriculum`)
   }
+  ok()
+}
+
+/* ---- 17) failed preference saves are visible and never celebrated ---- */
+{
+  const context = read('src/context/AppContext.jsx')
+  const onboarding = read('src/components/onboarding/TutorPersonalizationStep.jsx')
+  const identity = read('src/components/identity/LanguageIdentity.jsx')
+  assert.match(context, /const \[tutorPreferenceSaveFailed, setTutorPreferenceSaveFailed\] = useState\(false\)/)
+  assert.match(context, /setTutorPreferencesState\(prev => access\.valid\(\) \? next : prev\)\s+setTutorPreferenceSaveFailed\(prev => access\.valid\(\) \? false : prev\)\s+return access\.valid\(\)/,
+    'confirmed durable writes publish only to the originating account and clear its error')
+  assert.match(context, /setTutorPreferenceSaveFailed\(prev => access\.valid\(\) \? true : prev\)\s+return false/,
+    'failed writes cannot publish an error to a different account')
+  for (const [label, surface] of [['onboarding', onboarding], ['profile', identity]]) {
+    assert.match(surface, /tutorPreferenceSaveFailed && \([\s\S]*?role="alert"/,
+      `${label} must announce failed preference writes`)
+    assert.match(surface, /t\('authGenericError'\)/,
+      `${label} must reuse translated retry guidance`)
+  }
+  assert.match(onboarding, /if \(updateTutorPreferences\(\{ \[key\]: id \}\)\) react\(\)/,
+    'failed single-choice writes cannot trigger a cheer')
+  assert.match(onboarding, /if \(updateTutorPreferences\(current => \(\{ interests:[^\n]+\}\)\)\) react\(\)/,
+    'failed interest writes cannot trigger a cheer')
+  ok()
+}
+
+/* ---- 18) topic memory belongs to the account that made the choice ---- */
+{
+  const makeLease = (mode = 'ok') => {
+    const data = new Map()
+    let active = true
+    const access = {
+      valid: () => active,
+      getItem: key => {
+        if (mode === 'read-error') throw new Error('read rejected')
+        if (mode === 'wrong-readback') return null
+        return data.get(key) ?? null
+      },
+      setItem: (key, value) => {
+        if (mode === 'write-rejected') return false
+        data.set(key, value)
+        if (mode === 'revoke-on-write') active = false
+        return true
+      },
+    }
+    return { access, data, revoke: () => { active = false } }
+  }
+  const a = makeLease()
+  const b = makeLease()
+  const dismissed = dismissTopic('music', { atMs: TODAY, access: a.access })
+  assert.ok(dismissed && isTopicDismissed(dismissed, 'music'),
+    'a valid lease may dismiss a topic for its own account')
+  assert.ok(JSON.parse(a.data.get(MEMORY_CONTEXT_KEY)).dismissedTopicIds.includes('music'))
+  assert.equal(b.data.has(MEMORY_CONTEXT_KEY), false, 'a topic dismissal cannot touch B')
+  const recorded = recordTopicUse('games', { atMs: TODAY, access: a.access })
+  assert.equal(recorded.recentTopics[0].id, 'games', 'a valid lease records topic cooldown')
+  assert.equal(b.data.has(MEMORY_CONTEXT_KEY), false, 'cooldown cannot touch B')
+
+  a.revoke()
+  const snapshot = a.data.get(MEMORY_CONTEXT_KEY)
+  assert.equal(dismissTopic('travel', { atMs: TODAY, access: a.access }), null,
+    'a revoked lease cannot dismiss a topic')
+  assert.equal(recordTopicUse('history', { atMs: TODAY, access: a.access }), null,
+    'a revoked lease cannot record topic cooldown')
+  assert.equal(a.data.get(MEMORY_CONTEXT_KEY), snapshot, 'revocation preserves the stored memory')
+
+  for (const mode of ['write-rejected', 'wrong-readback', 'read-error', 'revoke-on-write']) {
+    const attempt = makeLease(mode)
+    assert.equal(dismissTopic('music', { atMs: TODAY, access: attempt.access }), null,
+      `dismissal must fail closed on ${mode}`)
+    const second = makeLease(mode)
+    assert.equal(recordTopicUse('music', { atMs: TODAY, access: second.access }), null,
+      `cooldown must fail closed on ${mode}`)
+  }
+
+  const context = read('src/context/AppContext.jsx')
+  assert.match(context, /dismissTopic\(conversationTopic\.interestId, \{ access \}\)/,
+    'topic dismissal must carry its originating lease')
+  assert.match(context, /setTopicRound\(round => access\.valid\(\) \? round \+ 1 : round\)/,
+    'queued React topic rotation must be lease fenced')
+  assert.match(context, /recordTopicUse\(conversationTopic\.interestId, \{ access: chatAccess \}\)/,
+    'async chat topic cooldown must carry the chat account lease')
   ok()
 }
 

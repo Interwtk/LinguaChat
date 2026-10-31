@@ -13,7 +13,7 @@
  *     A first completion is rewarded once. Everything after it is practice —
  *     real practice, that can produce new evidence, but never a second prize.
  */
-import { getEpisodeState, sanitizeRun, RUNS_PER_EPISODE } from './learnerModel.js'
+import { ACTIVITY_FORMATS, getEpisodeState, sanitizeRun, sanitizeEpisodeRuns, boundedRunSignalKeys, recordDelayedRetrievalEvidence, recordCanDoAttempt } from './learnerModel.js'
 import { dayKeyFor } from './session.js'
 import { reconcileLevelMilestones } from '../curriculum/graduation.js'
 
@@ -52,8 +52,27 @@ export function resolveRunMode(model, episodeId, { source = 'practice', wantsOth
  * in a reproducible test.)
  */
 export function makeRunId(model, episodeId, atMs = Date.now()) {
-  const sameDay = runsFor(model, episodeId).filter(r => String(r.runId).includes(dayKeyFor(atMs))).length
-  return `${episodeId}:${dayKeyFor(atMs)}:${sameDay + 1}`
+  const day = dayKeyFor(atMs)
+  const prefix = `${episodeId}:${day}:`
+  // The run history is capped at 12. Counting retained runs would reuse the
+  // thirteenth id forever and overwrite genuine later practice evidence.
+  // Keep the highest retained sequence instead; the newest run survives trim.
+  // A partially persisted completion can leave the episode marked completed
+  // while an older tab still holds the first run as active, with no filed
+  // history yet. Reserve that active ID too: switching to replay must never
+  // reuse it and later mistake two distinct attempts for the same evidence.
+  const candidates = [...runsFor(model, episodeId)]
+  const active = sanitizeRun(model.activeRun)
+  if (active?.episodeId === episodeId) candidates.push(active)
+  const highest = candidates.reduce((max, run) => {
+    const id = String(run.runId || '')
+    if (!id.startsWith(prefix)) return max
+    const suffix = id.slice(prefix.length)
+    if (!/^[1-9]\d*$/.test(suffix)) return max
+    const sequence = Number(suffix)
+    return Number.isSafeInteger(sequence) ? Math.max(max, sequence) : max
+  }, 0)
+  return `${prefix}${highest + 1}`
 }
 
 /*
@@ -63,8 +82,21 @@ export function makeRunId(model, episodeId, atMs = Date.now()) {
  */
 export function beginEpisodeRun(model, episodeId, { source = 'practice', wantsOtherBranch = false, branchPreference = null, atMs = Date.now() } = {}) {
   const mode = resolveRunMode(model, episodeId, { source, wantsOtherBranch })
-  const active = sanitizeRun(model.activeRun)
-  if (active && active.episodeId === episodeId && active.mode === mode && !active.completedAt) {
+  let active = sanitizeRun(model.activeRun)
+  // A restored tab may carry a stale active pointer even after another copy
+  // filed this exact run. Never rejoin that finished attempt or overwrite its
+  // history/evidence with a new practice using the same runId.
+  if (active && runsFor(model, active.episodeId).some(r => r.runId === active.runId && r.completedAt)) {
+    model.activeRun = null
+    active = null
+  }
+  // An unfinished run belongs to the local calendar day it started on.
+  // Resuming the episode tomorrow preserves its step progress, but must not
+  // reuse yesterday's run ID, assistance or independent-evidence counters.
+  // Missing/invalid legacy timestamps are not proof of a same-day attempt.
+  const startedAtMs = active ? Date.parse(active.startedAt) : NaN
+  const sameDay = Number.isFinite(startedAtMs) && dayKeyFor(startedAtMs) === dayKeyFor(atMs)
+  if (active && sameDay && active.episodeId === episodeId && active.mode === mode && !active.completedAt) {
     return active
   }
   /*
@@ -75,7 +107,7 @@ export function beginEpisodeRun(model, episodeId, { source = 'practice', wantsOt
    * it made a learner who reloaded mid-episode start again from whatever the
    * evidence said at that moment rather than from where they actually were.
    */
-  const continues = active && active.episodeId === episodeId && !active.completedAt
+  const continues = active && sameDay && active.episodeId === episodeId && !active.completedAt
     && ((active.mode === RUN_FIRST && mode === RUN_RESUME) || (active.mode === RUN_RESUME && mode === RUN_FIRST))
 
   const run = sanitizeRun({
@@ -90,8 +122,10 @@ export function beginEpisodeRun(model, episodeId, { source = 'practice', wantsOt
     assistanceUsed: continues ? active.assistanceUsed : 0,
     retriedSteps: continues ? active.retriedSteps : 0,
     formatsUsed: continues ? active.formatsUsed : [],
+    signalKeys: continues ? active.signalKeys : [],
     rewarded: continues ? active.rewarded : false,
     scaffold: continues ? active.scaffold : null,
+    pendingRetrieval: continues ? active.pendingRetrieval : [],
   })
   model.activeRun = run
   return run
@@ -105,23 +139,90 @@ export function updateActiveRun(model, patch) {
 }
 
 /*
+ * Daily activity-preference signals are counted once per step/day, across
+ * replays. That global dedupe must NOT suppress help or retries in a different
+ * run of the same episode on the same day.
+ *
+ * Track a bounded set of per-run step/action markers. They survive same-day
+ * reloads but reset on a new run/day; no learner answers are stored.
+ * Returns null for duplicate/invalid signals so callers can skip the write.
+ */
+export function recordRunActivitySignal(model, { kind, format, key } = {}) {
+  const active = sanitizeRun(model.activeRun)
+  if (!active || active.completedAt || !ACTIVITY_FORMATS.includes(format)) return null
+  if (!['completed', 'assistance', 'retried', 'negative_soft'].includes(kind)) return null
+  if (typeof key !== 'string' || !/^\d{1,4}(?::alt)?:(?:completed|assistance|retried|switched)$/.test(key)) return null
+  if (key.split(':').at(-1) !== (kind === 'negative_soft' ? 'switched' : kind)) return null
+  if (active.signalKeys.includes(key)) return null
+  const signalKeys = boundedRunSignalKeys([...active.signalKeys, key])
+  // Once a marker falls outside the bounded window, it cannot be remembered
+  // for idempotence. Do not count it only to count it again on a late replay.
+  if (!signalKeys.includes(key)) return null
+  const patch = {
+    signalKeys,
+    formatsUsed: [...new Set([...active.formatsUsed, format])],
+  }
+  if (kind === 'assistance') patch.assistanceUsed = active.assistanceUsed + 1
+  if (kind === 'retried') patch.retriedSteps = active.retriedSteps + 1
+  return updateActiveRun(model, patch)
+}
+
+// Pending observations belong to this run, never to earned can-do evidence.
+export function stageDelayedRetrieval(model, canDoIds, { independent = false, sessionId = null, atMs = Date.now() } = {}) {
+  const active = sanitizeRun(model.activeRun)
+  if (!active || active.completedAt || !independent || !sessionId) return active
+  const pending = [...active.pendingRetrieval]
+  for (const canDoId of Array.isArray(canDoIds) ? canDoIds : []) {
+    if (!canDoId || pending.some(p => p.canDoId === canDoId && p.sessionId === sessionId)) continue
+    pending.push({ canDoId, sessionId, atMs })
+  }
+  return updateActiveRun(model, { pendingRetrieval: pending })
+}
+
+/*
  * File a finished run into the history. Idempotent by run id: completing twice
  * (double tap, Back, a late remount) records one run, exactly as it records
  * one reward.
  */
-export function completeEpisodeRun(model, { independentEvidence = false, branchId = null, rewarded = false, atMs = Date.now() } = {}) {
+export function completeEpisodeRun(model, { independentEvidence = false, branchId = null, rewarded = false, atMs = Date.now(), canDoId = null, sessionId = null } = {}) {
   const active = sanitizeRun(model.activeRun)
   if (!active) return null
+  // Clearing activeRun after completion only protects a single in-memory
+  // instance. A stale tab or reconciled snapshot can restore the same pointer
+  // alongside its already-filed history. Check BEFORE recording can-do or
+  // delayed-retrieval evidence, not merely before replacing the history row.
+  const filed = runsFor(model, active.episodeId).find(r => r.runId === active.runId && r.completedAt)
+  if (filed) {
+    model.activeRun = null
+    return filed
+  }
+  if (active.completedAt) {
+    model.activeRun = null
+    return null
+  }
+  for (const observation of active.pendingRetrieval) {
+    recordDelayedRetrievalEvidence(model, [observation.canDoId], { ...observation, independent: true })
+  }
+  if (canDoId) recordCanDoAttempt(model, canDoId, {
+    success: true, independent: Boolean(independentEvidence || active.independentEvidence),
+    context: active.episodeId, atMs, sessionId,
+  })
   const finished = sanitizeRun({
     ...active,
     branchId: branchId || active.branchId,
     completedAt: new Date(atMs).toISOString(),
+    pendingRetrieval: [],
     independentEvidence: Boolean(independentEvidence || active.independentEvidence),
     rewarded: Boolean(rewarded),
   })
   model.episodeRuns = model.episodeRuns || {}
   const list = (model.episodeRuns[active.episodeId] || []).filter(r => r.runId !== finished.runId)
-  model.episodeRuns[active.episodeId] = [...list, finished].slice(-RUNS_PER_EPISODE)
+  // A late/stale-tab completion may have started before all retained runs.
+  // Apply the same chronological cap as migration and snapshot reconciliation;
+  // append order is not evidence of when a practice actually happened.
+  model.episodeRuns[active.episodeId] = sanitizeEpisodeRuns({
+    [active.episodeId]: [...list, finished],
+  })[active.episodeId] || []
   model.activeRun = null
   /*
    * A finished run is the moment the learner's evidence changed, which is the

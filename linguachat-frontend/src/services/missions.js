@@ -1,3 +1,4 @@
+import { learnerStorage as localStorage } from '../auth/localLease.js'
 import { PRACTICE_MISSIONS } from '../data/practiceMissions'
 
 const ACTIVE_KEY = 'lc2-active-mission'
@@ -48,7 +49,27 @@ export function loadActiveMission() {
   return readJSON(ACTIVE_KEY, null)
 }
 
-export function saveActiveMission(activeMission) {
+export function saveActiveMission(activeMission, { access = null } = {}) {
+  if (access) {
+    // Interactive mission actions must retain the account lease that began
+    // the action. A revoked tab, denied write or mismatched read-back must
+    // never be presented as saved to the learner.
+    try {
+      if (!access.valid()) return false
+      if (!activeMission) {
+        if (access.removeItem(ACTIVE_KEY) === false
+          || !access.valid() || access.getItem(ACTIVE_KEY) !== null) return false
+      } else {
+        const serialized = JSON.stringify(activeMission)
+        if (access.setItem(ACTIVE_KEY, serialized) === false
+          || !access.valid() || access.getItem(ACTIVE_KEY) !== serialized) return false
+      }
+      return access.valid()
+    } catch {
+      return false
+    }
+  }
+  // Preserve the best-effort legacy path for non-interactive callers.
   if (!activeMission) {
     try { localStorage.removeItem(ACTIVE_KEY) } catch {}
     return
@@ -80,7 +101,8 @@ export function getMissionForToday(level = 'A2', preferredType = null) {
   return easy || candidates[0] || PRACTICE_MISSIONS[0]
 }
 
-export function startMission(mission) {
+export function startMission(mission, { access = null } = {}) {
+  if (!mission || (access && !access.valid())) return null
   const active = {
     missionId: mission.id,
     currentStepIndex: 0,
@@ -89,7 +111,7 @@ export function startMission(mission) {
     startedAt: Date.now(),
     completedAt: null,
   }
-  saveActiveMission(active)
+  if (saveActiveMission(active, { access }) === false) return null
   return active
 }
 
@@ -215,7 +237,8 @@ export function evaluateMissionStep(step, value) {
   }
 }
 
-export function advanceMission(activeMission, step, answerValue, evaluation) {
+export function advanceMission(activeMission, step, answerValue, evaluation, { access = null, deferSave = false } = {}) {
+  if ((deferSave && !access) || (access && !access.valid())) return null
   const nextAnswers = [
     ...(activeMission.answers || []),
     {
@@ -235,11 +258,15 @@ export function advanceMission(activeMission, step, answerValue, evaluation) {
     currentStepIndex: nextIndex,
     earnedXp: (activeMission.earnedXp || 0) + earnedThisStep,
   }
-  saveActiveMission(nextActive)
+  // The final step is committed with the completed record, not ahead of it.
+  // Otherwise a failed completion would leave an unresumable final-step cursor.
+  if (!deferSave && saveActiveMission(nextActive, { access }) === false) return null
+  if (access && !access.valid()) return null
   return { activeMission: nextActive, earnedThisStep }
 }
 
-export function completeMission(activeMission) {
+export function completeMission(activeMission, { access = null } = {}) {
+  if (!activeMission || (access && !access.valid())) return null
   const mission = getMissionById(activeMission.missionId)
   const completed = {
     missionId: activeMission.missionId,
@@ -250,13 +277,59 @@ export function completeMission(activeMission) {
     startedAt: activeMission.startedAt,
     completedAt: Date.now(),
   }
+  if (access) {
+    // The last step was only prepared in memory. Require its previous cursor
+    // to remain durable before publishing completion for the same account.
+    try {
+      if (!mission?.steps?.length || activeMission.currentStepIndex !== mission.steps.length) return null
+      const rawActive = access.getItem(ACTIVE_KEY)
+      if (!access.valid() || !rawActive) return null
+      const savedActive = JSON.parse(rawActive)
+      if (savedActive?.missionId !== activeMission.missionId
+        || savedActive.startedAt !== activeMission.startedAt
+        || savedActive.currentStepIndex !== activeMission.currentStepIndex - 1) return null
+      const rawCompleted = access.getItem(COMPLETED_KEY)
+      if (!access.valid()) return null
+      const previous = rawCompleted === null ? [] : JSON.parse(rawCompleted)
+      if (!Array.isArray(previous)) return null
+      // If the completed record was saved but clearing the active cursor
+      // failed, retry the clear without duplicating a reward/history entry.
+      const existing = previous.find(item => item?.missionId === completed.missionId
+        && item.startedAt === completed.startedAt)
+      const result = existing || completed
+      if (!existing) {
+        const serialized = JSON.stringify([completed, ...previous].slice(0, 50))
+        if (access.setItem(COMPLETED_KEY, serialized) === false
+          || !access.valid() || access.getItem(COMPLETED_KEY) !== serialized) return null
+      }
+      if (saveActiveMission(null, { access }) === false || !access.valid()) return null
+      return result
+    } catch {
+      return null
+    }
+  }
+  // Legacy non-interactive callers keep their best-effort behavior.
   const previous = loadCompletedMissions()
   saveCompletedMissions([completed, ...previous])
   saveActiveMission(null)
   return completed
 }
 
-export function clearMissionStorage() {
+export function clearMissionStorage({ access = null } = {}) {
+  if (access) {
+    // Reset both mission stores only while the originating account still
+    // owns the lease, and verify each removal before reporting success.
+    try {
+      if (!access.valid()) return false
+      for (const key of [ACTIVE_KEY, COMPLETED_KEY]) {
+        if (!access.valid() || access.removeItem(key) === false
+          || !access.valid() || access.getItem(key) !== null) return false
+      }
+      return access.valid()
+    } catch {
+      return false
+    }
+  }
   try {
     localStorage.removeItem(ACTIVE_KEY)
     localStorage.removeItem(COMPLETED_KEY)

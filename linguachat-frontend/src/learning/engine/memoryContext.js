@@ -1,3 +1,4 @@
+import { learnerStorage as localStorage } from '../../auth/localLease.js'
 /*
  * memoryContext — "not that one, today".
  *
@@ -90,15 +91,31 @@ export function normalizeMemoryContext(parsed, atMs = Date.now()) {
   }
 }
 
-export function loadMemoryContext(atMs = Date.now()) {
+export function loadMemoryContext(atMs = Date.now(), { access = null } = {}) {
   try {
-    const raw = localStorage.getItem(MEMORY_CONTEXT_KEY)
+    if (access && !access.valid()) return null
+    const raw = access ? access.getItem(MEMORY_CONTEXT_KEY) : localStorage.getItem(MEMORY_CONTEXT_KEY)
+    if (access && !access.valid()) return null
     if (raw) return normalizeMemoryContext(JSON.parse(raw), atMs)
-  } catch { /* unreadable storage behaves like a fresh day */ }
+  } catch {
+    // A lease-bound read failure must not be treated as an empty account.
+    if (access) return null
+  }
   return emptyMemoryContext(atMs)
 }
 
-export function saveMemoryContext(context) {
+export function saveMemoryContext(context, { access = null } = {}) {
+  if (access) {
+    try {
+      if (!access.valid()) return null
+      const serialized = JSON.stringify(context)
+      if (access.setItem(MEMORY_CONTEXT_KEY, serialized) === false
+        || !access.valid() || access.getItem(MEMORY_CONTEXT_KEY) !== serialized) return null
+      return access.valid() ? context : null
+    } catch {
+      return null
+    }
+  }
   try { localStorage.setItem(MEMORY_CONTEXT_KEY, JSON.stringify(context)) } catch { /* storage full/blocked */ }
   return context
 }
@@ -142,26 +159,30 @@ export const recentTopicIds = (context) => (context?.recentTopics || []).map(ent
  * dislike, or touch activity preferences — the learner declined a subject for an
  * afternoon, which says nothing about what they enjoy.
  */
-export function dismissTopic(topicId, { atMs = Date.now(), context = null } = {}) {
-  const current = context ? normalizeMemoryContext(context, atMs) : loadMemoryContext(atMs)
+export function dismissTopic(topicId, { atMs = Date.now(), context = null, access = null } = {}) {
+  if (access && !access.valid()) return null
+  const current = context ? normalizeMemoryContext(context, atMs) : loadMemoryContext(atMs, { access })
+  if (!current || (access && !access.valid())) return null
   if (!topicId || !KNOWN_TOPIC_IDS.includes(topicId)) return current
   if (current.dismissedTopicIds.includes(topicId)) return current
   return saveMemoryContext({
     ...current,
     dismissedTopicIds: [...current.dismissedTopicIds, topicId].slice(-MAX_DISMISSED),
-  })
+  }, { access })
 }
 
 /*
  * Remember that a conversation was about this, so the next one probably is not.
  * Re-using the same topic moves it back to the front rather than duplicating it.
  */
-export function recordTopicUse(topicId, { atMs = Date.now(), context = null } = {}) {
-  const current = context ? normalizeMemoryContext(context, atMs) : loadMemoryContext(atMs)
+export function recordTopicUse(topicId, { atMs = Date.now(), context = null, access = null } = {}) {
+  if (access && !access.valid()) return null
+  const current = context ? normalizeMemoryContext(context, atMs) : loadMemoryContext(atMs, { access })
+  if (!current || (access && !access.valid())) return null
   if (!topicId || !KNOWN_TOPIC_IDS.includes(topicId)) return current
   const entry = { id: topicId, dayKey: dayKeyFor(atMs) }
   const rest = current.recentTopics.filter(other => other.id !== topicId)
-  return saveMemoryContext({ ...current, recentTopics: [entry, ...rest].slice(0, MAX_RECENT_TOPICS) })
+  return saveMemoryContext({ ...current, recentTopics: [entry, ...rest].slice(0, MAX_RECENT_TOPICS) }, { access })
 }
 
 export function clearMemoryContext() {

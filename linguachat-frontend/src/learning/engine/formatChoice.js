@@ -1,3 +1,4 @@
+import { chooseTeaching } from './teachingPolicy.js'
 /*
  * formatChoice — choosing BETWEEN ACTIVITIES THAT TEACH THE SAME THING.
  *
@@ -118,6 +119,9 @@ export function selectEquivalentActivityFormat({
 
   // 6. A quick session keeps the caller's first (safest) choice.
   if (!ADVENTUROUS_MODES.includes(durationMode)) return viable[0]
+
+  const teaching = chooseTeaching(model, objective, viable, seed)
+  if (teaching) return teaching.format
 
   // 5. Preference, but only when we actually have evidence.
   const scored = viable.map((format, index) => {

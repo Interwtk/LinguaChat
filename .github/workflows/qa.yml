@@ -102,11 +102,16 @@ jobs:
           node .github/scripts/check-linguachat-cloud-scope.test.mjs
           node .github/scripts/check-linguachat-cloud-scope.mjs
 
-      - name: no voice or media APIs
+      - name: native listening only; no recording or remote voice
         run: |
-          if git grep -nE "SpeechRecognition|speechSynthesis|RTCPeerConnection" -- 'linguachat-frontend/src/**/*.js' 'linguachat-frontend/src/**/*.jsx'; then
-            echo "Voice and media are out of scope — see CLAUDE.md"; exit 1
+          if git grep -nE "SpeechRecognition|webkitSpeechRecognition|RTCPeerConnection|getUserMedia|MediaRecorder" -- 'linguachat-frontend/src/**/*.js' 'linguachat-frontend/src/**/*.jsx'; then
+            echo "Recording and live media remain out of scope — see CLAUDE.md"; exit 1
           fi
+
+      - name: TTS stays inside the device adapter
+        run: |
+          matches=$(git grep -l 'speechSynthesis' -- 'linguachat-frontend/src/**/*.js' 'linguachat-frontend/src/**/*.jsx' || true)
+          test "$matches" = 'linguachat-frontend/src/audio/speech.js'
 
       - name: no build output, archives or env files tracked
         run: |

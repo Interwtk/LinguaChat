@@ -1,3 +1,4 @@
+import { learnerStorage as localStorage } from '../auth/localLease.js'
 import { SUPPORTED_LOCALES } from '../i18n/translations.js'
 
 const NATIVE_CODE_KEY = 'lc2-native-language-code'
@@ -163,20 +164,23 @@ function readLanguage(codeKey, legacyKey = null) {
  * The ONE storage writer. There is deliberately no writer that touches only the
  * native keys or only the interface keys: `user_language` is a single learner
  * choice, and native/interface are legacy storage names for that same choice
- * kept for compatibility. Writing both together, always, is what makes it
- * impossible for a supported product API to leave them pointing at two
- * different languages.
+ * kept for compatibility. The interactive writer remains best-effort; cloud
+ * imports use these same pure entries through the strict, recoverable adapter.
  */
+export function languagePreferencePersistence(language) {
+  const info = makeLanguageInfo(language)
+  return {
+    preferences: { nativeLanguage: info, interfaceLanguage: info, targetLanguage: TARGET_LANGUAGE },
+    entries: [
+      [NATIVE_CODE_KEY, info.code], [NATIVE_BASE_KEY, info.base], [NATIVE_NAME_KEY, info.name],
+      [LEGACY_NATIVE_KEY, info.base], [INTERFACE_CODE_KEY, info.code],
+      [INTERFACE_BASE_KEY, info.base], [INTERFACE_NAME_KEY, info.name], [TARGET_KEY, TARGET_LANGUAGE.code],
+    ],
+  }
+}
+
 function writeUserLanguage(info) {
-  try {
-    localStorage.setItem(NATIVE_CODE_KEY, info.code)
-    localStorage.setItem(NATIVE_BASE_KEY, info.base)
-    localStorage.setItem(NATIVE_NAME_KEY, info.name)
-    localStorage.setItem(LEGACY_NATIVE_KEY, info.base)
-    localStorage.setItem(INTERFACE_CODE_KEY, info.code)
-    localStorage.setItem(INTERFACE_BASE_KEY, info.base)
-    localStorage.setItem(INTERFACE_NAME_KEY, info.name)
-  } catch {}
+  try { for (const [key, value] of languagePreferencePersistence(info).entries) localStorage.setItem(key, value) } catch {}
 }
 
 /*
@@ -208,8 +212,46 @@ export function getStoredNativeLanguage() {
   return readLanguage(NATIVE_CODE_KEY, LEGACY_NATIVE_KEY) || FALLBACK_LANGUAGE
 }
 
-export function setNativeLanguage(language) {
+export function setNativeLanguage(language, { access = null } = {}) {
   const info = makeLanguageInfo(language)
+  if (access) {
+    // Interactive edits must retain their original account lease through every
+    // Storage operation. Keep the canonical code as the final commit marker:
+    // a failed intermediate write must not advertise a new user_language.
+    try {
+      if (!isSupportedLanguage(info.base) || !access.valid()) return null
+      const entries = languagePreferencePersistence(info).entries
+      const ordered = [
+        ...entries.filter(([key]) => key !== NATIVE_CODE_KEY),
+        ...entries.filter(([key]) => key === NATIVE_CODE_KEY),
+      ]
+      const expected = new Map()
+      for (const [key] of ordered) {
+        expected.set(key, access.getItem(key))
+        if (!access.valid()) return null
+      }
+      for (const [key, value] of ordered) {
+        // Storage has no atomic CAS. Refuse a detected concurrent edit instead
+        // of silently overwriting another tab's preference.
+        for (const [observed, previous] of expected) {
+          if (!access.valid() || access.getItem(observed) !== previous) return null
+        }
+        if (expected.get(key) === value) continue
+        if (access.setItem(key, value) === false || !access.valid()
+          || access.getItem(key) !== value) return null
+        expected.set(key, value)
+      }
+      for (const [key, value] of entries) {
+        if (!access.valid() || access.getItem(key) !== value) return null
+      }
+      return access.valid() ? info : null
+    } catch {
+      // A later ensureLanguagePreferences() reconciles legacy mirrors from the
+      // canonical code; never publish an unverified partial edit to React.
+      return null
+    }
+  }
+  // Legacy initialization/compatibility callers keep their best-effort API.
   writeUserLanguage(info)
   return info
 }

@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { ChattoMascot } from '../mascot/ChattoMascot'
-import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS, MAX_INTERESTS, toggleInterestId } from '../../services/tutorPreferences'
+import { TUTOR_OPTION_GROUPS, INTEREST_OPTIONS, MAX_INTERESTS, setInterestSelected } from '../../services/tutorPreferences'
 
 function ChipRow({ label, value, options, onChange, t }) {
   return (
@@ -40,6 +40,7 @@ export function TutorPersonalizationStep() {
     t,
     tutorPreferences,
     updateTutorPreferences,
+    tutorPreferenceSaveFailed,
     textSize,
     setTextSize,
     completePersonalization,
@@ -56,8 +57,7 @@ export function TutorPersonalizationStep() {
   }
 
   function choose(key, id) {
-    updateTutorPreferences({ [key]: id })
-    react()
+    if (updateTutorPreferences({ [key]: id })) react()
   }
 
   /*
@@ -65,8 +65,10 @@ export function TutorPersonalizationStep() {
    * a learner who wanted plain everyday conversation could not say so.
    */
   function toggleInterest(interest) {
-    updateTutorPreferences({ interests: toggleInterestId(tutorPreferences.interests, interest) })
-    react()
+    // Compute the toggle from the latest durable account preferences, not a
+    // possibly stale React snapshot from this tab.
+    const shouldSelect = !(tutorPreferences.interests || []).includes(interest)
+    if (updateTutorPreferences(current => ({ interests: setInterestSelected(current.interests, interest, shouldSelect) }))) react()
   }
 
   const selectedInterests = tutorPreferences.interests || []
@@ -173,6 +175,12 @@ export function TutorPersonalizationStep() {
                   </div>
                 </div>
 
+                {tutorPreferenceSaveFailed && (
+                  <p role="alert" style={{ fontSize: 13, color: 'var(--ink)', background: 'var(--surface-soft)', border: '1px solid var(--accent)', borderRadius: 12, padding: '10px 12px', marginBottom: 18 }}>
+                    {t('authGenericError')}
+                  </p>
+                )}
+
                 {/* Text size */}
                 <div style={{ marginBottom: 18 }}>
                   <p style={{ fontSize: 11, fontWeight: 800, color: 'var(--muted)', marginBottom: 8 }}>{t('textSize')}</p>
@@ -200,7 +208,7 @@ export function TutorPersonalizationStep() {
               </div>
 
               <button
-                onClick={completePersonalization}
+                onClick={() => completePersonalization()}
                 className="group w-full mt-5 py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-95 hover:-translate-y-px active:scale-[0.98] flex items-center justify-center gap-2"
                 style={{ background: 'var(--accent)' }}
               >

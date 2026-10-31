@@ -1,3 +1,4 @@
+import { learnerStorage as localStorage } from '../auth/localLease.js'
 const STORAGE_KEYS = {
   sessionId: 'lc2-session-id',
   messages: 'lc2-chat-messages',
@@ -83,12 +84,8 @@ function learnedCandidate(response) {
   if (response.mode === 'translation') {
     return { phrase: response.reply.split('(')[0].trim(), kind: 'translation', mastery: 0.45, marker: 'Aa' }
   }
-  if (response.suggestion) {
-    return { phrase: response.suggestion, kind: 'practice phrase', mastery: 0.35, marker: 'Try' }
-  }
-  if (response.learning_action?.prompt) {
-    return { phrase: response.learning_action.prompt, kind: 'mini goal', mastery: 0.3, marker: 'Go' }
-  }
+  // Suggestions and action prompts are teaching instructions, not typed
+  // vocabulary. Do not manufacture learned items from these arbitrary fields.
   return null
 }
 
@@ -147,8 +144,17 @@ function updateSessions(sessions, userMessage, response, topics, confidence) {
   return [updated, ...sessions.filter(session => session.id !== today)].slice(0, 30)
 }
 
-export function createSessionId() {
+export function createSessionId({ access = null } = {}) {
   const id = makeId()
+  if (access) {
+    try {
+      if (!access.valid() || access.setItem(STORAGE_KEYS.sessionId, id) === false
+        || !access.valid() || access.getItem(STORAGE_KEYS.sessionId) !== id) return null
+      return access.valid() ? id : null
+    } catch {
+      return null
+    }
+  }
   try { localStorage.setItem(STORAGE_KEYS.sessionId, id) } catch {}
   return id
 }
@@ -166,8 +172,22 @@ export function loadStoredMessages(welcomeMessage) {
   return Array.isArray(messages) && messages.length ? messages : [welcomeMessage]
 }
 
-export function saveStoredMessages(messages) {
-  writeJSON(STORAGE_KEYS.messages, messages.slice(-100))
+export function saveStoredMessages(messages, { access = null } = {}) {
+  const retained = messages.slice(-100)
+  if (access) {
+    // Clearing chat is a user-visible durable action. A rejected or stale
+    // account-scoped write must not look successful until a refresh.
+    try {
+      const serialized = JSON.stringify(retained)
+      if (!access.valid() || access.setItem(STORAGE_KEYS.messages, serialized) === false
+        || !access.valid() || access.getItem(STORAGE_KEYS.messages) !== serialized) return false
+      return access.valid()
+    } catch {
+      return false
+    }
+  }
+  // Keep the existing best-effort path for passive state persistence.
+  writeJSON(STORAGE_KEYS.messages, retained)
 }
 
 export function createEmptyProgress() {
@@ -179,7 +199,17 @@ export function loadLocalProgress() {
   return saved ? { ...createEmptyProgress(), ...saved } : createEmptyProgress()
 }
 
-export function saveLocalProgress(progress) {
+export function saveLocalProgress(progress, { access = null } = {}) {
+  if (access) {
+    try {
+      const serialized = JSON.stringify(progress)
+      if (!access.valid() || access.setItem(STORAGE_KEYS.progress, serialized) === false
+        || !access.valid() || access.getItem(STORAGE_KEYS.progress) !== serialized) return false
+      return access.valid()
+    } catch {
+      return false
+    }
+  }
   writeJSON(STORAGE_KEYS.progress, progress)
 }
 
@@ -230,7 +260,21 @@ export function recordMissionProgress(previous, { mission, step, earnedXp = 0, c
   }
 }
 
-export function clearStoredProgress() {
+export function clearStoredProgress({ access = null } = {}) {
+  if (access) {
+    // Reset is an explicit destructive action. A revoked account lease or
+    // denied Storage removal must not be presented as a successful reset.
+    try {
+      if (!access.valid()) return false
+      for (const key of Object.values(STORAGE_KEYS)) {
+        if (!access.valid() || access.removeItem(key) === false
+          || !access.valid() || access.getItem(key) !== null) return false
+      }
+      return access.valid()
+    } catch {
+      return false
+    }
+  }
   try {
     Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key))
   } catch {}

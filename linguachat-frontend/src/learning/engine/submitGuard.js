@@ -1,3 +1,4 @@
+import { captureLearnerAccess } from '../../auth/localLease.js'
 /*
  * createSubmissionGuard — tiny state machine that makes async free-reply
  * submission safe:
@@ -15,14 +16,17 @@
 export function createSubmissionGuard() {
   let token = 0
   let inFlight = false
+  let access = null
   return {
     begin() {
       if (inFlight) return null
+      access = globalThis.localStorage ? captureLearnerAccess() : null
+      if (access && !access.valid()) return null
       inFlight = true
       token += 1
       return token
     },
-    isCurrent(t) { return t === token && inFlight === true },
+    isCurrent(t) { return t === token && inFlight === true && (!access || access.valid()) },
     settle() { inFlight = false },
     invalidate() { token += 1; inFlight = false },
     get inFlight() { return inFlight },

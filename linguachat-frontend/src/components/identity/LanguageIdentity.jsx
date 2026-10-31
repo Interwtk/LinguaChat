@@ -8,7 +8,7 @@ import {
   TUTOR_OPTION_GROUPS,
   INTEREST_OPTIONS,
   MAX_INTERESTS,
-  toggleInterestId,
+  setInterestSelected,
   GOAL_OPTIONS,
   CORRECTION_OPTIONS,
   VIBE_OPTIONS,
@@ -105,6 +105,7 @@ export function LanguageIdentity() {
     setThemeDark,
     tutorPreferences,
     updateTutorPreferences,
+    tutorPreferenceSaveFailed,
     textSize,
     setTextSize,
     t,
@@ -189,8 +190,10 @@ export function LanguageIdentity() {
   )
 
   function saveName() {
-    if (nameInput.trim()) updateProfile({ name: nameInput.trim() })
-    setEditingName(false)
+    // Keep the editor open when the account-scoped write could not be verified.
+    if (nameInput.trim() && updateProfile({ name: nameInput.trim() }) === true) {
+      setEditingName(false)
+    }
   }
 
   function saveMood(id) {
@@ -214,7 +217,10 @@ export function LanguageIdentity() {
    * mind about one — and, like onboarding, it refused to let the list be empty.
    */
   function toggleInterest(interest) {
-    updateTutorPreferences({ interests: toggleInterestId(tutorPreferences.interests, interest) })
+    // Compute the toggle from the latest durable account preferences, not a
+    // possibly stale React snapshot from this tab.
+    const shouldSelect = !(tutorPreferences.interests || []).includes(interest)
+    updateTutorPreferences(current => ({ interests: setInterestSelected(current.interests, interest, shouldSelect) }))
   }
 
   return (
@@ -605,6 +611,12 @@ export function LanguageIdentity() {
           <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 16 }}>
             {t('personalizeTutorDescription')}
           </p>
+
+          {tutorPreferenceSaveFailed && (
+            <p role="alert" style={{ fontSize: 13, color: 'var(--ink)', background: 'var(--surface-soft)', border: '1px solid var(--accent)', borderRadius: 12, padding: '10px 12px', marginBottom: 16 }}>
+              {t('authGenericError')}
+            </p>
+          )}
 
           <div className="flex flex-col gap-4">
             {TUTOR_OPTION_GROUPS.map(group => (

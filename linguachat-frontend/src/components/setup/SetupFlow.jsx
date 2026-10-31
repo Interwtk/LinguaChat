@@ -1,5 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
+import { captureLearnerAccess } from '../../auth/localLease.js'
+import { retainPlacementAnswerLease } from '../../auth/setupCheckpoint.js'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { LanguageSwitcher } from '../ui/LanguageSwitcher'
@@ -53,25 +55,76 @@ function SetupShell({ children, step, totalSteps }) {
 }
 
 function PlacementTest() {
-  const { completePlacement, t, interfaceLanguage } = useApp()
+  const { authUser, completePlacement, t, interfaceLanguage } = useApp()
   const [phase, setPhase] = useState('intro')
   const [placementState, setPlacementState] = useState(() => getInitialPlacementState('A2'))
   const [selectedOption, setSelectedOption] = useState(null)
   const [feedback, setFeedback] = useState(null)
+  const [placementSaveFailed, setPlacementSaveFailed] = useState(false)
   const question = useMemo(() => getNextQuestion(placementState), [placementState])
+  const feedbackTimer = useRef(null)
+  const quizAccess = useRef(null)
+  const activeAccountId = authUser?.id ?? null
+  const currentAccountId = useRef(activeAccountId)
+  currentAccountId.current = activeAccountId
+
+  // A pending answer belongs to the account that submitted it. Cancel its
+  // delayed publication when setup unmounts or a different account takes over.
+  useEffect(() => () => {
+    if (feedbackTimer.current !== null) window.clearTimeout(feedbackTimer.current)
+    feedbackTimer.current = null
+    quizAccess.current = null
+  }, [activeAccountId])
 
   function start() {
     setPhase('quiz')
   }
 
   function chooseOption(optionId) {
-    if (selectedOption || phase !== 'quiz') return
+    if (selectedOption || feedbackTimer.current !== null || phase !== 'quiz') return
+    const scheduledAccountId = currentAccountId.current
+    // Capture the storage generation before feedback's delay. Never borrow
+    // whichever account happens to be active when the timer finally fires.
+    const answerAccess = retainPlacementAnswerLease(quizAccess.current, captureLearnerAccess())
+    if (!answerAccess) {
+      quizAccess.current = null
+      // Never reuse answers gathered under a revoked storage generation.
+      setPlacementState(getInitialPlacementState('A2'))
+      setSelectedOption(null)
+      setFeedback(null)
+      setPlacementSaveFailed(true)
+      return
+    }
+    quizAccess.current = answerAccess
+    setPlacementSaveFailed(false)
     const evaluated = evaluateAnswer(question, optionId, placementState)
     setSelectedOption(optionId)
     setFeedback(evaluated.feedback)
-    window.setTimeout(() => {
+    feedbackTimer.current = window.setTimeout(() => {
+      feedbackTimer.current = null
+      if (scheduledAccountId !== currentAccountId.current) return
+      if (!answerAccess.valid()) {
+        quizAccess.current = null
+        // The same account can acquire a new lease without changing its id.
+        // Clear the old generation's answers instead of leaving the quiz locked.
+        setPlacementState(getInitialPlacementState('A2'))
+        setSelectedOption(null)
+        setFeedback(null)
+        setPlacementSaveFailed(true)
+        return
+      }
       if (shouldFinishPlacement(evaluated.nextState)) {
-        completePlacement(calculatePlacementResult(evaluated.nextState, interfaceLanguage))
+        if (!completePlacement(calculatePlacementResult(evaluated.nextState, interfaceLanguage), answerAccess)) {
+          // A lease revoked during durable publication also invalidates the
+          // answers collected before that publication attempt.
+          if (!answerAccess.valid()) {
+            quizAccess.current = null
+            setPlacementState(getInitialPlacementState('A2'))
+          }
+          setPlacementSaveFailed(true)
+          setSelectedOption(null)
+          setFeedback(null)
+        }
         return
       }
       setPlacementState(evaluated.nextState)
@@ -137,6 +190,11 @@ function PlacementTest() {
             </span>
           </div>
 
+          {placementSaveFailed && (
+            <p role="alert" className="rounded-2xl p-3 mb-4" style={{ color: 'var(--ink)', background: 'var(--info-soft)', border: '1px solid var(--info)' }}>
+              {t('authGenericError')}
+            </p>
+          )}
           <div className="rounded-3xl p-5 md:p-6 mb-5" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
             <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', fontWeight: 600, marginBottom: 8 }}>
               {t(question.instructionKey)}
@@ -448,11 +506,14 @@ function TutorPersonality() {
             {PERSONALITIES.map(p => {
               const isSelected = selected === p.id
               return (
-                <div
+                <button
+                  type="button"
+                  aria-pressed={isSelected}
                   key={p.id}
                   onClick={() => setSelected(p.id)}
                   className="rounded-2xl p-5 cursor-pointer transition-all"
                   style={{
+                    textAlign: 'start', width: '100%', font: 'inherit',
                     background: isSelected ? p.soft : 'var(--surface)',
                     border: `2px solid ${isSelected ? p.aura : 'var(--border)'}`,
                     boxShadow: isSelected ? `0 0 0 4px ${p.aura}22` : 'none',
@@ -476,7 +537,7 @@ function TutorPersonality() {
                       "{t(p.sampleKey)}"
                     </p>
                   </div>
-                </div>
+                </button>
               )
             })}
           </div>
@@ -640,9 +701,10 @@ function Section({ label, children }) {
 
 /* ---- ROUTER ---- */
 export function SetupFlow() {
-  const { authStep } = useApp()
+  const { authStep, authUser } = useApp()
   const screens = {
-    placement: <PlacementTest />,
+    // Remount the quiz when account identity changes, discarding prior answers.
+    placement: <PlacementTest key={authUser?.id ?? 'guest'} />,
     'level-reveal': <LevelReveal />,
     'setup-choice': <SetupChoice />,
     'tutor-personality': <TutorPersonality />,

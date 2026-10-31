@@ -1,9 +1,18 @@
+import { readSetupCheckpoint, persistPlacementResult, SETUP_STEPS } from '../auth/setupCheckpoint.js'
+import { readVerifiedProfile } from '../auth/profileRestore.js'
+import { commitOnboarding } from '../auth/onboardingCommit.js'
+import { captureLearnerAccess, revokeLocalLease } from '../auth/localLease.js'
+import { learnerStorage as localStorage } from '../auth/localLease.js'
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { getBrowserAuthService } from '../auth/provider.js'
+import { authCallbackError } from '../auth/callbackError.js'
+import { CLOUD_PREFERENCES_RELEASED, connectPreferenceSync, schedulePreferenceSync } from '../cloud/runtime.js'
+import { createPreferenceImport, recoverCurrentPreferenceImport } from '../cloud/preferenceImport.js'
 import { activateLocalAccount } from '../auth/browserDataIsolation.js'
 import { sendChatMessage } from '../services/api'
 import {
   ensureLanguagePreferences,
+  languagePreferencePersistence,
   setNativeLanguage as persistNativeLanguage,
 } from '../services/language'
 import {
@@ -32,7 +41,6 @@ import {
   getMissionForToday,
   loadActiveMission,
   loadCompletedMissions,
-  saveCompletedMissions,
   saveActiveMission,
   startMission as createActiveMission,
   clearMissionStorage,
@@ -44,7 +52,7 @@ import {
   loadTutorPreferences,
   saveActiveCompanion,
   saveTextSize,
-  saveTutorPreferences,
+  updateTutorPreferencesDurably,
 } from '../services/tutorPreferences'
 // the planner works from the shape of the level; the episode itself loads when it starts
 import { playableLevelId, episodesOfLevel } from '../learning/curriculum/levels.js'
@@ -65,8 +73,8 @@ import {
 import { selectTopic, providerTopicContext } from '../learning/engine/topicSelection.js'
 import { asSubjectValue } from '../learning/engine/semanticContext.js'
 import {
-  loadSession, saveSession, clearSession, getOrCreateSession, startSession,
-  advanceBlock, completeSession, isDurationMode,
+  loadSession, saveSession, getOrCreateSession, startSession,
+  advanceBlock, completeSession, isDurationMode, SESSION_KEY, normalizeSession,
 } from '../learning/engine/session.js'
 
 const DURATION_PREF_KEY = 'lc2-session-duration'
@@ -108,6 +116,8 @@ function clearAuthCallback() {
   try {
     const url = new URL(window.location.href)
     for (const key of ['auth', 'code', 'error', 'error_code', 'error_description']) url.searchParams.delete(key)
+    const hash = new URLSearchParams(url.hash.slice(1))
+    if (hash.has('error') || hash.has('error_code')) url.hash = ''
     window.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash)
   } catch {}
 }
@@ -151,9 +161,24 @@ const createWelcomeMessage = (language) => ({
 })
 
 export function AppProvider({ children }) {
+  const authCallbackErrorRef = useRef(authCallbackError(window.location.href))
+  // Passive chat/progress effects must never acquire another account's lease
+  // after React flushes state from a previous session.
+  const passiveStorageAccessRef = useRef(captureLearnerAccess())
   // Auth/setup flow: null = main app, 'entry'/'login'/'signup'/'forgot'/'placement'/'tutor-personality'/'learning-prefs' = flow screens
   const [authStep, setAuthStep] = useState('entry')
-  const [languagePreferences, setLanguagePreferences] = useState(ensureLanguagePreferences)
+  const preferenceImportBlockedRef = useRef(false)
+  const [languagePreferences, setLanguagePreferences] = useState(() => {
+    try {
+      recoverCurrentPreferenceImport()
+      return ensureLanguagePreferences()
+    } catch {
+      // Do not normalize partial keys or persist React defaults over a WAL.
+      // Verified session activation retries recovery before private UI opens.
+      preferenceImportBlockedRef.current = true
+      return languagePreferencePersistence('en').preferences
+    }
+  })
   const nativeLanguageInfo = languagePreferences.nativeLanguage
   const interfaceLanguageInfo = languagePreferences.interfaceLanguage
   const targetLanguage = languagePreferences.targetLanguage
@@ -175,7 +200,13 @@ export function AppProvider({ children }) {
    */
   const [chatAppearance, setChatAppearanceState] = useState(loadChatAppearance)
   const setChatAppearance = useCallback((next) => {
-    setChatAppearanceState(saveChatAppearance(next))
+    // The account that clicked owns the write and the later React update.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const saved = saveChatAppearance(next, { access })
+    if (!saved || !access.valid()) return false
+    setChatAppearanceState(previous => access.valid() ? saved : previous)
+    return access.valid()
   }, [])
   const [onboardingCompleted, setOnboardingCompleted] = useState(() => {
     try { return localStorage.getItem('lc2-onboarded') === 'true' } catch { return false }
@@ -192,7 +223,10 @@ export function AppProvider({ children }) {
   // The flag is reset only when the learner explicitly starts another Auth operation or
   // when a provider session is safely activated.
   const authIsolationBlockedRef = useRef(false)
+  const accountBoundRef = useRef(false)
+  const profileRestoredRef = useRef(false)
   const [authProviderError, setAuthProviderError] = useState('')
+  const [tutorPreferenceSaveFailed, setTutorPreferenceSaveFailed] = useState(false)
 
   const getAuthService = useCallback(() => {
     if (!authServiceRef.current) {
@@ -204,9 +238,12 @@ export function AppProvider({ children }) {
 
   const applyProviderSession = useCallback((session, event = 'SESSION') => {
     if (!session?.user) {
+      if (event === 'SIGNED_OUT') revokeLocalLease()
+      preferenceSyncRef.current?.stop()
       // Invalid/expired auth callbacks must not survive into a later normal login.
       // Otherwise a stale ?auth=reset can incorrectly reopen the reset screen.
       clearVerifiedRecovery()
+      if (authCallbackErrorRef.current) setAuthProviderError(authCallbackErrorRef.current)
       if (currentAuthAction()) clearAuthCallback()
       try {
         localStorage.removeItem('lc2-auth')
@@ -216,10 +253,11 @@ export function AppProvider({ children }) {
       setAuthStep('entry')
       return
     }
+    authCallbackErrorRef.current = null
 
     if (event === 'PASSWORD_RECOVERY') rememberVerifiedRecovery(session.user.id)
 
-    const isolation = activateLocalAccount(localStorage, session.user.id)
+    const isolation = activateLocalAccount(globalThis.localStorage, session.user.id, { deferRebind: accountBoundRef.current })
     if (isolation.blocked) {
       clearAuthCallback()
       authIsolationBlockedRef.current = true
@@ -231,17 +269,49 @@ export function AppProvider({ children }) {
       getAuthService().signOut().catch(() => {})
       return
     }
+    // First sign-in may claim guest data without a reload. Rebind only then;
+    // account switches/revoked tabs must retain the old, invalid lease.
+    if (isolation.claimedGuestData && !isolation.reloadRequired)
+      passiveStorageAccessRef.current = captureLearnerAccess()
+    accountBoundRef.current = true
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
-    if (isolation.switched) {
+    if (isolation.switched || isolation.reloadRequired) {
       window.location.reload()
       return
     }
 
+    try {
+      const importer = createPreferenceImport({ userId: session.user.id, access: captureLearnerAccess() })
+      const recovered = importer.recover()
+      if (recovered || preferenceImportBlockedRef.current) {
+        const durable = recovered || importer.read()
+        setTutorPreferencesState(durable.tutorPreferences)
+        setLanguagePreferences(durable.languagePreferences)
+      }
+      preferenceImportBlockedRef.current = false
+    } catch {
+      preferenceImportBlockedRef.current = true
+      setAuthProviderError('storage_full')
+      setAuthStep('entry')
+      return
+    }
+
+    let restoredProfile = null
+    if (!profileRestoredRef.current) {
+      try { restoredProfile = readVerifiedProfile(captureLearnerAccess()) }
+      catch {
+        setAuthProviderError('storage_full')
+        setAuthStep('entry')
+        return
+      }
+      profileRestoredRef.current = true
+    }
     const user = providerUser(session.user)
     setAuthUser(user)
     setProfile(previous => ({
       ...previous,
+      ...restoredProfile,
       name: user?.name || previous.name,
       email: user?.email || previous.email,
     }))
@@ -270,18 +340,22 @@ export function AppProvider({ children }) {
     if (action === 'confirmed') clearAuthCallback()
     const onboarded = storedOnboardingComplete()
     setOnboardingCompleted(onboarded)
-    setAuthStep(onboarded ? null : 'placement')
+    const checkpoint = readSetupCheckpoint(localStorage)
+    if (!onboarded && checkpoint.result) setProfile(previous => ({ ...previous, placementResult: checkpoint.result, level: checkpoint.result.level }))
+    setAuthStep(onboarded ? null : checkpoint.step)
   }, [getAuthService])
 
   useEffect(() => {
     let alive = true
     let subscription = null
     let service
+    let authEvents = 0
 
     try {
       service = getAuthService()
       const registration = service.onAuthStateChange((event, session) => {
         if (!alive) return
+        authEvents += 1
         if (!authIsolationBlockedRef.current) setAuthProviderError('')
         applyProviderSession(session, event)
       })
@@ -292,15 +366,17 @@ export function AppProvider({ children }) {
       return () => {}
     }
 
+    const restorationRevision = authEvents
     service.getSession()
       .then((session) => {
-        if (!alive) return
+        if (!alive || authEvents !== restorationRevision) return
         if (!authIsolationBlockedRef.current) setAuthProviderError('')
         applyProviderSession(session, 'INITIAL_SESSION')
       })
       .catch((error) => {
         if (!alive) return
-        setAuthProviderError(error?.message || 'Could not restore your session.')
+        setAuthProviderError(authCallbackErrorRef.current || error?.message || 'Could not restore your session.')
+        if (authCallbackErrorRef.current) clearAuthCallback()
         setAuthStep('entry')
       })
 
@@ -309,13 +385,27 @@ export function AppProvider({ children }) {
       subscription?.unsubscribe?.()
     }
   }, [getAuthService, applyProviderSession])
+  useEffect(() => {
+    // This passive setup checkpoint belongs to the original account lease.
+    // A delayed React effect must not acquire B's lease after switching from A.
+    if (!authUser?.id || !SETUP_STEPS.includes(authStep)) return
+    const access = passiveStorageAccessRef.current
+    if (!access.valid()) return
+    try {
+      if (access.setItem('lc2-onboarding-step', authStep) === false || !access.valid()) return
+      if (access.getItem('lc2-onboarding-step') !== authStep || !access.valid()) return
+    } catch {
+      // A denied or revoked store cannot advance another account's checkpoint.
+    }
+  }, [authUser?.id, authStep])
   const [view, setView] = useState('today')
   const [sessionId, setSessionId] = useState(getOrCreateSessionId)
   const [messages, setMessages] = useState(() => loadStoredMessages(createWelcomeMessage(languagePreferences.interfaceLanguage.base)))
   const [localProgress, setLocalProgress] = useState(loadLocalProgress)
   const [activeMission, setActiveMission] = useState(loadActiveMission)
   const [completedMissions, setCompletedMissions] = useState(loadCompletedMissions)
-  const [tutorPreferences, setTutorPreferencesState] = useState(loadTutorPreferences)
+  const [tutorPreferences, setTutorPreferencesState] = useState(() => preferenceImportBlockedRef.current
+    ? { ...DEFAULT_TUTOR_PREFERENCES } : loadTutorPreferences())
   /*
    * Which conversation this is, for the purpose of choosing a subject. Bumped
    * when the learner asks for another topic, so the choice is re-derived without
@@ -348,11 +438,24 @@ export function AppProvider({ children }) {
   const [mobileSheet, setMobileSheet] = useState(null) // 'journey' | 'notes' | null
   const messagesEndRef = useRef(null)
   const restoredMissionRef = useRef(false)
+  // A delayed mission reply must not revive an abandoned/replaced mission.
+  const missionGenerationRef = useRef(0)
+  // A pending mission answer owns its HTTP turn until it settles. React's
+  // typing state is not synchronous, so rapid submits must share one turn.
+  const missionInFlightRef = useRef(null)
+  // Clearing or resetting a conversation invalidates replies from earlier HTTP turns.
+  // The account lease alone cannot distinguish two conversations of one account.
+  const chatGenerationRef = useRef(0)
+  // One free-chat request per conversation at a time. A stale request may finish
+  // after Clear, but must never release the new conversation's in-flight lock.
+  const chatInFlightRef = useRef(null)
 
+  // The DOM follows the committed theme; persistence belongs to the
+  // initiating account, never to an effect that can run after a lease switch.
+  const darkModeRef = useRef(darkMode)
   useEffect(() => {
     const root = document.documentElement
     darkMode ? root.classList.add('dark') : root.classList.remove('dark')
-    try { localStorage.setItem('lc2-dark', darkMode) } catch {}
   }, [darkMode])
 
   useEffect(() => {
@@ -362,40 +465,47 @@ export function AppProvider({ children }) {
     root.dataset.textSize = textSize
   }, [interfaceLanguageInfo, textSize])
 
-  useEffect(() => {
-    try { localStorage.setItem('lc2-profile', JSON.stringify(profile)) } catch {}
-  }, [profile])
+  // Profile hydration is read-only. Guided onboarding commits explicitly and
+  // updateProfile verifies its account-scoped write before publishing React
+  // state. A passive effect could replay pre-auth defaults or stale A state
+  // over a newer durable profile after a lease change.
 
   useEffect(() => {
-    saveStoredMessages(messages)
+    saveStoredMessages(messages, { access: passiveStorageAccessRef.current })
   }, [messages])
 
   useEffect(() => {
-    saveLocalProgress(localProgress)
+    saveLocalProgress(localProgress, { access: passiveStorageAccessRef.current })
   }, [localProgress])
 
-  useEffect(() => {
-    saveActiveMission(activeMission)
-  }, [activeMission])
+  // Mission starts, advances, completions and resets already persist under
+  // their originating account lease before updating React. Replaying mission
+  // state in passive effects could resurrect a completed cursor or overwrite
+  // a newer completion history from another tab.
 
-  useEffect(() => {
-    saveCompletedMissions(completedMissions)
-  }, [completedMissions])
+  // Companion and text size are persisted by their lease-verified setters.
+  // A delayed effect could replay A's state into B after an account switch.
 
-  useEffect(() => {
-    saveTutorPreferences(tutorPreferences)
-  }, [tutorPreferences])
-
-  useEffect(() => {
-    saveActiveCompanion(activeCompanion)
-  }, [activeCompanion])
-
-  useEffect(() => {
-    saveTextSize(textSize)
-  }, [textSize])
-
-  const toggleDark = useCallback(() => setDarkMode(d => !d), [])
-  const setThemeDark = useCallback((value) => setDarkMode(Boolean(value)), [])
+  const persistThemeDark = useCallback((next) => {
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const value = Boolean(next)
+    try {
+      const serialized = String(value)
+      if (access.setItem('lc2-dark', serialized) === false
+        || !access.valid() || access.getItem('lc2-dark') !== serialized
+        || !access.valid()) return false
+    } catch {
+      return false
+    }
+    // Keep rapid consecutive toggles based on the last verified write. React
+    // can flush this updater after a logout or an account switch.
+    darkModeRef.current = value
+    setDarkMode(previous => access.valid() ? value : previous)
+    return access.valid()
+  }, [])
+  const toggleDark = useCallback(() => persistThemeDark(!darkModeRef.current), [persistThemeDark])
+  const setThemeDark = useCallback((value) => persistThemeDark(value), [persistThemeDark])
 
   const nativeLanguage = nativeLanguageInfo.base
   const interfaceLanguage = interfaceLanguageInfo.base
@@ -432,15 +542,57 @@ export function AppProvider({ children }) {
    * interface and native apart because there is only ever one value to set.
    */
   const updateNativeLanguage = useCallback((language) => {
-    const userLanguage = persistNativeLanguage(language)
-    setLanguagePreferences(previous => ({
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const userLanguage = persistNativeLanguage(language, { access })
+    if (!userLanguage || !access.valid()) return false
+    // React can flush this updater after an account or tab lease was revoked.
+    setLanguagePreferences(previous => access.valid() ? ({
       ...previous,
       nativeLanguage: userLanguage,
       interfaceLanguage: userLanguage,
-    }))
+    }) : previous)
+    return access.valid()
   }, [])
 
+  const preferenceSyncRef = useRef(null)
+  useEffect(() => {
+    if (!CLOUD_PREFERENCES_RELEASED || !authUser?.id || authStep !== null) return undefined
+    let cancelled = false, controller = null
+    const syncAccess = captureLearnerAccess()
+    const importer = createPreferenceImport({ userId: authUser.id, access: syncAccess })
+    connectPreferenceSync({
+      store: {
+        getItem: key => syncAccess.getItem(key),
+        setItem: (key, value) => {
+          if (!syncAccess.setItem(key, value)) throw new Error('Stale preference session')
+        },
+      },
+      readOwner: () => {
+        if (!syncAccess.valid()) return ''
+        try { return decodeURIComponent(localStorage.getItem('lc2-auth-owner-id') || '') } catch { return '' }
+      },
+      readLocal: () => importer.read().fields,
+      applyLocal: row => {
+        const durable = importer.apply(row)
+        // Pure state publication follows strict persistence. Equal results keep
+        // their identity, so the dirty effect settles after one follow-up pass.
+        setTutorPreferencesState(previous => JSON.stringify(previous) === JSON.stringify(durable.tutorPreferences)
+          ? previous : durable.tutorPreferences)
+        setLanguagePreferences(previous => JSON.stringify(previous) === JSON.stringify(durable.languagePreferences)
+          ? previous : durable.languagePreferences)
+      },
+    }).then(sync => {
+      if (cancelled) { sync.cancel(); return }
+      controller = schedulePreferenceSync(sync, window)
+      preferenceSyncRef.current = controller
+    }).catch(() => { /* Local preferences remain usable; a later login retries initialization. */ })
+    return () => { cancelled = true; controller?.stop(); preferenceSyncRef.current = null }
+  }, [authUser?.id, authStep])
+  useEffect(() => { preferenceSyncRef.current?.changed() }, [tutorPreferences, interfaceLanguage])
+
   const login = useCallback(async (email, password) => {
+    authCallbackErrorRef.current = null
     clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
@@ -451,6 +603,7 @@ export function AppProvider({ children }) {
   }, [getAuthService])
 
   const signup = useCallback(async (name, email, password) => {
+    authCallbackErrorRef.current = null
     clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
@@ -467,6 +620,7 @@ export function AppProvider({ children }) {
   }, [getAuthService, interfaceLanguageInfo.base])
 
   const requestPasswordReset = useCallback(async (email) => {
+    authCallbackErrorRef.current = null
     clearVerifiedRecovery()
     authIsolationBlockedRef.current = false
     setAuthProviderError('')
@@ -491,77 +645,133 @@ export function AppProvider({ children }) {
     return user
   }, [getAuthService, applyProviderSession])
 
-  const completePlacement = useCallback((result) => {
-    setProfile(prev => ({ ...prev, level: result.level, placementResult: result }))
-    localStorage.setItem('lc2-placement', JSON.stringify(result))
-    localStorage.setItem('lc2-placement-result', JSON.stringify(result))
-    setAuthStep('level-reveal')
+  const completePlacement = useCallback((result, access = captureLearnerAccess()) => {
+    try {
+      // The quiz captures its lease before delayed feedback. Never rebind an
+      // old answer to a newly activated account at the moment of publication.
+      persistPlacementResult(access, result)
+      if (!access.valid()) throw new Error('Stale placement account')
+    } catch {
+      setAuthProviderError('storage_full')
+      return false
+    }
+    // React may apply these queued updates after an account/lease switch.
+    // Fence every publication, not only the durable write and profile update.
+    setAuthProviderError(prev => access.valid() ? '' : prev)
+    setProfile(prev => access.valid() ? { ...prev, level: result.level, placementResult: result } : prev)
+    setAuthStep(prev => access.valid() ? 'level-reveal' : prev)
+    return true
   }, [])
 
   const completeTutorPersonality = useCallback((personality) => {
-    setProfile(prev => ({ ...prev, tutorPersonality: personality }))
-    setAuthStep('learning-prefs')
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    // React may apply these updates after the learner lease is revoked.
+    setProfile(prev => access.valid() ? { ...prev, tutorPersonality: personality } : prev)
+    setAuthStep(prev => access.valid() ? 'learning-prefs' : prev)
+    return access.valid()
   }, [])
 
   const completeLearningPrefs = useCallback((prefs) => {
-    setProfile(prev => ({
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    setProfile(prev => access.valid() ? {
       ...prev,
       preferences: prefs,
       goal: prefs.goals?.[0] || 'Travel',
       dailyGoal: prefs.dailyGoal || 10,
-    }))
+    } : prev)
     // Final onboarding beat: guided AI personalization with Chatto.
-    setAuthStep('personalize')
+    setAuthStep(prev => access.valid() ? 'personalize' : prev)
+    return access.valid()
   }, [])
 
   // User finished the guided personalization step (tutor preferences are already
-  // persisted live). Mark onboarding complete and arm Chatto's Home welcome once.
-  const completePersonalization = useCallback(() => {
+  // persisted live). Commit the onboarding marker LAST so partial Storage
+  // failures cannot open Home or skip unfinished setup after a reload.
+  const completePersonalization = useCallback(({ profileToCommit = profile, preferencesVerified = false, access = captureLearnerAccess() } = {}) => {
+    // A failed preference edit must not be silently accepted by Save and Start.
+    // The recommended path may override this only after its own durable save.
+    if (tutorPreferenceSaveFailed && !preferencesVerified) return false
     try {
-      // Onboarding records setup only. Authentication authority belongs solely
-      // to the provider session gate; finishing personalization must never mint
-      // or persist an authenticated state on its own.
-      localStorage.setItem('lc2-onboarded', 'true')
-      localStorage.setItem('lc2-personalization-completed', 'true')
-      localStorage.setItem('lc2-welcome-seen', 'false')
-    } catch {}
-    setOnboardingCompleted(true)
-    setView('today')
-    setShowWelcome(true)
-    setAuthStep(null)
-  }, [])
+      // Persist before marking setup complete, under the originating lease.
+      // Queued React updates may run after an account switch: fence each one.
+      commitOnboarding(access, profileToCommit)
+      if (!access.valid()) throw new Error('Stale onboarding account')
+    } catch {
+      setTutorPreferenceSaveFailed(prev => access.valid() ? true : prev)
+      return false
+    }
+    setTutorPreferenceSaveFailed(prev => access.valid() ? false : prev)
+    setOnboardingCompleted(prev => access.valid() ? true : prev)
+    setView(prev => access.valid() ? 'today' : prev)
+    setShowWelcome(prev => access.valid() ? true : prev)
+    setAuthStep(prev => access.valid() ? null : prev)
+    return true
+  }, [profile, tutorPreferenceSaveFailed])
 
-  // Recommended path: skip the guided questions and start Lingua with a
-  // balanced, friendly setup. Mirrors the defaults the manual flow produces.
+  // Recommended setup must keep the same lease across preference save,
+  // onboarding commit and deferred React publications.
   const applyRecommendedSetup = useCallback(() => {
-    setProfile(prev => ({
-      ...prev,
-      tutorPersonality: prev.tutorPersonality || 'Gentle Guide',
+    const access = captureLearnerAccess()
+    let durable
+    try {
+      if (!access.valid()) throw new Error('Stale recommended setup')
+      durable = updateTutorPreferencesDurably(DEFAULT_TUTOR_PREFERENCES, { access })
+      if (!access.valid()) throw new Error('Stale recommended setup')
+    } catch {
+      setTutorPreferenceSaveFailed(prev => access.valid() ? true : prev)
+      return false
+    }
+    const recommendedProfile = {
+      ...profile,
+      tutorPersonality: profile.tutorPersonality || 'Gentle Guide',
       preferences: {
         goals: ['Travel'],
         dailyGoal: 10,
         correctionIntensity: 'Balanced',
         practiceVibe: 'Motivational',
       },
-      goal: prev.goal || 'Travel',
+      goal: profile.goal || 'Travel',
       dailyGoal: 10,
-    }))
-    setTutorPreferencesState(saveTutorPreferences(DEFAULT_TUTOR_PREFERENCES))
-    completePersonalization()
-  }, [completePersonalization])
+    }
+    if (!completePersonalization({ profileToCommit: recommendedProfile, preferencesVerified: true, access })) return false
+    setTutorPreferencesState(prev => access.valid() ? durable : prev)
+    setProfile(prev => access.valid() ? recommendedProfile : prev)
+    return access.valid()
+  }, [completePersonalization, profile])
 
   const dismissWelcome = useCallback(() => {
-    setShowWelcome(false)
-    try { localStorage.setItem('lc2-welcome-seen', 'true') } catch {}
-    // Arm Chatto's one-time guided tour once the welcome is closed (new users).
+    // A welcome click belongs to the account that made it. A later React flush
+    // must not close B's welcome or start B's tour after A has signed out.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
     try {
-      if (localStorage.getItem('lc2-tutorial-seen') !== 'true') setShowTutorial(true)
-    } catch {}
+      if (access.setItem('lc2-welcome-seen', 'true') === false
+        || !access.valid() || access.getItem('lc2-welcome-seen') !== 'true') return false
+      // Only start Chatto's tour if this same account has not seen it.
+      const needsTour = access.getItem('lc2-tutorial-seen') !== 'true'
+      if (!access.valid()) return false
+      setShowWelcome(prev => access.valid() ? false : prev)
+      if (needsTour) setShowTutorial(prev => access.valid() ? true : prev)
+      return access.valid()
+    } catch {
+      // A denied/failed write is not a completed welcome.
+      return false
+    }
   }, [])
 
   const dismissTutorial = useCallback(() => {
-    setShowTutorial(false)
-    try { localStorage.setItem('lc2-tutorial-seen', 'true') } catch {}
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    try {
+      if (access.setItem('lc2-tutorial-seen', 'true') === false
+        || !access.valid() || access.getItem('lc2-tutorial-seen') !== 'true') return false
+      setShowTutorial(prev => access.valid() ? false : prev)
+      return access.valid()
+    } catch {
+      return false
+    }
   }, [])
 
   // ── LinguaLoop episodes ──
@@ -580,39 +790,47 @@ export function AppProvider({ children }) {
      * checked against the level registry and the curriculum, and a refusal
      * leaves the learner where they were.
      */
+    // Capture the initiating learner: a delayed episode navigation cannot land on B.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return { ok: false, reason: 'stale_account' }
     const request = episodeRequest({ episodeId })
+    if (!access.valid()) return { ok: false, reason: 'stale_account' }
     if (!request.ok) {
       if (import.meta.env?.DEV) console.warn('[startEpisode] refused', episodeId, request.reason)
       return request
     }
-    setEpisodeRunOptions({
+    const runOptions = {
       source: options.source || 'practice',
       wantsOtherBranch: Boolean(options.wantsOtherBranch),
-    })
-    setEpisodeActiveId(request.episodeId)
-    setView('practice')
-    setMobileSheet(null)
-    return request
+    }
+    // React can apply functional updaters after the click's account lease expires.
+    setEpisodeRunOptions(previous => access.valid() ? runOptions : previous)
+    setEpisodeActiveId(previous => access.valid() ? request.episodeId : previous)
+    setView(previous => access.valid() ? 'practice' : previous)
+    setMobileSheet(previous => access.valid() ? null : previous)
+    return access.valid() ? request : { ok: false, reason: 'stale_account' }
   }, [])
 
-  const exitEpisode = useCallback(() => setEpisodeActiveId(null), [])
+  const exitEpisode = useCallback(() => {
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    setEpisodeActiveId(previous => access.valid() ? null : previous)
+    return access.valid()
+  }, [])
 
   const finishEpisode = useCallback(() => {
-    setEpisodeActiveId(null)
-    setEpisodeArcVersion(v => v + 1) // let Home/Practice re-read learner state
-    setView('today')
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    setEpisodeActiveId(previous => access.valid() ? null : previous)
+    setEpisodeArcVersion(previous => access.valid() ? previous + 1 : previous)
+    setView(previous => access.valid() ? 'today' : previous)
+    return access.valid()
   }, [])
 
   // ── adaptive daily session ──
   // The plan itself lives in the session engine; the context only owns "which
   // session is on screen" and persists every transition immediately so a reload
   // or a breakpoint change resumes at the same block.
-  const persistSession = useCallback((next) => {
-    setDailySession(next)
-    if (next) saveSession(next); else clearSession()
-    return next
-  }, [])
-
   /*
    * A PURE preview of today's session for Home to render. It must not persist
    * or setState: Home reads it during render, and writing state there would be
@@ -649,8 +867,14 @@ export function AppProvider({ children }) {
    * about what somebody enjoys.
    */
   const useAnotherConversationTopic = useCallback(() => {
-    if (conversationTopic?.interestId) dismissTopic(conversationTopic.interestId)
-    setTopicRound(round => round + 1)
+    // A queued topic rotation or a failed memory write must never become
+    // another account's dismissal after an auth switch.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    if (conversationTopic?.interestId && !dismissTopic(conversationTopic.interestId, { access })) return false
+    if (!access.valid()) return false
+    setTopicRound(round => access.valid() ? round + 1 : round)
+    return access.valid()
   }, [conversationTopic])
 
   // What the planner needs to pin today's subject matter: the interests the
@@ -673,76 +897,205 @@ export function AppProvider({ children }) {
   }, [dailySession, preferredDuration, sessionContext])
 
   const chooseDuration = useCallback((mode) => {
-    if (!isDurationMode(mode)) return
-    try { localStorage.setItem(DURATION_PREF_KEY, mode) } catch { /* noop */ }
-    setPreferredDuration(mode)
-    // Changing duration only replans while the session has not started yet.
-    if (dailySession && dailySession.status !== 'planned') return
-    const next = getOrCreateSession(loadLearnerModel(), ARC, { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
-    persistSession(next)
-  }, [dailySession, persistSession, sessionContext])
+    if (!isDurationMode(mode)) return false
+    // Duration and its planned session belong to the learner who clicked.
+    // Never adopt another account if Storage, planning or React runs later.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const replan = !dailySession || dailySession.status === 'planned'
+    let next = null
+    if (replan) {
+      const model = loadLearnerModel()
+      if (!access.valid()) return false
+      next = getOrCreateSession(model, ARC, { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
+      if (!next || !access.valid()) return false
+      // Another tab can start, advance or replace today's plan while this tab
+      // still shows the old duration selector. Check the durable cursor before
+      // changing the preference or publishing a replacement plan.
+      let storedSession = null
+      try {
+        const raw = access.getItem(SESSION_KEY)
+        if (!access.valid()) return false
+        if (raw !== null) {
+          storedSession = normalizeSession(JSON.parse(raw), ARC)
+          if (!storedSession) return false
+        }
+      } catch { return false }
+      if (dailySession) {
+        if (!storedSession || storedSession.id !== dailySession.id
+          || storedSession.dayKey !== dailySession.dayKey
+          || storedSession.status !== dailySession.status
+          || storedSession.currentBlockIndex !== dailySession.currentBlockIndex
+          || storedSession.blocks[storedSession.currentBlockIndex]?.id
+            !== dailySession.blocks?.[dailySession.currentBlockIndex]?.id) return false
+      } else if (storedSession && storedSession.dayKey === next.dayKey) {
+        // A plan created in another tab today must not be overwritten by a
+        // selector mounted before that plan existed.
+        return false
+      }
+    } else if (dailySession) {
+      // Changing tomorrow's duration during an active session must not let a
+      // stale tab silently overwrite this account's current preference.
+      // The active plan itself stays untouched, but its durable cursor still
+      // has to match the session this tab is showing.
+      let storedSession
+      try {
+        const raw = access.getItem(SESSION_KEY)
+        if (!access.valid() || raw === null) return false
+        storedSession = normalizeSession(JSON.parse(raw), ARC)
+      } catch { return false }
+      if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
+        || storedSession.dayKey !== dailySession.dayKey
+        || storedSession.status !== dailySession.status
+        || storedSession.currentBlockIndex !== dailySession.currentBlockIndex
+        || storedSession.blocks[storedSession.currentBlockIndex]?.id
+          !== dailySession.blocks?.[dailySession.currentBlockIndex]?.id) return false
+    }
+    // A denied, failed or conflicting write must not look saved in the UI.
+    try {
+      if (access.setItem(DURATION_PREF_KEY, mode) === false || !access.valid()
+        || access.getItem(DURATION_PREF_KEY) !== mode || !access.valid()) return false
+    } catch { return false }
+    // A started session keeps its original plan. A planned session changes only
+    // after its new plan has been durably written under the same account lease.
+    if (replan && (!saveSession(next, { access }) || !access.valid())) return false
+    setPreferredDuration(previous => access.valid() ? mode : previous)
+    if (replan) setDailySession(previous => access.valid() ? next : previous)
+    return access.valid()
+  }, [dailySession, sessionContext])
 
   const beginSession = useCallback(() => {
+    // The click owns the entire plan/start transaction. A revoked A lease must
+    // not publish a session in B, even when React flushes its updater later.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
     const planned = dailySession && dailySession.status !== 'completed'
       ? dailySession
       : getOrCreateSession(loadLearnerModel(), ARC, { durationMode: preferredDuration, ...sessionContext() })
-    const next = persistSession(startSession(planned))
+    if (!access.valid() || !planned || planned.status === 'completed') return false
+    // A second tab may have advanced or replaced the plan since this render.
+    // Starting from a stale React snapshot must not rewind its durable cursor.
+    let storedSession = null
+    try {
+      const raw = access.getItem(SESSION_KEY)
+      if (!access.valid()) return false
+      if (raw !== null) {
+        storedSession = normalizeSession(JSON.parse(raw), ARC)
+        if (!storedSession) return false
+      }
+    } catch { return false }
+    if (dailySession) {
+      if (!storedSession || storedSession.id !== dailySession.id
+        || storedSession.dayKey !== dailySession.dayKey
+        || storedSession.status !== dailySession.status
+        || storedSession.currentBlockIndex !== dailySession.currentBlockIndex
+        || storedSession.blocks[storedSession.currentBlockIndex]?.id
+          !== dailySession.blocks?.[dailySession.currentBlockIndex]?.id) return false
+    } else if (storedSession && storedSession.dayKey === planned.dayKey) {
+      // No session was visible at mount, but another tab created today's plan.
+      return false
+    }
+    const next = startSession(planned)
+    // Save first: a denied/full Storage write must not show a started session.
+    if (!next || !access.valid() || !saveSession(next, { access }) || !access.valid()) return false
     /*
-     * A remembered fact only counts as "used" when the session actually
-     * starts — never while Home is merely rendering a preview. That keeps the
-     * cooldown honest and keeps rendering free of side effects.
+     * A remembered fact only counts as used when the session actually starts.
+     * Keep the same lease through the fact's model read and save.
      */
-    if (next?.topic?.source === 'fact' && next.topic.factValue && planned.status === 'planned') {
+    if (next.topic?.source === 'fact' && next.topic.factValue && planned.status === 'planned') {
       const model = loadLearnerModel()
+      if (!access.valid()) return false
       const fact = { type: 'like', value: next.topic.factValue }
       markFactUsed(model, fact)
       rotateFactUsage(model, fact)
-      saveLearnerModel(model)
+      if (!access.valid()) return false
+      // A rejected or mismatched fact-usage write must not publish a started
+      // session as though its learner memory had been persisted.
+      if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
     }
-    setSessionActive(true)
-    setView('practice')
-    setMobileSheet(null)
-    return next
-  }, [dailySession, preferredDuration, persistSession, sessionContext])
+    setDailySession(previous => access.valid() ? next : previous)
+    setSessionActive(previous => access.valid() ? true : previous)
+    setView(previous => access.valid() ? 'practice' : previous)
+    setMobileSheet(previous => access.valid() ? null : previous)
+    return access.valid() ? next : false
+  }, [dailySession, preferredDuration, sessionContext])
 
   const advanceSession = useCallback(() => {
-    setEpisodeArcVersion(v => v + 1)
-    setDailySession(previous => {
-      if (!previous) return previous
-      const next = advanceBlock(previous)
-      saveSession(next)
-      return next
-    })
-  }, [])
+    // A delayed React updater must never advance B's daily plan after A signs out.
+    // Persist through the lease captured by the click, outside the updater:
+    // React may replay state updaters and a failed write must not look completed.
+    const access = captureLearnerAccess()
+    if (!access.valid() || !dailySession || dailySession.status !== 'active') return false
+    // Another tab (or a rapid second click before React flushes) may have
+    // already advanced this block. Never overwrite its newer durable cursor
+    // with the stale session captured by this render.
+    let storedSession
+    try {
+      const raw = access.getItem(SESSION_KEY)
+      if (!access.valid() || raw === null) return false
+      storedSession = normalizeSession(JSON.parse(raw), ARC)
+    } catch { return false }
+    if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
+      || storedSession.dayKey !== dailySession.dayKey
+      || storedSession.status !== 'active'
+      || storedSession.currentBlockIndex !== dailySession.currentBlockIndex
+      || storedSession.blocks[storedSession.currentBlockIndex]?.id
+        !== dailySession.blocks?.[dailySession.currentBlockIndex]?.id) return false
+    const next = advanceBlock(storedSession)
+    if (!access.valid() || !saveSession(next, { access }) || !access.valid()) return false
+    setEpisodeArcVersion(previous => access.valid() ? previous + 1 : previous)
+    setDailySession(previous => access.valid() ? next : previous)
+    return access.valid()
+  }, [dailySession])
 
   const finishSession = useCallback(() => {
-    // Decide synchronously from the current session: reading the award flag out
-    // of a setState updater would run before React applies it, and the bonus
-    // would silently never be granted. completeSession stays idempotent, so a
-    // double tap still awards exactly once.
+    // Keep the session's original account lease through the model, durable
+    // completion and deferred React updates. A's bonus must not land on B.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
     if (dailySession) {
-      /*
-       * The learner model goes in so a session that consolidated the last
-       * missing capability records the milestone here, at the moment the
-       * evidence changed, rather than the next time a screen renders.
-       */
+      // Only the actual completion block can grant the daily bonus. A stale
+      // completion screen must not finish a different block or an already
+      // completed session after another tab has advanced the durable cursor.
+      const visibleBlock = dailySession.blocks?.[dailySession.currentBlockIndex]
+      if (dailySession.status !== 'active' || visibleBlock?.type !== 'session_completion') return false
+      let storedSession
+      try {
+        const raw = access.getItem(SESSION_KEY)
+        if (!access.valid() || raw === null) return false
+        storedSession = normalizeSession(JSON.parse(raw), ARC)
+      } catch { return false }
+      const storedBlock = storedSession?.blocks?.[storedSession.currentBlockIndex]
+      if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
+        || storedSession.dayKey !== dailySession.dayKey
+        || storedSession.status !== 'active'
+        || storedSession.currentBlockIndex !== dailySession.currentBlockIndex
+        || storedBlock?.id !== visibleBlock.id
+        || storedBlock?.type !== 'session_completion') return false
       const model = loadLearnerModel()
-      const { session, awarded } = completeSession(dailySession, model)
-      saveLearnerModel(model)
-      saveSession(session)
-      setDailySession(session)
-      if (awarded) setLocalProgress(p => ({ ...p, xp: (p.xp || 0) + SESSION_BONUS_XP }))
+      if (!access.valid()) return false
+      const { session, awarded } = completeSession(storedSession, model)
+      if (!access.valid()) return false
+      if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
+      if (!saveSession(session, { access }) || !access.valid()) return false
+      setDailySession(previous => access.valid() ? session : previous)
+      if (awarded) setLocalProgress(previous => access.valid()
+        ? { ...previous, xp: (previous.xp || 0) + SESSION_BONUS_XP } : previous)
     }
-    setSessionActive(false)
-    setEpisodeActiveId(null)
-    setEpisodeArcVersion(v => v + 1)
-    setView('today')
+    setSessionActive(previous => access.valid() ? false : previous)
+    setEpisodeActiveId(previous => access.valid() ? null : previous)
+    setEpisodeArcVersion(previous => access.valid() ? previous + 1 : previous)
+    setView(previous => access.valid() ? 'today' : previous)
+    return access.valid()
   }, [dailySession])
 
   const exitSession = useCallback(() => {
-    setSessionActive(false)
-    setEpisodeActiveId(null)
-    setView('today')
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    setSessionActive(previous => access.valid() ? false : previous)
+    setEpisodeActiveId(previous => access.valid() ? null : previous)
+    setView(previous => access.valid() ? 'today' : previous)
+    return access.valid()
   }, [])
 
   /*
@@ -763,10 +1116,21 @@ export function AppProvider({ children }) {
    * learner downloads long before any of this can happen.
    */
   const awardEpisode = useCallback((episode, { grants = [] } = {}) => {
+    // An episode can finish while its originating account is being replaced.
+    // Keep that original lease across the model read, award and queued React
+    // updater: a late completion from A must never award XP or items to B.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
     const model = loadLearnerModel()
-    for (const grant of grants) recordItemSeen(model, grant.vocabId)
-    saveLearnerModel(model)
+    if (!access.valid()) return false
+    for (const grant of grants) {
+      if (!access.valid()) return false
+      recordItemSeen(model, grant.vocabId)
+    }
+    if (!access.valid()) return false
+    if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
     setLocalProgress(previous => {
+      if (!access.valid()) return previous
       const existing = new Set((previous.learnedItems || []).map(i => i.vocabId).filter(Boolean))
       const additions = grants
         .filter(grant => !existing.has(grant.vocabId))
@@ -777,53 +1141,115 @@ export function AppProvider({ children }) {
         xp: (previous.xp || 0) + (episode.xp || 0),
       }
     })
+    return access.valid()
   }, [])
 
   const logout = useCallback(async () => {
     clearVerifiedRecovery()
     setAuthProviderError('')
+    setTutorPreferenceSaveFailed(false)
     await getAuthService().signOut()
     applyProviderSession(null, 'SIGNED_OUT')
   }, [getAuthService, applyProviderSession])
 
   const completeOnboarding = useCallback((profileData) => {
+    const access = captureLearnerAccess()
     const merged = { ...DEFAULT_PROFILE, ...profileData }
-    setProfile(merged)
-    setOnboardingCompleted(true)
-    try { localStorage.setItem('lc2-onboarded', 'true') } catch {}
-    setView('today')
+    try {
+      // Legacy completion must retain its original lease through the durable
+      // commit and all queued React updates, just like guided onboarding.
+      commitOnboarding(access, merged)
+      if (!access.valid()) throw new Error('Stale onboarding account')
+    } catch {
+      setTutorPreferenceSaveFailed(prev => access.valid() ? true : prev)
+      return false
+    }
+    setTutorPreferenceSaveFailed(prev => access.valid() ? false : prev)
+    setProfile(prev => access.valid() ? merged : prev)
+    setOnboardingCompleted(prev => access.valid() ? true : prev)
+    setView(prev => access.valid() ? 'today' : prev)
+    return access.valid()
   }, [])
 
   const updateProfile = useCallback((updates) => {
-    setProfile(prev => ({ ...prev, ...updates }))
-  }, [])
+    // An interactive edit must be durable before it can appear saved. A queued
+    // React updater from A must not publish into B after an account switch.
+    const access = captureLearnerAccess()
+    if (!access.valid() || !updates || typeof updates !== 'object' || Array.isArray(updates)) return false
+    try {
+      // Merge against the latest account-scoped stored profile, not a possibly
+      // stale render. Corrupt or denied reads fail closed instead of overwriting.
+      const raw = access.getItem('lc2-profile')
+      if (!access.valid()) return false
+      const stored = raw === null ? profile : JSON.parse(raw)
+      if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return false
+      const next = { ...profile, ...stored, ...updates }
+      const serialized = JSON.stringify(next)
+      if (!access.valid() || access.setItem('lc2-profile', serialized) === false
+        || !access.valid() || access.getItem('lc2-profile') !== serialized
+        || !access.valid()) return false
+      setProfile(previous => access.valid() ? next : previous)
+      return access.valid()
+    } catch {
+      return false
+    }
+  }, [profile])
 
   const updateTutorPreferences = useCallback((updates) => {
-    setTutorPreferencesState(previous => saveTutorPreferences({
-      ...previous,
-      ...updates,
-      interests: updates?.interests || previous.interests,
-    }))
+    // Capture the account before the durable edit. React may apply queued
+    // updates after a different account has become active, so a successful
+    // storage transaction alone cannot authorize publishing its UI state.
+    const access = captureLearnerAccess()
+    try {
+      const next = updateTutorPreferencesDurably(updates, { access })
+      if (!access.valid()) throw new Error('Stale tutor preference edit')
+      setTutorPreferencesState(prev => access.valid() ? next : prev)
+      setTutorPreferenceSaveFailed(prev => access.valid() ? false : prev)
+      return access.valid()
+    } catch {
+      // An error from A must not appear on B's preference screen either.
+      setTutorPreferenceSaveFailed(prev => access.valid() ? true : prev)
+      return false
+    }
   }, [])
 
   const setActiveCompanion = useCallback((companion) => {
-    setActiveCompanionState(saveActiveCompanion(companion))
+    // The sole tutor is Lingua, but the legacy setter must still respect the
+    // originating account lease and refuse to publish an unverified write.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const saved = saveActiveCompanion(companion, { access })
+    if (!saved || !access.valid()) return false
+    setActiveCompanionState(previous => access.valid() ? saved : previous)
+    return access.valid()
   }, [])
 
   const setTextSize = useCallback((size) => {
-    setTextSizeState(saveTextSize(size))
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const saved = saveTextSize(size, { access })
+    if (!saved || !access.valid()) return false
+    setTextSizeState(previous => access.valid() ? saved : previous)
+    return access.valid()
   }, [])
 
   const navigateTo = useCallback((destination) => {
-    setView(destination)
-    setMobileSheet(null)
+    // A navigation queued by A must not move B's screen after logout or an
+    // account/tab lease switch. React can flush these updates later.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    setView(previous => access.valid() ? destination : previous)
+    if (!access.valid()) return false
+    setMobileSheet(previous => access.valid() ? null : previous)
+    return access.valid()
   }, [])
 
-  const appendLinguaMessages = useCallback((nextMessages) => {
+  const appendLinguaMessages = useCallback((nextMessages, access = captureLearnerAccess()) => {
     const list = Array.isArray(nextMessages) ? nextMessages.filter(Boolean) : [nextMessages].filter(Boolean)
-    if (!list.length) return
-    setMessages(previous => [...previous, ...list])
-    setSelectedMessage(list[list.length - 1])
+    if (!list.length || !access.valid()) return
+    // React may flush these after a logout, account switch or mission cancellation.
+    setMessages(previous => access.valid() ? [...previous, ...list] : previous)
+    setSelectedMessage(previous => access.valid() ? list[list.length - 1] : previous)
   }, [])
 
   const missionContextFromDetails = useCallback((details) => {
@@ -842,32 +1268,58 @@ export function AppProvider({ children }) {
   }, [])
 
   const startPracticeMission = useCallback((mission = null) => {
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const generation = ++missionGenerationRef.current
+    const publication = { valid: () => access.valid() && missionGenerationRef.current === generation }
     const selectedMission = mission || getMissionForToday(profile.level, profile.goal)
-    const active = createActiveMission(selectedMission)
-    setActiveMission(active)
-    setMissionFeedback(null)
-    setMissionCelebration(null)
+    if (!publication.valid()) return false
+    const active = createActiveMission(selectedMission, { access })
+    if (!active || !publication.valid()) return false
+    setActiveMission(previous => publication.valid() ? active : previous)
+    setMissionFeedback(previous => publication.valid() ? null : previous)
+    setMissionCelebration(previous => publication.valid() ? null : previous)
     appendLinguaMessages([
       createMissionIntroMessage(selectedMission),
       createMissionStepMessage(getActiveMissionDetails(active)),
-    ])
-    setView('practice')
-    setMobileSheet(null)
+    ], publication)
+    setView(previous => publication.valid() ? 'practice' : previous)
+    setMobileSheet(previous => publication.valid() ? null : previous)
+    return publication.valid()
   }, [appendLinguaMessages, profile.goal, profile.level])
 
   const submitMissionStep = useCallback(async (value, displayText = null) => {
     const details = getActiveMissionDetails(activeMission)
     if (!details?.step) return
+    // Capture BEFORE queuing the learner's answer or starting the HTTP request.
+    const access = captureLearnerAccess()
+    if (!access.valid()) return
+    const pending = missionInFlightRef.current
+    // A fast HTTP reply may settle before React publishes the next mission step.
+    // Keep the accepted step locked until a different durable cursor is visible.
+    if (pending?.generation === missionGenerationRef.current && pending.access.valid()
+      && (!pending.committed || (pending.missionId === activeMission.missionId
+        && pending.startedAt === activeMission.startedAt
+        && pending.stepIndex === activeMission.currentStepIndex))) return
+    const generation = ++missionGenerationRef.current
+    const publication = { valid: () => access.valid() && missionGenerationRef.current === generation }
+    const inFlight = {
+      generation, access, missionId: activeMission.missionId,
+      startedAt: activeMission.startedAt, stepIndex: activeMission.currentStepIndex,
+      committed: false,
+    }
+    missionInFlightRef.current = inFlight
+    try {
     const answerText = displayText || value
-    setMessages(previous => [...previous, {
+    setMessages(previous => publication.valid() ? [...previous, {
       id: `u${Date.now()}`,
       role: 'user',
       text: answerText,
       ts: Date.now(),
       missionId: details.mission.id,
       missionStepId: details.step.id,
-    }])
-    setIsTyping(true)
+    }] : previous)
+    setIsTyping(previous => publication.valid() ? true : previous)
 
     let response = null
     let evaluation = null
@@ -899,8 +1351,12 @@ export function AppProvider({ children }) {
         activeCompanion,
         missionContext: missionContextFromDetails(details),
       })
-    } catch {}
+      if (!publication.valid()) return
+    } catch {
+      // The local mission evaluator remains available when the network fails.
+    }
 
+    if (!publication.valid()) return
     if (response?.mission_feedback) {
       evaluation = {
         passed: Boolean(response.mission_feedback.should_advance),
@@ -914,9 +1370,10 @@ export function AppProvider({ children }) {
     }
 
     if (!evaluation.passed) {
-      setMissionFeedback({ passed: false, text: evaluation.feedback })
+      setMissionFeedback(previous => publication.valid() ? { passed: false, text: evaluation.feedback } : previous)
       setTimeout(() => {
-        setIsTyping(false)
+        if (!publication.valid()) return
+        setIsTyping(previous => publication.valid() ? false : previous)
         appendLinguaMessages({
           id: `mission-feedback-${details.step.id}-${Date.now()}`,
           role: 'lingua',
@@ -931,40 +1388,66 @@ export function AppProvider({ children }) {
           missionStepId: details.step.id,
           missionType: 'feedback',
           ts: Date.now(),
-        })
+        }, publication)
       }, 650)
       return
     }
 
-    const advanced = advanceMission(activeMission, details.step, value, evaluation)
-    setLocalProgress(previous => recordMissionProgress(previous, {
-      mission: details.mission,
-      step: details.step,
-      earnedXp: advanced.earnedThisStep,
-      completed: false,
-    }))
-
-    if (advanced.activeMission.currentStepIndex >= details.mission.steps.length) {
-      const completed = completeMission(advanced.activeMission)
-      setActiveMission(null)
-      setCompletedMissions(previous => [completed, ...previous].slice(0, 50))
-      setLocalProgress(previous => recordMissionProgress(previous, {
-        mission: details.mission,
-        step: details.step,
-        earnedXp: Math.max(0, details.mission.rewardXp - completed.earnedXp),
-        completed: true,
-      }))
-      setMissionCelebration({
+    if (!publication.valid()) return
+    const isFinalStep = activeMission.currentStepIndex + 1 >= details.mission.steps.length
+    const advanced = advanceMission(activeMission, details.step, value, evaluation, { access, deferSave: isFinalStep })
+    if (!advanced || !publication.valid()) {
+      if (publication.valid()) {
+        setIsTyping(previous => publication.valid() ? false : previous)
+        setMissionFeedback(previous => publication.valid() ? {
+          passed: false,
+          text: 'No se pudo guardar el avance. Intenta de nuevo.',
+        } : previous)
+      }
+      return
+    }
+    if (isFinalStep) {
+      const completed = completeMission(advanced.activeMission, { access })
+      if (!completed || !publication.valid()) {
+        if (publication.valid()) {
+          setIsTyping(previous => publication.valid() ? false : previous)
+          setMissionFeedback(previous => publication.valid() ? {
+            passed: false,
+            text: 'No se pudo guardar la misión completada. Intenta de nuevo.',
+          } : previous)
+        }
+        return
+      }
+      inFlight.committed = true
+      setActiveMission(previous => publication.valid() ? null : previous)
+      setCompletedMissions(previous => publication.valid() ? [completed, ...previous].slice(0, 50) : previous)
+      setLocalProgress(previous => {
+        if (!publication.valid()) return previous
+        const withStep = recordMissionProgress(previous, {
+          mission: details.mission,
+          step: details.step,
+          earnedXp: advanced.earnedThisStep,
+          completed: false,
+        })
+        return recordMissionProgress(withStep, {
+          mission: details.mission,
+          step: details.step,
+          earnedXp: Math.max(0, details.mission.rewardXp - completed.earnedXp),
+          completed: true,
+        })
+      })
+      setMissionCelebration(previous => publication.valid() ? {
         title: details.mission.title,
         xp: details.mission.rewardXp,
         message: 'Mision completada. Lingua guardo tu avance en este dispositivo.',
-      })
-      setMissionFeedback({
+      } : previous)
+      setMissionFeedback(previous => publication.valid() ? {
         passed: evaluation.passed,
         text: evaluation.feedback,
-      })
+      } : previous)
       setTimeout(() => {
-        setIsTyping(false)
+        if (!publication.valid()) return
+        setIsTyping(previous => publication.valid() ? false : previous)
         appendLinguaMessages([
           response
             ? {
@@ -986,18 +1469,26 @@ export function AppProvider({ children }) {
               }
             : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
           createMissionCompleteMessage(details.mission, completed),
-        ])
+        ], publication)
       }, 650)
       return
     }
 
-    setActiveMission(advanced.activeMission)
-    setMissionFeedback({
+    inFlight.committed = true
+    setLocalProgress(previous => publication.valid() ? recordMissionProgress(previous, {
+      mission: details.mission,
+      step: details.step,
+      earnedXp: advanced.earnedThisStep,
+      completed: false,
+    }) : previous)
+    setActiveMission(previous => publication.valid() ? advanced.activeMission : previous)
+    setMissionFeedback(previous => publication.valid() ? {
       passed: evaluation.passed,
       text: evaluation.feedback,
-    })
+    } : previous)
     setTimeout(() => {
-      setIsTyping(false)
+      if (!publication.valid()) return
+      setIsTyping(previous => publication.valid() ? false : previous)
       appendLinguaMessages([
         response
           ? {
@@ -1019,8 +1510,13 @@ export function AppProvider({ children }) {
             }
           : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
         createMissionStepMessage(getActiveMissionDetails(advanced.activeMission)),
-      ])
+      ], publication)
     }, 650)
+    } finally {
+      // An abandoned or replaced mission may have started another turn.
+      // An older HTTP completion must never release that newer turn's lock.
+      if (missionInFlightRef.current === inFlight && !inFlight.committed) missionInFlightRef.current = null
+    }
   }, [activeCompanion, activeMission, appendLinguaMessages, interfaceLanguageInfo, messages, missionContextFromDetails, nativeLanguageInfo, profile, sessionId, targetLanguage, tutorPreferences])
 
   const submitMissionOption = useCallback((option) => {
@@ -1029,10 +1525,16 @@ export function AppProvider({ children }) {
   }, [submitMissionStep])
 
   const abandonMission = useCallback(() => {
-    saveActiveMission(null)
-    setActiveMission(null)
-    setMissionFeedback(null)
-    setMissionCelebration(null)
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const generation = ++missionGenerationRef.current
+    const publication = { valid: () => access.valid() && missionGenerationRef.current === generation }
+    if (!publication.valid() || saveActiveMission(null, { access }) !== true
+      || !publication.valid()) return false
+    setActiveMission(previous => publication.valid() ? null : previous)
+    setMissionFeedback(previous => publication.valid() ? null : previous)
+    setMissionCelebration(previous => publication.valid() ? null : previous)
+    setIsTyping(previous => publication.valid() ? false : previous)
     appendLinguaMessages({
       id: `mission-exit-${Date.now()}`,
       role: 'lingua',
@@ -1040,11 +1542,16 @@ export function AppProvider({ children }) {
       feedback: null,
       missionType: 'exit',
       ts: Date.now(),
-    })
+    }, publication)
+    return publication.valid()
   }, [appendLinguaMessages])
 
   const sendMessage = useCallback(async (text) => {
-    if (!text.trim()) return
+    // Keep the originating account lease through the request AND React's deferred flush.
+    const chatAccess = captureLearnerAccess()
+    const chatGeneration = chatGenerationRef.current
+    const chatStillCurrent = () => chatAccess.valid() && chatGenerationRef.current === chatGeneration
+    if (!chatStillCurrent() || !text.trim()) return
 
     const missionDetails = getActiveMissionDetails(activeMission)
     if (missionDetails?.step) {
@@ -1052,15 +1559,26 @@ export function AppProvider({ children }) {
       return
     }
 
+    // React's isTyping state is asynchronous. Two rapid submits otherwise send
+    // duplicate HTTP turns and award practice XP twice before the next render.
+    const pending = chatInFlightRef.current
+    // React can publish the learner message while HTTP is still pending.
+    // Unlock only when the actual reply (or fallback) has committed, not
+    // merely when the message array changes or the request settles.
+    if (pending?.generation === chatGeneration && pending.access.valid()
+      && (!pending.committed || !messages.some(message => message.id === pending.replyId))) return
+    const inFlight = { generation: chatGeneration, access: chatAccess, replyId: null, committed: false }
+    chatInFlightRef.current = inFlight
+
     const userMsg = {
       id: `u${Date.now()}`,
       role: 'user',
       text: text.trim(),
       ts: Date.now(),
     }
-    setMessages(prev => [...prev, userMsg])
-    setIsTyping(true)
-    setSelectedMessage(null)
+    setMessages(prev => chatStillCurrent() ? [...prev, userMsg] : prev)
+    setIsTyping(prev => chatStillCurrent() ? true : prev)
+    setSelectedMessage(prev => chatStillCurrent() ? null : prev)
 
     try {
       const history = messages.slice(-8).map(m => ({
@@ -1113,25 +1631,29 @@ export function AppProvider({ children }) {
          */
         topicContext: learnerHasSpoken ? null : providerTopicContext(conversationTopic),
       })
+      if (!chatStillCurrent()) return
 
-      setConnectionNotice(response.connectionMessage)
-      setMemoryNotice(response.correction
+      setConnectionNotice(prev => chatStillCurrent() ? response.connectionMessage : prev)
+      setMemoryNotice(prev => chatStillCurrent() ? (response.correction
         ? 'Your recent corrections are saved on this device.'
-        : "I'll remember what we practiced today.")
-      setLocalProgress(previous => recordPractice(previous, {
+        : "I'll remember what we practiced today.") : prev)
+      setLocalProgress(previous => chatStillCurrent() ? recordPractice(previous, {
         userMessage: text.trim(),
         response,
-      }))
+      }) : previous)
       /*
        * Cooldown, not history: one id, so the next conversation prefers a
        * different one. No message, no reply and no prompt is recorded anywhere.
        */
-      if (!learnerHasSpoken && conversationTopic?.interestId) recordTopicUse(conversationTopic.interestId)
+      if (chatStillCurrent() && !learnerHasSpoken && conversationTopic?.interestId) {
+        recordTopicUse(conversationTopic.interestId, { access: chatAccess })
+      }
 
       const linguaMsg = {
         id: `l${Date.now()}`,
         role: 'lingua',
         text: response.reply,
+        audioEligible: profile.style !== 'translation',
         feedback: {
           correction:  response.correction  || null,
           why:         response.explanation || null,
@@ -1143,19 +1665,30 @@ export function AppProvider({ children }) {
         },
         ts: Date.now(),
       }
-      setMessages(prev => [...prev, linguaMsg])
-      setSelectedMessage(linguaMsg)
+      inFlight.replyId = linguaMsg.id
+      setMessages(prev => chatStillCurrent() ? [...prev, linguaMsg] : prev)
+      setSelectedMessage(prev => chatStillCurrent() ? linguaMsg : prev)
     } catch {
-      setConnectionNotice('Lingua had trouble connecting. You can keep exploring the demo.')
-      setMessages(prev => [...prev, {
+      if (!chatStillCurrent()) return
+      setConnectionNotice(prev => chatStillCurrent() ? 'Lingua had trouble connecting. You can keep exploring the demo.' : prev)
+      const fallbackMsg = {
         id: `e${Date.now()}`,
         role: 'lingua',
         text: 'You can keep practicing with the demo while the connection recovers.',
         feedback: null,
         ts: Date.now(),
-      }])
+      }
+      inFlight.replyId = fallbackMsg.id
+      setMessages(prev => chatStillCurrent() ? [...prev, fallbackMsg] : prev)
     } finally {
-      setIsTyping(false)
+      // An old reply cannot release a replacement request after Clear. A
+      // settled current reply stays locked until React commits its messages;
+      // otherwise another click could award the same free-chat turn twice.
+      if (chatInFlightRef.current === inFlight) {
+        if (chatStillCurrent() && inFlight.replyId) inFlight.committed = true
+        else chatInFlightRef.current = null
+      }
+      setIsTyping(prev => chatStillCurrent() ? false : prev)
     }
   }, [activeCompanion, activeMission, conversationTopic, interfaceLanguageInfo, messages, nativeLanguageInfo, profile, sessionId, submitMissionStep, targetLanguage, tutorPreferences])
 
@@ -1176,29 +1709,56 @@ export function AppProvider({ children }) {
   }, [activeMission, appendLinguaMessages, messages])
 
   const selectMessage = useCallback((msg) => {
-    setSelectedMessage(prev => prev?.id === msg.id ? null : msg)
+    const access = captureLearnerAccess()
+    if (!access.valid() || !msg) return
+    setSelectedMessage(prev => access.valid() ? (prev?.id === msg.id ? null : msg) : prev)
   }, [])
 
   const clearMessages = useCallback(() => {
-    setMessages([createWelcomeMessage(interfaceLanguageInfo.base)])
-    setSelectedMessage(null)
+    const access = captureLearnerAccess()
+    if (!access.valid()) return false
+    const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
+    // Persist with the originating account lease BEFORE publishing an empty
+    // chat. Otherwise denied storage resurrects the old conversation on reload.
+    if (!saveStoredMessages([welcome], { access }) || !access.valid()) return false
+    ++chatGenerationRef.current
+    chatInFlightRef.current = null
+    setIsTyping(prev => access.valid() ? false : prev)
+    setMessages(prev => access.valid() ? [welcome] : prev)
+    setSelectedMessage(prev => access.valid() ? null : prev)
+    return access.valid()
   }, [interfaceLanguageInfo.base])
 
   const resetLocalProgress = useCallback(() => {
-    if (!window.confirm(t('resetProgressConfirm'))) return
-    clearStoredProgress()
-    setSessionId(createSessionId())
-    setMessages([createWelcomeMessage(interfaceLanguageInfo.base)])
-    setLocalProgress(createEmptyProgress())
-    setSelectedMessage(null)
-    setConnectionNotice(null)
-    setMemoryNotice(null)
-    clearMissionStorage()
-    setActiveMission(null)
-    setCompletedMissions([])
-    setMissionFeedback(null)
-    setMissionCelebration(null)
-    setView('today')
+    // A confirmation dialog and React's queued state updates can outlive the
+    // account that requested the reset. Never clear B or publish A's reset to B.
+    const access = captureLearnerAccess()
+    if (!access.valid() || !window.confirm(t('resetProgressConfirm')) || !access.valid()) return
+    const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
+    const emptyProgress = createEmptyProgress()
+    // Destructive reset is not a best-effort UI action: every storage step
+    // must be verified for the same account before React can display success.
+    if (clearStoredProgress({ access }) === false || !access.valid()) return
+    if (clearMissionStorage({ access }) === false || !access.valid()) return
+    const nextSessionId = createSessionId({ access })
+    if (!nextSessionId || !access.valid()) return
+    if (saveStoredMessages([welcome], { access }) === false || !access.valid()) return
+    if (saveLocalProgress(emptyProgress, { access }) === false || !access.valid()) return
+    ++missionGenerationRef.current
+    ++chatGenerationRef.current
+    chatInFlightRef.current = null
+    setSessionId(prev => access.valid() ? nextSessionId : prev)
+    setMessages(prev => access.valid() ? [welcome] : prev)
+    setLocalProgress(prev => access.valid() ? emptyProgress : prev)
+    setSelectedMessage(prev => access.valid() ? null : prev)
+    setIsTyping(prev => access.valid() ? false : prev)
+    setConnectionNotice(prev => access.valid() ? null : prev)
+    setMemoryNotice(prev => access.valid() ? null : prev)
+    setActiveMission(prev => access.valid() ? null : prev)
+    setCompletedMissions(prev => access.valid() ? [] : prev)
+    setMissionFeedback(prev => access.valid() ? null : prev)
+    setMissionCelebration(prev => access.valid() ? null : prev)
+    setView(prev => access.valid() ? 'today' : prev)
   }, [t, interfaceLanguageInfo.base])
 
   const activeMissionDetails = getActiveMissionDetails(activeMission)
@@ -1225,7 +1785,7 @@ export function AppProvider({ children }) {
       darkMode, toggleDark, setThemeDark,
       onboardingCompleted, completeOnboarding,
       profile, updateProfile,
-      tutorPreferences, updateTutorPreferences,
+      tutorPreferences, updateTutorPreferences, tutorPreferenceSaveFailed,
       conversationTopic, useAnotherConversationTopic,
       activeCompanion, setActiveCompanion,
       textSize, setTextSize,

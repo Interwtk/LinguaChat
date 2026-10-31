@@ -136,6 +136,83 @@ async function main() {
     ok()
   }
 
+
+  // 8) Interactive language edits retain the originating account lease through
+  // durable storage and deferred React state. Run the real callback and writer.
+  {
+    const { readFileSync } = await import('node:fs')
+    const context = readFileSync(new URL('../src/context/AppContext.jsx', import.meta.url), 'utf8')
+    const signature = '  const updateNativeLanguage = useCallback((language) => {'
+    const start = context.indexOf(signature)
+    const end = context.indexOf('\n  }, [])', start)
+    assert.ok(start >= 0 && end > start, 'language updater must be inspectable')
+    const updateLanguage = new Function('language', 'deps',
+      'with (deps) { ' + context.slice(start + signature.length, end) + ' }')
+
+    for (const mode of ['current', 'stale-flush', 'denied', 'revoked-write',
+      'rejected-write', 'mismatch-readback', 'storage-throws', 'concurrent-edit', 'unsupported']) {
+      const store = makeStore()
+      global.localStorage = store
+      const language = await freshLanguageModule(store)
+      language.setNativeLanguage('en')
+      let owner = mode === 'denied' ? 'B' : 'A'
+      let writes = 0
+      const queued = []
+      const access = {
+        valid: () => owner === 'A',
+        getItem: key => {
+          if (mode === 'mismatch-readback' && writes && key === 'lc2-native-language-base') return 'wrong-value'
+          return store.getItem(key)
+        },
+        setItem: (key, value) => {
+          writes++
+          if (mode === 'rejected-write') return false
+          if (mode === 'storage-throws') throw new Error('Storage unavailable')
+          store.setItem(key, value)
+          if (mode === 'revoked-write') owner = 'B'
+          if (mode === 'concurrent-edit') store.setItem('lc2-interface-language-code', 'fr')
+          return true
+        },
+      }
+      const original = {
+        nativeLanguage: { code: 'en', base: 'en', name: 'English' },
+        interfaceLanguage: { code: 'en', base: 'en', name: 'English' },
+      }
+      let state = structuredClone(original)
+      const result = updateLanguage(mode === 'unsupported' ? 'hi' : 'es-CO', {
+        captureLearnerAccess: () => access,
+        persistNativeLanguage: (choice, options) => language.setNativeLanguage(choice, options),
+        setLanguagePreferences: updater => queued.push(updater),
+      })
+      if (mode === 'stale-flush') owner = 'B'
+      for (const updater of queued) {
+        assert.equal(typeof updater, 'function', mode + ': language state must be lease-checked')
+        state = updater(state)
+      }
+      if (mode === 'current') {
+        assert.equal(result, true)
+        assert.equal(state.nativeLanguage.code, 'es-CO')
+        assert.equal(state.interfaceLanguage.code, 'es-CO')
+        for (const [key, value] of language.languagePreferencePersistence('es-CO').entries) {
+          assert.equal(store.getItem(key), value, 'all language mirrors must persist')
+        }
+      } else if (mode === 'stale-flush') {
+        assert.equal(result, true, 'the originating account committed before the switch')
+        assert.equal(queued.length, 1)
+        assert.deepEqual(state, original, 'A cannot repaint B after deferred React flush')
+      } else {
+        assert.equal(result, false, mode + ': rejected edits must not report success')
+        assert.equal(queued.length, 0)
+        assert.deepEqual(state, original, mode + ': B must keep its own language')
+        assert.equal(store.getItem('lc2-native-language-code'), 'en',
+          mode + ': canonical language must not advance on an intermediate failure')
+      }
+      if (mode === 'denied' || mode === 'unsupported') assert.equal(writes, 0)
+      delete global.localStorage
+    }
+    ok()
+  }
+
   console.log(`check-user-language — OK  (${n} user_language groups verified)`)
 }
 
