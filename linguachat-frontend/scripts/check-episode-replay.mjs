@@ -34,6 +34,33 @@ const completed = (episodeId) => {
   return m
 }
 
+/*
+ * Persisted or imported run flags must be literal booleans. A truthy string
+ * like "false" is not evidence of independent learning or a paid reward.
+ * Migration and reconciliation must never promote malformed metadata.
+ */
+{
+  const raw = { runId: 'bad-flags', episodeId: 'first_greeting', mode: RUN_REPLAY,
+    startedAt: new Date(AT).toISOString(), completedAt: new Date(AT + 1000).toISOString(),
+    independentEvidence: 'false', rewarded: 'false' }
+  const sanitized = sanitizeRun(raw)
+  assert.equal(sanitized.independentEvidence, false)
+  assert.equal(sanitized.rewarded, false)
+  const imported = sanitizeEpisodeRuns({ first_greeting: [raw] }).first_greeting[0]
+  assert.equal(imported.independentEvidence, false)
+  assert.equal(imported.rewarded, false)
+  const merged = mergeEpisodeRuns({ first_greeting: [raw] }, {}).first_greeting[0]
+  assert.equal(merged.independentEvidence, false)
+  assert.equal(merged.rewarded, false)
+  const valid = sanitizeRun({ ...raw, independentEvidence: true, rewarded: true })
+  assert.equal(valid.independentEvidence, true)
+  assert.equal(valid.rewarded, true)
+  const falseFlags = sanitizeRun({ ...raw, independentEvidence: false, rewarded: false })
+  assert.equal(falseFlags.independentEvidence, false)
+  assert.equal(falseFlags.rewarded, false)
+  ok()
+}
+
 // 1) the mode is derived from the episode, never asserted by the caller
 {
   const fresh = createLearnerModel()
