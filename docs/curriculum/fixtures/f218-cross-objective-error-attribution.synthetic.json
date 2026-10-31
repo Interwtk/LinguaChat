@@ -151,7 +151,7 @@
           "assistance": "none",
           "new_context": true,
           "new_item": true,
-          "reviewed_meaning": "accepted",
+          "reviewed_meaning": "requires_review",
           "review_status": "requires_independent_review",
           "cross_objective_mastery_credit": false
         }
@@ -707,10 +707,6 @@
             "reason": "valid_meaning_critical_error",
             "reviewed_meaning": "request_function_error",
             "error_counted": true
-          },
-          {
-            "event_id": "E5",
-            "interest": "cooking"
           }
         ]
       },
@@ -740,7 +736,26 @@
           "missing_unrendered": 2,
           "pending_rendered": 0
         }
-      ]
+      ],
+      "interest_only_control": {
+        "replace": [
+          {
+            "event_id": "E5",
+            "interest": "cooking"
+          }
+        ],
+        "fixed_fields": [
+          "objective",
+          "skill",
+          "method_confidence_changed",
+          "rubric_changed",
+          "required_objectives_changed",
+          "adjacent_eligible",
+          "neutral_eligible",
+          "unfamiliar_eligible",
+          "skill_coverage_preserved"
+        ]
+      }
     },
     {
       "id": "F",
