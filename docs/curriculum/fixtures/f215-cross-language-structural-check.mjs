@@ -58,7 +58,7 @@ function validate(f) {
       ok(l.missing_unrendered === l.due - l.rendered && l.pending_rendered === l.rendered - l.completed, 'ledger denominators');
       ledgers++;
     }
-    ok(c.events.some(x => x.type === 'next_instruction_rendered' && x.rendered === true), 'next instruction must be actually rendered');
+    ok(c.events.some(x => ['next_instruction_rendered','bridge_rendered'].includes(x.type) && x.rendered === true), 'next instruction must be actually rendered');
   }
   const [A,B,C,D,E,F] = f.cases;
   const a = patched(A), b = patched(B), c = patched(C), d = patched(D), e = patched(E), ei = patched(E,'interest_only_control'), z = patched(F);
