@@ -463,6 +463,23 @@ function newestEpisodeRuns(runs) {
 }
 
 /*
+ * Keep the highest step/action markers before truncating a run's evidence.
+ * Persisted histories can arrive out of order, and a late callback can report
+ * an earlier step after the 100-marker window is already full. Insertion order
+ * must not displace newer step observations.
+ */
+const RUN_SIGNAL_KEY = /^\d{1,4}(?::alt)?:(?:completed|assistance|retried|switched)$/
+const compareRunSignalKeys = (a, b) => {
+  const stepDiff = Number(a.split(':')[0]) - Number(b.split(':')[0])
+  return stepDiff || (a < b ? -1 : a > b ? 1 : 0)
+}
+export function boundedRunSignalKeys(raw) {
+  if (!Array.isArray(raw)) return []
+  const unique = [...new Set(raw.filter(key => typeof key === 'string' && RUN_SIGNAL_KEY.test(key)))]
+  return unique.length > 100 ? unique.sort(compareRunSignalKeys).slice(-100) : unique
+}
+
+/*
  * A run ID is one practice, even when its completed record appears more than
  * once in a stored snapshot. Share the same reconciliation for migration and
  * cross-tab merges so neither path silently discards complementary evidence.
@@ -480,11 +497,8 @@ function mergeRunCopies(prev, run) {
     // Keep the latest step markers deterministically. Appending then slicing
     // made a stale completed copy evict newer observations depending on merge
     // direction; repeated stale merges could keep changing the retained set.
-    merged.signalKeys = [...new Set([...prev.signalKeys, ...run.signalKeys])]
-      .sort((a, b) => {
-        const stepDiff = Number(a.split(':')[0]) - Number(b.split(':')[0])
-        return stepDiff || (a < b ? -1 : a > b ? 1 : 0)
-      }).slice(-100)
+    merged.signalKeys = boundedRunSignalKeys([...prev.signalKeys, ...run.signalKeys])
+      .sort(compareRunSignalKeys)
     // Distinct markers represent distinct events; a max of two counters alone
     // can lose them. Keep larger legacy counters when marker history was capped.
     merged.assistanceUsed = Math.max(prev.assistanceUsed, run.assistanceUsed,
@@ -898,9 +912,7 @@ export function sanitizeRun(raw) {
     // One compact marker per step/action IN THIS RUN. Daily preference
     // signals dedupe across replays, but a new practice must still remember
     // its own assistance and retries. No answers or learner text are stored.
-    signalKeys: Array.isArray(raw.signalKeys)
-      ? [...new Set(raw.signalKeys.filter(k => typeof k === 'string'
-        && /^\d{1,4}(?::alt)?:(?:completed|assistance|retried|switched)$/.test(k)))].slice(-100) : [],
+    signalKeys: boundedRunSignalKeys(raw.signalKeys),
     rewarded: Boolean(raw.rewarded),
     /*
      * How much help this run offers, and why. It lives on the run so a resumed

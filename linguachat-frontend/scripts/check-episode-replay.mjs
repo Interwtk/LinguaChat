@@ -421,6 +421,46 @@ const completed = (episodeId) => {
   ok()
 }
 
+/*
+ * An unsorted imported run can contain more than 100 distinct markers before
+ * any cross-tab merge. Truncate by step chronology, not array insertion order.
+ * A late signal outside the retained window must not inflate help counters.
+ */
+{
+  const episodeId = 'what_you_like'
+  const keys = (from, to) => Array.from({ length: to - from + 1 }, (_, i) => `${from + i}:assistance`)
+  const newest = keys(51, 150)
+  const outOfOrder = [...newest, ...keys(1, 50)]
+  const raw = {
+    runId: 'unsorted-import', episodeId, mode: RUN_REPLAY,
+    startedAt: '2026-05-20T09:00:00Z', completedAt: '2026-05-20T09:10:00Z',
+    signalKeys: outOfOrder, assistanceUsed: 150,
+  }
+  assert.notDeepEqual(outOfOrder.slice(-100), newest,
+    'the old insertion-order truncation must reproduce the lost evidence')
+  assert.deepEqual(sanitizeRun(raw).signalKeys, newest,
+    'sanitizing one unsorted run must keep the highest step markers')
+  assert.deepEqual(sanitizeEpisodeRuns({ [episodeId]: [raw] })[episodeId][0].signalKeys, newest,
+    'migration must not discard newer markers before reconciliation')
+  const model = completed(episodeId)
+  beginEpisodeRun(model, episodeId, { atMs: AT })
+  updateActiveRun(model, { signalKeys: newest, assistanceUsed: 100 })
+  assert.equal(recordRunActivitySignal(model, {
+    kind: 'assistance', format: 'choice', key: '1:assistance',
+  }), null, 'a late marker outside the window cannot be deduplicated and must be ignored')
+  assert.deepEqual(model.activeRun.signalKeys, newest)
+  assert.equal(model.activeRun.assistanceUsed, 100, 'late duplicate must not inflate assistance')
+  const later = recordRunActivitySignal(model, {
+    kind: 'assistance', format: 'choice', key: '151:assistance',
+  })
+  assert.ok(later, 'a genuinely newer step is still recorded')
+  assert.deepEqual(later.signalKeys, keys(52, 151))
+  assert.equal(later.assistanceUsed, 101)
+  const restored = migrateLearnerModel(JSON.parse(JSON.stringify(model)))
+  assert.deepEqual(restored.activeRun.signalKeys, keys(52, 151))
+  ok()
+}
+
 // 10) two copies of the model saving over each other lose nothing
 {
   const mine = { what_you_like: [sanitizeRun({ runId: 'r1', episodeId: 'what_you_like', mode: 'replay', startedAt: 'a' })] }

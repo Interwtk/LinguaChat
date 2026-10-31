@@ -13,7 +13,7 @@
  *     A first completion is rewarded once. Everything after it is practice —
  *     real practice, that can produce new evidence, but never a second prize.
  */
-import { ACTIVITY_FORMATS, getEpisodeState, sanitizeRun, sanitizeEpisodeRuns, recordDelayedRetrievalEvidence, recordCanDoAttempt } from './learnerModel.js'
+import { ACTIVITY_FORMATS, getEpisodeState, sanitizeRun, sanitizeEpisodeRuns, boundedRunSignalKeys, recordDelayedRetrievalEvidence, recordCanDoAttempt } from './learnerModel.js'
 import { dayKeyFor } from './session.js'
 import { reconcileLevelMilestones } from '../curriculum/graduation.js'
 
@@ -154,8 +154,12 @@ export function recordRunActivitySignal(model, { kind, format, key } = {}) {
   if (typeof key !== 'string' || !/^\d{1,4}(?::alt)?:(?:completed|assistance|retried|switched)$/.test(key)) return null
   if (key.split(':').at(-1) !== (kind === 'negative_soft' ? 'switched' : kind)) return null
   if (active.signalKeys.includes(key)) return null
+  const signalKeys = boundedRunSignalKeys([...active.signalKeys, key])
+  // Once a marker falls outside the bounded window, it cannot be remembered
+  // for idempotence. Do not count it only to count it again on a late replay.
+  if (!signalKeys.includes(key)) return null
   const patch = {
-    signalKeys: [...active.signalKeys, key].slice(-100),
+    signalKeys,
     formatsUsed: [...new Set([...active.formatsUsed, format])],
   }
   if (kind === 'assistance') patch.assistanceUsed = active.assistanceUsed + 1
