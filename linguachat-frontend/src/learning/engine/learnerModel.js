@@ -440,7 +440,7 @@ function newestEpisodeRuns(runs) {
   // newer run and even change which story ending is considered the latest.
   // Legacy/undated IDs keep their historical relative order.
   const attempt = (runId) => {
-    const match = /^(.*:\\d{4}-\\d{2}-\\d{2}):([1-9]\\d*)$/.exec(runId)
+    const match = /^(.*:\d{4}-\d{2}-\d{2}):([1-9]\d*)$/.exec(runId)
     if (!match) return null
     const number = Number(match[2])
     return Number.isSafeInteger(number) ? { prefix: match[1], number } : null
