@@ -270,6 +270,42 @@ const completed = (episodeId) => {
   ok()
 }
 
+/*
+ * 8a) Several distinct runs may start in the SAME millisecond (rapid
+ * replay, restored tabs or imported snapshots). A timestamp tie is not
+ * permission to let array/merge order decide which 12 practices survive.
+ * Generated run IDs carry a per-day attempt sequence that resolves the tie.
+ */
+{
+  const id = 'what_you_like'
+  const make = (i) => sanitizeRun({
+    runId: `${id}:2026-05-20:${i}`, episodeId: id, mode: RUN_REPLAY,
+    startedAt: new Date(AT).toISOString(),
+    completedAt: new Date(AT + 500).toISOString(),
+    branchId: i % 2 ? 'accept' : 'decline',
+  })
+  const all = Array.from({ length: RUNS_PER_EPISODE + 8 }, (_, i) => make(i + 1))
+  const expected = all.slice(-RUNS_PER_EPISODE).map(r => r.runId)
+  for (const order of [all, [...all].reverse()]) {
+    assert.deepEqual(sanitizeEpisodeRuns({ [id]: order })[id].map(r => r.runId), expected,
+      'same-timestamp sanitization must retain the highest generated attempt numbers')
+  }
+  const old = all.slice(0, RUNS_PER_EPISODE)
+  const fresh = all.slice(-RUNS_PER_EPISODE)
+  for (const [a, b] of [[old, fresh], [fresh, old]]) {
+    const merged = mergeEpisodeRuns({ [id]: a }, { [id]: b })[id]
+    assert.deepEqual(merged.map(r => r.runId), expected,
+      'same-timestamp stale merge must keep the most recent attempt sequence')
+    assert.deepEqual(mergeEpisodeRuns({ [id]: merged }, { [id]: old })[id].map(r => r.runId), expected,
+      'a repeated stale merge must not change the retained attempts')
+  }
+  const model = completed(id)
+  model.episodeRuns[id] = sanitizeEpisodeRuns({ [id]: [make(2), make(1)] })[id]
+  assert.equal(lastBranchPlayed(model, id), 'decline',
+    'last branch must come from the latest numbered attempt, not input order')
+  ok()
+}
+
 // 9) corrupt, duplicated and foreign runs are dropped, not rendered
 {
   const dirty = sanitizeEpisodeRuns({
