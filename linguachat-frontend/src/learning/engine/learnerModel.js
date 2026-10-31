@@ -488,9 +488,21 @@ export function boundedRunSignalKeys(raw) {
  */
 function mergeRunCopies(prev, run) {
   const authoritative = prev.completedAt && !run.completedAt ? prev : run
+  // Two filed copies of the same attempt can have different completion times
+  // (late callbacks or stale tabs). The first actual completion is the fact;
+  // choosing the last array element made this timestamp change on every merge.
+  // Compare instants rather than ISO strings with potentially different offsets.
+  const completionTimes = [prev.completedAt, run.completedAt].filter(Boolean)
+  completionTimes.sort((a, b) => {
+    const aTime = Date.parse(a)
+    const bTime = Date.parse(b)
+    if (Number.isFinite(aTime) && Number.isFinite(bTime) && aTime !== bTime) return aTime - bTime
+    if (Number.isFinite(aTime) !== Number.isFinite(bTime)) return Number.isFinite(aTime) ? -1 : 1
+    return a < b ? -1 : a > b ? 1 : 0
+  })
   const merged = {
     ...prev, ...run, ...authoritative,
-    completedAt: run.completedAt || prev.completedAt,
+    completedAt: completionTimes[0] || null,
     rewarded: prev.rewarded || run.rewarded,
   }
   if (prev.completedAt && run.completedAt) {

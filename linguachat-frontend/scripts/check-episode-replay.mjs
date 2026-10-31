@@ -423,6 +423,35 @@ const completed = (episodeId) => {
   ok()
 }
 
+/* Two completed copies of the same attempt can have different completion
+ * timestamps (a delayed callback or stale tab). The earliest real completion
+ * must remain authoritative regardless of import/merge order. Timezone offsets
+ * make string ordering an unsafe shortcut; activity evidence still unions. */
+{
+  const id = 'what_you_like'
+  const common = { runId: 'completion-time-race', episodeId: id, mode: RUN_REPLAY,
+    startedAt: '2026-05-20T09:00:00Z' }
+  const first = sanitizeRun({ ...common, completedAt: '2026-05-20T09:10:00Z',
+    assistanceUsed: 1, signalKeys: ['2:assistance'] })
+  const delayed = sanitizeRun({ ...common, completedAt: '2026-05-20T05:11:00-04:00',
+    retriedSteps: 1, signalKeys: ['3:retried'] })
+  for (const [a, b] of [[first, delayed], [delayed, first]]) {
+    const imported = sanitizeEpisodeRuns({ [id]: [a, b] })[id][0]
+    const merged = mergeEpisodeRuns({ [id]: [a] }, { [id]: [b] })[id][0]
+    for (const run of [imported, merged]) {
+      assert.equal(run.completedAt, first.completedAt,
+        'the first completion must survive a later duplicate in either order')
+      assert.equal(run.assistanceUsed, 1)
+      assert.equal(run.retriedSteps, 1)
+      assert.deepEqual(new Set(run.signalKeys), new Set(['2:assistance', '3:retried']))
+    }
+    const repeated = mergeEpisodeRuns({ [id]: [merged] }, { [id]: [delayed] })[id][0]
+    assert.equal(repeated.completedAt, first.completedAt,
+      'a stale duplicate cannot move an already reconciled completion time')
+  }
+  ok()
+}
+
 /* The 100-marker retention window must be independent of merge order.
  * A stale completed snapshot cannot reintroduce old markers and evict newer
  * step evidence just because its array is read second. */
