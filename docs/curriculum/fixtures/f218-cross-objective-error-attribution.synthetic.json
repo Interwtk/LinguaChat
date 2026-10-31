@@ -1,0 +1,987 @@
+{
+  "schema_id": "linguachat.curriculum.f218.machine_readable.v1",
+  "fixture_document": "docs/curriculum/longitudinal-fixture-f218-cross-objective-error-attribution-negative-transfer-independent-repair.md",
+  "status": "DESIGN_ONLY_UNSUPPORTED",
+  "description": "Synthetic cross-objective error attribution, reversible repair and independent transfer. Not a released lesson, engine validation, CEFR exit proof, or human-learning efficacy.",
+  "seed": 21820261030,
+  "clock": {
+    "anchor": "2026-10-01T12:00:00Z",
+    "timezone": "UTC",
+    "day_offset_semantics": "distinct learning-day provenance; same-day repeats do not count as delayed retrieval"
+  },
+  "source_binding": {
+    "cefr_can_do_id": "REQUIRES_EXISTING_VERSIONED_SOURCE_BINDING",
+    "rubric_version": "REQUIRES_REVIEWED_RUBRIC",
+    "prerequisite_graph_version": "REQUIRES_REVIEWED_GRAPH",
+    "task_version": "SYNTHETIC_F218_V1",
+    "policy_version": "F218_DESIGN_V1",
+    "channel_version": "REQUIRES_SUPPORTED_CHANNEL_BINDING",
+    "source_resolution": "UNSUPPORTED"
+  },
+  "global_invariants": [
+    "Surface string similarity is not proof of a shared cognitive cause; retain competing explanations and uncertainty.",
+    "Meaning-reviewed errors and legitimate accepted variants are task/objective specific.",
+    "Never infer first language from names, accent, nationality or device locale.",
+    "Missing audio, invalid prompts, untrusted chronology and unresolved review remain UNKNOWN.",
+    "Assisted or copied corrections cannot count as clean delayed independent transfer.",
+    "A prerequisite review does not create a new mandatory CEFR gate or credit adjacent can-dos.",
+    "Method hypotheses and next actually rendered choices must remain reversible and uncertainty-aware.",
+    "Interest weights only softly affect contexts, never rubrics, required skills or unfamiliar rotation.",
+    "Synthetic structural verification cannot demonstrate tutoring engine behavior or real human learning."
+  ],
+  "required_harness_outputs": [
+    "source_binding_resolution",
+    "reviewed_meaning_oracle_per_event",
+    "per_case_and_control_oracle_result",
+    "per_assertion_PASS_FAIL_UNSUPPORTED",
+    "event_and_exposure_provenance",
+    "per_skill_due_offered_rendered_completed_missing",
+    "cross_objective_transfer_eligibility",
+    "actual_next_instruction_rendered",
+    "exact_engine_HEAD",
+    "executable_command",
+    "independent_reviewer_signoff"
+  ],
+  "acceptance_assertions": [
+    "FIXED_CEFR_AND_PREREQUISITE_BOUNDARIES",
+    "ERROR_IDENTITY_NOT_ERROR_CAUSE",
+    "CROSS_SKILL_EVIDENCE_NOT_BLINDLY_POOLED",
+    "PREREQUISITE_WITHOUT_INVENTED_GATE",
+    "ASSISTED_REPAIR_NOT_DURABLE_MASTERY",
+    "VARIANTS_VALIDITY_AND_ACCESSIBILITY",
+    "INTEREST_CONTEXT_NOT_METHOD_OR_RUBRIC",
+    "REPLAY_DENOMINATORS_AND_REVERSIBLE_DELIVERY",
+    "EXECUTABLE_REVIEW_AND_HUMAN_EFFICACY_UNSUPPORTED"
+  ],
+  "cases": [
+    {
+      "id": "A",
+      "title": "Age-expression errors are a candidate gap; valid possession is not",
+      "objective_families": [
+        "age_expression",
+        "possession"
+      ],
+      "events": [
+        {
+          "id": "A1",
+          "learner_id": "synthetic-learner-A",
+          "session": "a-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "occurred_at": "2026-10-01T12:01:00.000Z",
+          "type": "first_attempt",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "age_expression",
+          "skill": "writing",
+          "independent": true,
+          "task_valid": true,
+          "utterance": "I have 20 years.",
+          "reviewed_meaning": "age_expression_error",
+          "candidate_cause": "UNKNOWN",
+          "error_family": "age_expression"
+        },
+        {
+          "id": "A2",
+          "learner_id": "synthetic-learner-A",
+          "session": "a-day3",
+          "day_offset": 3,
+          "sequence": 1,
+          "occurred_at": "2026-10-04T12:01:00.000Z",
+          "type": "first_attempt",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "age_expression",
+          "skill": "writing",
+          "independent": true,
+          "task_valid": true,
+          "utterance": "I have 19 years.",
+          "reviewed_meaning": "age_expression_error",
+          "candidate_cause": "UNKNOWN",
+          "error_family": "age_expression"
+        },
+        {
+          "id": "A3",
+          "learner_id": "synthetic-learner-A",
+          "session": "a-day3",
+          "day_offset": 3,
+          "sequence": 2,
+          "occurred_at": "2026-10-04T12:02:00.000Z",
+          "type": "first_attempt",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "possession",
+          "skill": "writing",
+          "independent": true,
+          "task_valid": true,
+          "utterance": "I have two sisters.",
+          "reviewed_meaning": "accepted",
+          "error_family": "none",
+          "mastery_cross_credit": false
+        },
+        {
+          "id": "A4",
+          "learner_id": "synthetic-learner-A",
+          "session": "a-day3",
+          "day_offset": 3,
+          "sequence": 3,
+          "occurred_at": "2026-10-04T12:03:00.000Z",
+          "type": "contrast_rendered",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "age_expression",
+          "skill": "writing",
+          "rendered": true,
+          "answer_bearing": true,
+          "assistance_exposure": "reviewed_contrast"
+        },
+        {
+          "id": "A5",
+          "learner_id": "synthetic-learner-A",
+          "session": "a-day11",
+          "day_offset": 11,
+          "sequence": 1,
+          "occurred_at": "2026-10-12T12:01:00.000Z",
+          "type": "unseen_transfer",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "age_expression",
+          "skill": "writing",
+          "independent": true,
+          "assistance": "none",
+          "new_context": true,
+          "new_item": true,
+          "reviewed_meaning": "accepted",
+          "review_status": "requires_independent_review",
+          "cross_objective_mastery_credit": false
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "A2",
+            "independent": false,
+            "assistance": "copied_model",
+            "eligible_pattern": false
+          }
+        ]
+      },
+      "expected": {
+        "candidate_shared_gap_not_certain": true,
+        "valid_possession_accepted": true,
+        "native_language_inferred": false,
+        "control_reduces_independent_error_count": true,
+        "delayed_transfer_requires_review": true,
+        "other_objective_not_credited": true
+      },
+      "followup_ledger": [
+        {
+          "skill": "writing",
+          "due": 2,
+          "offered": 2,
+          "rendered": 2,
+          "completed": 1,
+          "missing_unrendered": 0,
+          "pending_rendered": 1
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "title": "Irregular-past writing does not imply all past or oral deficits",
+      "objective_families": [
+        "irregular_past",
+        "regular_past"
+      ],
+      "events": [
+        {
+          "id": "B1",
+          "learner_id": "synthetic-learner-B",
+          "session": "b-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "occurred_at": "2026-10-01T12:01:00.000Z",
+          "type": "first_attempt",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "irregular_past",
+          "skill": "writing",
+          "independent": true,
+          "task_valid": true,
+          "utterance": "Yesterday I goed.",
+          "reviewed_meaning": "irregular_past_error"
+        },
+        {
+          "id": "B2",
+          "learner_id": "synthetic-learner-B",
+          "session": "b-day2",
+          "day_offset": 2,
+          "sequence": 1,
+          "occurred_at": "2026-10-03T12:01:00.000Z",
+          "type": "first_attempt",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "regular_past",
+          "skill": "writing",
+          "independent": true,
+          "task_valid": true,
+          "utterance": "I walked home.",
+          "reviewed_meaning": "accepted",
+          "other_objective_downgrade": false
+        },
+        {
+          "id": "B3",
+          "learner_id": "synthetic-learner-B",
+          "session": "b-day4",
+          "day_offset": 4,
+          "sequence": 1,
+          "occurred_at": "2026-10-05T12:01:00.000Z",
+          "type": "asr_transcript",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "irregular_past",
+          "skill": "speaking",
+          "transcript": "goed",
+          "audio_reviewable": false,
+          "channel_valid": false,
+          "reviewed_meaning": "UNKNOWN",
+          "oral_failure_credit": false
+        },
+        {
+          "id": "B4",
+          "learner_id": "synthetic-learner-B",
+          "session": "b-day4",
+          "day_offset": 4,
+          "sequence": 2,
+          "occurred_at": "2026-10-05T12:02:00.000Z",
+          "type": "targeted_practice_rendered",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "irregular_past",
+          "skill": "writing",
+          "rendered": true,
+          "modality": "writing",
+          "method": "irregular_form_contrast",
+          "reversible": true
+        },
+        {
+          "id": "B5",
+          "learner_id": "synthetic-learner-B",
+          "session": "b-day12",
+          "day_offset": 12,
+          "sequence": 1,
+          "occurred_at": "2026-10-13T12:01:00.000Z",
+          "type": "unseen_transfer",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "irregular_past",
+          "skill": "writing",
+          "independent": true,
+          "new_item": true,
+          "new_context": true,
+          "assistance": "none",
+          "reviewed_meaning": "requires_review",
+          "oral_mastery_credit": false
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "B3",
+            "audio_reviewable": true,
+            "channel_valid": true,
+            "reviewed_meaning": "irregular_past_error",
+            "oral_failure_credit": true
+          }
+        ]
+      },
+      "expected": {
+        "asr_unknown_not_failure": true,
+        "regular_past_preserved": true,
+        "control_oral_observation_separate": true,
+        "writing_not_speaking_mastery": true
+      },
+      "followup_ledger": [
+        {
+          "skill": "writing",
+          "due": 2,
+          "offered": 2,
+          "rendered": 1,
+          "completed": 1,
+          "missing_unrendered": 1,
+          "pending_rendered": 0
+        },
+        {
+          "skill": "speaking",
+          "due": 1,
+          "offered": 1,
+          "rendered": 0,
+          "completed": 0,
+          "missing_unrendered": 1,
+          "pending_rendered": 0
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "title": "Versioned prerequisite hypothesis cannot invent a gate",
+      "objective_families": [
+        "multi_clause_request",
+        "time_reference"
+      ],
+      "events": [
+        {
+          "id": "C1",
+          "learner_id": "synthetic-learner-C",
+          "session": "c-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "occurred_at": "2026-10-01T12:01:00.000Z",
+          "type": "first_attempt",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "multi_clause_request",
+          "skill": "writing",
+          "independent": true,
+          "task_valid": true,
+          "complexity": "multi_clause_time_reference",
+          "reviewed_meaning": "request_failure",
+          "prerequisite_relation": "versioned_relevant_not_mandatory"
+        },
+        {
+          "id": "C2",
+          "learner_id": "synthetic-learner-C",
+          "session": "c-day0",
+          "day_offset": 0,
+          "sequence": 2,
+          "occurred_at": "2026-10-01T12:02:00.000Z",
+          "type": "first_attempt",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "multi_clause_request",
+          "skill": "writing",
+          "independent": true,
+          "task_valid": true,
+          "complexity": "simple_time_phrase",
+          "reviewed_meaning": "accepted",
+          "advanced_mastery_credit": false
+        },
+        {
+          "id": "C3",
+          "learner_id": "synthetic-learner-C",
+          "session": "c-day1",
+          "day_offset": 1,
+          "sequence": 1,
+          "occurred_at": "2026-10-02T12:01:00.000Z",
+          "type": "prerequisite_review_rendered",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "time_reference",
+          "skill": "reading",
+          "rendered": true,
+          "review_eligible": true,
+          "graph_mutated": false,
+          "new_mandatory_gate": false
+        },
+        {
+          "id": "C4",
+          "learner_id": "synthetic-learner-C",
+          "session": "c-day8",
+          "day_offset": 8,
+          "sequence": 1,
+          "occurred_at": "2026-10-09T12:01:00.000Z",
+          "type": "unseen_transfer",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "time_reference",
+          "skill": "reading",
+          "independent": true,
+          "assistance": "none",
+          "reviewed_meaning": "accepted",
+          "advanced_mastery_credit": false
+        },
+        {
+          "id": "C5",
+          "learner_id": "synthetic-learner-C",
+          "session": "c-day10",
+          "day_offset": 10,
+          "sequence": 1,
+          "occurred_at": "2026-10-11T12:01:00.000Z",
+          "type": "cross_objective_probe_due",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "multi_clause_request",
+          "skill": "writing",
+          "rendered": false,
+          "completed": false,
+          "mastery_credit": false
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "C1",
+            "time_reference_supplied": true,
+            "time_reference_understood": true,
+            "reviewed_meaning": "request_function_error",
+            "prerequisite_hypothesis_weakened": true
+          }
+        ]
+      },
+      "expected": {
+        "prerequisite_version_unchanged": true,
+        "advanced_not_locked": true,
+        "prerequisite_success_not_advanced_mastery": true,
+        "control_weakens_prerequisite_hypothesis": true
+      },
+      "followup_ledger": [
+        {
+          "skill": "reading",
+          "due": 1,
+          "offered": 1,
+          "rendered": 1,
+          "completed": 1,
+          "missing_unrendered": 0,
+          "pending_rendered": 0
+        },
+        {
+          "skill": "writing",
+          "due": 1,
+          "offered": 1,
+          "rendered": 0,
+          "completed": 0,
+          "missing_unrendered": 1,
+          "pending_rendered": 0
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "title": "Assisted repair, same-day echo and contradictory delayed evidence",
+      "objective_families": [
+        "third_person_agreement"
+      ],
+      "events": [
+        {
+          "id": "D1",
+          "learner_id": "synthetic-learner-D",
+          "session": "d-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "occurred_at": "2026-10-01T12:01:00.000Z",
+          "type": "first_attempt",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "third_person_agreement",
+          "skill": "writing",
+          "independent": true,
+          "task_valid": true,
+          "utterance": "She don't like coffee.",
+          "reviewed_meaning": "agreement_error"
+        },
+        {
+          "id": "D2",
+          "learner_id": "synthetic-learner-D",
+          "session": "d-day0",
+          "day_offset": 0,
+          "sequence": 2,
+          "occurred_at": "2026-10-01T12:02:00.000Z",
+          "type": "worked_example_rendered",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "third_person_agreement",
+          "skill": "writing",
+          "rendered": true,
+          "answer_bearing": true,
+          "utterance": "She doesn't like coffee."
+        },
+        {
+          "id": "D3",
+          "learner_id": "synthetic-learner-D",
+          "session": "d-day0",
+          "day_offset": 0,
+          "sequence": 3,
+          "occurred_at": "2026-10-01T12:03:00.000Z",
+          "type": "corrected_repeat",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "third_person_agreement",
+          "skill": "writing",
+          "utterance": "She doesn't like coffee.",
+          "independent": false,
+          "assisted": true,
+          "mastery_credit": false
+        },
+        {
+          "id": "D4",
+          "learner_id": "synthetic-learner-D",
+          "session": "d-day0",
+          "day_offset": 0,
+          "sequence": 4,
+          "occurred_at": "2026-10-01T12:04:00.000Z",
+          "type": "same_day_echo",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "third_person_agreement",
+          "skill": "writing",
+          "independent": false,
+          "assisted": true,
+          "delayed_retrieval_credit": false
+        },
+        {
+          "id": "D5",
+          "learner_id": "synthetic-learner-D",
+          "session": "d-day8",
+          "day_offset": 8,
+          "sequence": 1,
+          "occurred_at": "2026-10-09T12:01:00.000Z",
+          "type": "unseen_transfer",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "third_person_agreement",
+          "skill": "writing",
+          "independent": true,
+          "assistance": "none",
+          "new_context": true,
+          "new_item": true,
+          "utterance": "My brother doesn't work on Fridays.",
+          "reviewed_meaning": "accepted",
+          "causal_method_proof": false
+        },
+        {
+          "id": "D6",
+          "learner_id": "synthetic-learner-D",
+          "session": "d-day12",
+          "day_offset": 12,
+          "sequence": 1,
+          "occurred_at": "2026-10-13T12:01:00.000Z",
+          "type": "unseen_transfer",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "third_person_agreement",
+          "skill": "writing",
+          "independent": true,
+          "assistance": "none",
+          "new_context": true,
+          "new_item": true,
+          "reviewed_meaning": "agreement_error",
+          "review_debt_retained": true
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "D5",
+            "independent": false,
+            "assistance": "model_rendered",
+            "clean_delayed_credit": false
+          }
+        ]
+      },
+      "expected": {
+        "first_attempt_retained": true,
+        "assisted_not_mastery": true,
+        "same_day_not_delayed": true,
+        "contradictory_evidence_retained": true,
+        "control_weakens_repair_claim": true
+      },
+      "followup_ledger": [
+        {
+          "skill": "writing",
+          "due": 3,
+          "offered": 3,
+          "rendered": 3,
+          "completed": 2,
+          "missing_unrendered": 0,
+          "pending_rendered": 1
+        }
+      ]
+    },
+    {
+      "id": "E",
+      "title": "Accepted variants, invalid prompts and inaccessible listening are not errors",
+      "objective_families": [
+        "polite_request",
+        "listening_comprehension"
+      ],
+      "events": [
+        {
+          "id": "E1",
+          "learner_id": "synthetic-learner-E",
+          "session": "e-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "occurred_at": "2026-10-01T12:01:00.000Z",
+          "type": "first_attempt",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "polite_request",
+          "skill": "writing",
+          "independent": true,
+          "utterance": "Could you help me, please?",
+          "reviewed_meaning": "accepted_variant",
+          "variety_reviewed": true,
+          "error_counted": false
+        },
+        {
+          "id": "E2",
+          "learner_id": "synthetic-learner-E",
+          "session": "e-day1",
+          "day_offset": 1,
+          "sequence": 1,
+          "occurred_at": "2026-10-02T12:01:00.000Z",
+          "type": "first_attempt",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "polite_request",
+          "skill": "writing",
+          "independent": true,
+          "utterance": "Would you mind helping me?",
+          "reviewed_meaning": "accepted_variant",
+          "variety_reviewed": true,
+          "error_counted": false
+        },
+        {
+          "id": "E3",
+          "learner_id": "synthetic-learner-E",
+          "session": "e-day2",
+          "day_offset": 2,
+          "sequence": 1,
+          "occurred_at": "2026-10-03T12:01:00.000Z",
+          "type": "invalid_task",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "polite_request",
+          "skill": "writing",
+          "task_valid": false,
+          "reason": "contradictory_instructions",
+          "reviewed_meaning": "UNKNOWN",
+          "error_counted": false
+        },
+        {
+          "id": "E4",
+          "learner_id": "synthetic-learner-E",
+          "session": "e-day3",
+          "day_offset": 3,
+          "sequence": 1,
+          "occurred_at": "2026-10-04T12:01:00.000Z",
+          "type": "channel_failure",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "listening_comprehension",
+          "skill": "listening",
+          "audio_rendered": false,
+          "transcript_rendered": true,
+          "channel_valid": false,
+          "reviewed_meaning": "UNKNOWN",
+          "error_counted": false,
+          "listening_credit": false
+        },
+        {
+          "id": "E5",
+          "learner_id": "synthetic-learner-E",
+          "session": "e-day3",
+          "day_offset": 3,
+          "sequence": 2,
+          "occurred_at": "2026-10-04T12:02:00.000Z",
+          "type": "interest_context_policy",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "polite_request",
+          "skill": "writing",
+          "interest": "gaming",
+          "method_confidence_changed": false,
+          "rubric_changed": false,
+          "required_objectives_changed": false,
+          "adjacent_eligible": true,
+          "neutral_eligible": true,
+          "unfamiliar_eligible": true,
+          "skill_coverage_preserved": true
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "E3",
+            "task_valid": true,
+            "reason": "valid_meaning_critical_error",
+            "reviewed_meaning": "request_function_error",
+            "error_counted": true
+          },
+          {
+            "event_id": "E5",
+            "interest": "cooking"
+          }
+        ]
+      },
+      "expected": {
+        "variants_not_penalized": true,
+        "invalid_unknown_not_failure": true,
+        "absent_audio_not_listening_failure": true,
+        "interest_only_soft_context": true,
+        "control_only_valid_error_eligible": true
+      },
+      "followup_ledger": [
+        {
+          "skill": "writing",
+          "due": 2,
+          "offered": 2,
+          "rendered": 2,
+          "completed": 1,
+          "missing_unrendered": 0,
+          "pending_rendered": 1
+        },
+        {
+          "skill": "listening",
+          "due": 2,
+          "offered": 1,
+          "rendered": 0,
+          "completed": 0,
+          "missing_unrendered": 2,
+          "pending_rendered": 0
+        }
+      ]
+    },
+    {
+      "id": "F",
+      "title": "Contradictory matched outcomes revise hypotheses; duplicates do not count",
+      "objective_families": [
+        "shared_gap_diagnostic",
+        "cross_objective_repair"
+      ],
+      "events": [
+        {
+          "id": "F1",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "occurred_at": "2026-10-01T12:01:00.000Z",
+          "type": "delayed_probe",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "shared_gap_diagnostic",
+          "skill": "writing",
+          "independent": true,
+          "comparable": true,
+          "assistance": "none",
+          "new_item": true,
+          "outcome": "success",
+          "method": "contrastive",
+          "trusted_chronology": true
+        },
+        {
+          "id": "F2",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day7",
+          "day_offset": 7,
+          "sequence": 1,
+          "occurred_at": "2026-10-08T12:01:00.000Z",
+          "type": "delayed_probe",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "shared_gap_diagnostic",
+          "skill": "writing",
+          "independent": true,
+          "comparable": true,
+          "assistance": "none",
+          "new_item": true,
+          "outcome": "success",
+          "method": "contrastive",
+          "trusted_chronology": true
+        },
+        {
+          "id": "F3",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day14",
+          "day_offset": 14,
+          "sequence": 1,
+          "occurred_at": "2026-10-15T12:01:00.000Z",
+          "type": "delayed_probe",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "shared_gap_diagnostic",
+          "skill": "writing",
+          "independent": true,
+          "comparable": true,
+          "assistance": "none",
+          "new_item": true,
+          "outcome": "failure",
+          "method": "minimal_hint_retrieval",
+          "trusted_chronology": true
+        },
+        {
+          "id": "F4",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day21",
+          "day_offset": 21,
+          "sequence": 1,
+          "occurred_at": "2026-10-22T12:01:00.000Z",
+          "type": "delayed_probe",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "shared_gap_diagnostic",
+          "skill": "writing",
+          "independent": true,
+          "comparable": true,
+          "assistance": "none",
+          "new_item": true,
+          "outcome": "failure",
+          "method": "minimal_hint_retrieval",
+          "trusted_chronology": true
+        },
+        {
+          "id": "F5-original",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day21",
+          "day_offset": 21,
+          "sequence": 2,
+          "occurred_at": "2026-10-22T12:02:00.000Z",
+          "type": "assisted_repeat",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "shared_gap_diagnostic",
+          "skill": "writing",
+          "independent": false,
+          "assisted": true,
+          "outcome": "success",
+          "mastery_credit": false
+        },
+        {
+          "id": "F5",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day21",
+          "day_offset": 21,
+          "sequence": 3,
+          "occurred_at": "2026-10-22T12:03:00.000Z",
+          "type": "replay",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "shared_gap_diagnostic",
+          "skill": "writing",
+          "duplicate_of": "F5-original",
+          "independent": false,
+          "assisted": true,
+          "mastery_credit": false
+        },
+        {
+          "id": "F6",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day22",
+          "day_offset": 22,
+          "sequence": 1,
+          "occurred_at": "2026-10-23T12:01:00.000Z",
+          "type": "untrusted_upload",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "shared_gap_diagnostic",
+          "skill": "writing",
+          "claimed_outcome": "success",
+          "trusted_chronology": false,
+          "render_chronology": "UNKNOWN",
+          "mastery_credit": false
+        },
+        {
+          "id": "F7",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day23",
+          "day_offset": 23,
+          "sequence": 1,
+          "occurred_at": "2026-10-24T12:01:00.000Z",
+          "type": "next_option_queued",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "cross_objective_repair",
+          "skill": "writing",
+          "rendered": false,
+          "method": "contrastive",
+          "mastery_credit": false
+        },
+        {
+          "id": "F8",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day23",
+          "day_offset": 23,
+          "sequence": 2,
+          "occurred_at": "2026-10-24T12:02:00.000Z",
+          "type": "next_option_rendered",
+          "task_version": "SYNTHETIC_F218_V1",
+          "policy_version": "F218_DESIGN_V1",
+          "objective": "cross_objective_repair",
+          "skill": "writing",
+          "rendered": true,
+          "method": "balanced_unfamiliar_production",
+          "reversible": true,
+          "uncertainty": "high",
+          "context": "neutral",
+          "alternative_methods_retained": true
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "F3",
+            "outcome": "success"
+          },
+          {
+            "event_id": "F4",
+            "outcome": "success"
+          },
+          {
+            "event_id": "F1",
+            "outcome": "failure"
+          },
+          {
+            "event_id": "F2",
+            "outcome": "failure"
+          },
+          {
+            "event_id": "F8",
+            "method": "targeted_contrast_or_calibrated_exploration"
+          }
+        ]
+      },
+      "expected": {
+        "eligible_successes": 2,
+        "eligible_failures": 2,
+        "duplicate_excluded": true,
+        "untrusted_quarantined": true,
+        "delivered_next_choice_required": true,
+        "control_can_change_choice": true,
+        "causal_superiority_claimed": false,
+        "coverage_debt_retained": true
+      },
+      "arrival_order": [
+        "F4",
+        "F2",
+        "F5",
+        "F5-original",
+        "F1",
+        "F3",
+        "F6",
+        "F7",
+        "F8"
+      ],
+      "followup_ledger": [
+        {
+          "skill": "writing",
+          "due": 6,
+          "offered": 5,
+          "rendered": 4,
+          "completed": 4,
+          "missing_unrendered": 2,
+          "pending_rendered": 0
+        },
+        {
+          "skill": "speaking",
+          "due": 2,
+          "offered": 1,
+          "rendered": 0,
+          "completed": 0,
+          "missing_unrendered": 2,
+          "pending_rendered": 0
+        }
+      ]
+    }
+  ]
+}
