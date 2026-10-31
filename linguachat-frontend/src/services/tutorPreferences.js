@@ -1,3 +1,4 @@
+import { learnerStorage as localStorage } from '../auth/localLease.js'
 import { KNOWN_INTERESTS, MAX_SELECTED_INTERESTS, normalizeInterests } from '../learning/engine/interests.js'
 
 const TUTOR_PREFERENCES_KEY = 'lc2-tutor-preferences'

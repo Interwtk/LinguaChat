@@ -1,0 +1,652 @@
+{
+  "schema_id": "linguachat.curriculum.f220.machine_readable.v1",
+  "fixture_document": "docs/curriculum/longitudinal-fixture-f220-session-bandwidth-interruption-pacing-independent-transfer.md",
+  "status": "DESIGN_ONLY_UNSUPPORTED",
+  "description": "Deterministic synthetic histories and matched controls for independent future review; no real learner efficacy, CEFR pass, fatigue inference, or shipped pacing engine.",
+  "seed": 22020261030,
+  "clock": {
+    "anchor": "2026-10-30T12:00:00Z",
+    "timezone": "UTC",
+    "day_offset_semantics": "elapsed 24-hour periods; date rollover alone is not a meaningful delay"
+  },
+  "source_binding": {
+    "cefr_can_do_id": "REQUIRES_EXISTING_VERSIONED_SOURCE_BINDING",
+    "rubric_version": "REQUIRES_REVIEWED_RUBRIC",
+    "task_version": "SYNTHETIC_F220_V1",
+    "policy_version": "F220_DESIGN_V1",
+    "channel_version": "REQUIRES_SUPPORTED_CHANNEL_BINDING",
+    "source_resolution": "UNSUPPORTED"
+  },
+  "global_invariants": [
+    "Time budget, pauses, access aids and latency are scheduling context, not learner competence or psychological diagnoses.",
+    "Only durably submitted first unaided attempts can become candidate reviewed evidence; partial transport failures and replay are not semantic failures.",
+    "Separate due, offered, queued, rendered, submitted, completed, abandoned and missing opportunities.",
+    "Same-run midnight rollover and model-exposed repetitions are not delayed independent retrieval.",
+    "Preserve receptive/productive skill debt, accessible options, neutral/unfamiliar topics and soft interest weights.",
+    "Compare pacing only on comparable task difficulty, assistance, exposure and valid delayed unseen transfer; revise hypotheses with uncertainty.",
+    "Actual delivered next teaching choice must be recorded; no causal improvement claim from synthetic checks."
+  ],
+  "required_harness_outputs": [
+    "source_binding_resolution",
+    "per_case_and_control_oracle_result",
+    "per_assertion_PASS_FAIL_UNSUPPORTED",
+    "trusted_event_chronology",
+    "first_unaided_attempt_and_assistance_provenance",
+    "due_offered_rendered_completed_abandoned_missing_denominators",
+    "actual_next_instruction_rendered",
+    "exact_engine_HEAD",
+    "executable_command",
+    "independent_reviewer_signoff"
+  ],
+  "acceptance_assertions": [
+    "FIXED_CEFR_OBJECTIVE_AND_REVIEWED_RUBRIC",
+    "TIME_AND_LATENCY_NOT_COMPETENCE",
+    "OPPORTUNITY_VS_OUTCOME",
+    "RESUME_FIRST_ATTEMPT_AND_REPLAY_INTEGRITY",
+    "MEANINGFUL_DELAY_UNSEEN_UNAIDED",
+    "ACCESS_AND_SKILL_BALANCE",
+    "PACING_INTEREST_SEPARATE",
+    "REVERSIBLE_DELIVERED_NEXT_CHOICE",
+    "EXECUTABLE_INDEPENDENT_REVIEW_UNSUPPORTED"
+  ],
+  "cases": [
+    {
+      "id": "A",
+      "title": "Five-minute time budget preserves due independent retrieval",
+      "objective_family": "request_directions",
+      "events": [
+        {
+          "id": "A1",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "review_due",
+          "skill": "writing",
+          "due": true
+        },
+        {
+          "id": "A2",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "time_budget_volunteered",
+          "minutes": 5,
+          "competence_inference": false
+        },
+        {
+          "id": "A3",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 3,
+          "type": "short_independent_review_rendered",
+          "offered": true,
+          "rendered": true,
+          "skill": "writing",
+          "context": "neutral"
+        },
+        {
+          "id": "A4",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 4,
+          "type": "first_attempt_committed",
+          "independent": true,
+          "assistance": "none",
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "A5",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 5,
+          "type": "long_favorite_lesson_queued",
+          "rendered": false,
+          "mastery_credit": false
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "A2",
+            "minutes": 30
+          }
+        ],
+        "insert": [
+          {
+            "id": "A6",
+            "session": "s1",
+            "day_offset": 0,
+            "sequence": 6,
+            "type": "long_mixed_activity_rendered",
+            "offered": true,
+            "rendered": true,
+            "skill": "listening",
+            "context": "unfamiliar"
+          }
+        ]
+      },
+      "expected": {
+        "due_review_preserved": true,
+        "unrendered_queued_credit": false,
+        "unchanged_mastery_threshold": true,
+        "short_review_may_be_rendered": true
+      }
+    },
+    {
+      "id": "B",
+      "title": "Disconnected partial answer and replay do not create a wrong first attempt",
+      "objective_family": "request_information_writing",
+      "events": [
+        {
+          "id": "B1",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "prompt_rendered",
+          "rendered": true,
+          "assistance": "none"
+        },
+        {
+          "id": "B2",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "partial_draft",
+          "durably_submitted": false,
+          "evidence_status": "PARTIAL_NOT_COMPLETED"
+        },
+        {
+          "id": "B3",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 3,
+          "type": "transport_failure",
+          "cause": "connectivity",
+          "semantic_failure": false
+        },
+        {
+          "id": "B4",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 4,
+          "type": "retry",
+          "idempotency_key": "B2",
+          "duplicate_of": "B2",
+          "attempt_credit": false
+        },
+        {
+          "id": "B5",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 5,
+          "type": "retry",
+          "idempotency_key": "B2",
+          "duplicate_of": "B2",
+          "attempt_credit": false
+        },
+        {
+          "id": "B6",
+          "session": "s1",
+          "day_offset": 1,
+          "sequence": 6,
+          "type": "same_run_resume",
+          "same_session": true,
+          "answer_model_rendered": false,
+          "first_attempt_preserved": true
+        }
+      ],
+      "matched_control": {
+        "insert": [
+          {
+            "id": "B2C",
+            "session": "s1",
+            "day_offset": 0,
+            "sequence": 2.5,
+            "type": "first_attempt_committed",
+            "durably_submitted": true,
+            "independent": true,
+            "meaning_critical_error": true,
+            "reviewed_semantic_oracle": "requires_review"
+          }
+        ],
+        "replace": [
+          {
+            "event_id": "B3",
+            "sequence": 3.5
+          }
+        ]
+      },
+      "expected": {
+        "partial_not_semantic_failure": true,
+        "retries_award_zero_attempts": true,
+        "same_run_no_new_session": true,
+        "durable_error_remains_in_control": true
+      }
+    },
+    {
+      "id": "C",
+      "title": "Midnight and repeated reopenings do not manufacture delayed retrieval",
+      "objective_family": "directions_production",
+      "events": [
+        {
+          "id": "C1",
+          "session": "episode-1",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "first_attempt_committed",
+          "occurred_at": "2026-10-30T23:58:00Z",
+          "independent": true,
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "C2",
+          "session": "episode-1",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "pause",
+          "occurred_at": "2026-10-30T23:59:00Z",
+          "episode_closed": false
+        },
+        {
+          "id": "C3",
+          "session": "episode-1",
+          "day_offset": 0,
+          "sequence": 3,
+          "type": "resume",
+          "occurred_at": "2026-10-31T00:03:00Z",
+          "same_episode": true
+        },
+        {
+          "id": "C4",
+          "session": "episode-1",
+          "day_offset": 0,
+          "sequence": 4,
+          "type": "model_answer_rendered",
+          "answer_bearing": true
+        },
+        {
+          "id": "C5",
+          "session": "episode-1",
+          "day_offset": 0,
+          "sequence": 5,
+          "type": "same_item_reopen",
+          "reopen_count": 20,
+          "assisted": true,
+          "delayed_retrieval_credit": false
+        }
+      ],
+      "matched_control": {
+        "insert": [
+          {
+            "id": "C6",
+            "session": "episode-2",
+            "day_offset": 8,
+            "sequence": 1,
+            "type": "unseen_transfer",
+            "new_item": true,
+            "new_context": true,
+            "independent": true,
+            "assistance": "none",
+            "meaningful_delay_verified": true,
+            "reviewed_semantic_oracle": "requires_review"
+          }
+        ]
+      },
+      "expected": {
+        "midnight_not_new_session": true,
+        "assisted_reopens_not_delayed": true,
+        "later_new_item_candidate_only": true
+      }
+    },
+    {
+      "id": "D",
+      "title": "Accessibility and latency are not a fatigue or ability diagnosis",
+      "objective_family": "reading_and_free_production",
+      "events": [
+        {
+          "id": "D1",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "accessible_task_rendered",
+          "access": "screen_reader",
+          "rendered": true
+        },
+        {
+          "id": "D2",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "first_attempt_committed",
+          "latency_seconds": 190,
+          "independent": true,
+          "meaning_quality": "equivalent",
+          "reviewed_semantic_oracle": "requires_review",
+          "fatigue_inferred": false
+        },
+        {
+          "id": "D3",
+          "session": "s2",
+          "day_offset": 8,
+          "sequence": 1,
+          "type": "unseen_transfer",
+          "independent": true,
+          "meaning_quality": "equivalent",
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "D4",
+          "session": "s2",
+          "day_offset": 8,
+          "sequence": 2,
+          "type": "audio_failed",
+          "channel": "listening",
+          "evidence_status": "UNKNOWN",
+          "listening_mastery_credit": false
+        },
+        {
+          "id": "D5",
+          "session": "s2",
+          "day_offset": 8,
+          "sequence": 3,
+          "type": "break_requested",
+          "voluntary": true,
+          "competence_inference": false
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "D3",
+            "meaning_quality": "meaning_critical_error",
+            "independent": true
+          }
+        ]
+      },
+      "expected": {
+        "latency_not_fatigue": true,
+        "access_not_downgrade": true,
+        "failed_audio_not_listening_evidence": true,
+        "language_outcome_can_update_tentative_hypothesis": true
+      }
+    },
+    {
+      "id": "E",
+      "title": "Short assisted completion is not proof of better long-term pacing",
+      "objective_family": "request_information",
+      "events": [
+        {
+          "id": "E1",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "short_chunk_completed",
+          "method": "short",
+          "assisted": true,
+          "independent": false,
+          "context": "gaming"
+        },
+        {
+          "id": "E2",
+          "session": "s2",
+          "day_offset": 2,
+          "sequence": 1,
+          "type": "short_chunk_completed",
+          "method": "short",
+          "assisted": true,
+          "independent": false,
+          "context": "gaming"
+        },
+        {
+          "id": "E3",
+          "session": "s3",
+          "day_offset": 4,
+          "sequence": 1,
+          "type": "short_chunk_completed",
+          "method": "short",
+          "assisted": true,
+          "independent": false,
+          "context": "gaming"
+        },
+        {
+          "id": "E4",
+          "session": "s4",
+          "day_offset": 6,
+          "sequence": 1,
+          "type": "long_task_first_attempt",
+          "method": "long",
+          "independent": true,
+          "meaning_quality": "meaning_critical_error",
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "E5",
+          "session": "s4",
+          "day_offset": 6,
+          "sequence": 2,
+          "type": "followup_missing",
+          "delayed_transfer_rendered": false,
+          "comparison_eligible": false
+        },
+        {
+          "id": "E6",
+          "session": "s4",
+          "day_offset": 6,
+          "sequence": 3,
+          "type": "interest_context_rotation",
+          "interest": "gaming",
+          "adjacent_eligible": true,
+          "neutral_eligible": true,
+          "unfamiliar_eligible": true,
+          "method_estimate_changed": false
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "E1",
+            "assisted": false,
+            "independent": true
+          },
+          {
+            "event_id": "E2",
+            "assisted": false,
+            "independent": true
+          },
+          {
+            "event_id": "E3",
+            "assisted": false,
+            "independent": true
+          },
+          {
+            "event_id": "E5",
+            "delayed_transfer_rendered": true,
+            "comparison_eligible": true,
+            "type": "followup_rendered"
+          }
+        ],
+        "insert": [
+          {
+            "id": "E7",
+            "session": "s5",
+            "day_offset": 14,
+            "sequence": 1,
+            "type": "unseen_transfer",
+            "method": "short",
+            "independent": true,
+            "comparable_difficulty": true,
+            "assistance": "none",
+            "reviewed_semantic_oracle": "requires_review"
+          },
+          {
+            "id": "E8",
+            "session": "s6",
+            "day_offset": 16,
+            "sequence": 1,
+            "type": "unseen_transfer",
+            "method": "long",
+            "independent": true,
+            "comparable_difficulty": true,
+            "assistance": "none",
+            "reviewed_semantic_oracle": "requires_review"
+          }
+        ]
+      },
+      "expected": {
+        "assisted_completion_not_pacing_efficacy": true,
+        "missing_followup_not_success": true,
+        "interest_not_exclusive": true,
+        "matched_control_still_requires_independent_review": true
+      }
+    },
+    {
+      "id": "F",
+      "title": "Out-of-order contradictory outcomes preserve uncertainty and actual delivery",
+      "objective_family": "information_request",
+      "events": [
+        {
+          "id": "F4",
+          "session": "s4",
+          "day_offset": 21,
+          "sequence": 2,
+          "type": "delayed_transfer",
+          "method": "long_explain_then_practice",
+          "independent": true,
+          "comparable": true,
+          "outcome": "success"
+        },
+        {
+          "id": "F2",
+          "session": "s2",
+          "day_offset": 7,
+          "sequence": 2,
+          "type": "delayed_transfer",
+          "method": "long_explain_then_practice",
+          "independent": true,
+          "comparable": true,
+          "outcome": "failure"
+        },
+        {
+          "id": "F5",
+          "session": "s5",
+          "day_offset": 28,
+          "sequence": 2,
+          "type": "assisted_retry",
+          "method": "short_retrieval_first",
+          "independent": false,
+          "outcome": "success",
+          "duplicate_of": "F5-original"
+        },
+        {
+          "id": "F1",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "delayed_transfer",
+          "method": "short_retrieval_first",
+          "independent": true,
+          "comparable": true,
+          "outcome": "success"
+        },
+        {
+          "id": "F3",
+          "session": "s3",
+          "day_offset": 14,
+          "sequence": 2,
+          "type": "delayed_transfer",
+          "method": "short_retrieval_first",
+          "independent": true,
+          "comparable": true,
+          "outcome": "failure"
+        },
+        {
+          "id": "F6",
+          "session": "s6",
+          "day_offset": 35,
+          "sequence": 2,
+          "type": "untrusted_chronology",
+          "method": "long_explain_then_practice",
+          "independent": "UNKNOWN",
+          "comparable": false,
+          "outcome": "failure",
+          "render_chronology": "UNKNOWN"
+        },
+        {
+          "id": "F7",
+          "session": "s7",
+          "day_offset": 42,
+          "sequence": 1,
+          "type": "due_review_not_offered",
+          "skill": "listening",
+          "rendered": false
+        },
+        {
+          "id": "F8",
+          "session": "s7",
+          "day_offset": 42,
+          "sequence": 2,
+          "type": "next_instruction_rendered",
+          "skill": "writing",
+          "method": "balanced_fallback",
+          "rendered": true,
+          "context": "neutral",
+          "uncertainty": "high"
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "F1",
+            "outcome": "failure"
+          },
+          {
+            "event_id": "F2",
+            "outcome": "success"
+          },
+          {
+            "event_id": "F3",
+            "outcome": "success"
+          },
+          {
+            "event_id": "F4",
+            "outcome": "failure"
+          }
+        ]
+      },
+      "followup_ledger": [
+        {
+          "skill": "listening",
+          "due": 1,
+          "offered": 0,
+          "rendered": 0,
+          "completed": 0,
+          "abandoned": 0,
+          "missing_unrendered": 1,
+          "pending_rendered": 0
+        },
+        {
+          "skill": "writing",
+          "due": 1,
+          "offered": 1,
+          "rendered": 1,
+          "completed": 0,
+          "abandoned": 0,
+          "missing_unrendered": 0,
+          "pending_rendered": 1
+        }
+      ],
+      "expected": {
+        "eligible_comparable_independent_observations": 4,
+        "contradictory_outcomes_preserved": true,
+        "duplicate_and_unknown_excluded": true,
+        "skill_debt_preserved": true,
+        "actual_next_method": "balanced_fallback",
+        "followup_due": 2,
+        "followup_rendered": 1,
+        "followup_completed": 0,
+        "followup_missing_unrendered": 1,
+        "followup_pending_rendered": 1
+      }
+    }
+  ]
+}

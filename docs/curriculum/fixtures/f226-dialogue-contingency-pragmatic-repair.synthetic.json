@@ -1,0 +1,661 @@
+{
+  "schema_id": "linguachat.curriculum.f226.machine_readable.v1",
+  "fixture_document": "docs/curriculum/longitudinal-fixture-f226-dialogue-contingency-pragmatic-repair-independent-transfer.md",
+  "governing_contract": "docs/curriculum/longitudinal-instructional-adaptation.md",
+  "status": "DESIGN_ONLY_UNSUPPORTED",
+  "purpose": "Six deterministic synthetic dialogue histories and matched controls for learner contribution, clarification/repair, channel honesty and independent multi-turn transfer; not a runnable engine test, CEFR certification or efficacy claim.",
+  "seed": 22620261030,
+  "clock": {
+    "timezone": "UTC",
+    "anchor": "2026-10-01T12:00:00Z",
+    "trusted_occurrence_and_arrival_separate": true,
+    "distinct_session_and_meaningful_delay_require_review": true
+  },
+  "source_binding": {
+    "objective_id": "REQUIRES_EXISTING_VERSIONED_CEFR_CAN_DO",
+    "rubric_version": "REQUIRES_INDEPENDENT_MEANING_FUNCTION_PRAGMATIC_REVIEW",
+    "task_calibration_version": "SYNTHETIC_F226_V1",
+    "interlocutor_policy_version": "REQUIRES_REVIEW",
+    "audio_capture_and_transcription_oracle": "UNAVAILABLE",
+    "channel_and_accessibility_review": "REQUIRED",
+    "source_resolution": "UNSUPPORTED"
+  },
+  "global_rules": {
+    "construct": "Keep isolated form, scripted/text interaction, contingent pragmatic repair, listening and speaking distinct; never infer oral skill from text.",
+    "provenance": "Per-turn learner/tutor contribution, answer-bearing render and transcript chronology determine assisted versus first unaided evidence.",
+    "clarification": "Neutral repetition is not automatically answer-bearing; legitimate clarification is not automatically failure. Apply reviewed can-do rubric.",
+    "selection": "Freeze pre-choice feasible alternatives, uncertainty and policy; record delivered method and actual dialogue burden.",
+    "interests": "Soft weights only; preserve adjacent, neutral and unfamiliar contexts and all fixed CEFR objectives.",
+    "missingness": "Due/offered/rendered/completed/missing are distinct; pending and unsupported are not pass/fail.",
+    "chronology": "Stable attempt/turn/event identities; deduplicate replays; preserve original and revised transcript/rubric versions.",
+    "release": "Pre-A1 frozen, A1-C2 unavailable; no Auth/cloud/infra/production/Supabase/paid Claude/EvoLabs/auto-merge."
+  },
+  "assertions": [
+    {
+      "id": 1,
+      "check": "Preserve existing reviewed CEFR can-do, meaning/function/pragmatic rubric, prerequisites, accessibility and independent exit; no Pre-A1 or A1-C2 release changes."
+    },
+    {
+      "id": 2,
+      "check": "Distinguish isolated form, scripted/text dialogue, contingent repair, listening and speaking; unsupported channel cannot certify proficiency."
+    },
+    {
+      "id": 3,
+      "check": "Attribute tutor-leading phrases, answer-bearing prompts, models and transcripts per turn; assisted correctness never becomes independent exit."
+    },
+    {
+      "id": 4,
+      "check": "Review clarification and repair against the rubric; neutral repetition versus answer-bearing model must produce different provenance."
+    },
+    {
+      "id": 5,
+      "check": "Require actually delivered independently reviewed contingent turns and unseen meaningfully delayed transfer; unrendered due probes are neither passes nor failures."
+    },
+    {
+      "id": 6,
+      "check": "ASR errors, device/network delay and unsupported audio cannot be scored as learner language deficits; retain oral/listening skill debt."
+    },
+    {
+      "id": 7,
+      "check": "Compare interest/neutral contexts only with matched pragmatic burden, difficulty, item novelty, channel, access and missingness; interests are non-exclusive."
+    },
+    {
+      "id": 8,
+      "check": "Deduplicate stable turn IDs, preserve occurrence/arrival, revisions, pre-choice, delivered dialogue and due/offered/rendered/completed/missing counts; never backdate decisions."
+    },
+    {
+      "id": 9,
+      "check": "Without reviewed CEFR and pragmatic/channel/audio oracles and executable exact-head harness, synthetic verdict remains UNSUPPORTED; human efficacy requires ethical longitudinal independent evaluation."
+    }
+  ],
+  "required_harness_outputs": [
+    "exact_curriculum_HEAD",
+    "exact_engine_HEAD",
+    "executable_command",
+    "resolved_existing_CEFR_can_do_and_reviewed_semantic_pragmatic_rubric",
+    "reviewed_interlocutor_contingency_and_channel_oracles",
+    "accessibility_and_audio_capture_transcription_support",
+    "trusted_per_turn_prompt_answer_render_and_submission_chronology",
+    "learner_vs_tutor_contribution_and_first_unaided_evidence",
+    "meaningfully_delayed_unseen_contingent_transfer",
+    "pre_choice_candidates_propensity_uncertainty_and_actual_delivered_dialogue",
+    "due_offered_rendered_completed_missing_denominators",
+    "stable_deduplicated_turn_ids_and_versioned_transcript_bridges",
+    "matched_control_results_and_per_case_assertion_PASS_FAIL_UNSUPPORTED",
+    "independent_reviewer_signoff"
+  ],
+  "cases": [
+    {
+      "id": "A",
+      "title": "Isolated form accuracy cannot establish contingent dialogue",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "A0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "A0-session",
+          "type": "independent_isolated_form",
+          "demands_correct": 9,
+          "demands_total": 10,
+          "first_unaided": true,
+          "channel": "text",
+          "item_family": "form-A"
+        },
+        {
+          "id": "A1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T12:00:01Z",
+          "session_id": "A1-session",
+          "type": "independent_isolated_form",
+          "demands_correct": 10,
+          "demands_total": 10,
+          "first_unaided": true,
+          "channel": "text",
+          "item_family": "form-B"
+        },
+        {
+          "id": "A2",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T12:00:01Z",
+          "session_id": "A2-session",
+          "type": "independent_isolated_form",
+          "demands_correct": 10,
+          "demands_total": 10,
+          "first_unaided": true,
+          "channel": "text",
+          "item_family": "form-C"
+        },
+        {
+          "id": "A3",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T12:00:01Z",
+          "session_id": "A3-session",
+          "type": "contingent_dialogue_due",
+          "dialogue_family": "appointment-time-change",
+          "turns_planned": 3,
+          "offered": false,
+          "rendered": false,
+          "completed": false,
+          "channel": "text",
+          "pragmatic_burden": "respond_to_unanticipated_time_change"
+        }
+      ],
+      "opportunities": {
+        "due": 1,
+        "offered": 0,
+        "rendered": 0,
+        "completed": 0,
+        "missing": 1,
+        "description": "unseen_contingent_multi_turn_dialogue"
+      },
+      "expected": {
+        "isolated_form_evidence_retained": true,
+        "independent_contingent_dialogue": "UNMEASURED",
+        "interaction_exit_certified": false,
+        "oral_or_listening_certified": false,
+        "imputed_dialogue_passes": 0
+      },
+      "matched_control": {
+        "mutation": "Render an independently reviewed, accessible unseen contingent exchange with a valid change of appointment time, record actual learner turns and delayed follow-up.",
+        "expected": "ONLY_ACTUAL_REVIEWED_LEARNER_TURNS_MAY_UPDATE_INTERACTION_EVIDENCE; TEXT_NEVER_CERTIFIES_ORAL_SKILL"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "B",
+      "title": "Tutor-led fluent replies are assisted, not independent mastery",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "B0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "B0-session",
+          "type": "pre_choice_snapshot",
+          "feasible_accessible_methods": [
+            "P_worked_dialogue",
+            "Q_retrieval_first_dialogue"
+          ],
+          "method_uncertainty": "HIGH",
+          "selection_propensity": "UNAVAILABLE",
+          "policy_version": "F226_DESIGN_V1",
+          "decision_frozen": true
+        },
+        {
+          "id": "B1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T12:00:01Z",
+          "session_id": "B1-session",
+          "type": "learner_turn",
+          "attempt_id": "B-T1",
+          "turn_id": "B-T1",
+          "method": "P_worked_dialogue",
+          "tutor_pre_turn": "supplied_exact_target_phrase",
+          "answer_exposure": "ANSWER_BEARING_BEFORE_TURN",
+          "learner_reply": "correct",
+          "assisted": true,
+          "independent_credit_delta": 0
+        },
+        {
+          "id": "B2",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T12:00:01Z",
+          "session_id": "B2-session",
+          "type": "learner_turn",
+          "attempt_id": "B-T2",
+          "turn_id": "B-T2",
+          "method": "P_worked_dialogue",
+          "tutor_pre_turn": "leading_yes_no_question",
+          "answer_exposure": "LEADING_PROMPT",
+          "learner_reply": "correct",
+          "assisted": true,
+          "independent_credit_delta": 0
+        },
+        {
+          "id": "B3",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T12:00:01Z",
+          "session_id": "B3-session",
+          "type": "learner_turn",
+          "attempt_id": "B-T3",
+          "turn_id": "B-T3",
+          "method": "P_worked_dialogue",
+          "tutor_pre_turn": "supplied_exact_target_phrase",
+          "answer_exposure": "ANSWER_BEARING_BEFORE_TURN",
+          "learner_reply": "correct",
+          "assisted": true,
+          "independent_credit_delta": 0
+        },
+        {
+          "id": "B4",
+          "occurred_at": "2026-10-13T12:00:00Z",
+          "arrived_at": "2026-10-13T12:00:01Z",
+          "session_id": "B4-session",
+          "type": "independent_unseen_dialogue_due",
+          "offered": false,
+          "rendered": false,
+          "completed": false,
+          "answer_exposure": "UNKNOWN"
+        }
+      ],
+      "opportunities": {
+        "due": 1,
+        "offered": 0,
+        "rendered": 0,
+        "completed": 0,
+        "missing": 1,
+        "description": "unseen_nonleading_delayed_dialogue"
+      },
+      "expected": {
+        "assisted_correct_turns": 3,
+        "independent_turns_credited": 0,
+        "independent_exit": "UNMEASURED",
+        "method_P_permanent_winner": false,
+        "method_uncertainty_retained": true
+      },
+      "matched_control": {
+        "mutation": "Offer non-leading reviewed semantically equivalent dialogue, with target answer isolated until learner response; collect independent unseen delayed transfer.",
+        "expected": "COUNT_UNASSISTED_CONTRIBUTION_ONLY_IF_RENDER_CHRONOLOGY_AND_RUBRIC_VERIFIED"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "C",
+      "title": "Legitimate clarification and contingent repair are not automatic errors",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "C0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "F226-C-dialogue-session",
+          "type": "dialogue_delivered",
+          "channel": "text",
+          "dialogue_family": "unfamiliar_reviewed",
+          "accessibility": "FEASIBLE",
+          "answer_exposure": "VERIFIED_NONE",
+          "rendered": true
+        },
+        {
+          "id": "C1",
+          "occurred_at": "2026-10-01T12:00:10Z",
+          "arrived_at": "2026-10-01T12:00:11Z",
+          "session_id": "F226-C-dialogue-session",
+          "type": "learner_turn",
+          "attempt_id": "C-T1",
+          "turn_id": "C-T1",
+          "learner_intent": "request_repetition",
+          "utterance": "Could you repeat that?",
+          "answer_exposure": "VERIFIED_NONE",
+          "first_unaided": true,
+          "review_status": "REQUIRES_PRAGMATIC_RUBRIC"
+        },
+        {
+          "id": "C2",
+          "occurred_at": "2026-10-01T12:00:20Z",
+          "arrived_at": "2026-10-01T12:00:21Z",
+          "session_id": "F226-C-dialogue-session",
+          "type": "interlocutor_turn",
+          "turn_id": "C-I2",
+          "delivery": "neutral_repetition_same_meaning",
+          "target_answer_revealed": false,
+          "objective_simplified": false
+        },
+        {
+          "id": "C3",
+          "occurred_at": "2026-10-01T12:00:30Z",
+          "arrived_at": "2026-10-01T12:00:31Z",
+          "session_id": "F226-C-dialogue-session",
+          "type": "learner_turn",
+          "attempt_id": "C-T3",
+          "turn_id": "C-T3",
+          "learner_reply": "context_appropriate",
+          "answer_exposure": "VERIFIED_NONE",
+          "assisted": false,
+          "review_status": "REQUIRES_INDEPENDENT_REVIEW"
+        },
+        {
+          "id": "C4",
+          "occurred_at": "2026-10-08T12:00:00Z",
+          "arrived_at": "2026-10-08T12:00:01Z",
+          "session_id": "C4-session",
+          "type": "independent_unseen_repair",
+          "attempt_id": "C-T4",
+          "turn_id": "C-T4",
+          "item_family": "unseen-C",
+          "reviewed_synthetic_outcome": "successful_contingent_repair",
+          "answer_exposure": "VERIFIED_NONE",
+          "channel": "text",
+          "first_unaided": true
+        }
+      ],
+      "opportunities": {
+        "due": 2,
+        "offered": 2,
+        "rendered": 2,
+        "completed": 2,
+        "missing": 0,
+        "description": "initial_text_dialogue_and_delayed_unseen_text_repair"
+      },
+      "expected": {
+        "clarification_automatically_failed": false,
+        "neutral_repetition_automatically_assisted": false,
+        "independent_contribution_requires_rubric_review": true,
+        "oral_or_listening_certified": false
+      },
+      "matched_control": {
+        "mutation": "At C2 replace neutral repetition with an answer-bearing model while preserving turn chronology; separately adjudicate C4.",
+        "expected": "C3_BECOMES_ASSISTED; C4_INDEPENDENT_STATUS_REQUIRES_SEPARATE_REVIEW"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "D",
+      "title": "ASR omission and network latency do not establish oral deficit",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "D0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "D0-session",
+          "type": "oral_probe_offered",
+          "channel": "audio",
+          "audio_capture_verified": false,
+          "transcription_oracle": "UNAVAILABLE",
+          "rendered": false,
+          "oral_evidence": "UNSUPPORTED"
+        },
+        {
+          "id": "D1",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "D1-session",
+          "type": "asr_transcript_observed",
+          "transcript": "I can attend",
+          "synthetic_unverified_spoken_intent": "I cannot attend",
+          "negation_missing": true,
+          "recording_review": "UNAVAILABLE",
+          "learner_semantic_error": "UNKNOWN"
+        },
+        {
+          "id": "D2",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "D2-session",
+          "type": "latency_observed",
+          "elapsed_seconds": 42,
+          "device_or_network_interruption": true,
+          "clean_response_latency": "UNAVAILABLE",
+          "fluency_inference": "UNSUPPORTED"
+        },
+        {
+          "id": "D3",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T12:00:01Z",
+          "session_id": "D3-session",
+          "type": "independent_text_response",
+          "channel": "text",
+          "first_unaided": true,
+          "reviewed_synthetic_outcome": "correct",
+          "oral_transfer_eligible": false,
+          "answer_exposure": "VERIFIED_NONE"
+        }
+      ],
+      "opportunities": {
+        "due": 1,
+        "offered": 1,
+        "rendered": 0,
+        "completed": 0,
+        "missing": 1,
+        "description": "verified_accessible_audio_probe"
+      },
+      "expected": {
+        "oral_evidence": "UNSUPPORTED",
+        "asr_error_counted_as_learner_error": false,
+        "latency_counted_as_fluency_deficit": false,
+        "text_may_update_text_construct_only": true,
+        "oral_skill_debt_retained": true
+      },
+      "matched_control": {
+        "mutation": "Use independently supported consented audio capture, reviewer-confirmed transcript and accessibility timing; separately deliver unseen oral probe.",
+        "expected": "ONLY_VERIFIED_CHANNEL_MATCHED_ORAL_EVIDENCE_MAY_UPDATE_ORAL_CONSTRUCT; NEVER_SYNTHETIC_CERTIFICATION"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "E",
+      "title": "Favorite travel scripts do not establish negotiation under refusal",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "E0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "E0-session",
+          "type": "pre_choice_snapshot",
+          "topic_weights": {
+            "travel": "HIGH",
+            "adjacent": "ELIGIBLE",
+            "neutral": "ELIGIBLE",
+            "unfamiliar": "ELIGIBLE"
+          },
+          "methods_feasible": [
+            "P",
+            "Q"
+          ],
+          "uncertainty": "HIGH",
+          "decision_frozen": true
+        },
+        {
+          "id": "E1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T12:00:01Z",
+          "session_id": "E1-session",
+          "type": "scripted_dialogue",
+          "context": "travel",
+          "interlocutor_response": "immediate_acceptance",
+          "pragmatic_burden": "simple_request",
+          "item_familiarity": "HIGH",
+          "correct_turns": 3,
+          "total_turns": 3,
+          "assistance": "SCRIPTED",
+          "independent_negotiation_evidence": false
+        },
+        {
+          "id": "E2",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T12:00:01Z",
+          "session_id": "E2-session",
+          "type": "scripted_dialogue",
+          "context": "travel",
+          "interlocutor_response": "immediate_acceptance",
+          "pragmatic_burden": "simple_request",
+          "item_familiarity": "HIGH",
+          "correct_turns": 3,
+          "total_turns": 3,
+          "assistance": "SCRIPTED",
+          "independent_negotiation_evidence": false
+        },
+        {
+          "id": "E3",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T12:00:01Z",
+          "session_id": "E3-session",
+          "type": "negotiation_due",
+          "context": "neutral",
+          "interlocutor_response": "refusal",
+          "pragmatic_burden": "polite_negotiation",
+          "offered": false,
+          "rendered": false,
+          "completed": false
+        },
+        {
+          "id": "E4",
+          "occurred_at": "2026-10-13T12:00:00Z",
+          "arrived_at": "2026-10-13T12:00:01Z",
+          "session_id": "E4-session",
+          "type": "negotiation_due",
+          "context": "unfamiliar",
+          "interlocutor_response": "refusal",
+          "pragmatic_burden": "polite_negotiation",
+          "offered": false,
+          "rendered": false,
+          "completed": false
+        }
+      ],
+      "opportunities": {
+        "due": 2,
+        "offered": 0,
+        "rendered": 0,
+        "completed": 0,
+        "missing": 2,
+        "description": "neutral_and_unfamiliar_negotiation_after_refusal"
+      },
+      "expected": {
+        "negotiation_mastery": "UNMEASURED",
+        "travel_vs_negotiation_comparability": "NOT_COMPARABLE",
+        "travel_exclusive_topic_filter": false,
+        "required_objective_skipped": false,
+        "method_winner": "UNSUPPORTED"
+      },
+      "matched_control": {
+        "mutation": "Review topic-equivalent refusal, register, contingency, novelty, channel, difficulty and timing across interest/neutral contexts; render delayed unseen transfer.",
+        "expected": "ONLY_MATCHED_REVIEWED_COMPARISONS_CAN_INFORM_METHOD; OTHERWISE_NOT_COMPARABLE"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "F",
+      "title": "Duplicate, late revision and unrendered turns do not complete dialogue",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "F0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "F0-session",
+          "type": "pre_choice_snapshot",
+          "feasible_accessible_methods": [
+            "P",
+            "Q"
+          ],
+          "uncertainty": "HIGH",
+          "selection_propensity": "UNAVAILABLE",
+          "policy_version": "F226_DESIGN_V1",
+          "turns_due": 3,
+          "decision_frozen": true
+        },
+        {
+          "id": "F1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T12:00:00.500Z",
+          "session_id": "F226-F-D1-session",
+          "type": "learner_turn",
+          "attempt_id": "F-T1",
+          "turn_id": "F-T1",
+          "dialogue_id": "F-D1",
+          "turn_index": 1,
+          "answer_exposure": "VERIFIED_NONE",
+          "first_unaided": true,
+          "transcript_version": "v1",
+          "reviewed_synthetic_outcome": "success",
+          "independent_credit_delta": 1
+        },
+        {
+          "id": "F2",
+          "occurred_at": "2026-10-04T12:00:02Z",
+          "arrived_at": "2026-10-04T12:00:02.500Z",
+          "session_id": "F226-F-D1-session",
+          "type": "duplicate_replay",
+          "attempt_id": "F-T1",
+          "turn_id": "F-T1",
+          "same_as": "F1",
+          "independent_credit_delta": 0
+        },
+        {
+          "id": "F3",
+          "occurred_at": "2026-10-04T12:01:00Z",
+          "arrived_at": "2026-10-04T12:01:00.500Z",
+          "session_id": "F226-F-D1-session",
+          "type": "learner_turn",
+          "attempt_id": "F-T2",
+          "turn_id": "F-T2",
+          "dialogue_id": "F-D1",
+          "turn_index": 2,
+          "tutor_pre_turn": "supplied_answer",
+          "answer_exposure": "ANSWER_BEARING_BEFORE_TURN",
+          "assisted": true,
+          "reviewed_synthetic_outcome": "success",
+          "independent_credit_delta": 0
+        },
+        {
+          "id": "F4",
+          "occurred_at": "2026-10-04T12:02:00Z",
+          "arrived_at": "2026-10-04T12:02:00.500Z",
+          "session_id": "F226-F-D1-session",
+          "type": "turn_due",
+          "turn_id": "F-T3",
+          "dialogue_id": "F-D1",
+          "turn_index": 3,
+          "offered": false,
+          "rendered": false,
+          "completed": false
+        },
+        {
+          "id": "F5",
+          "occurred_at": "2026-10-05T12:00:00Z",
+          "arrived_at": "2026-10-13T12:00:01Z",
+          "session_id": "F5-session",
+          "type": "late_independent_transcript_review",
+          "attempt_id": "F-T1",
+          "turn_id": "F-T1",
+          "dialogue_id": "F-D1",
+          "reviewed_interlocutor_transcript_from": "v1",
+          "reviewed_interlocutor_transcript_to": "v2",
+          "rubric_bridge": "NOT_COMPARABLE_PENDING_ADJUDICATION",
+          "historical_pre_choice_preserved": true,
+          "original_evidence_preserved": true
+        },
+        {
+          "id": "F6",
+          "occurred_at": "2026-10-16T12:00:00Z",
+          "arrived_at": "2026-10-16T12:00:01Z",
+          "session_id": "F6-session",
+          "type": "unseen_neutral_dialogue_delivered",
+          "dialogue_id": "F-D2",
+          "channel": "text",
+          "offered": true,
+          "rendered": true,
+          "completed": false,
+          "outcome": "PENDING",
+          "answer_exposure": "VERIFIED_NONE"
+        }
+      ],
+      "opportunities": {
+        "due": 2,
+        "offered": 1,
+        "rendered": 1,
+        "completed": 0,
+        "missing": 2,
+        "description": "F-D1_turn3_unrendered_and_F-D2_outcome_pending"
+      },
+      "expected": {
+        "unique_F_T1_attempt_count": 1,
+        "duplicate_independent_credit_delta": 0,
+        "F_T2_independent_credit_delta": 0,
+        "F_T3_scored_as_failure": false,
+        "F_D1_complete": false,
+        "F_D2_outcome": "PENDING",
+        "historical_choice_rewritten": false,
+        "revision_bridge": "NOT_COMPARABLE_PENDING_ADJUDICATION"
+      },
+      "matched_control": {
+        "mutation": "Render valid reviewed unseen turn 3 with trusted answer isolation and adjudicate transcript v1/v2 without altering F0.",
+        "expected": "ONLY_NEW_VALID_TURN_MAY_UPDATE_FUTURE_EVIDENCE; ORIGINAL_CHOICE_AND_REVIEW_HISTORY_IMMUTABLE"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    }
+  ]
+}

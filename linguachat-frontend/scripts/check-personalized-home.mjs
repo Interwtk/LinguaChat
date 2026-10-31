@@ -98,13 +98,25 @@ function learner() {
   ok()
 }
 
-// 7) a NEW session may legitimately pick a different context
+// 7) across NEW learning days, an interest is a soft weight: it dominates but is not a whitelist
 {
   const model = learner()
-  const today = buildSessionPlan(model, ARC, { durationMode: 'standard', atMs: AT, interests: ['music'], learnerKey: 'sofia' })
-  const tomorrow = buildSessionPlan(model, ARC, { durationMode: 'standard', atMs: AT + 86400000, interests: ['sports'], learnerKey: 'sofia' })
-  assert.equal(today.topic.interestId, 'music')
-  assert.equal(tomorrow.topic.interestId, 'sports')
+  const topics = []
+  for (let day = 0; day < 120; day++) {
+    const plan = buildSessionPlan(model, ARC, {
+      durationMode: 'standard',
+      atMs: AT + day * 86400000,
+      interests: ['sports'],
+      learnerKey: 'sofia',
+    })
+    topics.push(plan.topic.interestId)
+  }
+  const favoured = topics.filter(id => id === 'sports').length
+  const varied = topics.filter(id => id !== null && id !== 'sports').length
+  const neutral = topics.filter(id => id === null).length
+  assert.ok(favoured > topics.length / 2, 'selected interest should remain the majority across learning days')
+  assert.ok(varied > 0, 'daily practice must sometimes explore a non-selected topic')
+  assert.ok(neutral > 0, 'daily practice must sometimes use a neutral context')
   ok()
 }
 

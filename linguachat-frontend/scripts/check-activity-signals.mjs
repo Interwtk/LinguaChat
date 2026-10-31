@@ -292,4 +292,24 @@ const show = (m, format, times, id = 'e') => {
   ok()
 }
 
+// 19) Recorded event IDs must survive the same validation as persisted IDs.
+// A malformed or oversized ID used to count once, disappear during migration,
+// and count again after reload. Reject it before mutating any counters.
+{
+  for (const bad of [null, undefined, 1, {}, [], '', 'x'.repeat(121)]) {
+    const m = createLearnerModel()
+    assert.equal(recordActivitySignalOnce(m, bad, 'choice', 'shown'), false)
+    assert.deepEqual(m.activityPreferences, {})
+    assert.deepEqual(m.signalLog, [])
+  }
+  const m = createLearnerModel()
+  const valid = 'x'.repeat(120)
+  assert.equal(recordActivitySignalOnce(m, valid, 'choice', 'shown'), true)
+  const loaded = migrateLearnerModel(JSON.parse(JSON.stringify(m)))
+  assert.deepEqual(loaded.signalLog, [valid])
+  assert.equal(recordActivitySignalOnce(loaded, valid, 'choice', 'shown'), false)
+  assert.equal(loaded.activityPreferences.choice.shown, 1)
+  ok()
+}
+
 console.log(`check-activity-signals — OK  (${n} signal groups verified)`)

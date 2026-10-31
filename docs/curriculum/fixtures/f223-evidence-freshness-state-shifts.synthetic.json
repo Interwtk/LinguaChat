@@ -1,0 +1,533 @@
+{
+  "schema_id": "linguachat.curriculum.f223.machine_readable.v1",
+  "fixture_document": "docs/curriculum/longitudinal-fixture-f223-evidence-freshness-state-shifts-independent-transfer.md",
+  "governing_contract": "docs/curriculum/longitudinal-instructional-adaptation.md",
+  "status": "DESIGN_ONLY_UNSUPPORTED",
+  "purpose": "Deterministic synthetic histories and matched controls for evidence freshness, learner-state shifts and reversible instructional hypotheses. Not executable engine evidence, a CEFR pass or proof of human-learning gains.",
+  "seed": 22320261030,
+  "clock": {
+    "anchor": "2026-10-01T12:00:00Z",
+    "timezone": "UTC",
+    "day_semantics": "elapsed_24h; not automatic meaningful delay",
+    "arrival_time_distinct_from_occurrence": true
+  },
+  "source_binding": {
+    "cefr_can_do_id": "REQUIRES_EXISTING_VERSIONED_SOURCE_BINDING",
+    "rubric_version": "REQUIRES_INDEPENDENT_REVIEW",
+    "task_version": "SYNTHETIC_F223_V1",
+    "policy_version": "F223_DESIGN_V1",
+    "channel_version": "REQUIRES_SUPPORTED_CHANNEL_BINDING",
+    "source_resolution": "UNSUPPORTED"
+  },
+  "global_rules": {
+    "decision_snapshot": "freeze before next choice; preserve policy, candidate feasibility, learner choice, objective/rubric/task/channel/content versions, uncertainty and review debt",
+    "evidence_eligibility": "first valid unaided, independently reviewed meaning/function; answer exposure and genuine distinct-session delayed unseen transfer required",
+    "missingness": "due, offered, rendered, completed and missing are separate; missing does not mean failed",
+    "evidence_freshness": "elapsed time raises uncertainty or review need, not automatic mastery expiry",
+    "topic_layer": "soft reweighting independent of method confidence; keep adjacent, neutral and unfamiliar eligible",
+    "release": "Pre-A1 frozen; A1-C2 unavailable; no engine, Auth, cloud, infrastructure, production, Supabase, paid Claude, EvoLabs or auto-merge mutation"
+  },
+  "assertions": [
+    {
+      "id": 1,
+      "check": "Fixed versioned CEFR can-do, reviewed rubric, prerequisites, skill coverage and independent exit standards; no invented objective or level activation."
+    },
+    {
+      "id": 2,
+      "check": "Elapsed time and missing review opportunities never create failed attempts, automatic downgrade or deterministic forgetting."
+    },
+    {
+      "id": 3,
+      "check": "Deduplicate stable attempts, preserve trusted occurrence versus arrival, answer-bearing render and unaided delayed unseen provenance."
+    },
+    {
+      "id": 4,
+      "check": "Non-equivalent rubric/task versions cannot be pooled or retrospectively rescored without independent construct/difficulty bridge."
+    },
+    {
+      "id": 5,
+      "check": "Device/audio failure and unreliable latency cannot create language errors or complete missing oral/listening coverage."
+    },
+    {
+      "id": 6,
+      "check": "Interest shifts affect only soft context probabilities; neutral/adjacent/unfamiliar remain eligible and method confidence is unchanged absent learning evidence."
+    },
+    {
+      "id": 7,
+      "check": "UNKNOWN and queued/not-rendered work cannot count as success; due/offered/rendered/completed/missing denominators remain auditable."
+    },
+    {
+      "id": 8,
+      "check": "Conflicting evidence supports revisable uncertain hypotheses and an actually rendered feasible next choice, or justified balanced fallback, never fixed learning types."
+    },
+    {
+      "id": 9,
+      "check": "Every synthetic result remains UNSUPPORTED pending source binding, independently reviewed oracles and exact-head executable harness; efficacy additionally needs ethical longitudinal human evidence."
+    }
+  ],
+  "required_harness_outputs": [
+    "exact_curriculum_HEAD",
+    "exact_engine_HEAD",
+    "executable_command",
+    "resolved_CEFR_objective_and_rubric",
+    "versioned_task_and_channel_comparability",
+    "trusted_occurrence_arrival_answer_render_chronology",
+    "pre_choice_feasible_methods_policy_uncertainty",
+    "actual_next_method_rendered_and_dose",
+    "first_unaided_delayed_unseen_transfer_eligibility",
+    "due_offered_rendered_completed_missing_counts",
+    "per_case_and_control_expected_vs_observed",
+    "per_assertion_PASS_FAIL_UNSUPPORTED",
+    "independent_reviewer_signoff"
+  ],
+  "cases": [
+    {
+      "id": "A",
+      "title": "New independent evidence reverses a formerly useful scaffold hypothesis",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "A_PRE",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "session": "a_pre",
+          "type": "pre_choice_snapshot",
+          "methods_feasible": [
+            "worked_example",
+            "retrieval_first"
+          ],
+          "method_hypothesis": "worked_example_tentatively_supported",
+          "uncertainty": "HIGH",
+          "next_method_rendered": "worked_example"
+        },
+        {
+          "id": "A0",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "session": "a0",
+          "type": "unseen_delayed_probe",
+          "method_prior": "worked_example",
+          "independent": true,
+          "reviewed_error": "repair_failure",
+          "answer_exposure": false,
+          "meaningful_delay_review": "REQUIRED"
+        },
+        {
+          "id": "A1",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "session": "a1",
+          "type": "unseen_delayed_probe",
+          "method_prior": "worked_example",
+          "independent": true,
+          "reviewed_error": "repair_failure",
+          "answer_exposure": false,
+          "meaningful_delay_review": "REQUIRED"
+        },
+        {
+          "id": "A2",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "session": "a2",
+          "type": "unseen_delayed_probe",
+          "method_prior": "worked_example",
+          "independent": true,
+          "reviewed_error": "repair_failure",
+          "answer_exposure": false,
+          "meaningful_delay_review": "REQUIRED"
+        },
+        {
+          "id": "A3",
+          "occurred_at": "2026-10-13T12:00:00Z",
+          "session": "a3",
+          "type": "unseen_delayed_probe",
+          "method_prior": "retrieval_first",
+          "independent": true,
+          "reviewed_semantic_outcome": "success",
+          "answer_exposure": false,
+          "meaningful_delay_review": "REQUIRED"
+        },
+        {
+          "id": "A4",
+          "occurred_at": "2026-10-16T12:00:00Z",
+          "session": "a4",
+          "type": "unseen_delayed_probe",
+          "method_prior": "retrieval_first",
+          "independent": true,
+          "reviewed_semantic_outcome": "success",
+          "answer_exposure": false,
+          "meaningful_delay_review": "REQUIRED"
+        },
+        {
+          "id": "A5",
+          "occurred_at": "2026-10-19T12:00:00Z",
+          "session": "a5",
+          "type": "unseen_delayed_probe",
+          "method_prior": "retrieval_first",
+          "independent": true,
+          "reviewed_semantic_outcome": "success",
+          "answer_exposure": false,
+          "meaningful_delay_review": "REQUIRED"
+        },
+        {
+          "id": "A6",
+          "occurred_at": "2026-10-20T12:00:00Z",
+          "session": "a6",
+          "type": "next_instruction_rendered",
+          "method": "lower_scaffold_or_balanced_feasible",
+          "dose": 1,
+          "uncertainty": "NONZERO",
+          "skill_debt_retained": true
+        }
+      ],
+      "matched_control": {
+        "mutation": "replace A3-A5 with model-assisted repeats, same dates and surface correctness",
+        "expected_clean_new_independent_successes": 0,
+        "expected": "NO_NEW_METHOD_WINNER; CLEAN_UNSEEN_PROBE_DUE"
+      },
+      "expected": {
+        "permanent_worked_example_label": false,
+        "method_hypothesis_revisable": true,
+        "observational_causality_claim": false,
+        "next_method_must_be_rendered": true
+      }
+    },
+    {
+      "id": "B",
+      "title": "Forty-five absent days do not equal three failed reviews",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "B0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "session": "b0",
+          "type": "clean_independent_probe",
+          "reviewed_semantic_outcome": "success",
+          "answer_exposure": false
+        },
+        {
+          "id": "B1",
+          "occurred_at": "2026-11-15T12:00:00Z",
+          "session": "b1",
+          "type": "review_schedule",
+          "due_count": 3,
+          "offered": 0,
+          "rendered": 0,
+          "completed": 0,
+          "missing": 3,
+          "absence_elapsed_days": 45,
+          "observed_failures": 0
+        },
+        {
+          "id": "B2",
+          "occurred_at": "2026-11-16T12:00:00Z",
+          "session": "b2",
+          "type": "reentry_choice",
+          "choice": "accessible_independent_reentry_probe",
+          "rendered": false,
+          "current_retention": "UNMEASURED"
+        }
+      ],
+      "matched_control": {
+        "mutation": "render a distinct-session reviewed delayed unseen independent reentry probe that fails; retain 45-day absence and no invented interim failures",
+        "expected": {
+          "new_observed_failures": 1,
+          "absence_imputed_failures": 0,
+          "review_support_may_increase": true
+        }
+      },
+      "expected": {
+        "historical_independent_success_retained": true,
+        "current_retention": "UNMEASURED",
+        "due": 3,
+        "offered": 0,
+        "rendered": 0,
+        "completed": 0,
+        "missing": 3,
+        "auto_CEFR_downgrade": false
+      }
+    },
+    {
+      "id": "C",
+      "title": "Changed scoring construct is not learner regression",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "C0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "session": "c0",
+          "type": "independent_probe",
+          "rubric_version": "v1",
+          "task_version": "v1",
+          "raw_answer": "ILLUSTRATIVE_UNSCORED",
+          "reviewed_result": "passes_v1"
+        },
+        {
+          "id": "C1",
+          "occurred_at": "2026-10-05T12:00:00Z",
+          "session": "c1",
+          "type": "independent_probe",
+          "rubric_version": "v1",
+          "task_version": "v1",
+          "reviewed_result": "passes_v1"
+        },
+        {
+          "id": "C2",
+          "occurred_at": "2026-10-09T12:00:00Z",
+          "session": "c2",
+          "type": "independent_probe",
+          "rubric_version": "v2",
+          "task_version": "v2",
+          "meaning_critical_requirement_changed": true,
+          "surface_answer_same_as_C0": true,
+          "reviewed_result": "fails_v2"
+        }
+      ],
+      "matched_control": {
+        "mutation": "independent reviewer certifies v2 presentation-only with equivalent construct and difficulty; signed bridge",
+        "expected_comparability": "CAUTIOUSLY_COMPARABLE_WITH_BRIDGE"
+      },
+      "expected": {
+        "original_comparability": "NOT_COMPARABLE",
+        "retroactive_rescoring": false,
+        "automatic_forgetting_claim": false,
+        "method_switch_due_only_to_version_change": false
+      }
+    },
+    {
+      "id": "D",
+      "title": "Audio/device failure and unreliable latency are not language failure",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "D0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "session": "d0",
+          "type": "listening_probe",
+          "audio_delivery": "VERIFIED",
+          "independent": true,
+          "reviewed_semantic_outcome": "success"
+        },
+        {
+          "id": "D1",
+          "occurred_at": "2026-10-05T12:00:00Z",
+          "session": "d1",
+          "type": "listening_probe",
+          "audio_delivery": "VERIFIED",
+          "independent": true,
+          "reviewed_semantic_outcome": "success"
+        },
+        {
+          "id": "D2",
+          "occurred_at": "2026-10-09T12:00:00Z",
+          "session": "d2",
+          "type": "listening_probe",
+          "audio_delivery": "FAILED",
+          "transcript_exposure": "UNKNOWN",
+          "latency_quality": "UNRELIABLE",
+          "reviewed_semantic_outcome": "UNKNOWN"
+        },
+        {
+          "id": "D3",
+          "occurred_at": "2026-10-09T12:00:00Z",
+          "session": "d2",
+          "type": "speaking_probe_offered",
+          "rendered": false,
+          "completed": false
+        },
+        {
+          "id": "D4",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "session": "d3",
+          "type": "next_instruction_rendered",
+          "method": "feasible_accessible_balanced_practice",
+          "listening_debt": "PENDING",
+          "speaking_debt": "PENDING",
+          "dose": 1
+        }
+      ],
+      "matched_control": {
+        "mutation": "audio verified and accessible, distinct-session speaking/listening probes genuinely rendered, independently reviewed",
+        "expected": "ONLY_VALID_NEW_LANGUAGE_OUTCOMES_MAY_UPDATE_SKILL_MASTERY"
+      },
+      "expected": {
+        "D2_language_failure": false,
+        "D2_independent_success": false,
+        "unreliable_latency_ignored": true,
+        "text_only_oral_certification": false,
+        "skill_debt_retained": true
+      }
+    },
+    {
+      "id": "E",
+      "title": "Interest drift changes contexts, not instructional-method evidence",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "E0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "session": "e0",
+          "type": "pre_choice_snapshot",
+          "soft_interest_weights": {
+            "games": "higher",
+            "cooking": "lower"
+          },
+          "methods_feasible": [
+            "worked_example",
+            "retrieval_first"
+          ],
+          "method_confidence": "LOW"
+        },
+        {
+          "id": "E1",
+          "occurred_at": "2026-10-06T12:00:00Z",
+          "session": "e1",
+          "type": "interest_observation",
+          "demonstrated_interest": "cooking",
+          "language_outcome": "NONE"
+        },
+        {
+          "id": "E2",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "session": "e2",
+          "type": "context_sampler",
+          "soft_interest_weights": {
+            "games": "lower",
+            "cooking": "higher"
+          },
+          "eligible_context_families": [
+            "cooking",
+            "games",
+            "adjacent",
+            "neutral",
+            "unfamiliar"
+          ],
+          "objective_and_rubric_unchanged": true,
+          "method_confidence": "LOW"
+        },
+        {
+          "id": "E3",
+          "occurred_at": "2026-10-08T12:00:00Z",
+          "session": "e3",
+          "type": "next_instruction_rendered",
+          "context": "neutral",
+          "method": "balanced_feasible",
+          "dose": 1
+        }
+      ],
+      "matched_control": {
+        "mutation": "hold interest shift fixed and add repeated comparable, reviewed, meaningfully delayed unseen independent outcomes under feasible alternatives",
+        "expected": "METHOD_HYPOTHESIS_MAY_REVISE_ONLY_AFTER_NEW_EVIDENCE"
+      },
+      "expected": {
+        "permanent_learning_style_label": false,
+        "topic_exclusion": false,
+        "method_confidence_changes_from_interest_only": false,
+        "required_objective_skipped": false
+      }
+    },
+    {
+      "id": "F",
+      "title": "Late arrivals, duplicate replay, UNKNOWN and a delivered balanced next choice",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "F0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session": "f0",
+          "type": "pre_choice_snapshot",
+          "methods_feasible": [
+            "P",
+            "Q"
+          ],
+          "method_confidence": "LOW",
+          "due_listening_review": true,
+          "decision_frozen": true
+        },
+        {
+          "id": "F1",
+          "occurred_at": "2026-10-09T12:00:00Z",
+          "arrived_at": "2026-10-09T12:00:01Z",
+          "session": "f1",
+          "type": "unseen_transfer",
+          "stable_attempt_id": "F_T1",
+          "independent": true,
+          "answer_visibility": "VERIFIED_NO_EXPOSURE",
+          "reviewed_semantic_outcome": "success"
+        },
+        {
+          "id": "F2",
+          "occurred_at": "2026-10-09T12:00:00Z",
+          "arrived_at": "2026-10-09T12:00:02Z",
+          "session": "f1",
+          "type": "replay",
+          "stable_attempt_id": "F_T1",
+          "independent": true
+        },
+        {
+          "id": "F3",
+          "occurred_at": "2026-10-09T13:00:00Z",
+          "arrived_at": "2026-10-09T13:00:01Z",
+          "session": "f1",
+          "type": "unseen_transfer",
+          "stable_attempt_id": "F_UNKNOWN",
+          "answer_visibility": "UNKNOWN",
+          "reviewed_semantic_outcome": "success_surface_only"
+        },
+        {
+          "id": "F4",
+          "occurred_at": "2026-10-08T12:00:00Z",
+          "arrived_at": "2026-10-10T12:00:00Z",
+          "session": "f_pre",
+          "type": "unseen_transfer_late_arrival",
+          "stable_attempt_id": "F_FAIL",
+          "independent": true,
+          "answer_visibility": "VERIFIED_NO_EXPOSURE",
+          "reviewed_semantic_outcome": "failure",
+          "may_affect_decisions_after_arrival_only": true
+        },
+        {
+          "id": "F5",
+          "occurred_at": "2026-10-10T12:00:01Z",
+          "arrived_at": "2026-10-10T12:00:02Z",
+          "session": "f2",
+          "type": "listening_review_queued",
+          "due": 1,
+          "offered": 0,
+          "rendered": 0,
+          "completed": 0,
+          "missing": 1
+        },
+        {
+          "id": "F6",
+          "occurred_at": "2026-10-11T12:00:00Z",
+          "arrived_at": "2026-10-11T12:00:01Z",
+          "session": "f3",
+          "type": "next_instruction_rendered",
+          "method": "balanced_feasible_fallback",
+          "skill": "listening",
+          "dose": 1,
+          "rendered": true,
+          "independent_outcome": "PENDING"
+        }
+      ],
+      "matched_control": {
+        "mutation": "reverse only a later clean independently reviewed transfer outcome, preserving timing, eligibility, objective, difficulty, exposure and access",
+        "expected": "REASSESS_METHOD_HYPOTHESIS_OR_JUSTIFY_SAME_BALANCED_FALLBACK"
+      },
+      "expected": {
+        "unique_F_T1_count": 1,
+        "F_UNKNOWN_eligible": false,
+        "backdated_prior_decision": false,
+        "F5_review_completed": false,
+        "F5_missing": 1,
+        "F6_actually_rendered": true,
+        "method_permanently_locked": false
+      }
+    }
+  ],
+  "prohibitions": [
+    "No live learner experiment or production tracking",
+    "No Auth/cloud/infra/Supabase/production mutation",
+    "No paid Claude or EvoLabs",
+    "No auto-merge",
+    "No Pre-A1 edits or A1-C2 activation"
+  ]
+}
