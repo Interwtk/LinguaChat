@@ -904,7 +904,7 @@ export function sanitizeRun(raw) {
     branchId: str(raw.branchId, 30),
     startedAt: str(raw.startedAt, 40),
     completedAt: str(raw.completedAt, 40),
-    independentEvidence: Boolean(raw.independentEvidence),
+    independentEvidence: raw.independentEvidence === true,
     assistanceUsed: num(raw.assistanceUsed),
     retriedSteps: num(raw.retriedSteps),
     formatsUsed: Array.isArray(raw.formatsUsed)
@@ -913,7 +913,7 @@ export function sanitizeRun(raw) {
     // signals dedupe across replays, but a new practice must still remember
     // its own assistance and retries. No answers or learner text are stored.
     signalKeys: boundedRunSignalKeys(raw.signalKeys),
-    rewarded: Boolean(raw.rewarded),
+    rewarded: raw.rewarded === true,
     /*
      * How much help this run offers, and why. It lives on the run so a resumed
      * attempt restores exactly what it had rather than re-deriving from a model
