@@ -1,0 +1,805 @@
+{
+  "schema_id": "linguachat.curriculum.f216.machine_readable.v1",
+  "fixture_document": "docs/curriculum/longitudinal-fixture-f216-speech-asr-provenance-accessibility-independent-transfer.md",
+  "status": "DESIGN_ONLY_UNSUPPORTED",
+  "description": "Synthetic design-only ASR/audio/accessibility evidence; no real speech evaluator, reviewed human oracle, CEFR release, causal proof, or human efficacy.",
+  "seed": 21620261030,
+  "clock": {
+    "anchor": "2026-10-01T12:00:00Z",
+    "timezone": "UTC",
+    "day_offset_semantics": "distinct days; upload order is not event order"
+  },
+  "source_binding": {
+    "cefr_can_do_id": "REQUIRES_EXISTING_VERSIONED_SOURCE_BINDING",
+    "rubric_version": "REQUIRES_INDEPENDENT_REVIEW",
+    "task_version": "SYNTHETIC_F216_V1",
+    "policy_version": "F216_DESIGN_V1",
+    "asr_version": "REQUIRES_REAL_PROVIDER_BINDING",
+    "tts_version": "REQUIRES_REAL_PROVIDER_BINDING",
+    "source_resolution": "UNSUPPORTED"
+  },
+  "global_invariants": [
+    "ASR hypothesis is measurement, never CEFR ground truth.",
+    "Capture absence, permission refusal, and channel corruption are UNKNOWN, not failure.",
+    "Transcript or typed substitute cannot certify oral speaking/listening obligations.",
+    "Actual rendered exposure invalidates assisted repeats as independent evidence.",
+    "Accent and variety require fixed independently reviewed rubric; never infer identity.",
+    "Interests change example probabilities, not objective/rubric/method confidence.",
+    "Replays deduplicated by stable IDs; contradictions and missing denominators retained.",
+    "Actual delivered instruction and reversible uncertainty are recorded.",
+    "Synthetic structural PASS cannot establish engine behavior or human learning benefit."
+  ],
+  "required_harness_outputs": [
+    "source_binding_resolution",
+    "per_event_capture_and_playback_provenance",
+    "asr_hypothesis_uncertainty_and_version",
+    "independently_reviewed_semantic_oracle_when_available",
+    "per_case_and_control_oracle_result",
+    "per_assertion_PASS_FAIL_UNSUPPORTED",
+    "per_skill_due_offered_rendered_completed_missing",
+    "actual_next_instruction_rendered",
+    "exact_engine_HEAD",
+    "executable_command",
+    "independent_reviewer_signoff"
+  ],
+  "acceptance_assertions": [
+    "FIXED_CEFR_SKILL_AND_RUBRIC",
+    "ASR_MEASUREMENT_PROVENANCE",
+    "AUDIO_PLAYBACK_AND_TRANSCRIPT_EXPOSURE",
+    "ACCESSIBILITY_PERMISSION_AND_CORRUPT_CAPTURE",
+    "FIRST_ATTEMPT_MODEL_EXPOSURE_AND_TRANSFER",
+    "VARIETY_REVIEW_NOT_CONFIDENCE",
+    "INTEREST_METHOD_SEPARATION",
+    "REPLAY_MISSINGNESS_REVERSIBILITY",
+    "INDEPENDENT_EXECUTION_AND_EFFICACY_UNSUPPORTED"
+  ],
+  "cases": [
+    {
+      "id": "A",
+      "title": "Recognizer substitution is not the learner's semantic error",
+      "skill": "speaking",
+      "objective": "request_information",
+      "events": [
+        {
+          "id": "A1",
+          "learner_id": "synthetic-learner-A",
+          "session": "a-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "occurred_at": "2026-10-01T12:01:00.000Z",
+          "type": "first_unaided_oral_capture",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "capture": "valid",
+          "independent": true,
+          "utterance": "Could you tell me where the station is?",
+          "mastery_credit": false
+        },
+        {
+          "id": "A2",
+          "learner_id": "synthetic-learner-A",
+          "session": "a-day0",
+          "day_offset": 0,
+          "sequence": 2,
+          "occurred_at": "2026-10-01T12:02:00.000Z",
+          "type": "asr_hypothesis",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "hypothesis": "Could you tell me where the statue is?",
+          "confidence": "low",
+          "measurement_not_ground_truth": true
+        },
+        {
+          "id": "A3",
+          "learner_id": "synthetic-learner-A",
+          "session": "a-day0",
+          "day_offset": 0,
+          "sequence": 3,
+          "occurred_at": "2026-10-01T12:03:00.000Z",
+          "type": "synthetic_semantic_oracle",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "oracle_kind": "synthetic_design_label_not_human_review",
+          "meaning": "station",
+          "result": "meaning_preserved",
+          "human_review_available": false,
+          "mastery_credit": false
+        },
+        {
+          "id": "A4",
+          "learner_id": "synthetic-learner-A",
+          "session": "a-day0",
+          "day_offset": 0,
+          "sequence": 4,
+          "occurred_at": "2026-10-01T12:04:00.000Z",
+          "type": "next_instruction_rendered",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "rendered": true,
+          "method": "nonpunitive_clarification",
+          "reversible": true
+        },
+        {
+          "id": "A5",
+          "learner_id": "synthetic-learner-A",
+          "session": "a-day8",
+          "day_offset": 8,
+          "sequence": 1,
+          "occurred_at": "2026-10-09T12:01:00.000Z",
+          "type": "unseen_oral_transfer_due",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "status": "UNKNOWN",
+          "human_review_available": false,
+          "mastery_credit": false
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "A1",
+            "utterance": "Could you tell me where the statue is?"
+          },
+          {
+            "event_id": "A3",
+            "meaning": "statue",
+            "result": "meaning_critical_error"
+          }
+        ]
+      },
+      "expected": {
+        "asr_alone_never_grades": true,
+        "synthetic_oracle_not_human_review": true,
+        "review_missing_abstains": true
+      },
+      "followup_ledger": [
+        {
+          "skill": "speaking",
+          "due": 2,
+          "offered": 2,
+          "rendered": 1,
+          "completed": 1,
+          "missing_unrendered": 1,
+          "pending_rendered": 0
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "title": "Visible transcript is reading evidence, not listening",
+      "skill": "listening",
+      "objective": "understand_appointment_change",
+      "events": [
+        {
+          "id": "B1",
+          "learner_id": "synthetic-learner-B",
+          "session": "b-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "occurred_at": "2026-10-01T12:01:00.000Z",
+          "type": "audio_offered",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "offered": true,
+          "actually_played": false,
+          "channel_integrity": "not_played"
+        },
+        {
+          "id": "B2",
+          "learner_id": "synthetic-learner-B",
+          "session": "b-day0",
+          "day_offset": 0,
+          "sequence": 2,
+          "occurred_at": "2026-10-01T12:02:00.000Z",
+          "type": "transcript_rendered",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "rendered": true,
+          "answer_bearing": true,
+          "text": "The meeting is now at three."
+        },
+        {
+          "id": "B3",
+          "learner_id": "synthetic-learner-B",
+          "session": "b-day0",
+          "day_offset": 0,
+          "sequence": 3,
+          "occurred_at": "2026-10-01T12:03:00.000Z",
+          "type": "first_answer",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "answer": "three",
+          "independent": false,
+          "exposure": "transcript",
+          "listening_mastery_credit": false
+        },
+        {
+          "id": "B4",
+          "learner_id": "synthetic-learner-B",
+          "session": "b-day0",
+          "day_offset": 0,
+          "sequence": 4,
+          "occurred_at": "2026-10-01T12:04:00.000Z",
+          "type": "next_instruction_rendered",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "rendered": true,
+          "method": "accessible_audio_retry",
+          "reversible": true
+        },
+        {
+          "id": "B5",
+          "learner_id": "synthetic-learner-B",
+          "session": "b-day8",
+          "day_offset": 8,
+          "sequence": 1,
+          "occurred_at": "2026-10-09T12:01:00.000Z",
+          "type": "unseen_audio_transfer_due",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "actually_played": false,
+          "reviewed_result": "UNKNOWN",
+          "listening_mastery_credit": false
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "B1",
+            "actually_played": true,
+            "channel_integrity": "valid_audio"
+          },
+          {
+            "event_id": "B2",
+            "rendered": false,
+            "answer_bearing": false
+          },
+          {
+            "event_id": "B3",
+            "independent": true,
+            "exposure": "none"
+          },
+          {
+            "event_id": "B5",
+            "actually_played": true,
+            "reviewed_result": "synthetic_oracle_success"
+          }
+        ]
+      },
+      "expected": {
+        "transcript_not_listening": true,
+        "control_requires_real_review": true
+      },
+      "followup_ledger": [
+        {
+          "skill": "listening",
+          "due": 2,
+          "offered": 2,
+          "rendered": 1,
+          "completed": 1,
+          "missing_unrendered": 1,
+          "pending_rendered": 0
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "title": "Microphone refusal and corruption preserve speaking debt",
+      "skill": "speaking",
+      "objective": "oral_polite_request",
+      "events": [
+        {
+          "id": "C1",
+          "learner_id": "synthetic-learner-C",
+          "session": "c-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "occurred_at": "2026-10-01T12:01:00.000Z",
+          "type": "microphone_permission",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "permission": "declined",
+          "learner_failure": false
+        },
+        {
+          "id": "C2",
+          "learner_id": "synthetic-learner-C",
+          "session": "c-day0",
+          "day_offset": 0,
+          "sequence": 2,
+          "occurred_at": "2026-10-01T12:02:00.000Z",
+          "type": "text_substitute",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "rendered": true,
+          "typed_response": "Could I ask for another time?",
+          "speaking_mastery_credit": false
+        },
+        {
+          "id": "C3",
+          "learner_id": "synthetic-learner-C",
+          "session": "c-day1",
+          "day_offset": 1,
+          "sequence": 1,
+          "occurred_at": "2026-10-02T12:01:00.000Z",
+          "type": "audio_capture",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "permission": "granted",
+          "capture": "corrupt",
+          "learner_failure": false
+        },
+        {
+          "id": "C4",
+          "learner_id": "synthetic-learner-C",
+          "session": "c-day1",
+          "day_offset": 1,
+          "sequence": 2,
+          "occurred_at": "2026-10-02T12:02:00.000Z",
+          "type": "next_instruction_rendered",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "rendered": true,
+          "method": "accessible_text_practice_without_oral_credit",
+          "reversible": true
+        },
+        {
+          "id": "C5",
+          "learner_id": "synthetic-learner-C",
+          "session": "c-day9",
+          "day_offset": 9,
+          "sequence": 1,
+          "occurred_at": "2026-10-10T12:01:00.000Z",
+          "type": "accessible_oral_followup",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "capture": "unavailable",
+          "human_review_available": false,
+          "oral_mastery_credit": false,
+          "coverage_debt_retained": true
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "C5",
+            "capture": "valid",
+            "human_review_available": false,
+            "synthetic_oracle": "oral_request_success",
+            "oral_mastery_credit": false
+          }
+        ]
+      },
+      "expected": {
+        "permission_not_failure": true,
+        "corruption_not_failure": true,
+        "text_not_oral": true,
+        "oral_debt_visible": true
+      },
+      "followup_ledger": [
+        {
+          "skill": "speaking",
+          "due": 3,
+          "offered": 2,
+          "rendered": 1,
+          "completed": 1,
+          "missing_unrendered": 2,
+          "pending_rendered": 0
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "title": "Rendered model and transcript contaminate repeat evidence",
+      "skill": "speaking",
+      "objective": "independent_oral_request",
+      "events": [
+        {
+          "id": "D1",
+          "learner_id": "synthetic-learner-D",
+          "session": "d-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "occurred_at": "2026-10-01T12:01:00.000Z",
+          "type": "first_unaided_oral_capture",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "independent": true,
+          "synthetic_oracle": "missing_polite_form",
+          "mastery_credit": false
+        },
+        {
+          "id": "D2",
+          "learner_id": "synthetic-learner-D",
+          "session": "d-day0",
+          "day_offset": 0,
+          "sequence": 2,
+          "occurred_at": "2026-10-01T12:02:00.000Z",
+          "type": "model_audio",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "rendered": true,
+          "answer_bearing": true
+        },
+        {
+          "id": "D3",
+          "learner_id": "synthetic-learner-D",
+          "session": "d-day0",
+          "day_offset": 0,
+          "sequence": 3,
+          "occurred_at": "2026-10-01T12:03:00.000Z",
+          "type": "model_transcript",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "rendered": true,
+          "answer_bearing": true
+        },
+        {
+          "id": "D4",
+          "learner_id": "synthetic-learner-D",
+          "session": "d-day0",
+          "day_offset": 0,
+          "sequence": 4,
+          "occurred_at": "2026-10-01T12:04:00.000Z",
+          "type": "assisted_oral_repeat",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "independent": false,
+          "assistance": "model_and_transcript",
+          "mastery_credit": false
+        },
+        {
+          "id": "D5",
+          "learner_id": "synthetic-learner-D",
+          "session": "d-day9",
+          "day_offset": 9,
+          "sequence": 1,
+          "occurred_at": "2026-10-10T12:01:00.000Z",
+          "type": "unseen_oral_transfer",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "independent": true,
+          "new_item": true,
+          "assistance": "none",
+          "synthetic_oracle": "success",
+          "human_review_available": false,
+          "mastery_credit": false
+        },
+        {
+          "id": "D6",
+          "learner_id": "synthetic-learner-D",
+          "session": "d-day9",
+          "day_offset": 9,
+          "sequence": 2,
+          "occurred_at": "2026-10-10T12:02:00.000Z",
+          "type": "next_instruction_rendered",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "rendered": true,
+          "method": "balanced_unfamiliar_oral_practice",
+          "reversible": true
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "D2",
+            "rendered": false
+          },
+          {
+            "event_id": "D3",
+            "rendered": false
+          },
+          {
+            "event_id": "D4",
+            "independent": true,
+            "assistance": "none",
+            "mastery_credit": false
+          }
+        ]
+      },
+      "expected": {
+        "first_attempt_preserved": true,
+        "repeat_not_mastery": true,
+        "delayed_oral_requires_review": true
+      },
+      "followup_ledger": [
+        {
+          "skill": "speaking",
+          "due": 2,
+          "offered": 2,
+          "rendered": 2,
+          "completed": 2,
+          "missing_unrendered": 0,
+          "pending_rendered": 0
+        }
+      ]
+    },
+    {
+      "id": "E",
+      "title": "ASR confidence disparity does not determine accepted variety or topic access",
+      "skill": "speaking",
+      "objective": "polite_request_variety",
+      "events": [
+        {
+          "id": "E1",
+          "learner_id": "synthetic-learner-E1",
+          "session": "e-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "occurred_at": "2026-10-01T12:01:00.000Z",
+          "type": "first_oral_variant",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "asr_confidence": "high",
+          "human_review_available": false,
+          "cefr_credit": false
+        },
+        {
+          "id": "E2",
+          "learner_id": "synthetic-learner-E2",
+          "session": "e-day0",
+          "day_offset": 0,
+          "sequence": 2,
+          "occurred_at": "2026-10-01T12:02:00.000Z",
+          "type": "second_oral_variant",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "asr_confidence": "low",
+          "human_review_available": false,
+          "cefr_credit": false
+        },
+        {
+          "id": "E3",
+          "learner_id": "synthetic-learner-E",
+          "session": "e-day0",
+          "day_offset": 0,
+          "sequence": 3,
+          "occurred_at": "2026-10-01T12:03:00.000Z",
+          "type": "variant_rubric_pending",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "reviewed_variant": "UNKNOWN",
+          "accent_identity_inferred": false,
+          "asr_as_ground_truth": false
+        },
+        {
+          "id": "E4",
+          "learner_id": "synthetic-learner-E",
+          "session": "e-day0",
+          "day_offset": 0,
+          "sequence": 4,
+          "occurred_at": "2026-10-01T12:04:00.000Z",
+          "type": "interest_context_weights",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "interest": "gaming",
+          "rubric_changed": false,
+          "objective_changed": false,
+          "method_confidence_changed": false,
+          "adjacent_eligible": true,
+          "neutral_eligible": true,
+          "unfamiliar_eligible": true
+        },
+        {
+          "id": "E5",
+          "learner_id": "synthetic-learner-E",
+          "session": "e-day0",
+          "day_offset": 0,
+          "sequence": 5,
+          "occurred_at": "2026-10-01T12:05:00.000Z",
+          "type": "next_instruction_rendered",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "rendered": true,
+          "method": "balanced_oral_roleplay",
+          "reversible": true
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "E1",
+            "synthetic_oracle": "accepted_variant",
+            "human_review_available": false
+          },
+          {
+            "event_id": "E2",
+            "synthetic_oracle": "accepted_variant",
+            "human_review_available": false
+          }
+        ]
+      },
+      "interest_only_control": {
+        "replace": [
+          {
+            "event_id": "E4",
+            "interest": "cooking"
+          }
+        ]
+      },
+      "expected": {
+        "no_accent_classification": true,
+        "unreviewed_variant_not_failed": true,
+        "interests_soft_only": true
+      },
+      "followup_ledger": [
+        {
+          "skill": "speaking",
+          "due": 2,
+          "offered": 2,
+          "rendered": 1,
+          "completed": 1,
+          "missing_unrendered": 1,
+          "pending_rendered": 0
+        }
+      ]
+    },
+    {
+      "id": "F",
+      "title": "Replay, missing capture and contradictory oral outcomes revise actual delivery",
+      "skill": "speaking",
+      "objective": "oral_request_unseen_transfer",
+      "events": [
+        {
+          "id": "F1",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day0",
+          "day_offset": 0,
+          "sequence": 1,
+          "occurred_at": "2026-10-01T12:01:00.000Z",
+          "type": "oral_probe_offered",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "capture": "missing",
+          "learner_failure": false,
+          "mastery_credit": false
+        },
+        {
+          "id": "F2",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day1",
+          "day_offset": 1,
+          "sequence": 1,
+          "occurred_at": "2026-10-02T12:01:00.000Z",
+          "type": "first_unaided_oral_capture",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "capture": "valid",
+          "independent": true,
+          "mastery_credit": false
+        },
+        {
+          "id": "F3",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day1",
+          "day_offset": 1,
+          "sequence": 2,
+          "occurred_at": "2026-10-02T12:02:00.000Z",
+          "type": "assisted_repeat",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "independent": false,
+          "assistance": "rendered_model",
+          "mastery_credit": false
+        },
+        {
+          "id": "F4",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day8",
+          "day_offset": 8,
+          "sequence": 1,
+          "occurred_at": "2026-10-09T12:01:00.000Z",
+          "type": "unseen_oral_transfer",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "independent": true,
+          "new_item": true,
+          "synthetic_oracle": "success",
+          "mastery_credit": false
+        },
+        {
+          "id": "F5",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day12",
+          "day_offset": 12,
+          "sequence": 1,
+          "occurred_at": "2026-10-13T12:01:00.000Z",
+          "type": "unseen_oral_transfer",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "independent": true,
+          "new_item": true,
+          "synthetic_oracle": "meaning_critical_error",
+          "mastery_credit": false
+        },
+        {
+          "id": "F6",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day12",
+          "day_offset": 12,
+          "sequence": 2,
+          "occurred_at": "2026-10-13T12:02:00.000Z",
+          "type": "replayed_upload",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "duplicate_of": "F3",
+          "mastery_credit": false
+        },
+        {
+          "id": "F7",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day13",
+          "day_offset": 13,
+          "sequence": 1,
+          "occurred_at": "2026-10-14T12:01:00.000Z",
+          "type": "untrusted_chronology",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "exposure_chronology": "UNKNOWN",
+          "quarantined": true,
+          "mastery_credit": false
+        },
+        {
+          "id": "F8",
+          "learner_id": "synthetic-learner-F",
+          "session": "f-day13",
+          "day_offset": 13,
+          "sequence": 2,
+          "occurred_at": "2026-10-14T12:02:00.000Z",
+          "type": "next_instruction_rendered",
+          "task_version": "SYNTHETIC_F216_V1",
+          "policy_version": "F216_DESIGN_V1",
+          "rendered": true,
+          "method": "diagnostic_oral_probe",
+          "uncertainty": "high",
+          "reversible": true
+        }
+      ],
+      "arrival_order": [
+        "F5",
+        "F2",
+        "F6",
+        "F1",
+        "F4",
+        "F3",
+        "F7",
+        "F8"
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "F4",
+            "synthetic_oracle": "meaning_critical_error"
+          },
+          {
+            "event_id": "F5",
+            "synthetic_oracle": "success"
+          },
+          {
+            "event_id": "F8",
+            "method": "balanced_oral_transfer_probe"
+          }
+        ]
+      },
+      "expected": {
+        "duplicate_not_counted": true,
+        "missing_not_failure": true,
+        "contradiction_preserved": true,
+        "causal_superiority_claimed": false,
+        "coverage_debt_retained": true
+      },
+      "followup_ledger": [
+        {
+          "skill": "speaking",
+          "due": 4,
+          "offered": 3,
+          "rendered": 2,
+          "completed": 2,
+          "missing_unrendered": 2,
+          "pending_rendered": 0
+        }
+      ]
+    }
+  ]
+}
