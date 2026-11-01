@@ -15,7 +15,9 @@ import {
   getNextQuestion,
   shouldFinishPlacement,
 } from '../../services/placement'
-import { playableLevelId, labelKeyOfLevel } from '../../learning/curriculum/levels.js'
+import { labelKeyOfLevel } from '../../learning/curriculum/levels.js'
+import { workingLevelId } from '../../learning/curriculum/learnerLevel.js'
+import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 import {
   CORRECTION_OPTIONS,
   GOAL_OPTIONS,
@@ -276,7 +278,7 @@ function PlacementTest() {
 function LevelReveal() {
   const { profile, setAuthStep, t } = useApp()
   const moti = getMotiMoment('placementDone')
-  const currentCourseLevelId = playableLevelId()
+  const currentCourseLevelId = workingLevelId(loadLearnerModel())
   const result = profile.placementResult || {
     level: 'B1', vocab: 72, grammar: 65, conversation: 78,
     currentCourseLevelId,

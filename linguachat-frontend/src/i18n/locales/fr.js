@@ -641,6 +641,7 @@ export default {
   authLocalDataUnreadable: 'Certaines données enregistrées sur cet appareil n’ont pas pu être lues en toute sécurité. Elles ont été conservées telles quelles et vous avez été déconnecté pour les protéger. Reconnectez-vous.',
   profileRecoveredNotice: 'Nous n’avons pas pu lire le profil enregistré sur cet appareil. Une copie a été conservée et la configuration reprend à votre dernière étape valide. Vos progrès, vos mots et vos préférences sont préservés.',
   chatOfflineNotice: 'Le service de tutorat de Lingua est indisponible pour le moment. Vos messages restent ici ; rien n’est vérifié avant son retour.',
+  progressNotSavedNotice: 'Votre progression sur cet appareil n’est pas encore enregistrée (stockage plein ou bloqué). LinguaChat continue d’essayer ; ne fermez pas cet onglet avant que ce message disparaisse.',
   evidenceWeeklyTitle: 'Réponses en autonomie, par semaine',
   evidenceWeeklySummary: 'Réponses en autonomie cette semaine, du premier coup : {count}',
   evidenceWeeklyEmpty: 'Pas encore assez de pratique pour montrer une tendance. Les réponses que vous donnez seul·e apparaîtront ici.',

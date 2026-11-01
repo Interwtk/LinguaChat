@@ -48,7 +48,7 @@ export function normalizeChatResponse(payload) {
     detected_language: data.detected_language ?? null,
     target_language: data.target_language ?? null,
     mission_feedback: data.mission_feedback ?? null,
-    analysis: safeAnalysis(data.analysis),
+    analysis: safeAnalysis(data.analysis, data.evaluation),
   }
 }
 
@@ -81,6 +81,11 @@ export async function sendChatMessage({
    * practised. Never sentences; the server validates and ignores the rest.
    */
   learningMemory = null,
+  /*
+   * P5: how the learner produced this message — 'suggestion_sent' when they
+   * sent a suggestion Lingua offered. It can only lower what the turn is worth.
+   */
+  assistance = 'none',
 }) {
   try {
     /*
@@ -111,6 +116,7 @@ export async function sendChatMessage({
         tutor_preferences: tutorPreferences ? teachingPreferences : null,
         active_companion: activeCompanion,
         ...(Array.isArray(learningMemory) && learningMemory.length ? { learning_memory: learningMemory } : {}),
+        ...(assistance && assistance !== 'none' ? { assistance } : {}),
         ...(Object.keys(optionalContext).length ? { optional_context: optionalContext } : {}),
       }),
       signal: AbortSignal.timeout(8000),

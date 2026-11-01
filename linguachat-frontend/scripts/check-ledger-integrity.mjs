@@ -199,12 +199,13 @@ scenario('every write failing for 15 minutes (storage full): nothing lost once s
   assert.equal(withClock(start + 2 * HOUR, () => total(shared, 'learner-A')).messagesSent, 3 + 90 + 600)
 })
 
-// --- the remaining limit, measured -------------------------------------------
+// --- stranded beyond coverage pruning (P4's limit, closed in P5) ----------------
 /*
  * Coverage forgets a writer 30 days after its last folded turn (otherwise every
- * page load would grow storage forever). A turn stranded LONGER than that,
- * behind a writer that was forgotten meanwhile, is judged by `prunedBefore`.
- * Measured, both sides of the line.
+ * page load would grow storage forever). Until P5 a turn stranded LONGER than
+ * that, behind a writer forgotten meanwhile, was judged by `prunedBefore` alone
+ * and lost. P5: the turn carries the time its writer first SAVED it, which is
+ * after every pruned writer's last folded save — so it cannot have been folded.
  */
 function strandedFor(days) {
   const shared = new Store()
@@ -227,10 +228,57 @@ scenario('a turn stranded for 29 days is still counted once', () => {
   const { got, expected } = strandedFor(29)
   assert.equal(got, expected)
 })
-scenario('LIMIT (documented): stranded for 35 days behind a forgotten writer, the turn is not counted', () => {
+scenario('stranded for 35 days behind a forgotten writer: counted once (P4 lost it)', () => {
   const { got, expected } = strandedFor(35)
   console.log(`       (measured: ${got} of ${expected})`)
-  assert.ok(got === expected - 1 || got === expected, 'never double-counted; at most the stranded turn')
+  assert.equal(got, expected)
+})
+if (!quick) scenario('stranded for 120 days: counted once', () => {
+  const { got, expected } = strandedFor(120)
+  assert.equal(got, expected)
+})
+
+/*
+ * The other side of the same rule: a STALE copy that still holds a pruned
+ * writer's turns (already folded long ago) must not count them again. Those
+ * turns were saved before the pruned writer's last folded save.
+ */
+scenario('a stale copy of a pruned writer, months later: nothing counted twice', () => {
+  const shared = new Store()
+  const start = NOW - 80 * DAY
+  const old = openTab(shared, 'learner-A')
+  for (let i = 0; i < 30; i++) withClock(start + i * 1000, () => { practice(old, 'old ' + i, start + i * 1000); persist(old) })
+  const staleCopy = [...shared.values.entries()].filter(([k]) => k.includes('progress') && k.includes('~w~'))
+  for (let d = 1; d <= 70; d++) {
+    const tab = withClock(start + d * DAY, () => openTab(shared, 'learner-A'))
+    for (let i = 0; i < 12; i++) withClock(start + d * DAY + i * 1000, () => { practice(tab, 'd' + d, start + d * DAY + i * 1000); persist(tab) })
+  }
+  // the old writer's raw copy comes back (a restored backup, a sync from a stale device)
+  assert.ok(staleCopy.length, 'the old copy exists')
+  for (const [k, v] of staleCopy) shared.values.set(k.replace(/~w~[^~]+$/, '~w~staletab.0'), v)
+  const fresh = withClock(start + 71 * DAY, () => openTab(shared, 'learner-A'))
+  withClock(start + 71 * DAY + 1000, () => { hear(fresh); persist(fresh) })
+  assert.equal(withClock(start + 71 * DAY + 2000, () => total(shared, 'learner-A')).messagesSent, 30 + 70 * 12)
+})
+
+/*
+ * A tab left open (idle) for weeks still holds its old, long-saved turns in
+ * memory, without save stamps. When it saves again after its writer was
+ * pruned, those turns must keep their ORIGINAL save time — stamping them "now"
+ * would make them look never-saved and count them twice.
+ */
+scenario('a tab idle for 40 days saves again: its old turns are not counted twice', () => {
+  const shared = new Store()
+  const start = NOW - 45 * DAY
+  const idle = openTab(shared, 'learner-A')
+  for (let i = 0; i < 25; i++) withClock(start + i * 1000, () => { practice(idle, 'early ' + i, start + i * 1000); persist(idle) })
+  for (let d = 1; d <= 40; d++) {
+    const tab = withClock(start + d * DAY, () => openTab(shared, 'learner-A'))
+    for (let i = 0; i < 12; i++) withClock(start + d * DAY + i * 1000, () => { practice(tab, 'd' + d, start + d * DAY + i * 1000); persist(tab) })
+  }
+  const at = start + 41 * DAY
+  withClock(at, () => { practice(idle, 'back again', at); persist(idle) })
+  assert.equal(withClock(at + 1000, () => total(shared, 'learner-A')).messagesSent, 25 + 40 * 12 + 1)
 })
 
 // --- growth -----------------------------------------------------------------

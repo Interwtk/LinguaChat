@@ -1,5 +1,7 @@
 import { useApp } from '../../context/AppContext'
-import { episodesOfLevel, playableLevelId } from '../../learning/curriculum/levels.js'
+import { episodesOfLevel } from '../../learning/curriculum/levels.js'
+import { workingLevelId } from '../../learning/curriculum/learnerLevel.js'
+import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 
 /*
  * "Your learning" on the Tú screen: what the learner practises, can already do
@@ -19,7 +21,7 @@ const SKILL_KEYS = {
 
 export function LearningSummaryCard({ summary }) {
   const { t } = useApp()
-  const skillName = canDoId => t((episodesOfLevel(playableLevelId()).find(e => e.canDoId === canDoId) || {}).canDoNameKey || 'preA1LevelBadge')
+  const skillName = canDoId => t((episodesOfLevel(workingLevelId(loadLearnerModel())).find(e => e.canDoId === canDoId) || {}).canDoNameKey || 'preA1LevelBadge')
   const focusLine = !summary.focus ? null
     : summary.focus.kind === 'strengthen_skill' ? t('preA1FocusSkill').replace('{skill}', skillName(summary.focus.canDoId))
       : summary.focus.kind === 'catch_up_reviews' ? t('preA1FocusReviews')

@@ -16,7 +16,7 @@
 | Readiness Pre-A1 | `src/learning/curriculum/readiness.js` | Umbrales propios de Pre-A1 (`independentEvidencePerCanDo`, `MAX_OVERDUE_REQUIRED_REVIEWS`, `MAX_ASSISTANCE_IN_EVIDENCE`). | **No se copian** a A1, salvo las dos reglas que el blueprint manda heredar (abajo). |
 | `exitCriteria` | `docs/curriculum/a1-blueprint.json` | Cinco dimensiones y tres no-criterios. | Los números de dos dimensiones están **sin calibrar a propósito**. |
 | Planificador | `src/learning/engine/session.js` | `buildSessionPlan` es neutral respecto al nivel. Con los episodios de los dos niveles, tras Pre-A1 propone el primer episodio de A1 (probado en un banco aislado). | — |
-| Home / identidad / progreso | `TodayView.jsx`, `CompletedEpisodes.jsx`, `LearningSummaryCard.jsx`, `JourneyRail.jsx`, `SetupFlow.jsx` | Usan `playableLevelId()`, que es el **primer nivel abierto global**, no el nivel del alumno. `CompletedEpisodes` lo fija al cargar el módulo. | Con dos niveles abiertos, un alumno graduado seguiría viendo Pre-A1. Hace falta un «nivel actual del alumno» derivado del hito. Es un **cambio de producto: BLOQUEADO**, sin probar con A1 abierto. |
+| Home / identidad / progreso | `TodayView.jsx`, `CompletedEpisodes.jsx`, `LearningSummaryCard.jsx`, `JourneyRail.jsx`, `SetupFlow.jsx` | Usan `playableLevelId()`, que es el **primer nivel abierto global**, no el nivel del alumno. `CompletedEpisodes` lo fija al cargar el módulo. | Con dos niveles abiertos, un alumno graduado seguiría viendo Pre-A1. Hace falta un «nivel actual del alumno» derivado del hito. Es un **cambio de producto: BLOQUEADO**, sin probar con A1 abierto. **P5:** hecho — `learnerLevel.js` deriva el nivel de trabajo del alumno a partir de hitos válidos; las pantallas lo usan; probado en un banco aislado de dos niveles (`check-learner-level`). A1 sigue cerrado. |
 | Puertas | `levels.js` (`isLevelAvailable`), backend `level_unavailable` | El alumno que pide A1 recibe `level_unavailable` antes de cargar contenido. | Sin cambios. |
 | Guardia | `scripts/check-a1-blueprint.mjs` | Prohíbe `deriveA1Readiness`, `a1Readiness` y `levelMilestones.a1` en `src/`. | Se mantiene. Por eso el evaluador vive en `linguachat-frontend/prepared/`. |
 
@@ -123,7 +123,7 @@ Cada capacidad, antes de que A1 pueda abrirse:
 | 2 | Revisión nativa de las traducciones de los 21 episodios | contenido | propietario |
 | 3 | `LC-PED-002` sobre el head final de A1 | QA pedagógica | — |
 | 4 | **Calibrar** `unaidedProductionsPerCapability` y `recentEvidenceDays` con recorridos reales (piloto, ver `docs/research/pre-a1-pilot-protocol.md`) | datos reales | consentimiento + propietario |
-| 5 | «Nivel actual del alumno» derivado del hito en Home, identidad, archivo y progreso, en lugar de `playableLevelId()` global | producto | propietario |
+| 5 | ~~«Nivel actual del alumno» derivado del hito en Home, identidad, archivo y progreso~~ **Hecho en P5** (`learnerLevel.js`, autorizado) | producto | — |
 | 6 | Mover el evaluador de `prepared/` a `src/`, retirar la guardia de `check-a1-blueprint`, añadir `a1` a `MILESTONE_LEVELS` | motor | propietario (`LC-PROD-002`) |
 | 7 | `available: true` en `levels.js` | decisión | **propietario, explícita** |
 | 8 | Dos ciclos limpios de QA completos tras 1–7 | QA | — |

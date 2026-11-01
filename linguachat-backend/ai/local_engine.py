@@ -6,6 +6,7 @@ import unicodedata
 from ai.grammar_check import (
     SILENT_H, VOWEL_LETTER_CONSONANT_SOUND, _past_of, _third_person, analyze, corrected_sentence, correct_uses,
 )
+from ai.language_id import is_not_english
 from ai.schemas import ChatMode, ChatResult, LanguageLevel, LearningAction, MissionFeedback
 from ai.tutor_i18n import MESSAGES, resolve_language, say
 
@@ -243,7 +244,9 @@ def assess(message: str, profile: dict | None = None) -> dict:
     """
     lang = _language(profile)
     words = re.findall(r"[A-Za-z]+(?:'[A-Za-z]+)?", message)
-    if lang != "en" and _written_in_own_language(message, lang):
+    # P5: any clearly non-English message, not only one in the learner's own
+    # language (ai/language_id.py); ambiguous text is not claimed either way.
+    if (lang != "en" and _written_in_own_language(message, lang)) or is_not_english(message):
         return {"verdict": "not_english", "confidence": "medium", "findings": [], "source": "local_rules"}
     fixed = FIXED_PHRASES.get(normalize(message))
     if fixed:
@@ -293,6 +296,10 @@ def choose_strategy(rule: str, profile: dict | None) -> str:
 
 def _explain(rule: str, facts: dict, strategy: str, lang: str) -> str:
     depth = "brief" if strategy == "brief_explanation" else "detailed"
+    # P5: agreement after a noun subject ("My sister like") has its own wording;
+    # the rule id stays the same everywhere else (memory, evidence, retrieval).
+    if facts.get("noun_subject") and f"{rule}_noun.{depth}" in MESSAGES:
+        return say(f"{rule}_noun.{depth}", lang, **facts)
     key = f"{rule}.{depth}"
     if key in MESSAGES:
         return say(key, lang, **facts)
@@ -310,14 +317,21 @@ def _follow_up(level: LanguageLevel) -> str:
     return "How did that turn out?"
 
 
-def _correction_response(message: str, level: LanguageLevel, profile: dict, analysis: dict) -> ChatResult:
+def _correction_response(message: str, level: LanguageLevel, profile: dict, analysis: dict,
+                         evaluation: dict | None = None) -> ChatResult:
     lang = _language(profile)
     primary = analysis["findings"][0]
     rule = primary["rule"]
     strategy = choose_strategy(rule, profile)
     corrected = analysis["corrected"]
     facts = {**primary["facts"], "wrong": primary["original"], "right": primary["replacement"]}
-    explanation = _explain(rule, facts, strategy, lang)
+    local = analysis.get("source") == "local_rules"
+    if not local:
+        # A non-local adapter's validated explanation; its findings carry no rule
+        # facts, so the frame-based retrieval below is not offered.
+        strategy = "brief_explanation"
+    explanation = _explain(rule, facts, strategy, lang) if local else (
+        analysis.get("provided_explanation") or say("compare", lang, wrong=facts["wrong"], right=facts["right"]))
     if _tutor_preferences(profile).get("correction_style") == "gentle":
         explanation = say("gentle_prefix", lang, text=explanation)
 
@@ -341,7 +355,8 @@ def _correction_response(message: str, level: LanguageLevel, profile: dict, anal
         learning_action=action,
         focus=say(RULE_FOCUS.get(rule, "focus_phrase"), lang),
         word_to_use=None,
-        analysis={**analysis, "strategy": strategy, "language": lang},
+        analysis={**{k: v for k, v in analysis.items() if k != "provided_explanation"}, "strategy": strategy, "language": lang},
+        evaluation=evaluation,
     )
 
 
@@ -603,9 +618,16 @@ def generate_local_response(
             word_to_use="because" if level in {LanguageLevel.A1, LanguageLevel.A2} else "although",
         )
 
-    analysis = assess(message, profile)
+    # P5: one evaluation through the contract (ai/chat_evaluation.py), validated
+    # before anything below uses it. Imported here: chat_evaluation → adapters →
+    # this module.
+    from ai.chat_evaluation import evaluate_chat_turn
+    previous = (history or [])[-1:] or [{}]
+    turn = evaluate_chat_turn(message, lang, assistance=profile.get("assistance") or "none",
+                              previous_correction=previous[0].get("correction"))
+    analysis = turn.analysis
     if analysis["verdict"] == "error":
-        return _correction_response(message, level, profile, analysis)
+        return _correction_response(message, level, profile, analysis, turn.evaluation)
 
     _topic_id, topic_facet = _topic_context(profile)
     reply = (
@@ -636,4 +658,5 @@ def generate_local_response(
         focus=f"Talking about {topic_facet}" if on_topic else say("focus_conversation", lang),
         word_to_use="because" if level in {LanguageLevel.A1, LanguageLevel.A2} else "although",
         analysis={**analysis, "language": lang},
+        evaluation=turn.evaluation,
     )

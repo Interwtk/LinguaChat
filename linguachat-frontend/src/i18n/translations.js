@@ -1319,6 +1319,7 @@ const base = {
   authLocalDataUnreadable: 'Some data saved on this device could not be read safely. It was kept unchanged and you were signed out to protect it. Please sign in again.',
   profileRecoveredNotice: 'We could not read the profile saved on this device. A copy has been kept, and setup continues from your last valid step. Your progress, words and preferences are safe.',
   chatOfflineNotice: "Lingua's tutor service is not reachable right now. Your messages stay here; nothing is checked until it is back.",
+  progressNotSavedNotice: "Your progress on this device has not been saved yet (storage is full or blocked). LinguaChat keeps trying; please don't close this tab until this message disappears.",
   evidenceWeeklyTitle: 'Answers on your own, per week',
   evidenceWeeklySummary: 'Answered on your own this week, at the first try: {count}',
   evidenceWeeklyEmpty: 'Not enough practice yet to show a trend. Answers you give on your own will appear here.',

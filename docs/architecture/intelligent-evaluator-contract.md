@@ -2,7 +2,8 @@
 
 > **Estado (fase 5 / P4, 2026-10-31):**
 > - Contrato, validador, implementación de referencia y ruta segura escritos y probados.
-> - **No hay ningún proveedor comercial conectado.** `evaluate_safely` todavía no está cableado a `/chat`; cablearlo es un paso aparte que requiere autorización.
+> - **No hay ningún proveedor comercial conectado.**
+> - **P5 (fase 6):** `evaluate_safely` con la referencia local **ya responde cada mensaje libre de `/chat`**, a través de la capa versionada `chat-evaluation/1` (`ai/chat_evaluation.py`), con autorización del propietario limitada al evaluador local. Detalle en `docs/audits/2026-10-31-p5-tutor-runtime-integration.md`.
 > - Los adaptadores guionizados existen **solo en los tests**, con el nombre `ScriptedTestAdapter` / `scripted_test_tool`, y no representan inteligencia alguna.
 >
 > Código:
@@ -177,5 +178,5 @@ Es el motor de reglas gratuito y determinista de siempre (`assess`, `grammar_che
 ## 9. Lo que no se hizo, a propósito
 
 - No se conectó ningún proveedor: ni OpenAI, ni Anthropic, ni Gemini, ni ningún otro.
-- No se cableó `evaluate_safely` a `/chat`. El endpoint sigue con su ruta actual (motor local, con `provider_policy`).
+- ~~No se cableó `evaluate_safely` a `/chat`.~~ **P5:** cableado con la referencia local; ningún proveedor remoto. El adaptador no se puede elegir desde una petición ni desde el entorno (probado).
 - No se cambió el `EvaluationResult` de episodios (`ai/schemas.py`, con `confidence` numérica). Migrarlo a este contrato es un paso posterior.

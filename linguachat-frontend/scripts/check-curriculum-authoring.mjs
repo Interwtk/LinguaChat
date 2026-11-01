@@ -620,22 +620,30 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
    *
    * Home, the session builder and the replay list are not about Pre-A1
    * specifically — they are about whatever level a learner may actually
-   * play (LC-PROD-001), so they must derive it from `playableLevelId()`
-   * rather than a hardcoded level id, or they silently stop agreeing with
-   * curriculum availability the day a second level opens.
+   * play (LC-PROD-001), so they must derive it from the registry rather than
+   * a hardcoded level id, or they silently stop agreeing with curriculum
+   * availability the day a second level opens. P5: and from the LEARNER's
+   * working level (learnerLevel.workingLevelId, itself derived from the
+   * registry and the learner's milestones), not the first level the product
+   * has open — which is the same for everyone and would keep a graduate in
+   * the level they finished.
    */
   const mustBeScoped = {
     'src/learning/curriculum/readiness.js': { what: 'Pre-A1 readiness', pattern: /episodesOfLevel\(PRE_A1\)/ },
     'src/learning/curriculum/preA1Map.js': { what: 'the Pre-A1 registry', pattern: /episodesOfLevel\(PRE_A1\)/ },
-    'src/components/today/TodayView.jsx': { what: 'Home', pattern: /episodesOfLevel\(playableLevelId\(\)\)/ },
-    'src/context/AppContext.jsx': { what: 'the session the app builds', pattern: /episodesOfLevel\(playableLevelId\(\)\)/ },
-    'src/components/episode/CompletedEpisodes.jsx': { what: 'the replay list', pattern: /episodesOfLevel\(playableLevelId\(\)\)/ },
+    'src/components/today/TodayView.jsx': { what: 'Home', pattern: /episodesOfLevel\(workingLevelId\(/, learner: true },
+    'src/context/AppContext.jsx': { what: 'the session the app builds', pattern: /episodesOfLevel\(workingLevelId\(/, learner: true },
+    'src/components/episode/CompletedEpisodes.jsx': { what: 'the replay list', pattern: /episodesOfLevel\(workingLevelId\(/, learner: true },
   }
-  for (const [path, { what, pattern }] of Object.entries(mustBeScoped)) {
+  for (const [path, { what, pattern, learner }] of Object.entries(mustBeScoped)) {
     const src = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
     assert.ok(pattern.test(src),
       `${what} must take its episodes from the level registry (${path})`)
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    if (learner) {
+      assert.ok(!/playableLevelId\(/.test(code), `${what} must use the learner's working level, not the first open level (${path})`)
+      assert.ok(!/episodesOfLevel\(PRE_A1\)/.test(code), `${what} must not hardcode Pre-A1 (${path})`)
+    }
     assert.ok(!/EPISODE_SKELETON as ARC|EPISODE_SKELETON\.(filter|map|every|some|find)/.test(code),
       `${what} still walks the whole curriculum (${path})`)
   }

@@ -105,13 +105,20 @@ async function main() {
     const today = read('src/components/today/TodayView.jsx')
     const appContext = read('src/context/AppContext.jsx')
     for (const [name, src] of [['TodayView.jsx', today], ['AppContext.jsx', appContext]]) {
-      assert.match(src, /episodesOfLevel\(playableLevelId\(\)\)/,
-        `${name} must derive its arc from playableLevelId(), not a hardcoded level id`)
+      // P5: from the learner's working level (registry + milestones), not the first open level
+      assert.match(src, /episodesOfLevel\(workingLevelId\(/,
+        `${name} must derive its arc from the learner's working level, not a hardcoded level id`)
+      assert.doesNotMatch(src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, ''), /playableLevelId\(/,
+        `${name} must not use the first open level for everyone`)
       assert.doesNotMatch(src, /episodesOfLevel\(PRE_A1\)/,
         `${name} must not hardcode episodesOfLevel(PRE_A1) — that stops agreeing with availability once a second level opens`)
     }
     const registryArc = episodesOfLevel(playableLevelId())
     assert.ok(registryArc.length > 0, 'sanity: the playable level actually has runtime episodes')
+    // a new learner's working level IS the registry's open level today
+    const { workingLevelId } = await import('../src/learning/curriculum/learnerLevel.js')
+    const { createLearnerModel } = await import('../src/learning/engine/learnerModel.js')
+    assert.deepEqual(episodesOfLevel(workingLevelId(createLearnerModel())).map(e => e.id), registryArc.map(e => e.id))
     ok()
   }
 
@@ -121,8 +128,8 @@ async function main() {
   //    node this build has no content for.
   {
     const journeyRail = read('src/components/layout/JourneyRail.jsx')
-    assert.match(journeyRail, /ProgressMap\s+courseLevelId=\{playableLevelId\(\)\}/,
-      'JourneyRail must pass the playable curriculum level into ProgressMap, not profile.level')
+    assert.match(journeyRail, /ProgressMap\s+courseLevelId=\{workingLevelId\(loadLearnerModel\(\)\)\}/,
+      'JourneyRail must pass the learner\'s working curriculum level into ProgressMap, not profile.level')
     assert.doesNotMatch(journeyRail, /ProgressMap\s+level=\{profile\.level\}/,
       'the journey map must not place the learner using the raw CEFR placement label')
 

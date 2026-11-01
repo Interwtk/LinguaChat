@@ -710,6 +710,7 @@ export default {
   authLocalDataUnreadable: 'Algunos datos guardados en este dispositivo no se pudieron leer de forma segura. Se conservaron sin cambios y cerramos tu sesión para protegerlos. Vuelve a iniciar sesión.',
   profileRecoveredNotice: 'No pudimos leer el perfil guardado en este dispositivo. Guardamos una copia y la configuración continúa desde tu último paso válido. Tu progreso, tus palabras y tus preferencias están a salvo.',
   chatOfflineNotice: 'El servicio de tutoría de Lingua no está disponible en este momento. Tus mensajes se quedan aquí; no se revisa nada hasta que vuelva.',
+  progressNotSavedNotice: 'Tu progreso en este dispositivo aún no se ha guardado (el almacenamiento está lleno o bloqueado). LinguaChat sigue intentándolo; no cierres esta pestaña hasta que desaparezca este mensaje.',
   evidenceWeeklyTitle: 'Respuestas por tu cuenta, por semana',
   evidenceWeeklySummary: 'Respondidas por tu cuenta esta semana, al primer intento: {count}',
   evidenceWeeklyEmpty: 'Todavía no hay práctica suficiente para mostrar una tendencia. Aquí aparecerán las respuestas que des por tu cuenta.',

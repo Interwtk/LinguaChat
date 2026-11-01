@@ -21,6 +21,8 @@ EXPECTED_KEYS = {
     "detected_language",
     "target_language",
     "mission_feedback",
+    # What the evaluator contract said about the message (P5, chat-evaluation/1).
+    "evaluation",
 }
 BASE_KEYS = {"reply", "correction", "explanation", "suggestion", "mode"}
 
@@ -74,6 +76,8 @@ def test_chat_endpoint_returns_stable_contract():
     assert data["mode"] == "chat"
     assert data["correction"] is None
     assert data["explanation"] is None
+    assert data["evaluation"]["version"] == "chat-evaluation/1"
+    assert set(data["evaluation"]) == {"version", "contract_version", "verdict", "certainty", "evidence", "source", "used", "incidents"}
 
 
 def test_translation_request():

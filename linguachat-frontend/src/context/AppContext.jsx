@@ -64,16 +64,19 @@ import {
   updateTutorPreferencesDurably,
 } from '../services/tutorPreferences'
 // the planner works from the shape of the level; the episode itself loads when it starts
-import { playableLevelId, episodesOfLevel } from '../learning/curriculum/levels.js'
+import { episodesOfLevel } from '../learning/curriculum/levels.js'
+import { workingLevelId } from '../learning/curriculum/learnerLevel.js'
 import { episodeRequest } from '../learning/curriculum/episodeContent.js'
 
 /*
  * The episodes a session may draw on. The planner itself is level-agnostic — it
  * takes whatever list it is given — so the level lives here, at the call site.
- * `playableLevelId()` derives it from the curriculum registry rather than a
- * hardcoded level id, so this keeps agreeing with Home once a second level opens.
+ * P5: it is the LEARNER's working level (learnerLevel.js), read from the active
+ * account's model at each call — the same answer Home gives — rather than the
+ * first level the product has open.
  */
-const ARC = episodesOfLevel(playableLevelId())
+const currentArc = () => episodesOfLevel(workingLevelId(loadLearnerModel()))
+const PROGRESS_RETRY_MS = 15000
 import { loadLearnerModel, saveLearnerModel, recordItemSeen } from '../learning/engine/learnerModel.js'
 import { classifyChatTurn, recordChatTurn, learningMemoryPayload } from '../learning/engine/chatEvidence.js'
 import { markFactUsed, rotateFactUsage, selectLearnerFact } from '../learning/engine/learnerFacts.js'
@@ -454,7 +457,7 @@ export function AppProvider({ children }) {
   const [episodeRunOptions, setEpisodeRunOptions] = useState({ source: 'practice', wantsOtherBranch: false })
   const [episodeArcVersion, setEpisodeArcVersion] = useState(0) // bumps when episode progress changes
   // Daily session: restored from storage on first render so a reload resumes.
-  const [dailySession, setDailySession] = useState(() => loadSession(ARC))
+  const [dailySession, setDailySession] = useState(() => loadSession(currentArc()))
   const [sessionActive, setSessionActive] = useState(false)
   const [preferredDuration, setPreferredDuration] = useState(() => {
     try {
@@ -507,8 +510,31 @@ export function AppProvider({ children }) {
     saveStoredMessages(messages, { access: passiveStorageAccessRef.current })
   }, [messages])
 
+  /*
+   * P5: a progress save can fail (storage full or blocked). Until P5 nothing
+   * retried until the next turn and nothing said so; a turn held only in this
+   * tab's memory is lost if the tab closes. Now a failing save is retried every
+   * PROGRESS_RETRY_MS, and the learner is told — once, calmly — until it works.
+   */
+  const latestProgressRef = useRef(localProgress)
+  const [progressSaveFailing, setProgressSaveFailing] = useState(false)
   useEffect(() => {
-    saveLocalProgress(localProgress, { access: passiveStorageAccessRef.current })
+    latestProgressRef.current = localProgress
+    const access = passiveStorageAccessRef.current
+    if (saveLocalProgress(localProgress, { access }) !== false || !access.valid()) {
+      setProgressSaveFailing(false)
+      return undefined
+    }
+    setProgressSaveFailing(true)
+    const timer = setInterval(() => {
+      const current = passiveStorageAccessRef.current
+      if (!current.valid()) { clearInterval(timer); setProgressSaveFailing(false); return }
+      if (saveLocalProgress(latestProgressRef.current, { access: current }) !== false) {
+        clearInterval(timer)
+        setProgressSaveFailing(false)
+      }
+    }, PROGRESS_RETRY_MS)
+    return () => clearInterval(timer)
   }, [localProgress])
 
   // Another tab of the same account saved progress or chat: fold it into this
@@ -957,7 +983,7 @@ export function AppProvider({ children }) {
 
   const previewSession = useCallback((durationMode) => {
     const mode = durationMode || preferredDuration
-    return getOrCreateSession(loadLearnerModel(), ARC, { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
+    return getOrCreateSession(loadLearnerModel(), currentArc(), { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
   }, [dailySession, preferredDuration, sessionContext])
 
   const chooseDuration = useCallback((mode) => {
@@ -971,7 +997,7 @@ export function AppProvider({ children }) {
     if (replan) {
       const model = loadLearnerModel()
       if (!access.valid()) return false
-      next = getOrCreateSession(model, ARC, { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
+      next = getOrCreateSession(model, currentArc(), { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
       if (!next || !access.valid()) return false
       // Another tab can start, advance or replace today's plan while this tab
       // still shows the old duration selector. Check the durable cursor before
@@ -981,7 +1007,7 @@ export function AppProvider({ children }) {
         const raw = readStoredSessionRaw(access)
         if (!access.valid()) return false
         if (raw !== null) {
-          storedSession = normalizeSession(JSON.parse(raw), ARC)
+          storedSession = normalizeSession(JSON.parse(raw), currentArc())
           if (!storedSession) return false
         }
       } catch { return false }
@@ -1006,7 +1032,7 @@ export function AppProvider({ children }) {
       try {
         const raw = readStoredSessionRaw(access)
         if (!access.valid() || raw === null) return false
-        storedSession = normalizeSession(JSON.parse(raw), ARC)
+        storedSession = normalizeSession(JSON.parse(raw), currentArc())
       } catch { return false }
       if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
         || storedSession.dayKey !== dailySession.dayKey
@@ -1035,7 +1061,7 @@ export function AppProvider({ children }) {
     if (!access.valid()) return false
     const planned = dailySession && dailySession.status !== 'completed'
       ? dailySession
-      : getOrCreateSession(loadLearnerModel(), ARC, { durationMode: preferredDuration, ...sessionContext() })
+      : getOrCreateSession(loadLearnerModel(), currentArc(), { durationMode: preferredDuration, ...sessionContext() })
     if (!access.valid() || !planned || planned.status === 'completed') return false
     // A second tab may have advanced or replaced the plan since this render.
     // Starting from a stale React snapshot must not rewind its durable cursor.
@@ -1044,7 +1070,7 @@ export function AppProvider({ children }) {
       const raw = readStoredSessionRaw(access)
       if (!access.valid()) return false
       if (raw !== null) {
-        storedSession = normalizeSession(JSON.parse(raw), ARC)
+        storedSession = normalizeSession(JSON.parse(raw), currentArc())
         if (!storedSession) return false
       }
     } catch { return false }
@@ -1097,7 +1123,7 @@ export function AppProvider({ children }) {
     try {
       const raw = readStoredSessionRaw(access)
       if (!access.valid() || raw === null) return false
-      storedSession = normalizeSession(JSON.parse(raw), ARC)
+      storedSession = normalizeSession(JSON.parse(raw), currentArc())
     } catch { return false }
     if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
       || storedSession.dayKey !== dailySession.dayKey
@@ -1127,7 +1153,7 @@ export function AppProvider({ children }) {
       try {
         const raw = readStoredSessionRaw(access)
         if (!access.valid() || raw === null) return false
-        storedSession = normalizeSession(JSON.parse(raw), ARC)
+        storedSession = normalizeSession(JSON.parse(raw), currentArc())
       } catch { return false }
       const storedBlock = storedSession?.blocks?.[storedSession.currentBlockIndex]
       if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
@@ -1703,6 +1729,7 @@ export function AppProvider({ children }) {
          */
         topicContext: learnerHasSpoken ? null : providerTopicContext(conversationTopic),
         learningMemory: learningMemoryPayload(loadLearnerModel()),
+        assistance: assisted ? 'suggestion_sent' : 'none',
       })
       if (!chatStillCurrent()) return
 
@@ -1890,7 +1917,7 @@ export function AppProvider({ children }) {
       messages, sendMessage, clearMessages, isTyping,
       sessionId, localProgress, resetLocalProgress,
       chatAppearance, setChatAppearance,
-      connectionNotice, memoryNotice,
+      connectionNotice, memoryNotice, progressSaveFailing,
       selectedMessage, selectMessage,
       mobileSheet, setMobileSheet,
       messagesEndRef,

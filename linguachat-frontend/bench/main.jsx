@@ -1,6 +1,6 @@
 /*
  * LinguaChat visual bench — development only, synthetic data (see
- * vite.bench.config.mjs). URL: /bench/?scene=tu|call|notes|chat|auth|archive|archive-empty|chats|mission
+ * vite.bench.config.mjs). URL: /bench/?scene=tu|call|notes|chat|auth|archive|archive-empty|chats|mission|today|identity
  * &lang=en|es|ja|ar|…&theme=light|dark
  *
  * Every learner shown here is invented. The summaries are derived by the real
@@ -24,6 +24,11 @@ import { ConversationArchive } from '../src/components/archive/ConversationArchi
 import { ChatsView } from '../src/components/chats/ChatsView.jsx'
 import { createEmptyProgress, recordPractice } from '../src/services/localProgress.js'
 import { PRACTICE_MISSIONS } from '../src/data/practiceMissions.js'
+import { TodayView } from '../src/components/today/TodayView.jsx'
+import { LanguageIdentity } from '../src/components/identity/LanguageIdentity.jsx'
+import { getOrCreateSession } from '../src/learning/engine/session.js'
+import { episodesOfLevel } from '../src/learning/curriculum/levels.js'
+import { workingLevelId } from '../src/learning/curriculum/learnerLevel.js'
 import { createMissionIntroMessage, createMissionStepMessage, createMissionFeedbackMessage, evaluateMissionStep } from '../src/services/missions.js'
 
 const BENCH_MARKER = 'LC_VISUAL_BENCH' // asserted absent from every production build
@@ -103,7 +108,7 @@ function Scene({ t }) {
   if (scene === 'chat') {
     window.__benchSent = []
     return (
-      <AppProvider value={{ ...common, messages: lesson, sendMessage: text => window.__benchSent.push(text) }}>
+      <AppProvider value={{ ...common, messages: lesson, sendMessage: text => window.__benchSent.push(text), progressSaveFailing: params.get('saveFailing') === '1' }}>
         <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}><ConversationRoom /></div>
       </AppProvider>
     )
@@ -147,6 +152,20 @@ function Scene({ t }) {
     return (
       <AppProvider value={{ ...common, messages: msgs }}>
         <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}><ConversationRoom /></div>
+      </AppProvider>
+    )
+  }
+  // P5: the screens that now ask for the learner's working level (learnerLevel.js)
+  if (scene === 'today' || scene === 'identity') {
+    const model = createLearnerModel()
+    const arc = episodesOfLevel(workingLevelId(model))
+    const value = { ...common, dailySession: null, previewSession: mode => getOrCreateSession(model, arc, { durationMode: mode || 'standard' }),
+      completedMissions: [], tutorPreferences: {}, textSize: 'standard', profile: { ...common.profile, level: 'A2', placementResult: { level: 'A2' } } }
+    return (
+      <AppProvider value={value}>
+        <main className='px-4 py-6' style={{ maxWidth: 1100, margin: '0 auto' }}>
+          {scene === 'today' ? <TodayView onOpenPath={() => {}} /> : <LanguageIdentity />}
+        </main>
       </AppProvider>
     )
   }

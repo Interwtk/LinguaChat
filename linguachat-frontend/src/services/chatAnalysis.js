@@ -5,7 +5,15 @@
  */
 const RULE_ID = /^[a-z_]{1,40}$/
 const BASE = /^[a-z]{1,20}$/
-export function safeAnalysis(raw) {
+/*
+ * P5: what the evaluator contract PROPOSED for this turn (`evaluation`,
+ * chat-evaluation/1). Only the two kinds that LOWER a turn's worth survive —
+ * a copy of the correction, or a turn produced with help. Nothing the server
+ * says can raise it: independence, retrieval and transfer stay the device's
+ * call (chatEvidence.classifyChatTurn).
+ */
+const LOWERING = new Set(['copied', 'assisted'])
+export function safeAnalysis(raw, evaluation = null) {
   if (!raw || typeof raw !== 'object') return null
   const findings = (Array.isArray(raw.findings) ? raw.findings : []).slice(0, 6)
     .filter(f => RULE_ID.test(f?.rule || ''))
@@ -22,5 +30,6 @@ export function safeAnalysis(raw) {
     confidence: typeof raw.confidence === 'string' ? raw.confidence : null,
     strategy: typeof raw.strategy === 'string' ? raw.strategy : null,
     findings, uses, retrieval,
+    proposed: LOWERING.has(evaluation?.evidence?.kind) ? evaluation.evidence.kind : null,
   }
 }

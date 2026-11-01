@@ -3,7 +3,8 @@ import { ProgressMap } from '../progress/ProgressMap'
 import { getMissionForToday } from '../../services/missions'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { StreakFlame } from '../ui/StreakFlame'
-import { playableLevelId } from '../../learning/curriculum/levels.js'
+import { workingLevelId } from '../../learning/curriculum/learnerLevel.js'
+import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 
 /**
  * The path and the progress that goes with it.
@@ -165,7 +166,7 @@ export function JourneyRail({ onClose, embedded = false }) {
           <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: 10 }}>
             {isMobileSheet ? t('yourJourney') : t('path')}
           </p>
-          <ProgressMap courseLevelId={playableLevelId()} />
+          <ProgressMap courseLevelId={workingLevelId(loadLearnerModel())} />
         </div>
 
         {/*

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from ai.chat_evaluation import safe_assistance
 from ai.engine import generate_response
 from ai.schemas import ChatMode, ChatResult, LanguageInfo, LanguageLevel, MissionContext
 from app.services.memory import conversation_memory
@@ -99,6 +100,11 @@ class ChatRequest(BaseModel):
     # Lingua corrected before — rule ids, a status, which verbs were already
     # practised. Never sentences. Validated below; anything else is dropped.
     learning_memory: list | None = None
+    # P5: how this message was produced, as the device knows it ("none",
+    # "suggestion_sent" when the learner sent a suggestion Lingua offered, …).
+    # A closed set; anything else is treated as "none". It can only LOWER what
+    # the turn is worth (assisted is never independent), never raise it.
+    assistance: str | None = None
 
 
 def _language_name(base: str) -> str:
@@ -256,6 +262,7 @@ def chat(req: ChatRequest, response: Response):
             "mission_context": mission_context,
             "optional_context": _safe_optional_context(req.optional_context),
             "learning_memory": _safe_learning_memory(req.learning_memory),
+            "assistance": safe_assistance(req.assistance),
         }
 
         generated = generate_response(

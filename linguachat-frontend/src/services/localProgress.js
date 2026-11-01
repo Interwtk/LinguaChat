@@ -1,7 +1,7 @@
 import { learnerStorage as localStorage } from '../auth/localLease.js'
 import {
   addEvent, applyToSnapshot, compactLedger, createLedger, deriveSnapshot, emptySnapshot,
-  ledgerFromLegacy, ledgerFromStored, makeEventId, mergeLedgers, missionEvent, practiceEvent,
+  ledgerFromLegacy, ledgerFromStored, makeEventId, mergeLedgers, missionEvent, practiceEvent, stampUnsaved,
   isFoldedReward, isStableEventId, PROGRESS_VERSION, sameLedger, serializeLedger, snapshotFrom,
 } from './progressLedger.js'
 import { quarantineValue } from './storageQuarantine.js'
@@ -70,8 +70,32 @@ function parseStoredProgress(raw) {
  * compacted. Unreadable stored bytes are copied to quarantine first; if that
  * copy fails this throws, so nothing replaces the only copy of the data.
  */
+/*
+ * P5: when each of THIS page's events was first saved durably. The in-memory
+ * copy never receives the stamps (only what is written does), so a tab left
+ * open for weeks still holds old events without one. Stamping those with
+ * "now" would make them look never-saved — and, once their writer is pruned,
+ * count them again. So the first confirmed save time is remembered here and
+ * reused; only events never confirmed get the time of the current attempt.
+ */
+const confirmedSaves = new Map()
+let attemptedSaves = null
+
+function withConfirmedSaves(ledger, writer) {
+  if (!confirmedSaves.size) return ledger
+  return { ...ledger, events: ledger.events.map(event => event.w === writer && !Number.isFinite(event.saved)
+    && confirmedSaves.has(event.id) ? { ...event, saved: confirmedSaves.get(event.id) } : event) }
+}
+
+function confirmSaves() {
+  for (const [id, at] of attemptedSaves || []) if (!confirmedSaves.has(id)) confirmedSaves.set(id, at)
+  attemptedSaves = null
+}
+
 export function mergeIntoStoredProgress(access, progress, now = Date.now()) {
-  let merged = progress ? ledgerOf(progress) : null
+  // P5: this page's own never-saved events carry the time of this attempt
+  const writer = writerId()
+  let merged = progress ? stampUnsaved(withConfirmedSaves(ledgerOf(progress), writer), writer, now) : null
   for (const copy of storedCopies(access, STORAGE_KEYS.progress)) {
     const stored = parseStoredProgress(copy.raw)
     if (stored.unreadable) {
@@ -80,6 +104,9 @@ export function mergeIntoStoredProgress(access, progress, now = Date.now()) {
     }
     merged = mergeLedgers(merged, stored.ledger)
   }
+  // the save time each own event will have once this write is confirmed (earliest copy wins the merge)
+  attemptedSaves = merged ? merged.events.filter(event => event.w === writer && Number.isFinite(event.saved))
+    .map(event => [event.id, event.saved]) : null
   return compactLedger(merged || createLedger(), now)
 }
 
@@ -306,8 +333,12 @@ export function readStoredProgress({ access }) {
 }
 
 /* Fold another copy into this one. Same object if it adds nothing. */
-export function mergeLocalProgress(progress, other) {
-  const mine = ledgerOf(progress)
+export function mergeLocalProgress(progress, other, now = Date.now()) {
+  // P5: this page's own events carry their save time (confirmed, or this
+  // moment if never saved) while they meet the stored copies, so a turn that
+  // never reached storage is not mistaken for one a pruned writer folded.
+  const writer = writerId()
+  const mine = stampUnsaved(withConfirmedSaves(ledgerOf(progress), writer), writer, now)
   const merged = mergeLedgers(mine, ledgerOf(other))
   return sameLedger(merged, mine) ? progress : progressFromLedger(merged)
 }
@@ -323,6 +354,7 @@ export function saveLocalProgress(progress, { access = null } = {}) {
       const serialized = serializeStoredProgress(ledger)
       if (!access.valid() || access.setItem(key, serialized) === false
         || !access.valid() || access.getItem(key) !== serialized) return false
+      confirmSaves()
       collectDeadCopies(access, STORAGE_KEYS.progress, parsed => {
         const theirs = ledgerFromStored(parsed)
         return Boolean(theirs) && sameLedger(mergeLedgers(ledger, theirs), ledger)

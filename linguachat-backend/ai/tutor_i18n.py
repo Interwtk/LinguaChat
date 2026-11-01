@@ -78,6 +78,27 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ja": "現在形では I・you・we・they なら {base}、he・she・it なら {fixed} です。比べてみましょう：✗ {subject} {base} · ✓ {subject} {fixed}。",
         "ar": "في المضارع: I وyou وwe وthey ‏{base}، أمّا he وshe وit ‏{fixed}. قارن: ✗ {subject} {base} · ✓ {subject} {fixed}.",
     },
+    # --- P5: the same agreement after a NOUN subject ("My sister like") -------
+    "third_person_noun.brief": {
+        "en": "{subject} is one person or thing, like he or she, so the present verb takes -s: {subject} {fixed}.",
+        "es": "{subject} es una sola persona o cosa, como he o she; por eso el verbo en presente lleva -s: {subject} {fixed}.",
+        "pt": "{subject} é uma só pessoa ou coisa, como he ou she; por isso o verbo no presente recebe -s: {subject} {fixed}.",
+        "fr": "{subject} est une seule personne ou chose, comme he ou she ; le verbe au présent prend donc un -s : {subject} {fixed}.",
+        "it": "{subject} è una sola persona o cosa, come he o she; per questo il verbo al presente prende la -s: {subject} {fixed}.",
+        "de": "{subject} ist eine einzelne Person oder Sache, wie he oder she – deshalb bekommt das Verb im Präsens ein -s: {subject} {fixed}.",
+        "ja": "{subject} は he や she と同じく一人（一つ）なので、現在形の動詞に -s が付きます：{subject} {fixed}。",
+        "ar": "‏{subject} شخص أو شيء واحد مثل he أو she، لذلك يأخذ الفعل في المضارع ‎-s‎: {subject} {fixed}.",
+    },
+    "third_person_noun.detailed": {
+        "en": "One person or thing works like he or she: ✗ {subject} {base} · ✓ {subject} {fixed}. With more than one (my sisters, they) the verb stays {base}.",
+        "es": "Una sola persona o cosa funciona como he o she: ✗ {subject} {base} · ✓ {subject} {fixed}. Con varias (my sisters, they) el verbo queda {base}.",
+        "pt": "Uma só pessoa ou coisa funciona como he ou she: ✗ {subject} {base} · ✓ {subject} {fixed}. Com várias (my sisters, they) o verbo fica {base}.",
+        "fr": "Une seule personne ou chose se comporte comme he ou she : ✗ {subject} {base} · ✓ {subject} {fixed}. Avec plusieurs (my sisters, they), le verbe reste {base}.",
+        "it": "Una sola persona o cosa si comporta come he o she: ✗ {subject} {base} · ✓ {subject} {fixed}. Con più di una (my sisters, they) il verbo resta {base}.",
+        "de": "Eine einzelne Person oder Sache verhält sich wie he oder she: ✗ {subject} {base} · ✓ {subject} {fixed}. Bei mehreren (my sisters, they) bleibt das Verb {base}.",
+        "ja": "一人（一つ）の主語は he や she と同じです：✗ {subject} {base} · ✓ {subject} {fixed}。複数（my sisters, they）なら動詞は {base} のままです。",
+        "ar": "الشخص أو الشيء الواحد يُعامَل مثل he أو she: ✗ {subject} {base} · ✓ {subject} {fixed}. ومع أكثر من واحد (my sisters, they) يبقى الفعل ‏{base}.",
+    },
     # --- explanations: a / an ------------------------------------------------
     "article.brief": {
         "en": "Use '{article}' before '{word}': it depends on the first sound.",

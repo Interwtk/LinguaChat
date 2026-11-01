@@ -6,7 +6,8 @@ import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 import { teachingHistory } from '../../learning/engine/teachingPolicy.js'
 import { learnerSummary } from '../../learning/engine/learnerSummary.js'
 import { LearningSummaryCard } from './LearningSummaryCard'
-import { labelKeyOfLevel, playableLevelId } from '../../learning/curriculum/levels.js'
+import { labelKeyOfLevel } from '../../learning/curriculum/levels.js'
+import { workingLevelId } from '../../learning/curriculum/learnerLevel.js'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { getLanguageOption, languageFromInput, searchLanguages } from '../../services/language'
 import {
@@ -322,7 +323,7 @@ export function LanguageIdentity() {
                   fontSize: 10, fontWeight: 700, background: 'var(--accent)',
                   color: '#fff', padding: '2px 9px', borderRadius: 999,
                 }}>
-                  {t(labelKeyOfLevel(playableLevelId()) || 'preA1LevelBadge')}
+                  {t(labelKeyOfLevel(workingLevelId(loadLearnerModel())) || 'preA1LevelBadge')}
                 </span>
                 <span style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>
                   {profile.email || 'linguachat.user'}

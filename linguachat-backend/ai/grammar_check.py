@@ -166,6 +166,92 @@ def _past_marker(words: list[str]) -> str | None:
     return None
 
 
+# --- P5: a singular NOUN subject ("my sister", "the shop", "our English teacher") ---
+#
+# Agreement after a noun phrase is checked only where the structure leaves no
+# doubt, so a wrong correction stays rarer than a missed one:
+#   * the phrase opens a clause: the sentence start, after punctuation, after a
+#     clause word ("and", "because", "when"...) or a reporting verb ("I think ...");
+#     never after "let", "see", "help", "make" (bare infinitives) or "that"
+#     (mandative subjunctive: "It is important that he go");
+#   * it is a SINGULAR determiner + one or two words + the verb, with nothing
+#     else in between but a frequency adverb, and no punctuation;
+#   * the head noun does not end in -s (plural, or "bus"/"news": left alone),
+#     and is not a collective, an irregular plural or a time word ("this week
+#     go to bed early" is an imperative);
+#   * the word after the verb is not a verb itself ("the school work is hard":
+#     a compound noun, not a subject + verb).
+# Proper names ("Maria like ...") are NOT checked: an unknown capitalised word
+# may be a plural that does not end in -s (Sheep, Fish, Children).
+SINGULAR_DETERMINERS = {"my", "your", "his", "her", "our", "their", "the", "this", "that", "every", "each"}
+NOT_SINGULAR_HEADS = {
+    "people", "children", "men", "women", "police", "family", "team", "staff", "crew", "government", "class",
+    "audience", "couple", "majority", "sheep", "fish", "deer", "data", "media", "cattle", "feet", "teeth", "mice",
+    "geese", "group", "public", "band", "company", "club", "committee", "army", "jury",
+    "day", "morning", "afternoon", "evening", "night", "week", "month", "year", "weekend", "time", "summer",
+    "winter", "spring", "autumn", "today", "tonight", "moment", "hour", "minute", "second", "semester", "term",
+}
+# Not "and"/"or": "My mother and my father cook" is ONE plural subject. After a
+# comma ("…, and my sister like cats") the clause is new and is still checked.
+CLAUSE_STARTERS = {"but", "so", "because", "when", "if", "while", "although", "though", "until", "before",
+                   "after", "since", "then"}
+REPORTING_VERBS = {"think", "thinks", "know", "knows", "believe", "believes", "hope", "hopes", "guess", "suppose",
+                   "say", "says"}
+FREQUENCY_ADVERBS = {"always", "usually", "often", "sometimes", "never", "rarely", "also", "really", "still",
+                     "normally", "generally", "seldom"}
+NOT_NOUNS = SUBJECTS | SINGULAR_DETERMINERS | AUXILIARIES | CLAUSE_STARTERS | FREQUENCY_ADVERBS | {
+    "me", "him", "us", "them", "a", "an", "of", "in", "on", "at", "for", "with", "from", "by", "about", "not",
+    "who", "which", "what", "where", "why", "how", "is", "are", "was", "were", "am", "be", "has", "have", "had",
+    "very", "too", "there", "here", "some", "all", "many", "both", "these", "those", "other", "others", "more",
+    "one", "two", "three", "no", "any",
+}
+# allowed before the head ("my best friend"), never as the head itself
+NOT_HEADS = {"best", "first", "last", "next", "own", "other", "more", "most", "little", "old", "new", "good", "big"}
+# "Yesterday my sister ...", "Last week the shop ...", "Every morning my mother ...": a time phrase opens the clause
+TIME_WORDS = {"yesterday", "today", "tonight", "now", "ago"}
+TIME_UNITS = PAST_UNITS | {"morning", "afternoon", "evening", "day"}
+VERB_FOLLOWERS = {"is", "are", "was", "were", "has", "have", "had", "will", "would", "can", "could", "should", "must",
+                  "does", "do", "did", "isn't", "aren't", "wasn't", "weren't", "doesn't", "don't", "may", "might"}
+_ONLY_SPACE = re.compile(r"^[\s']*$")
+
+
+def _noun_subjects(text: str, tokens: list, words: list[str]) -> list[tuple[int, int, int]]:
+    """(determiner index, head index, verb index) for each safe singular noun subject."""
+    found = []
+    for i, word in enumerate(words):
+        if word not in SINGULAR_DETERMINERS:
+            continue
+        before = text[: tokens[i].start()]
+        after_time = i > 0 and (words[i - 1] in TIME_WORDS or (
+            i > 1 and words[i - 1] in TIME_UNITS and words[i - 2] in {"last", "this", "next", "every", "each", "on"}))
+        if i > 0 and not re.search(r"[.!?,;:]\s*(?:(?:and|or)\s+)?$", before, re.I) \
+                and words[i - 1] not in CLAUSE_STARTERS | REPORTING_VERBS and not after_time:
+            continue
+        for size in (1, 2):
+            head = i + size
+            verb = head + 1
+            if verb < len(words) and words[verb] in FREQUENCY_ADVERBS:
+                verb += 1
+            if verb >= len(words):
+                break
+            nouns = words[i + 1: head + 1]
+            if any(w in NOT_NOUNS or not re.fullmatch(r"[a-z]+(?:'s)?", w) for w in nouns):
+                break
+            if any(w.endswith("s") and not w.endswith("'s") for w in nouns) or words[head] in NOT_SINGULAR_HEADS \
+                    or words[head] in NOT_HEADS or words[head].endswith("'s"):
+                continue
+            # nothing but spaces between the determiner and the verb: "My sister, like me, ..." is not a subject + verb
+            if not _ONLY_SPACE.match(re.sub(r"[A-Za-z']+", "", text[tokens[i].start(): tokens[verb].start()])):
+                break
+            if verb + 1 < len(words) and words[verb + 1] in VERB_FOLLOWERS:
+                continue
+            candidate = words[verb]
+            if candidate in {"don't", "dont", "is", "are", "am"} or candidate in AGREEMENT_VERBS or _base_of(candidate):
+                found.append((i, head, verb))
+                break
+    return found
+
+
 def analyze(text: str) -> list[Finding]:
     """All findings, left to right, without overlapping spans."""
     tokens = list(TOKEN.finditer(text or ""))
@@ -212,6 +298,26 @@ def analyze(text: str) -> list[Finding]:
                                token.start(), token.end(), "medium",
                                {"marker": marker, "base": base, "past": past, "wrong": token.group(0)}))
             break
+        # P5: the same with a singular noun subject ("Yesterday my sister go ...")
+        if not any(f.rule == "past_marker" for f in findings):
+            for _det, _head, v in _noun_subjects(text, tokens, words):
+                verb = words[v]
+                if v in taken or verb in {"are", "am", "don't", "dont"}:
+                    continue
+                if verb == "is":
+                    base, past = "be", "was"
+                else:
+                    base = _base_of(verb)
+                    if not base or (base in SAME_FORM_PAST and verb in {base, _third_person(base)}):
+                        continue
+                    past = _past_of(base)
+                if past == verb:
+                    continue
+                token = tokens[v]
+                add(v, Finding("past_marker", token.group(0), _match_case(token.group(0), past),
+                               token.start(), token.end(), "medium",
+                               {"marker": marker, "base": base, "past": past, "wrong": token.group(0)}))
+                break
 
     # 3) He/she/it with a base verb in the present: "she like" -> "she likes".
     if not marker:
@@ -238,6 +344,21 @@ def analyze(text: str) -> list[Finding]:
                 add(i + 1, Finding("third_person", token.group(0), _match_case(token.group(0), fixed),
                                    token.start(), token.end(), "medium",
                                    {"subject": tokens[i].group(0), "base": verb, "fixed": fixed}))
+        # P5: a singular noun subject with a base verb: "My sister like cats".
+        for det, head, v in _noun_subjects(text, tokens, words):
+            if v in taken:
+                continue
+            verb, token = words[v], tokens[v]
+            subject = text[tokens[det].start(): tokens[head].end()]
+            if verb in {"don't", "dont"}:
+                fixed, base = "doesn't", "don't"
+            elif verb in AGREEMENT_VERBS and verb not in {"can", "will"}:
+                fixed, base = _third_person(verb), verb
+            else:
+                continue
+            add(v, Finding("third_person", token.group(0), _match_case(token.group(0), fixed),
+                           token.start(), token.end(), "medium",
+                           {"subject": subject, "base": base, "fixed": fixed, "noun_subject": True}))
 
     # 4) a/an by the sound of the next word: "a apple" -> "an apple".
     for i in range(len(tokens) - 1):

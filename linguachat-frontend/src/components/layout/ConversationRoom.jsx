@@ -54,6 +54,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
     profile,
     connectionNotice,
     memoryNotice,
+    progressSaveFailing,
     setMobileSheet,
     navigateTo,
     t,
@@ -320,6 +321,21 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
             lineHeight: 1.45,
           }}>
           {connectionNotice}
+        </div>
+      )}
+
+      {progressSaveFailing && (
+        <div className="mt-3 px-3.5 py-2.5 rounded-xl animate-fade-up"
+          role="status"
+          style={{
+            ...practicePanelStyle,
+            background: 'var(--accent-soft)',
+            border: '1px solid var(--accent-tint)',
+            color: 'var(--text)',
+            fontSize: '0.8125rem',
+            lineHeight: 1.45,
+          }}>
+          {t('progressNotSavedNotice')}
         </div>
       )}
 

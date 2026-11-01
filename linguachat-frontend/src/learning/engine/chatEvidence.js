@@ -111,6 +111,10 @@ export function classifyChatTurn({ turnId, at, message, analysis, provenance = '
   if (!analysis || typeof analysis !== 'object') return { kind: 'not_evaluable', entries: [] }
   const entries = []
   const msgWords = words(message)
+  // P5: the evaluator may PROPOSE that the turn was a copy or assisted; that
+  // only ever lowers a kind (chatAnalysis.safeAnalysis keeps nothing else).
+  const proposedCopy = analysis.proposed === 'copied'
+  assisted = assisted || analysis.proposed === 'assisted' || proposedCopy
   const pending = previous?.retrieval && CHAT_RULES[previous.retrieval.rule] ? previous.retrieval : null
 
   // 1) The answer to a delayed retrieval Lingua offered.
@@ -140,7 +144,7 @@ export function classifyChatTurn({ turnId, at, message, analysis, provenance = '
     const lastError = [...history].reverse().find(x => x.kind === 'error' || x.kind === 'retrieval_failed')
     const knownBases = new Set(history.map(x => x.base).filter(Boolean))
     let kind
-    if (correctionText && (norm(message) === correctionText || correctionText.includes(norm(message)))) kind = 'copied'
+    if (proposedCopy || (correctionText && (norm(message) === correctionText || correctionText.includes(norm(message))))) kind = 'copied'
     else if (assisted) kind = 'assisted'
     else if (provenance !== 'free_chat') kind = 'accepted'
     else if (!lastError) kind = 'accepted'

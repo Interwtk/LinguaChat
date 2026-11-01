@@ -455,13 +455,16 @@ function PracticeTurn({ block, topic = null, sessionId = null, listeningBaseline
   const teaching = modelRef.current
   const decisionRef = useRef(null)
   if (!decisionRef.current) {
-  const instruction = block.payload?.requiredPractice === 'recall' ? 'concise'
-    : showsModelAnswer(scaffold) ? 'worked_example'
-      : chooseTeaching(teaching, kind, ['concise', 'worked_example'], decisionSeed, 'instruction')?.format
-        || (seedFrom(decisionSeed + ':instruction') % 2 ? 'concise' : 'worked_example')
   const channel = listeningBaseline ? 'listening'
     : chooseTeaching(teaching, kind, ['reading', 'listening'], decisionSeed, 'channel')?.format
       || (seedFrom(decisionSeed + ':channel') % 2 ? 'reading' : 'listening')
+  // P5: the explanation style is ranked by this SKILL's own later probes when
+  // there are enough (a method can help listening and not writing).
+  const instruction = block.payload?.requiredPractice === 'recall' ? 'concise'
+    : showsModelAnswer(scaffold) ? 'worked_example'
+      : chooseTeaching(teaching, kind, ['concise', 'worked_example'], decisionSeed, 'instruction',
+        { skill: channel === 'listening' ? 'listening' : 'written' })?.format
+        || (seedFrom(decisionSeed + ':instruction') % 2 ? 'concise' : 'worked_example')
   decisionRef.current = { instruction, channel }
   }
   const { instruction, channel } = decisionRef.current

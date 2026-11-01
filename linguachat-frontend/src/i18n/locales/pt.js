@@ -641,6 +641,7 @@ export default {
   authLocalDataUnreadable: 'Alguns dados salvos neste dispositivo não puderam ser lidos com segurança. Eles foram mantidos sem alterações e encerramos sua sessão para protegê-los. Entre novamente.',
   profileRecoveredNotice: 'Não conseguimos ler o perfil salvo neste dispositivo. Guardamos uma cópia e a configuração continua a partir do seu último passo válido. Seu progresso, suas palavras e suas preferências estão seguros.',
   chatOfflineNotice: 'O serviço de tutoria da Lingua não está disponível agora. Suas mensagens ficam aqui; nada é verificado até ele voltar.',
+  progressNotSavedNotice: 'Seu progresso neste dispositivo ainda não foi salvo (o armazenamento está cheio ou bloqueado). O LinguaChat continua tentando; não feche esta aba até esta mensagem desaparecer.',
   evidenceWeeklyTitle: 'Respostas por conta própria, por semana',
   evidenceWeeklySummary: 'Respondidas por conta própria nesta semana, na primeira tentativa: {count}',
   evidenceWeeklyEmpty: 'Ainda não há prática suficiente para mostrar uma tendência. As respostas que você der por conta própria aparecerão aqui.',

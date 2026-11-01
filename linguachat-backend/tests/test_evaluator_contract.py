@@ -283,9 +283,13 @@ def test_gate_new_contexts(text, expected):
 
 
 def test_gate_known_false_negative_stays_honest():
-    # Known limit: the third-person rule only knows pronoun subjects, so "My sister
-    # like cats." is missed. What must hold: no praise, no acceptance evidence.
+    # P4's known limit ("My sister like cats." missed) is closed in P5: a singular
+    # noun subject is checked where the structure is unambiguous.
     result, found = findings_of("My sister like cats.")
+    assert found == {("third_person", "like", "likes")} and result.evidence.kind == "error"
+    # The limit that remains: proper names are not checked (an unknown capitalised
+    # word may be a plural without -s). What must hold: no praise, no acceptance.
+    result, found = findings_of("Maria like cats.")
     assert not found and result.certainty == "unsure" and result.evidence.kind == "insufficient"
 
 

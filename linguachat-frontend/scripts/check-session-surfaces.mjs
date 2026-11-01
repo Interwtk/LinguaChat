@@ -272,7 +272,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       SESSION_KEY: 'lc2-daily-session-v1',
       // Reads go through the merged per-tab reader (P2); here, one stored copy.
       readStoredSessionRaw: access => access.getItem('lc2-daily-session-v1'),
-      ARC: [],
+      // P5: the session's episodes come from the learner's working level
+      currentArc: () => [],
       captureLearnerAccess: () => ({
         valid: () => valid,
         getItem: (key) => {
@@ -342,11 +343,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   assert.match(context, /if \(isolation\.claimedGuestData && !isolation\.reloadRequired\)\s*passiveStorageAccessRef\.current = captureLearnerAccess\(\)/,
     'a first guest claim must rebind passive persistence to the new authenticated lease')
   const messageEffect = context.match(/useEffect\(\(\) => \{\s*(saveStoredMessages\(messages, \{ access: passiveStorageAccessRef\.current \}\))\s*\}, \[messages\]\)/)
-  const progressEffect = context.match(/useEffect\(\(\) => \{\s*(saveLocalProgress\(localProgress, \{ access: passiveStorageAccessRef\.current \}\))\s*\}, \[localProgress\]\)/)
+  // P5: the progress writer retries a failing save and reports it; same captured lease throughout
+  const progressEffect = context.match(/useEffect\(\(\) => \{\n(    latestProgressRef\.current = localProgress\n[\s\S]*?)\n  \}, \[localProgress\]\)/)
   assert.ok(messageEffect && progressEffect,
     'passive writers must use their captured lease, never a fresh lease or unscoped storage')
   const runMessages = new Function('deps', 'with (deps) { ' + messageEffect[1] + ' }')
-  const runProgress = new Function('deps', 'with (deps) { ' + progressEffect[1] + ' }')
+  assert.ok(!/captureLearnerAccess\(|unscopedAccess|localStorage\./.test(progressEffect[1]), 'the progress writer never takes a fresh lease')
+  const runProgress = new Function('deps', 'with (deps) { return (() => {' + progressEffect[1] + '\n})() }')
   for (const mode of ['same-account', 'switched-account', 'revoked-tab', 'claimed-guest']) {
     let active = mode === 'same-account' || mode === 'claimed-guest'
     const captured = { valid: () => active }
@@ -354,8 +357,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const messages = [{ id: 'old-A' }]
     const localProgress = { xp: 42 }
     let writes = 0
+    const timers = []
+    let failing = null
     const deps = {
-      passiveStorageAccessRef, messages, localProgress,
+      passiveStorageAccessRef, messages, localProgress, latestProgressRef: { current: null }, PROGRESS_RETRY_MS: 15000,
+      setProgressSaveFailing: value => { failing = value },
+      setInterval: (fn, ms) => { timers.push({ fn, ms }); return timers.length },
+      clearInterval: id => { if (timers[id - 1]) timers[id - 1].cleared = true },
       saveStoredMessages: (_value, { access }) => {
         assert.equal(access, captured, mode + ': chat uses the original lease')
         if (!access.valid()) return false
@@ -374,6 +382,34 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     runMessages(deps)
     runProgress(deps)
     assert.equal(writes, active ? 2 : 0, mode + ': stale effects must never persist into B')
+    assert.equal(timers.length, 0, mode + ': nothing to retry when the save worked or the lease is gone')
+    assert.equal(failing, false, mode + ': no notice when the save worked or the lease is gone')
+  }
+  // P5: a save that fails under a VALID lease is retried, with the same lease, and reported until it works
+  {
+    const captured = { valid: () => true }
+    let ok = false, attempts = 0, failing = null
+    const timers = []
+    const deps = {
+      passiveStorageAccessRef: { current: captured }, localProgress: { xp: 1 }, latestProgressRef: { current: null },
+      PROGRESS_RETRY_MS: 15000,
+      setProgressSaveFailing: value => { failing = value },
+      setInterval: (fn, ms) => { timers.push({ fn, ms }); return timers.length },
+      clearInterval: id => { if (timers[id - 1]) timers[id - 1].cleared = true },
+      saveLocalProgress: (_value, { access }) => { assert.equal(access, captured, 'retries keep the original lease'); attempts++; return ok },
+    }
+    const cleanup = runProgress(deps)
+    assert.equal(failing, true, 'a failing save is reported')
+    assert.equal(timers.length, 1, 'and retried')
+    assert.equal(timers[0].ms, 15000)
+    timers[0].fn()
+    assert.equal(failing, true, 'still failing: still reported')
+    ok = true
+    timers[0].fn()
+    assert.equal(failing, false, 'the notice goes away once a retry works')
+    assert.equal(timers[0].cleared, true, 'and the retry stops')
+    assert.equal(attempts, 3)
+    assert.equal(typeof cleanup, 'function', 'the retry is cleared when the progress changes or the screen unmounts')
   }
   ok()
 }
@@ -1394,6 +1430,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       // saveLocalProgress merges with what storage holds (P0-1). The real
       // helpers run against the same scoped `access`, never unscoped storage.
       mergeIntoStoredProgress, serializeStoredProgress,
+      // P5: a verified write confirms this page's save times
+      confirmSaves: () => {},
       // Each tab writes its own copy (P1 stage A); the same scoped access only.
       ownKey, collectDeadCopies, ledgerFromStored, mergeLedgers, sameLedger,
       // Mission history has one copy per tab; a reset removes all of them (P2).
@@ -1799,7 +1837,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       SESSION_BONUS_XP: 15,
       SESSION_KEY: 'daily-session',
       readStoredSessionRaw: access => access.getItem('daily-session'), // merged per-tab reader (P2)
-      ARC: [],
+      currentArc: () => [], // P5: the learner's working level (was ARC)
       normalizeSession: value => value,
       dailySession: structuredClone(visible),
       captureLearnerAccess: () => access,
@@ -1949,7 +1987,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const deps = {
       SESSION_KEY: 'daily-session',
       readStoredSessionRaw: access => access.getItem('daily-session'), // merged per-tab reader (P2)
-      ARC: [],
+      currentArc: () => [], // P5: the learner's working level (was ARC)
       normalizeSession: value => value,
       captureLearnerAccess: () => access,
       dailySession: mode === 'no-session' ? null : structuredClone(initial),
@@ -2152,7 +2190,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       dailySession: daily,
       preferredDuration: 'standard',
       sessionContext: () => ({}),
-      ARC: [],
+      currentArc: () => [], // P5: the learner's working level (was ARC)
       getOrCreateSession: () => {
         if (mode === 'first-session' || mode === 'old-completed' || mode === 'absent-current') return planned
         if (mode === 'completed-today') return daily
@@ -2401,7 +2439,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       SESSION_KEY: 'daily-session',
       readStoredSessionRaw: access => access.getItem('daily-session'), // merged per-tab reader (P2)
       normalizeSession: value => value,
-      ARC: [],
+      currentArc: () => [], // P5: the learner's working level (was ARC)
       dailySession: original.daily,
       captureLearnerAccess: () => access,
       isDurationMode: value => value === 'quick',

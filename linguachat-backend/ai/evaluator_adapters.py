@@ -11,7 +11,8 @@ adapter lives in the tests, named as a test tool.
 request is checked, the adapter is called within a time budget, the answer is
 validated, and on ANY failure (rejection, timeout, network error, empty or
 malformed answer) the local reference answers instead, with the incident
-recorded. Not wired into /chat yet — that wiring is a separate, authorised step.
+recorded. P5: /chat uses it, through ``ai/chat_evaluation.py`` (owner's
+authorisation of 2026-10-31, local reference only — no remote provider).
 """
 from __future__ import annotations
 
@@ -44,8 +45,21 @@ class LocalReferenceEvaluator(EvaluatorAdapter):
     name = "local_rules"
 
     def evaluate(self, request: EvaluatorRequest) -> dict:
+        return self.evaluate_detailed(request)[0]
+
+    def evaluate_detailed(self, request: EvaluatorRequest) -> tuple[dict, dict]:
+        """The contract answer AND the engine's own analysis it was built from.
+
+        One `assess` call serves both, so the chat never evaluates a message
+        twice: the contract answer is validated, and only then is the analysis
+        behind it used (corrected sentence, rule facts, correct uses).
+        """
         profile = {"native_language": request.learner_language}
         analysis = assess(request.response_text, profile)
+        return self._contract(request, analysis), analysis
+
+    def _contract(self, request: EvaluatorRequest, analysis: dict) -> dict:
+        profile = {"native_language": request.learner_language}
         verdict = analysis["verdict"]
         findings = []
         for f in analysis.get("findings", []):
@@ -88,13 +102,16 @@ class SafeEvaluation:
     used: str                                  # adapter name that produced the result, or "refused"
     incidents: list[str] = field(default_factory=list)
     elapsed_s: float = 0.0
+    # When the local reference answered: the engine analysis behind `result`.
+    local_analysis: dict | None = None
 
 
 _REFERENCE = LocalReferenceEvaluator()
 
 
-def evaluate_safely(adapter: EvaluatorAdapter, request: EvaluatorRequest, *, timeout_s: float = DEFAULT_TIMEOUT_S) -> SafeEvaluation:
+def evaluate_safely(adapter: EvaluatorAdapter, request: EvaluatorRequest, *, timeout_s: float | None = None) -> SafeEvaluation:
     started = time.monotonic()
+    timeout_s = DEFAULT_TIMEOUT_S if timeout_s is None else timeout_s
     refused = check_request(request)
     if refused:
         return SafeEvaluation(None, "refused", refused, time.monotonic() - started)
@@ -115,8 +132,9 @@ def evaluate_safely(adapter: EvaluatorAdapter, request: EvaluatorRequest, *, tim
             incidents.append("provider_error")
         finally:
             pool.shutdown(wait=False, cancel_futures=True)
-    result = validate_result(_REFERENCE.evaluate(request), request)
-    return SafeEvaluation(result, _REFERENCE.name, incidents, time.monotonic() - started)
+    raw, analysis = _REFERENCE.evaluate_detailed(request)
+    result = validate_result(raw, request)
+    return SafeEvaluation(result, _REFERENCE.name, incidents, time.monotonic() - started, analysis)
 
 
 def reference_result(request: EvaluatorRequest) -> EvaluatorResult:

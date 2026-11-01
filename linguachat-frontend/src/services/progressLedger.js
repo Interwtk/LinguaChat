@@ -31,6 +31,13 @@
  *   rule was "older than `foldedBefore` means counted", which dropped it.)
  *   Events written before P4 have no identity and keep the time rule, as do
  *   bases written by older code (no `coverage` field).
+ * - P5: an event also records WHEN ITS WRITER FIRST SAVED IT durably (`saved`).
+ *   Other tabs only ever see events from storage, so an event that was never
+ *   saved cannot have been folded anywhere. When a writer's coverage is pruned
+ *   (30 days), the base keeps `prunedSaved` — the latest save time among the
+ *   events it folded — and a turn first saved AFTER that is new, not covered,
+ *   however old its clock. This closes P4's documented limit (a turn stranded
+ *   for more than 30 days behind a failing save).
  * - `epoch` marks an explicit reset. Everything before the newest reset is
  *   gone, including a stale tab's older copy; anything that tab does after the
  *   reset still counts.
@@ -259,6 +266,7 @@ export function sanitizeEvent(raw) {
   if (typeof raw.w === 'string' && WRITER_ID.test(raw.w) && Number.isInteger(raw.seq) && raw.seq > 0) {
     base.w = raw.w
     base.seq = raw.seq
+    if (Number.isFinite(raw.saved) && raw.saved > 0) base.saved = raw.saved
   }
   if (raw.kind === 'xp') return base
   if (raw.kind === 'award') return { ...base, grants: Array.isArray(raw.grants) ? raw.grants.map(sanitizeGrant).filter(Boolean) : [] }
@@ -431,7 +439,7 @@ function sanitizeEpoch(raw) {
 export function createLedger({ epoch = INITIAL_EPOCH, startedAt = Date.now(), snapshot = emptySnapshot() } = {}) {
   return {
     epoch: { ...epoch },
-    base: { snapshot: sanitizeSnapshot(snapshot), startedAt, foldedBefore: 0, folded: 0, foldedIds: [], foldedFloors: {}, coverage: {}, prunedBefore: 0 },
+    base: { snapshot: sanitizeSnapshot(snapshot), startedAt, foldedBefore: 0, folded: 0, foldedIds: [], foldedFloors: {}, coverage: {}, prunedBefore: 0, prunedSaved: 0 },
     events: [],
   }
 }
@@ -465,7 +473,8 @@ export function ledgerFromStored(value) {
       ...pruneFolded(Array.isArray(base.foldedIds) ? base.foldedIds.filter(isStableEventId) : [], sanitizeFloors(base.foldedFloors)),
       // absent on bases written before P4: those keep the time rule entirely
       ...(base.coverage && typeof base.coverage === 'object' && !Array.isArray(base.coverage)
-        ? { coverage: sanitizeCoverage(base.coverage), prunedBefore: Math.max(0, finite(base.prunedBefore)) } : {}),
+        ? { coverage: sanitizeCoverage(base.coverage), prunedBefore: Math.max(0, finite(base.prunedBefore)),
+            ...(Number.isFinite(base.prunedSaved) ? { prunedSaved: Math.max(0, base.prunedSaved) } : {}) } : {}),
     },
     events: dedupe(value.events.map(sanitizeEvent).filter(Boolean)),
   }
@@ -483,7 +492,11 @@ function dedupe(events) {
   const byId = new Map()
   for (const event of events) {
     const current = byId.get(event.id)
-    if (!current || canonical(event) < canonical(current)) byId.set(event.id, event)
+    if (!current) { byId.set(event.id, event); continue }
+    // P5: the copy that records a durable save wins, and the earliest save of all
+    const a = Number.isFinite(event.saved) ? event.saved : Infinity
+    const b = Number.isFinite(current.saved) ? current.saved : Infinity
+    if (a < b || (a === b && canonical(event) < canonical(current))) byId.set(event.id, event)
   }
   return [...byId.values()].sort(byTime)
 }
@@ -503,7 +516,8 @@ function sanitizeCoverage(raw) {
     if (!WRITER_ID.test(w) || !Number.isInteger(min) || !Number.isInteger(max) || min < 1 || max < min || !Number.isFinite(at)) continue
     const holes = Array.isArray(entry.holes)
       ? [...new Set(entry.holes.filter(n => Number.isInteger(n) && n > min && n < max))].sort((x, y) => x - y).slice(0, HOLES_LIMIT) : []
-    out[w] = holes.length ? { min, max, at, holes } : { min, max, at }
+    const saved = Number.isFinite(entry.saved) ? { saved: entry.saved } : {}
+    out[w] = holes.length ? { min, max, at, ...saved, holes } : { min, max, at, ...saved }
   }
   return out
 }
@@ -513,14 +527,16 @@ const coverageHas = (entry, seq) => Boolean(entry) && seq >= entry.min && seq <=
 /* The entry once `event` is folded too — or null if that would scatter it beyond HOLES_LIMIT. */
 function coverageAdd(entry, event) {
   const n = event.seq
-  if (!entry) return { min: n, max: n, at: event.at }
+  const latestSave = Math.max(Number.isFinite(entry?.saved) ? entry.saved : -Infinity, Number.isFinite(event.saved) ? event.saved : -Infinity)
+  const saved = Number.isFinite(latestSave) ? { saved: latestSave } : {}
+  if (!entry) return { min: n, max: n, at: event.at, ...saved }
   const holes = new Set(entry.holes || [])
   let { min, max } = entry
   if (n > max) { for (let k = max + 1; k < n; k++) holes.add(k); max = n }
   else if (n < min) { for (let k = n + 1; k < min; k++) holes.add(k); min = n }
   else holes.delete(n)
   if (holes.size > HOLES_LIMIT) return null
-  const out = { min, max, at: Math.max(entry.at, event.at) }
+  const out = { min, max, at: Math.max(entry.at, event.at), ...saved }
   if (holes.size) out.holes = [...holes].sort((x, y) => x - y)
   return out
 }
@@ -535,7 +551,11 @@ export function isCovered(base, event) {
   if (!base) return false
   if (hasIdentity(event) && base.coverage) {
     const entry = base.coverage[event.w]
-    return entry ? coverageHas(entry, event.seq) : event.at <= (base.prunedBefore || 0)
+    if (entry) return coverageHas(entry, event.seq)
+    if (event.at > (base.prunedBefore || 0)) return false
+    // P5: first saved after every pruned writer's last folded save → never folded
+    if (Number.isFinite(event.saved) && Number.isFinite(base.prunedSaved)) return event.saved <= base.prunedSaved
+    return true
   }
   return event.at < (base.foldedBefore || 0)
 }
@@ -643,10 +663,13 @@ export function compactLedger(ledger, now = Date.now()) {
   const remaining = events.filter(event => !folding.has(event))
   // forget writers that cannot matter any more (see COVERAGE_KEEP_MS)
   let prunedBefore = ledger.base.prunedBefore || 0
+  let prunedSaved = Number.isFinite(ledger.base.prunedSaved) ? ledger.base.prunedSaved : 0
   const pending = new Set(remaining.filter(hasIdentity).map(event => event.w))
   for (const [w, entry] of Object.entries(coverage)) {
     if (entry.at < now - COVERAGE_KEEP_MS && !pending.has(w)) {
       prunedBefore = Math.max(prunedBefore, entry.at)
+      // an entry folded by older code has no save times: assume everything up to now
+      prunedSaved = Math.max(prunedSaved, Number.isFinite(entry.saved) ? entry.saved : now)
       delete coverage[w]
     }
   }
@@ -664,9 +687,28 @@ export function compactLedger(ledger, now = Date.now()) {
         ledger.base.foldedFloors || {}),
       coverage,
       prunedBefore,
+      prunedSaved,
     },
     events: remaining,
   }
+}
+
+/*
+ * Stamp `writer`'s own events that have never been saved with the time of this
+ * save attempt (P5). Called on the ledger about to be written: if the write
+ * fails, nothing is stored and the next attempt stamps again; once a write
+ * succeeds, the stamped copy in storage wins every merge (dedupe), so the time
+ * is fixed from then on.
+ */
+export function stampUnsaved(ledger, writer, now = Date.now()) {
+  if (!ledger || !writer) return ledger
+  let changed = false
+  const events = ledger.events.map(event => {
+    if (event.w !== writer || !hasIdentity(event) || Number.isFinite(event.saved)) return event
+    changed = true
+    return { ...event, saved: now }
+  })
+  return changed ? { ...ledger, events } : ledger
 }
 
 export function deriveSnapshot(ledger) {

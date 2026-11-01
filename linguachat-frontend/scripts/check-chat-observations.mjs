@@ -180,12 +180,31 @@ scenario('P4: an evaluator answer cannot move mastery, XP, level or milestones',
   const hostile = { ...RAW.goed, mastery: 'can_use', xp: 500, level: 'a1', levelMilestones: { a1: { graduatedAt: 'x' } },
     unlock: ['a1'], learningState: 'can_use', findings: [...RAW.goed.findings, { rule: 'Unlock A1!', confidence: 'high' }] }
   const a = safeAnalysis(hostile)
-  assert.deepEqual(Object.keys(a).sort(), ['confidence', 'findings', 'retrieval', 'strategy', 'uses', 'verdict'])
+  assert.deepEqual(Object.keys(a).sort(), ['confidence', 'findings', 'proposed', 'retrieval', 'strategy', 'uses', 'verdict'])
+  assert.equal(a.proposed, null, 'no evaluation, nothing proposed')
   assert.deepEqual(a.findings.map(f => f.rule), ['past_irregular'], 'a rule id outside the closed shape is dropped')
   const m = createLearnerModel()
   const before = JSON.stringify({ canDo: m.canDo, items: m.languageItems, milestones: m.levelMilestones || null })
   turn(m, { at: T0, message: 'Yesterday I goed home.', analysis: hostile })
   assert.equal(JSON.stringify({ canDo: m.canDo, items: m.languageItems, milestones: m.levelMilestones || null }), before)
+})
+
+scenario('P5: the evaluator’s proposed evidence can only lower a turn, never raise it', () => {
+  const ev = kind => ({ evidence: { kind } })
+  for (const kind of ['accepted_under_criterion', 'error', 'retrieval', 'transfer', 'mastery', 'independent', undefined]) {
+    assert.equal(safeAnalysis(RAW.swam, ev(kind)).proposed, null, `${kind} is not kept`)
+  }
+  // a later-day correct use with a verb never corrected would be TRANSFER…
+  const m = createLearnerModel()
+  turn(m, { at: T0, message: 'Yesterday I goed home.', analysis: RAW.goed })
+  const later = (evaluation, id) => classifyChatTurn({ turnId: id, at: T0 + 3 * DAY, message: 'Last summer I swam a lot.',
+    analysis: safeAnalysis(RAW.swam, evaluation), model: m }).kind
+  assert.equal(later(null, 'p5a'), 'transfer')
+  // …unless the evaluator saw help or a copy: then it is exactly that
+  assert.equal(later(ev('assisted'), 'p5b'), 'assisted')
+  assert.equal(later(ev('copied'), 'p5c'), 'copied')
+  // and a proposal of independence changes nothing
+  assert.equal(later(ev('accepted_under_criterion'), 'p5d'), 'transfer')
 })
 
 console.log(`\ncheck-chat-observations — ${passed} passed, ${failures.length} failed`)

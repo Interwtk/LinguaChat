@@ -641,6 +641,7 @@ export default {
   authLocalDataUnreadable: 'Einige auf diesem Gerät gespeicherte Daten konnten nicht sicher gelesen werden. Sie wurden unverändert aufbewahrt, und wir haben dich zu ihrem Schutz abgemeldet. Melde dich erneut an.',
   profileRecoveredNotice: 'Wir konnten das auf diesem Gerät gespeicherte Profil nicht lesen. Eine Kopie wurde aufbewahrt, und die Einrichtung geht bei deinem letzten gültigen Schritt weiter. Dein Fortschritt, deine Wörter und deine Einstellungen sind sicher.',
   chatOfflineNotice: 'Der Tutordienst von Lingua ist gerade nicht erreichbar. Deine Nachrichten bleiben hier; bis er zurück ist, wird nichts geprüft.',
+  progressNotSavedNotice: 'Dein Fortschritt auf diesem Gerät ist noch nicht gespeichert (Speicher voll oder blockiert). LinguaChat versucht es weiter; schließe diesen Tab nicht, bis diese Meldung verschwindet.',
   evidenceWeeklyTitle: 'Selbstständige Antworten pro Woche',
   evidenceWeeklySummary: 'Diese Woche selbstständig beim ersten Versuch beantwortet: {count}',
   evidenceWeeklyEmpty: 'Noch nicht genug Übung, um einen Verlauf zu zeigen. Antworten, die du selbstständig gibst, erscheinen hier.',
