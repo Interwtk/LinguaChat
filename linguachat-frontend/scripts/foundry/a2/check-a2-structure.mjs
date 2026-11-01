@@ -11,7 +11,7 @@
  * explicitly as part of this task's own evidence.
  */
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, join } from 'node:path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -19,7 +19,7 @@ const REPO_ROOT = join(__dirname, '..', '..', '..', '..')
 const FRONTEND = join(REPO_ROOT, 'linguachat-frontend')
 
 const blueprint = JSON.parse(readFileSync(join(REPO_ROOT, 'docs/curriculum/blueprints/a2.json'), 'utf8'))
-const { A2_ARCS, A2_EPISODES } = await import(join(FRONTEND, 'src/learning/levels/a2/index.js').replace(/\\/g, '/').replace(/^([A-Za-z]:)?/, (m) => (process.platform === 'win32' ? m : '')))
+const { A2_ARCS, A2_EPISODES } = await import(pathToFileURL(join(FRONTEND, 'src/learning/levels/a2/index.js')).href)
 const { A2_NEW_INTENTS, A2_EVALUATORS } = await import('../../../src/learning/levels/a2/evaluators.js')
 const { A2_I18N_EN } = await import('../../../src/learning/levels/a2/i18n/en.js')
 

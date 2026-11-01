@@ -4,6 +4,7 @@ import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { ThemeToggle } from '../ui/ThemeToggle'
 import { LanguageSwitcher } from '../ui/LanguageSwitcher'
 import { ChattoMascot } from '../mascot/ChattoMascot'
+import { authErrorKey, AUTH_PROVIDER_ERROR_KEYS } from '../../auth/authErrorKey.js'
 
 function AuthShell({ children, back, onBack }) {
   const { t } = useApp()
@@ -109,7 +110,9 @@ function EntryScreen() {
     ? t('authStorageFull')
     : authProviderError === 'storage_unavailable' ? t('authStorageUnavailable')
       : authProviderError === 'local_data_unreadable' ? t('authLocalDataUnreadable')
-        : authProviderError === 'callback_error' ? t('authCallbackError') : authProviderError
+        : authProviderError === 'callback_error' ? t('authCallbackError')
+          // never the raw text: it was English, provider wording or config names
+          : authProviderError ? t(AUTH_PROVIDER_ERROR_KEYS[authProviderError] || 'authGenericError') : ''
   return (
     <AuthShell>
       <div className="flex flex-col items-center text-center animate-fade-up">
@@ -161,7 +164,7 @@ function LoginForm() {
     try {
       await login(email.trim(), password)
     } catch (err) {
-      setError(err?.message || t('authGenericError'))
+      setError(t(authErrorKey(err)))
     } finally {
       setLoading(false)
     }
@@ -228,7 +231,7 @@ function SignupForm() {
       const result = await signup(name.trim(), email.trim(), password)
       if (result?.confirmationPending) setSent(true)
     } catch (err) {
-      setError(err?.message || t('authGenericError'))
+      setError(t(authErrorKey(err)))
     } finally {
       setLoading(false)
     }
@@ -240,7 +243,7 @@ function SignupForm() {
       await resendConfirmation(email.trim())
       setResent(true)
     } catch (err) {
-      setError(err?.message || t('authGenericError'))
+      setError(t(authErrorKey(err)))
     }
   }
   if (sent) {
@@ -394,7 +397,7 @@ function ResetPassword() {
     try {
       await changePassword(password)
     } catch (err) {
-      setError(err?.message || t('authGenericError'))
+      setError(t(authErrorKey(err)))
     } finally {
       setLoading(false)
     }

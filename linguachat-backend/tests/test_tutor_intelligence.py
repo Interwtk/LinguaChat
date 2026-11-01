@@ -220,3 +220,37 @@ def test_memory_keeps_rule_ids_not_words():
     stored = conversation_memory.get("priv")[-1]
     assert stored["error_types"] == ["past_irregular"]
     assert conversation_memory.recent_error_types("priv") == ["past_irregular"]
+
+
+# --- the whole loop, one learner (P2) ----------------------------------------
+
+def test_full_learning_flow_irregular_past():
+    """Error → explanation → the same error again → another strategy → retrieval
+    in a new sentence → a correct answer on their own → later, a new context.
+    At no point is a correct sentence praised as mastery of the rule."""
+    first = chat("Yesterday I goed to the park.", session="loop")
+    assert first["analysis"]["findings"][0]["rule"] == "past_irregular"
+    assert first["analysis"]["strategy"] == "brief_explanation"
+    assert first["correction"] == "Yesterday I went to the park."
+
+    again = chat("Last night I eated pasta.", session="loop")
+    assert again["analysis"]["strategy"] == "contrast_example", "the explanation did not work: change it"
+    assert "✗" in again["explanation"]
+
+    third = chat("Last week we buyed a car.", session="loop")
+    assert third["analysis"]["strategy"] == "guided_retrieval", "stop explaining, ask for retrieval"
+    action = third["learning_action"]
+    assert action["type"] == "fill_blank" and action["expected"] == "bought"
+    assert "We bought a car" not in action["prompt"], "retrieval happens in a new sentence"
+
+    own = chat("Last weekend we bought some bread.", session="loop")
+    assert own["correction"] is None
+    assert own["analysis"]["verdict"] == "no_issue_detected"
+    assert own["analysis"]["confidence"] == "low", "silence from a few rules is not mastery"
+
+    # Later, a different context, without the memory of the earlier errors.
+    later = chat("Last summer I swam in the sea and ate fish.", session="loop-later")
+    assert later["correction"] is None
+    assert later["analysis"]["confidence"] == "low"
+    relapse = chat("Yesterday I runned to work.", session="loop-later")
+    assert relapse["analysis"]["strategy"] == "brief_explanation", "a fresh slip starts light again"

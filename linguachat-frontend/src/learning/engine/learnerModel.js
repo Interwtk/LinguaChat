@@ -1,6 +1,6 @@
 import { teachingHistory, retentionProfile } from './teachingPolicy.js'
 import { bindLearnerObject, captureLearnerAccess, captureLearnerObjectAccess } from '../../auth/localLease.js'
-import { ownKey, storedCopies, WRITER_IDLE_MS } from '../../services/writerKeys.js'
+import { collectDeadCopies, ownKey, storedCopies } from '../../services/writerKeys.js'
 /*
  * learnerModel (v2) — what the learner can do, with safe migration from v1.
  *
@@ -323,7 +323,7 @@ function modelCopies(access) {
   for (const copy of storedCopies(access, KEY)) {
     try {
       const parsed = JSON.parse(copy.raw)
-      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) copies.push({ key: copy.key, parsed })
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) copies.push({ key: copy.key, parsed, raw: copy.raw })
     } catch { /* unreadable: ignored, never overwritten */ }
   }
   return copies.sort((a, b) => (Number(b.parsed.writtenAt) || 0) - (Number(a.parsed.writtenAt) || 0))
@@ -355,9 +355,12 @@ export function loadLearnerModel() {
  * event id, so taking the larger of the two values is exactly the union of what
  * both copies saw: never double-counted, never lost.
  */
-function mergeActivityEvidence(model, access) {
+function mergeActivityEvidence(model, access, mergedRaws = null) {
   let merged = model
-  for (const copy of modelCopies(access)) merged = mergeModelCopy(merged, copy.parsed)
+  for (const copy of modelCopies(access)) {
+    merged = mergeModelCopy(merged, copy.parsed)
+    mergedRaws?.add(copy.raw)
+  }
   return merged
 }
 
@@ -636,7 +639,8 @@ export function saveLearnerModel(model, { verified = false } = {}) {
   const failure = () => verified ? false : model
   const access = captureLearnerObjectAccess(model)
   if (!access.valid()) return failure()
-  const merged = mergeActivityEvidence(model, access)
+  const mergedRaws = new Set()
+  const merged = mergeActivityEvidence(model, access, mergedRaws)
   if (!access.valid()) return failure()
   // Never reacquire/rebind to a new owner between validation, merge and write.
   // Only expose merged data to the caller after a durable scoped commit.
@@ -650,16 +654,9 @@ export function saveLearnerModel(model, { verified = false } = {}) {
       return false
     }
   } catch { return failure() }
-  // Other copies idle for a while were just merged into this one: remove them
-  // so storage does not grow with every page load. Best effort only.
-  try {
-    for (const copy of storedCopies(access, KEY)) {
-      if (copy.key === key) continue
-      let writtenAt = 0
-      try { writtenAt = Number(JSON.parse(copy.raw)?.writtenAt) || 0 } catch { continue }
-      if (Date.now() - writtenAt >= WRITER_IDLE_MS && access.valid()) access.removeItem(copy.key)
-    }
-  } catch { /* Cleanup is optional. */ }
+  // Copies left by closed tabs whose exact bytes were just merged into this
+  // one are no longer needed (services/writerKeys.collectDeadCopies).
+  collectDeadCopies(access, KEY, (_parsed, raw) => mergedRaws.has(raw))
   // keep the caller's own object in step with what was written
   model.activityPreferences = merged.activityPreferences
   model.canDo = merged.canDo

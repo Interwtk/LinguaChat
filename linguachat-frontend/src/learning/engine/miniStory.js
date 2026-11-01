@@ -12,6 +12,7 @@
  * objective, and the subject matter comes from the context the session already
  * decided on. Five to seven interactions, then out.
  */
+import { learnerStorage as globalLearnerStorage } from '../../auth/localLease.js'
 import { seedFrom } from './variation.js'
 
 /*
@@ -767,3 +768,31 @@ export const isStoryFinished = (state, story) =>
   Boolean(state) && state.currentTurn >= storyLength(story) - 1
 
 export const STORY_STORAGE_KEY = 'lc2-mini-story-v1'
+
+/*
+ * Where a story is, saved so a reload resumes. A story only moves forward, so
+ * a save from a screen (or tab) holding an older turn of the SAME story keeps
+ * the furthest turn instead of rewinding it. Another story, or another day's
+ * seed, simply replaces it.
+ */
+export function saveStoryState(state, story, { access = null } = {}) {
+  const store = access || learnerStore()
+  try {
+    if (access && !access.valid()) return false
+    let stored = null
+    try { stored = normalizeStoryState(JSON.parse(store.getItem(STORY_STORAGE_KEY) || 'null'), story) } catch { stored = null }
+    const next = stored && stored.seed === state.seed && stored.currentTurn > state.currentTurn
+      ? { ...state, currentTurn: stored.currentTurn, branchId: stored.branchId ?? state.branchId }
+      : state
+    const serialized = JSON.stringify(next)
+    if (store.setItem(STORY_STORAGE_KEY, serialized) === false) return false
+    return store.getItem(STORY_STORAGE_KEY) === serialized ? next : false
+  } catch { return false }
+}
+
+function learnerStore() {
+  return {
+    getItem: key => globalLearnerStorage.getItem(key),
+    setItem: (key, value) => { globalLearnerStorage.setItem(key, value); return true },
+  }
+}

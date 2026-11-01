@@ -39,6 +39,13 @@
   --border:        #E7E2DB;
   --border-strong: #D9D3CA;
 
+  /* — the call stage: night in BOTH themes. It used to paint itself with
+     --ink, which turns light in dark mode under light text: invisible. — */
+  --stage:          #1C2333;
+  --on-stage:       #F1EEE8;
+  --on-stage-muted: #C9C6C0;
+  --on-stage-line:  rgba(241, 238, 232, 0.24);
+
   /* — accents — */
   --accent:        #C86B4A;  /* terracotta: action, streak */
   --accent-strong: #A9563A;  /* pressed / links */
@@ -110,6 +117,11 @@
 
   --border:        #3D4658;
   --border-strong: #4A5468;
+
+  --stage:          #141A27;
+  --on-stage:       #F1EEE8;
+  --on-stage-muted: #C3C9D4;
+  --on-stage-line:  rgba(241, 238, 232, 0.24);
 
   --accent:        #D98A66;
   --accent-strong: #E8A57F;

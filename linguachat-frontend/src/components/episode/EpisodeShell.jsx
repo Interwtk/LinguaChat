@@ -31,6 +31,7 @@ import {
 import {
   recordLearnerFact, selectLearnerFact, factsOfType, captureStatedLifeFact, captureStatedUsualTime,
 } from '../../learning/engine/learnerFacts.js'
+import { isSubmitEnter } from '../../services/keyboard.js'
 
 // Fill {name} / {partner} / {place} / {partnerPlace} in the English target text.
 // An unknown placeholder is left untouched rather than printed as "undefined".
@@ -1033,7 +1034,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
             )}
 
             <div className="flex items-end gap-2 rounded-2xl p-2.5" aria-busy={reviewing} style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', opacity: reviewing ? 0.7 : 1 }}>
-              <input ref={replyInputRef} value={reply} onChange={e => setReply(e.target.value)} disabled={reviewing} lang="en" dir="ltr" onKeyDown={e => { if (e.key === 'Enter' && reply.trim() && !reviewing) submitFree(step.evalKind, step.itemIds, { fromSuggestion: answerWasShown() }) }} placeholder={t('ep1TypeReply')} aria-label={t(step.instructionKey)} className="chat-input flex-1 bg-transparent text-sm" style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
+              <input ref={replyInputRef} value={reply} onChange={e => setReply(e.target.value)} disabled={reviewing} lang="en" dir="ltr" onKeyDown={e => { if (isSubmitEnter(e, { allowShift: true }) && reply.trim() && !reviewing) submitFree(step.evalKind, step.itemIds, { fromSuggestion: answerWasShown() }) }} placeholder={t('ep1TypeReply')} aria-label={t(step.instructionKey)} className="chat-input flex-1 bg-transparent text-sm" style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
               <button onClick={() => submitFree(step.evalKind, step.itemIds, { fromSuggestion: answerWasShown() })} disabled={!reply.trim() || reviewing} className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-white transition-all active:scale-[0.98]" style={{ background: reply.trim() && !reviewing ? 'var(--info)' : 'var(--border)' }}>{t('ep1Send')}</button>
             </div>
             {praise && <p role="status" lang={nativeLang} className="mt-2" style={{ fontSize: '0.8125rem', color: 'var(--positive)', fontWeight: 700 }}>{t(praise)}</p>}

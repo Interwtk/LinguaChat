@@ -20,7 +20,7 @@ import assert from 'node:assert/strict'
 import * as progressStore from '../src/services/localProgress.js'
 import { activateLocalAccount } from '../src/auth/browserDataIsolation.js'
 import { captureLearnerAccess, NAMESPACE_PREFIX } from '../src/auth/localLease.js'
-import { writerId } from '../src/services/writerKeys.js'
+import { settleCollections, writerId } from '../src/services/writerKeys.js'
 import { createLearnerModel, loadLearnerModel, saveLearnerModel, recordItemAttempt } from '../src/learning/engine/learnerModel.js'
 
 const {
@@ -453,6 +453,41 @@ scenario('a tab writing from a stale cache cannot erase another tab’s saves', 
   assert.equal(p.xp, 600)
 })
 
+/*
+ * P2, found by the real two-tab harness at 600 turns per tab (P1 code lost
+ * 101 of 1200 too): past the 500-event cap, compaction cut through the last
+ * seconds, and the other tab's turns this tab's stale cache had not shown yet
+ * fell below the cut — treated as already counted, then dropped on merge.
+ */
+scenario('past the size cap, a stale tab cannot fold away turns it has not seen yet', () => {
+  const shared = new Store()
+  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
+  const now = Date.now()
+  const view = staleView(shared)
+  for (let i = 0; i < 600; i++) { practice(b, 'b ' + i, now - 2000 + i); persist(b) }
+  for (let i = 0; i < 600; i++) {
+    practice(a, 'a ' + i, now - 1000 + i)
+    a.act(() => {
+      globalThis.localStorage = view
+      try { assert.notEqual(saveLocalProgress(a.progress, { access: captureLearnerAccess(view) }), false) }
+      finally { globalThis.localStorage = shared }
+    })
+  }
+  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 1200, 'every verified turn of both tabs survives')
+  // Once the turns have settled, the cap folds them — and still nothing is lost.
+  const realNow = Date.now
+  Date.now = () => now + 11 * 60 * 1000
+  try {
+    const later = freshLoad(shared, 'A')
+    practice(later, 'later', Date.now())
+    persist(later)
+    const after = freshLoad(shared, 'A').progress
+    assert.equal(after.messagesSent, 1201)
+    const own = JSON.parse(shared.getItem(storedKeys(shared, 'lc2-local-progress').find(k => k.includes(later.act(() => writerId())))))
+    assert.ok(own.events.length <= 500, 'the ledger is bounded again: ' + own.events.length)
+  } finally { Date.now = realNow }
+})
+
 // Small deterministic PRNG so every failure can be replayed by its seed.
 function prng(seed) { let x = seed >>> 0; return () => ((x = (x * 1664525 + 1013904223) >>> 0) / 2 ** 32) }
 
@@ -497,44 +532,6 @@ scenario('a reward re-sent after its event was compacted is not paid again', () 
   assert.equal(freshLoad(shared, 'A').progress.xp, 40, 'paid once: 30 + 10')
 })
 
-scenario('idle copies that add nothing are removed; others are kept', () => {
-  const shared = new Store()
-  const a = openTab(shared, 'A'), b = openTab(shared, 'A'), c = openTab(shared, 'A')
-  practice(b, 'from b', T0); persist(b)
-  practice(c, 'only in c', T0 + 1); c.act(() => saveLocalProgress(c.progress, { access: c.access }))
-  const keyOf = tab => storedKeys(shared, 'lc2-local-progress').find(k => k.includes(tab.act(() => writerId())))
-  const age = (tab, ms) => { const k = keyOf(tab); const v = JSON.parse(shared.getItem(k)); v.writtenAt -= ms; shared.values.set(k, JSON.stringify(v)) }
-  age(b, 10 * 60 * 1000)                                  // b idle 10 min
-  hear(a)                                                 // a holds b's and c's content now
-  persist(a)
-  assert.equal(Boolean(keyOf(b)), false, "b's idle, redundant copy is removed")
-  assert.equal(Boolean(keyOf(c)), true, "c's recent copy is kept even though a holds it")
-  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 2)
-  // b, still open, saves again: its copy comes back, nothing is lost.
-  practice(b, 'b again', T0 + 2); persist(b)
-  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 3)
-})
-
-scenario('a copy holding something nobody else has is never removed, however idle', () => {
-  const shared = new Store()
-  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
-  practice(a, 'only a', T0 + 1); persist(a)
-  const view = staleView(shared)                           // a's cache stops here
-  practice(b, 'only b', T0); persist(b)
-  const k = storedKeys(shared, 'lc2-local-progress').find(key => key.includes(b.act(() => writerId())))
-  const v = JSON.parse(shared.getItem(k)); v.writtenAt -= 60 * 60 * 1000; shared.values.set(k, JSON.stringify(v))
-  // a saves again without seeing b: b's idle copy is the only holder of b's turn.
-  practice(a, 'a again', T0 + 2)
-  a.act(() => {
-    globalThis.localStorage = view
-    try { saveLocalProgress(a.progress, { access: captureLearnerAccess(view) }) } finally { globalThis.localStorage = shared }
-  })
-  assert.notEqual(shared.getItem(k), null, "b's copy survives")
-  // a, now seeing b's copy, still must not remove what only b holds until it holds it too.
-  persist(a)
-  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 3)
-})
-
 scenario('learner-model evidence saved from a stale cache does not erase the other tab’s evidence', () => {
   const shared = new Store()
   const a = openTab(shared, 'A'), b = openTab(shared, 'A')
@@ -551,6 +548,222 @@ scenario('learner-model evidence saved from a stale cache does not erase the oth
   const merged = freshLoad(shared, 'A').act(() => loadLearnerModel())
   assert.ok(merged.languageItems.hello, "a's evidence")
   assert.ok(merged.languageItems.goodbye, "b's evidence survives a's stale save")
+})
+
+scenario('years of daily bonuses never let an old reward be paid again (bounded memory, exact guarantee)', () => {
+  const shared = new Store()
+  const a = openTab(shared, 'A')
+  const now = Date.now()
+  const day = i => new Date(now - (2600 - i) * DAY).toISOString().slice(0, 10)
+  // An episode award on day 0, then ~7 years of daily bonuses and missions.
+  assert.equal(reward(a, 'episode-award:first_greeting', 30, now - 2600 * DAY), true)
+  a.act(() => {
+    let p = loadLocalProgress()
+    for (let i = 1; i <= 2550; i++) {
+      p = applyProgressEvent(p, { id: `session-bonus:${day(i)}:standard`, kind: 'xp', at: now - (2600 - i) * DAY, xp: 15 })
+      if (i % 3 === 0) p = applyProgressEvent(p, { id: `mission:m${i % 7}:${now - (2600 - i) * DAY}:complete`, kind: 'xp', at: now - (2600 - i) * DAY + 5, xp: 10 })
+    }
+    assert.notEqual(saveLocalProgress(p, { access: a.access }), false)
+  })
+  const before = freshLoad(shared, 'A').progress.xp
+  const stored = JSON.parse(shared.getItem(storedKeys(shared, 'lc2-local-progress').find(k => k.includes(a.act(() => writerId())))))
+  assert.ok(JSON.stringify(stored.base).length < 60000, 'the remembered ids stay small: ' + JSON.stringify(stored.base).length)
+  // Every old reward re-sent today is refused: the oldest bonus, a middle one,
+  // the first episode award and an old mission.
+  for (const id of ['episode-award:first_greeting', `session-bonus:${day(1)}:standard`, `session-bonus:${day(1200)}:standard`,
+    `mission:m3:${now - (2600 - 3) * DAY}:complete`]) {
+    assert.equal(reward(a, id, 99, now), true, id + ' counts as already paid (no endless retry)')
+  }
+  assert.equal(freshLoad(shared, 'A').progress.xp, before, 'nothing old is paid twice')
+  // A genuinely new reward is still paid.
+  assert.equal(reward(a, `session-bonus:${new Date(now).toISOString().slice(0, 10)}:deep`, 15, now), true)
+  assert.equal(freshLoad(shared, 'A').progress.xp, before + 15)
+})
+
+scenario('storage near its quota: the save reports failure, nothing stored is damaged, the next save catches up', () => {
+  const shared = new Store()
+  const a = openTab(shared, 'A')
+  practice(a, 'one', T0); persist(a)
+  const before = new Map(shared.values)
+  shared.failWrites = key => key.includes(':lc2-')            // quota exceeded for every learner write
+  practice(a, 'two', T0 + 1)
+  assert.equal(persist(a).progress, false)
+  assert.equal(reward(a, 'episode-award:full', 30, T0 + 2), false, 'a reward is not confirmed either')
+  for (const [k, v] of before) assert.equal(shared.getItem(k), v, 'stored data untouched: ' + k)
+  shared.failWrites = null
+  assert.notEqual(persist(a).progress, false)
+  assert.equal(reward(a, 'episode-award:full', 30, T0 + 3), true)
+  const p = freshLoad(shared, 'A').progress
+  assert.equal(p.messagesSent, 2)
+  assert.equal(p.xp, 50)
+})
+
+scenario('a backdated event takes its place in the calendar; one older than the folded base is refused', () => {
+  const shared = new Store()
+  const a = openTab(shared, 'A')
+  const now = Date.now()
+  practice(a, 'today', now); persist(a)
+  practice(a, 'two days ago, arriving late', now - 2 * DAY); persist(a)
+  const p = freshLoad(shared, 'A').progress
+  assert.equal(p.messagesSent, 2)
+  assert.equal(p.lastPracticeDate, new Date(now).toLocaleDateString('sv-SE'), 'the latest day stays the latest')
+  // Something folded weeks ago cannot be paid again by a late copy.
+  practice(a, 'old', now - 40 * DAY); persist(a)
+  practice(a, 'newer', now); persist(a)                        // compaction folds the 40-day-old turn
+  const folded = freshLoad(shared, 'A').progress
+  a.act(() => {
+    const stale = applyProgressEvent(loadLocalProgress(), { id: 'practice:late', kind: 'xp', at: now - 60 * DAY, xp: 500 })
+    assert.notEqual(saveLocalProgress(stale, { access: a.access }), false)
+  })
+  assert.equal(freshLoad(shared, 'A').progress.xp, folded.xp, 'an event from before the folded base is not counted')
+})
+
+scenario('old data restores: an original v1 record, a P0 shared ledger and a P1 ledger with a 2000-id window', () => {
+  const shared = new Store()
+  const a = openTab(shared, 'A')
+  const v1 = { version: 1, xp: 120, messagesSent: 12, correctionsReceived: 2, streak: 3, lastPracticeDate: '2026-10-28', confidence: 71, topics: ['travel'], learnedItems: [], sessions: [], missionsCompleted: 1 }
+  a.act(() => a.access.setItem('lc2-local-progress', JSON.stringify(v1)))
+  assert.equal(freshLoad(shared, 'A').progress.xp, 120, 'v1 totals')
+  // A P1 copy whose window had dropped every episode award (the old alphabetical cut).
+  const p1 = { version: 2, epoch: { id: 'initial', at: 0 }, writer: 'old.p1', writtenAt: 1,
+    // A P1 copy is always derived from what was stored, so its base holds the v1 totals.
+    base: { snapshot: { ...v1 }, startedAt: 1, foldedBefore: 1, folded: 0,
+      foldedIds: Array.from({ length: 2000 }, (_, i) => `session-bonus:2020-01-01:${i}`) }, events: [] }
+  a.act(() => a.access.setItem('lc2-local-progress~w~old.p1', JSON.stringify(p1)))
+  const restored = freshLoad(shared, 'A').progress
+  assert.equal(restored.xp, 120, 'P1 copy merges without inventing or losing totals')
+  assert.equal(reward(a, 'session-bonus:2020-01-01:5', 15, Date.now()), true)
+  assert.equal(freshLoad(shared, 'A').progress.xp, 120, 'a reward the P1 window remembered is still refused')
+  persist(a)
+  const own = JSON.parse(shared.getItem(storedKeys(shared, 'lc2-local-progress').find(k => k.includes(a.act(() => writerId())))))
+  assert.ok(own.base.foldedIds.length <= 400 + 171, 'the old window is pruned into floors: ' + own.base.foldedIds.length)
+  assert.ok(own.base.foldedFloors.session, 'with a floor that keeps the guarantee')
+})
+
+/*
+ * Cleaning up other tabs' copies (P2). A copy is removed only when its tab is
+ * closed — the browser released that tab's Web Lock — and everything in it is
+ * already in this tab's verified copy. These scenarios use a lock manager the
+ * test controls, so "closing a tab" is explicit and nothing depends on timers.
+ */
+const realNavigator = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
+function fakeLocks({ supported = true } = {}) {
+  const held = new Set()
+  const locks = {
+    request(name) { held.add(name); return new Promise(() => {}) },
+    async query() { return { held: [...held].map(name => ({ name })), pending: [] } },
+  }
+  Object.defineProperty(globalThis, 'navigator', { value: supported ? { locks } : {}, configurable: true, writable: true })
+  return { close: tab => held.delete('lc2-writer:' + tab.act(() => writerId())) }
+}
+function restoreNavigator() {
+  if (realNavigator) Object.defineProperty(globalThis, 'navigator', realNavigator)
+}
+async function asyncScenario(name, run) {
+  try { await run(); ok(); console.log('  ok  ' + name) }
+  catch (error) { failures.push(name); console.log('  FAIL ' + name + '\n       ' + String(error.message).split('\n')[0]) }
+  finally { restoreNavigator() }
+}
+const copyOf = (shared, tab) => storedKeys(shared, 'lc2-local-progress').find(k => k.includes(tab.act(() => writerId())))
+const ageCopy = (shared, key, ms) => { const v = JSON.parse(shared.getItem(key)); v.writtenAt -= ms; shared.values.set(key, JSON.stringify(v)) }
+
+await asyncScenario('a closed tab’s redundant copy is removed; an open tab’s copy never is, however long idle', async () => {
+  const locks = fakeLocks()
+  const shared = new Store()
+  const a = openTab(shared, 'A'), b = openTab(shared, 'A'), c = openTab(shared, 'A')
+  practice(b, 'from b', T0); persist(b)
+  practice(c, 'from c', T0 + 1); persist(c)
+  ageCopy(shared, copyOf(shared, c), 10 * 60 * 60 * 1000)   // c open but idle for ten hours
+  ageCopy(shared, copyOf(shared, b), -60 * 1000)            // b written "in the future": timers decide nothing
+  locks.close(b)
+  hear(a); persist(a)
+  await settleCollections()
+  assert.equal(Boolean(copyOf(shared, b)), false, "the closed tab's copy, already held by a, is removed")
+  assert.equal(Boolean(copyOf(shared, c)), true, 'an open tab is never cleaned up')
+  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 2, 'and nothing was lost')
+})
+
+await asyncScenario('a closed tab’s copy that holds something nobody else has is kept', async () => {
+  const locks = fakeLocks()
+  const shared = new Store()
+  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
+  practice(a, 'only a', T0); persist(a)
+  const view = staleView(shared)                            // a's cache stops before b writes
+  practice(b, 'only b', T0 + 1); persist(b)
+  locks.close(b)
+  practice(a, 'a again', T0 + 2)
+  a.act(() => {
+    globalThis.localStorage = view
+    try { saveLocalProgress(a.progress, { access: captureLearnerAccess(view) }) } finally { globalThis.localStorage = shared }
+  })
+  await settleCollections()
+  assert.equal(Boolean(copyOf(shared, b)), true, "b's turn exists only in b's copy: kept")
+  hear(a); persist(a)                                       // a now holds b's turn too
+  await settleCollections()
+  assert.equal(Boolean(copyOf(shared, b)), false, 'only once a holds it is the copy removed')
+  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 3)
+})
+
+await asyncScenario('a write that lands while a copy is being cleaned is never deleted', async () => {
+  fakeLocks()                                               // b's lock is not registered yet: it looks closed
+  const shared = new Store()
+  const a = openTab(shared, 'A')
+  const b = openTab(shared, 'A')
+  practice(b, 'b one', T0); persist(b)
+  const bKey = copyOf(shared, b)
+  // b holds no lock (as a page in its first instant would) — and writes again
+  // exactly between the cleaner's first read and its re-check.
+  globalThis.navigator.locks.query = async () => ({ held: [{ name: 'lc2-writer:' + a.act(() => writerId()) }], pending: [] })
+  hear(a); persist(a)
+  let reads = 0
+  const realGet = shared.getItem.bind(shared)
+  shared.getItem = key => {
+    if (key === bKey && ++reads === 2) { practice(b, 'b two', T0 + 5); persist(b) }
+    return realGet(key)
+  }
+  persist(a)
+  await settleCollections()
+  shared.getItem = realGet
+  assert.equal(Boolean(copyOf(shared, b)), true, "b's newer copy survives the clean-up")
+  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 2, "both of b's turns are kept")
+})
+
+await asyncScenario('a deleted copy of a tab that is still open is written again (listener repair)', async () => {
+  fakeLocks()
+  const shared = new Store()
+  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
+  practice(b, 'b', T0); persist(b)
+  shared.removeItem(copyOf(shared, b))                      // whatever removed it
+  b.progress = { ...b.progress }; persist(b)                 // AppContext re-publishes on its own key's removal
+  assert.equal(Boolean(copyOf(shared, b)), true)
+  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 1)
+  void a
+})
+
+await asyncScenario('without a liveness signal nothing is ever removed', async () => {
+  fakeLocks({ supported: false })
+  const shared = new Store()
+  const tabs = [0, 1, 2, 3].map(() => openTab(shared, 'A'))
+  tabs.forEach((tab, i) => { practice(tab, 'turn ' + i, T0 + i); persist(tab) })
+  hear(tabs[0]); persist(tabs[0])
+  await settleCollections()
+  assert.equal(storedKeys(shared, 'lc2-local-progress').length, 4, 'every copy is kept')
+  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 4)
+})
+
+await asyncScenario('the learner model, session and mission history are cleaned the same safe way', async () => {
+  const locks = fakeLocks()
+  const shared = new Store()
+  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
+  b.act(() => { const m = loadLearnerModel(); recordItemAttempt(m, 'bye', { correct: true, independent: true }); saveLearnerModel(m, { verified: true }) })
+  const bModel = [...shared.values.keys()].find(k => k.includes('lc2-learner-model-v1~w~') && k.includes(b.act(() => writerId())))
+  assert.ok(bModel)
+  locks.close(b)
+  a.act(() => { const m = loadLearnerModel(); recordItemAttempt(m, 'hi', { correct: true, independent: true }); saveLearnerModel(m, { verified: true }) })
+  await settleCollections()
+  assert.equal(shared.getItem(bModel), null, "the closed tab's merged model copy is removed")
+  const merged = a.act(() => loadLearnerModel())
+  assert.ok(merged.languageItems.hi && merged.languageItems.bye, 'its evidence lives on in a’s copy')
 })
 
 console.log(`\ncheck-same-account-tabs — ${checks} passed, ${failures.length} failed`)

@@ -7,6 +7,7 @@
  * so it lives once here rather than drifting into two slightly different copies.
  */
 import { readFile } from 'node:fs/promises'
+import { existsSync, readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 
@@ -46,11 +47,29 @@ export function readPairs(lines, from = 0, until = () => false) {
 
 // English lives in translations.js as `const base = { … }`; it is both a locale
 // and the fallback, so it always ships in the entry chunk.
+//
+// P2: the closed levels' English (B1–C2) moved verbatim to closedLevelsEn.js,
+// a chunk loaded with that level's content. It is still the English source of
+// those keys, so it is read here as part of the base: coverage, placeholders
+// and duplicates are judged exactly as before — including a key defined in
+// both files, which is reported as a duplicate.
+export const CLOSED_LEVELS_PATH = resolve(FRONTEND_ROOT, 'src/i18n/closedLevelsEn.js')
+
 export function extractBase(source) {
   const lines = source.split(/\r?\n/)
   const start = lines.findIndex(l => /^const base = \{$/.test(l))
   if (start === -1) return { dict: {}, duplicates: [] }
-  return readPairs(lines, start + 1, (l) => /^\}/.test(l))
+  const own = readPairs(lines, start + 1, (l) => /^\}/.test(l))
+  if (!existsSync(CLOSED_LEVELS_PATH)) return own
+  const closedLines = readFileSync(CLOSED_LEVELS_PATH, 'utf8').split(/\r?\n/)
+  const closedStart = closedLines.findIndex(l => /^export const CLOSED_LEVELS_EN = \{$/.test(l))
+  if (closedStart === -1) return own
+  const closed = readPairs(closedLines, closedStart + 1, (l) => /^\}/.test(l))
+  const both = Object.keys(closed.dict).filter(key => key in own.dict)
+  return {
+    dict: { ...closed.dict, ...own.dict },
+    duplicates: [...new Set([...own.duplicates, ...closed.duplicates, ...both])],
+  }
 }
 
 // Every other locale is its own lazily-imported module: `export default { … }`.

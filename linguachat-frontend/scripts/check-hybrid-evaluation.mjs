@@ -11,7 +11,9 @@ import { readFileSync } from 'node:fs'
 import { ARC } from '../src/learning/episodes/index.js'
 
 // the English dictionary is module-private, so the keys are read as source
+// English source: translations.js plus the closed levels' copy (P2 split)
 const EN_SOURCE = readFileSync(new URL('../src/i18n/translations.js', import.meta.url), 'utf8')
+  + '\n' + readFileSync(new URL('../src/i18n/closedLevelsEn.js', import.meta.url), 'utf8')
 const hasKey = (key) => new RegExp(`\n  ${key}:`).test(EN_SOURCE)
 
 const NAME = 'Sebastian'

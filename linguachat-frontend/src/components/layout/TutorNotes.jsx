@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
+import { teachingHistory } from '../../learning/engine/teachingPolicy.js'
 
 /*
  * LINGUA'S NOTES — a notebook at the side of the conversation.
@@ -27,25 +28,25 @@ function NoteSection({ label, children }) {
 }
 
 /*
- * How settled the practice feels, as a quiet bar. It is deliberately not a score
- * out of a hundred with a colour that changes when it drops: it is context for
- * the learner, not a grade. The number comes from local progress.
+ * What the learner did on their own this week: first attempts, no help, no
+ * retry, counted from the teaching history (the same rule as the Tú screen).
+ *
+ * It replaces a "confidence" percentage that was 45 + 2 per message + 1 per
+ * correction received, capped at 95 — it went UP when the learner was
+ * corrected and measured activity, not ability. A number a learner reads as
+ * "how good I am" has to come from evidence.
  */
-function ConfidenceMeter({ value }) {
+function OwnAnswersThisWeek() {
   const { t } = useApp()
+  const count = useMemo(() => {
+    const since = Date.now() - 7 * 86400000
+    return teachingHistory(loadLearnerModel().teachingHistory)
+      .filter(x => x.at >= since && x.independent && !x.assisted && !x.retried && x.success === true).length
+  }, [])
   return (
-    <div>
-      <div className="flex justify-between items-center mb-2">
-        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>{t('confidenceScore')}</span>
-        <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--muted)' }}>{value}%</span>
-      </div>
-      <div style={{ height: 6, background: 'var(--surface-sunk)', borderRadius: 999, overflow: 'hidden' }}>
-        <div className="xp-bar-fill" style={{ width: `${value}%`, height: '100%', borderRadius: 999, background: 'var(--positive)' }} />
-      </div>
-      <p style={{ fontSize: 11.5, color: 'var(--muted)', marginTop: 5, lineHeight: 1.45 }}>
-        {t('confidenceHint')}
-      </p>
-    </div>
+    <p style={{ fontSize: '0.8125rem', color: count ? 'var(--text)' : 'var(--muted)', lineHeight: 1.5 }}>
+      {count ? t('evidenceWeeklySummary', { count }) : t('evidenceWeeklyEmpty')}
+    </p>
   )
 }
 
@@ -171,10 +172,10 @@ export function TutorNotes() {
           </NoteSection>
         )}
 
-        {/* How settled it feels — the learner's own number, not an example one */}
-        <div className="notes-line">
-          <ConfidenceMeter value={localProgress?.confidence ?? 0} />
-        </div>
+        {/* What they did on their own this week — evidence, not a percentage */}
+        <NoteSection label={t('evidenceWeeklyTitle')}>
+          <OwnAnswersThisWeek />
+        </NoteSection>
 
         {/* The words this learner has met, with the state the model recorded */}
         {recentWords.length > 0 && (

@@ -37,7 +37,7 @@ export function teachingEstimates(model, capability, candidates, dimension = 'fo
   })
 }
 
-function retentionProbes(history) {
+export function retentionProbes(history) {
   const measuredSessions = new Set(), probes = []
   history.forEach((probe, i) => {
     if (!probe.independent || probe.retried || probe.assisted || typeof probe.success !== 'boolean') return

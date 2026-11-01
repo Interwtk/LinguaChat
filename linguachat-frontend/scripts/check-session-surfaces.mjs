@@ -15,11 +15,12 @@ import { dirname, resolve as resolvePath } from 'node:path'
 import { selectRepresentativeFormat, BLOCK_CANDIDATES, formatSupportsObjective } from '../src/learning/engine/formatChoice.js'
 import { ACTIVITY_FORMATS } from '../src/learning/engine/learnerModel.js'
 import {
-  applyProgressEvent, collectIdleCopies, mergeIntoStoredProgress, serializeStoredProgress,
+  applyProgressEvent, collectDeadCopies, mergeIntoStoredProgress, serializeStoredProgress,
 } from '../src/services/localProgress.js'
-import { ownKey } from '../src/services/writerKeys.js'
+import { ownKey, storedCopies } from '../src/services/writerKeys.js'
 import { ledgerFromStored, mergeLedgers, sameLedger } from '../src/services/progressLedger.js'
 import { translate } from '../src/i18n/translations.js'
+import { mergeSessions } from '../src/learning/engine/session.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = (p) => readFileSync(resolvePath(here, '..', p), 'utf8')
@@ -269,6 +270,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const deps = {
       dailySession: { ...stored, awarded: false },
       SESSION_KEY: 'lc2-daily-session-v1',
+      // Reads go through the merged per-tab reader (P2); here, one stored copy.
+      readStoredSessionRaw: access => access.getItem('lc2-daily-session-v1'),
       ARC: [],
       captureLearnerAccess: () => ({
         valid: () => valid,
@@ -992,6 +995,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         return mode === 'failed-completion' ? null : { missionId: 'A-mission', earnedXp: 4 }
       },
       recordMissionProgress: () => ({ owner: 'A' }),
+      // Mission rewards carry a stable id per run and step (P2).
+      missionRewardId: (active, part) => `mission:${active?.missionId}:${active?.startedAt}:${part}`,
       createMissionFeedbackMessage: () => ({ missionType: 'feedback' }),
       createMissionStepMessage: () => ({ missionType: 'step' }),
       createMissionCompleteMessage: () => ({ missionType: 'complete' }),
@@ -1382,7 +1387,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       // helpers run against the same scoped `access`, never unscoped storage.
       mergeIntoStoredProgress, serializeStoredProgress,
       // Each tab writes its own copy (P1 stage A); the same scoped access only.
-      ownKey, collectIdleCopies, ledgerFromStored, mergeLedgers, sameLedger,
+      ownKey, collectDeadCopies, ledgerFromStored, mergeLedgers, sameLedger,
+      // Mission history has one copy per tab; a reset removes all of them (P2).
+      storedCopies,
     }
     const expected = mode === 'current'
     assert.equal(clearProgress({ access }, deps), expected, mode + ': progress keys')
@@ -1783,6 +1790,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const deps = {
       SESSION_BONUS_XP: 15,
       SESSION_KEY: 'daily-session',
+      readStoredSessionRaw: access => access.getItem('daily-session'), // merged per-tab reader (P2)
       ARC: [],
       normalizeSession: value => value,
       dailySession: structuredClone(visible),
@@ -1803,9 +1811,14 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         if (mode === 'revoked-model-save') owner = 'B'
         return mode !== 'rejected-model-save'
       },
+      readStoredSessionRaw: access => access.getItem('daily-session'),
       saveSession: (session, options) => save(session, options, {
         SESSION_KEY: 'daily-session',
         localStorage: { setItem: () => { throw new Error('unscoped write') } },
+        // saveSession writes this tab's own copy, merged with what is stored (P2).
+        learnerAccess: { valid() { throw new Error('unscoped write') } },
+        readStoredSessionRaw: access => access.getItem('daily-session'),
+        mergeSessions, ownKey: base => base + '~w~harness', collectDeadCopies: () => Promise.resolve(0),
       }),
       setDailySession: queue('daily'),
       setLocalProgress: queue('progress'),
@@ -1927,6 +1940,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
     const deps = {
       SESSION_KEY: 'daily-session',
+      readStoredSessionRaw: access => access.getItem('daily-session'), // merged per-tab reader (P2)
       ARC: [],
       normalizeSession: value => value,
       captureLearnerAccess: () => access,
@@ -1936,9 +1950,14 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         if (mode === 'revoked-advance') owner = 'B'
         return { ...session, currentBlockIndex: session.currentBlockIndex + 1 }
       },
+      // Reads go through the merged per-tab reader; writes to this tab's copy (P2).
+      readStoredSessionRaw: access => access.getItem('daily-session'),
       saveSession: (session, options) => save(session, options, {
         SESSION_KEY: 'daily-session',
         localStorage: { setItem: () => { throw new Error('unscoped write') } },
+        learnerAccess: { valid() { throw new Error('unscoped write') } },
+        readStoredSessionRaw: access => access.getItem('daily-session'),
+        mergeSessions, ownKey: base => base, collectDeadCopies: () => Promise.resolve(0),
       }),
       setEpisodeArcVersion: update => queued.push(['arc', update]),
       setDailySession: update => queued.push(['daily', update]),
@@ -2120,6 +2139,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const deps = {
       captureLearnerAccess: () => access,
       SESSION_KEY: 'daily-session',
+      readStoredSessionRaw: access => access.getItem('daily-session'), // merged per-tab reader (P2)
       normalizeSession: value => value,
       dailySession: daily,
       preferredDuration: 'standard',
@@ -2371,6 +2391,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const deps = {
       DURATION_PREF_KEY: 'duration',
       SESSION_KEY: 'daily-session',
+      readStoredSessionRaw: access => access.getItem('daily-session'), // merged per-tab reader (P2)
       normalizeSession: value => value,
       ARC: [],
       dailySession: original.daily,
@@ -2456,7 +2477,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const persist = new Function('activeMission', 'options', 'deps',
     'with (deps) { const { access = null } = options || {}; ' +
     extract(missions, 'export function saveActiveMission(activeMission, { access = null } = {}) {',
-      '\n}\n\nexport function loadCompletedMissions') + ' }')
+      '\n}\n') + ' }') // end of saveActiveMission itself (P2 added readers after it)
   const create = new Function('mission', 'options', 'deps',
     'with (deps) { const { access = null } = options || {}; ' +
     extract(missions, 'export function startMission(mission, { access = null } = {}) {',
@@ -2582,7 +2603,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const persist = new Function('activeMission', 'options', 'deps',
     'with (deps) { const { access = null } = options || {}; ' +
     extract('export function saveActiveMission(activeMission, { access = null } = {}) {',
-      '\n}\n\nexport function loadCompletedMissions') + ' }')
+      '\n}\n') + ' }') // end of saveActiveMission itself (P2 added readers after it)
   const advance = new Function('activeMission', 'step', 'answerValue', 'evaluation', 'options', 'deps',
     'with (deps) { const { access = null, deferSave = false } = options || {}; ' +
     extract('export function advanceMission(activeMission, step, answerValue, evaluation, { access = null, deferSave = false } = {}) {',
@@ -2641,7 +2662,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const persist = new Function('activeMission', 'options', 'deps',
     'with (deps) { const { access = null } = options || {}; ' +
     extract('export function saveActiveMission(activeMission, { access = null } = {}) {',
-      '\n}\n\nexport function loadCompletedMissions') + ' }')
+      '\n}\n') + ' }') // end of saveActiveMission itself (P2 added readers after it)
   const complete = new Function('activeMission', 'options', 'deps',
     'with (deps) { const { access = null } = options || {}; ' +
     extract('export function completeMission(activeMission, { access = null } = {}) {',
@@ -2706,6 +2727,16 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       saveActiveMission: save,
       loadCompletedMissions: () => { throw new Error('unscoped history read') },
       saveCompletedMissions: () => { throw new Error('unscoped history write') },
+      // History has one copy per tab (P2); here a single copy, read and written
+      // through the same scoped access, failing closed on unreadable bytes.
+      readCompletedMissions: lease => {
+        const raw = lease.getItem('completed-missions')
+        if (raw === null) return []
+        const list = JSON.parse(raw)
+        if (!Array.isArray(list)) throw new Error('Unreadable mission history')
+        return list
+      },
+      ownKey: base => base, collectDeadCopies: () => Promise.resolve(0),
     }
     const prepared = advance(saved, { id: 's1', type: 'write_sentence', xp: 4 },
       'hello', { passed: true }, { access, deferSave: true }, {

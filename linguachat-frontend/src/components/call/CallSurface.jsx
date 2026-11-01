@@ -42,8 +42,10 @@ function UpcomingControl({ label, icon, wide = false }) {
       style={{
         width: wide ? 'auto' : 62, minWidth: 62, minHeight: 62, padding: wide ? '12px 18px' : 0,
         borderRadius: wide ? 'var(--radius)' : '50%',
-        background: 'var(--surface-sunk)', border: '1px solid var(--border)',
-        color: 'var(--muted)', cursor: 'not-allowed', opacity: 0.7,
+        /* dashed = not there yet; the label keeps full contrast on the stage
+           (it used to be muted text at 70% opacity, unreadable in dark mode) */
+        background: 'rgba(255,255,255,0.06)', border: '1px dashed var(--on-stage-line)',
+        color: 'var(--on-stage-muted)', cursor: 'not-allowed',
       }}
     >
       {icon}
@@ -71,16 +73,16 @@ export function CallSurface({ mode = 'voice', onClose }) {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden"
-      style={{ background: 'var(--ink)', color: '#F1EEE8' }}>
+      style={{ background: 'var(--stage)', color: 'var(--on-stage)' }}>
 
       {/* Header: what this is, and the way out, always drawn. */}
       <div className="flex items-center justify-between px-4 py-3 flex-shrink-0"
         style={{ borderBottom: '1px solid rgba(255,255,255,0.09)' }}>
-        <p className="eyebrow" style={{ color: 'rgba(241,238,232,0.62)' }}>
+        <p className="eyebrow" style={{ color: 'var(--on-stage-muted)' }}>
           {isVideo ? t('videoCall') : t('voiceCall')}
         </p>
         <button type="button" onClick={onClose} className="tool-chip"
-          style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)', color: '#F1EEE8' }}>
+          style={{ background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.14)', color: 'var(--on-stage)' }}>
           {t('backToChat')}
         </button>
       </div>
@@ -102,7 +104,7 @@ export function CallSurface({ mode = 'voice', onClose }) {
               <LinguaAvatar size={isVideo ? 74 : 88} online />
               <div>
                 <p className="font-display" style={{ fontWeight: 700, fontSize: '1.125rem' }}>{t('linguaReady')}</p>
-                <p style={{ fontSize: '0.8125rem', color: 'rgba(241,238,232,0.62)', marginTop: 2 }}>
+                <p style={{ fontSize: '0.8125rem', color: 'var(--on-stage-muted)', marginTop: 2 }}>
                   {isVideo ? t('videoPlaceholder') : t('callNotStarted')}
                 </p>
               </div>
@@ -117,7 +119,7 @@ export function CallSurface({ mode = 'voice', onClose }) {
                   background: 'rgba(255,255,255,0.06)',
                   border: '1px dashed rgba(255,255,255,0.16)',
                 }}>
-                <span style={{ fontSize: 10.5, color: 'rgba(241,238,232,0.62)', textAlign: 'center', padding: 4 }}>
+                <span style={{ fontSize: 10.5, color: 'var(--on-stage-muted)', textAlign: 'center', padding: 4 }}>
                   {name ? t('yourCamera') : t('yourCamera')}
                 </span>
               </div>
@@ -130,10 +132,10 @@ export function CallSurface({ mode = 'voice', onClose }) {
           {isVideo && (
             <div className="rounded-2xl p-4 mb-4"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)' }}>
-              <p className="eyebrow" style={{ color: 'rgba(241,238,232,0.62)', marginBottom: 8 }}>
+              <p className="eyebrow" style={{ color: 'var(--on-stage-muted)', marginBottom: 8 }}>
                 {t('liveSubtitles')}
               </p>
-              <p style={{ fontSize: '0.875rem', color: 'rgba(241,238,232,0.72)', lineHeight: 1.5 }}>
+              <p style={{ fontSize: '0.875rem', color: 'var(--on-stage-muted)', lineHeight: 1.5 }}>
                 {t('subtitlesWhenAvailable')}
               </p>
             </div>
@@ -156,7 +158,7 @@ export function CallSurface({ mode = 'voice', onClose }) {
 
           {/* The reassurance the frames carry: a call is practice, not an exam. */}
           <p lang={nativeLanguageInfo.base}
-            style={{ fontSize: '0.8125rem', color: 'rgba(241,238,232,0.55)', textAlign: 'center', lineHeight: 1.5 }}>
+            style={{ fontSize: '0.8125rem', color: 'var(--on-stage-muted)', textAlign: 'center', lineHeight: 1.5 }}>
             {t('callNotRecorded')}
           </p>
 

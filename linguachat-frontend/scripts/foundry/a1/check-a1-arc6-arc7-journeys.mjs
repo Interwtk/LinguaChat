@@ -16,13 +16,14 @@
  * that persona should produce.
  */
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+// pathToFileURL: a bare C:\ path is not an import specifier on Windows
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, join } from 'node:path'
 import * as EV from '../../../src/learning/levels/a1/evaluators.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const FRONTEND = join(__dirname, '..', '..', '..')
-const { A1_ARC6_ARC7_ARCS } = await import(join(FRONTEND, 'src/learning/levels/a1/index.js'))
+const { A1_ARC6_ARC7_ARCS } = await import(pathToFileURL(join(FRONTEND, 'src/learning/levels/a1/index.js')).href)
 
 /*
  * One persona set per owned intent. `arrange_meeting` is deliberately tested

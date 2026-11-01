@@ -14,8 +14,9 @@ import {
 } from '../../learning/engine/learnerModel.js'
 import {
   getStory, storyTurns, turnText, createStoryState, normalizeStoryState, advanceStory,
-  isStoryFinished, defaultBranch, STORY_STORAGE_KEY,
+  isStoryFinished, defaultBranch, STORY_STORAGE_KEY, saveStoryState,
 } from '../../learning/engine/miniStory.js'
+import { isSubmitEnter } from '../../services/keyboard.js'
 
 const En = ({ children, style }) => <span lang="en" dir="ltr" style={style}>{children}</span>
 
@@ -100,7 +101,7 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
 
   // Persist where the story is, so a reload resumes instead of restarting.
   useEffect(() => {
-    try { localStorage.setItem(STORY_STORAGE_KEY, JSON.stringify(state)) } catch { /* noop */ }
+    saveStoryState(state, story)
   }, [state])
 
   // One "shown" per story block per day, whatever the UI does in between.
@@ -325,7 +326,7 @@ export function MiniStory({ block, vars, onDone, scaffoldLevel = null, runMode =
           <div className="flex items-end gap-2 rounded-2xl p-2.5" aria-busy={reviewing}
             style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', opacity: reviewing ? 0.7 : 1 }}>
             <input ref={inputRef} value={reply} onChange={e => setReply(e.target.value)} disabled={reviewing} lang="en" dir="ltr"
-              onKeyDown={e => { if (e.key === 'Enter' && reply.trim() && !reviewing) submit({ fromSuggestion: reply === suggestion }) }}
+              onKeyDown={e => { if (isSubmitEnter(e, { allowShift: true }) && reply.trim() && !reviewing) submit({ fromSuggestion: reply === suggestion }) }}
               placeholder={t('ep1TypeReply')} aria-label={t(turn.instructionKey)} className="chat-input flex-1 bg-transparent text-sm"
               style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
             <button onClick={() => submit({ fromSuggestion: reply === suggestion })} disabled={!reply.trim() || reviewing}

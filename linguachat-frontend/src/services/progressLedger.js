@@ -34,12 +34,82 @@
 export const PROGRESS_VERSION = 2
 export const LEDGER_HORIZON_MS = 7 * 86400000
 export const LEDGER_MAX_EVENTS = 500
+/*
+ * The size cap never folds anything this recent (P2). Folding is a cut by
+ * time: whatever sits below the cut and is not in this copy is treated as
+ * already counted. Another tab's events can be invisible here for a moment —
+ * a busy tab's storage cache lags — so a cut through the last seconds dropped
+ * them: two real tabs writing 600 turns each lost 101 (P1 code too). Events
+ * older than this margin have long reached every open tab, so a prefix cut
+ * below it folds the same events in every copy. The ledger may briefly hold
+ * more than LEDGER_MAX_EVENTS; the next save after the margin folds them.
+ */
+export const LEDGER_SETTLE_MS = 10 * 60 * 1000
 export const INITIAL_EPOCH = Object.freeze({ id: 'initial', at: 0 })
-// Ids of folded rewards that a retry could legitimately send again (episode
-// awards, daily bonuses). Their events leave the ledger when folded; their ids
-// must not, or the same reward re-sent later would be paid twice.
-export const FOLDED_IDS_MAX = 2000
-export const isStableEventId = id => /^(episode-award|session-bonus):/.test(id)
+/*
+ * Rewards with a stable id (an episode award, a daily bonus, a mission step)
+ * may legitimately be sent again by a retry or a second tab. When their event
+ * is folded into the base its id must still be remembered, or the same reward
+ * would be paid twice.
+ *
+ * Remembering every id forever would grow without bound, and a plain cap (the
+ * P1 design) silently forgot the oldest ones — the alphabetical cut dropped
+ * every episode award first. Instead each family has an explicit guarantee:
+ *
+ *   episode-award:<episodeId>          one per curriculum episode: a finite
+ *                                      set, kept in full, never pruned.
+ *   session-bonus:<YYYY-MM-DD>:<mode>  time-keyed by its day.
+ *   mission:<missionId>:<startedAt>:…  time-keyed by when the mission began.
+ *
+ * A time-keyed family keeps its newest REWARD_FAMILY_KEEP ids exactly; older
+ * ones are replaced by a floor (the newest key ever pruned). Any id of that
+ * family whose key is at or below the floor is refused as already paid. A new
+ * reward always has a newer key (today's session, a mission started now), so
+ * it is never refused — unless the device clock is set back past hundreds of
+ * folded rewards, which is documented, not hidden.
+ */
+export const REWARD_FAMILY_KEEP = 400
+const FAMILIES = [
+  { name: 'episode', match: id => /^episode-award:/.test(id), key: null },
+  { name: 'session', match: id => /^session-bonus:\d{4}-\d{2}-\d{2}/.test(id), key: id => id.slice(14, 24) },
+  { name: 'mission', match: id => /^mission:[^:]+:\d+:/.test(id), key: id => id.split(':')[2].padStart(16, '0') },
+]
+const familyOf = id => FAMILIES.find(family => family.match(id)) || null
+export const isStableEventId = id => typeof id === 'string' && Boolean(familyOf(id))
+
+function sanitizeFloors(raw) {
+  const out = {}
+  for (const family of FAMILIES) {
+    if (family.key && typeof raw?.[family.name] === 'string' && raw[family.name]) out[family.name] = raw[family.name]
+  }
+  return out
+}
+
+// Already paid: remembered exactly, or at/below its family's floor.
+export function isFoldedReward(base, id) {
+  if ((base?.foldedIds || []).includes(id)) return true
+  const family = familyOf(id)
+  const floor = family?.key ? base?.foldedFloors?.[family.name] : null
+  return Boolean(floor && family.key(id) <= floor)
+}
+
+// Keep every episode id; keep each time-keyed family's newest ids, and move
+// the rest into its floor. Deterministic, so every tab prunes the same way.
+function pruneFolded(ids, floors) {
+  const nextFloors = { ...floors }
+  const keep = []
+  for (const family of FAMILIES) {
+    const own = [...new Set(ids.filter(family.match))]
+    if (!family.key) { keep.push(...own); continue }
+    const floor = nextFloors[family.name] || ''
+    const live = own.filter(id => !floor || family.key(id) > floor)
+      .sort((x, y) => (family.key(x) < family.key(y) ? -1 : family.key(x) > family.key(y) ? 1 : x < y ? -1 : 1))
+    const cut = Math.max(0, live.length - REWARD_FAMILY_KEEP)
+    if (cut) nextFloors[family.name] = live.slice(0, cut).map(family.key).reduce((a, b) => (a > b ? a : b), floor)
+    keep.push(...live.slice(cut).filter(id => !nextFloors[family.name] || family.key(id) > nextFloors[family.name]))
+  }
+  return { foldedIds: keep.sort(), foldedFloors: nextFloors }
+}
 
 const EVENT_KINDS = new Set(['practice', 'mission', 'award', 'xp'])
 
@@ -326,7 +396,7 @@ function sanitizeEpoch(raw) {
 export function createLedger({ epoch = INITIAL_EPOCH, startedAt = Date.now(), snapshot = emptySnapshot() } = {}) {
   return {
     epoch: { ...epoch },
-    base: { snapshot: sanitizeSnapshot(snapshot), startedAt, foldedBefore: 0, folded: 0, foldedIds: [] },
+    base: { snapshot: sanitizeSnapshot(snapshot), startedAt, foldedBefore: 0, folded: 0, foldedIds: [], foldedFloors: {} },
     events: [],
   }
 }
@@ -355,8 +425,9 @@ export function ledgerFromStored(value) {
       startedAt: Number.isFinite(base.startedAt) ? base.startedAt : null,
       foldedBefore: Math.max(0, finite(base.foldedBefore)),
       folded: Math.max(0, finite(base.folded)),
-      foldedIds: Array.isArray(base.foldedIds)
-        ? base.foldedIds.filter(id => typeof id === 'string' && isStableEventId(id)).slice(-FOLDED_IDS_MAX) : [],
+      // P1 ledgers kept up to 2000 ids and no floors: kept as they are, then
+      // pruned by family on the next save.
+      ...pruneFolded(Array.isArray(base.foldedIds) ? base.foldedIds.filter(isStableEventId) : [], sanitizeFloors(base.foldedFloors)),
     },
     events: dedupe(value.events.map(sanitizeEvent).filter(Boolean)),
   }
@@ -397,12 +468,15 @@ export function mergeLedgers(a, b) {
   const epoch = newerEpoch(a.epoch, b.epoch)
   const sameEpoch = [a, b].filter(l => l.epoch.id === epoch.id && l.epoch.at === epoch.at)
   const preferred = sameEpoch.map(l => l.base).reduce(preferredBase)
-  // A reward folded in either copy stays counted, whichever base is kept.
-  const foldedIds = [...new Set(sameEpoch.flatMap(l => l.base.foldedIds || []))].sort().slice(-FOLDED_IDS_MAX)
-  const base = { ...preferred, foldedIds }
-  const folded = new Set(foldedIds)
+  // A reward folded in either copy stays counted, whichever base is kept:
+  // the union of remembered ids and the higher floor of each family.
+  const floors = {}
+  for (const l of sameEpoch) {
+    for (const [name, floor] of Object.entries(l.base.foldedFloors || {})) if (!floors[name] || floor > floors[name]) floors[name] = floor
+  }
+  const base = { ...preferred, ...pruneFolded(sameEpoch.flatMap(l => l.base.foldedIds || []), floors) }
   const events = dedupe([...a.events, ...b.events])
-    .filter(event => event.at >= epoch.at && event.at >= base.foldedBefore && !folded.has(event.id))
+    .filter(event => event.at >= epoch.at && event.at >= base.foldedBefore && !isFoldedReward(base, event.id))
   return { epoch: { ...epoch }, base, events }
 }
 
@@ -417,7 +491,7 @@ export function addEvent(ledger, raw) {
   // An event from before a reset or already folded into the base cannot be
   // added again; it was either erased by the learner or already counted.
   if (event.at < ledger.epoch.at || event.at < ledger.base.foldedBefore) return ledger
-  if ((ledger.base.foldedIds || []).includes(event.id)) return ledger
+  if (isFoldedReward(ledger.base, event.id)) return ledger
   return { ...ledger, events: dedupe([...ledger.events, event]) }
 }
 
@@ -429,7 +503,9 @@ export function addEvent(ledger, raw) {
 export function compactLedger(ledger, now = Date.now()) {
   const events = [...ledger.events].sort(byTime)
   let cutoff = now - LEDGER_HORIZON_MS
-  if (events.length > LEDGER_MAX_EVENTS) cutoff = Math.max(cutoff, events[events.length - LEDGER_MAX_EVENTS].at)
+  if (events.length > LEDGER_MAX_EVENTS) {
+    cutoff = Math.max(cutoff, Math.min(events[events.length - LEDGER_MAX_EVENTS].at, now - LEDGER_SETTLE_MS))
+  }
   const folding = events.filter(event => event.at < cutoff)
   if (!folding.length) return ledger
   return {
@@ -439,8 +515,8 @@ export function compactLedger(ledger, now = Date.now()) {
       snapshot: foldEvents(ledger.base.snapshot, folding),
       foldedBefore: Math.max(ledger.base.foldedBefore, cutoff),
       folded: ledger.base.folded + folding.length,
-      foldedIds: [...new Set([...(ledger.base.foldedIds || []), ...folding.map(e => e.id).filter(isStableEventId)])]
-        .sort().slice(-FOLDED_IDS_MAX),
+      ...pruneFolded([...(ledger.base.foldedIds || []), ...folding.map(e => e.id).filter(isStableEventId)],
+        ledger.base.foldedFloors || {}),
     },
     events: events.filter(event => event.at >= cutoff),
   }

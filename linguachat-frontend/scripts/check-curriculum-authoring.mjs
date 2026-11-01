@@ -184,7 +184,10 @@ const incidentalFor = (episode) =>
   (episode?.level === 'A1' ? A1_INCIDENTAL_ITEMS : INCIDENTAL_ITEMS)
 
 const runnerSource = readFileSync(new URL('../src/components/session/SessionRunner.jsx', import.meta.url), 'utf8')
+// The English source of a key is translations.js, or, for the closed levels
+// B1–C2, closedLevelsEn.js (moved out of the first chunk in P2).
 const baseLocale = readFileSync(new URL('../src/i18n/translations.js', import.meta.url), 'utf8')
+  + '\n' + readFileSync(new URL('../src/i18n/closedLevelsEn.js', import.meta.url), 'utf8')
 const LOCALES = ['es', 'pt', 'fr', 'it', 'de', 'ja', 'ar']
 const localeSources = Object.fromEntries(LOCALES.map(code =>
   [code, readFileSync(new URL(`../src/i18n/locales/${code}.js`, import.meta.url), 'utf8')]))

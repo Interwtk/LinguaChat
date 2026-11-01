@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { readFileSync } from 'node:fs'
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 const AUTHORIZED_SOURCE_PREFIXES = [
   'linguachat-frontend/src/auth/',
@@ -115,8 +116,43 @@ function selfTest() {
   console.log('check-linguachat-cloud-scope self-test — positive/negative fixtures OK')
 }
 
+/*
+ * Without a git checkout (a downloaded archive, a fresh Windows copy) there is
+ * no `git ls-files`. The guard then scans the working tree instead: every file
+ * git would consider, minus what .gitignore keeps out of the repository
+ * (dependencies, builds, caches, local .env files). That is a superset of the
+ * tracked files, so falling back never scans less — and it says which mode ran.
+ */
+const IGNORED_DIRS = new Set(['.git', 'node_modules', 'dist', 'build', 'coverage', '.venv', 'venv', '__pycache__', '.pytest_cache'])
+const IGNORED_ENV = /(?:^|\/)\.env(?:\.local)?$|(?:^|\/)\.env\.[^/]+\.local$/
+
+export function worktreePaths(root = '.') {
+  const out = []
+  const walk = rel => {
+    for (const entry of readdirSync(rel ? join(root, rel) : root, { withFileTypes: true })) {
+      const path = rel ? rel + '/' + entry.name : entry.name
+      if (entry.isSymbolicLink()) continue
+      if (entry.isDirectory()) { if (!IGNORED_DIRS.has(entry.name)) walk(path) }
+      else if (entry.isFile() && !IGNORED_ENV.test(path)) out.push(path)
+    }
+  }
+  walk('')
+  return out.sort()
+}
+
+function trackedPaths() {
+  try {
+    const paths = execFileSync('git', ['ls-files'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] })
+      .trim().split('\n').filter(Boolean)
+    return { mode: 'git ls-files', paths }
+  } catch {
+    return { mode: 'working tree (no git checkout)', paths: worktreePaths() }
+  }
+}
+
 function trackedEntries() {
-  const paths = execFileSync('git', ['ls-files'], { encoding: 'utf8' }).trim().split('\n').filter(Boolean)
+  const { mode, paths } = trackedPaths()
+  console.log(`check-linguachat-cloud-scope — scanning ${mode}`)
   return paths.filter(isTrackedRelevant).map(path => ({
     path, text: isRootCloudResource(path) ? '' : readFileSync(path, 'utf8'),
   }))

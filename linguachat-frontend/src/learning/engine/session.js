@@ -1,4 +1,5 @@
 import { learnerStorage as localStorage } from '../../auth/localLease.js'
+import { collectDeadCopies, ownKey, storedCopies } from '../../services/writerKeys.js'
 /*
  * session — the adaptive daily session.
  *
@@ -553,32 +554,85 @@ export function normalizeSession(parsed, arc) {
   return { ...parsed, currentBlockIndex, topic, awarded: Boolean(parsed.awarded) }
 }
 
+/*
+ * Two tabs of one account may both hold today's session. Each writes its own
+ * copy (services/writerKeys.js) and a read merges them, so a tab whose view of
+ * storage is stale can never move the session backwards:
+ *
+ *   same plan (same id and blocks)  the furthest copy wins — completed beats
+ *                                   active beats planned, then the later block —
+ *                                   and "awarded" is never forgotten;
+ *   a different plan                the later write wins (a new day, or an
+ *                                   explicit change of duration before starting).
+ */
+const STATUS_RANK = { planned: 0, active: 1, completed: 2 }
+const blockSignature = session => (session.blocks || []).map(block => block?.id).join('|')
+
+export function mergeSessions(a, b) {
+  if (!a) return b
+  if (!b) return a
+  if (a.id === b.id && blockSignature(a) === blockSignature(b)) {
+    const reach = x => (STATUS_RANK[x.status] ?? 0) * 1000 + (Number(x.currentBlockIndex) || 0)
+    const ahead = reach(a) >= reach(b) ? a : b
+    return { ...ahead, awarded: Boolean(a.awarded || b.awarded) }
+  }
+  const written = x => Number(x.updatedAt) || 0
+  if (written(a) !== written(b)) return written(a) > written(b) ? a : b
+  return String(a.dayKey || '') >= String(b.dayKey || '') ? a : b
+}
+
+/* The merged stored session as JSON (null when there is none). */
+export function readStoredSessionRaw(access) {
+  let merged = null
+  for (const copy of storedCopies(access, SESSION_KEY)) {
+    try {
+      const parsed = JSON.parse(copy.raw)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) merged = mergeSessions(merged, parsed)
+    } catch { /* an unreadable copy is ignored, never overwritten */ }
+  }
+  return merged ? JSON.stringify(merged) : null
+}
+
+const learnerAccess = {
+  valid: () => true,
+  keys: () => localStorage.keys(),
+  getItem: key => localStorage.getItem(key),
+  setItem: (key, value) => { localStorage.setItem(key, value); return true },
+}
+
 export function loadSession(arc) {
   try {
-    const raw = localStorage.getItem(SESSION_KEY)
+    const raw = readStoredSessionRaw(learnerAccess)
     if (!raw) return null
     return normalizeSession(JSON.parse(raw), arc)
   } catch { return null }
 }
 
 export function saveSession(session, { access = null } = {}) {
-  if (access) {
-    // Completion must persist through the account lease captured before the
-    // learner model was read. A late callback cannot reacquire B's storage.
-    try {
-      const serialized = JSON.stringify(session)
-      if (!access.valid() || access.setItem(SESSION_KEY, serialized) === false
-        || !access.valid() || access.getItem(SESSION_KEY) !== serialized
-        || !access.valid()) return null
-      return session
-    } catch { return null }
-  }
-  try { localStorage.setItem(SESSION_KEY, JSON.stringify(session)) } catch { /* storage full/blocked */ }
-  return session
+  const target = access || learnerAccess
+  // Completion must persist through the account lease captured before the
+  // learner model was read. A late callback cannot reacquire B's storage.
+  // This tab writes its own copy: the furthest of what it holds and what is
+  // stored, so it cannot undo another tab's progress either.
+  try {
+    if (!target.valid()) return access ? null : session
+    const stored = readStoredSessionRaw(target)
+    const merged = mergeSessions(stored ? JSON.parse(stored) : null, { ...session, updatedAt: Date.now() })
+    const key = ownKey(SESSION_KEY)
+    const serialized = JSON.stringify(merged)
+    if (!target.valid() || target.setItem(key, serialized) === false
+      || !target.valid() || target.getItem(key) !== serialized
+      || !target.valid()) return access ? null : session
+    // A closed tab's copy that adds nothing to this one is no longer needed.
+    collectDeadCopies(target, SESSION_KEY, parsed => JSON.stringify(mergeSessions(merged, parsed)) === serialized)
+    return merged
+  } catch { return access ? null : session }
 }
 
 export function clearSession() {
-  try { localStorage.removeItem(SESSION_KEY) } catch { /* noop */ }
+  try {
+    for (const copy of storedCopies(learnerAccess, SESSION_KEY)) localStorage.removeItem(copy.key)
+  } catch { /* noop */ }
 }
 
 /*

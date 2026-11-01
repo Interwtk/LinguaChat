@@ -17,6 +17,7 @@ import { loadLearnerModel, getEpisodeState } from '../../learning/engine/learner
 import { selectLearnerFact } from '../../learning/engine/learnerFacts.js'
 import { loadMemoryContext, dismissFact } from '../../learning/engine/memoryContext.js'
 import { asSubjectValue } from '../../learning/engine/semanticContext.js'
+import { isSubmitEnter } from '../../services/keyboard.js'
 
 /*
  * The episodes this screen may talk about, as structure only.
@@ -128,7 +129,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
   }, [input, isTyping, sendMessage])
 
   const handleKey = useCallback((e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (isSubmitEnter(e)) {
       e.preventDefault()
       handleSend()
     }
@@ -362,7 +363,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
           <div style={{ minWidth: 0 }}>
             <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--ink)' }}>{t('missionComplete')}</p>
             <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>
-              {missionCelebration.message} +{missionCelebration.xp} XP.
+              {t(missionCelebration.messageKey || 'missionSavedOnDevice')} +{missionCelebration.xp} XP.
             </p>
           </div>
         </div>

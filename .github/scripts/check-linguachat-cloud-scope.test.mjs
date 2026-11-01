@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
-import { isTrackedRelevant, validateEntry, validateRepository } from './check-linguachat-cloud-scope.mjs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { isTrackedRelevant, validateEntry, validateRepository, worktreePaths } from './check-linguachat-cloud-scope.mjs'
 
 const auth = 'linguachat-frontend/src/auth/client.js'
 const cloud = 'linguachat-frontend/src/cloud/preferences.js'
@@ -63,5 +66,30 @@ const repoProblems = validateRepository([
 assert.ok(repoProblems.some(x => x.includes('private/server')))
 assert.ok(repoProblems.some(x => x.includes('backend Supabase')))
 assert.ok(repoProblems.some(x => x.includes('repository-level')))
+
+// Without git, the working-tree scan must see everything git would track:
+// sources and root cloud resources in, dependencies, builds and local .env out.
+{
+  const root = mkdtempSync(join(tmpdir(), 'lc-scope-'))
+  try {
+    const put = (path, text = 'x') => { mkdirSync(join(root, path, '..'), { recursive: true }); writeFileSync(join(root, path), text) }
+    put('linguachat-frontend/src/App.jsx')
+    put('linguachat-frontend/src/auth/client.js')
+    put('linguachat-frontend/node_modules/@supabase/supabase-js/index.js')
+    put('linguachat-frontend/dist/assets/index.js')
+    put('linguachat-backend/.venv/lib/site.py')
+    put('linguachat-frontend/.env')
+    put('linguachat-frontend/.env.production.local')
+    put('.env.supabase')
+    put('supabase/config.toml')
+    const paths = worktreePaths(root)
+    for (const expected of ['linguachat-frontend/src/App.jsx', 'linguachat-frontend/src/auth/client.js', '.env.supabase', 'supabase/config.toml']) {
+      assert.ok(paths.includes(expected), 'worktree scan includes ' + expected)
+    }
+    for (const ignored of ['node_modules', '/dist/', '.venv', 'linguachat-frontend/.env']) {
+      assert.ok(!paths.some(p => p.includes(ignored)), 'worktree scan skips ' + ignored)
+    }
+  } finally { rmSync(root, { recursive: true, force: true }) }
+}
 
 console.log('check-linguachat-cloud-scope tests — ' + forbidden.length + ' negative cases and allowed client/package cases passed')

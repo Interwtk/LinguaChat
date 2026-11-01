@@ -5,6 +5,7 @@ import { useIsDesktop } from './services/viewport'
 import { TodayView } from './components/today/TodayView'
 import { ChatsView } from './components/chats/ChatsView'
 import { ContextPanel, contextPanelFor } from './components/layout/ContextPanel'
+import { NotesSheet } from './components/layout/NotesSheet'
 import { ThemeToggle } from './components/ui/ThemeToggle'
 import { lazyScreen } from './components/ui/LazyBoundary'
 import { WelcomeMascotCard } from './components/onboarding/WelcomeMascotCard'
@@ -259,7 +260,7 @@ function DesktopSidebar() {
 
 /* ─── Main app shell ─── */
 function AppShell() {
-  const { authStep, view, navigateTo, showWelcome, showTutorial, t } = useApp()
+  const { authStep, view, navigateTo, showWelcome, showTutorial, mobileSheet, setMobileSheet, t } = useApp()
   const { focusMode, setFocusMode, toggleFocusMode } = useFocusMode()
   // Exactly one shell is mounted. Rendering both and hiding one with CSS keeps a
   // second, stale copy of every stateful view alive (see services/viewport.js).
@@ -398,6 +399,7 @@ function AppShell() {
         </div>
 
         {!focusMode && !isCall && <MobileNav />}
+        {mobileSheet === 'notes' && <NotesSheet onClose={() => setMobileSheet(null)} />}
       </div>
       )}
     </div>

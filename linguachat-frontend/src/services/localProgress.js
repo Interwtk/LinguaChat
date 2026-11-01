@@ -2,10 +2,10 @@ import { learnerStorage as localStorage } from '../auth/localLease.js'
 import {
   addEvent, applyToSnapshot, compactLedger, createLedger, deriveSnapshot, emptySnapshot,
   ledgerFromLegacy, ledgerFromStored, makeEventId, mergeLedgers, missionEvent, practiceEvent,
-  PROGRESS_VERSION, sameLedger, serializeLedger, snapshotFrom,
+  isFoldedReward, PROGRESS_VERSION, sameLedger, serializeLedger, snapshotFrom,
 } from './progressLedger.js'
 import { quarantineValue } from './storageQuarantine.js'
-import { ownKey, storedCopies, writerId, WRITER_IDLE_MS } from './writerKeys.js'
+import { collectDeadCopies, ownKey, storedCopies, writerId } from './writerKeys.js'
 
 const STORAGE_KEYS = {
   sessionId: 'lc2-session-id',
@@ -89,23 +89,11 @@ export function serializeStoredProgress(ledger) {
 }
 
 /*
- * Remove other writers' copies that add nothing to this tab's and have been
- * idle for a while, so storage does not grow with every tab ever opened. Best
- * effort: a failure here never fails the save that already succeeded.
+ * Copies left by closed tabs that add nothing to this tab's own copy are
+ * removed after a save (writerKeys.collectDeadCopies); they are never needed
+ * again, and a copy whose tab may still be open is never touched.
  */
-export function collectIdleCopies(access, base, addsNothing) {
-  try {
-    const own = ownKey(base)
-    for (const copy of storedCopies(access, base)) {
-      if (copy.key === own) continue
-      let parsed = null
-      try { parsed = JSON.parse(copy.raw) } catch { continue }
-      const idleFor = Date.now() - (Number.isFinite(parsed?.writtenAt) ? parsed.writtenAt : 0)
-      if (copy.key !== base && idleFor < WRITER_IDLE_MS) continue
-      if (addsNothing(parsed) && access.valid()) access.removeItem(copy.key)
-    }
-  } catch { /* Cleanup is optional. */ }
-}
+export { collectDeadCopies }
 
 function conversationEpochAt(raw) {
   try {
@@ -218,7 +206,7 @@ export function saveStoredMessages(messages, { access = null } = {}) {
         || !access.valid() || access.getItem(key) !== serialized) return false
       const held = new Set(merged.map(messageKey))
       const epochAt = conversationEpochAt(access.getItem(STORAGE_KEYS.chatEpoch))
-      collectIdleCopies(access, STORAGE_KEYS.messages, parsed => (messagesOf(parsed) || [])
+      collectDeadCopies(access, STORAGE_KEYS.messages, parsed => (messagesOf(parsed) || [])
         .every(message => held.has(messageKey(message)) || (Number(message?.ts) || 0) < epochAt))
       return access.valid()
     } catch {
@@ -335,7 +323,7 @@ export function saveLocalProgress(progress, { access = null } = {}) {
       const serialized = serializeStoredProgress(ledger)
       if (!access.valid() || access.setItem(key, serialized) === false
         || !access.valid() || access.getItem(key) !== serialized) return false
-      collectIdleCopies(access, STORAGE_KEYS.progress, parsed => {
+      collectDeadCopies(access, STORAGE_KEYS.progress, parsed => {
         const theirs = ledgerFromStored(parsed)
         return Boolean(theirs) && sameLedger(mergeLedgers(ledger, theirs), ledger)
       })
@@ -382,7 +370,7 @@ export function commitProgressEvent(event, { access }) {
     const { ledger } = parseStoredProgress(access.getItem(key))
     // Already folded into the base (paid long ago) counts as committed: the
     // caller must not retry forever, and nothing is paid twice.
-    const held = ledger?.events.some(stored => stored.id === event.id) || ledger?.base.foldedIds.includes(event.id)
+    const held = ledger?.events.some(stored => stored.id === event.id) || isFoldedReward(ledger?.base, event.id)
     return Boolean(held) && access.valid()
   } catch {
     return false

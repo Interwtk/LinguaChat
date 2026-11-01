@@ -26,6 +26,10 @@ import {
   PRE_A1, A1, A2, B1, B2, C1, C2, getLevel, isKnownLevel, isLevelAvailable, hasRuntimeContent,
   episodesOfLevel, levelIdOfEpisodeId, playableLevelId,
 } from './levels.js'
+import { loadClosedLevelStrings } from '../../i18n/translations.js'
+
+/* Levels whose English copy is not in the first chunk (see i18n/closedLevelsEn.js). */
+const LAZY_COPY_LEVELS = new Set([B1, B2, C1, C2])
 
 /* Why a request was refused. Callers switch on these, so they are part of the contract. */
 export const REFUSED = {
@@ -236,7 +240,11 @@ export async function loadEpisodeContent({ levelId = null, episodeId, forLearner
   if (!request.ok) throw new EpisodeContentError(request.reason, episodeId)
 
   const loader = loaderFor(request.levelId, request.arcId)
-  const module = await loader()
+  // the episode's words and the interface copy that names them arrive together
+  const [module] = await Promise.all([
+    loader(),
+    LAZY_COPY_LEVELS.has(request.levelId) ? loadClosedLevelStrings() : null,
+  ])
   const episode = module.getEpisode ? module.getEpisode(episodeId) : null
   if (!episode) throw new EpisodeContentError(REFUSED.UNKNOWN_EPISODE, episodeId)
   return episode

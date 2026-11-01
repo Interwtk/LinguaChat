@@ -1,5 +1,6 @@
 import { learnerStorage as localStorage } from '../auth/localLease.js'
-import { PRACTICE_MISSIONS } from '../data/practiceMissions'
+import { PRACTICE_MISSIONS } from '../data/practiceMissions.js'
+import { collectDeadCopies, ownKey, storedCopies } from './writerKeys.js'
 
 const ACTIVE_KEY = 'lc2-active-mission'
 const COMPLETED_KEY = 'lc2-completed-missions'
@@ -77,9 +78,45 @@ export function saveActiveMission(activeMission, { access = null } = {}) {
   writeJSON(ACTIVE_KEY, activeMission)
 }
 
+/*
+ * The completed-mission history is append-only, so each tab writes its own
+ * copy (writerKeys.js) and a read is the union of every copy: a tab whose view
+ * of storage is stale can never erase another tab's completion. One entry per
+ * mission run (missionId + startedAt), newest first, at most 50.
+ * An unreadable copy throws: completing a mission without being able to check
+ * its history fails closed, as before, and the bytes are left untouched.
+ */
+export function readCompletedMissions(access) {
+  const byRun = new Map()
+  for (const copy of storedCopies(access, COMPLETED_KEY)) {
+    const list = JSON.parse(copy.raw)
+    if (!Array.isArray(list)) throw new Error('Unreadable mission history')
+    for (const item of list) {
+      if (!item || typeof item.missionId !== 'string') continue
+      const run = `${item.missionId}:${item.startedAt}`
+      if (!byRun.has(run)) byRun.set(run, item)
+    }
+  }
+  return [...byRun.values()].sort((a, b) => (Number(b.completedAt) || 0) - (Number(a.completedAt) || 0)).slice(0, 50)
+}
+
+const learnerAccess = {
+  valid: () => true,
+  keys: () => localStorage.keys(),
+  getItem: key => localStorage.getItem(key),
+}
+
 export function loadCompletedMissions() {
-  const completed = readJSON(COMPLETED_KEY, [])
-  return Array.isArray(completed) ? completed : []
+  try { return readCompletedMissions(learnerAccess) } catch { return [] }
+}
+
+/*
+ * The progress-ledger id of a mission reward: one per mission run and step,
+ * plus one for the completion bonus. Answering the same step again (a retry,
+ * a second tab, a stale cursor) is then the same reward, paid once.
+ */
+export function missionRewardId(activeMission, part) {
+  return `mission:${activeMission.missionId}:${Number(activeMission.startedAt) || 0}:${part}`
 }
 
 export function saveCompletedMissions(completed) {
@@ -288,19 +325,22 @@ export function completeMission(activeMission, { access = null } = {}) {
       if (savedActive?.missionId !== activeMission.missionId
         || savedActive.startedAt !== activeMission.startedAt
         || savedActive.currentStepIndex !== activeMission.currentStepIndex - 1) return null
-      const rawCompleted = access.getItem(COMPLETED_KEY)
+      const previous = readCompletedMissions(access)
       if (!access.valid()) return null
-      const previous = rawCompleted === null ? [] : JSON.parse(rawCompleted)
-      if (!Array.isArray(previous)) return null
       // If the completed record was saved but clearing the active cursor
       // failed, retry the clear without duplicating a reward/history entry.
       const existing = previous.find(item => item?.missionId === completed.missionId
         && item.startedAt === completed.startedAt)
       const result = existing || completed
       if (!existing) {
+        const key = ownKey(COMPLETED_KEY)
         const serialized = JSON.stringify([completed, ...previous].slice(0, 50))
-        if (access.setItem(COMPLETED_KEY, serialized) === false
-          || !access.valid() || access.getItem(COMPLETED_KEY) !== serialized) return null
+        if (access.setItem(key, serialized) === false
+          || !access.valid() || access.getItem(key) !== serialized) return null
+        // A closed tab's history copy whose every run is in this one can go.
+        const runs = new Set([completed, ...previous].map(item => `${item.missionId}:${item.startedAt}`))
+        collectDeadCopies(access, COMPLETED_KEY, parsed => Array.isArray(parsed)
+          && parsed.every(item => runs.has(`${item?.missionId}:${item?.startedAt}`)))
       }
       if (saveActiveMission(null, { access }) === false || !access.valid()) return null
       return result
@@ -321,7 +361,9 @@ export function clearMissionStorage({ access = null } = {}) {
     // owns the lease, and verify each removal before reporting success.
     try {
       if (!access.valid()) return false
-      for (const key of [ACTIVE_KEY, COMPLETED_KEY]) {
+      // Every tab's copy of the history goes, not only this tab's.
+      const historyKeys = storedCopies(access, COMPLETED_KEY).map(copy => copy.key)
+      for (const key of [ACTIVE_KEY, COMPLETED_KEY, ...historyKeys]) {
         if (!access.valid() || access.removeItem(key) === false
           || !access.valid() || access.getItem(key) !== null) return false
       }

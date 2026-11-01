@@ -443,6 +443,19 @@ const html = read('index.html')
     /kind === 'conversation'/.test(panel) && /<TutorNotes \/>/.test(panel))
 }
 
+/* ---- 15b) the "Lingua's notes" row opens something on a phone (P2) ---- */
+{
+  const app = read('src/App.jsx')
+  const sheet = read('src/components/layout/NotesSheet.jsx')
+  const chats = read('src/components/chats/ChatsView.jsx')
+  // The row used to set a sheet that nothing drew: a button that did nothing.
+  has('the notes row asks for the notes sheet', /setMobileSheet\('notes'\)/.test(chats))
+  has('the mobile shell draws that sheet', /mobileSheet === 'notes' && <NotesSheet/.test(app))
+  has('it is a modal dialog', /role="dialog"/.test(sheet) && /aria-modal="true"/.test(sheet))
+  has('Escape closes it', /'Escape'/.test(sheet))
+  has('it shows the same notes, only on request', /<TutorNotes \/>/.test(sheet))
+}
+
 /* ---- 16) call and video: visible, real surfaces, honest about the media ---- */
 {
   const room = read('src/components/layout/ConversationRoom.jsx')
@@ -462,6 +475,31 @@ const html = read('index.html')
   has('controls are disabled', /disabled\s*\n\s*aria-disabled="true"/.test(call))
   has('the upcoming state is announced, not only shown', /aria-label=\{`\$\{label\} — \$\{t\('upcoming'\)\}`\}/.test(call))
   has('the surface says the feature is not ready', /callUpcomingBody/.test(call) && /videoUpcomingBody/.test(call))
+  /*
+   * READABLE IN BOTH THEMES (P2). The stage used to be painted with --ink, which
+   * is light in dark mode — light text on a light stage. The stage now has its
+   * own night tokens; their contrast is computed here, not eyeballed.
+   */
+  has('the stage is not painted with a theme-flipping token', !/background: 'var\(--ink\)'/.test(call))
+  has('it has no hard-coded text colour left', !/#F1EEE8|rgba\(241,238,232/.test(call))
+  {
+    const block = sel => css.slice(css.indexOf(sel + ' {'), css.indexOf('}', css.indexOf(sel + ' {')))
+    const hex = (src, name) => (src.match(new RegExp(`--${name}:\\s*(#[0-9A-Fa-f]{6})`)) || [])[1]
+    const lum = h => {
+      const c = [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16) / 255)
+        .map(v => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4))
+      return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+    }
+    const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, k) => k - m); return (x + 0.05) / (y + 0.05) }
+    for (const [theme, src] of [['light', block(':root')], ['dark', block('.dark')]]) {
+      const stage = hex(src, 'stage')
+      for (const fg of ['on-stage', 'on-stage-muted']) {
+        const colour = hex(src, fg)
+        has(`${fg} on the call stage is readable in ${theme} (≥ 4.5:1)`,
+          Boolean(stage && colour) && ratio(stage, colour) >= 4.5)
+      }
+    }
+  }
   /* and no media API was smuggled in anywhere */
   const media = ALL.filter(f => /getUserMedia|RTCPeerConnection|SpeechRecognition|MediaRecorder/.test(f.text))
   assert.deepEqual(media.map(f => f.path), [], 'a media API appeared in a UI-only sprint')

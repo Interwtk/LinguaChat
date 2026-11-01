@@ -8,9 +8,18 @@
  *
  * So no tab ever rewrites a key another tab writes. Each page load writes its
  * own copy under `<base>~w~<writer>`; readers merge every copy (the merge is a
- * union, so extra copies are harmless). A copy that adds nothing to this
- * tab's own, and has not been written for a while, is removed to bound
- * storage; its owner, if still open, rewrites it on its next save.
+ * union, so extra copies are harmless).
+ *
+ * Cleaning up — and why it cannot lose data. Each page holds a Web Lock named
+ * after its writer id for as long as it is open; the browser releases it when
+ * the tab closes or is discarded. Another tab removes a copy only when
+ *   1. its writer's lock is NOT held (that page is gone and can never write
+ *      again — no timer, no guess), and
+ *   2. everything in it is already in this tab's own verified copy, and
+ *   3. it still holds exactly the bytes that were checked.
+ * Where Web Locks are unavailable nothing is removed: data is kept and growth
+ * is reported instead of risked. (P1 used "idle for two minutes", which could
+ * race with an idle tab that was still open.)
  *
  * Keys keep the `lc2-` prefix, so they live in the account's namespace and
  * move with the account exactly like every other learner key.
@@ -43,7 +52,67 @@ export function writerId() {
 }
 
 export function ownKey(base) {
-  return `${base}${WRITER_SEPARATOR}${writerId()}`
+  const id = writerId()
+  holdWriterLock(id)
+  return `${base}${WRITER_SEPARATOR}${id}`
+}
+
+const LOCK_PREFIX = 'lc2-writer:'
+const heldIds = new Set()
+
+/* Hold this page's liveness lock until the page goes away. */
+export function holdWriterLock(id = writerId()) {
+  const locks = globalThis.navigator?.locks
+  if (heldIds.has(id) || typeof locks?.request !== 'function') return
+  heldIds.add(id)
+  try {
+    locks.request(LOCK_PREFIX + id, () => new Promise(() => {})).catch(() => heldIds.delete(id))
+  } catch { heldIds.delete(id) }
+}
+
+/* Writer ids whose page is still open, or null when the browser cannot say. */
+export async function liveWriterIds() {
+  const locks = globalThis.navigator?.locks
+  if (typeof locks?.query !== 'function') return null
+  try {
+    const { held = [], pending = [] } = await locks.query()
+    return new Set([...held, ...pending].map(lock => lock?.name).filter(name => name?.startsWith(LOCK_PREFIX))
+      .map(name => name.slice(LOCK_PREFIX.length)))
+  } catch { return null }
+}
+
+let collections = Promise.resolve()
+/* Resolves when every clean-up started so far has finished (tests, shutdown). */
+export const settleCollections = () => collections
+
+/*
+ * Remove copies of `base` left by closed pages that add nothing to this tab's
+ * own copy (`addsNothing(parsed, raw)` decides, per store). Never throws;
+ * resolves to the number of copies removed.
+ */
+export function collectDeadCopies(access, base, addsNothing) {
+  // Fixed now, not when the clean-up runs: "this tab's copy" must never be
+  // re-derived from whatever context is current later.
+  const own = ownKey(base)
+  const run = collections.then(async () => {
+    const live = await liveWriterIds()
+    if (!live) return 0
+    let removed = 0
+    for (const copy of storedCopies(access, base)) {
+      if (copy.key === own) continue
+      const writer = copy.key === base ? null : copy.key.slice(base.length + WRITER_SEPARATOR.length)
+      if (writer && live.has(writer)) continue
+      let parsed
+      try { parsed = JSON.parse(copy.raw) } catch { continue }
+      try { if (!addsNothing(parsed, copy.raw)) continue } catch { continue }
+      if (!access.valid() || access.getItem(copy.key) !== copy.raw) continue
+      access.removeItem(copy.key)
+      removed++
+    }
+    return removed
+  }).catch(() => 0)
+  collections = run
+  return run
 }
 
 export function isWriterKey(base, key) {
@@ -63,5 +132,3 @@ export function storedCopies(access, base) {
   return copies
 }
 
-// A copy idle this long whose content this tab already holds may be removed.
-export const WRITER_IDLE_MS = 2 * 60 * 1000

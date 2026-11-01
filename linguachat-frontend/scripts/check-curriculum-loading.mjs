@@ -16,11 +16,14 @@
  *   3. the content is really in a chunk that loads on demand, and a failure to
  *      fetch it is recoverable rather than a dead screen
  *
- * The build assertions read dist/, so they skip (without failing) on a fresh
- * clone that has not built yet — the skeleton check always runs.
+ * P2: the build assertions build what they read. They used to read dist/ and
+ * SKIP without one — and CI runs check:all before `npm run build`, so they
+ * never ran there. Now a production build goes to a temporary directory each
+ * run, unless `--dist <dir>` names a build to inspect.
  */
 import assert from 'node:assert/strict'
-import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync, statSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 
@@ -213,9 +216,19 @@ const curriculumOnlyProse = (minLength = 14) => {
 }
 
 /* ---- 4) the first chunk carries the shape, not the level ---- */
-const DIST = 'dist/assets'
+const distArg = process.argv.indexOf('--dist')
+let OUT
+if (distArg > 0) {
+  OUT = process.argv[distArg + 1] || ''
+} else {
+  OUT = mkdtempSync(join(tmpdir(), 'lc-loading-'))
+  const { build } = await import('vite')
+  await build({ logLevel: 'error', build: { outDir: OUT, emptyOutDir: true } })
+  process.on('exit', () => { try { rmSync(OUT, { recursive: true, force: true }) } catch { /* temp dir */ } })
+}
+const DIST = join(OUT, 'assets')
 if (!existsSync(DIST)) {
-  console.log('\ncheck-curriculum-loading — build assertions SKIPPED (no dist/, run `npm run build`)')
+  assert.fail(`no build output at ${DIST}`)
 } else {
   const files = readdirSync(DIST).filter(f => f.endsWith('.js'))
   /*
@@ -223,7 +236,7 @@ if (!existsSync(DIST)) {
    * found by its `index-` prefix, until a second chunk built from
    * `episodes/index.js` was named the same way and got mistaken for it.
    */
-  const html = readFileSync('dist/index.html', 'utf8')
+  const html = readFileSync(join(OUT, 'index.html'), 'utf8')
   const entryName = (html.match(/<script[^>]+src="\/assets\/([^"]+\.js)"/) || [])[1]
   assert.ok(entryName, 'index.html must load an entry chunk')
   assert.ok(files.includes(entryName), `index.html loads ${entryName}, which is not in the build`)
@@ -473,6 +486,25 @@ if (!existsSync(DIST)) {
       + ` ${[contentChunk, ...arcChunks].join(', ')} on demand`)
     ok()
   }
+}
+
+/* ---- closed levels' English arrives with their content (P2) ---- */
+{
+  const { translate } = await import('../src/i18n/translations.js')
+  const { loadEpisodeContent } = await import('../src/learning/curriculum/episodeContent.js')
+  const firstB1 = EPISODE_SKELETON.find(ep => ep.level === 'B1')
+  const key = firstB1.titleKey
+  // Not in the first chunk: before the level's content, the key is unresolved…
+  assert.equal(translate('en', key), key, 'B1 copy is back in the base dictionary')
+  // …a learner still cannot open it — the product gate comes first, loading nothing…
+  await assert.rejects(loadEpisodeContent({ episodeId: firstB1.id }), /level_unavailable/)
+  assert.equal(translate('en', key), key, 'a refused request must not load anything')
+  // …and tooling that may open it gets its words with it.
+  await loadEpisodeContent({ episodeId: firstB1.id, forLearner: false })
+  assert.notEqual(translate('en', key), key, 'opening a B1 episode brings its English with it')
+  assert.notEqual(translate('en', 'ep1Title'), 'ep1Title', 'Pre-A1 copy never depended on it')
+  console.log(`  ${key} resolves only once its level's content loads ("${translate('en', key)}")`)
+  ok()
 }
 
 console.log(`\ncheck-curriculum-loading — OK  (${groups} loading groups verified)`)

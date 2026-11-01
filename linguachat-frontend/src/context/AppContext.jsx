@@ -40,6 +40,7 @@ import { loadChatAppearance, saveChatAppearance } from '../services/chatAppearan
 import {
   advanceMission,
   completeMission,
+  missionRewardId,
   createMissionCompleteMessage,
   createMissionFeedbackMessage,
   createMissionIntroMessage,
@@ -82,7 +83,7 @@ import { selectTopic, providerTopicContext } from '../learning/engine/topicSelec
 import { asSubjectValue } from '../learning/engine/semanticContext.js'
 import {
   loadSession, saveSession, getOrCreateSession, startSession,
-  advanceBlock, completeSession, isDurationMode, SESSION_KEY, normalizeSession,
+  advanceBlock, completeSession, isDurationMode, SESSION_KEY, normalizeSession, readStoredSessionRaw,
 } from '../learning/engine/session.js'
 
 const DURATION_PREF_KEY = 'lc2-session-duration'
@@ -392,7 +393,7 @@ export function AppProvider({ children }) {
       })
       subscription = registration?.data?.subscription || registration?.subscription || null
     } catch (error) {
-      setAuthProviderError(error?.message || 'Authentication is not configured.')
+      setAuthProviderError('auth_unavailable')
       setAuthStep('entry')
       return () => {}
     }
@@ -406,7 +407,7 @@ export function AppProvider({ children }) {
       })
       .catch((error) => {
         if (!alive) return
-        setAuthProviderError(authCallbackErrorRef.current || error?.message || 'Could not restore your session.')
+        setAuthProviderError(authCallbackErrorRef.current || 'session_restore_failed')
         if (authCallbackErrorRef.current) clearAuthCallback()
         setAuthStep('entry')
       })
@@ -972,7 +973,7 @@ export function AppProvider({ children }) {
       // changing the preference or publishing a replacement plan.
       let storedSession = null
       try {
-        const raw = access.getItem(SESSION_KEY)
+        const raw = readStoredSessionRaw(access)
         if (!access.valid()) return false
         if (raw !== null) {
           storedSession = normalizeSession(JSON.parse(raw), ARC)
@@ -998,7 +999,7 @@ export function AppProvider({ children }) {
       // has to match the session this tab is showing.
       let storedSession
       try {
-        const raw = access.getItem(SESSION_KEY)
+        const raw = readStoredSessionRaw(access)
         if (!access.valid() || raw === null) return false
         storedSession = normalizeSession(JSON.parse(raw), ARC)
       } catch { return false }
@@ -1035,7 +1036,7 @@ export function AppProvider({ children }) {
     // Starting from a stale React snapshot must not rewind its durable cursor.
     let storedSession = null
     try {
-      const raw = access.getItem(SESSION_KEY)
+      const raw = readStoredSessionRaw(access)
       if (!access.valid()) return false
       if (raw !== null) {
         storedSession = normalizeSession(JSON.parse(raw), ARC)
@@ -1089,7 +1090,7 @@ export function AppProvider({ children }) {
     // with the stale session captured by this render.
     let storedSession
     try {
-      const raw = access.getItem(SESSION_KEY)
+      const raw = readStoredSessionRaw(access)
       if (!access.valid() || raw === null) return false
       storedSession = normalizeSession(JSON.parse(raw), ARC)
     } catch { return false }
@@ -1119,7 +1120,7 @@ export function AppProvider({ children }) {
       if (dailySession.status !== 'active' || visibleBlock?.type !== 'session_completion') return false
       let storedSession
       try {
-        const raw = access.getItem(SESSION_KEY)
+        const raw = readStoredSessionRaw(access)
         if (!access.valid() || raw === null) return false
         storedSession = normalizeSession(JSON.parse(raw), ARC)
       } catch { return false }
@@ -1480,23 +1481,27 @@ export function AppProvider({ children }) {
       setCompletedMissions(previous => publication.valid() ? [completed, ...previous].slice(0, 50) : previous)
       setLocalProgress(previous => {
         if (!publication.valid()) return previous
+        // Stable ids: the same step or completion reported again (retry,
+        // second tab, stale cursor) is the same reward, paid once.
         const withStep = recordMissionProgress(previous, {
           mission: details.mission,
           step: details.step,
           earnedXp: advanced.earnedThisStep,
           completed: false,
+          eventId: missionRewardId(activeMission, `step:${details.step.id}`),
         })
         return recordMissionProgress(withStep, {
           mission: details.mission,
           step: details.step,
           earnedXp: Math.max(0, details.mission.rewardXp - completed.earnedXp),
           completed: true,
+          eventId: missionRewardId(activeMission, 'complete'),
         })
       })
       setMissionCelebration(previous => publication.valid() ? {
         title: details.mission.title,
         xp: details.mission.rewardXp,
-        message: 'Mision completada. Lingua guardo tu avance en este dispositivo.',
+        messageKey: 'missionSavedOnDevice',
       } : previous)
       setMissionFeedback(previous => publication.valid() ? {
         passed: evaluation.passed,
@@ -1537,6 +1542,7 @@ export function AppProvider({ children }) {
       step: details.step,
       earnedXp: advanced.earnedThisStep,
       completed: false,
+      eventId: missionRewardId(activeMission, `step:${details.step.id}`),
     }) : previous)
     setActiveMission(previous => publication.valid() ? advanced.activeMission : previous)
     setMissionFeedback(previous => publication.valid() ? {

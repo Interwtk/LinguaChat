@@ -4,6 +4,8 @@ import { useApp } from '../../context/AppContext'
 import { JourneyRail } from '../layout/JourneyRail'
 import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 import { teachingHistory } from '../../learning/engine/teachingPolicy.js'
+import { learnerSummary } from '../../learning/engine/learnerSummary.js'
+import { LearningSummaryCard } from './LearningSummaryCard'
 import { labelKeyOfLevel, playableLevelId } from '../../learning/curriculum/levels.js'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { getLanguageOption, languageFromInput, searchLanguages } from '../../services/language'
@@ -18,6 +20,7 @@ import {
   labelKeyFor,
   personalityName,
 } from '../../services/tutorPreferences'
+import { isSubmitEnter } from '../../services/keyboard.js'
 
 const MOOD_COLORS = [
   /*
@@ -195,6 +198,12 @@ export function LanguageIdentity() {
     return counts.map((count, index) => ({ week: index === 4 ? t('progressNow') : String(index - 4), count, score: (count / max) * 100 }))
   }, [t])
   const independentThisWeek = progressData[4].count
+  /*
+   * What the learner practises, can already do on their own, should review and
+   * what is not evaluated at all — from the same model the engine teaches from.
+   * Counts and plain words; no score is invented.
+   */
+  const summary = useMemo(() => learnerSummary(loadLearnerModel()), [])
   const hasEvidence = progressData.some(d => d.count > 0)
   const practicedTopics = hasLocalProgress && localProgress.topics.length
     ? localProgress.topics
@@ -285,7 +294,7 @@ export function LanguageIdentity() {
                   <input
                     value={nameInput}
                     onChange={e => setNameInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && saveName()}
+                    onKeyDown={e => isSubmitEnter(e, { allowShift: true }) && saveName()}
                     autoFocus
                     className="rounded-xl px-3 py-1.5 text-sm outline-none"
                     style={{ background: 'var(--surface-soft)', border: '1px solid var(--accent)', color: 'var(--ink)', fontFamily: 'inherit', fontWeight: 700, flex: 1 }}
@@ -550,6 +559,10 @@ export function LanguageIdentity() {
             </div>
           ))}
         </div>
+
+        {/* Your learning, from evidence */}
+        <LearningSummaryCard summary={summary} />
+
 
         {/* Confidence evolution */}
         <div className="rounded-2xl p-5 mb-5 animate-fade-up" style={{ animationDelay: '0.12s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
