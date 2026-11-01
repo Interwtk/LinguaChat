@@ -1,5 +1,5 @@
 import { readSetupCheckpoint, persistPlacementResult, SETUP_STEPS } from '../auth/setupCheckpoint.js'
-import { readVerifiedProfile } from '../auth/profileRestore.js'
+import { isQuotaError, restoreProfile } from '../auth/profileRestore.js'
 import { commitOnboarding } from '../auth/onboardingCommit.js'
 import { captureLearnerAccess, revokeLocalLease } from '../auth/localLease.js'
 import { learnerStorage as localStorage } from '../auth/localLease.js'
@@ -16,16 +16,23 @@ import {
   setNativeLanguage as persistNativeLanguage,
 } from '../services/language'
 import {
+  applyProgressEvent,
   clearStoredProgress,
+  commitProgressEvent,
   createEmptyProgress,
   createSessionId,
   getOrCreateSessionId,
   loadLocalProgress,
   loadStoredMessages,
+  mergeConversation,
+  mergeLocalProgress,
+  readStoredConversation,
+  readStoredProgress,
   recordPractice,
   recordMissionProgress,
   saveLocalProgress,
   saveStoredMessages,
+  startStoredConversation,
 } from '../services/localProgress'
 import { translate, loadLocale, isLocaleReady } from '../i18n/translations'
 import { loadChatAppearance, saveChatAppearance } from '../services/chatAppearance'
@@ -226,6 +233,8 @@ export function AppProvider({ children }) {
   const accountBoundRef = useRef(false)
   const profileRestoredRef = useRef(false)
   const [authProviderError, setAuthProviderError] = useState('')
+  // Set when sign-in recovered a damaged local profile into setup.
+  const [profileRecoveryNotice, setProfileRecoveryNotice] = useState(false)
   const [tutorPreferenceSaveFailed, setTutorPreferenceSaveFailed] = useState(false)
 
   const getAuthService = useCallback(() => {
@@ -254,6 +263,18 @@ export function AppProvider({ children }) {
       return
     }
     authCallbackErrorRef.current = null
+
+    // Local data this session cannot use safely: show the real cause and end
+    // the provider session, so a reload does not repeat the failure behind a
+    // signed-in session. The compensatory SIGNED_OUT must not erase the message.
+    const blockSignIn = code => {
+      clearAuthCallback()
+      authIsolationBlockedRef.current = true
+      setAuthProviderError(code)
+      setAuthUser(null)
+      setAuthStep('entry')
+      getAuthService().signOut().catch(() => {})
+    }
 
     if (event === 'PASSWORD_RECOVERY') rememberVerifiedRecovery(session.user.id)
 
@@ -290,21 +311,30 @@ export function AppProvider({ children }) {
         setLanguagePreferences(durable.languagePreferences)
       }
       preferenceImportBlockedRef.current = false
-    } catch {
+    } catch (error) {
       preferenceImportBlockedRef.current = true
-      setAuthProviderError('storage_full')
-      setAuthStep('entry')
+      // The import journal fails closed with its bytes intact. Say what
+      // actually happened, and end the provider session so a reload does not
+      // repeat the same failure behind a signed-in session.
+      blockSignIn(isQuotaError(error) ? 'storage_full' : 'local_data_unreadable')
       return
     }
 
     let restoredProfile = null
     if (!profileRestoredRef.current) {
-      try { restoredProfile = readVerifiedProfile(captureLearnerAccess()) }
-      catch {
-        setAuthProviderError('storage_full')
-        setAuthStep('entry')
+      // A damaged profile is recovered into setup (original bytes quarantined,
+      // progress untouched); storage problems are reported as what they are.
+      const restored = restoreProfile(captureLearnerAccess())
+      if (restored.status === 'stale') return
+      if (restored.status !== 'restored' && restored.status !== 'recovered') {
+        blockSignIn({ storage_full: 'storage_full', storage_unavailable: 'storage_unavailable' }[restored.status]
+          || 'local_data_unreadable')
         return
       }
+      restoredProfile = restored.profile
+      // Recovery closed onboarding, so the routing below reopens setup at the
+      // last valid checkpoint (or placement).
+      if (restored.status === 'recovered') setProfileRecoveryNotice(true)
       profileRestoredRef.current = true
     }
     const user = providerUser(session.user)
@@ -477,6 +507,25 @@ export function AppProvider({ children }) {
   useEffect(() => {
     saveLocalProgress(localProgress, { access: passiveStorageAccessRef.current })
   }, [localProgress])
+
+  // Another tab of the same account saved progress or chat: fold it into this
+  // tab's copy. The passive writers above then persist anything this tab holds
+  // that storage does not, so both tabs converge without losing either side.
+  // Reads go through the same captured lease, so a revoked tab hears nothing.
+  useEffect(() => {
+    const watched = ['lc2-local-progress', 'lc2-chat-messages', 'lc2-chat-epoch']
+    const onStorage = event => {
+      if (event.key !== null && !watched.some(key => event.key === key || event.key.endsWith(':' + key))) return
+      const access = passiveStorageAccessRef.current
+      if (!access.valid()) return
+      const progress = readStoredProgress({ access })
+      if (progress) setLocalProgress(previous => access.valid() ? mergeLocalProgress(previous, progress) : previous)
+      const conversation = readStoredConversation({ access })
+      if (conversation) setMessages(previous => access.valid() ? mergeConversation(previous, conversation) : previous)
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   // Mission starts, advances, completions and resets already persist under
   // their originating account lease before updating React. Replaying mission
@@ -1077,10 +1126,14 @@ export function AppProvider({ children }) {
       const { session, awarded } = completeSession(storedSession, model)
       if (!access.valid()) return false
       if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
+      // The bonus is durable before the session is marked complete: a failure
+      // after this point is retried, and the session's id makes the retry (or
+      // the same session finishing in another tab) pay exactly once.
+      const bonus = awarded ? { id: `session-bonus:${session.id}`, kind: 'xp', at: Date.now(), xp: SESSION_BONUS_XP } : null
+      if (bonus && (!commitProgressEvent(bonus, { access }) || !access.valid())) return false
       if (!saveSession(session, { access }) || !access.valid()) return false
       setDailySession(previous => access.valid() ? session : previous)
-      if (awarded) setLocalProgress(previous => access.valid()
-        ? { ...previous, xp: (previous.xp || 0) + SESSION_BONUS_XP } : previous)
+      if (bonus) setLocalProgress(previous => access.valid() ? applyProgressEvent(previous, bonus) : previous)
     }
     setSessionActive(previous => access.valid() ? false : previous)
     setEpisodeActiveId(previous => access.valid() ? null : previous)
@@ -1129,18 +1182,12 @@ export function AppProvider({ children }) {
     }
     if (!access.valid()) return false
     if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
-    setLocalProgress(previous => {
-      if (!access.valid()) return previous
-      const existing = new Set((previous.learnedItems || []).map(i => i.vocabId).filter(Boolean))
-      const additions = grants
-        .filter(grant => !existing.has(grant.vocabId))
-        .map(grant => ({ ...grant, lastSeenAt: Date.now() }))
-      return {
-        ...previous,
-        learnedItems: [...additions, ...(previous.learnedItems || [])],
-        xp: (previous.xp || 0) + (episode.xp || 0),
-      }
-    })
+    // XP and Garden words are durable before the episode may call itself
+    // awarded. The episode id makes a retry, or the same episode finishing in
+    // a second tab, pay once.
+    const award = { id: `episode-award:${episode.id}`, kind: 'award', at: Date.now(), xp: episode.xp || 0, grants }
+    if (!commitProgressEvent(award, { access }) || !access.valid()) return false
+    setLocalProgress(previous => access.valid() ? applyProgressEvent(previous, award) : previous)
     return access.valid()
   }, [])
 
@@ -1148,6 +1195,7 @@ export function AppProvider({ children }) {
     clearVerifiedRecovery()
     setAuthProviderError('')
     setTutorPreferenceSaveFailed(false)
+    setProfileRecoveryNotice(false)
     await getAuthService().signOut()
     applyProviderSession(null, 'SIGNED_OUT')
   }, [getAuthService, applyProviderSession])
@@ -1720,7 +1768,9 @@ export function AppProvider({ children }) {
     const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
     // Persist with the originating account lease BEFORE publishing an empty
     // chat. Otherwise denied storage resurrects the old conversation on reload.
-    if (!saveStoredMessages([welcome], { access }) || !access.valid()) return false
+    // Starting a new conversation (not just saving one message) is what stops
+    // another open tab from writing the old one back.
+    if (!startStoredConversation(welcome, { access }) || !access.valid()) return false
     ++chatGenerationRef.current
     chatInFlightRef.current = null
     setIsTyping(prev => access.valid() ? false : prev)
@@ -1735,14 +1785,15 @@ export function AppProvider({ children }) {
     const access = captureLearnerAccess()
     if (!access.valid() || !window.confirm(t('resetProgressConfirm')) || !access.valid()) return
     const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
-    const emptyProgress = createEmptyProgress()
+    // A new epoch: progress from before this moment no longer counts in any tab.
+    const emptyProgress = createEmptyProgress({ reset: true })
     // Destructive reset is not a best-effort UI action: every storage step
     // must be verified for the same account before React can display success.
     if (clearStoredProgress({ access }) === false || !access.valid()) return
     if (clearMissionStorage({ access }) === false || !access.valid()) return
     const nextSessionId = createSessionId({ access })
     if (!nextSessionId || !access.valid()) return
-    if (saveStoredMessages([welcome], { access }) === false || !access.valid()) return
+    if (startStoredConversation(welcome, { access }) === false || !access.valid()) return
     if (saveLocalProgress(emptyProgress, { access }) === false || !access.valid()) return
     ++missionGenerationRef.current
     ++chatGenerationRef.current
@@ -1773,6 +1824,7 @@ export function AppProvider({ children }) {
       updateNativeLanguage,
       t,
       authUser, authProviderError,
+      profileRecoveryNotice, dismissProfileRecoveryNotice: () => setProfileRecoveryNotice(false),
       login, signup, requestPasswordReset, resendConfirmation, changePassword,
       completePlacement, completeTutorPersonality, completeLearningPrefs,
       completePersonalization, applyRecommendedSetup,

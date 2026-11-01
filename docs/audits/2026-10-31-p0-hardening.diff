@@ -1,0 +1,2327 @@
+--- a/linguachat-frontend/package.json
++++ b/linguachat-frontend/package.json
+@@ -52,7 +52,7 @@
+     "check:a1-arc6-arc7-journeys": "node scripts/foundry/a1/check-a1-arc6-arc7-journeys.mjs",
+     "check:a1-arc6-arc7-structure": "node scripts/foundry/a1/check-a1-arc6-arc7-structure.mjs",
+     "build:skeleton": "node scripts/build-curriculum-skeleton.mjs",
+-    "check:all": "node scripts/check-i18n.mjs && node scripts/check-i18n-lint.mjs && node scripts/check-learning-content.mjs && node scripts/check-episodes.mjs && node scripts/check-learner-model.mjs && node scripts/check-arc-e2e.mjs && node scripts/check-edge-cases.mjs && node scripts/check-hybrid-evaluation.mjs && node scripts/check-episode-recovery.mjs && node scripts/check-visual-structure.mjs && node scripts/check-visual-identity.mjs && node scripts/check-daily-session.mjs && node scripts/check-second-arc.mjs && node scripts/check-session-recovery.mjs && node scripts/check-third-arc.mjs && node scripts/check-third-arc-e2e.mjs && node scripts/check-activity-signals.mjs && node scripts/check-preference-planning.mjs && node scripts/check-personalized-home.mjs && node scripts/check-episode-replay.mjs && node scripts/check-learner-facts.mjs && node scripts/check-session-surfaces.mjs && node scripts/check-memory-and-story.mjs && node scripts/check-locale-loading.mjs && node scripts/check-user-language.mjs && node scripts/check-language-detection.mjs && node scripts/check-language-support.mjs && node scripts/check-semantic-context.mjs && node scripts/check-fourth-arc.mjs && node scripts/check-curriculum-map.mjs && node scripts/check-cross-level-ids.mjs && node scripts/check-adaptive-scaffolding.mjs && node scripts/check-learning-states.mjs && node scripts/check-fifth-arc.mjs && node scripts/check-repair-evaluation.mjs && node scripts/check-fifth-arc-flow.mjs && node scripts/check-semantic-slots.mjs && node scripts/check-sixth-arc.mjs && node scripts/check-things-and-quantity-evaluation.mjs && node scripts/check-pre-a1-readiness.mjs && node scripts/check-pre-a1-journeys.mjs && node scripts/check-graduation.mjs && node scripts/check-target-range-evidence.mjs && node scripts/check-pre-a1-freeze.mjs && node scripts/check-a1-blueprint.mjs && node scripts/check-a1-arc1.mjs && node scripts/check-a1-arc2.mjs && node scripts/check-a1-arc3.mjs && node scripts/check-a1-arc4.mjs && node scripts/check-a1-arc5.mjs && node scripts/check-curriculum-authoring.mjs && node scripts/check-interest-personalization.mjs && node scripts/check-curriculum-loading.mjs && node scripts/check-autonomy-audit.mjs && node scripts/check-cloud-automation.mjs && node scripts/check-two-clean-cycles.mjs && node scripts/check-merge-blocker-gate.mjs && node scripts/check-continuous-automation.mjs && node scripts/check-placement-honesty.mjs && node scripts/check-pedagogical-journeys.mjs && node scripts/check-a1-longitudinal-journeys.mjs && node scripts/foundry/a1/check-a1-arc6-arc7-structure.mjs && node scripts/foundry/a1/check-a1-arc6-arc7-evaluators.mjs && node scripts/foundry/a1/check-a1-arc6-arc7-journeys.mjs && node scripts/check-bundle-boundaries.mjs && node scripts/check-auth-service.mjs && node src/auth/check-auth-ui-wiring.mjs && node src/auth/check-browser-data-isolation.mjs && node src/auth/check-lazy-provider.mjs && node scripts/check-cloud-preferences.mjs && node src/cloud/check-preference-import.mjs && node src/cloud/check-preference-sync.mjs && node src/cloud/check-preference-transport.mjs && node src/cloud/check-sync-runtime.mjs && node src/auth/check-local-lease.mjs && node src/auth/check-stale-tab-learner-model.mjs --secure && node src/auth/check-stale-tab-learner-model-read.mjs --secure && node src/auth/check-stale-tab-aba-progress-rollback.mjs --secure && node src/auth/check-stale-guest-model.mjs && node scripts/check-teaching-policy.mjs && node scripts/check-listening.mjs && node scripts/check-longitudinal-regressions.mjs && node scripts/check-setup-checkpoint.mjs && node scripts/check-failed-save-and-reconcile-learner-model.mjs",
++    "check:all": "node scripts/check-i18n.mjs && node scripts/check-i18n-lint.mjs && node scripts/check-learning-content.mjs && node scripts/check-episodes.mjs && node scripts/check-learner-model.mjs && node scripts/check-arc-e2e.mjs && node scripts/check-edge-cases.mjs && node scripts/check-hybrid-evaluation.mjs && node scripts/check-episode-recovery.mjs && node scripts/check-visual-structure.mjs && node scripts/check-visual-identity.mjs && node scripts/check-daily-session.mjs && node scripts/check-second-arc.mjs && node scripts/check-session-recovery.mjs && node scripts/check-third-arc.mjs && node scripts/check-third-arc-e2e.mjs && node scripts/check-activity-signals.mjs && node scripts/check-preference-planning.mjs && node scripts/check-personalized-home.mjs && node scripts/check-episode-replay.mjs && node scripts/check-learner-facts.mjs && node scripts/check-session-surfaces.mjs && node scripts/check-memory-and-story.mjs && node scripts/check-locale-loading.mjs && node scripts/check-user-language.mjs && node scripts/check-language-detection.mjs && node scripts/check-language-support.mjs && node scripts/check-semantic-context.mjs && node scripts/check-fourth-arc.mjs && node scripts/check-curriculum-map.mjs && node scripts/check-cross-level-ids.mjs && node scripts/check-adaptive-scaffolding.mjs && node scripts/check-learning-states.mjs && node scripts/check-fifth-arc.mjs && node scripts/check-repair-evaluation.mjs && node scripts/check-fifth-arc-flow.mjs && node scripts/check-semantic-slots.mjs && node scripts/check-sixth-arc.mjs && node scripts/check-things-and-quantity-evaluation.mjs && node scripts/check-pre-a1-readiness.mjs && node scripts/check-pre-a1-journeys.mjs && node scripts/check-graduation.mjs && node scripts/check-target-range-evidence.mjs && node scripts/check-pre-a1-freeze.mjs && node scripts/check-a1-blueprint.mjs && node scripts/check-a1-arc1.mjs && node scripts/check-a1-arc2.mjs && node scripts/check-a1-arc3.mjs && node scripts/check-a1-arc4.mjs && node scripts/check-a1-arc5.mjs && node scripts/check-curriculum-authoring.mjs && node scripts/check-interest-personalization.mjs && node scripts/check-curriculum-loading.mjs && node scripts/check-autonomy-audit.mjs && node scripts/check-cloud-automation.mjs && node scripts/check-two-clean-cycles.mjs && node scripts/check-merge-blocker-gate.mjs && node scripts/check-continuous-automation.mjs && node scripts/check-placement-honesty.mjs && node scripts/check-pedagogical-journeys.mjs && node scripts/check-a1-longitudinal-journeys.mjs && node scripts/foundry/a1/check-a1-arc6-arc7-structure.mjs && node scripts/foundry/a1/check-a1-arc6-arc7-evaluators.mjs && node scripts/foundry/a1/check-a1-arc6-arc7-journeys.mjs && node scripts/check-bundle-boundaries.mjs && node scripts/check-auth-service.mjs && node src/auth/check-auth-ui-wiring.mjs && node src/auth/check-browser-data-isolation.mjs && node src/auth/check-lazy-provider.mjs && node scripts/check-cloud-preferences.mjs && node src/cloud/check-preference-import.mjs && node src/cloud/check-preference-sync.mjs && node src/cloud/check-preference-transport.mjs && node src/cloud/check-sync-runtime.mjs && node src/auth/check-local-lease.mjs && node src/auth/check-stale-tab-learner-model.mjs --secure && node src/auth/check-stale-tab-learner-model-read.mjs --secure && node src/auth/check-stale-tab-aba-progress-rollback.mjs --secure && node src/auth/check-stale-guest-model.mjs && node scripts/check-teaching-policy.mjs && node scripts/check-listening.mjs && node scripts/check-longitudinal-regressions.mjs && node scripts/check-setup-checkpoint.mjs && node scripts/check-failed-save-and-reconcile-learner-model.mjs && node scripts/check-same-account-tabs.mjs && node scripts/check-profile-recovery.mjs",
+     "check:episode-replay": "node scripts/check-episode-replay.mjs",
+     "check:learner-facts": "node scripts/check-learner-facts.mjs",
+     "check:session-surfaces": "node scripts/check-session-surfaces.mjs",
+@@ -77,6 +77,8 @@
+     "check:auth-ui": "node scripts/check-auth-service.mjs && node src/auth/check-auth-ui-wiring.mjs && node src/auth/check-browser-data-isolation.mjs",
+     "check:cloud-preferences": "node scripts/check-cloud-preferences.mjs && node src/cloud/check-preference-import.mjs && node src/cloud/check-preference-sync.mjs && node src/cloud/check-preference-transport.mjs && node src/cloud/check-sync-runtime.mjs",
+     "check:isolation": "node src/auth/check-local-lease.mjs && node src/auth/check-stale-tab-learner-model.mjs --secure && node src/auth/check-stale-tab-learner-model-read.mjs --secure && node src/auth/check-stale-tab-aba-progress-rollback.mjs --secure && node src/auth/check-stale-guest-model.mjs",
++    "check:same-account-tabs": "node scripts/check-same-account-tabs.mjs",
++    "check:profile-recovery": "node scripts/check-profile-recovery.mjs",
+     "check:teaching": "node scripts/check-teaching-policy.mjs",
+     "check:listening": "node scripts/check-listening.mjs",
+     "check:longitudinal-regressions": "node scripts/check-longitudinal-regressions.mjs",
+--- a/linguachat-frontend/scripts/check-session-surfaces.mjs
++++ b/linguachat-frontend/scripts/check-session-surfaces.mjs
+@@ -14,6 +14,7 @@
+ import { dirname, resolve as resolvePath } from 'node:path'
+ import { selectRepresentativeFormat, BLOCK_CANDIDATES, formatSupportsObjective } from '../src/learning/engine/formatChoice.js'
+ import { ACTIVITY_FORMATS } from '../src/learning/engine/learnerModel.js'
++import { applyProgressEvent, mergeIntoStoredProgress, serializeStoredProgress } from '../src/services/localProgress.js'
+ 
+ const here = dirname(fileURLToPath(import.meta.url))
+ const read = (p) => readFileSync(resolvePath(here, '..', p), 'utf8')
+@@ -248,9 +249,10 @@
+   const finish = new Function('deps', 'with (deps) { return (() => {' + match[1] + '\n})() }')
+   for (const mode of [
+     'double-click', 'already-awarded', 'missing', 'denied', 'invalid-json',
+-    'revoked-after-read', 'different-session', 'rejected-write',
++    'revoked-after-read', 'different-session', 'rejected-write', 'rejected-bonus',
+   ]) {
+     let valid = true
++    const committed = []
+     let stored = {
+       id: '2026-10-30:standard', version: 1, status: 'active',
+       awarded: mode === 'already-awarded', dayKey: '2026-10-30',
+@@ -294,6 +296,13 @@
+       setEpisodeArcVersion: () => {},
+       setView: () => {},
+       SESSION_BONUS_XP: 15,
++      // The bonus is a durable, identified progress event (P0-1).
++      commitProgressEvent: event => {
++        if (mode === 'rejected-bonus') return false
++        committed.push(event.id)
++        return true
++      },
++      applyProgressEvent,
+     }
+     const first = finish(deps)
+     const second = finish(deps)
+@@ -302,6 +311,7 @@
+       assert.equal(second, false, 'stale second click must not finish an already completed cursor')
+       assert.equal(xp, 15, 'two completions before React flush must award once')
+       assert.equal(writes, 1)
++      assert.deepEqual(committed, ['session-bonus:2026-10-30:standard'], 'the bonus is committed once, by session id')
+     } else if (mode === 'already-awarded') {
+       assert.equal(first, true)
+       assert.equal(second, false, 'completed cursor cannot be replayed by a stale click')
+@@ -1138,7 +1148,9 @@
+       createWelcomeMessage: language => ({ role: 'lingua', text: 'Welcome ' + language }),
+       // This older deferred-React regression supplies a successful durable
+       // writer; the new dedicated block below tests real read-back failures.
+-      saveStoredMessages: (_messages, { access }) => access.valid(),
++      // Clearing starts a new conversation (P0-1), so other tabs cannot
++      // write the old one back.
++      startStoredConversation: (_welcome, { access }) => access.valid(),
+       interfaceLanguageInfo: { base: 'es' },
+     }
+     updateProfile({ name: 'A profile', level: 'A1' }, deps)
+@@ -1233,9 +1245,11 @@
+         sessions++
+         return mode === 'rejected-session' ? null : 'A-new-session'
+       },
+-      saveStoredMessages: (messages, options) => {
++      // Reset starts a new conversation (P0-1): a stale tab cannot write the
++      // erased chat back.
++      startStoredConversation: (welcome, options) => {
+         assert.equal(options.access, access, 'welcome must be durably stored under the original lease')
+-        assert.equal(messages[0].text, 'Welcome es')
++        assert.equal(welcome.text, 'Welcome es')
+         chatWrites++
+         return mode !== 'rejected-chat'
+       },
+@@ -1357,6 +1371,9 @@
+       localStorage: { removeItem: () => { throw new Error('unscoped write') },
+         setItem: () => { throw new Error('unscoped write') } },
+       writeJSON: () => { throw new Error('unscoped write') },
++      // saveLocalProgress merges with what storage holds (P0-1). The real
++      // helpers run against the same scoped `access`, never unscoped storage.
++      mergeIntoStoredProgress, serializeStoredProgress,
+     }
+     const expected = mode === 'current'
+     assert.equal(clearProgress({ access }, deps), expected, mode + ': progress keys')
+@@ -1609,9 +1626,10 @@
+     'with (deps) { const { grants = [] } = options || {}; ' +
+     context.slice(start + signature.length, end) + ' }')
+ 
+-  for (const mode of ['current', 'stale-flush', 'denied', 'revoked-load', 'revoked-grant', 'revoked-save', 'rejected-model-save']) {
++  for (const mode of ['current', 'stale-flush', 'denied', 'revoked-load', 'revoked-grant', 'revoked-save', 'rejected-model-save', 'rejected-award', 'revoked-award']) {
+     let owner = mode === 'denied' ? 'B' : 'A'
+     let loads = 0, seen = 0, saves = 0
++    const committed = []
+     const queued = []
+     const model = { seen: [] }
+     const progress = mode === 'current'
+@@ -1637,8 +1655,17 @@
+         return mode !== 'rejected-model-save'
+       },
+       setLocalProgress: updater => queued.push(updater),
++      // XP and Garden words are a durable, identified event (P0-1).
++      commitProgressEvent: (event, options) => {
++        assert.equal(typeof options.access.valid, 'function', 'the award is written under a captured lease')
++        if (mode === 'revoked-award') owner = 'B'
++        if (mode === 'rejected-award') return false
++        committed.push(event.id)
++        return true
++      },
++      applyProgressEvent,
+     }
+-    const result = award({ xp: 5 }, {
++    const result = award({ id: 'first_greeting', xp: 5 }, {
+       grants: [{ vocabId: 'new-word' }, { vocabId: 'existing' }],
+     }, deps)
+     if (mode === 'stale-flush') owner = 'B'
+@@ -1654,6 +1681,7 @@
+       assert.equal(queued.length, 1)
+       assert.equal(progress.xp, 14)
+       assert.deepEqual(progress.learnedItems.map(item => item.vocabId), ['new-word', 'existing'])
++      assert.deepEqual(committed, ['episode-award:first_greeting'], 'the award is committed by episode id')
+     } else {
+       assert.deepEqual(progress, original, mode + ': stale episode must not award B')
+       assert.equal(queued.length, mode === 'stale-flush' ? 1 : 0)
+@@ -1698,7 +1726,9 @@
+     'revoked-save', 'stale-id', 'stale-day', 'stale-index', 'stale-block',
+     'stale-status', 'already-completed', 'wrong-visible-block',
+     'wrong-durable-type', 'missing', 'invalid-json', 'blocked-read', 'revoked-read',
++    'rejected-bonus', 'revoked-bonus',
+   ]) {
++    const bonuses = []
+     let owner = mode === 'denied' ? 'B' : 'A'
+     let loads = 0, completions = 0, modelSaves = 0, writes = 0, reads = 0
+     const visible = mode === 'wrong-visible-block'
+@@ -1770,6 +1800,17 @@
+       }),
+       setDailySession: queue('daily'),
+       setLocalProgress: queue('progress'),
++      // The bonus is committed as an identified event before the session is
++      // marked complete (P0-1); its own storage is exercised by
++      // check-same-account-tabs.mjs.
++      commitProgressEvent: (event, options) => {
++        assert.equal(options.access, access, 'the bonus is written under the original lease')
++        if (mode === 'revoked-bonus') owner = 'B'
++        if (mode === 'rejected-bonus') return false
++        bonuses.push(event.id)
++        return true
++      },
++      applyProgressEvent,
+       setSessionActive: queue('active'),
+       setEpisodeActiveId: queue('episode'),
+       setEpisodeArcVersion: queue('arc'),
+@@ -1794,6 +1835,7 @@
+       assert.equal(completions, 1)
+       assert.equal(modelSaves, 1)
+       assert.equal(queued.length, 6)
++      assert.deepEqual(bonuses, ['session-bonus:A-session'])
+     } else {
+       assert.equal(result, mode === 'stale-flush', mode + ': only a valid current completion may succeed')
+       assert.deepEqual(state, original, mode + ': stale completion cannot mutate B or an older cursor')
+@@ -2697,12 +2739,14 @@
+   assert.ok(start >= 0 && end > start, 'clearMessages must remain inspectable')
+   const clear = new Function('deps', 'with (deps) { ' +
+     context.slice(start + signature.length, end) + ' }')
+-  const saveStart = progress.indexOf('export function saveStoredMessages(messages, { access = null } = {}) {')
+-  const saveEnd = progress.indexOf('\n}\n\nexport function createEmptyProgress', saveStart)
++  // Clearing starts a new conversation (P0-1): an epoch, then the welcome.
++  const writerSignature = 'export function startStoredConversation(welcome, { access = null } = {}) {'
++  const saveStart = progress.indexOf(writerSignature)
++  const saveEnd = progress.indexOf('\n}\n', saveStart)
+   assert.ok(saveStart >= 0 && saveEnd > saveStart, 'durable chat writer must remain inspectable')
+-  const save = new Function('messages', 'options', 'deps', 'with (deps) { ' +
++  const save = new Function('welcome', 'options', 'deps', 'with (deps) { ' +
+     'const { access = null } = options || {}; ' +
+-    progress.slice(saveStart + 'export function saveStoredMessages(messages, { access = null } = {}) {'.length, saveEnd) + ' }')
++    progress.slice(saveStart + writerSignature.length, saveEnd) + ' }')
+ 
+   for (const mode of [
+     'current', 'stale-flush', 'denied', 'rejected-write', 'mismatched-read',
+@@ -2739,8 +2783,10 @@
+       chatGenerationRef, chatInFlightRef,
+       interfaceLanguageInfo: { base: 'es' },
+       createWelcomeMessage: () => ({ id: 'welcome-es' }),
+-      saveStoredMessages: (messages, options) => save(messages, options, {
+-        STORAGE_KEYS: { messages: 'chat' },
++      startStoredConversation: (welcome, options) => save(welcome, options, {
++        STORAGE_KEYS: { messages: 'chat', chatEpoch: 'chat-epoch' },
++        makeId: () => 'chat-epoch-1',
++        unscopedAccess: { valid() { throw new Error('Durable path bypassed') } },
+         writeJSON: () => { throw new Error('Durable path bypassed') },
+       }),
+       setMessages: update => queued.push(['messages', update]),
+@@ -2761,11 +2807,13 @@
+     if (mode === 'current') {
+       assert.deepEqual(state, { messages: [{ id: 'welcome-es' }], selected: null, typing: false })
+       assert.equal(stored.get('chat'), JSON.stringify([{ id: 'welcome-es' }]))
++      assert.equal(JSON.parse(stored.get('chat-epoch')).id, 'chat-epoch-1', 'the new conversation is marked')
+     } else {
+       assert.deepEqual(state, original, mode + ': no unsaved or foreign UI reset')
+     }
+     if (mode === 'denied') assert.equal(writes, 0)
+-    if (mode === 'stale-flush') assert.equal(writes, 1, 'A was saved, B UI stays untouched')
++    // Two writes: the conversation epoch, then the welcome message.
++    if (mode === 'stale-flush') assert.equal(writes, 2, 'A was saved, B UI stays untouched')
+   }
+   ok()
+ }
+--- a/linguachat-frontend/scripts/check-setup-checkpoint.mjs
++++ b/linguachat-frontend/scripts/check-setup-checkpoint.mjs
+@@ -207,7 +207,10 @@
+ ownValues.set('lc2-profile','{');assert.throws(()=>readVerifiedProfile(ownAccess))
+ ownValues.set('lc2-profile','[]');assert.throws(()=>readVerifiedProfile(ownAccess),/Invalid/)
+ assert.match(provider,/if \(!profileRestoredRef.current\)/,'token refresh must preserve unsaved in-memory profile edits after hydration')
+-assert.ok(provider.indexOf('if (isolation.switched || isolation.reloadRequired)') < provider.indexOf('readVerifiedProfile(captureLearnerAccess())'),'hydrate only after account activation/reload fencing')
++// Sign-in hydrates through restoreProfile (P0-2), which wraps readVerifiedProfile
++// with recovery. The ordering invariant is unchanged, and the call must exist.
++assert.ok(provider.includes('restoreProfile(captureLearnerAccess())'), 'sign-in hydrates the verified profile')
++assert.ok(provider.indexOf('if (isolation.switched || isolation.reloadRequired)') < provider.indexOf('restoreProfile(captureLearnerAccess())'),'hydrate only after account activation/reload fencing')
+ assert.match(setup,/<button\s+type="button"\s+aria-pressed=\{isSelected\}\s+key=\{p.id\}/)
+ // A successful marker is meaningful only if the complete profile was written
+ // and read back first. Inject storage failures without a browser dependency.
+--- a/linguachat-frontend/src/auth/profileRestore.js
++++ b/linguachat-frontend/src/auth/profileRestore.js
+@@ -1,4 +1,99 @@
+ import { isValidPlacementResult, readSetupCheckpoint } from './setupCheckpoint.js'
++import { quarantineValue } from '../services/storageQuarantine.js'
++
++const PROFILE_KEY = 'lc2-profile'
++const ONBOARDED_KEY = 'lc2-onboarded'
++
++export const isQuotaError = error => error?.name === 'QuotaExceededError' || error?.name === 'NS_ERROR_DOM_QUOTA_REACHED'
++  || error?.code === 22 || error?.code === 1014
++
++// The readable parts of a damaged profile, minus anything about level: a level
++// or placement that failed validation is never carried forward or guessed.
++function salvageProfile(raw) {
++  try {
++    const parsed = JSON.parse(raw)
++    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null
++    const { level: _level, placementResult: _placement, ...rest } = parsed
++    return rest
++  } catch {
++    return null
++  }
++}
++
++function writeVerified(access, key, value) {
++  if (!access.valid()) return false
++  const result = value === null ? access.removeItem(key) : access.setItem(key, value)
++  return result !== false && access.valid() && access.getItem(key) === value && access.valid()
++}
++
++/*
++ * Restore the signed-in learner's profile, recovering from a damaged one
++ * instead of locking them out. Never throws. Returns one of:
++ *
++ *   restored             the profile was valid
++ *   recovered            it was not; the original bytes were quarantined, the
++ *                        readable choices kept, and setup reopens at `step`
++ *                        (the last valid checkpoint, or placement). Progress,
++ *                        preferences and the learner model are not touched.
++ *   stale                the lease changed (logout, account switch): do nothing
++ *   storage_unavailable  the browser refused to read learner storage
++ *   storage_full         the browser is out of space; nothing was replaced
++ *   unrecoverable        the profile could not be repaired safely right now;
++ *                        nothing half-applied, original bytes kept when possible
++ */
++export function restoreProfile(access) {
++  try {
++    return { status: 'restored', profile: readVerifiedProfile(access) }
++  } catch (error) {
++    if (!access.valid()) return { status: 'stale' }
++    let raw
++    try {
++      raw = access.getItem(PROFILE_KEY)
++      access.getItem(ONBOARDED_KEY)
++    } catch {
++      return { status: 'storage_unavailable' }
++    }
++    if (!access.valid()) return { status: 'stale' }
++    return repairProfile(access, raw, error?.message || 'invalid')
++  }
++}
++
++function repairProfile(access, raw, reason) {
++  try {
++    // 1. Keep the exact original before anything replaces it.
++    if (raw !== null && !quarantineValue(access, PROFILE_KEY, raw, reason)) {
++      return access.valid() ? { status: probeQuota(access) ? 'storage_full' : 'unrecoverable' } : { status: 'stale' }
++    }
++    // 2. Close Home first: a crash between these writes must reopen setup, never
++    //    a completed app on top of an unverified profile.
++    if (!writeVerified(access, ONBOARDED_KEY, 'false')) return access.valid() ? { status: 'unrecoverable' } : { status: 'stale' }
++    const salvaged = raw === null ? null : salvageProfile(raw)
++    if (!writeVerified(access, PROFILE_KEY, salvaged ? JSON.stringify(salvaged) : null)) {
++      return access.valid() ? { status: 'unrecoverable' } : { status: 'stale' }
++    }
++    // 3. The strict reader must now accept what is stored.
++    const profile = readVerifiedProfile(access)
++    const { step, result } = readSetupCheckpoint(access)
++    if (!access.valid()) return { status: 'stale' }
++    return { status: 'recovered', profile, step: result ? step : 'placement' }
++  } catch (error) {
++    if (!access.valid()) return { status: 'stale' }
++    return { status: isQuotaError(error) ? 'storage_full' : 'unrecoverable' }
++  }
++}
++
++// quarantineValue reports failure without its cause. Ask once, without keeping
++// anything, whether a small write is refused for lack of space.
++function probeQuota(access) {
++  const key = 'lc2-quarantine:probe'
++  try {
++    access.setItem(key, 'x')
++    access.removeItem(key)
++    return false
++  } catch (error) {
++    return isQuotaError(error)
++  }
++}
+ 
+ // Read only after verified account activation, through its captured lease.
+ // A new tab's pre-auth React defaults are not the account's durable profile.
+--- a/linguachat-frontend/src/components/auth/AuthFlow.jsx
++++ b/linguachat-frontend/src/components/auth/AuthFlow.jsx
+@@ -107,7 +107,9 @@
+   const { setAuthStep, authProviderError, t } = useApp()
+   const providerErrorText = authProviderError === 'storage_full'
+     ? t('authStorageFull')
+-    : authProviderError === 'callback_error' ? t('authCallbackError') : authProviderError
++    : authProviderError === 'storage_unavailable' ? t('authStorageUnavailable')
++      : authProviderError === 'local_data_unreadable' ? t('authLocalDataUnreadable')
++        : authProviderError === 'callback_error' ? t('authCallbackError') : authProviderError
+   return (
+     <AuthShell>
+       <div className="flex flex-col items-center text-center animate-fade-up">
+--- a/linguachat-frontend/src/components/setup/SetupFlow.jsx
++++ b/linguachat-frontend/src/components/setup/SetupFlow.jsx
+@@ -26,6 +26,7 @@
+ } from '../../services/tutorPreferences'
+ 
+ function SetupShell({ children, step, totalSteps }) {
++  const { profileRecoveryNotice, dismissProfileRecoveryNotice, t } = useApp()
+   return (
+     <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+       <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
+@@ -47,6 +48,19 @@
+           <ThemeToggle compact />
+         </div>
+       </div>
++      {/* Sign-in recovered a damaged local profile into setup: say so once. */}
++      {profileRecoveryNotice && (
++        <div className="px-5 pt-4" style={{ maxWidth: 640, width: '100%', margin: '0 auto' }}>
++          <div role="status" className="rounded-2xl p-3 flex items-start gap-3"
++            style={{ color: 'var(--ink)', background: 'var(--info-soft)', border: '1px solid var(--info)', fontSize: '0.875rem', lineHeight: 1.5 }}>
++            <p style={{ flex: 1 }}>{t('profileRecoveredNotice')}</p>
++            <button type="button" onClick={dismissProfileRecoveryNotice}
++              className="font-bold" style={{ color: 'var(--ink)', fontSize: '0.8125rem' }}>
++              {t('close')}
++            </button>
++          </div>
++        </div>
++      )}
+       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+         {children}
+       </div>
+--- a/linguachat-frontend/src/context/AppContext.jsx
++++ b/linguachat-frontend/src/context/AppContext.jsx
+@@ -1,5 +1,5 @@
+ import { readSetupCheckpoint, persistPlacementResult, SETUP_STEPS } from '../auth/setupCheckpoint.js'
+-import { readVerifiedProfile } from '../auth/profileRestore.js'
++import { isQuotaError, restoreProfile } from '../auth/profileRestore.js'
+ import { commitOnboarding } from '../auth/onboardingCommit.js'
+ import { captureLearnerAccess, revokeLocalLease } from '../auth/localLease.js'
+ import { learnerStorage as localStorage } from '../auth/localLease.js'
+@@ -16,16 +16,23 @@
+   setNativeLanguage as persistNativeLanguage,
+ } from '../services/language'
+ import {
++  applyProgressEvent,
+   clearStoredProgress,
++  commitProgressEvent,
+   createEmptyProgress,
+   createSessionId,
+   getOrCreateSessionId,
+   loadLocalProgress,
+   loadStoredMessages,
++  mergeConversation,
++  mergeLocalProgress,
++  readStoredConversation,
++  readStoredProgress,
+   recordPractice,
+   recordMissionProgress,
+   saveLocalProgress,
+   saveStoredMessages,
++  startStoredConversation,
+ } from '../services/localProgress'
+ import { translate, loadLocale, isLocaleReady } from '../i18n/translations'
+ import { loadChatAppearance, saveChatAppearance } from '../services/chatAppearance'
+@@ -226,6 +233,8 @@
+   const accountBoundRef = useRef(false)
+   const profileRestoredRef = useRef(false)
+   const [authProviderError, setAuthProviderError] = useState('')
++  // Set when sign-in recovered a damaged local profile into setup.
++  const [profileRecoveryNotice, setProfileRecoveryNotice] = useState(false)
+   const [tutorPreferenceSaveFailed, setTutorPreferenceSaveFailed] = useState(false)
+ 
+   const getAuthService = useCallback(() => {
+@@ -255,6 +264,18 @@
+     }
+     authCallbackErrorRef.current = null
+ 
++    // Local data this session cannot use safely: show the real cause and end
++    // the provider session, so a reload does not repeat the failure behind a
++    // signed-in session. The compensatory SIGNED_OUT must not erase the message.
++    const blockSignIn = code => {
++      clearAuthCallback()
++      authIsolationBlockedRef.current = true
++      setAuthProviderError(code)
++      setAuthUser(null)
++      setAuthStep('entry')
++      getAuthService().signOut().catch(() => {})
++    }
++
+     if (event === 'PASSWORD_RECOVERY') rememberVerifiedRecovery(session.user.id)
+ 
+     const isolation = activateLocalAccount(globalThis.localStorage, session.user.id, { deferRebind: accountBoundRef.current })
+@@ -290,21 +311,30 @@
+         setLanguagePreferences(durable.languagePreferences)
+       }
+       preferenceImportBlockedRef.current = false
+-    } catch {
++    } catch (error) {
+       preferenceImportBlockedRef.current = true
+-      setAuthProviderError('storage_full')
+-      setAuthStep('entry')
++      // The import journal fails closed with its bytes intact. Say what
++      // actually happened, and end the provider session so a reload does not
++      // repeat the same failure behind a signed-in session.
++      blockSignIn(isQuotaError(error) ? 'storage_full' : 'local_data_unreadable')
+       return
+     }
+ 
+     let restoredProfile = null
+     if (!profileRestoredRef.current) {
+-      try { restoredProfile = readVerifiedProfile(captureLearnerAccess()) }
+-      catch {
+-        setAuthProviderError('storage_full')
+-        setAuthStep('entry')
++      // A damaged profile is recovered into setup (original bytes quarantined,
++      // progress untouched); storage problems are reported as what they are.
++      const restored = restoreProfile(captureLearnerAccess())
++      if (restored.status === 'stale') return
++      if (restored.status !== 'restored' && restored.status !== 'recovered') {
++        blockSignIn({ storage_full: 'storage_full', storage_unavailable: 'storage_unavailable' }[restored.status]
++          || 'local_data_unreadable')
+         return
+       }
++      restoredProfile = restored.profile
++      // Recovery closed onboarding, so the routing below reopens setup at the
++      // last valid checkpoint (or placement).
++      if (restored.status === 'recovered') setProfileRecoveryNotice(true)
+       profileRestoredRef.current = true
+     }
+     const user = providerUser(session.user)
+@@ -478,6 +508,25 @@
+     saveLocalProgress(localProgress, { access: passiveStorageAccessRef.current })
+   }, [localProgress])
+ 
++  // Another tab of the same account saved progress or chat: fold it into this
++  // tab's copy. The passive writers above then persist anything this tab holds
++  // that storage does not, so both tabs converge without losing either side.
++  // Reads go through the same captured lease, so a revoked tab hears nothing.
++  useEffect(() => {
++    const watched = ['lc2-local-progress', 'lc2-chat-messages', 'lc2-chat-epoch']
++    const onStorage = event => {
++      if (event.key !== null && !watched.some(key => event.key === key || event.key.endsWith(':' + key))) return
++      const access = passiveStorageAccessRef.current
++      if (!access.valid()) return
++      const progress = readStoredProgress({ access })
++      if (progress) setLocalProgress(previous => access.valid() ? mergeLocalProgress(previous, progress) : previous)
++      const conversation = readStoredConversation({ access })
++      if (conversation) setMessages(previous => access.valid() ? mergeConversation(previous, conversation) : previous)
++    }
++    window.addEventListener('storage', onStorage)
++    return () => window.removeEventListener('storage', onStorage)
++  }, [])
++
+   // Mission starts, advances, completions and resets already persist under
+   // their originating account lease before updating React. Replaying mission
+   // state in passive effects could resurrect a completed cursor or overwrite
+@@ -1077,10 +1126,14 @@
+       const { session, awarded } = completeSession(storedSession, model)
+       if (!access.valid()) return false
+       if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
++      // The bonus is durable before the session is marked complete: a failure
++      // after this point is retried, and the session's id makes the retry (or
++      // the same session finishing in another tab) pay exactly once.
++      const bonus = awarded ? { id: `session-bonus:${session.id}`, kind: 'xp', at: Date.now(), xp: SESSION_BONUS_XP } : null
++      if (bonus && (!commitProgressEvent(bonus, { access }) || !access.valid())) return false
+       if (!saveSession(session, { access }) || !access.valid()) return false
+       setDailySession(previous => access.valid() ? session : previous)
+-      if (awarded) setLocalProgress(previous => access.valid()
+-        ? { ...previous, xp: (previous.xp || 0) + SESSION_BONUS_XP } : previous)
++      if (bonus) setLocalProgress(previous => access.valid() ? applyProgressEvent(previous, bonus) : previous)
+     }
+     setSessionActive(previous => access.valid() ? false : previous)
+     setEpisodeActiveId(previous => access.valid() ? null : previous)
+@@ -1129,18 +1182,12 @@
+     }
+     if (!access.valid()) return false
+     if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
+-    setLocalProgress(previous => {
+-      if (!access.valid()) return previous
+-      const existing = new Set((previous.learnedItems || []).map(i => i.vocabId).filter(Boolean))
+-      const additions = grants
+-        .filter(grant => !existing.has(grant.vocabId))
+-        .map(grant => ({ ...grant, lastSeenAt: Date.now() }))
+-      return {
+-        ...previous,
+-        learnedItems: [...additions, ...(previous.learnedItems || [])],
+-        xp: (previous.xp || 0) + (episode.xp || 0),
+-      }
+-    })
++    // XP and Garden words are durable before the episode may call itself
++    // awarded. The episode id makes a retry, or the same episode finishing in
++    // a second tab, pay once.
++    const award = { id: `episode-award:${episode.id}`, kind: 'award', at: Date.now(), xp: episode.xp || 0, grants }
++    if (!commitProgressEvent(award, { access }) || !access.valid()) return false
++    setLocalProgress(previous => access.valid() ? applyProgressEvent(previous, award) : previous)
+     return access.valid()
+   }, [])
+ 
+@@ -1148,6 +1195,7 @@
+     clearVerifiedRecovery()
+     setAuthProviderError('')
+     setTutorPreferenceSaveFailed(false)
++    setProfileRecoveryNotice(false)
+     await getAuthService().signOut()
+     applyProviderSession(null, 'SIGNED_OUT')
+   }, [getAuthService, applyProviderSession])
+@@ -1720,7 +1768,9 @@
+     const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
+     // Persist with the originating account lease BEFORE publishing an empty
+     // chat. Otherwise denied storage resurrects the old conversation on reload.
+-    if (!saveStoredMessages([welcome], { access }) || !access.valid()) return false
++    // Starting a new conversation (not just saving one message) is what stops
++    // another open tab from writing the old one back.
++    if (!startStoredConversation(welcome, { access }) || !access.valid()) return false
+     ++chatGenerationRef.current
+     chatInFlightRef.current = null
+     setIsTyping(prev => access.valid() ? false : prev)
+@@ -1735,14 +1785,15 @@
+     const access = captureLearnerAccess()
+     if (!access.valid() || !window.confirm(t('resetProgressConfirm')) || !access.valid()) return
+     const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
+-    const emptyProgress = createEmptyProgress()
++    // A new epoch: progress from before this moment no longer counts in any tab.
++    const emptyProgress = createEmptyProgress({ reset: true })
+     // Destructive reset is not a best-effort UI action: every storage step
+     // must be verified for the same account before React can display success.
+     if (clearStoredProgress({ access }) === false || !access.valid()) return
+     if (clearMissionStorage({ access }) === false || !access.valid()) return
+     const nextSessionId = createSessionId({ access })
+     if (!nextSessionId || !access.valid()) return
+-    if (saveStoredMessages([welcome], { access }) === false || !access.valid()) return
++    if (startStoredConversation(welcome, { access }) === false || !access.valid()) return
+     if (saveLocalProgress(emptyProgress, { access }) === false || !access.valid()) return
+     ++missionGenerationRef.current
+     ++chatGenerationRef.current
+@@ -1773,6 +1824,7 @@
+       updateNativeLanguage,
+       t,
+       authUser, authProviderError,
++      profileRecoveryNotice, dismissProfileRecoveryNotice: () => setProfileRecoveryNotice(false),
+       login, signup, requestPasswordReset, resendConfirmation, changePassword,
+       completePlacement, completeTutorPersonality, completeLearningPrefs,
+       completePersonalization, applyRecommendedSetup,
+--- a/linguachat-frontend/src/i18n/locales/ar.js
++++ b/linguachat-frontend/src/i18n/locales/ar.js
+@@ -552,6 +552,9 @@
+   authGenericError: 'تعذر إكمال العملية. حاول مرة أخرى.',
+   authCallbackError: "رابط تسجيل الدخول غير صالح أو انتهت صلاحيته. سجّل الدخول أو اطلب رابطًا جديدًا.",
+   authStorageFull: 'مساحة تخزين المتصفح ممتلئة. حرّر مساحة لهذا الموقع ثم سجّل الدخول مرة أخرى.',
++  authStorageUnavailable: 'لا يسمح هذا المتصفح لـ LinguaChat بقراءة بياناته المحفوظة (مثلًا في نافذة خاصة أو عند حظر تخزين الموقع). اسمح بالتخزين لهذا الموقع، ثم سجّل الدخول مرة أخرى.',
++  authLocalDataUnreadable: 'تعذّرت قراءة بعض البيانات المحفوظة على هذا الجهاز بأمان. احتفظنا بها دون تغيير وسجّلنا خروجك لحمايتها. سجّل الدخول مرة أخرى.',
++  profileRecoveredNotice: 'تعذّرت قراءة الملف الشخصي المحفوظ على هذا الجهاز. احتفظنا بنسخة منه، ويستمر الإعداد من آخر خطوة صالحة. تقدّمك وكلماتك وتفضيلاتك في أمان.',
+   confirmEmailTitle: 'أكّد بريدك الإلكتروني',
+   confirmEmailText: 'أرسلنا رابط تأكيد إلى {email}. افتحه لتفعيل حسابك.',
+   resendConfirmation: 'إعادة إرسال رسالة التأكيد',
+--- a/linguachat-frontend/src/i18n/locales/de.js
++++ b/linguachat-frontend/src/i18n/locales/de.js
+@@ -548,6 +548,9 @@
+   authGenericError: 'Das konnte nicht abgeschlossen werden. Bitte versuche es erneut.',
+   authCallbackError: "Dieser Anmeldelink ist ungültig oder abgelaufen. Melde dich an oder fordere einen neuen Link an.",
+   authStorageFull: 'Der Browserspeicher ist voll. Gib Speicher für diese Website frei und melde dich erneut an.',
++  authStorageUnavailable: 'Dieser Browser erlaubt LinguaChat nicht, gespeicherte Daten zu lesen (zum Beispiel in einem privaten Fenster oder wenn der Website-Speicher blockiert ist). Erlaube den Speicher für diese Website und melde dich erneut an.',
++  authLocalDataUnreadable: 'Einige auf diesem Gerät gespeicherte Daten konnten nicht sicher gelesen werden. Sie wurden unverändert aufbewahrt, und wir haben dich zu ihrem Schutz abgemeldet. Melde dich erneut an.',
++  profileRecoveredNotice: 'Wir konnten das auf diesem Gerät gespeicherte Profil nicht lesen. Eine Kopie wurde aufbewahrt, und die Einrichtung geht bei deinem letzten gültigen Schritt weiter. Dein Fortschritt, deine Wörter und deine Einstellungen sind sicher.',
+   confirmEmailTitle: 'Bestätige deine E-Mail-Adresse',
+   confirmEmailText: 'Wir haben einen Bestätigungslink an {email} gesendet. Öffne ihn, um dein Konto zu aktivieren.',
+   resendConfirmation: 'Bestätigungs-E-Mail erneut senden',
+--- a/linguachat-frontend/src/i18n/locales/es.js
++++ b/linguachat-frontend/src/i18n/locales/es.js
+@@ -617,6 +617,9 @@
+   authGenericError: 'No pudimos completar eso. Inténtalo de nuevo.',
+   authCallbackError: "El enlace de acceso no es válido o venció. Inicia sesión o solicita otro enlace.",
+   authStorageFull: 'El almacenamiento del navegador está lleno. Libera espacio de este sitio y vuelve a iniciar sesión.',
++  authStorageUnavailable: 'Este navegador no permite que LinguaChat lea sus datos guardados (por ejemplo, en una ventana privada o con el almacenamiento del sitio bloqueado). Permite el almacenamiento para este sitio y vuelve a iniciar sesión.',
++  authLocalDataUnreadable: 'Algunos datos guardados en este dispositivo no se pudieron leer de forma segura. Se conservaron sin cambios y cerramos tu sesión para protegerlos. Vuelve a iniciar sesión.',
++  profileRecoveredNotice: 'No pudimos leer el perfil guardado en este dispositivo. Guardamos una copia y la configuración continúa desde tu último paso válido. Tu progreso, tus palabras y tus preferencias están a salvo.',
+   confirmEmailTitle: 'Confirma tu correo',
+   confirmEmailText: 'Te enviamos un enlace a {email}. Ábrelo para activar tu cuenta.',
+   resendConfirmation: 'Reenviar correo de confirmación',
+--- a/linguachat-frontend/src/i18n/locales/fr.js
++++ b/linguachat-frontend/src/i18n/locales/fr.js
+@@ -548,6 +548,9 @@
+   authGenericError: "Impossible de terminer l’opération. Réessayez.",
+   authCallbackError: "Ce lien de connexion est invalide ou a expiré. Connectez-vous ou demandez un nouveau lien.",
+   authStorageFull: "Le stockage du navigateur est plein. Libérez de l’espace pour ce site, puis reconnectez-vous.",
++  authStorageUnavailable: 'Ce navigateur n’autorise pas LinguaChat à lire ses données enregistrées (par exemple en navigation privée ou si le stockage du site est bloqué). Autorisez le stockage pour ce site, puis reconnectez-vous.',
++  authLocalDataUnreadable: 'Certaines données enregistrées sur cet appareil n’ont pas pu être lues en toute sécurité. Elles ont été conservées telles quelles et vous avez été déconnecté pour les protéger. Reconnectez-vous.',
++  profileRecoveredNotice: 'Nous n’avons pas pu lire le profil enregistré sur cet appareil. Une copie a été conservée et la configuration reprend à votre dernière étape valide. Vos progrès, vos mots et vos préférences sont préservés.',
+   confirmEmailTitle: 'Confirmez votre e-mail',
+   confirmEmailText: 'Nous avons envoyé un lien de confirmation à {email}. Ouvrez-le pour activer votre compte.',
+   resendConfirmation: 'Renvoyer l’e-mail de confirmation',
+--- a/linguachat-frontend/src/i18n/locales/it.js
++++ b/linguachat-frontend/src/i18n/locales/it.js
+@@ -548,6 +548,9 @@
+   authGenericError: 'Non siamo riusciti a completare l’operazione. Riprova.',
+   authCallbackError: "Questo link di accesso non è valido o è scaduto. Accedi o richiedi un nuovo link.",
+   authStorageFull: 'Lo spazio del browser è pieno. Libera spazio per questo sito e accedi di nuovo.',
++  authStorageUnavailable: 'Questo browser non consente a LinguaChat di leggere i dati salvati (ad esempio in una finestra privata o con l’archiviazione del sito bloccata). Consenti l’archiviazione per questo sito e accedi di nuovo.',
++  authLocalDataUnreadable: 'Non è stato possibile leggere in modo sicuro alcuni dati salvati su questo dispositivo. Li abbiamo conservati senza modifiche e abbiamo chiuso la sessione per proteggerli. Accedi di nuovo.',
++  profileRecoveredNotice: 'Non siamo riusciti a leggere il profilo salvato su questo dispositivo. Ne abbiamo conservato una copia e la configurazione riprende dal tuo ultimo passaggio valido. I tuoi progressi, le tue parole e le tue preferenze sono al sicuro.',
+   confirmEmailTitle: 'Conferma la tua email',
+   confirmEmailText: 'Abbiamo inviato un link di conferma a {email}. Aprilo per attivare il tuo account.',
+   resendConfirmation: 'Invia di nuovo l’email di conferma',
+--- a/linguachat-frontend/src/i18n/locales/ja.js
++++ b/linguachat-frontend/src/i18n/locales/ja.js
+@@ -547,6 +547,9 @@
+   authGenericError: '処理を完了できませんでした。もう一度お試しください。',
+   authCallbackError: "ログインリンクが無効か期限切れです。ログインするか、新しいリンクをリクエストしてください。",
+   authStorageFull: 'ブラウザの保存領域がいっぱいです。このサイトの保存領域を空けてから、もう一度ログインしてください。',
++  authStorageUnavailable: 'このブラウザでは、LinguaChat が保存データを読み込めません（プライベートウィンドウや、サイトの保存領域がブロックされている場合など）。このサイトの保存を許可してから、もう一度ログインしてください。',
++  authLocalDataUnreadable: 'この端末に保存されている一部のデータを安全に読み込めませんでした。データは変更せずに保管し、保護のためにログアウトしました。もう一度ログインしてください。',
++  profileRecoveredNotice: 'この端末に保存されているプロフィールを読み込めませんでした。コピーを保管し、最後の有効なステップから設定を再開します。学習の進み具合、単語、設定はそのまま残っています。',
+   confirmEmailTitle: 'メールアドレスを確認',
+   confirmEmailText: '{email} に確認リンクを送信しました。リンクを開いてアカウントを有効化してください。',
+   resendConfirmation: '確認メールを再送信',
+--- a/linguachat-frontend/src/i18n/locales/pt.js
++++ b/linguachat-frontend/src/i18n/locales/pt.js
+@@ -548,6 +548,9 @@
+   authGenericError: 'Não foi possível concluir. Tente novamente.',
+   authCallbackError: "Este link de acesso é inválido ou expirou. Entre novamente ou solicite outro link.",
+   authStorageFull: 'O armazenamento do navegador está cheio. Libere espaço deste site e entre novamente.',
++  authStorageUnavailable: 'Este navegador não permite que o LinguaChat leia os dados salvos (por exemplo, numa janela privada ou com o armazenamento do site bloqueado). Permita o armazenamento para este site e entre novamente.',
++  authLocalDataUnreadable: 'Alguns dados salvos neste dispositivo não puderam ser lidos com segurança. Eles foram mantidos sem alterações e encerramos sua sessão para protegê-los. Entre novamente.',
++  profileRecoveredNotice: 'Não conseguimos ler o perfil salvo neste dispositivo. Guardamos uma cópia e a configuração continua a partir do seu último passo válido. Seu progresso, suas palavras e suas preferências estão seguros.',
+   confirmEmailTitle: 'Confirme seu e-mail',
+   confirmEmailText: 'Enviamos um link de confirmação para {email}. Abra-o para ativar sua conta.',
+   resendConfirmation: 'Reenviar e-mail de confirmação',
+--- a/linguachat-frontend/src/i18n/translations.js
++++ b/linguachat-frontend/src/i18n/translations.js
+@@ -1226,6 +1226,9 @@
+   authGenericError: 'We could not complete that. Please try again.',
+   authCallbackError: "This sign-in link is invalid or expired. Sign in again or request a new link.",
+   authStorageFull: 'Browser storage is full. Free some storage for this site, then sign in again.',
++  authStorageUnavailable: 'This browser is not letting LinguaChat read its saved data (for example in a private window or with site storage blocked). Allow storage for this site, then sign in again.',
++  authLocalDataUnreadable: 'Some data saved on this device could not be read safely. It was kept unchanged and you were signed out to protect it. Please sign in again.',
++  profileRecoveredNotice: 'We could not read the profile saved on this device. A copy has been kept, and setup continues from your last valid step. Your progress, words and preferences are safe.',
+   confirmEmailTitle: 'Confirm your email',
+   confirmEmailText: 'We sent a confirmation link to {email}. Open it to activate your account.',
+   resendConfirmation: 'Resend confirmation email',
+--- a/linguachat-frontend/src/services/localProgress.js
++++ b/linguachat-frontend/src/services/localProgress.js
+@@ -1,46 +1,32 @@
+ import { learnerStorage as localStorage } from '../auth/localLease.js'
++import {
++  addEvent, applyToSnapshot, compactLedger, createLedger, deriveSnapshot, emptySnapshot,
++  ledgerFromLegacy, ledgerFromStored, makeEventId, mergeLedgers, missionEvent, practiceEvent,
++  PROGRESS_VERSION, sameLedger, serializeLedger, snapshotFrom,
++} from './progressLedger.js'
++import { quarantineValue } from './storageQuarantine.js'
++
+ const STORAGE_KEYS = {
+   sessionId: 'lc2-session-id',
+   messages: 'lc2-chat-messages',
+   progress: 'lc2-local-progress',
+-}
+-
+-const EMPTY_PROGRESS = {
+-  version: 1,
+-  startedAt: null,
+-  lastPracticeDate: null,
+-  streak: 0,
+-  messagesSent: 0,
+-  correctionsReceived: 0,
+-  xp: 0,
+-  confidence: 45,
+-  topics: [],
+-  learnedItems: [],
+-  sessions: [],
+-  missionsCompleted: 0,
+-}
+-
+-const TOPIC_RULES = [
+-  ['travel', /\b(travel|trip|city|country|flight|hotel|train)\b/i],
+-  ['work', /\b(work|job|interview|office|career)\b/i],
+-  ['food', /\b(food|eat|restaurant|cook|meal)\b/i],
+-  ['hobbies', /\b(game|music|sport|movie|hobby|play)\b/i],
+-  ['feelings', /\b(feel|happy|sad|nervous|excited|tired)\b/i],
+-]
+-
+-function readJSON(key, fallback) {
+-  try {
+-    const raw = localStorage.getItem(key)
+-    return raw ? JSON.parse(raw) : fallback
+-  } catch {
+-    return fallback
+-  }
+-}
+-
+-function writeJSON(key, value) {
+-  try {
+-    localStorage.setItem(key, JSON.stringify(value))
+-  } catch {}
++  // When the visible conversation last started over (clear chat or reset).
++  // Messages older than this belong to an erased conversation.
++  chatEpoch: 'lc2-chat-epoch',
++}
++
++/*
++ * Local progress is a ledger of identified events (see progressLedger.js) so
++ * that two tabs of the same account can both save without erasing each other.
++ * The object the app holds is the totals it always read (xp, streak, topics,
++ * ...) plus `ledger`, the record those totals were folded from.
++ */
++
++// The access the learner's own tab would capture, for the few unscoped callers.
++const unscopedAccess = {
++  valid: () => true,
++  getItem: key => localStorage.getItem(key),
++  setItem: (key, value) => { localStorage.setItem(key, value); return true },
+ }
+ 
+ function makeId(prefix = 'session') {
+@@ -48,100 +34,113 @@
+   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+ }
+ 
+-function dateKey(date = new Date()) {
+-  const year = date.getFullYear()
+-  const month = String(date.getMonth() + 1).padStart(2, '0')
+-  const day = String(date.getDate()).padStart(2, '0')
+-  return `${year}-${month}-${day}`
++function progressFromLedger(ledger) {
++  return {
++    ...deriveSnapshot(ledger),
++    version: PROGRESS_VERSION,
++    startedAt: ledger.base.startedAt,
++    ledger,
++  }
+ }
+ 
+-function dayDifference(from, to) {
+-  if (!from || !to) return null
+-  const start = new Date(`${from}T00:00:00`)
+-  const end = new Date(`${to}T00:00:00`)
+-  return Math.round((end - start) / 86400000)
++// The ledger behind an in-memory progress object. An object without one (an
++// older in-memory copy, or a test fixture) starts a ledger from its totals.
++function ledgerOf(progress) {
++  return progress?.ledger || ledgerFromLegacy(progress || {})
+ }
+ 
+-function unique(values) {
+-  return [...new Set(values.filter(Boolean))]
++function parseStoredProgress(raw) {
++  if (raw === null || raw === undefined) return { ledger: null, unreadable: false }
++  try {
++    const ledger = ledgerFromStored(JSON.parse(raw))
++    return ledger ? { ledger, unreadable: false } : { ledger: null, unreadable: true }
++  } catch {
++    return { ledger: null, unreadable: true }
++  }
+ }
+ 
+-function inferTopics(message, response) {
+-  const topics = TOPIC_RULES
+-    .filter(([, pattern]) => pattern.test(message))
+-    .map(([topic]) => topic)
++/*
++ * The ledger to write: what storage already holds merged with this copy, then
++ * compacted. Unreadable stored bytes are copied to quarantine first; if that
++ * copy fails this throws, so nothing replaces the only copy of the data.
++ */
++export function mergeIntoStoredProgress(access, progress, now = Date.now()) {
++  const raw = access.getItem(STORAGE_KEYS.progress)
++  const stored = parseStoredProgress(raw)
++  if (stored.unreadable && !quarantineValue(access, STORAGE_KEYS.progress, raw)) {
++    throw new Error('Unreadable progress could not be preserved')
++  }
++  const mine = progress ? ledgerOf(progress) : null
++  return compactLedger(mergeLedgers(stored.ledger, mine) || createLedger(), now)
++}
+ 
+-  if (response.mode === 'translation') topics.push('translation')
+-  if (response.correction) topics.push('grammar')
+-  if (!topics.length) topics.push('conversation')
+-  return unique(topics)
++export function serializeStoredProgress(ledger) {
++  return JSON.stringify(serializeLedger(ledger))
+ }
+ 
+-function learnedCandidate(response) {
+-  if (response.correction) {
+-    return { phrase: response.correction, kind: 'correction', mastery: 0.55, marker: 'Fix' }
+-  }
+-  if (response.mode === 'translation') {
+-    return { phrase: response.reply.split('(')[0].trim(), kind: 'translation', mastery: 0.45, marker: 'Aa' }
++function conversationEpochAt(raw) {
++  try {
++    const epoch = raw ? JSON.parse(raw) : null
++    return Number.isFinite(epoch?.at) ? epoch.at : 0
++  } catch {
++    return 0
+   }
+-  // Suggestions and action prompts are teaching instructions, not typed
+-  // vocabulary. Do not manufacture learned items from these arbitrary fields.
+-  return null
+ }
+ 
+-function updateLearnedItems(items, response) {
+-  const candidate = learnedCandidate(response)
+-  if (!candidate?.phrase || candidate.phrase.length > 100) return items
+-
+-  const id = candidate.phrase.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+-  if (!id) return items
++const messageKey = message => JSON.stringify([message?.id ?? null, message?.ts ?? null, message?.role ?? null, message?.text ?? null])
+ 
+-  const now = Date.now()
+-  const existing = items.find(item => item.id === id)
+-  const nextItem = existing
+-    ? {
+-        ...existing,
+-        mastery: Math.min(0.95, existing.mastery + 0.08),
+-        seen: (existing.seen || 1) + 1,
+-        lastSeenAt: now,
+-        example: response.suggestion || response.reply,
+-      }
+-    : {
+-        id,
+-        word: candidate.phrase,
+-        trans: candidate.kind,
+-        mastery: candidate.mastery,
+-        emoji: candidate.marker,
+-        example: response.suggestion || response.reply,
+-        addedAt: now,
+-        lastSeenAt: now,
+-        seen: 1,
+-      }
+-
+-  return [nextItem, ...items.filter(item => item.id !== id)].slice(0, 40)
+-}
+-
+-function updateSessions(sessions, userMessage, response, topics, confidence) {
+-  const today = dateKey()
+-  const existing = sessions.find(session => session.id === today)
+-  const correction = response.correction
+-    ? `${userMessage} -> ${response.correction}`
+-    : existing?.correction || null
+-
+-  const updated = {
+-    id: today,
+-    date: today,
+-    topic: topics[0]?.replace(/^./, letter => letter.toUpperCase()) || 'Conversation',
+-    mood: 'LC',
+-    moodLabel: 'Practicing',
+-    confidence: Math.max(5, Math.min(10, Math.round(confidence / 10))),
+-    messages: (existing?.messages || 0) + 2,
+-    preview: userMessage.slice(0, 140),
+-    tags: unique([...(existing?.tags || []), ...topics]).slice(0, 4),
+-    correction,
++/*
++ * One conversation from two copies: every message either copy holds, each
++ * once, in time order, minus anything from before the conversation last
++ * started over. Two different messages that happen to share an id (ids are
++ * made from the millisecond) are both kept.
++ */
++export function mergeMessageLists(stored, local, epochAt = 0) {
++  const seen = new Set()
++  const merged = []
++  for (const message of [...(Array.isArray(stored) ? stored : []), ...(Array.isArray(local) ? local : [])]) {
++    if (!message || typeof message !== 'object') continue
++    if ((Number(message.ts) || 0) < epochAt) continue
++    const key = messageKey(message)
++    if (seen.has(key)) continue
++    seen.add(key)
++    merged.push(message)
+   }
++  // Two tabs opened on an empty chat each greet the learner; a conversation
++  // has one welcome, the earliest.
++  let welcomed = false
++  return merged
++    .map((message, index) => ({ message, index }))
++    .sort((a, b) => ((Number(a.message.ts) || 0) - (Number(b.message.ts) || 0)) || (a.index - b.index))
++    .map(entry => entry.message)
++    .filter(message => message.id !== 'welcome' || (!welcomed && (welcomed = true)))
++    .slice(-100)
++}
++
++/*
++ * The messages to write: storage merged with this copy. Unreadable stored
++ * bytes are quarantined first, as for progress.
++ */
++export function mergeIntoStoredMessages(access, messages) {
++  const epochAt = conversationEpochAt(access.getItem(STORAGE_KEYS.chatEpoch))
++  const raw = access.getItem(STORAGE_KEYS.messages)
++  let stored = []
++  if (raw !== null) {
++    try {
++      stored = JSON.parse(raw)
++      if (!Array.isArray(stored)) throw new Error('Not a conversation')
++    } catch {
++      if (!quarantineValue(access, STORAGE_KEYS.messages, raw)) throw new Error('Unreadable chat could not be preserved')
++      stored = []
++    }
++  }
++  return mergeMessageLists(stored, messages, epochAt)
++}
+ 
+-  return [updated, ...sessions.filter(session => session.id !== today)].slice(0, 30)
++function writeJSON(key, value) {
++  try {
++    localStorage.setItem(key, JSON.stringify(value))
++  } catch {}
+ }
+ 
+ export function createSessionId({ access = null } = {}) {
+@@ -168,17 +167,23 @@
+ }
+ 
+ export function loadStoredMessages(welcomeMessage) {
+-  const messages = readJSON(STORAGE_KEYS.messages, [])
+-  return Array.isArray(messages) && messages.length ? messages : [welcomeMessage]
++  try {
++    const messages = mergeMessageLists(JSON.parse(localStorage.getItem(STORAGE_KEYS.messages) || '[]'), [],
++      conversationEpochAt(localStorage.getItem(STORAGE_KEYS.chatEpoch)))
++    return messages.length ? messages : [welcomeMessage]
++  } catch {
++    return [welcomeMessage]
++  }
+ }
+ 
+ export function saveStoredMessages(messages, { access = null } = {}) {
+-  const retained = messages.slice(-100)
+   if (access) {
+-    // Clearing chat is a user-visible durable action. A rejected or stale
+-    // account-scoped write must not look successful until a refresh.
++    // Another tab of the same account may have saved since this copy was read:
++    // write the union, never this copy alone. A rejected, stale or unverified
++    // write must not look successful.
+     try {
+-      const serialized = JSON.stringify(retained)
++      if (!access.valid()) return false
++      const serialized = JSON.stringify(mergeIntoStoredMessages(access, messages))
+       if (!access.valid() || access.setItem(STORAGE_KEYS.messages, serialized) === false
+         || !access.valid() || access.getItem(STORAGE_KEYS.messages) !== serialized) return false
+       return access.valid()
+@@ -187,22 +192,99 @@
+     }
+   }
+   // Keep the existing best-effort path for passive state persistence.
+-  writeJSON(STORAGE_KEYS.messages, retained)
++  try { writeJSON(STORAGE_KEYS.messages, mergeIntoStoredMessages(unscopedAccess, messages)) } catch {}
+ }
+ 
+-export function createEmptyProgress() {
+-  return { ...EMPTY_PROGRESS, startedAt: Date.now() }
++/*
++ * Start the conversation over (clear chat, reset): from now on only `welcome`
++ * and later messages belong to it, whichever tab still holds older ones.
++ * The epoch is written before the messages, so an interruption between the two
++ * still hides the erased conversation.
++ */
++export function startStoredConversation(welcome, { access = null } = {}) {
++  const target = access || unscopedAccess
++  try {
++    const epoch = JSON.stringify({ id: makeId('chat'), at: Number(welcome?.ts) || Date.now() })
++    const serialized = JSON.stringify([welcome])
++    if (!target.valid() || target.setItem(STORAGE_KEYS.chatEpoch, epoch) === false
++      || !target.valid() || target.getItem(STORAGE_KEYS.chatEpoch) !== epoch) return false
++    if (!target.valid() || target.setItem(STORAGE_KEYS.messages, serialized) === false
++      || !target.valid() || target.getItem(STORAGE_KEYS.messages) !== serialized) return false
++    return target.valid()
++  } catch {
++    return false
++  }
++}
++
++/* What another tab saved, for the `storage` listener. Null if unreadable. */
++export function readStoredConversation({ access }) {
++  try {
++    if (!access.valid()) return null
++    const raw = access.getItem(STORAGE_KEYS.messages)
++    const messages = raw === null ? [] : JSON.parse(raw)
++    if (!Array.isArray(messages)) return null
++    const epochAt = conversationEpochAt(access.getItem(STORAGE_KEYS.chatEpoch))
++    return access.valid() ? { messages, epochAt } : null
++  } catch {
++    return null
++  }
++}
++
++/* Fold another tab's conversation into this tab's. Same array if nothing new. */
++export function mergeConversation(messages, { messages: stored = [], epochAt = 0 } = {}) {
++  const merged = mergeMessageLists(stored, messages, epochAt)
++  const same = merged.length === messages.length && merged.every((message, i) => message === messages[i])
++  return same ? messages : merged
++}
++
++/*
++ * A fresh progress record. `reset: true` starts a new epoch: every event from
++ * before this moment, in any tab, no longer counts.
++ */
++export function createEmptyProgress({ reset = false } = {}) {
++  const now = Date.now()
++  return progressFromLedger(createLedger({
++    ...(reset ? { epoch: { id: makeEventId('reset'), at: now } } : {}),
++    startedAt: now,
++    snapshot: emptySnapshot(),
++  }))
+ }
+ 
+ export function loadLocalProgress() {
+-  const saved = readJSON(STORAGE_KEYS.progress, null)
+-  return saved ? { ...createEmptyProgress(), ...saved } : createEmptyProgress()
++  try {
++    const { ledger } = parseStoredProgress(localStorage.getItem(STORAGE_KEYS.progress))
++    // Unreadable progress loads as empty in memory; the first save quarantines
++    // the stored bytes before anything replaces them.
++    if (ledger) return progressFromLedger({ ...ledger, base: { ...ledger.base, startedAt: ledger.base.startedAt ?? Date.now() } })
++  } catch {}
++  return createEmptyProgress()
++}
++
++/* What another tab saved, for the `storage` listener. Null if absent or unreadable. */
++export function readStoredProgress({ access }) {
++  try {
++    if (!access.valid()) return null
++    const { ledger } = parseStoredProgress(access.getItem(STORAGE_KEYS.progress))
++    return ledger && access.valid() ? progressFromLedger(ledger) : null
++  } catch {
++    return null
++  }
++}
++
++/* Fold another copy into this one. Same object if it adds nothing. */
++export function mergeLocalProgress(progress, other) {
++  const mine = ledgerOf(progress)
++  const merged = mergeLedgers(mine, ledgerOf(other))
++  return sameLedger(merged, mine) ? progress : progressFromLedger(merged)
+ }
+ 
+ export function saveLocalProgress(progress, { access = null } = {}) {
+   if (access) {
++    // Merge with what storage holds now (another tab may have saved since this
++    // copy was read) and verify the write before reporting success.
+     try {
+-      const serialized = JSON.stringify(progress)
++      if (!access.valid()) return false
++      const serialized = serializeStoredProgress(mergeIntoStoredProgress(access, progress))
+       if (!access.valid() || access.setItem(STORAGE_KEYS.progress, serialized) === false
+         || !access.valid() || access.getItem(STORAGE_KEYS.progress) !== serialized) return false
+       return access.valid()
+@@ -210,56 +292,55 @@
+       return false
+     }
+   }
+-  writeJSON(STORAGE_KEYS.progress, progress)
++  try { writeJSON(STORAGE_KEYS.progress, serializeLedger(mergeIntoStoredProgress(unscopedAccess, progress))) } catch {}
+ }
+ 
+-export function recordPractice(previous, { userMessage, response }) {
+-  const today = dateKey()
+-  const difference = dayDifference(previous.lastPracticeDate, today)
+-  const streak = difference === 0
+-    ? previous.streak
+-    : difference === 1
+-      ? previous.streak + 1
+-      : 1
+-  const messagesSent = previous.messagesSent + 1
+-  const correctionsReceived = previous.correctionsReceived + (response.correction ? 1 : 0)
+-  const confidence = Math.min(95, 45 + messagesSent * 2 + correctionsReceived)
+-  const topics = inferTopics(userMessage, response)
+-
++/*
++ * Apply one identified event to an in-memory copy. Applying an event this copy
++ * already holds changes nothing, so retries and replays never pay twice.
++ */
++export function applyProgressEvent(progress, event) {
++  const ledger = ledgerOf(progress)
++  const next = addEvent(ledger, event)
++  if (next === ledger) return progress
++  // The newest event advances this copy's own totals, exactly as before. One
++  // that sorts before events already held is folded from the ledger instead,
++  // so the totals always follow the order the events happened in.
++  const added = next.events.find(stored => stored.id === event.id)
++  const newest = ledger.events.every(stored => stored.at < added.at || (stored.at === added.at && stored.id < added.id))
+   return {
+-    ...previous,
+-    lastPracticeDate: today,
+-    streak,
+-    messagesSent,
+-    correctionsReceived,
+-    xp: previous.xp + 10 + (response.correction ? 5 : 0),
+-    confidence,
+-    topics: unique([...topics, ...previous.topics]).slice(0, 12),
+-    learnedItems: updateLearnedItems(previous.learnedItems, response),
+-    sessions: updateSessions(previous.sessions, userMessage, response, topics, confidence),
++    ...(newest ? applyToSnapshot(snapshotFrom(progress), added) : deriveSnapshot(next)),
++    version: PROGRESS_VERSION,
++    startedAt: next.base.startedAt ?? progress?.startedAt ?? null,
++    ledger: next,
+   }
+ }
+ 
+-export function recordMissionProgress(previous, { mission, step, earnedXp = 0, completed = false }) {
+-  const today = dateKey()
+-  const difference = dayDifference(previous.lastPracticeDate, today)
+-  const streak = difference === 0
+-    ? previous.streak
+-    : difference === 1
+-      ? previous.streak + 1
+-      : 1
+-  const topics = unique([mission?.type?.toLowerCase(), step?.type, ...(previous.topics || [])]).slice(0, 12)
+-  return {
+-    ...previous,
+-    lastPracticeDate: today,
+-    streak,
+-    xp: (previous.xp || 0) + earnedXp,
+-    confidence: Math.min(95, (previous.confidence || 45) + (completed ? 2 : 1)),
+-    topics,
+-    missionsCompleted: (previous.missionsCompleted || 0) + (completed ? 1 : 0),
++/*
++ * Durably record one event before the caller reports success (episode awards,
++ * the daily bonus). The event's id makes a retry or a second tab harmless.
++ * True only when the event is verifiably in storage for this account.
++ */
++export function commitProgressEvent(event, { access }) {
++  try {
++    if (!access.valid()) return false
++    const serialized = serializeStoredProgress(addEvent(mergeIntoStoredProgress(access, null), event))
++    if (!access.valid() || access.setItem(STORAGE_KEYS.progress, serialized) === false || !access.valid()) return false
++    const { ledger } = parseStoredProgress(access.getItem(STORAGE_KEYS.progress))
++    return Boolean(ledger?.events.some(stored => stored.id === event.id)) && access.valid()
++  } catch {
++    return false
+   }
+ }
+ 
++export function recordPractice(previous, { userMessage, response, at = Date.now(), eventId } = {}) {
++  return applyProgressEvent(previous, practiceEvent({ userMessage, response, at, ...(eventId ? { id: eventId } : {}) }))
++}
++
++export function recordMissionProgress(previous, { mission, step, earnedXp = 0, completed = false, at = Date.now(), eventId } = {}) {
++  return applyProgressEvent(previous, missionEvent({ mission, step, earnedXp, completed, at, ...(eventId ? { id: eventId } : {}) }))
++}
++
+ export function clearStoredProgress({ access = null } = {}) {
+   if (access) {
+     // Reset is an explicit destructive action. A revoked account lease or
+--- /dev/null
++++ b/linguachat-frontend/src/services/progressLedger.js
+@@ -0,0 +1,441 @@
++/*
++ * Local progress as a ledger of identified events.
++ *
++ * WHY
++ * ---
++ * Every open tab holds its own copy of the learner's local progress and used to
++ * persist that copy whole, so the tab that saved last erased what the other tab
++ * had earned in the meantime: XP, streak days, words, chat turns. Taking the
++ * larger counter or the newest copy would only hide the loss differently.
++ *
++ * So progress is stored as what happened, not as totals:
++ *
++ *   { version: 2, epoch, base, events }
++ *
++ * - `events` are the recent things that changed progress (a practice turn, a
++ *   mission step, an episode award, a session bonus), each with a stable `id`.
++ *   Two copies merge by the union of their ids, so the same reward reaching
++ *   storage twice is applied once, and two different rewards are both kept.
++ * - The totals the UI reads (xp, streak, confidence, topics, ...) are a fold of
++ *   `base` plus `events` in time order, with the same rules the app always used.
++ *   A streak therefore follows the calendar of the events, never the order in
++ *   which two tabs happened to save.
++ * - `base` is the folded snapshot of events older than the horizon, so the
++ *   ledger stays small. An event older than `base.foldedBefore` is already in
++ *   it and is ignored on merge.
++ * - `epoch` marks an explicit reset. Everything before the newest reset is
++ *   gone, including a stale tab's older copy; anything that tab does after the
++ *   reset still counts.
++ *
++ * Everything here is pure and deterministic: the same two inputs always merge
++ * to the same output, whichever tab does it.
++ */
++
++export const PROGRESS_VERSION = 2
++export const LEDGER_HORIZON_MS = 7 * 86400000
++export const LEDGER_MAX_EVENTS = 500
++export const INITIAL_EPOCH = Object.freeze({ id: 'initial', at: 0 })
++
++const EVENT_KINDS = new Set(['practice', 'mission', 'award', 'xp'])
++
++const TOPIC_RULES = [
++  ['travel', /\b(travel|trip|city|country|flight|hotel|train)\b/i],
++  ['work', /\b(work|job|interview|office|career)\b/i],
++  ['food', /\b(food|eat|restaurant|cook|meal)\b/i],
++  ['hobbies', /\b(game|music|sport|movie|hobby|play)\b/i],
++  ['feelings', /\b(feel|happy|sad|nervous|excited|tired)\b/i],
++]
++
++export function emptySnapshot() {
++  return {
++    lastPracticeDate: null,
++    streak: 0,
++    messagesSent: 0,
++    correctionsReceived: 0,
++    xp: 0,
++    confidence: 45,
++    topics: [],
++    learnedItems: [],
++    sessions: [],
++    missionsCompleted: 0,
++  }
++}
++
++const SNAPSHOT_FIELDS = Object.keys(emptySnapshot())
++
++export function makeEventId(prefix = 'progress') {
++  if (globalThis.crypto?.randomUUID) return `${prefix}:${globalThis.crypto.randomUUID()}`
++  return `${prefix}:${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`
++}
++
++export function dateKey(date = new Date()) {
++  const year = date.getFullYear()
++  const month = String(date.getMonth() + 1).padStart(2, '0')
++  const day = String(date.getDate()).padStart(2, '0')
++  return `${year}-${month}-${day}`
++}
++
++function dayDifference(from, to) {
++  if (!from || !to) return null
++  const start = new Date(`${from}T00:00:00`)
++  const end = new Date(`${to}T00:00:00`)
++  return Math.round((end - start) / 86400000)
++}
++
++function unique(values) {
++  return [...new Set(values.filter(Boolean))]
++}
++
++const finite = (value, fallback = 0) => (Number.isFinite(value) ? value : fallback)
++const clip = (text, max) => (typeof text === 'string' ? text.slice(0, max) : null)
++
++/* ------------------------------------------------------------ the events -- */
++
++function inferTopics(message, response) {
++  const topics = TOPIC_RULES
++    .filter(([, pattern]) => pattern.test(message))
++    .map(([topic]) => topic)
++  if (response.mode === 'translation') topics.push('translation')
++  if (response.correction) topics.push('grammar')
++  if (!topics.length) topics.push('conversation')
++  return unique(topics)
++}
++
++function learnedCandidate(response) {
++  if (response.correction) {
++    return { phrase: response.correction, kind: 'correction', mastery: 0.55, marker: 'Fix' }
++  }
++  if (response.mode === 'translation') {
++    return { phrase: String(response.reply || '').split('(')[0].trim(), kind: 'translation', mastery: 0.45, marker: 'Aa' }
++  }
++  // Suggestions and action prompts are teaching instructions, not typed
++  // vocabulary. Do not manufacture learned items from these arbitrary fields.
++  return null
++}
++
++/*
++ * Everything a chat turn changes, computed once when it happens. The message
++ * text itself is not kept: only what the totals need (topics, the session
++ * preview line, the correction line), clipped so the ledger stays bounded.
++ */
++export function practiceEvent({ userMessage = '', response = {}, at = Date.now(), id = makeEventId('practice') } = {}) {
++  const message = String(userMessage || '')
++  const candidate = learnedCandidate(response)
++  return {
++    id,
++    kind: 'practice',
++    at,
++    day: dateKey(new Date(at)),
++    xp: 10 + (response.correction ? 5 : 0),
++    corrected: Boolean(response.correction),
++    topics: inferTopics(message, response),
++    learned: candidate?.phrase && candidate.phrase.length <= 100
++      ? { ...candidate, example: clip(response.suggestion || response.reply || '', 300) }
++      : null,
++    preview: message.slice(0, 140),
++    correctionLine: response.correction ? clip(`${message} -> ${response.correction}`, 1000) : null,
++  }
++}
++
++export function missionEvent({ mission, step, earnedXp = 0, completed = false, at = Date.now(), id = makeEventId('mission') } = {}) {
++  return {
++    id,
++    kind: 'mission',
++    at,
++    day: dateKey(new Date(at)),
++    xp: Math.max(0, finite(earnedXp)),
++    completed: Boolean(completed),
++    topics: unique([mission?.type?.toLowerCase(), step?.type]),
++  }
++}
++
++function sanitizeGrant(grant) {
++  if (!grant || typeof grant !== 'object' || typeof grant.vocabId !== 'string') return null
++  const out = { vocabId: grant.vocabId }
++  if (typeof grant.word === 'string') out.word = grant.word
++  if (typeof grant.kind === 'string') out.kind = grant.kind
++  return out
++}
++
++/* An event read back from storage is untrusted: keep only what the fold uses. */
++export function sanitizeEvent(raw) {
++  if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || !raw.id) return null
++  if (!EVENT_KINDS.has(raw.kind) || !Number.isFinite(raw.at)) return null
++  const xp = Math.max(0, Math.min(100000, finite(raw.xp)))
++  const base = { id: raw.id, kind: raw.kind, at: raw.at, xp }
++  if (raw.kind === 'xp') return base
++  if (raw.kind === 'award') return { ...base, grants: Array.isArray(raw.grants) ? raw.grants.map(sanitizeGrant).filter(Boolean) : [] }
++  const day = typeof raw.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.day) ? raw.day : dateKey(new Date(raw.at))
++  const topics = Array.isArray(raw.topics) ? raw.topics.filter(t => typeof t === 'string').slice(0, 12) : []
++  if (raw.kind === 'mission') return { ...base, day, topics, completed: Boolean(raw.completed) }
++  const learned = raw.learned && typeof raw.learned === 'object' && typeof raw.learned.phrase === 'string'
++    ? {
++        phrase: raw.learned.phrase.slice(0, 100),
++        kind: String(raw.learned.kind || ''),
++        mastery: finite(raw.learned.mastery, 0.45),
++        marker: String(raw.learned.marker || ''),
++        example: clip(raw.learned.example, 300) || '',
++      }
++    : null
++  return {
++    ...base, day, topics, learned,
++    corrected: Boolean(raw.corrected),
++    preview: clip(raw.preview, 140) || '',
++    correctionLine: clip(raw.correctionLine, 1000),
++  }
++}
++
++/* -------------------------------------------------------------- the fold -- */
++
++function nextStreak(snapshot, day) {
++  const difference = dayDifference(snapshot.lastPracticeDate, day)
++  return difference === 0
++    ? snapshot.streak
++    : difference === 1
++      ? snapshot.streak + 1
++      : 1
++}
++
++function updateLearnedItems(items, learned, at) {
++  if (!learned?.phrase) return items
++  const id = learned.phrase.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
++  if (!id) return items
++  const existing = items.find(item => item.id === id)
++  const nextItem = existing
++    ? {
++        ...existing,
++        mastery: Math.min(0.95, existing.mastery + 0.08),
++        seen: (existing.seen || 1) + 1,
++        lastSeenAt: at,
++        example: learned.example,
++      }
++    : {
++        id,
++        word: learned.phrase,
++        trans: learned.kind,
++        mastery: learned.mastery,
++        emoji: learned.marker,
++        example: learned.example,
++        addedAt: at,
++        lastSeenAt: at,
++        seen: 1,
++      }
++  return [nextItem, ...items.filter(item => item.id !== id)].slice(0, 40)
++}
++
++function updateSessions(sessions, event, confidence) {
++  const existing = sessions.find(session => session.id === event.day)
++  const updated = {
++    id: event.day,
++    date: event.day,
++    topic: event.topics[0]?.replace(/^./, letter => letter.toUpperCase()) || 'Conversation',
++    mood: 'LC',
++    moodLabel: 'Practicing',
++    confidence: Math.max(5, Math.min(10, Math.round(confidence / 10))),
++    messages: (existing?.messages || 0) + 2,
++    preview: event.preview,
++    tags: unique([...(existing?.tags || []), ...event.topics]).slice(0, 4),
++    correction: event.correctionLine || existing?.correction || null,
++  }
++  return [updated, ...sessions.filter(session => session.id !== event.day)].slice(0, 30)
++}
++
++/* One event applied to totals: the rules the app has always used. */
++export function applyToSnapshot(snapshot, event) {
++  const s = snapshot
++  switch (event.kind) {
++    case 'practice': {
++      const messagesSent = s.messagesSent + 1
++      const correctionsReceived = s.correctionsReceived + (event.corrected ? 1 : 0)
++      const confidence = Math.min(95, 45 + messagesSent * 2 + correctionsReceived)
++      return {
++        ...s,
++        lastPracticeDate: event.day,
++        streak: nextStreak(s, event.day),
++        messagesSent,
++        correctionsReceived,
++        xp: s.xp + event.xp,
++        confidence,
++        topics: unique([...event.topics, ...s.topics]).slice(0, 12),
++        learnedItems: updateLearnedItems(s.learnedItems, event.learned, event.at),
++        sessions: updateSessions(s.sessions, event, confidence),
++      }
++    }
++    case 'mission':
++      return {
++        ...s,
++        lastPracticeDate: event.day,
++        streak: nextStreak(s, event.day),
++        xp: (s.xp || 0) + event.xp,
++        confidence: Math.min(95, (s.confidence || 45) + (event.completed ? 2 : 1)),
++        topics: unique([...event.topics, ...(s.topics || [])]).slice(0, 12),
++        missionsCompleted: (s.missionsCompleted || 0) + (event.completed ? 1 : 0),
++      }
++    case 'award': {
++      const existing = new Set((s.learnedItems || []).map(item => item.vocabId).filter(Boolean))
++      const additions = event.grants
++        .filter(grant => !existing.has(grant.vocabId))
++        .map(grant => ({ ...grant, lastSeenAt: event.at }))
++      return {
++        ...s,
++        learnedItems: [...additions, ...(s.learnedItems || [])],
++        xp: (s.xp || 0) + event.xp,
++      }
++    }
++    case 'xp':
++      return { ...s, xp: (s.xp || 0) + event.xp }
++    default:
++      return s
++  }
++}
++
++const byTime = (a, b) => (a.at - b.at) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)
++
++export function foldEvents(snapshot, events) {
++  return [...events].sort(byTime).reduce(applyToSnapshot, snapshot)
++}
++
++/* ----------------------------------------------------------- the ledger -- */
++
++export function snapshotFrom(raw) {
++  return sanitizeSnapshot(raw)
++}
++
++function sanitizeSnapshot(raw) {
++  const empty = emptySnapshot()
++  const out = { ...empty }
++  if (!raw || typeof raw !== 'object') return out
++  for (const field of SNAPSHOT_FIELDS) {
++    const value = raw[field]
++    if (Array.isArray(empty[field])) out[field] = Array.isArray(value) ? value : []
++    else if (field === 'lastPracticeDate') out[field] = typeof value === 'string' ? value : null
++    else out[field] = Number.isFinite(value) ? value : empty[field]
++  }
++  return out
++}
++
++function sanitizeEpoch(raw) {
++  return raw && typeof raw.id === 'string' && Number.isFinite(raw.at) ? { id: raw.id, at: raw.at } : { ...INITIAL_EPOCH }
++}
++
++export function createLedger({ epoch = INITIAL_EPOCH, startedAt = Date.now(), snapshot = emptySnapshot() } = {}) {
++  return {
++    epoch: { ...epoch },
++    base: { snapshot: sanitizeSnapshot(snapshot), startedAt, foldedBefore: 0, folded: 0 },
++    events: [],
++  }
++}
++
++/*
++ * A version-1 record (the totals themselves) becomes the base of a ledger with
++ * no events: its numbers are kept exactly, and new events are added on top.
++ */
++export function ledgerFromLegacy(saved) {
++  return createLedger({
++    startedAt: Number.isFinite(saved?.startedAt) ? saved.startedAt : null,
++    snapshot: sanitizeSnapshot(saved),
++  })
++}
++
++/* Parse what storage holds. Returns null for anything that is not progress. */
++export function ledgerFromStored(value) {
++  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
++  if (value.version !== PROGRESS_VERSION) return ledgerFromLegacy(value)
++  if (!value.base || typeof value.base !== 'object' || !Array.isArray(value.events)) return null
++  const base = value.base
++  return {
++    epoch: sanitizeEpoch(value.epoch),
++    base: {
++      snapshot: sanitizeSnapshot(base.snapshot),
++      startedAt: Number.isFinite(base.startedAt) ? base.startedAt : null,
++      foldedBefore: Math.max(0, finite(base.foldedBefore)),
++      folded: Math.max(0, finite(base.folded)),
++    },
++    events: dedupe(value.events.map(sanitizeEvent).filter(Boolean)),
++  }
++}
++
++export function serializeLedger(ledger) {
++  return { version: PROGRESS_VERSION, epoch: ledger.epoch, base: ledger.base, events: ledger.events }
++}
++
++function canonical(value) { return JSON.stringify(value) }
++
++// One event per id. Should two copies ever disagree about the same id, keep a
++// deterministic one so every tab converges on the same result.
++function dedupe(events) {
++  const byId = new Map()
++  for (const event of events) {
++    const current = byId.get(event.id)
++    if (!current || canonical(event) < canonical(current)) byId.set(event.id, event)
++  }
++  return [...byId.values()].sort(byTime)
++}
++
++const newerEpoch = (a, b) => (a.at !== b.at ? (a.at > b.at ? a : b) : (a.id >= b.id ? a : b))
++
++function preferredBase(a, b) {
++  if (a.foldedBefore !== b.foldedBefore) return a.foldedBefore > b.foldedBefore ? a : b
++  if (a.folded !== b.folded) return a.folded > b.folded ? a : b
++  return canonical(a) <= canonical(b) ? a : b
++}
++
++/*
++ * The union of two copies. Commutative, associative and idempotent, so it does
++ * not matter which tab merges or how often.
++ */
++export function mergeLedgers(a, b) {
++  if (!a) return b
++  if (!b) return a
++  const epoch = newerEpoch(a.epoch, b.epoch)
++  const sameEpoch = [a, b].filter(l => l.epoch.id === epoch.id && l.epoch.at === epoch.at)
++  const base = sameEpoch.map(l => l.base).reduce(preferredBase)
++  const events = dedupe([...a.events, ...b.events])
++    .filter(event => event.at >= epoch.at && event.at >= base.foldedBefore)
++  return { epoch: { ...epoch }, base, events }
++}
++
++export function hasEvent(ledger, id) {
++  return Boolean(ledger?.events.some(event => event.id === id))
++}
++
++export function addEvent(ledger, raw) {
++  const event = sanitizeEvent(raw)
++  if (!event) throw new Error('Invalid progress event')
++  if (hasEvent(ledger, event.id)) return ledger
++  // An event from before a reset or already folded into the base cannot be
++  // added again; it was either erased by the learner or already counted.
++  if (event.at < ledger.epoch.at || event.at < ledger.base.foldedBefore) return ledger
++  return { ...ledger, events: dedupe([...ledger.events, event]) }
++}
++
++/*
++ * Fold old events into the base so the ledger stays bounded. Only events older
++ * than the horizon (or beyond the size cap) are folded; a copy still holding
++ * one of them later will see it as already counted.
++ */
++export function compactLedger(ledger, now = Date.now()) {
++  const events = [...ledger.events].sort(byTime)
++  let cutoff = now - LEDGER_HORIZON_MS
++  if (events.length > LEDGER_MAX_EVENTS) cutoff = Math.max(cutoff, events[events.length - LEDGER_MAX_EVENTS].at)
++  const folding = events.filter(event => event.at < cutoff)
++  if (!folding.length) return ledger
++  return {
++    ...ledger,
++    base: {
++      ...ledger.base,
++      snapshot: foldEvents(ledger.base.snapshot, folding),
++      foldedBefore: Math.max(ledger.base.foldedBefore, cutoff),
++      folded: ledger.base.folded + folding.length,
++    },
++    events: events.filter(event => event.at >= cutoff),
++  }
++}
++
++export function deriveSnapshot(ledger) {
++  return foldEvents(ledger.base.snapshot, ledger.events)
++}
++
++export function sameLedger(a, b) {
++  return canonical(a) === canonical(b)
++}
+--- /dev/null
++++ b/linguachat-frontend/src/services/storageQuarantine.js
+@@ -0,0 +1,46 @@
++/*
++ * Unreadable learner data is set aside, never silently overwritten.
++ *
++ * When a stored value cannot be parsed or validated, the app must still be
++ * able to move on — but the original bytes may be the only copy of somebody's
++ * progress. Before anything replaces such a value, its exact bytes are copied
++ * to an account-scoped quarantine key named after a hash of the content, so a
++ * repeated attempt is idempotent and two different corruptions never collide.
++ *
++ * The copy goes through the same captured account lease as every other learner
++ * write: it can never land in another account's storage. If the copy cannot be
++ * made, the caller must not overwrite the original.
++ */
++export const QUARANTINE_PREFIX = 'lc2-quarantine:'
++
++// FNV-1a, 32 bit: a stable short name for the content, not a security hash.
++function contentHash(text) {
++  let hash = 0x811c9dc5
++  for (let i = 0; i < text.length; i++) {
++    hash ^= text.charCodeAt(i)
++    hash = Math.imul(hash, 0x01000193) >>> 0
++  }
++  return hash.toString(16).padStart(8, '0')
++}
++
++export function quarantineKey(key, raw) {
++  return `${QUARANTINE_PREFIX}${key}:${contentHash(String(raw))}:${String(raw).length}`
++}
++
++/*
++ * Copy `raw` (the value currently stored under `key`) aside. Returns the
++ * quarantine key on success and null when the copy could not be verified.
++ */
++export function quarantineValue(access, key, raw, reason = 'unreadable') {
++  if (raw === null || raw === undefined) return null
++  const target = quarantineKey(key, raw)
++  const record = JSON.stringify({ key, reason, raw: String(raw) })
++  try {
++    if (!access.valid()) return null
++    if (access.getItem(target) === record) return target
++    if (access.setItem(target, record) === false || !access.valid()) return null
++    return access.getItem(target) === record && access.valid() ? target : null
++  } catch {
++    return null
++  }
++}
+--- /dev/null
++++ b/linguachat-frontend/scripts/check-same-account-tabs.mjs
+@@ -0,0 +1,419 @@
++#!/usr/bin/env node
++/*
++ * P0-1 — one account, two tabs, one browser.
++ *
++ * Every tab of LinguaChat keeps its own in-memory copy of the learner's local
++ * progress (XP, streak, confidence, topics, words, sessions) and chat, and a
++ * passive React effect persists that copy whenever it changes. Before this
++ * check existed the copy was written whole, so the tab that saved last silently
++ * erased whatever the other tab had earned in the meantime.
++ *
++ * The scenarios below drive the real storage modules exactly the way AppContext
++ * does: load once per tab, mutate in memory, persist through the tab's captured
++ * account lease, and (where the app listens) fold `storage` events back in.
++ * Two tabs share one localStorage and own separate sessionStorage, like a real
++ * browser. Nothing here touches the network or a real Supabase project.
++ *
++ * Run: node scripts/check-same-account-tabs.mjs
++ */
++import assert from 'node:assert/strict'
++import * as progressStore from '../src/services/localProgress.js'
++import { activateLocalAccount } from '../src/auth/browserDataIsolation.js'
++import { captureLearnerAccess, NAMESPACE_PREFIX } from '../src/auth/localLease.js'
++import { createLearnerModel, loadLearnerModel, saveLearnerModel, recordItemAttempt } from '../src/learning/engine/learnerModel.js'
++
++const {
++  loadLocalProgress, saveLocalProgress, recordPractice, recordMissionProgress,
++  loadStoredMessages, saveStoredMessages,
++} = progressStore
++// The app's cross-tab hooks. Absent before the fix: a tab then never hears
++// about the other tab's writes, which is exactly what the app used to do.
++const mergeLocalProgress = progressStore.mergeLocalProgress
++const readStoredProgress = progressStore.readStoredProgress
++const readStoredConversation = progressStore.readStoredConversation
++const mergeConversation = progressStore.mergeConversation
++const applyProgressEvent = progressStore.applyProgressEvent
++const commitProgressEvent = progressStore.commitProgressEvent
++const startStoredConversation = progressStore.startStoredConversation
++
++class Store {
++  constructor() { this.values = new Map(); this.failWrites = null }
++  get length() { return this.values.size }
++  key(i) { return [...this.values.keys()][i] ?? null }
++  getItem(k) { return this.values.has(String(k)) ? this.values.get(String(k)) : null }
++  setItem(k, v) {
++    if (this.failWrites?.(String(k))) throw new Error('QuotaExceededError')
++    this.values.set(String(k), String(v))
++  }
++  removeItem(k) { this.values.delete(String(k)) }
++}
++
++let checks = 0
++const ok = () => { checks++ }
++const failures = []
++function scenario(name, run) {
++  try { run(); ok(); console.log('  ok  ' + name) }
++  catch (error) { failures.push(name); console.log('  FAIL ' + name + '\n       ' + String(error.message).split('\n')[0]) }
++}
++
++const DAY = 86400000
++const T0 = Date.UTC(2026, 9, 30, 15, 0, 0)
++const reply = (fields = {}) => ({ mode: 'chat', reply: 'Nice!', correction: null, suggestion: null, ...fields })
++
++/*
++ * A tab: its own sessionStorage (lease binding), its own React-like state, and
++ * the same persistence calls AppContext makes.
++ */
++function openTab(shared, owner) {
++  const session = new Store()
++  globalThis.localStorage = shared
++  globalThis.sessionStorage = session
++  activateLocalAccount(shared, owner)
++  const tab = {
++    session,
++    access: captureLearnerAccess(shared),
++    progress: null,
++    messages: null,
++    act(fn) { globalThis.localStorage = shared; globalThis.sessionStorage = session; return fn() },
++  }
++  tab.act(() => {
++    tab.progress = loadLocalProgress()
++    tab.messages = loadStoredMessages({ id: 'welcome', role: 'lingua', text: 'Hi', ts: 1 })
++  })
++  return tab
++}
++// The passive effects: `saveLocalProgress(localProgress, { access })` and
++// `saveStoredMessages(messages, { access })`, run after every state change.
++function persist(tab) {
++  return tab.act(() => ({
++    progress: saveLocalProgress(tab.progress, { access: tab.access }),
++    messages: saveStoredMessages(tab.messages, { access: tab.access }),
++  }))
++}
++// The `storage` listener: fold another tab's write into this tab's state, then
++// let the passive effects persist anything this tab still knows that storage
++// does not. Without the listener (the old app) this is a no-op.
++function hear(tab) {
++  tab.act(() => {
++    if (mergeLocalProgress && readStoredProgress) {
++      const stored = readStoredProgress({ access: tab.access })
++      if (stored) tab.progress = mergeLocalProgress(tab.progress, stored)
++    }
++    if (mergeConversation && readStoredConversation) {
++      const stored = readStoredConversation({ access: tab.access })
++      if (stored) tab.messages = mergeConversation(tab.messages, stored)
++    }
++  })
++  persist(tab)
++}
++function practice(tab, message, at, fields) {
++  tab.act(() => { tab.progress = recordPractice(tab.progress, { userMessage: message, response: reply(fields), at }) })
++}
++// awardEpisode / finishSession: a reward with a stable identity.
++function reward(tab, id, xp, at = T0) {
++  return tab.act(() => {
++    if (applyProgressEvent && commitProgressEvent) {
++      const event = { id, kind: 'xp', at, xp }
++      if (!commitProgressEvent(event, { access: tab.access })) return false
++      tab.progress = applyProgressEvent(tab.progress, event)
++      return true
++    }
++    tab.progress = { ...tab.progress, xp: (tab.progress.xp || 0) + xp }
++    return persist(tab).progress !== false
++  })
++}
++function say(tab, id, text, ts) {
++  tab.messages = [...tab.messages, { id, role: 'user', text, ts }]
++}
++function freshLoad(shared, owner) { return openTab(shared, owner) }
++function storedKeys(shared, suffix) {
++  return [...shared.values.keys()].filter(k => k.startsWith(NAMESPACE_PREFIX) && k.endsWith(':' + suffix))
++}
++
++console.log('check-same-account-tabs')
++
++scenario('two tabs of one account practise at the same time — nothing is lost', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  practice(a, 'I like travel', T0)
++  persist(a); hear(b)
++  practice(b, 'I like music', T0 + 1000)       // b began from a stale copy
++  persist(b); hear(a)
++  const reloaded = freshLoad(shared, 'A')
++  assert.equal(reloaded.progress.messagesSent, 2, 'both practice turns survive')
++  assert.equal(reloaded.progress.xp, 20, 'both XP grants survive')
++})
++
++scenario('stale writes in the opposite order, before either tab hears the other', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  practice(a, 'hello', T0)
++  practice(b, 'hello again', T0 + 10, { correction: 'Hello again.' })
++  persist(b)                                    // b saves first
++  persist(a)                                    // a saves its stale copy over it
++  const reloaded = freshLoad(shared, 'A')
++  assert.equal(reloaded.progress.messagesSent, 2)
++  assert.equal(reloaded.progress.correctionsReceived, 1, "b's correction is not erased by a")
++  assert.equal(reloaded.progress.xp, 25)
++})
++
++scenario('two independent achievements from two tabs both pay', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  assert.equal(reward(a, 'episode-award:first_greeting', 30), true)
++  assert.equal(reward(b, 'session-bonus:2026-10-30:standard', 15), true)
++  persist(a); persist(b); hear(a); hear(b)
++  assert.equal(freshLoad(shared, 'A').progress.xp, 45)
++  assert.equal(a.progress.xp, 45, 'tab a shows what tab b earned')
++  assert.equal(b.progress.xp, 45, 'tab b shows what tab a earned')
++})
++
++scenario('the same reward reaching storage from two tabs is paid once', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  assert.equal(reward(a, 'episode-award:first_greeting', 30), true)
++  assert.equal(reward(b, 'episode-award:first_greeting', 30), true)
++  assert.equal(reward(a, 'episode-award:first_greeting', 30), true, 'a retry is idempotent')
++  persist(a); persist(b); hear(a); hear(b)
++  assert.equal(freshLoad(shared, 'A').progress.xp, 30)
++  assert.equal(a.progress.xp, 30)
++  assert.equal(b.progress.xp, 30)
++})
++
++scenario('streak follows the calendar, not the order the tabs saved in', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  practice(b, 'day two', T0 + DAY)              // the later day is saved first
++  persist(b)
++  practice(a, 'day one', T0)
++  persist(a); hear(b)
++  const p = freshLoad(shared, 'A').progress
++  assert.equal(p.streak, 2, 'two consecutive days')
++  assert.equal(p.lastPracticeDate, new Date(T0 + DAY).toLocaleDateString('sv-SE'))
++})
++
++scenario('a reload of one tab sees everything both tabs saved', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  practice(a, 'one', T0); persist(a)
++  practice(b, 'two', T0 + 5); persist(b)
++  const a2 = freshLoad(shared, 'A')              // tab a reloads
++  practice(a2, 'three', T0 + 10); persist(a2)
++  persist(b)                                     // b keeps its stale copy and saves again
++  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 3)
++})
++
++scenario('a tab closed before its passive save loses only its unsaved turn', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  practice(a, 'saved', T0); persist(a); hear(b)
++  practice(b, 'never saved', T0 + 5)             // b closes before the effect runs
++  practice(a, 'saved too', T0 + 10); persist(a)
++  const p = freshLoad(shared, 'A').progress
++  assert.equal(p.messagesSent, 2)
++  assert.equal(p.xp, 20)
++})
++
++scenario('a write interrupted by Storage keeps the last durable value and retries later', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  practice(a, 'one', T0); persist(a)
++  shared.failWrites = key => key.endsWith(':lc2-local-progress')
++  practice(b, 'two', T0 + 5)
++  assert.equal(persist(b).progress, false, 'a denied write is reported as not saved')
++  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 1, 'the durable value is intact')
++  shared.failWrites = null
++  practice(b, 'three', T0 + 10)
++  assert.notEqual(persist(b).progress, false)
++  const p = freshLoad(shared, 'A').progress
++  assert.equal(p.messagesSent, 3, "b's earlier unsaved turn is persisted on the next save")
++  assert.equal(p.xp, 30)
++})
++
++scenario('a reward is not confirmed when its write is refused', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A')
++  shared.failWrites = key => key.endsWith(':lc2-local-progress')
++  assert.equal(reward(a, 'episode-award:first_greeting', 30), false)
++  shared.failWrites = null
++  assert.equal(freshLoad(shared, 'A').progress.xp, 0)
++  assert.equal(reward(a, 'episode-award:first_greeting', 30), true, 'the same reward can be retried')
++  assert.equal(freshLoad(shared, 'A').progress.xp, 30)
++})
++
++scenario('A → B → A: a stale A tab cannot write into B or into the new A session', () => {
++  const shared = new Store()
++  const staleA = openTab(shared, 'A')
++  practice(staleA, 'A one', T0); persist(staleA)
++  const b = openTab(shared, 'B')
++  practice(b, 'B one', T0 + 5); persist(b)
++  const a2 = openTab(shared, 'A')
++  practice(staleA, 'A stale', T0 + 10)
++  const result = persist(staleA)
++  assert.equal(result.progress, false, 'the stale tab is refused')
++  assert.equal(a2.progress.messagesSent, 1, 'A keeps exactly its own history')
++  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 1)
++  assert.equal(freshLoad(shared, 'B').progress.messagesSent, 1, 'B is untouched')
++})
++
++scenario('two tabs chatting keep both conversations, without duplicates', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  say(a, 'u100', 'from a', 100); persist(a)
++  say(b, 'u100', 'from b, same millisecond id', 100)   // ids are `u${Date.now()}`
++  say(b, 'u200', 'b again', 200)
++  persist(b); persist(a); hear(a); hear(b); persist(a)
++  const texts = freshLoad(shared, 'A').messages.map(m => m.text)
++  assert.deepEqual(texts, ['Hi', 'from a', 'from b, same millisecond id', 'b again'])
++  assert.deepEqual(a.messages.map(m => m.text), texts, 'tab a shows b’s messages')
++})
++
++scenario('two tabs opened on an empty chat show one welcome, not two', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  a.messages = [{ id: 'welcome', role: 'lingua', text: 'Hi from a', ts: 10 }]
++  b.messages = [{ id: 'welcome', role: 'lingua', text: 'Hi from b', ts: 11 }]
++  persist(a); persist(b); hear(a); hear(b)
++  assert.deepEqual(freshLoad(shared, 'A').messages.map(m => m.text), ['Hi from a'])
++  assert.deepEqual(b.messages.map(m => m.text), ['Hi from a'])
++})
++
++scenario('clearing the chat in one tab is not undone by the other tab', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  say(a, 'u1', 'old one', 100); persist(a); hear(b)
++  const welcome = { id: 'welcome', role: 'lingua', text: 'Hi again', ts: 500 }
++  a.act(() => {
++    if (startStoredConversation) assert.equal(startStoredConversation(welcome, { access: a.access }), true)
++    else assert.notEqual(saveStoredMessages([welcome], { access: a.access }), false)
++  })
++  a.messages = [welcome]
++  say(b, 'u2', 'b after the clear', 600)         // b has not heard of the clear yet
++  persist(b); hear(a); hear(b)
++  const texts = freshLoad(shared, 'A').messages.map(m => m.text)
++  assert.deepEqual(texts, ['Hi again', 'b after the clear'])
++  assert.deepEqual(b.messages.map(m => m.text), texts)
++})
++
++scenario('learner-model evidence from two tabs is merged (regression)', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  const ma = a.act(() => loadLearnerModel()), mb = b.act(() => loadLearnerModel())
++  a.act(() => { recordItemAttempt(ma, 'hello', { correct: true, independent: true, eventId: 'a-1' }); saveLearnerModel(ma) })
++  b.act(() => { recordItemAttempt(mb, 'goodbye', { correct: true, independent: true, eventId: 'b-1' }); saveLearnerModel(mb) })
++  const merged = a.act(() => loadLearnerModel())
++  assert.ok(merged.languageItems.hello && merged.languageItems.goodbye, 'both items survive')
++  void createLearnerModel
++})
++
++scenario('progress survives a full restart of the browser', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  practice(a, 'one', T0); persist(a)
++  assert.equal(reward(b, 'session-bonus:x', 15), true); persist(b)
++  // A restart drops every sessionStorage and every in-memory copy.
++  const restarted = freshLoad(shared, 'A')
++  assert.equal(restarted.progress.xp, 25)
++  assert.equal(restarted.progress.messagesSent, 1)
++  assert.equal(storedKeys(shared, 'lc2-local-progress').length, 1)
++})
++
++scenario('a reset in one tab is not undone by a stale tab, which keeps only later work', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  practice(a, 'before reset', Date.now() - 60000); persist(a); hear(b)
++  const empty = a.act(() => progressStore.createEmptyProgress({ reset: true }))
++  a.act(() => assert.notEqual(saveLocalProgress(empty, { access: a.access }), false))
++  a.progress = empty
++  persist(b)                                     // b never heard of the reset
++  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 0, 'the reset stands')
++  practice(b, 'after reset', Date.now() + 1000); persist(b)
++  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 1, "b's post-reset turn counts")
++})
++
++scenario('compaction keeps totals exact and never double-counts an old copy', () => {
++  if (!progressStore.mergeLocalProgress) throw new Error('no ledger')
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  const old = Date.now() - 30 * DAY
++  for (let i = 0; i < 3; i++) practice(a, 'old ' + i, old + i * DAY)
++  persist(a); hear(b)                            // b now holds the same old events
++  practice(a, 'recent', Date.now()); persist(a)  // a's save folds the old events
++  const stored = JSON.parse(shared.getItem(storedKeys(shared, 'lc2-local-progress')[0]))
++  assert.equal(stored.events.length, 1, 'only the recent event stays in the ledger')
++  assert.equal(stored.base.folded, 3)
++  persist(b)                                     // b re-sends the folded events
++  const p = freshLoad(shared, 'A').progress
++  assert.equal(p.messagesSent, 4)
++  assert.equal(p.xp, 40)
++  assert.equal(p.streak, 1, 'the old three-day run ended weeks ago')
++})
++
++scenario('an existing version-1 record keeps every total exactly', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A')
++  const legacy = {
++    version: 1, startedAt: 1700000000000, lastPracticeDate: '2026-10-29', streak: 6,
++    messagesSent: 41, correctionsReceived: 7, xp: 455, confidence: 95,
++    topics: ['travel'], learnedItems: [{ id: 'water', word: 'water', mastery: 0.5, seen: 2 }],
++    sessions: [{ id: '2026-10-29', messages: 4 }], missionsCompleted: 2,
++  }
++  a.act(() => a.access.setItem('lc2-local-progress', JSON.stringify(legacy)))
++  const loaded = freshLoad(shared, 'A').progress
++  for (const [field, value] of Object.entries(legacy)) {
++    if (field === 'version') continue
++    assert.deepEqual(loaded[field], value, field + ' survives the upgrade')
++  }
++  const next = freshLoad(shared, 'A')
++  practice(next, 'next', Date.UTC(2026, 9, 30, 12)); persist(next)
++  const after = freshLoad(shared, 'A').progress
++  assert.equal(after.xp, 465)
++  assert.equal(after.messagesSent, 42)
++  assert.equal(after.streak, 7, 'the stored streak continues on the next day')
++})
++
++scenario('unreadable stored progress is quarantined, never silently replaced', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A')
++  a.act(() => a.access.setItem('lc2-local-progress', '{"xp": 120, "stre'))
++  const b = openTab(shared, 'A')
++  practice(b, 'hello', T0)
++  assert.notEqual(persist(b).progress, false)
++  const quarantined = [...shared.values.entries()].filter(([k]) => k.includes(':lc2-quarantine:lc2-local-progress:'))
++  assert.equal(quarantined.length, 1, 'the original bytes are kept')
++  assert.equal(JSON.parse(quarantined[0][1]).raw, '{"xp": 120, "stre')
++  a.act(() => a.access.setItem('lc2-local-progress', 'not json either'))
++  shared.failWrites = key => key.includes('lc2-quarantine:')
++  practice(b, 'again', T0 + 1)
++  assert.equal(persist(b).progress, false, 'no overwrite when the copy cannot be kept')
++  shared.failWrites = null
++  assert.equal(a.act(() => a.access.getItem('lc2-local-progress')), 'not json either')
++})
++
++scenario('merging is order-independent and idempotent', () => {
++  if (!progressStore.mergeLocalProgress) throw new Error('no ledger')
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  practice(a, 'travel', T0); practice(a, 'music', T0 + 2, { correction: 'Music.' })
++  practice(b, 'food', T0 + 1); practice(b, 'work', T0 + 3)
++  const ab = progressStore.mergeLocalProgress(a.progress, b.progress)
++  const ba = progressStore.mergeLocalProgress(b.progress, a.progress)
++  const strip = p => { const { ledger, startedAt, ...totals } = p; return totals }
++  assert.deepEqual(strip(ab), strip(ba))
++  assert.equal(progressStore.mergeLocalProgress(ab, ab), ab, 'merging a copy with itself changes nothing')
++  assert.equal(progressStore.mergeLocalProgress(ab, b.progress), ab)
++})
++
++scenario('an interruption between starting a conversation and writing it still hides the old one', () => {
++  if (!startStoredConversation) throw new Error('no conversation epoch')
++  const shared = new Store()
++  const a = openTab(shared, 'A')
++  say(a, 'u1', 'old', 100); persist(a)
++  shared.failWrites = key => key.endsWith(':lc2-chat-messages')
++  a.act(() => assert.equal(startStoredConversation({ id: 'welcome', role: 'lingua', text: 'New', ts: 500 }, { access: a.access }), false))
++  shared.failWrites = null
++  assert.deepEqual(freshLoad(shared, 'A').messages.map(m => m.text), ['Hi'], 'the erased conversation stays erased')
++})
++
++console.log(`\ncheck-same-account-tabs — ${checks} passed, ${failures.length} failed`)
++if (failures.length) process.exit(1)
+--- /dev/null
++++ b/linguachat-frontend/scripts/check-profile-recovery.mjs
+@@ -0,0 +1,222 @@
++#!/usr/bin/env node
++/*
++ * P0-2 — a damaged local profile must not lock the learner out.
++ *
++ * Signing in restores the learner's profile from this browser through the
++ * strict `readVerifiedProfile`. Before this check existed, any failure there —
++ * corrupt JSON, a missing level, an inconsistent placement, a denied read or a
++ * lease that changed mid-restore — was reported as "browser storage is full",
++ * left the provider session signed in and repeated on every reload and login,
++ * with no way out inside the app.
++ *
++ * These scenarios drive the real lease, storage and restore modules against a
++ * shared in-memory localStorage. They assert what the learner gets (restored,
++ * recovered into setup, or a precise error), that the original bytes are kept,
++ * that nothing outside the profile changes, and that nothing reaches another
++ * account. No network, no Supabase.
++ *
++ * Run: node scripts/check-profile-recovery.mjs
++ */
++import assert from 'node:assert/strict'
++import { readFileSync } from 'node:fs'
++import { fileURLToPath } from 'node:url'
++import { dirname, resolve } from 'node:path'
++import * as restoreModule from '../src/auth/profileRestore.js'
++import { activateLocalAccount } from '../src/auth/browserDataIsolation.js'
++import { captureLearnerAccess } from '../src/auth/localLease.js'
++
++const here = dirname(fileURLToPath(import.meta.url))
++const read = path => readFileSync(resolve(here, '..', path), 'utf8')
++
++// What AppContext did before: the strict reader, and "storage_full" for any throw.
++function restore(access) {
++  if (restoreModule.restoreProfile) return restoreModule.restoreProfile(access)
++  try { return { status: 'restored', profile: restoreModule.readVerifiedProfile(access) } }
++  catch { return { status: 'storage_full' } }
++}
++
++class Store {
++  constructor() { this.values = new Map(); this.onSet = null; this.onGet = null }
++  get length() { return this.values.size }
++  key(i) { return [...this.values.keys()][i] ?? null }
++  getItem(k) { this.onGet?.(String(k)); return this.values.has(String(k)) ? this.values.get(String(k)) : null }
++  setItem(k, v) { this.onSet?.(String(k)); this.values.set(String(k), String(v)) }
++  removeItem(k) { this.onSet?.(String(k)); this.values.delete(String(k)) }
++}
++const quota = () => Object.assign(new Error('The quota has been exceeded.'), { name: 'QuotaExceededError' })
++const denied = () => Object.assign(new Error('The operation is insecure.'), { name: 'SecurityError' })
++
++const A1 = { level: 'A1', strengths: ['greetings'], focusAreas: ['numbers'] }
++const OTHER_DATA = {
++  'lc2-local-progress': '{"version":2,"epoch":{"id":"initial","at":0},"base":{"snapshot":{"xp":455,"streak":6},"startedAt":1,"foldedBefore":0,"folded":0},"events":[]}',
++  'lc2-tutor-preferences': '{"correctionStyle":"gentle","pace":"calm"}',
++  'lc2-learner-model-v1': '{"version":1,"languageItems":{"hello":{"learningState":"can_use"}}}',
++  'lc2-native-language': 'es',
++}
++
++let passed = 0
++const failures = []
++function scenario(name, run) {
++  try { run(); passed++; console.log('  ok  ' + name) }
++  catch (error) { failures.push(name); console.log('  FAIL ' + name + '\n       ' + String(error.message).split('\n')[0]) }
++}
++
++// One signed-in tab of account `owner`, with `values` already in its storage.
++function signedIn(values, owner = 'A', shared = new Store()) {
++  globalThis.localStorage = shared
++  globalThis.sessionStorage = new Store()
++  activateLocalAccount(shared, owner)
++  const access = captureLearnerAccess(shared)
++  for (const [key, value] of Object.entries({ ...OTHER_DATA, ...values })) access.setItem(key, value)
++  return { shared, access }
++}
++const quarantined = (access, shared) => [...shared.values.entries()]
++  .filter(([key]) => key.includes(':lc2-quarantine:lc2-profile:'))
++  .map(([, value]) => JSON.parse(value))
++function assertOtherDataUntouched(access) {
++  for (const [key, value] of Object.entries(OTHER_DATA)) assert.equal(access.getItem(key), value, key + ' is untouched')
++}
++
++console.log('check-profile-recovery')
++
++scenario('a valid profile restores exactly as before, with no writes', () => {
++  const profile = { name: 'Ana', goal: 'Travel', level: 'A1', placementResult: A1 }
++  const { access, shared } = signedIn({ 'lc2-profile': JSON.stringify(profile), 'lc2-onboarded': 'true', 'lc2-placement-result': JSON.stringify(A1) })
++  let writes = 0
++  shared.onSet = () => { writes++ }
++  const result = restore(access)
++  assert.equal(result.status, 'restored')
++  assert.deepEqual(result.profile, profile)
++  assert.equal(writes, 0)
++})
++
++scenario('corrupt JSON: bytes kept, learner resumes setup, no loop on reload', () => {
++  const raw = '{"name":"Ana","goal":"Trav'
++  const { access, shared } = signedIn({ 'lc2-profile': raw, 'lc2-onboarded': 'true' })
++  const result = restore(access)
++  assert.equal(result.status, 'recovered', 'not reported as full storage')
++  assert.equal(result.step, 'placement', 'no checkpoint: the learner retakes placement')
++  assert.equal(result.profile?.level, undefined, 'no level is invented')
++  assert.deepEqual(quarantined(access, shared).map(q => q.raw), [raw], 'the original bytes are preserved')
++  assert.equal(access.getItem('lc2-onboarded'), 'false', 'Home stays closed until setup is valid again')
++  assertOtherDataUntouched(access)
++  const again = restore(access)
++  assert.equal(again.status, 'restored', 'a reload restores instead of failing again')
++  assert.equal(quarantined(access, shared).length, 1, 'repeating recovery does not duplicate the copy')
++})
++
++scenario('incomplete completed profile with a valid checkpoint resumes from the checkpoint', () => {
++  const { access, shared } = signedIn({
++    'lc2-profile': JSON.stringify({ name: 'Ana', goal: 'Travel' }), 'lc2-onboarded': 'true',
++    'lc2-placement-result': JSON.stringify(A1), 'lc2-onboarding-step': 'tutor-personality',
++  })
++  const result = restore(access)
++  assert.equal(result.status, 'recovered')
++  assert.equal(result.step, 'tutor-personality', 'resumes at the last valid setup step')
++  assert.equal(result.profile.level, 'A1', 'the level comes from the durable placement evidence')
++  assert.equal(result.profile.name, 'Ana')
++  assert.equal(result.profile.goal, 'Travel', 'readable choices are kept')
++  assert.equal(quarantined(access, shared).length, 1)
++  assertOtherDataUntouched(access)
++})
++
++scenario('an invalid level is dropped, never guessed', () => {
++  const { access } = signedIn({ 'lc2-profile': JSON.stringify({ name: 'Ana', level: 'Z9' }) })
++  const result = restore(access)
++  assert.equal(result.status, 'recovered')
++  assert.equal(result.step, 'placement')
++  assert.equal(result.profile.level, undefined)
++  assert.equal(result.profile.name, 'Ana')
++})
++
++scenario('an inconsistent placement without a checkpoint is re-assessed, not resolved by guessing', () => {
++  const { access } = signedIn({ 'lc2-profile': JSON.stringify({ name: 'Ana', level: 'B1', placementResult: A1 }), 'lc2-onboarded': 'true' })
++  const result = restore(access)
++  assert.equal(result.status, 'recovered')
++  assert.equal(result.step, 'placement')
++  assert.equal(result.profile.level, undefined)
++  assert.equal(result.profile.placementResult, undefined)
++})
++
++scenario('an invalid checkpoint is ignored, not trusted', () => {
++  const { access } = signedIn({ 'lc2-profile': '[]', 'lc2-onboarded': 'true', 'lc2-placement-result': '{"level":"A1","strengths":"nope"' })
++  const result = restore(access)
++  assert.equal(result.status, 'recovered')
++  assert.equal(result.step, 'placement')
++  assert.equal(result.profile?.level, undefined)
++})
++
++scenario('a denied read is reported as unavailable storage, and nothing is written', () => {
++  const { access, shared } = signedIn({ 'lc2-profile': '{bad', 'lc2-onboarded': 'true' })
++  let writes = 0
++  shared.onGet = key => { if (key.endsWith(':lc2-profile')) throw denied() }
++  shared.onSet = () => { writes++ }
++  const result = restore(access)
++  assert.equal(result.status, 'storage_unavailable')
++  assert.equal(writes, 0)
++})
++
++scenario('a full storage is reported as full, and the original is not replaced', () => {
++  const { access, shared } = signedIn({ 'lc2-profile': '{bad', 'lc2-onboarded': 'true' })
++  shared.onSet = key => { if (key.includes('lc2-quarantine:')) throw quota() }
++  const result = restore(access)
++  assert.equal(result.status, 'storage_full')
++  shared.onSet = null
++  assert.equal(access.getItem('lc2-profile'), '{bad', 'the only copy stays where it was')
++  assert.equal(access.getItem('lc2-onboarded'), 'true')
++})
++
++scenario('a refused repair write is unrecoverable for now, with the copy kept', () => {
++  const { access, shared } = signedIn({ 'lc2-profile': '{bad', 'lc2-onboarded': 'true' })
++  shared.onSet = key => { if (key.endsWith(':lc2-onboarded')) throw denied() }
++  const result = restore(access)
++  assert.equal(result.status, 'unrecoverable')
++  shared.onSet = null
++  assert.equal(quarantined(access, shared).length, 1, 'the original bytes are preserved')
++  assert.equal(access.getItem('lc2-onboarded'), 'true', 'nothing half-applied is presented as recovered')
++})
++
++scenario('an account switch during recovery stops it and never touches the other account', () => {
++  const shared = new Store()
++  const b = signedIn({ 'lc2-profile': JSON.stringify({ name: 'Bea', level: 'A1', placementResult: A1 }), 'lc2-onboarded': 'true' }, 'B', shared)
++  const bProfile = b.access.getItem('lc2-profile')
++  const a = signedIn({ 'lc2-profile': '{bad', 'lc2-onboarded': 'true' }, 'A', shared)
++  let switched = false
++  shared.onSet = key => {
++    if (!switched && key.includes('lc2-quarantine:')) {
++      switched = true
++      shared.onSet = null
++      globalThis.sessionStorage = new Store()
++      activateLocalAccount(shared, 'B')
++    }
++  }
++  const result = restore(a.access)
++  assert.equal(result.status, 'stale')
++  // The switch rotates B's generation, so compare B's data, not physical keys.
++  const bNow = captureLearnerAccess(shared)
++  assert.equal(bNow.getItem('lc2-profile'), bProfile, "B's profile is untouched")
++  assert.equal(bNow.getItem('lc2-onboarded'), 'true')
++  for (const [key, value] of Object.entries(OTHER_DATA)) assert.equal(bNow.getItem(key), value, 'B is untouched: ' + key)
++  assert.equal([...shared.values.keys()].some(key => key.includes(':B:') && key.includes('lc2-quarantine:')), false, 'no A copy lands in B')
++})
++
++scenario('a lease that is already stale restores nothing', () => {
++  const { access } = signedIn({ 'lc2-profile': '{bad', 'lc2-onboarded': 'true' })
++  const result = restore({ ...access, valid: () => false })
++  assert.equal(result.status, 'stale')
++})
++
++scenario('the app maps each outcome to its real cause, and resumes setup after recovery', () => {
++  const context = read('src/context/AppContext.jsx')
++  const flow = read('src/components/auth/AuthFlow.jsx')
++  assert.match(context, /restoreProfile\(captureLearnerAccess\(\)\)/, 'sign-in restores through the recovering reader')
++  assert.doesNotMatch(context, /readVerifiedProfile\(captureLearnerAccess\(\)\)\s*\}\s*catch\s*\{\s*setAuthProviderError\('storage_full'\)/,
++    'a profile problem is no longer reported as full storage')
++  for (const code of ['storage_unavailable', 'local_data_unreadable']) {
++    assert.match(context, new RegExp(`'${code}'`), code + ' is reported')
++    assert.match(flow, new RegExp(`'${code}'`), code + ' is translated on the entry screen')
++  }
++})
++
++console.log(`\ncheck-profile-recovery — ${passed} passed, ${failures.length} failed`)
++if (failures.length) process.exit(1)

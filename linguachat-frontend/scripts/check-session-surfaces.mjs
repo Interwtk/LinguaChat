@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve as resolvePath } from 'node:path'
 import { selectRepresentativeFormat, BLOCK_CANDIDATES, formatSupportsObjective } from '../src/learning/engine/formatChoice.js'
 import { ACTIVITY_FORMATS } from '../src/learning/engine/learnerModel.js'
+import { applyProgressEvent, mergeIntoStoredProgress, serializeStoredProgress } from '../src/services/localProgress.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = (p) => readFileSync(resolvePath(here, '..', p), 'utf8')
@@ -248,9 +249,10 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const finish = new Function('deps', 'with (deps) { return (() => {' + match[1] + '\n})() }')
   for (const mode of [
     'double-click', 'already-awarded', 'missing', 'denied', 'invalid-json',
-    'revoked-after-read', 'different-session', 'rejected-write',
+    'revoked-after-read', 'different-session', 'rejected-write', 'rejected-bonus',
   ]) {
     let valid = true
+    const committed = []
     let stored = {
       id: '2026-10-30:standard', version: 1, status: 'active',
       awarded: mode === 'already-awarded', dayKey: '2026-10-30',
@@ -294,6 +296,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       setEpisodeArcVersion: () => {},
       setView: () => {},
       SESSION_BONUS_XP: 15,
+      // The bonus is a durable, identified progress event (P0-1).
+      commitProgressEvent: event => {
+        if (mode === 'rejected-bonus') return false
+        committed.push(event.id)
+        return true
+      },
+      applyProgressEvent,
     }
     const first = finish(deps)
     const second = finish(deps)
@@ -302,6 +311,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(second, false, 'stale second click must not finish an already completed cursor')
       assert.equal(xp, 15, 'two completions before React flush must award once')
       assert.equal(writes, 1)
+      assert.deepEqual(committed, ['session-bonus:2026-10-30:standard'], 'the bonus is committed once, by session id')
     } else if (mode === 'already-awarded') {
       assert.equal(first, true)
       assert.equal(second, false, 'completed cursor cannot be replayed by a stale click')
@@ -1138,7 +1148,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       createWelcomeMessage: language => ({ role: 'lingua', text: 'Welcome ' + language }),
       // This older deferred-React regression supplies a successful durable
       // writer; the new dedicated block below tests real read-back failures.
-      saveStoredMessages: (_messages, { access }) => access.valid(),
+      // Clearing starts a new conversation (P0-1), so other tabs cannot
+      // write the old one back.
+      startStoredConversation: (_welcome, { access }) => access.valid(),
       interfaceLanguageInfo: { base: 'es' },
     }
     updateProfile({ name: 'A profile', level: 'A1' }, deps)
@@ -1233,9 +1245,11 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         sessions++
         return mode === 'rejected-session' ? null : 'A-new-session'
       },
-      saveStoredMessages: (messages, options) => {
+      // Reset starts a new conversation (P0-1): a stale tab cannot write the
+      // erased chat back.
+      startStoredConversation: (welcome, options) => {
         assert.equal(options.access, access, 'welcome must be durably stored under the original lease')
-        assert.equal(messages[0].text, 'Welcome es')
+        assert.equal(welcome.text, 'Welcome es')
         chatWrites++
         return mode !== 'rejected-chat'
       },
@@ -1357,6 +1371,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       localStorage: { removeItem: () => { throw new Error('unscoped write') },
         setItem: () => { throw new Error('unscoped write') } },
       writeJSON: () => { throw new Error('unscoped write') },
+      // saveLocalProgress merges with what storage holds (P0-1). The real
+      // helpers run against the same scoped `access`, never unscoped storage.
+      mergeIntoStoredProgress, serializeStoredProgress,
     }
     const expected = mode === 'current'
     assert.equal(clearProgress({ access }, deps), expected, mode + ': progress keys')
@@ -1609,9 +1626,10 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     'with (deps) { const { grants = [] } = options || {}; ' +
     context.slice(start + signature.length, end) + ' }')
 
-  for (const mode of ['current', 'stale-flush', 'denied', 'revoked-load', 'revoked-grant', 'revoked-save', 'rejected-model-save']) {
+  for (const mode of ['current', 'stale-flush', 'denied', 'revoked-load', 'revoked-grant', 'revoked-save', 'rejected-model-save', 'rejected-award', 'revoked-award']) {
     let owner = mode === 'denied' ? 'B' : 'A'
     let loads = 0, seen = 0, saves = 0
+    const committed = []
     const queued = []
     const model = { seen: [] }
     const progress = mode === 'current'
@@ -1637,8 +1655,17 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         return mode !== 'rejected-model-save'
       },
       setLocalProgress: updater => queued.push(updater),
+      // XP and Garden words are a durable, identified event (P0-1).
+      commitProgressEvent: (event, options) => {
+        assert.equal(typeof options.access.valid, 'function', 'the award is written under a captured lease')
+        if (mode === 'revoked-award') owner = 'B'
+        if (mode === 'rejected-award') return false
+        committed.push(event.id)
+        return true
+      },
+      applyProgressEvent,
     }
-    const result = award({ xp: 5 }, {
+    const result = award({ id: 'first_greeting', xp: 5 }, {
       grants: [{ vocabId: 'new-word' }, { vocabId: 'existing' }],
     }, deps)
     if (mode === 'stale-flush') owner = 'B'
@@ -1654,6 +1681,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(queued.length, 1)
       assert.equal(progress.xp, 14)
       assert.deepEqual(progress.learnedItems.map(item => item.vocabId), ['new-word', 'existing'])
+      assert.deepEqual(committed, ['episode-award:first_greeting'], 'the award is committed by episode id')
     } else {
       assert.deepEqual(progress, original, mode + ': stale episode must not award B')
       assert.equal(queued.length, mode === 'stale-flush' ? 1 : 0)
@@ -1698,7 +1726,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     'revoked-save', 'stale-id', 'stale-day', 'stale-index', 'stale-block',
     'stale-status', 'already-completed', 'wrong-visible-block',
     'wrong-durable-type', 'missing', 'invalid-json', 'blocked-read', 'revoked-read',
+    'rejected-bonus', 'revoked-bonus',
   ]) {
+    const bonuses = []
     let owner = mode === 'denied' ? 'B' : 'A'
     let loads = 0, completions = 0, modelSaves = 0, writes = 0, reads = 0
     const visible = mode === 'wrong-visible-block'
@@ -1770,6 +1800,17 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       }),
       setDailySession: queue('daily'),
       setLocalProgress: queue('progress'),
+      // The bonus is committed as an identified event before the session is
+      // marked complete (P0-1); its own storage is exercised by
+      // check-same-account-tabs.mjs.
+      commitProgressEvent: (event, options) => {
+        assert.equal(options.access, access, 'the bonus is written under the original lease')
+        if (mode === 'revoked-bonus') owner = 'B'
+        if (mode === 'rejected-bonus') return false
+        bonuses.push(event.id)
+        return true
+      },
+      applyProgressEvent,
       setSessionActive: queue('active'),
       setEpisodeActiveId: queue('episode'),
       setEpisodeArcVersion: queue('arc'),
@@ -1794,6 +1835,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(completions, 1)
       assert.equal(modelSaves, 1)
       assert.equal(queued.length, 6)
+      assert.deepEqual(bonuses, ['session-bonus:A-session'])
     } else {
       assert.equal(result, mode === 'stale-flush', mode + ': only a valid current completion may succeed')
       assert.deepEqual(state, original, mode + ': stale completion cannot mutate B or an older cursor')
@@ -2697,12 +2739,14 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   assert.ok(start >= 0 && end > start, 'clearMessages must remain inspectable')
   const clear = new Function('deps', 'with (deps) { ' +
     context.slice(start + signature.length, end) + ' }')
-  const saveStart = progress.indexOf('export function saveStoredMessages(messages, { access = null } = {}) {')
-  const saveEnd = progress.indexOf('\n}\n\nexport function createEmptyProgress', saveStart)
+  // Clearing starts a new conversation (P0-1): an epoch, then the welcome.
+  const writerSignature = 'export function startStoredConversation(welcome, { access = null } = {}) {'
+  const saveStart = progress.indexOf(writerSignature)
+  const saveEnd = progress.indexOf('\n}\n', saveStart)
   assert.ok(saveStart >= 0 && saveEnd > saveStart, 'durable chat writer must remain inspectable')
-  const save = new Function('messages', 'options', 'deps', 'with (deps) { ' +
+  const save = new Function('welcome', 'options', 'deps', 'with (deps) { ' +
     'const { access = null } = options || {}; ' +
-    progress.slice(saveStart + 'export function saveStoredMessages(messages, { access = null } = {}) {'.length, saveEnd) + ' }')
+    progress.slice(saveStart + writerSignature.length, saveEnd) + ' }')
 
   for (const mode of [
     'current', 'stale-flush', 'denied', 'rejected-write', 'mismatched-read',
@@ -2739,8 +2783,10 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       chatGenerationRef, chatInFlightRef,
       interfaceLanguageInfo: { base: 'es' },
       createWelcomeMessage: () => ({ id: 'welcome-es' }),
-      saveStoredMessages: (messages, options) => save(messages, options, {
-        STORAGE_KEYS: { messages: 'chat' },
+      startStoredConversation: (welcome, options) => save(welcome, options, {
+        STORAGE_KEYS: { messages: 'chat', chatEpoch: 'chat-epoch' },
+        makeId: () => 'chat-epoch-1',
+        unscopedAccess: { valid() { throw new Error('Durable path bypassed') } },
         writeJSON: () => { throw new Error('Durable path bypassed') },
       }),
       setMessages: update => queued.push(['messages', update]),
@@ -2761,11 +2807,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     if (mode === 'current') {
       assert.deepEqual(state, { messages: [{ id: 'welcome-es' }], selected: null, typing: false })
       assert.equal(stored.get('chat'), JSON.stringify([{ id: 'welcome-es' }]))
+      assert.equal(JSON.parse(stored.get('chat-epoch')).id, 'chat-epoch-1', 'the new conversation is marked')
     } else {
       assert.deepEqual(state, original, mode + ': no unsaved or foreign UI reset')
     }
     if (mode === 'denied') assert.equal(writes, 0)
-    if (mode === 'stale-flush') assert.equal(writes, 1, 'A was saved, B UI stays untouched')
+    // Two writes: the conversation epoch, then the welcome message.
+    if (mode === 'stale-flush') assert.equal(writes, 2, 'A was saved, B UI stays untouched')
   }
   ok()
 }
