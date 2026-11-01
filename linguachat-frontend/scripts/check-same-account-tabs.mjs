@@ -488,6 +488,88 @@ scenario('past the size cap, a stale tab cannot fold away turns it has not seen 
   } finally { Date.now = realNow }
 })
 
+/*
+ * P3 — adversarial integrity. More than 1,200 turns, long pauses, and the
+ * edge of the protection window, measured rather than assumed.
+ */
+function withClock(at, fn) {
+  const real = Date.now
+  Date.now = () => at
+  try { return fn() } finally { Date.now = real }
+}
+const MIN = 60 * 1000
+
+scenario('three tabs, 2,400 turns with stale caches inside the settle window: nothing lost, then bounded', () => {
+  const shared = new Store()
+  const now = Date.now()
+  const tabs = [openTab(shared, 'A'), openTab(shared, 'A'), openTab(shared, 'A')]
+  const views = tabs.map(() => staleView(shared))
+  tabs.forEach((tab, t) => {
+    for (let i = 0; i < 800; i++) {
+      practice(tab, `t${t} ${i}`, now - 3 * MIN + t * 1000 + i)
+      tab.act(() => {
+        globalThis.localStorage = views[t]
+        try { assert.notEqual(saveLocalProgress(tab.progress, { access: captureLearnerAccess(views[t]) }), false) }
+        finally { globalThis.localStorage = shared }
+      })
+    }
+  })
+  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 2400, 'every verified turn of three tabs')
+  withClock(now + 11 * MIN, () => {
+    const later = freshLoad(shared, 'A')
+    practice(later, 'later', Date.now()); persist(later)
+    assert.equal(freshLoad(shared, 'A').progress.messagesSent, 2401)
+    const own = JSON.parse(shared.getItem(storedKeys(shared, 'lc2-local-progress').find(k => k.includes(later.act(() => writerId())))))
+    assert.ok(own.events.length <= 500, 'bounded again after settling: ' + own.events.length)
+  })
+})
+
+scenario('a tab paused for two hours resumes with stale memory: nothing lost, nothing counted twice', () => {
+  const shared = new Store()
+  const start = Date.now() - 3 * 60 * MIN
+  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
+  withClock(start, () => { for (let i = 0; i < 50; i++) { practice(b, 'b ' + i, start + i); persist(b) } })
+  // b is paused (a background tab, a sleeping laptop): it keeps its old memory.
+  for (let i = 0; i < 900; i++) {
+    const at = start + 60 * MIN + i * 8000            // two hours of a's turns, folding as it goes
+    withClock(at, () => { hear(a); practice(a, 'a ' + i, at); persist(a) })
+  }
+  const resumedAt = start + 3 * 60 * MIN
+  withClock(resumedAt, () => {
+    for (let i = 0; i < 10; i++) { practice(b, 'b late ' + i, resumedAt + i); persist(b) }
+    const p = freshLoad(shared, 'A').progress
+    assert.equal(p.messagesSent, 960, 'b’s old turns are counted once, a’s all kept, b’s new ones added')
+    assert.ok(p.ledger.base.folded > 0, 'and compaction did happen in between')
+  })
+})
+
+/*
+ * The edge, measured: what the settle window does NOT cover. A turn that only
+ * one tab holds — its save failing (quota) for longer than the window — while
+ * another tab folds past it. The failing tab is told at every save; this pins
+ * down what happens once the save recovers.
+ */
+scenario('beyond the protection window: a turn whose save kept failing for 15 minutes', () => {
+  const shared = new Store()
+  const start = Date.now() - 60 * MIN
+  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
+  const bKey = () => b.act(() => writerId())
+  shared.failWrites = key => key.includes(bKey())                        // only b's copy cannot be written
+  const failed = withClock(start, () => { practice(b, 'b stranded', start); return persist(b).progress })
+  assert.equal(failed, false, 'b is told its turn is not saved')
+  for (let i = 0; i < 600; i++) {
+    const at = start + i * 1500                                           // 15 minutes of a's turns
+    withClock(at, () => { practice(a, 'a ' + i, at); persist(a) })
+  }
+  shared.failWrites = null
+  const recovered = withClock(start + 16 * MIN, () => { hear(b); return persist(b).progress })
+  assert.notEqual(recovered, false)
+  const total = freshLoad(shared, 'A').progress.messagesSent
+  // Measured result, recorded in the P3 report: the stranded turn is older than
+  // the base a folded, so the merge treats it as counted and it is dropped.
+  assert.equal(total, 600, 'KNOWN LIMIT: the turn hidden for longer than the window is not counted')
+})
+
 // Small deterministic PRNG so every failure can be replayed by its seed.
 function prng(seed) { let x = seed >>> 0; return () => ((x = (x * 1664525 + 1013904223) >>> 0) / 2 ** 32) }
 

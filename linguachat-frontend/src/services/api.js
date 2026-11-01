@@ -1,4 +1,5 @@
 import { translate } from '../i18n/translations'
+import { safeAnalysis } from './chatAnalysis.js'
 
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : '/api')
 const VALID_MODES = new Set(['chat', 'translation', 'correction'])
@@ -47,6 +48,7 @@ export function normalizeChatResponse(payload) {
     detected_language: data.detected_language ?? null,
     target_language: data.target_language ?? null,
     mission_feedback: data.mission_feedback ?? null,
+    analysis: safeAnalysis(data.analysis),
   }
 }
 
@@ -73,6 +75,12 @@ export async function sendChatMessage({
    * is not told why this one won — the selection happened before the request.
    */
   topicContext = null,
+  /*
+   * P3: what this device remembers across days about rules Lingua corrected
+   * (chatEvidence.learningMemoryPayload): rule ids, a status, verbs already
+   * practised. Never sentences; the server validates and ignores the rest.
+   */
+  learningMemory = null,
 }) {
   try {
     /*
@@ -102,6 +110,7 @@ export async function sendChatMessage({
         mission_context: missionContext,
         tutor_preferences: tutorPreferences ? teachingPreferences : null,
         active_companion: activeCompanion,
+        ...(Array.isArray(learningMemory) && learningMemory.length ? { learning_memory: learningMemory } : {}),
         ...(Object.keys(optionalContext).length ? { optional_context: optionalContext } : {}),
       }),
       signal: AbortSignal.timeout(8000),

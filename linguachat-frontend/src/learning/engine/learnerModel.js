@@ -1,4 +1,5 @@
 import { teachingHistory, retentionProfile } from './teachingPolicy.js'
+import { mergeChatEvidence, sanitizeChatEvidence, sanitizeForgotten } from './chatEvidence.js'
 import { bindLearnerObject, captureLearnerAccess, captureLearnerObjectAccess } from '../../auth/localLease.js'
 import { collectDeadCopies, ownKey, storedCopies } from '../../services/writerKeys.js'
 /*
@@ -58,6 +59,14 @@ export function createLearnerModel() {
     // Ids of activity events already counted, so the same moment can never be
     // counted twice (double tap, StrictMode, reload, breakpoint, re-render).
     signalLog: [],
+    /*
+     * What the chat observed about rules Lingua corrected (P3): rule ids,
+     * kinds and times, never sentences — see chatEvidence.js. Informative
+     * only: none of it is curriculum evidence. `chatForgotten` holds the
+     * per-rule tombstones that make forgetting stick across tabs.
+     */
+    chatEvidence: [],
+    chatForgotten: {},
     /*
      * A compact history of how each episode was played: first time, resumed,
      * practised again, or practised taking the other option. Never the answers
@@ -122,6 +131,8 @@ function carryForward(parsed, { keepPreferences, keepSignals, keepRuns }) {
     recentInterests: keepPreferences && Array.isArray(parsed.recentInterests)
       ? parsed.recentInterests.filter(i => typeof i === 'string').slice(0, 8) : [],
     teachingHistory: teachingHistory(parsed.teachingHistory),
+    chatEvidence: sanitizeChatEvidence(parsed.chatEvidence),
+    chatForgotten: sanitizeForgotten(parsed.chatForgotten),
     signalLog: keepSignals ? sanitizeSignalLog(parsed.signalLog) : [],
     episodeRuns: keepRuns ? sanitizeEpisodeRuns(parsed.episodeRuns) : {},
     activeRun: keepRuns ? sanitizeRun(parsed.activeRun) : null,
@@ -388,6 +399,7 @@ function mergeModelCopy(model, stored) {
     ...model,
     teachingHistory: teachingHistory([...new Map([...teachingHistory(stored.teachingHistory), ...teachingHistory(model.teachingHistory)].map(x => [x.id, x])).values()].sort((a,b) => a.at-b.at)),
     activityPreferences: merged,
+    ...mergeChatEvidence(model.chatEvidence, stored.chatEvidence, model.chatForgotten, stored.chatForgotten),
     // Preserve capabilities from independent snapshots without summing mastery evidence.
     // Same-id concurrent attempts need per-event provenance before safe reconciliation.
     canDo: mergeCanDoEvidence(model.canDo, stored.canDo),

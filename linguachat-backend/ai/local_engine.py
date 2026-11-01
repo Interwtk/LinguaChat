@@ -3,7 +3,9 @@ from __future__ import annotations
 import re
 import unicodedata
 
-from ai.grammar_check import analyze, corrected_sentence
+from ai.grammar_check import (
+    SILENT_H, VOWEL_LETTER_CONSONANT_SOUND, _past_of, _third_person, analyze, corrected_sentence, correct_uses,
+)
 from ai.schemas import ChatMode, ChatResult, LanguageLevel, LearningAction, MissionFeedback
 from ai.tutor_i18n import MESSAGES, resolve_language, say
 
@@ -121,15 +123,19 @@ GREETINGS = {"hello", "hi", "hey", "good morning", "good afternoon", "good eveni
 # code; these lists only answer "is this message in that language?".
 OWN_LANGUAGE_WORDS = {
     "es": {"el", "la", "los", "las", "que", "de", "y", "en", "un", "una", "es", "por", "para", "con",
-           "como", "quiero", "tengo", "gracias", "hola", "yo", "no", "mi", "muy"},
+           "como", "quiero", "tengo", "gracias", "hola", "yo", "no", "mi", "muy",
+           # P3: frequent words with no English twin
+           "estoy", "estás", "cómo", "bien", "también", "pero", "soy", "eres"},
     "pt": {"o", "os", "as", "que", "de", "e", "em", "um", "uma", "é", "não", "para", "com", "eu",
-           "obrigado", "obrigada", "olá", "muito", "meu"},
+           "obrigado", "obrigada", "olá", "muito", "meu", "você", "tudo", "bem", "estou", "também"},
     "fr": {"le", "la", "les", "que", "de", "et", "un", "une", "est", "je", "pas", "pour", "avec",
-           "bonjour", "merci", "très", "mon", "moi"},
+           "bonjour", "merci", "très", "mon", "moi", "suis", "comment", "ça", "va", "vous", "aussi"},
     "it": {"il", "la", "che", "di", "e", "un", "una", "è", "non", "per", "con", "sono", "ciao",
            "grazie", "io", "molto", "mio"},
     "de": {"der", "die", "das", "und", "ist", "ich", "nicht", "ein", "eine", "zu", "mit", "danke",
-           "hallo", "sehr", "mein", "bin"},
+           "hallo", "sehr", "mein", "bin",
+           # P3: "Hallo, wie geht es?" was answered "Nice!": one hit was not enough
+           "wie", "geht", "es", "du", "auch", "nein", "bitte", "heute", "habe", "kann", "gut"},
 }
 NON_LATIN = {"ja": re.compile(r"[぀-ヿ一-鿿]"), "ar": re.compile(r"[؀-ۿ]")}
 
@@ -247,16 +253,17 @@ def assess(message: str, profile: dict | None = None) -> dict:
                               "confidence": "high", "facts": {"correction": correction}}],
                 "corrected": correction}
     findings = analyze(message)
+    uses = correct_uses(message)
     if findings:
-        return {"verdict": "error", "source": "local_rules",
+        return {"verdict": "error", "source": "local_rules", "uses": uses,
                 "confidence": "high" if all(f.confidence == "high" for f in findings) else "medium",
                 "findings": [{"rule": f.rule, "original": f.original, "replacement": f.replacement,
                               "confidence": f.confidence, "facts": f.facts} for f in findings],
                 "corrected": corrected_sentence(message, findings)}
     if len(words) < 2:
-        return {"verdict": "insufficient", "confidence": "high", "findings": [], "source": "local_rules"}
+        return {"verdict": "insufficient", "confidence": "high", "findings": [], "uses": uses, "source": "local_rules"}
     # The rules are few. Silence from them is not a verdict of correctness.
-    return {"verdict": "no_issue_detected", "confidence": "low", "findings": [], "source": "local_rules"}
+    return {"verdict": "no_issue_detected", "confidence": "low", "findings": [], "uses": uses, "source": "local_rules"}
 
 
 def choose_strategy(rule: str, profile: dict | None) -> str:
@@ -271,6 +278,15 @@ def choose_strategy(rule: str, profile: dict | None) -> str:
     if len(recent) >= 2:
         return "guided_retrieval"
     if recent or _tutor_preferences(profile).get("explanation_depth") == "detailed":
+        return "contrast_example"
+    # Across days. This server forgets a session after a few turns; the
+    # learner's own device keeps a compact record (rule ids, never words) and
+    # sends what the teaching policy concluded from it. Its choice is used only
+    # when nothing in THIS conversation already decided.
+    memory = memory_for(rule, profile)
+    if memory.get("preferred_strategy") in STRATEGIES:
+        return memory["preferred_strategy"]
+    if memory.get("status") == "recurring":
         return "contrast_example"
     return "brief_explanation"
 
@@ -405,6 +421,76 @@ def _chat_suggestion(level: LanguageLevel, lang: str, verdict: str) -> str:
     return say("sugg_nuance", lang)
 
 
+STRATEGIES = ("brief_explanation", "contrast_example", "guided_retrieval")
+
+
+def memory_for(rule: str, profile: dict | None) -> dict:
+    for item in (profile or {}).get("learning_memory") or []:
+        if item.get("rule") == rule:
+            return item
+    return {}
+
+
+# Retrieval on a later day happens in a sentence the learner has not met, with
+# a verb (or noun) they have not been corrected on — so success is retrieval
+# and transfer, not recognition of the screen they saw yesterday.
+RETRIEVAL_ITEMS = {
+    "past_irregular": [
+        ("write", "Yesterday my friend ____ ({base}) a long letter."),
+        ("swim", "Last summer we ____ ({base}) in the lake."),
+        ("eat", "Last night I ____ ({base}) pizza with my family."),
+        ("buy", "On Saturday she ____ ({base}) new shoes."),
+        ("drink", "This morning he ____ ({base}) a big cup of tea."),
+        ("take", "Last week we ____ ({base}) the train to work."),
+        ("go", "Last Sunday they ____ ({base}) to the beach."),
+        ("speak", "Yesterday the teacher ____ ({base}) very slowly."),
+    ],
+    "past_marker": [
+        ("work", "Yesterday I ____ ({base}) until six."),
+        ("walk", "Last night we ____ ({base}) home together."),
+        ("watch", "Two days ago they ____ ({base}) a funny film."),
+    ],
+    "third_person": [
+        ("work", "My sister ____ ({base}) in a hospital."),
+        ("live", "He ____ ({base}) near the station."),
+        ("play", "She ____ ({base}) tennis on Mondays."),
+        ("like", "Our teacher ____ ({base}) jazz."),
+    ],
+    "article": [
+        ("orange", "Can I have ____ (a/an) {base}, please?"),
+        ("umbrella", "I need ____ (a/an) {base} today."),
+        ("hour", "The film is ____ (a/an) {base} long."),
+        ("idea", "That is ____ (a/an) good {base}."),
+    ],
+}
+
+
+def _retrieval_expected(rule: str, base: str) -> str:
+    if rule in {"past_irregular", "past_marker"}:
+        return _past_of(base)
+    if rule == "third_person":
+        return _third_person(base)
+    vowel_sound = (base[0] in "aeiou" and not base.startswith(VOWEL_LETTER_CONSONANT_SOUND)) or base.startswith(SILENT_H)
+    return "an" if vowel_sound else "a"
+
+
+def retrieval_action(profile: dict | None, lang: str) -> tuple[LearningAction, dict] | None:
+    """A delayed retrieval for the first DUE difficulty the device sent, or None."""
+    for item in (profile or {}).get("learning_memory") or []:
+        rule = item.get("rule")
+        if not item.get("due") or rule not in RETRIEVAL_ITEMS:
+            continue
+        seen = set(item.get("bases") or [])
+        base, frame = next(((b, f) for b, f in RETRIEVAL_ITEMS[rule] if b not in seen), RETRIEVAL_ITEMS[rule][0])
+        material = frame.format(base=base)
+        expected = _retrieval_expected(rule, base)
+        fill = say("fill_past", lang, base=base, material=material) if rule in {"past_irregular", "past_marker"}             else say("fill_generic", lang, material=material)
+        prompt = say("retrieval_lead", lang) + " " + fill
+        action = LearningAction(type="fill_blank", prompt=prompt, options=None, expected=expected)
+        return action, {"rule": rule, "expected": expected, "base": base}
+    return None
+
+
 def _learning_action_for(level: LanguageLevel, lang: str) -> LearningAction:
     if level in {LanguageLevel.A1, LanguageLevel.A2}:
         return LearningAction(
@@ -531,6 +617,12 @@ def generate_local_response(
     # already brought their own subject in every other branch, and a focus line
     # announcing "game worlds" over a conversation about travel is a small lie.
     on_topic = bool(topic_facet) and reply == _topic_opener(topic_facet, level)
+    # A difficulty from an earlier day that is due again: offer one retrieval
+    # in a new sentence instead of the generic prompt. Never on top of a
+    # correction, and never invented — only what the device says is due.
+    retrieval = retrieval_action(profile, lang) if analysis["verdict"] in {"no_issue_detected", "insufficient"} else None
+    if retrieval:
+        analysis = {**analysis, "retrieval": retrieval[1]}
     return ChatResult(
         reply=reply,
         correction=None,
@@ -538,7 +630,7 @@ def generate_local_response(
         suggestion=say("sugg_unclear", lang) if analysis["verdict"] == "insufficient" and normalize(message) not in GREETINGS
         else _chat_suggestion(level, lang, analysis["verdict"]),
         mode=ChatMode.CHAT,
-        learning_action=_learning_action_for(level, lang),
+        learning_action=retrieval[0] if retrieval else _learning_action_for(level, lang),
         # naming the topic is honest and useful; naming why it was chosen is not,
         # and the server was never told why anyway
         focus=f"Talking about {topic_facet}" if on_topic else say("focus_conversation", lang),

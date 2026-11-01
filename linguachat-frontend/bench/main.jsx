@@ -1,6 +1,6 @@
 /*
  * LinguaChat visual bench — development only, synthetic data (see
- * vite.bench.config.mjs). URL: /bench/?scene=tu|call|notes|chat|auth
+ * vite.bench.config.mjs). URL: /bench/?scene=tu|call|notes|chat|auth|archive|archive-empty|chats|mission
  * &lang=en|es|ja|ar|…&theme=light|dark
  *
  * Every learner shown here is invented. The summaries are derived by the real
@@ -20,6 +20,11 @@ import { NotesSheet } from '../src/components/layout/NotesSheet.jsx'
 import { ConversationRoom } from '../src/components/layout/ConversationRoom.jsx'
 import { AuthFlow } from '../src/components/auth/AuthFlow.jsx'
 import { sanitizeChatAppearance } from '../src/services/chatAppearance.js'
+import { ConversationArchive } from '../src/components/archive/ConversationArchive.jsx'
+import { ChatsView } from '../src/components/chats/ChatsView.jsx'
+import { createEmptyProgress, recordPractice } from '../src/services/localProgress.js'
+import { PRACTICE_MISSIONS } from '../src/data/practiceMissions.js'
+import { createMissionIntroMessage, createMissionStepMessage, createMissionFeedbackMessage, evaluateMissionStep } from '../src/services/missions.js'
 
 const BENCH_MARKER = 'LC_VISUAL_BENCH' // asserted absent from every production build
 const params = new URLSearchParams(location.search)
@@ -110,6 +115,39 @@ function Scene({ t }) {
         <AppProvider value={{ ...common, authStep: 'entry', authProviderError: 'auth_unavailable' }}><AuthFlow /></AppProvider>
         <AppProvider value={{ ...common, authStep: 'login', login: failing }}><AuthFlow /></AppProvider>
       </>
+    )
+  }
+  if (scene === 'archive' || scene === 'archive-empty' || scene === 'chats') {
+    // real days, folded by the real ledger from synthetic turns
+    let progress = createEmptyProgress()
+    if (scene !== 'archive-empty') {
+      progress = recordPractice(progress, { userMessage: 'I want to travel to Rome by train', response: { mode: 'chat', reply: 'ok' }, at: NOW - 2 * DAY })
+      progress = recordPractice(progress, { userMessage: 'Yesterday I goed to school', response: { mode: 'chat', reply: 'ok', correction: 'Yesterday I went to school.' }, at: NOW - 2 * DAY + 60000 })
+      progress = recordPractice(progress, { userMessage: 'I like my new job', response: { mode: 'chat', reply: 'ok' }, at: NOW })
+    }
+    return (
+      <AppProvider value={{ ...common, localProgress: progress, messages: [] }}>
+        <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+          {scene === 'chats' ? <ChatsView /> : <ConversationArchive />}
+        </div>
+      </AppProvider>
+    )
+  }
+  if (scene === 'mission') {
+    const mission = PRACTICE_MISSIONS[0]
+    const step = mission.steps[0]
+    const details = { mission, step, currentStepNumber: 1, totalSteps: mission.steps.length, progressPercent: 0 }
+    const wrong = evaluateMissionStep(step, 'I travel want', t)
+    const msgs = [
+      createMissionIntroMessage(mission, false, t),
+      createMissionStepMessage(details, t),
+      { id: 'u-m', role: 'user', text: 'I travel want', ts: NOW },
+      createMissionFeedbackMessage(mission, step, wrong, 5, t),
+    ]
+    return (
+      <AppProvider value={{ ...common, messages: msgs }}>
+        <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}><ConversationRoom /></div>
+      </AppProvider>
     )
   }
   return <p>Unknown scene</p>

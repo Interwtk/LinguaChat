@@ -33,17 +33,40 @@ function normalize(text) {
   return String(text || '').trim().toLowerCase().replace(/[.!?]+$/g, '')
 }
 
-function friendlyPrompt(step) {
+/*
+ * Everything a learner reads in a mission goes through `t` (P3: it was
+ * Spanish for every interface language). Without a translator — a test, a
+ * caller that has none — the key itself is returned, never another language.
+ */
+const keyOnly = (key) => key
+const fill = (text, values = {}) => Object.entries(values).reduce((out, [k, v]) => out.replaceAll(`{${k}}`, String(v)), text)
+const say = (t, key, values) => fill((t || keyOnly)(key, values), values)
+
+/* The step's hint in the learner's language, with its English phrase. */
+export function stepHint(step, t) {
+  if (!step?.hintKey) return ''
+  return say(t, step.hintKey, { phrase: step.phrase || '' })
+}
+
+/* The idea to express (learner's language) or the English frame to complete. */
+export function stepPrompt(step, t) {
   if (!step) return ''
-  const prompt = step.prompt ? `\n\n${step.prompt}` : ''
-  const typeHint = {
-    translate: 'Probemos una frase util.',
-    choose_option: 'Elige la opcion que suena mas natural.',
-    write_sentence: 'Escribe una respuesta corta en ingles.',
-    reply_to_lingua: 'Imagina que estamos conversando.',
-    rewrite: 'Mejoremos esta frase juntos.',
-  }[step.type] || 'Vamos con el siguiente paso.'
-  return `${typeHint} ${step.instruction}${prompt}`
+  return step.promptKey ? say(t, step.promptKey) : (step.prompt || '')
+}
+
+const TYPE_HINT_KEYS = {
+  translate: 'missionHintTranslate',
+  choose_option: 'missionHintChoose',
+  write_sentence: 'missionHintWrite',
+  reply_to_lingua: 'missionHintReply',
+  rewrite: 'missionHintRewrite',
+}
+
+function friendlyPrompt(step, t) {
+  if (!step) return ''
+  const prompt = stepPrompt(step, t)
+  const typeHint = say(t, TYPE_HINT_KEYS[step.type] || 'missionHintNext')
+  return `${typeHint} ${say(t, step.instructionKey)}${prompt ? `\n\n${prompt}` : ''}`
 }
 
 export function loadActiveMission() {
@@ -166,17 +189,16 @@ export function getActiveMissionDetails(activeMission) {
   }
 }
 
-export function createMissionIntroMessage(mission, isContinuation = false) {
-  const text = isContinuation
-    ? `Continuemos donde quedamos. Seguimos con "${mission.title}" y te guio paso a paso.`
-    : `Hoy practicaremos ${mission.title.toLowerCase()}. Te guiare paso a paso.`
+export function createMissionIntroMessage(mission, isContinuation = false, t = null) {
+  const title = say(t, mission.titleKey)
+  const text = say(t, isContinuation ? 'missionIntroContinue' : 'missionIntroStart', { title })
   return {
     id: `mission-intro-${Date.now()}`,
     role: 'lingua',
     text,
     feedback: {
-      focus: mission.targetSkill,
-      suggestion: `Meta de hoy: ${mission.description}`,
+      focus: say(t, mission.skillKey),
+      suggestion: say(t, 'missionGoal', { goal: say(t, mission.descKey) }),
     },
     missionId: mission.id,
     missionType: 'intro',
@@ -184,12 +206,12 @@ export function createMissionIntroMessage(mission, isContinuation = false) {
   }
 }
 
-export function createMissionStepMessage(details) {
+export function createMissionStepMessage(details, t = null) {
   if (!details?.step) return null
   return {
     id: `mission-step-${details.mission.id}-${details.step.id}-${Date.now()}`,
     role: 'lingua',
-    text: friendlyPrompt(details.step),
+    text: friendlyPrompt(details.step, t),
     feedback: null,
     missionId: details.mission.id,
     missionStepId: details.step.id,
@@ -199,24 +221,22 @@ export function createMissionStepMessage(details) {
       current: details.currentStepNumber,
       total: details.totalSteps,
       percent: details.progressPercent,
-      targetSkill: details.mission.targetSkill,
+      targetSkill: say(t, details.mission.skillKey),
     },
     ts: Date.now(),
   }
 }
 
-export function createMissionFeedbackMessage(mission, step, evaluation, earnedXp) {
+export function createMissionFeedbackMessage(mission, step, evaluation, earnedXp, t = null) {
   return {
     id: `mission-feedback-${step.id}-${Date.now()}`,
     role: 'lingua',
-    text: evaluation.passed
-      ? `Bien. ${evaluation.feedback} +${earnedXp} XP.`
-      : `Buen intento. ${evaluation.feedback} +${earnedXp} XP por practicar.`,
+    text: say(t, evaluation.passed ? 'missionFeedbackPassed' : 'missionFeedbackTried', { feedback: evaluation.feedback, xp: earnedXp }),
     feedback: {
       correction: evaluation.correction || null,
       why: evaluation.explanation || null,
-      suggestion: evaluation.nextSuggestion || 'Sigue con una frase corta y clara.',
-      focus: mission.targetSkill,
+      suggestion: evaluation.nextSuggestion || say(t, 'missionKeepShort'),
+      focus: say(t, mission.skillKey),
     },
     missionId: mission.id,
     missionStepId: step.id,
@@ -225,14 +245,14 @@ export function createMissionFeedbackMessage(mission, step, evaluation, earnedXp
   }
 }
 
-export function createMissionCompleteMessage(mission, completed) {
+export function createMissionCompleteMessage(mission, completed, t = null) {
   return {
     id: `mission-complete-${mission.id}-${Date.now()}`,
     role: 'lingua',
-    text: `Mision completada. Hoy practicaste ${mission.targetSkill} y frases utiles. +${completed.earnedXp || mission.rewardXp} XP.`,
+    text: say(t, 'missionCompleteText', { skill: say(t, mission.skillKey), xp: completed.earnedXp || mission.rewardXp }),
     feedback: {
-      focus: mission.targetSkill,
-      suggestion: 'Vuelve manana y hacemos otra mini practica.',
+      focus: say(t, mission.skillKey),
+      suggestion: say(t, 'missionComeBack'),
     },
     missionId: mission.id,
     missionType: 'complete',
@@ -240,9 +260,10 @@ export function createMissionCompleteMessage(mission, completed) {
   }
 }
 
-export function evaluateMissionStep(step, value) {
+export function evaluateMissionStep(step, value, t = null) {
   const normalized = normalize(value)
-  if (!step) return { passed: false, feedback: 'No encontre este paso.' }
+  if (!step) return { passed: false, feedback: say(t, 'missionStepMissing') }
+  const hint = stepHint(step, t)
 
   if (step.type === 'choose_option') {
     const selected = step.options?.find(option =>
@@ -251,10 +272,10 @@ export function evaluateMissionStep(step, value) {
     const passed = normalize(selected?.id || value) === normalize(step.expectedPattern)
     return {
       passed,
-      feedback: passed ? step.feedbackHint : `Casi. Mira esta pista: ${step.feedbackHint}`,
+      feedback: passed ? hint : say(t, 'missionAlmost', { hint }),
       correction: passed ? null : step.options?.find(option => normalize(option.id) === normalize(step.expectedPattern))?.text || null,
-      explanation: passed ? null : 'La opcion correcta suena mas natural en ingles.',
-      nextSuggestion: 'Leamos la siguiente situacion.',
+      explanation: passed ? null : say(t, 'missionChoiceWhy'),
+      nextSuggestion: say(t, 'missionNextChoice'),
     }
   }
 
@@ -265,12 +286,13 @@ export function evaluateMissionStep(step, value) {
 
   return {
     passed,
-    feedback: passed
-      ? step.feedbackHint
-      : `Prueba usando esta idea: ${step.feedbackHint}`,
-    correction: passed ? null : step.feedbackHint.replace(/^[^:]+:\s*/, ''),
-    explanation: passed ? null : 'La idea esta bien; solo ajustemos la forma.',
-    nextSuggestion: 'Vamos paso a paso.',
+    feedback: passed ? hint : say(t, 'missionTryIdea', { hint }),
+    // Only a real English model answer is a correction. The old code cut the
+    // hint at its colon, and a hint without one was shown, in Spanish, as the
+    // "correct" English.
+    correction: passed ? null : (step.model || null),
+    explanation: passed ? null : say(t, 'missionFormWhy'),
+    nextSuggestion: say(t, 'missionNextStep'),
   }
 }
 

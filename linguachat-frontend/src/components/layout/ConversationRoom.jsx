@@ -119,10 +119,15 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
     }
   }, [input])
 
+  // A suggestion Lingua offered and the learner sent unchanged is assisted:
+  // it can be good practice, never evidence of what they know (P3).
+  const promptedRef = useRef(null)
   const handleSend = useCallback(() => {
     const text = input.trim()
     if (!text || isTyping) return
-    sendMessage(text)
+    const assisted = promptedRef.current !== null && text === promptedRef.current.trim()
+    promptedRef.current = null
+    sendMessage(text, { assisted })
     setInput('')
     setSparkOpen(false)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
@@ -136,6 +141,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
   }, [handleSend])
 
   const usePrompt = useCallback((text) => {
+    promptedRef.current = text
     setInput(text)
     setSparkOpen(false)
     textareaRef.current?.focus()

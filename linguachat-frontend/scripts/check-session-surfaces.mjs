@@ -748,7 +748,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
 // arrived while the original account was still active.
 {
   const context = read('src/context/AppContext.jsx')
-  const signature = '  const sendMessage = useCallback(async (text) => {'
+  const signature = '  const sendMessage = useCallback(async (text, { assisted = false } = {}) => {'
   const start = context.indexOf(signature)
   const end = context.indexOf('\n  }, [activeCompanion, activeMission, conversationTopic', start)
   assert.ok(start >= 0 && end > start, 'free chat must retain an inspectable async callback')
@@ -811,6 +811,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       providerTopicContext: () => ({}),
       recordPractice: () => ({ owner: 'A' }),
       recordTopicUse: () => {},
+      // P3: the learning record of a chat turn (chatEvidence.js) and its translator
+      assisted: false,
+      tRef: { current: key => key },
+      learningMemoryPayload: () => [],
+      classifyChatTurn: () => ({ kind: 'not_evaluable', entries: [] }),
+      recordChatTurn: () => false,
+      saveLearnerModel: () => true,
     }
     const pending = send('Hello', deps)
     let alreadyFlushed = 0
@@ -999,6 +1006,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       missionRewardId: (active, part) => `mission:${active?.missionId}:${active?.startedAt}:${part}`,
       createMissionFeedbackMessage: () => ({ missionType: 'feedback' }),
       createMissionStepMessage: () => ({ missionType: 'step' }),
+      tRef: { current: key => key },
       createMissionCompleteMessage: () => ({ missionType: 'complete' }),
     }
     const pending = submit('answer', null, deps)
@@ -2545,6 +2553,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         getActiveMissionDetails: active => ({ mission, step: { id: 'step-A' }, active }),
         createMissionIntroMessage: () => ({ id: 'intro-A' }),
         createMissionStepMessage: () => ({ id: 'step-A' }),
+        tRef: { current: key => key },
         appendLinguaMessages: (_messages, publication) => {
           appends++
           queued.push(['messages', () => publication.valid()])

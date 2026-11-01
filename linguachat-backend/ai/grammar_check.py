@@ -77,7 +77,17 @@ class Finding:
     facts: dict = field(default_factory=dict)  # values for the explanation templates
 
 
+# Verbs whose simple past is spelled like the base: after "yesterday" the
+# sentence may well be right ("I read a book yesterday"), so a past-marker
+# finding on them is impossible to justify — and "readed" would be a wrong
+# correction. P3: found by the false-positive corpus.
+SAME_FORM_PAST = {"read", "put", "cut", "hit", "let", "set", "shut", "hurt", "cost", "quit", "spread",
+                  "bet", "cast", "burst", "split", "shed", "upset", "broadcast", "fit"}
+
+
 def _past_of(base: str) -> str:
+    if base in SAME_FORM_PAST:
+        return base
     if base in IRREGULAR_PAST:
         return IRREGULAR_PAST[base]
     if base.endswith("e"):
@@ -191,9 +201,12 @@ def analyze(text: str) -> list[Finding]:
                 base = "be"
             else:
                 base = _base_of(verb)
-                if not base:
+                if not base or (base in SAME_FORM_PAST and verb == base):
                     continue
                 past = _past_of(base)
+            # never "correct" a word into itself
+            if past == verb:
+                continue
             token = tokens[i + 1]
             add(i + 1, Finding("past_marker", token.group(0), _match_case(token.group(0), past),
                                token.start(), token.end(), "medium",
@@ -212,6 +225,13 @@ def analyze(text: str) -> list[Finding]:
             if subject == "it" and i > 0 and not re.search(r"[.!?,;]\s*$", text[: tokens[i].start()]):
                 continue
             verb = words[i + 1]
+            # "she don't" -> "she doesn't": the same agreement, on the auxiliary.
+            if verb in {"don't", "dont"}:
+                token = tokens[i + 1]
+                add(i + 1, Finding("third_person", token.group(0), _match_case(token.group(0), "doesn't"),
+                                   token.start(), token.end(), "medium",
+                                   {"subject": tokens[i].group(0), "base": "don't", "fixed": "doesn't"}))
+                continue
             if verb in AGREEMENT_VERBS and verb not in {"can", "will"}:
                 fixed = _third_person(verb)
                 token = tokens[i + 1]
@@ -234,6 +254,39 @@ def analyze(text: str) -> list[Finding]:
                            {"article": wanted, "word": nxt, "wrong": token.group(0)}))
 
     return sorted(findings, key=lambda f: f.start)
+
+
+# What a CORRECT irregular past says about the learner (P3). Only forms that
+# cannot be anything else count: a past identical to its base ("put", "cut"),
+# a form that is also a common other word ("left", "felt"), the auxiliary "did",
+# and "was" (learned as a chunk long before the rule) say nothing. After
+# have/has/had/be the form is a participle, not the simple past.
+NOT_EVIDENCE_OF_PAST = {"left", "felt", "did", "was", "found", "fell", "saw", "won", "lost"}
+PARTICIPLE_CONTEXT = {"have", "has", "had", "i've", "you've", "we've", "they've", "is", "are",
+                      "was", "were", "be", "been", "being", "get", "gets", "got"}
+PAST_TO_BASE = {past: base for base, past in IRREGULAR_PAST.items()
+                if past != base and past not in NOT_EVIDENCE_OF_PAST}
+
+
+def correct_uses(text: str) -> list[dict]:
+    """Irregular past forms used correctly, in order, once each: {rule, form, base}.
+
+    This is an observation that a form was produced, never proof the rule is
+    known: whether it counts as learning is decided by WHEN and HOW it was
+    produced (after a correction? prompted? in a new context?), on the
+    learner's side, where that history is kept.
+    """
+    words = [t.group(0).lower() for t in TOKEN.finditer(text or "")]
+    uses, seen = [], set()
+    for i, word in enumerate(words):
+        base = PAST_TO_BASE.get(word)
+        if not base or word in seen:
+            continue
+        if any(w in PARTICIPLE_CONTEXT for w in words[max(0, i - 2):i]):
+            continue
+        seen.add(word)
+        uses.append({"rule": "past_irregular", "form": word, "base": base})
+    return uses
 
 
 def corrected_sentence(text: str, findings: list[Finding]) -> str:

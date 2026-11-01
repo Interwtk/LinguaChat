@@ -201,6 +201,18 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ja": "上を見ずにやってみましょう。「{base}」の過去形で空欄を埋めてください：{material}",
         "ar": "دورك، دون النظر إلى الأعلى: أكمل الفراغ بصيغة الماضي من '{base}': {material}",
     },
+    # P3: a retrieval on a later day, about something that was hard before.
+    # It says what it is (a check of earlier work), never "you failed this".
+    "retrieval_lead": {
+        "en": "A quick check from an earlier day.",
+        "es": "Un repaso rápido de otro día.",
+        "pt": "Uma revisão rápida de outro dia.",
+        "fr": "Un petit rappel d’un autre jour.",
+        "it": "Un ripasso veloce di un altro giorno.",
+        "de": "Eine kurze Wiederholung von einem anderen Tag.",
+        "ja": "前に練習したことの、短い確認です。",
+        "ar": "مراجعة سريعة لشيء من يوم سابق.",
+    },
     "fill_generic": {
         "en": "Your turn, without looking back: fill the gap: {material}",
         "es": "Tu turno, sin mirar arriba: completa el espacio: {material}",

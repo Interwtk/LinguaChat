@@ -75,6 +75,7 @@ import { episodeRequest } from '../learning/curriculum/episodeContent.js'
  */
 const ARC = episodesOfLevel(playableLevelId())
 import { loadLearnerModel, saveLearnerModel, recordItemSeen } from '../learning/engine/learnerModel.js'
+import { classifyChatTurn, recordChatTurn, learningMemoryPayload } from '../learning/engine/chatEvidence.js'
 import { markFactUsed, rotateFactUsage, selectLearnerFact } from '../learning/engine/learnerFacts.js'
 import {
   loadMemoryContext, dismissTopic, recordTopicUse, recentTopicIds,
@@ -592,6 +593,10 @@ export function AppProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [interfaceLanguageInfo.base, localeVersion],
   )
+  // The current translator for long-lived callbacks (missions) that build text
+  // when they run, without re-creating them on every language change.
+  const tRef = useRef(t)
+  tRef.current = t
   const interfaceReady = isLocaleReady(interfaceLanguage)
 
   /*
@@ -1318,8 +1323,12 @@ export function AppProvider({ children }) {
       step_id: details.step.id,
       step_type: details.step.type,
       target_skill: details.mission.targetSkill,
-      instruction: details.step.instruction,
-      prompt: details.step.prompt,
+      // The backend is told the instruction in the learner's language and, as
+      // `prompt`, only ENGLISH material: a model answer or the English frame.
+      // It echoes `prompt` as the correction; a translate step's idea in the
+      // learner's language must never come back as "the correct English".
+      instruction: tRef.current(details.step.instructionKey),
+      prompt: details.step.model || (details.step.promptKey ? null : details.step.prompt) || null,
       expected_pattern: details.step.expectedPattern || null,
       options: details.step.options || null,
     }
@@ -1338,8 +1347,8 @@ export function AppProvider({ children }) {
     setMissionFeedback(previous => publication.valid() ? null : previous)
     setMissionCelebration(previous => publication.valid() ? null : previous)
     appendLinguaMessages([
-      createMissionIntroMessage(selectedMission),
-      createMissionStepMessage(getActiveMissionDetails(active)),
+      createMissionIntroMessage(selectedMission, false, tRef.current),
+      createMissionStepMessage(getActiveMissionDetails(active), tRef.current),
     ], publication)
     setView(previous => publication.valid() ? 'practice' : previous)
     setMobileSheet(previous => publication.valid() ? null : previous)
@@ -1424,7 +1433,7 @@ export function AppProvider({ children }) {
         nextSuggestion: response.suggestion || response.mission_feedback.hint || null,
       }
     } else {
-      evaluation = evaluateMissionStep(details.step, value)
+      evaluation = evaluateMissionStep(details.step, value, tRef.current)
     }
 
     if (!evaluation.passed) {
@@ -1521,7 +1530,7 @@ export function AppProvider({ children }) {
                   why: response.explanation || evaluation.explanation || null,
                   suggestion: response.suggestion || evaluation.nextSuggestion || null,
                   learningAction: response.learning_action || null,
-                  focus: response.focus || details.mission.targetSkill,
+                  focus: response.focus || tRef.current(details.mission.skillKey),
                   wordToUse: response.word_to_use || null,
                 },
                 missionId: details.mission.id,
@@ -1529,8 +1538,8 @@ export function AppProvider({ children }) {
                 missionType: 'feedback',
                 ts: Date.now(),
               }
-            : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
-          createMissionCompleteMessage(details.mission, completed),
+            : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep, tRef.current),
+          createMissionCompleteMessage(details.mission, completed, tRef.current),
         ], publication)
       }, 650)
       return
@@ -1563,7 +1572,7 @@ export function AppProvider({ children }) {
                 why: response.explanation || evaluation.explanation || null,
                 suggestion: response.suggestion || evaluation.nextSuggestion || null,
                 learningAction: response.learning_action || null,
-                focus: response.focus || details.mission.targetSkill,
+                focus: response.focus || tRef.current(details.mission.skillKey),
                 wordToUse: response.word_to_use || null,
               },
               missionId: details.mission.id,
@@ -1571,8 +1580,8 @@ export function AppProvider({ children }) {
               missionType: 'feedback',
               ts: Date.now(),
             }
-          : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
-        createMissionStepMessage(getActiveMissionDetails(advanced.activeMission)),
+          : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep, tRef.current),
+        createMissionStepMessage(getActiveMissionDetails(advanced.activeMission), tRef.current),
       ], publication)
     }, 650)
     } finally {
@@ -1601,7 +1610,7 @@ export function AppProvider({ children }) {
     appendLinguaMessages({
       id: `mission-exit-${Date.now()}`,
       role: 'lingua',
-      text: 'Salimos de la mision. Seguimos en chat libre cuando quieras.',
+      text: tRef.current('missionExit'),
       feedback: null,
       missionType: 'exit',
       ts: Date.now(),
@@ -1609,7 +1618,7 @@ export function AppProvider({ children }) {
     return publication.valid()
   }, [appendLinguaMessages])
 
-  const sendMessage = useCallback(async (text) => {
+  const sendMessage = useCallback(async (text, { assisted = false } = {}) => {
     // Keep the originating account lease through the request AND React's deferred flush.
     const chatAccess = captureLearnerAccess()
     const chatGeneration = chatGenerationRef.current
@@ -1693,8 +1702,23 @@ export function AppProvider({ children }) {
          * ends up saying "anyway, back to technology".
          */
         topicContext: learnerHasSpoken ? null : providerTopicContext(conversationTopic),
+        learningMemory: learningMemoryPayload(loadLearnerModel()),
       })
       if (!chatStillCurrent()) return
+
+      /*
+       * What this turn means for learning (P3, chatEvidence.js): an error, a
+       * correct form typed back from the correction, a retrieval on a later
+       * day, a transfer to a new verb… Rule ids and times are recorded, never
+       * the sentence, and none of it is curriculum evidence.
+       */
+      const previousLingua = [...messages].reverse().find(m => m.role === 'lingua')
+      const learningModel = loadLearnerModel()
+      if (recordChatTurn(learningModel, classifyChatTurn({
+        turnId: userMsg.id, at: userMsg.ts, message: text.trim(), analysis: response.analysis, assisted,
+        previous: previousLingua ? { correction: previousLingua.feedback?.correction || null, retrieval: previousLingua.retrieval || null } : null,
+        model: learningModel,
+      })) && chatStillCurrent()) saveLearnerModel(learningModel)
 
       setConnectionNotice(prev => chatStillCurrent() ? response.connectionMessage : prev)
       setMemoryNotice(prev => chatStillCurrent()
@@ -1726,6 +1750,8 @@ export function AppProvider({ children }) {
           wordToUse: response.word_to_use || null,
           translation: null,
         },
+        // a delayed retrieval Lingua just offered: the next turn answers it
+        retrieval: response.analysis?.retrieval || null,
         ts: Date.now(),
       }
       inFlight.replyId = linguaMsg.id
@@ -1733,11 +1759,12 @@ export function AppProvider({ children }) {
       setSelectedMessage(prev => chatStillCurrent() ? linguaMsg : prev)
     } catch {
       if (!chatStillCurrent()) return
-      setConnectionNotice(prev => chatStillCurrent() ? 'Lingua had trouble connecting. You can keep exploring the demo.' : prev)
+      // (P3: these were English in every language, and promised a "demo")
+      setConnectionNotice(prev => chatStillCurrent() ? tRef.current('chatOfflineNotice') : prev)
       const fallbackMsg = {
         id: `e${Date.now()}`,
         role: 'lingua',
-        text: 'You can keep practicing with the demo while the connection recovers.',
+        text: tRef.current('chatOfflineNotice'),
         feedback: null,
         ts: Date.now(),
       }
@@ -1765,8 +1792,8 @@ export function AppProvider({ children }) {
     )
     if (!hasCurrentStep) {
       appendLinguaMessages([
-        createMissionIntroMessage(details.mission, true),
-        createMissionStepMessage(details),
+        createMissionIntroMessage(details.mission, true, tRef.current),
+        createMissionStepMessage(details, tRef.current),
       ])
     }
   }, [activeMission, appendLinguaMessages, messages])
