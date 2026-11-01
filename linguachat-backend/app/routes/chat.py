@@ -33,7 +33,9 @@ ALLOWED_TUTOR_PREFERENCES = {
     "learner_style",
 }
 
-ALLOWED_COMPANIONS = {"lingua", "lingo", "chatto"}
+# Lingua is the only tutor. "lingo" (legacy) and "chatto" (the mascot) are not
+# tutors: whatever a client sends, Lingua answers.
+ALLOWED_COMPANIONS = {"lingua"}
 
 LANGUAGE_NAMES = {
     "ar": "Arabic",
@@ -217,6 +219,9 @@ def chat(req: ChatRequest, response: Response):
             "tutor_preferences": tutor_preferences,
             "active_companion": active_companion,
             "recent_errors": conversation_memory.recent_errors(session_id),
+            # Which error rules fired recently, so the tutor can change strategy
+            # when an explanation did not work (ai/local_engine.choose_strategy).
+            "recent_error_types": conversation_memory.recent_error_types(session_id),
             "mission_context": mission_context,
             "optional_context": _safe_optional_context(req.optional_context),
         }

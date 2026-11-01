@@ -8,6 +8,8 @@ from main import app
 
 client = TestClient(app)
 EXPECTED_KEYS = {
+    # What the local engine could honestly tell about the message (P1 stage C).
+    "analysis",
     "reply",
     "correction",
     "explanation",
@@ -105,12 +107,24 @@ def test_translation_intent_handles_accents_and_punctuation():
 
 
 def test_meaning_question_from_english_to_spanish():
-    response = post_chat("qué significa cheese", level="A1")
+    # A Spanish-speaking learner's client sends its user_language explicitly.
+    response = post_chat_payload({"session_id": "meaning-es", "message": "qué significa cheese",
+                                  "level": "A1", "native_language": "es"})
     data = response.json()
 
     assert response.status_code == 200
     assert data["mode"] == "translation"
     assert "queso" in data["reply"].lower()
+
+
+def test_a_spanish_meaning_is_never_given_to_a_learner_of_another_language():
+    response = post_chat_payload({"session_id": "meaning-ja", "message": "what does cheese mean",
+                                  "level": "A1", "native_language": "ja"})
+    data = response.json()
+
+    assert response.status_code == 200
+    assert "queso" not in (data["reply"] + " " + (data["explanation"] or "")).lower()
+    assert "ローカルモード" in data["reply"], "the honest limit is stated in the learner's language"
 
 
 def test_translation_intent_long_phrase_does_not_repeat_request():
@@ -175,19 +189,16 @@ def test_tutor_preferences_and_companion_do_not_break_old_contract():
     assert data["mode"] == "chat"
 
 
-def test_lingo_companion_uses_vocabulary_fallback():
-    response = post_chat_payload({
-        "session_id": "lingo-session",
-        "message": "cheese",
-        "level": "A1",
-        "active_companion": "lingo",
-        "tutor_preferences": {"interests": ["food"]},
-    })
-    data = response.json()
-
-    assert response.status_code == 200
-    assert data["focus"] == "Vocabulary practice"
-    assert "queso" in (data["reply"] + " " + (data["explanation"] or "")).lower()
+def test_legacy_companions_are_answered_by_lingua():
+    # Lingua is the only tutor: "lingo" is legacy and Chatto is the mascot.
+    lingua = post_chat_payload({"session_id": "companion-lingua", "message": "I like cheese",
+                                "level": "A1", "active_companion": "lingua"}).json()
+    for companion in ("lingo", "chatto", "anything"):
+        data = post_chat_payload({"session_id": f"companion-{companion}", "message": "I like cheese",
+                                  "level": "A1", "active_companion": companion}).json()
+        assert data == lingua, companion
+        text = " ".join(str(data.get(k) or "") for k in ("reply", "explanation", "suggestion", "focus"))
+        assert "Lingo" not in text and "Vocabulary practice" not in text
 
 
 def test_old_native_language_string_still_works():

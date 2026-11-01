@@ -114,6 +114,7 @@ function scopedKeys(storage, lease) {
   return validLocalLease(storage, lease) ? keys : []
 }
 export const learnerStorage = {
+  keys() { return scopedKeys(globalThis.localStorage, currentLease()) },
   get length() { return scopedKeys(globalThis.localStorage, currentLease()).length },
   key(i) { return scopedKeys(globalThis.localStorage, currentLease())[i] ?? null },
   getItem(key) { return readScoped(globalThis.localStorage, key, currentLease()) },
@@ -124,6 +125,8 @@ export const learnerStorage = {
 export function captureLearnerAccess(storage = browserStorage(), lease = currentLease(storage)) {
   return {
     valid: () => validLocalLease(storage, lease),
+    // The account's own learner keys under this lease (empty once revoked).
+    keys: () => scopedKeys(storage, lease),
     bind(value) {
       if (value && typeof value === 'object') bindings.set(value, lease)
       return value

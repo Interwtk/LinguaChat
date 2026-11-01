@@ -20,6 +20,7 @@ import assert from 'node:assert/strict'
 import * as progressStore from '../src/services/localProgress.js'
 import { activateLocalAccount } from '../src/auth/browserDataIsolation.js'
 import { captureLearnerAccess, NAMESPACE_PREFIX } from '../src/auth/localLease.js'
+import { writerId } from '../src/services/writerKeys.js'
 import { createLearnerModel, loadLearnerModel, saveLearnerModel, recordItemAttempt } from '../src/learning/engine/learnerModel.js'
 
 const {
@@ -127,7 +128,8 @@ function say(tab, id, text, ts) {
 }
 function freshLoad(shared, owner) { return openTab(shared, owner) }
 function storedKeys(shared, suffix) {
-  return [...shared.values.keys()].filter(k => k.startsWith(NAMESPACE_PREFIX) && k.endsWith(':' + suffix))
+  // One copy per writer (tab): `<suffix>~w~<writer>`, plus any older shared key.
+  return [...shared.values.keys()].filter(k => k.startsWith(NAMESPACE_PREFIX) && (k.endsWith(':' + suffix) || k.includes(':' + suffix + '~w~')))
 }
 
 console.log('check-same-account-tabs')
@@ -218,7 +220,7 @@ scenario('a write interrupted by Storage keeps the last durable value and retrie
   const shared = new Store()
   const a = openTab(shared, 'A'), b = openTab(shared, 'A')
   practice(a, 'one', T0); persist(a)
-  shared.failWrites = key => key.endsWith(':lc2-local-progress')
+  shared.failWrites = key => key.includes(':lc2-local-progress')
   practice(b, 'two', T0 + 5)
   assert.equal(persist(b).progress, false, 'a denied write is reported as not saved')
   assert.equal(freshLoad(shared, 'A').progress.messagesSent, 1, 'the durable value is intact')
@@ -233,7 +235,7 @@ scenario('a write interrupted by Storage keeps the last durable value and retrie
 scenario('a reward is not confirmed when its write is refused', () => {
   const shared = new Store()
   const a = openTab(shared, 'A')
-  shared.failWrites = key => key.endsWith(':lc2-local-progress')
+  shared.failWrites = key => key.includes(':lc2-local-progress')
   assert.equal(reward(a, 'episode-award:first_greeting', 30), false)
   shared.failWrites = null
   assert.equal(freshLoad(shared, 'A').progress.xp, 0)
@@ -315,7 +317,7 @@ scenario('progress survives a full restart of the browser', () => {
   const restarted = freshLoad(shared, 'A')
   assert.equal(restarted.progress.xp, 25)
   assert.equal(restarted.progress.messagesSent, 1)
-  assert.equal(storedKeys(shared, 'lc2-local-progress').length, 1)
+  assert.equal(storedKeys(shared, 'lc2-local-progress').length, 2, 'one copy per writer, never a shared overwrite')
 })
 
 scenario('a reset in one tab is not undone by a stale tab, which keeps only later work', () => {
@@ -339,7 +341,7 @@ scenario('compaction keeps totals exact and never double-counts an old copy', ()
   for (let i = 0; i < 3; i++) practice(a, 'old ' + i, old + i * DAY)
   persist(a); hear(b)                            // b now holds the same old events
   practice(a, 'recent', Date.now()); persist(a)  // a's save folds the old events
-  const stored = JSON.parse(shared.getItem(storedKeys(shared, 'lc2-local-progress')[0]))
+  const stored = JSON.parse(shared.getItem(storedKeys(shared, 'lc2-local-progress').find(k => k.includes(a.act(() => writerId())))))
   assert.equal(stored.events.length, 1, 'only the recent event stays in the ledger')
   assert.equal(stored.base.folded, 3)
   persist(b)                                     // b re-sends the folded events
@@ -413,6 +415,142 @@ scenario('an interruption between starting a conversation and writing it still h
   a.act(() => assert.equal(startStoredConversation({ id: 'welcome', role: 'lingua', text: 'New', ts: 500 }, { access: a.access }), false))
   shared.failWrites = null
   assert.deepEqual(freshLoad(shared, 'A').messages.map(m => m.text), ['Hi'], 'the erased conversation stays erased')
+})
+
+/*
+ * Adversarial: a browser tab reads localStorage from its own cache, which other
+ * tabs update asynchronously. `staleView` freezes what a tab can read while
+ * its writes still reach the real store — the interleaving that lost a whole
+ * tab's 300 verified saves in two real Chromium tabs with the shared-key design.
+ */
+function staleView(shared) {
+  const frozen = new Map(shared.values)
+  return {
+    get length() { return frozen.size },
+    key(i) { return [...frozen.keys()][i] ?? null },
+    getItem(k) { return frozen.has(String(k)) ? frozen.get(String(k)) : null },
+    setItem(k, v) { shared.setItem(k, v); frozen.set(String(k), String(v)) },
+    removeItem(k) { shared.removeItem(k); frozen.delete(String(k)) },
+  }
+}
+scenario('a tab writing from a stale cache cannot erase another tab’s saves', () => {
+  const shared = new Store()
+  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
+  // a reads storage now; b then saves 30 turns a never sees.
+  const view = staleView(shared)
+  for (let i = 0; i < 30; i++) { practice(b, 'b ' + i, T0 + i); assert.notEqual(persist(b).progress, false) }
+  // a saves 30 turns through its stale view and never hears b (closed).
+  for (let i = 0; i < 30; i++) {
+    practice(a, 'a ' + i, T0 + 100 + i)
+    a.act(() => {
+      globalThis.localStorage = view
+      try { assert.notEqual(saveLocalProgress(a.progress, { access: captureLearnerAccess(view) }), false) }
+      finally { globalThis.localStorage = shared }
+    })
+  }
+  const p = freshLoad(shared, 'A').progress
+  assert.equal(p.messagesSent, 60, 'both tabs’ verified saves survive')
+  assert.equal(p.xp, 600)
+})
+
+// Small deterministic PRNG so every failure can be replayed by its seed.
+function prng(seed) { let x = seed >>> 0; return () => ((x = (x * 1664525 + 1013904223) >>> 0) / 2 ** 32) }
+
+scenario('random interleavings of 3 tabs, stale caches and abrupt closes lose no verified save (200 seeds)', () => {
+  for (let seed = 1; seed <= 200; seed++) {
+    const rand = prng(seed)
+    const shared = new Store()
+    const tabs = [0, 1, 2].map(() => ({ tab: openTab(shared, 'A'), alive: true, saved: 0, done: 0, view: null }))
+    let at = T0
+    for (let step = 0; step < 60; step++) {
+      const t = tabs[Math.floor(rand() * tabs.length)]
+      if (!t.alive) continue
+      const roll = rand()
+      if (roll < 0.06) { t.alive = false; continue }                       // closed abruptly
+      if (roll < 0.25) { t.view = staleView(shared); continue }            // cache falls behind
+      if (roll < 0.35) { t.view = null; hear(t.tab); continue }            // catches up
+      practice(t.tab, `s${seed} t${tabs.indexOf(t)} #${t.done++}`, at++)
+      const ok = t.view
+        ? t.tab.act(() => { globalThis.localStorage = t.view; try { return saveLocalProgress(t.tab.progress, { access: captureLearnerAccess(t.view) }) } finally { globalThis.localStorage = shared } })
+        : persist(t.tab).progress
+      if (ok !== false) t.saved = t.done
+    }
+    const expected = tabs.reduce((sum, t) => sum + t.saved, 0)
+    const p = freshLoad(shared, 'A').progress
+    assert.equal(p.messagesSent, expected, `seed ${seed}: every verified save survives`)
+    assert.equal(p.xp, expected * 10, `seed ${seed}: XP matches`)
+  }
+})
+
+scenario('a reward re-sent after its event was compacted is not paid again', () => {
+  const shared = new Store()
+  const a = openTab(shared, 'A')
+  const old = Date.now() - 30 * DAY
+  assert.equal(reward(a, 'episode-award:first_greeting', 30, old), true)
+  practice(a, 'recent', Date.now()); persist(a)                      // compaction folds the award
+  const stored = JSON.parse(shared.getItem(storedKeys(shared, 'lc2-local-progress').find(k => k.includes(a.act(() => writerId())))))
+  assert.equal(stored.events.some(e => e.id === 'episode-award:first_greeting'), false, 'the award event was folded')
+  assert.deepEqual(stored.base.foldedIds, ['episode-award:first_greeting'], 'its id is remembered')
+  const b = openTab(shared, 'A')
+  assert.equal(reward(b, 'episode-award:first_greeting', 30, Date.now()), true, 'a retry is accepted as already paid')
+  persist(b)
+  assert.equal(freshLoad(shared, 'A').progress.xp, 40, 'paid once: 30 + 10')
+})
+
+scenario('idle copies that add nothing are removed; others are kept', () => {
+  const shared = new Store()
+  const a = openTab(shared, 'A'), b = openTab(shared, 'A'), c = openTab(shared, 'A')
+  practice(b, 'from b', T0); persist(b)
+  practice(c, 'only in c', T0 + 1); c.act(() => saveLocalProgress(c.progress, { access: c.access }))
+  const keyOf = tab => storedKeys(shared, 'lc2-local-progress').find(k => k.includes(tab.act(() => writerId())))
+  const age = (tab, ms) => { const k = keyOf(tab); const v = JSON.parse(shared.getItem(k)); v.writtenAt -= ms; shared.values.set(k, JSON.stringify(v)) }
+  age(b, 10 * 60 * 1000)                                  // b idle 10 min
+  hear(a)                                                 // a holds b's and c's content now
+  persist(a)
+  assert.equal(Boolean(keyOf(b)), false, "b's idle, redundant copy is removed")
+  assert.equal(Boolean(keyOf(c)), true, "c's recent copy is kept even though a holds it")
+  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 2)
+  // b, still open, saves again: its copy comes back, nothing is lost.
+  practice(b, 'b again', T0 + 2); persist(b)
+  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 3)
+})
+
+scenario('a copy holding something nobody else has is never removed, however idle', () => {
+  const shared = new Store()
+  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
+  practice(a, 'only a', T0 + 1); persist(a)
+  const view = staleView(shared)                           // a's cache stops here
+  practice(b, 'only b', T0); persist(b)
+  const k = storedKeys(shared, 'lc2-local-progress').find(key => key.includes(b.act(() => writerId())))
+  const v = JSON.parse(shared.getItem(k)); v.writtenAt -= 60 * 60 * 1000; shared.values.set(k, JSON.stringify(v))
+  // a saves again without seeing b: b's idle copy is the only holder of b's turn.
+  practice(a, 'a again', T0 + 2)
+  a.act(() => {
+    globalThis.localStorage = view
+    try { saveLocalProgress(a.progress, { access: captureLearnerAccess(view) }) } finally { globalThis.localStorage = shared }
+  })
+  assert.notEqual(shared.getItem(k), null, "b's copy survives")
+  // a, now seeing b's copy, still must not remove what only b holds until it holds it too.
+  persist(a)
+  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 3)
+})
+
+scenario('learner-model evidence saved from a stale cache does not erase the other tab’s evidence', () => {
+  const shared = new Store()
+  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
+  const ma = a.act(() => loadLearnerModel()), mb = b.act(() => loadLearnerModel())
+  const view = staleView(shared)                           // a's cache stops here
+  b.act(() => { recordItemAttempt(mb, 'goodbye', { correct: true, independent: true }); assert.equal(saveLearnerModel(mb, { verified: true }), true) })
+  a.act(() => {
+    globalThis.localStorage = view
+    try {
+      recordItemAttempt(ma, 'hello', { correct: true, independent: true })
+      assert.equal(saveLearnerModel(ma, { verified: true }), true)
+    } finally { globalThis.localStorage = shared }
+  })
+  const merged = freshLoad(shared, 'A').act(() => loadLearnerModel())
+  assert.ok(merged.languageItems.hello, "a's evidence")
+  assert.ok(merged.languageItems.goodbye, "b's evidence survives a's stale save")
 })
 
 console.log(`\ncheck-same-account-tabs — ${checks} passed, ${failures.length} failed`)

@@ -35,6 +35,11 @@ export const PROGRESS_VERSION = 2
 export const LEDGER_HORIZON_MS = 7 * 86400000
 export const LEDGER_MAX_EVENTS = 500
 export const INITIAL_EPOCH = Object.freeze({ id: 'initial', at: 0 })
+// Ids of folded rewards that a retry could legitimately send again (episode
+// awards, daily bonuses). Their events leave the ledger when folded; their ids
+// must not, or the same reward re-sent later would be paid twice.
+export const FOLDED_IDS_MAX = 2000
+export const isStableEventId = id => /^(episode-award|session-bonus):/.test(id)
 
 const EVENT_KINDS = new Set(['practice', 'mission', 'award', 'xp'])
 
@@ -321,7 +326,7 @@ function sanitizeEpoch(raw) {
 export function createLedger({ epoch = INITIAL_EPOCH, startedAt = Date.now(), snapshot = emptySnapshot() } = {}) {
   return {
     epoch: { ...epoch },
-    base: { snapshot: sanitizeSnapshot(snapshot), startedAt, foldedBefore: 0, folded: 0 },
+    base: { snapshot: sanitizeSnapshot(snapshot), startedAt, foldedBefore: 0, folded: 0, foldedIds: [] },
     events: [],
   }
 }
@@ -350,6 +355,8 @@ export function ledgerFromStored(value) {
       startedAt: Number.isFinite(base.startedAt) ? base.startedAt : null,
       foldedBefore: Math.max(0, finite(base.foldedBefore)),
       folded: Math.max(0, finite(base.folded)),
+      foldedIds: Array.isArray(base.foldedIds)
+        ? base.foldedIds.filter(id => typeof id === 'string' && isStableEventId(id)).slice(-FOLDED_IDS_MAX) : [],
     },
     events: dedupe(value.events.map(sanitizeEvent).filter(Boolean)),
   }
@@ -389,9 +396,13 @@ export function mergeLedgers(a, b) {
   if (!b) return a
   const epoch = newerEpoch(a.epoch, b.epoch)
   const sameEpoch = [a, b].filter(l => l.epoch.id === epoch.id && l.epoch.at === epoch.at)
-  const base = sameEpoch.map(l => l.base).reduce(preferredBase)
+  const preferred = sameEpoch.map(l => l.base).reduce(preferredBase)
+  // A reward folded in either copy stays counted, whichever base is kept.
+  const foldedIds = [...new Set(sameEpoch.flatMap(l => l.base.foldedIds || []))].sort().slice(-FOLDED_IDS_MAX)
+  const base = { ...preferred, foldedIds }
+  const folded = new Set(foldedIds)
   const events = dedupe([...a.events, ...b.events])
-    .filter(event => event.at >= epoch.at && event.at >= base.foldedBefore)
+    .filter(event => event.at >= epoch.at && event.at >= base.foldedBefore && !folded.has(event.id))
   return { epoch: { ...epoch }, base, events }
 }
 
@@ -406,6 +417,7 @@ export function addEvent(ledger, raw) {
   // An event from before a reset or already folded into the base cannot be
   // added again; it was either erased by the learner or already counted.
   if (event.at < ledger.epoch.at || event.at < ledger.base.foldedBefore) return ledger
+  if ((ledger.base.foldedIds || []).includes(event.id)) return ledger
   return { ...ledger, events: dedupe([...ledger.events, event]) }
 }
 
@@ -427,6 +439,8 @@ export function compactLedger(ledger, now = Date.now()) {
       snapshot: foldEvents(ledger.base.snapshot, folding),
       foldedBefore: Math.max(ledger.base.foldedBefore, cutoff),
       folded: ledger.base.folded + folding.length,
+      foldedIds: [...new Set([...(ledger.base.foldedIds || []), ...folding.map(e => e.id).filter(isStableEventId)])]
+        .sort().slice(-FOLDED_IDS_MAX),
     },
     events: events.filter(event => event.at >= cutoff),
   }

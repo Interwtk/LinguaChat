@@ -9,11 +9,11 @@ class StorageStub {
   get length() { return this.data.size }
   key(i) { return [...this.data.keys()][i] ?? null }
   getItem(k) {
-    if (this.mismatchLearnerReads && String(k).endsWith(':lc2-learner-model-v1')) return 'mismatched-readback'
+    if (this.mismatchLearnerReads && String(k).includes(':lc2-learner-model-v1')) return 'mismatched-readback'
     return this.data.get(String(k)) ?? null
   }
   setItem(k, v) {
-    if (this.rejectLearnerWrites && String(k).endsWith(':lc2-learner-model-v1')) {
+    if (this.rejectLearnerWrites && String(k).includes(':lc2-learner-model-v1')) {
       throw new Error('QuotaExceededError (simulated)')
     }
     this.data.set(String(k), String(v))

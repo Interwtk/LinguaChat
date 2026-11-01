@@ -34,6 +34,7 @@ import {
   saveStoredMessages,
   startStoredConversation,
 } from '../services/localProgress'
+import { ownKey, WRITER_SEPARATOR } from '../services/writerKeys.js'
 import { translate, loadLocale, isLocaleReady } from '../i18n/translations'
 import { loadChatAppearance, saveChatAppearance } from '../services/chatAppearance'
 import {
@@ -513,11 +514,19 @@ export function AppProvider({ children }) {
   // that storage does not, so both tabs converge without losing either side.
   // Reads go through the same captured lease, so a revoked tab hears nothing.
   useEffect(() => {
+    // Each tab writes its own copy (`<key>~w~<writer>`); any of them may change.
     const watched = ['lc2-local-progress', 'lc2-chat-messages', 'lc2-chat-epoch']
     const onStorage = event => {
-      if (event.key !== null && !watched.some(key => event.key === key || event.key.endsWith(':' + key))) return
+      if (event.key !== null && !watched.some(key => event.key === key || event.key.endsWith(':' + key)
+        || event.key.includes(':' + key + WRITER_SEPARATOR))) return
       const access = passiveStorageAccessRef.current
       if (!access.valid()) return
+      // Another tab removed this tab's own copy while tidying up: write it
+      // again by re-publishing the same state through the passive writers.
+      if (event.newValue === null && event.key?.endsWith(ownKey('lc2-local-progress')))
+        setLocalProgress(previous => access.valid() ? { ...previous } : previous)
+      if (event.newValue === null && event.key?.endsWith(ownKey('lc2-chat-messages')))
+        setMessages(previous => access.valid() ? [...previous] : previous)
       const progress = readStoredProgress({ access })
       if (progress) setLocalProgress(previous => access.valid() ? mergeLocalProgress(previous, progress) : previous)
       const conversation = readStoredConversation({ access })
@@ -1682,9 +1691,9 @@ export function AppProvider({ children }) {
       if (!chatStillCurrent()) return
 
       setConnectionNotice(prev => chatStillCurrent() ? response.connectionMessage : prev)
-      setMemoryNotice(prev => chatStillCurrent() ? (response.correction
-        ? 'Your recent corrections are saved on this device.'
-        : "I'll remember what we practiced today.") : prev)
+      setMemoryNotice(prev => chatStillCurrent()
+        ? translate(interfaceLanguageInfo.base, response.correction ? 'memoryNoticeCorrections' : 'memoryNoticePractice')
+        : prev)
       setLocalProgress(previous => chatStillCurrent() ? recordPractice(previous, {
         userMessage: text.trim(),
         response,

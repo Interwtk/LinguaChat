@@ -5,6 +5,7 @@ import {
   PROGRESS_VERSION, sameLedger, serializeLedger, snapshotFrom,
 } from './progressLedger.js'
 import { quarantineValue } from './storageQuarantine.js'
+import { ownKey, storedCopies, writerId, WRITER_IDLE_MS } from './writerKeys.js'
 
 const STORAGE_KEYS = {
   sessionId: 'lc2-session-id',
@@ -20,11 +21,16 @@ const STORAGE_KEYS = {
  * that two tabs of the same account can both save without erasing each other.
  * The object the app holds is the totals it always read (xp, streak, topics,
  * ...) plus `ledger`, the record those totals were folded from.
+ *
+ * Each tab writes only its own copy (see writerKeys.js) and reads the union of
+ * every copy, so no tab can overwrite what another tab saved, even when its
+ * view of storage is momentarily stale.
  */
 
 // The access the learner's own tab would capture, for the few unscoped callers.
 const unscopedAccess = {
   valid: () => true,
+  keys: () => localStorage.keys(),
   getItem: key => localStorage.getItem(key),
   setItem: (key, value) => { localStorage.setItem(key, value); return true },
 }
@@ -65,17 +71,40 @@ function parseStoredProgress(raw) {
  * copy fails this throws, so nothing replaces the only copy of the data.
  */
 export function mergeIntoStoredProgress(access, progress, now = Date.now()) {
-  const raw = access.getItem(STORAGE_KEYS.progress)
-  const stored = parseStoredProgress(raw)
-  if (stored.unreadable && !quarantineValue(access, STORAGE_KEYS.progress, raw)) {
-    throw new Error('Unreadable progress could not be preserved')
+  let merged = progress ? ledgerOf(progress) : null
+  for (const copy of storedCopies(access, STORAGE_KEYS.progress)) {
+    const stored = parseStoredProgress(copy.raw)
+    if (stored.unreadable) {
+      if (!quarantineValue(access, copy.key, copy.raw)) throw new Error('Unreadable progress could not be preserved')
+      continue
+    }
+    merged = mergeLedgers(merged, stored.ledger)
   }
-  const mine = progress ? ledgerOf(progress) : null
-  return compactLedger(mergeLedgers(stored.ledger, mine) || createLedger(), now)
+  return compactLedger(merged || createLedger(), now)
 }
 
+// This tab's copy: the ledger plus who wrote it and when (for cleanup).
 export function serializeStoredProgress(ledger) {
-  return JSON.stringify(serializeLedger(ledger))
+  return JSON.stringify({ ...serializeLedger(ledger), writer: writerId(), writtenAt: Date.now() })
+}
+
+/*
+ * Remove other writers' copies that add nothing to this tab's and have been
+ * idle for a while, so storage does not grow with every tab ever opened. Best
+ * effort: a failure here never fails the save that already succeeded.
+ */
+export function collectIdleCopies(access, base, addsNothing) {
+  try {
+    const own = ownKey(base)
+    for (const copy of storedCopies(access, base)) {
+      if (copy.key === own) continue
+      let parsed = null
+      try { parsed = JSON.parse(copy.raw) } catch { continue }
+      const idleFor = Date.now() - (Number.isFinite(parsed?.writtenAt) ? parsed.writtenAt : 0)
+      if (copy.key !== base && idleFor < WRITER_IDLE_MS) continue
+      if (addsNothing(parsed) && access.valid()) access.removeItem(copy.key)
+    }
+  } catch { /* Cleanup is optional. */ }
 }
 
 function conversationEpochAt(raw) {
@@ -121,26 +150,26 @@ export function mergeMessageLists(stored, local, epochAt = 0) {
  * The messages to write: storage merged with this copy. Unreadable stored
  * bytes are quarantined first, as for progress.
  */
-export function mergeIntoStoredMessages(access, messages) {
-  const epochAt = conversationEpochAt(access.getItem(STORAGE_KEYS.chatEpoch))
-  const raw = access.getItem(STORAGE_KEYS.messages)
-  let stored = []
-  if (raw !== null) {
-    try {
-      stored = JSON.parse(raw)
-      if (!Array.isArray(stored)) throw new Error('Not a conversation')
-    } catch {
-      if (!quarantineValue(access, STORAGE_KEYS.messages, raw)) throw new Error('Unreadable chat could not be preserved')
-      stored = []
-    }
-  }
-  return mergeMessageLists(stored, messages, epochAt)
+// A stored conversation copy: the shared key holds an array, a writer's copy
+// holds { writer, writtenAt, messages }. Null if it is neither.
+function messagesOf(parsed) {
+  if (Array.isArray(parsed)) return parsed
+  return Array.isArray(parsed?.messages) ? parsed.messages : null
 }
 
-function writeJSON(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value))
-  } catch {}
+export function mergeIntoStoredMessages(access, messages) {
+  const epochAt = conversationEpochAt(access.getItem(STORAGE_KEYS.chatEpoch))
+  let merged = Array.isArray(messages) ? messages : []
+  for (const copy of storedCopies(access, STORAGE_KEYS.messages)) {
+    let stored = null
+    try { stored = messagesOf(JSON.parse(copy.raw)) } catch { stored = null }
+    if (!stored) {
+      if (!quarantineValue(access, copy.key, copy.raw)) throw new Error('Unreadable chat could not be preserved')
+      continue
+    }
+    merged = mergeMessageLists(stored, merged, epochAt)
+  }
+  return mergeMessageLists([], merged, epochAt)
 }
 
 export function createSessionId({ access = null } = {}) {
@@ -168,8 +197,7 @@ export function getOrCreateSessionId() {
 
 export function loadStoredMessages(welcomeMessage) {
   try {
-    const messages = mergeMessageLists(JSON.parse(localStorage.getItem(STORAGE_KEYS.messages) || '[]'), [],
-      conversationEpochAt(localStorage.getItem(STORAGE_KEYS.chatEpoch)))
+    const messages = readStoredConversation({ access: unscopedAccess })?.messages || []
     return messages.length ? messages : [welcomeMessage]
   } catch {
     return [welcomeMessage]
@@ -183,16 +211,22 @@ export function saveStoredMessages(messages, { access = null } = {}) {
     // write must not look successful.
     try {
       if (!access.valid()) return false
-      const serialized = JSON.stringify(mergeIntoStoredMessages(access, messages))
-      if (!access.valid() || access.setItem(STORAGE_KEYS.messages, serialized) === false
-        || !access.valid() || access.getItem(STORAGE_KEYS.messages) !== serialized) return false
+      const merged = mergeIntoStoredMessages(access, messages)
+      const key = ownKey(STORAGE_KEYS.messages)
+      const serialized = JSON.stringify({ writer: writerId(), writtenAt: Date.now(), messages: merged })
+      if (!access.valid() || access.setItem(key, serialized) === false
+        || !access.valid() || access.getItem(key) !== serialized) return false
+      const held = new Set(merged.map(messageKey))
+      const epochAt = conversationEpochAt(access.getItem(STORAGE_KEYS.chatEpoch))
+      collectIdleCopies(access, STORAGE_KEYS.messages, parsed => (messagesOf(parsed) || [])
+        .every(message => held.has(messageKey(message)) || (Number(message?.ts) || 0) < epochAt))
       return access.valid()
     } catch {
       return false
     }
   }
   // Keep the existing best-effort path for passive state persistence.
-  try { writeJSON(STORAGE_KEYS.messages, mergeIntoStoredMessages(unscopedAccess, messages)) } catch {}
+  try { saveStoredMessages(messages, { access: unscopedAccess }) } catch {}
 }
 
 /*
@@ -220,10 +254,13 @@ export function startStoredConversation(welcome, { access = null } = {}) {
 export function readStoredConversation({ access }) {
   try {
     if (!access.valid()) return null
-    const raw = access.getItem(STORAGE_KEYS.messages)
-    const messages = raw === null ? [] : JSON.parse(raw)
-    if (!Array.isArray(messages)) return null
     const epochAt = conversationEpochAt(access.getItem(STORAGE_KEYS.chatEpoch))
+    let messages = []
+    for (const copy of storedCopies(access, STORAGE_KEYS.messages)) {
+      let stored = null
+      try { stored = messagesOf(JSON.parse(copy.raw)) } catch { stored = null }
+      if (stored) messages = mergeMessageLists(stored, messages, epochAt)
+    }
     return access.valid() ? { messages, epochAt } : null
   } catch {
     return null
@@ -252,19 +289,28 @@ export function createEmptyProgress({ reset = false } = {}) {
 
 export function loadLocalProgress() {
   try {
-    const { ledger } = parseStoredProgress(localStorage.getItem(STORAGE_KEYS.progress))
-    // Unreadable progress loads as empty in memory; the first save quarantines
-    // the stored bytes before anything replaces them.
+    // Unreadable copies are left out in memory; the first save quarantines
+    // their bytes. Nothing replaces them.
+    const ledger = readStoredLedger(unscopedAccess)
     if (ledger) return progressFromLedger({ ...ledger, base: { ...ledger.base, startedAt: ledger.base.startedAt ?? Date.now() } })
   } catch {}
   return createEmptyProgress()
 }
 
 /* What another tab saved, for the `storage` listener. Null if absent or unreadable. */
+function readStoredLedger(access) {
+  let merged = null
+  for (const copy of storedCopies(access, STORAGE_KEYS.progress)) {
+    const { ledger } = parseStoredProgress(copy.raw)
+    if (ledger) merged = mergeLedgers(merged, ledger)
+  }
+  return merged
+}
+
 export function readStoredProgress({ access }) {
   try {
     if (!access.valid()) return null
-    const { ledger } = parseStoredProgress(access.getItem(STORAGE_KEYS.progress))
+    const ledger = readStoredLedger(access)
     return ledger && access.valid() ? progressFromLedger(ledger) : null
   } catch {
     return null
@@ -284,15 +330,21 @@ export function saveLocalProgress(progress, { access = null } = {}) {
     // copy was read) and verify the write before reporting success.
     try {
       if (!access.valid()) return false
-      const serialized = serializeStoredProgress(mergeIntoStoredProgress(access, progress))
-      if (!access.valid() || access.setItem(STORAGE_KEYS.progress, serialized) === false
-        || !access.valid() || access.getItem(STORAGE_KEYS.progress) !== serialized) return false
+      const ledger = mergeIntoStoredProgress(access, progress)
+      const key = ownKey(STORAGE_KEYS.progress)
+      const serialized = serializeStoredProgress(ledger)
+      if (!access.valid() || access.setItem(key, serialized) === false
+        || !access.valid() || access.getItem(key) !== serialized) return false
+      collectIdleCopies(access, STORAGE_KEYS.progress, parsed => {
+        const theirs = ledgerFromStored(parsed)
+        return Boolean(theirs) && sameLedger(mergeLedgers(ledger, theirs), ledger)
+      })
       return access.valid()
     } catch {
       return false
     }
   }
-  try { writeJSON(STORAGE_KEYS.progress, serializeLedger(mergeIntoStoredProgress(unscopedAccess, progress))) } catch {}
+  try { saveLocalProgress(progress, { access: unscopedAccess }) } catch {}
 }
 
 /*
@@ -324,10 +376,14 @@ export function applyProgressEvent(progress, event) {
 export function commitProgressEvent(event, { access }) {
   try {
     if (!access.valid()) return false
+    const key = ownKey(STORAGE_KEYS.progress)
     const serialized = serializeStoredProgress(addEvent(mergeIntoStoredProgress(access, null), event))
-    if (!access.valid() || access.setItem(STORAGE_KEYS.progress, serialized) === false || !access.valid()) return false
-    const { ledger } = parseStoredProgress(access.getItem(STORAGE_KEYS.progress))
-    return Boolean(ledger?.events.some(stored => stored.id === event.id)) && access.valid()
+    if (!access.valid() || access.setItem(key, serialized) === false || !access.valid()) return false
+    const { ledger } = parseStoredProgress(access.getItem(key))
+    // Already folded into the base (paid long ago) counts as committed: the
+    // caller must not retry forever, and nothing is paid twice.
+    const held = ledger?.events.some(stored => stored.id === event.id) || ledger?.base.foldedIds.includes(event.id)
+    return Boolean(held) && access.valid()
   } catch {
     return false
   }

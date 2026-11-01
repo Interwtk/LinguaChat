@@ -1,19 +1,21 @@
 import { useApp } from '../../context/AppContext'
 
-const ACTION_LABELS = {
-  complete_sentence: 'Completa',
-  answer_question: 'Responde',
-  rewrite: 'Reescribe',
-  choose_option: 'Elige',
-  ask_back: 'Pregunta',
-  use_word: 'Usa palabra',
+// Labels follow the learner's language (they were hardcoded Spanish).
+const ACTION_LABEL_KEYS = {
+  complete_sentence: 'actionComplete',
+  answer_question: 'actionAnswer',
+  rewrite: 'actionRewrite',
+  choose_option: 'actionChoose',
+  ask_back: 'actionAskBack',
+  use_word: 'actionUseWord',
+  fill_blank: 'actionFillBlank',
 }
 
 export function LearningAction({ action }) {
   const { t } = useApp()
   if (!action?.prompt) return null
 
-  const label = ACTION_LABELS[action.type] || t('learningAction')
+  const label = ACTION_LABEL_KEYS[action.type] ? t(ACTION_LABEL_KEYS[action.type]) : t('learningAction')
 
   return (
     <div

@@ -169,3 +169,8 @@ class ChatResult(BaseModel):
     detected_language: LanguageInfo | None = None
     target_language: LanguageInfo | None = None
     mission_feedback: MissionFeedback | None = None
+    # What the local engine could honestly tell about the learner's message:
+    # verdict (error / no_issue_detected / insufficient / not_english /
+    # translation), findings, confidence and the teaching strategy it chose.
+    # Never rendered as mastery; "no_issue_detected" is not "correct".
+    analysis: dict | None = None

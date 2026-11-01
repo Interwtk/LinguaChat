@@ -14,7 +14,12 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve as resolvePath } from 'node:path'
 import { selectRepresentativeFormat, BLOCK_CANDIDATES, formatSupportsObjective } from '../src/learning/engine/formatChoice.js'
 import { ACTIVITY_FORMATS } from '../src/learning/engine/learnerModel.js'
-import { applyProgressEvent, mergeIntoStoredProgress, serializeStoredProgress } from '../src/services/localProgress.js'
+import {
+  applyProgressEvent, collectIdleCopies, mergeIntoStoredProgress, serializeStoredProgress,
+} from '../src/services/localProgress.js'
+import { ownKey } from '../src/services/writerKeys.js'
+import { ledgerFromStored, mergeLedgers, sameLedger } from '../src/services/progressLedger.js'
+import { translate } from '../src/i18n/translations.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = (p) => readFileSync(resolvePath(here, '..', p), 'utf8')
@@ -790,6 +795,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       sessionId: 'A-session',
       nativeLanguageInfo: { base: 'es' },
       interfaceLanguageInfo: { base: 'es' },
+      // The memory notice follows the learner's language (P1 stage C).
+      translate,
       targetLanguage: 'en',
       tutorPreferences: {},
       activeCompanion: null,
@@ -1374,6 +1381,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       // saveLocalProgress merges with what storage holds (P0-1). The real
       // helpers run against the same scoped `access`, never unscoped storage.
       mergeIntoStoredProgress, serializeStoredProgress,
+      // Each tab writes its own copy (P1 stage A); the same scoped access only.
+      ownKey, collectIdleCopies, ledgerFromStored, mergeLedgers, sameLedger,
     }
     const expected = mode === 'current'
     assert.equal(clearProgress({ access }, deps), expected, mode + ': progress keys')

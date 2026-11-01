@@ -19,7 +19,7 @@ import {
 } from '../../learning/engine/learnerModel.js'
 import {
   deriveInitialScaffold, updateScaffoldAfterTurn, reviveScaffoldState,
-  evidenceKindForStep, isIndependentEvidence, showsStepModelAnswer, showsHintByDefault,
+  copiesShownModel, evidenceKindForStep, isIndependentEvidence, showsStepModelAnswer, showsHintByDefault,
 } from '../../learning/engine/scaffolding.js'
 import { dayKeyFor } from '../../learning/engine/session.js'
 import { seedFrom } from '../../learning/engine/variation.js'
@@ -517,7 +517,11 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
     if (!text.trim()) return
     const token = guardRef.current.begin()
     if (token === null) return                // a submission is already in flight
-    const independent = isIndependentEvidence({ step, assistanceUsed: fromSuggestion, correct: true })
+    // Typing back the model answer that is on screen is assisted, never
+    // independent evidence, whatever the scaffold level (copiesShownModel).
+    const shownModel = showsStepModelAnswer(step, scaffold, { unaidedAttempt, retry })
+      ? resolve(step.suggestionEn || '', vars) : ''
+    const independent = isIndependentEvidence({ step, assistanceUsed: fromSuggestion || copiesShownModel(text, shownModel), correct: true })
     const turnContext = { linguaSaid: resolve(step.promptEn || step.sceneEn || '', vars) }
 
     // Decide up front whether we will need Lingua, only to show a calm status.
