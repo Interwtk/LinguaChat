@@ -176,5 +176,17 @@ scenario('the memory sent to the tutor is closed-set and sentence-free', () => {
   assert.ok(!/Maria|Lisbon|grandmother/.test(JSON.stringify(payload)))
 })
 
+scenario('P4: an evaluator answer cannot move mastery, XP, level or milestones', () => {
+  const hostile = { ...RAW.goed, mastery: 'can_use', xp: 500, level: 'a1', levelMilestones: { a1: { graduatedAt: 'x' } },
+    unlock: ['a1'], learningState: 'can_use', findings: [...RAW.goed.findings, { rule: 'Unlock A1!', confidence: 'high' }] }
+  const a = safeAnalysis(hostile)
+  assert.deepEqual(Object.keys(a).sort(), ['confidence', 'findings', 'retrieval', 'strategy', 'uses', 'verdict'])
+  assert.deepEqual(a.findings.map(f => f.rule), ['past_irregular'], 'a rule id outside the closed shape is dropped')
+  const m = createLearnerModel()
+  const before = JSON.stringify({ canDo: m.canDo, items: m.languageItems, milestones: m.levelMilestones || null })
+  turn(m, { at: T0, message: 'Yesterday I goed home.', analysis: hostile })
+  assert.equal(JSON.stringify({ canDo: m.canDo, items: m.languageItems, milestones: m.levelMilestones || null }), before)
+})
+
 console.log(`\ncheck-chat-observations — ${passed} passed, ${failures.length} failed`)
 if (failures.length) process.exit(1)

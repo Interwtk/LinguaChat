@@ -2,7 +2,7 @@ import { learnerStorage as localStorage } from '../auth/localLease.js'
 import {
   addEvent, applyToSnapshot, compactLedger, createLedger, deriveSnapshot, emptySnapshot,
   ledgerFromLegacy, ledgerFromStored, makeEventId, mergeLedgers, missionEvent, practiceEvent,
-  isFoldedReward, PROGRESS_VERSION, sameLedger, serializeLedger, snapshotFrom,
+  isFoldedReward, isStableEventId, PROGRESS_VERSION, sameLedger, serializeLedger, snapshotFrom,
 } from './progressLedger.js'
 import { quarantineValue } from './storageQuarantine.js'
 import { collectDeadCopies, ownKey, storedCopies, writerId } from './writerKeys.js'
@@ -339,8 +339,23 @@ export function saveLocalProgress(progress, { access = null } = {}) {
  * Apply one identified event to an in-memory copy. Applying an event this copy
  * already holds changes nothing, so retries and replays never pay twice.
  */
-export function applyProgressEvent(progress, event) {
+/*
+ * The identity of a new event (P4): this page's writer id and its next
+ * sequence number. Rewards keep their stable ids instead (a retry or another
+ * tab must find the SAME id), so they get none.
+ */
+const sequences = new Map()
+function withIdentity(event) {
+  if (!event || isStableEventId(event.id) || event.w) return event
+  const w = writerId()
+  const seq = (sequences.get(w) || 0) + 1
+  sequences.set(w, seq)
+  return { ...event, w, seq }
+}
+
+export function applyProgressEvent(progress, rawEvent) {
   const ledger = ledgerOf(progress)
+  const event = withIdentity(rawEvent)
   const next = addEvent(ledger, event)
   if (next === ledger) return progress
   // The newest event advances this copy's own totals, exactly as before. One

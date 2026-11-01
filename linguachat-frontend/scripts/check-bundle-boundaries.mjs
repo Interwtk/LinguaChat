@@ -299,6 +299,23 @@ ok()
 }
 ok()
 
+// 6c) the prepared, inactive A1 readiness evaluator (prepared/, P4) never ships:
+//     no chunk carries it and no product source imports it.
+{
+  for (const f of readdirSync(OUT, { recursive: true }).map(String)) {
+    if (!/\.(js|html|css)$/.test(f)) continue
+    const src = readFileSync(join(OUT, f), 'utf8')
+    assert.ok(!src.includes('a1.v0-uncalibrated') && !src.includes('deriveA1Readiness') && !src.includes('pending_calibration'),
+      `${f} carries the prepared A1 readiness evaluator`)
+  }
+  const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(e =>
+    e.isDirectory() ? walk(join(dir, e.name)) : /\.(jsx?|mjs)$/.test(e.name) ? [join(dir, e.name)] : [])
+  for (const f of walk(join(FRONTEND, 'src'))) {
+    assert.ok(!/(?:from\s+|import\s*\(?\s*)['"][^'"]*\/prepared\//.test(readFileSync(f, 'utf8')), `${f} imports prepared/`)
+  }
+}
+ok()
+
 // 7) Chatto ships only in web-sized renditions — never the 1254px masters
 const images = readdirSync(DIST).filter(f => /\.(png|webp|jpg)$/.test(f))
 const chatto = images.filter(f => /chatto/.test(f))

@@ -544,10 +544,11 @@ scenario('a tab paused for two hours resumes with stale memory: nothing lost, no
 })
 
 /*
- * The edge, measured: what the settle window does NOT cover. A turn that only
- * one tab holds — its save failing (quota) for longer than the window — while
- * another tab folds past it. The failing tab is told at every save; this pins
- * down what happens once the save recovers.
+ * The edge P3 measured: a turn that only one tab holds — its save failing
+ * (quota) for longer than the settle window — while another tab folds past it.
+ * P3 dropped it (the merge judged "counted" by time). Since P4 the base records
+ * which events it folded by identity, so the stranded turn is counted on
+ * recovery. Wider matrix: check-ledger-integrity.mjs.
  */
 scenario('beyond the protection window: a turn whose save kept failing for 15 minutes', () => {
   const shared = new Store()
@@ -565,9 +566,7 @@ scenario('beyond the protection window: a turn whose save kept failing for 15 mi
   const recovered = withClock(start + 16 * MIN, () => { hear(b); return persist(b).progress })
   assert.notEqual(recovered, false)
   const total = freshLoad(shared, 'A').progress.messagesSent
-  // Measured result, recorded in the P3 report: the stranded turn is older than
-  // the base a folded, so the merge treats it as counted and it is dropped.
-  assert.equal(total, 600, 'KNOWN LIMIT: the turn hidden for longer than the window is not counted')
+  assert.equal(total, 601, 'the stranded turn is counted once it can be saved (P3 lost it)')
 })
 
 // Small deterministic PRNG so every failure can be replayed by its seed.
@@ -680,7 +679,7 @@ scenario('storage near its quota: the save reports failure, nothing stored is da
   assert.equal(p.xp, 50)
 })
 
-scenario('a backdated event takes its place in the calendar; one older than the folded base is refused', () => {
+scenario('a backdated event takes its place in the calendar; one already counted is refused, however it returns', () => {
   const shared = new Store()
   const a = openTab(shared, 'A')
   const now = Date.now()
@@ -689,15 +688,31 @@ scenario('a backdated event takes its place in the calendar; one older than the 
   const p = freshLoad(shared, 'A').progress
   assert.equal(p.messagesSent, 2)
   assert.equal(p.lastPracticeDate, new Date(now).toLocaleDateString('sv-SE'), 'the latest day stays the latest')
-  // Something folded weeks ago cannot be paid again by a late copy.
-  practice(a, 'old', now - 40 * DAY); persist(a)
-  practice(a, 'newer', now); persist(a)                        // compaction folds the 40-day-old turn
-  const folded = freshLoad(shared, 'A').progress
+  // P4: a NEW event is counted once even with an old clock (it is new by
+  // identity) — and it never moves the last practice day backwards.
+  const before = freshLoad(shared, 'A').progress
+  let late = null
   a.act(() => {
-    const stale = applyProgressEvent(loadLocalProgress(), { id: 'practice:late', kind: 'xp', at: now - 60 * DAY, xp: 500 })
-    assert.notEqual(saveLocalProgress(stale, { access: a.access }), false)
+    const next = applyProgressEvent(loadLocalProgress(), { id: 'practice:late', kind: 'xp', at: now - 60 * DAY, xp: 500 })
+    late = next.ledger.events.find(e => e.id === 'practice:late')
+    assert.ok(late.w && late.seq, 'a new event carries its writer and sequence')
+    assert.notEqual(saveLocalProgress(next, { access: a.access }), false)  // 60 days old: folded on this save
   })
-  assert.equal(freshLoad(shared, 'A').progress.xp, folded.xp, 'an event from before the folded base is not counted')
+  const counted = freshLoad(shared, 'A').progress
+  assert.equal(counted.xp, before.xp + 500, 'counted once')
+  assert.equal(counted.lastPracticeDate, before.lastPracticeDate)
+  // The SAME event coming back (a retry, a stale copy) is refused by identity.
+  a.act(() => {
+    const again = applyProgressEvent(loadLocalProgress(), late)
+    assert.notEqual(saveLocalProgress(again, { access: a.access }), false)
+  })
+  assert.equal(freshLoad(shared, 'A').progress.xp, counted.xp, 'an event already folded is not paid again')
+  // A pre-P4 copy (no identity) still follows the time rule: older than the base, already counted.
+  const legacyKey = storedKeys(shared, 'lc2-local-progress')[0].replace(/~w~.*$/, '~w~legacy.p3')
+  shared.values.set(legacyKey, JSON.stringify({ version: 2, epoch: { id: 'initial', at: 0 }, writer: 'legacy.p3', writtenAt: 1,
+    base: { snapshot: {}, startedAt: 1, foldedBefore: 0, folded: 0, foldedIds: [] },
+    events: [{ id: 'practice:legacy-old', kind: 'xp', at: now - 50 * DAY, xp: 700 }] }))
+  assert.equal(freshLoad(shared, 'A').progress.xp, counted.xp, 'a legacy event older than the folded base is not counted again')
 })
 
 scenario('old data restores: an original v1 record, a P0 shared ledger and a P1 ledger with a 2000-id window', () => {

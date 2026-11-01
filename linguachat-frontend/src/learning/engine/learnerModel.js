@@ -152,6 +152,16 @@ function carryForward(parsed, { keepPreferences, keepSignals, keepRuns }) {
 
 /* The levels a milestone may be recorded for. Pre-A1 is the only one that exists. */
 export const MILESTONE_LEVELS = ['pre_a1']
+/*
+ * Levels whose milestone is KEPT if a copy already holds one, without this
+ * code ever recording it (P4). A1 opening is a separate, authorised change;
+ * until then nothing writes an A1 milestone (check-a1-arc1 proves playing A1
+ * creates none). Keeping a well-formed one means a tab still running this
+ * version cannot erase it from another tab's copy when A1 does open.
+ * Its version must name its own level, so a mislabelled entry is dropped.
+ */
+export const PRESERVED_MILESTONE_LEVELS = ['pre_a1', 'a1']
+const ownVersion = (level, version) => level === 'pre_a1' || (typeof version === 'string' && version.startsWith(level + '.'))
 
 /*
  * Keep a milestone only if it is shaped like one. A corrupt or hand-edited
@@ -161,11 +171,11 @@ export const MILESTONE_LEVELS = ['pre_a1']
 export function sanitizeLevelMilestones(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
   const out = {}
-  for (const level of MILESTONE_LEVELS) {
+  for (const level of PRESERVED_MILESTONE_LEVELS) {
     const entry = raw[level]
     if (!entry || typeof entry !== 'object') continue
     const at = Date.parse(entry.graduatedAt || '')
-    if (!Number.isFinite(at)) continue
+    if (!Number.isFinite(at) || !ownVersion(level, entry.evidenceVersion)) continue
     out[level] = {
       graduatedAt: new Date(at).toISOString(),
       evidenceVersion: typeof entry.evidenceVersion === 'string' ? entry.evidenceVersion.slice(0, 24) : 'unknown',
@@ -186,7 +196,7 @@ export function mergeLevelMilestones(mine, theirs) {
   const a = sanitizeLevelMilestones(mine)
   const b = sanitizeLevelMilestones(theirs)
   const out = {}
-  for (const level of MILESTONE_LEVELS) {
+  for (const level of PRESERVED_MILESTONE_LEVELS) {
     const x = a[level]
     const y = b[level]
     if (!x && !y) continue

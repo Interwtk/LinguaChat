@@ -21,8 +21,16 @@
  *   A streak therefore follows the calendar of the events, never the order in
  *   which two tabs happened to save.
  * - `base` is the folded snapshot of events older than the horizon, so the
- *   ledger stays small. An event older than `base.foldedBefore` is already in
- *   it and is ignored on merge.
+ *   ledger stays small.
+ * - P4: whether an event is already in the base is decided by its IDENTITY,
+ *   not its time. New events carry their writer and a per-writer sequence
+ *   (`w`, `seq`); the base records, per writer, the highest sequence it has
+ *   folded (`coverage`). An event no fold has seen — a turn whose save kept
+ *   failing while another tab compacted past it — is not covered, so it is
+ *   kept and counted on arrival, however old its timestamp. (Until P3 the
+ *   rule was "older than `foldedBefore` means counted", which dropped it.)
+ *   Events written before P4 have no identity and keep the time rule, as do
+ *   bases written by older code (no `coverage` field).
  * - `epoch` marks an explicit reset. Everything before the newest reset is
  *   gone, including a stale tab's older copy; anything that tab does after the
  *   reset still counts.
@@ -45,6 +53,16 @@ export const LEDGER_MAX_EVENTS = 500
  * more than LEDGER_MAX_EVENTS; the next save after the margin folds them.
  */
 export const LEDGER_SETTLE_MS = 10 * 60 * 1000
+/*
+ * A writer's coverage entry is kept while it can still matter: 30 days after
+ * the last event of that writer that was folded, and only once none of its
+ * events is still pending in this ledger. After that its events are judged by
+ * `prunedBefore` — so a turn stranded for MORE than 30 days behind a failing
+ * save is the remaining, documented limit. Without pruning, every page load
+ * (a new writer) would grow the base forever.
+ */
+export const COVERAGE_KEEP_MS = 30 * 86400000
+const WRITER_ID = /^[A-Za-z0-9._:-]{1,80}$/
 export const INITIAL_EPOCH = Object.freeze({ id: 'initial', at: 0 })
 /*
  * Rewards with a stable id (an episode award, a daily bonus, a mission step)
@@ -238,6 +256,10 @@ export function sanitizeEvent(raw) {
   if (!EVENT_KINDS.has(raw.kind) || !Number.isFinite(raw.at)) return null
   const xp = Math.max(0, Math.min(100000, finite(raw.xp)))
   const base = { id: raw.id, kind: raw.kind, at: raw.at, xp }
+  if (typeof raw.w === 'string' && WRITER_ID.test(raw.w) && Number.isInteger(raw.seq) && raw.seq > 0) {
+    base.w = raw.w
+    base.seq = raw.seq
+  }
   if (raw.kind === 'xp') return base
   if (raw.kind === 'award') return { ...base, grants: Array.isArray(raw.grants) ? raw.grants.map(sanitizeGrant).filter(Boolean) : [] }
   const day = typeof raw.day === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.day) ? raw.day : dateKey(new Date(raw.at))
@@ -261,6 +283,21 @@ export function sanitizeEvent(raw) {
 }
 
 /* -------------------------------------------------------------- the fold -- */
+
+/*
+ * The calendar fields for one event. An event that arrives LATE — older than
+ * the last practice day already counted (a recovered stranded turn) — is
+ * counted in every total but cannot move the last practice day backwards or
+ * restart the streak. (It cannot extend a streak retroactively either: the
+ * days in between are not kept. A rare under-count of a streak, never a loss
+ * of the turn itself.)
+ */
+function calendar(snapshot, day) {
+  if (snapshot.lastPracticeDate && day < snapshot.lastPracticeDate) {
+    return { lastPracticeDate: snapshot.lastPracticeDate, streak: snapshot.streak }
+  }
+  return { lastPracticeDate: day, streak: nextStreak(snapshot, day) }
+}
 
 function nextStreak(snapshot, day) {
   const difference = dayDifference(snapshot.lastPracticeDate, day)
@@ -325,8 +362,7 @@ export function applyToSnapshot(snapshot, event) {
       const confidence = Math.min(95, 45 + messagesSent * 2 + correctionsReceived)
       return {
         ...s,
-        lastPracticeDate: event.day,
-        streak: nextStreak(s, event.day),
+        ...calendar(s, event.day),
         messagesSent,
         correctionsReceived,
         xp: s.xp + event.xp,
@@ -339,8 +375,7 @@ export function applyToSnapshot(snapshot, event) {
     case 'mission':
       return {
         ...s,
-        lastPracticeDate: event.day,
-        streak: nextStreak(s, event.day),
+        ...calendar(s, event.day),
         xp: (s.xp || 0) + event.xp,
         confidence: Math.min(95, (s.confidence || 45) + (event.completed ? 2 : 1)),
         topics: unique([...event.topics, ...(s.topics || [])]).slice(0, 12),
@@ -396,7 +431,7 @@ function sanitizeEpoch(raw) {
 export function createLedger({ epoch = INITIAL_EPOCH, startedAt = Date.now(), snapshot = emptySnapshot() } = {}) {
   return {
     epoch: { ...epoch },
-    base: { snapshot: sanitizeSnapshot(snapshot), startedAt, foldedBefore: 0, folded: 0, foldedIds: [], foldedFloors: {} },
+    base: { snapshot: sanitizeSnapshot(snapshot), startedAt, foldedBefore: 0, folded: 0, foldedIds: [], foldedFloors: {}, coverage: {}, prunedBefore: 0 },
     events: [],
   }
 }
@@ -428,6 +463,9 @@ export function ledgerFromStored(value) {
       // P1 ledgers kept up to 2000 ids and no floors: kept as they are, then
       // pruned by family on the next save.
       ...pruneFolded(Array.isArray(base.foldedIds) ? base.foldedIds.filter(isStableEventId) : [], sanitizeFloors(base.foldedFloors)),
+      // absent on bases written before P4: those keep the time rule entirely
+      ...(base.coverage && typeof base.coverage === 'object' && !Array.isArray(base.coverage)
+        ? { coverage: sanitizeCoverage(base.coverage), prunedBefore: Math.max(0, finite(base.prunedBefore)) } : {}),
     },
     events: dedupe(value.events.map(sanitizeEvent).filter(Boolean)),
   }
@@ -450,9 +488,82 @@ function dedupe(events) {
   return [...byId.values()].sort(byTime)
 }
 
+/*
+ * Per writer, exactly which events were folded: the sequence range
+ * [min, max] minus `holes` (numbers inside the range not folded yet — only
+ * when a writer's clock disagreed with its own order, a backdated turn). No
+ * time is involved, and the range does not need to start at 1 (after a reset
+ * a tab's sequence simply continues).
+ */
+const HOLES_LIMIT = 64
+function sanitizeCoverage(raw) {
+  const out = {}
+  for (const [w, entry] of Object.entries(raw)) {
+    const { min, max, at } = entry || {}
+    if (!WRITER_ID.test(w) || !Number.isInteger(min) || !Number.isInteger(max) || min < 1 || max < min || !Number.isFinite(at)) continue
+    const holes = Array.isArray(entry.holes)
+      ? [...new Set(entry.holes.filter(n => Number.isInteger(n) && n > min && n < max))].sort((x, y) => x - y).slice(0, HOLES_LIMIT) : []
+    out[w] = holes.length ? { min, max, at, holes } : { min, max, at }
+  }
+  return out
+}
+
+const coverageHas = (entry, seq) => Boolean(entry) && seq >= entry.min && seq <= entry.max && !entry.holes?.includes(seq)
+
+/* The entry once `event` is folded too — or null if that would scatter it beyond HOLES_LIMIT. */
+function coverageAdd(entry, event) {
+  const n = event.seq
+  if (!entry) return { min: n, max: n, at: event.at }
+  const holes = new Set(entry.holes || [])
+  let { min, max } = entry
+  if (n > max) { for (let k = max + 1; k < n; k++) holes.add(k); max = n }
+  else if (n < min) { for (let k = n + 1; k < min; k++) holes.add(k); min = n }
+  else holes.delete(n)
+  if (holes.size > HOLES_LIMIT) return null
+  const out = { min, max, at: Math.max(entry.at, event.at) }
+  if (holes.size) out.holes = [...holes].sort((x, y) => x - y)
+  return out
+}
+
+const hasIdentity = event => typeof event.w === 'string' && Number.isInteger(event.seq)
+
+/*
+ * Is this event already counted in `base`? By identity when both sides have
+ * one; by time for events and bases from before P4.
+ */
+export function isCovered(base, event) {
+  if (!base) return false
+  if (hasIdentity(event) && base.coverage) {
+    const entry = base.coverage[event.w]
+    return entry ? coverageHas(entry, event.seq) : event.at <= (base.prunedBefore || 0)
+  }
+  return event.at < (base.foldedBefore || 0)
+}
+
+/*
+ * A base that does not contain everything another one folded. Both cannot be
+ * kept (the folded events are gone), so this is reported, not hidden: tests
+ * assert it never happens under the conditions they cover (see the P4 report).
+ */
+export const ledgerDiagnostics = { baseConflicts: 0 }
+function noteConflict(chosen, other) {
+  if (!chosen.coverage || !other.coverage) return
+  for (const [w, entry] of Object.entries(other.coverage)) {
+    const mine = chosen.coverage[w]
+    const lost = !mine ? entry.at > (chosen.prunedBefore || 0)
+      : entry.min < mine.min || entry.max > mine.max || (mine.holes || []).some(n => coverageHas(entry, n))
+    if (lost) { ledgerDiagnostics.baseConflicts++; return }
+  }
+}
+
 const newerEpoch = (a, b) => (a.at !== b.at ? (a.at > b.at ? a : b) : (a.id >= b.id ? a : b))
 
 function preferredBase(a, b) {
+  const chosen = choose(a, b)
+  noteConflict(chosen, chosen === a ? b : a)
+  return chosen
+}
+function choose(a, b) {
   if (a.foldedBefore !== b.foldedBefore) return a.foldedBefore > b.foldedBefore ? a : b
   if (a.folded !== b.folded) return a.folded > b.folded ? a : b
   return canonical(a) <= canonical(b) ? a : b
@@ -476,7 +587,7 @@ export function mergeLedgers(a, b) {
   }
   const base = { ...preferred, ...pruneFolded(sameEpoch.flatMap(l => l.base.foldedIds || []), floors) }
   const events = dedupe([...a.events, ...b.events])
-    .filter(event => event.at >= epoch.at && event.at >= base.foldedBefore && !isFoldedReward(base, event.id))
+    .filter(event => event.at >= epoch.at && !isCovered(base, event) && !isFoldedReward(base, event.id))
   return { epoch: { ...epoch }, base, events }
 }
 
@@ -490,7 +601,7 @@ export function addEvent(ledger, raw) {
   if (hasEvent(ledger, event.id)) return ledger
   // An event from before a reset or already folded into the base cannot be
   // added again; it was either erased by the learner or already counted.
-  if (event.at < ledger.epoch.at || event.at < ledger.base.foldedBefore) return ledger
+  if (event.at < ledger.epoch.at || isCovered(ledger.base, event)) return ledger
   if (isFoldedReward(ledger.base, event.id)) return ledger
   return { ...ledger, events: dedupe([...ledger.events, event]) }
 }
@@ -506,19 +617,55 @@ export function compactLedger(ledger, now = Date.now()) {
   if (events.length > LEDGER_MAX_EVENTS) {
     cutoff = Math.max(cutoff, Math.min(events[events.length - LEDGER_MAX_EVENTS].at, now - LEDGER_SETTLE_MS))
   }
-  const folding = events.filter(event => event.at < cutoff)
-  if (!folding.length) return ledger
+  /*
+   * Below the cut by time. For events with an identity, coverage records
+   * exactly which ones were folded, so it can never claim an event that was
+   * not folded, whatever order the clock gave them.
+   */
+  const folding = new Set()
+  const byWriter = new Map()
+  for (const event of events) {
+    if (!hasIdentity(event)) { if (event.at < cutoff) folding.add(event); continue }
+    if (!byWriter.has(event.w)) byWriter.set(event.w, [])
+    byWriter.get(event.w).push(event)
+  }
+  const coverage = { ...(ledger.base.coverage || {}) }
+  for (const [w, list] of byWriter) {
+    list.sort((x, y) => x.seq - y.seq)
+    for (const event of list) {
+      if (event.at >= cutoff) continue
+      const next = coverageAdd(coverage[w], event)
+      if (!next) continue                    // too scattered for now: it stays an event, folded later
+      coverage[w] = next
+      folding.add(event)
+    }
+  }
+  const remaining = events.filter(event => !folding.has(event))
+  // forget writers that cannot matter any more (see COVERAGE_KEEP_MS)
+  let prunedBefore = ledger.base.prunedBefore || 0
+  const pending = new Set(remaining.filter(hasIdentity).map(event => event.w))
+  for (const [w, entry] of Object.entries(coverage)) {
+    if (entry.at < now - COVERAGE_KEEP_MS && !pending.has(w)) {
+      prunedBefore = Math.max(prunedBefore, entry.at)
+      delete coverage[w]
+    }
+  }
+  const coverageChanged = JSON.stringify(coverage) !== JSON.stringify(ledger.base.coverage || {})
+  if (!folding.size && !coverageChanged && ledger.base.coverage) return ledger
+  const folded = [...folding].sort(byTime)
   return {
     ...ledger,
     base: {
       ...ledger.base,
-      snapshot: foldEvents(ledger.base.snapshot, folding),
-      foldedBefore: Math.max(ledger.base.foldedBefore, cutoff),
-      folded: ledger.base.folded + folding.length,
-      ...pruneFolded([...(ledger.base.foldedIds || []), ...folding.map(e => e.id).filter(isStableEventId)],
+      snapshot: foldEvents(ledger.base.snapshot, folded),
+      foldedBefore: folded.length ? Math.max(ledger.base.foldedBefore, cutoff) : ledger.base.foldedBefore,
+      folded: ledger.base.folded + folded.length,
+      ...pruneFolded([...(ledger.base.foldedIds || []), ...folded.map(e => e.id).filter(isStableEventId)],
         ledger.base.foldedFloors || {}),
+      coverage,
+      prunedBefore,
     },
-    events: events.filter(event => event.at >= cutoff),
+    events: remaining,
   }
 }
 
