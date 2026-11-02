@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
@@ -69,9 +69,22 @@ export function scrambleTokens(tokens, seedKey = '') {
   return list
 }
 
+/*
+ * The language being practised. Historically always English, hence the name;
+ * a course episode (Spanish, …) provides its own target language here.
+ */
+const TargetLanguage = createContext('en')
+
 function En({ children, className = '', style }) {
+  const lang = useContext(TargetLanguage)
+  if (lang !== 'en') return <span lang={lang} dir="ltr" className={className} style={style}>{children}</span>
   return <span lang="en" dir="ltr" className={className} style={style}>{children}</span>
 }
+
+/* A course episode's Garden grants, resolved from the course's own words. */
+const courseGrants = (ep) => (ep.gardenItems || [])
+  .filter(id => ep.runtime.vocab[id])
+  .map(id => ({ vocabId: id, word: ep.runtime.vocab[id].term, kind: ep.runtime.vocab[id].kind }))
 
 function LinguaLine({ children }) {
   return (
@@ -97,7 +110,16 @@ function LinguaLine({ children }) {
  * inside a session the next block follows, standalone it returns to Home.
  */
 function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = null, runOptions = null }) {
-  const { t, profile, tutorPreferences, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode, dailySession, sessionActive } = useApp()
+  const { t: appT, profile, tutorPreferences, nativeLanguageInfo, interfaceLanguageInfo, exitEpisode, awardEpisode, finishEpisode, dailySession, sessionActive } = useApp()
+  /*
+   * A course episode (learning/courses) carries its own runtime: the target
+   * language, its copy in the learner's auxiliary language, its words and its
+   * evaluator. English episodes have none and behave exactly as before.
+   */
+  const runtime = episode?.runtime || null
+  const targetLang = runtime?.targetLanguage || 'en'
+  const t = runtime ? (key, vars) => (runtime.copy[key] ?? appT(key, vars)) : appT
+  const vocabOf = (id) => (runtime ? runtime.vocab[id] : SEED_VOCAB_BY_ID[id]) || null
   // One daily learning boundary across guided and standalone practice. Changing
   // duration/surface or immediately reopening an episode is not a delayed session.
   const learningSessionId = useRef(`learning-day:${sessionActive && dailySession?.dayKey ? dailySession.dayKey : dayKeyFor()}`).current
@@ -106,7 +128,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
   // deterministic roleplay partner — stable per learner, reproducible on reload
   const partner = useMemo(() => partnerFor(profile.name || 'guest'), [profile.name])
   const nativeLang = nativeLanguageInfo.base
-  const meaningOf = (id) => getLocalizedMeaning(SEED_VOCAB_BY_ID[id]?.meaning, nativeLanguageInfo)
+  const meaningOf = (id) => getLocalizedMeaning(vocabOf(id)?.meaning, nativeLanguageInfo)
 
   /*
    * A run the planner opened to see whether the learner can hold the
@@ -189,6 +211,8 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
   const [reply, setReply] = useState('')
   const [retry, setRetry] = useState(null)     // { explainKey, natural, promptKey }
   const [praise, setPraise] = useState(null)
+  // a course evaluator's spelling tip shown with the praise ("¿Cómo te llamas?")
+  const [praiseNote, setPraiseNote] = useState(null)
   const [live, setLive] = useState('')
   const [reviewing, setReviewing] = useState(false)  // remote evaluation in flight
   // The learner asked to practise this step another way (see `switchActivity`).
@@ -420,7 +444,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
     attemptsRef.current = 0
     setReviewing(false)
     setAltStep(null)
-    setRetry(null); setPraise(null); setLive(''); setChoice(null); setBuildOrder([]); setFillValue(''); setReply(''); setUsedSuggestion(false)
+    setRetry(null); setPraise(null); setPraiseNote(null); setLive(''); setChoice(null); setBuildOrder([]); setFillValue(''); setReply(''); setUsedSuggestion(false)
     const next = Math.min(ep.steps.length - 1, stepIndex + 1)
     setStepIndex(next)
     persistStep(next)
@@ -588,15 +612,23 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
      */
     const spanTurns = Array.isArray(step.turnContext) ? step.turnContext : []
     const evalCtx = { name, independent, turnContext, place, partner: aboutPerson, targetNoun: subjectNoun, activity: interestCtx.activity, ...(requestedThing ? { targetThing: requestedThing } : {}), ...(step.repairKind ? { repairKind: step.repairKind } : {}), ...(step.meaningWord ? { meaningWord: step.meaningWord } : {}), ...(stepThing ? { targetThing: stepThing.id } : {}), ...(step.quantityForm ? { quantityForm: step.quantityForm } : {}), ...(step.timeForm ? { timeForm: step.timeForm } : {}), ...(usualTime ? { usualTime } : {}), ...(stepCount ? { targetCount: stepCount } : {}), /* arc 4: which public place the turn asks about, and which relation its situation implies */ ...(step.placeName ? { placeName: step.placeName } : {}), ...(step.relationHint ? { relationHint: step.relationHint } : {}), /* arc 6/7: ability polarity, arrangement stage, and which episode's confirm-stage praise applies */ ...(step.abilityForm ? { abilityForm: step.abilityForm } : {}), ...(step.arrangeStage ? { arrangeStage: step.arrangeStage } : {}), ...(step.praisePrefix ? { praisePrefix: step.praisePrefix } : {}), /* A2 arc 5: the name a spell_word turn asks the learner to spell */ ...(step.expectedSpelling ? { expected: step.expectedSpelling } : {}), /* B1: narrative form, problem tone, future-intent situation, and conversational role — see hybridEvaluation.js's own comment on these four fields */ ...(step.narrativeForm ? { narrativeForm: step.narrativeForm } : {}), ...(step.tone ? { tone: step.tone } : {}), ...(step.situationForm ? { situationForm: step.situationForm } : {}), ...(step.role ? { role: step.role } : {}), /* B2: capstone/register subtype, register-check target, discourse-coherence opt-in and the resolved mediation source text — see hybridEvaluation.js's own comment on these fields */ ...(step.subtype ? { subtype: step.subtype } : {}), ...(step.registerCheck ? { registerCheck: step.registerCheck } : {}), ...(step.expectedRegister ? { expectedRegister: step.expectedRegister } : {}), ...(step.discourseCoherenceCheck ? { discourseCoherenceCheck: step.discourseCoherenceCheck } : {}), ...(sourceText ? { sourceText } : {}), /* C1: which of a multi-canDo intent's can-dos this step teaches, and the referable-discourse buffer — see hybridEvaluation.js's own comment on these fields */ ...(step.canDoId ? { canDoId: step.canDoId } : {}), ...(conversationHistory.length ? { conversationHistory } : {}), /* C2: the multi-turn evaluation span — see this function's own comment above */ ...(spanTurns.length ? { spanTurns } : {}) }
-    const preview = evaluateFree(evalKind, text, evalCtx)
-    const willEscalate = shouldEscalate(preview)
+    /*
+     * A course episode is judged by its own local evaluator, once, and never
+     * escalated: the remote evaluator only knows English and would grade a
+     * correct Spanish sentence as a mistake.
+     */
+    const preview = runtime
+      ? runtime.evaluate(evalKind, text, { name, independent, place, partner: aboutPerson, ...(step.courseContext || {}) })
+      : evaluateFree(evalKind, text, evalCtx)
+    const willEscalate = !runtime && shouldEscalate(preview)
 
     const controller = new AbortController()
     abortRef.current = controller
     if (willEscalate) { setReviewing(true); setLive(t('epEvaluating')) }
 
     let result
-    try {
+    if (runtime) result = preview
+    else try {
       result = await evaluateEpisodeResponse({
         episode: ep, step, learnerResponse: text, learnerName: name, place,
         targetNoun: subjectNoun, targetThing: (stepThing && stepThing.id) || requestedThing || undefined, activity: interestCtx.activity, interestId: interestCtx.interestId,
@@ -684,17 +716,25 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
       if (independent && Array.isArray(step.delayedRetrievalChecks) && step.delayedRetrievalChecks.length) {
         runRef.current = stageDelayedRetrieval(modelRef.current, step.delayedRetrievalChecks, { independent, sessionId: learningSessionId }) || runRef.current
       }
-      captureLifeFact(evalKind, text)
+      if (!runtime) captureLifeFact(evalKind, text)
       if (attemptsRef.current > 0) signal('retried')
       adaptScaffold({ correct: true, usedHelp: fromSuggestion, evidenceKind: evidenceKindForStep(step), retried: attemptsRef.current > 0 })
       setPraise(result.praiseKey || 'ep1FeedbackGood')
+      setPraiseNote(result.spellingNote || null)
       setLive(t(result.praiseKey || 'ep1FeedbackGood'))
       setTimeout(advance, 700)
     } else {
       attemptsRef.current += 1
-      recordItems(itemIds, { correct: false, independent: false })
-      markRecurringError(modelRef.current, result.errorType)
-      saveLearnerModel(modelRef.current)
+      /*
+       * A reply the evaluator could not read is not evidence of anything: the
+       * learner sees the pattern again, and nothing is filed against them.
+       */
+      if (!result.notEvaluable) {
+        recordItems(itemIds, { correct: false, independent: false })
+        // a course's errors are namespaced like its items, so they never shape another course's support
+        markRecurringError(modelRef.current, runtime && result.errorType ? `${runtime.courseId}:${result.errorType}` : result.errorType)
+        saveLearnerModel(modelRef.current)
+      }
       adaptScaffold({ correct: false, evidenceKind: evidenceKindForStep(step) })
       setRetry({ explainKey: result.explanation, natural: resolve(result.naturalVersion, vars), promptKey: result.retryPrompt })
       setLive(t('ep1RetryTitle'))
@@ -732,7 +772,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
        * The Garden grants are resolved here, where the vocabulary catalogue
        * is already loaded. Unknown ids are dropped as before.
        */
-      const grants = (ep.gardenItems || [])
+      const grants = ep.runtime ? courseGrants(ep) : (ep.gardenItems || [])
         .filter(id => SEED_VOCAB_BY_ID[id])
         .map(id => ({ vocabId: id, word: SEED_VOCAB_BY_ID[id].term, kind: SEED_VOCAB_BY_ID[id].kind }))
       // A denied account lease or failed model save must not mark the episode
@@ -921,9 +961,9 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
           <div className="animate-fade-up">
             <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 10 }}>{t(step.instructionKey)}</p>
             <div className="flex items-center gap-2 flex-wrap rounded-2xl p-3 mb-4" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>
-              <En style={{ fontSize: '1rem', fontWeight: 700 }}>{step.before}</En>
-              <input value={fillValue} onChange={e => setFillValue(e.target.value)} lang="en" dir="ltr" placeholder={t(step.placeholderKey || 'ep1TypeName')} aria-label={t(step.instructionKey)} className="chat-input rounded-xl px-3 py-2 text-sm" style={{ flex: 1, minWidth: 120, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)' }} />
-              <En style={{ fontSize: '1rem', fontWeight: 700 }}>{step.after}</En>
+              <En style={{ fontSize: '1rem', fontWeight: 700 }}>{resolve(step.before, vars)}</En>
+              <input value={fillValue} onChange={e => setFillValue(e.target.value)} lang={targetLang} dir="ltr" placeholder={t(step.placeholderKey || 'ep1TypeName')} aria-label={t(step.instructionKey)} className="chat-input rounded-xl px-3 py-2 text-sm" style={{ flex: 1, minWidth: 120, background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)' }} />
+              <En style={{ fontSize: '1rem', fontWeight: 700 }}>{resolve(step.after, vars)}</En>
             </div>
             {/* The example must match what is being asked for: a place for the
                 place step, something the learner enjoys for the likes step. */}
@@ -960,7 +1000,10 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
                 const typed = fillValue.trim().toLowerCase().replace(/[^\w'’\s]/g, '')
                 const want = resolve(step.expects, vars).toLowerCase()
                 const accepted = [want, ...(step.alternatives || []).map(alt => resolve(alt, vars).toLowerCase())]
-                const correct = accepted.some(one => typed === one || typed === one.replace(/'/g, '’'))
+                // a course compares its own way (Spanish: accents and ñ are letters, not noise)
+                const correct = runtime?.compareFill
+                  ? accepted.some(one => runtime.compareFill(fillValue, one))
+                  : accepted.some(one => typed === one || typed === one.replace(/'/g, '’'))
                 recordItems([step.itemId].filter(Boolean), { correct, independent: false })
                 if (!correct) {
                   // its own wording: a gap has no word ORDER to get wrong
@@ -1034,10 +1077,10 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
             )}
 
             <div className="flex items-end gap-2 rounded-2xl p-2.5" aria-busy={reviewing} style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', opacity: reviewing ? 0.7 : 1 }}>
-              <input ref={replyInputRef} value={reply} onChange={e => setReply(e.target.value)} disabled={reviewing} lang="en" dir="ltr" onKeyDown={e => { if (isSubmitEnter(e, { allowShift: true }) && reply.trim() && !reviewing) submitFree(step.evalKind, step.itemIds, { fromSuggestion: answerWasShown() }) }} placeholder={t('ep1TypeReply')} aria-label={t(step.instructionKey)} className="chat-input flex-1 bg-transparent text-sm" style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
+              <input ref={replyInputRef} value={reply} onChange={e => setReply(e.target.value)} disabled={reviewing} lang={targetLang} dir="ltr" onKeyDown={e => { if (isSubmitEnter(e, { allowShift: true }) && reply.trim() && !reviewing) submitFree(step.evalKind, step.itemIds, { fromSuggestion: answerWasShown() }) }} placeholder={t('ep1TypeReply')} aria-label={t(step.instructionKey)} className="chat-input flex-1 bg-transparent text-sm" style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
               <button onClick={() => submitFree(step.evalKind, step.itemIds, { fromSuggestion: answerWasShown() })} disabled={!reply.trim() || reviewing} className="flex-shrink-0 rounded-xl px-4 py-2 text-sm font-bold text-white transition-all active:scale-[0.98]" style={{ background: reply.trim() && !reviewing ? 'var(--info)' : 'var(--border)' }}>{t('ep1Send')}</button>
             </div>
-            {praise && <p role="status" lang={nativeLang} className="mt-2" style={{ fontSize: '0.8125rem', color: 'var(--positive)', fontWeight: 700 }}>{t(praise)}</p>}
+            {praise && <p role="status" lang={nativeLang} className="mt-2" style={{ fontSize: '0.8125rem', color: 'var(--positive)', fontWeight: 700 }}>{t(praise)}{praiseNote && <> <En style={{ fontWeight: 700 }}>{praiseNote}</En></>}</p>}
           </div>
         )}
 
@@ -1146,7 +1189,11 @@ export function EpisodeShell({ episodeId, forLearner = true, ...runnerProps }) {
       </div>
     )
   }
-  return <EpisodeRunner episode={content.value} episodeId={episodeId} {...runnerProps} />
+  return (
+    <TargetLanguage.Provider value={content.value?.runtime?.targetLanguage || 'en'}>
+      <EpisodeRunner episode={content.value} episodeId={episodeId} {...runnerProps} />
+    </TargetLanguage.Provider>
+  )
 }
 
 export default EpisodeShell

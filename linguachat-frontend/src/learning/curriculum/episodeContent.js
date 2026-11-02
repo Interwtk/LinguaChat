@@ -27,6 +27,7 @@ import {
   episodesOfLevel, levelIdOfEpisodeId,
 } from './levels.js'
 import { loadClosedLevelStrings } from '../../i18n/translations.js'
+import { isCourseEpisodeId, courseEpisodeRequest, loadCourseEpisode } from '../courses/registry.js'
 
 /* Levels whose English copy is not in the first chunk (see i18n/closedLevelsEn.js). */
 const LAZY_COPY_LEVELS = new Set([B1, B2, C1, C2])
@@ -177,6 +178,11 @@ const loaderFor = (levelId, arcId) => {
  * session block) can still be level-checked.
  */
 export function episodeRequest({ levelId = null, episodeId, forLearner = true } = {}) {
+  /*
+   * A course other than English (`es:` ids) has its own small registry; its
+   * refusals use the same names. English ids never take this branch.
+   */
+  if (isCourseEpisodeId(episodeId)) return courseEpisodeRequest(episodeId)
   const resolvedLevel = levelId || levelIdOfEpisodeId(episodeId)
 
   if (!episodeId) return { ok: false, reason: REFUSED.UNKNOWN_EPISODE }
@@ -238,6 +244,11 @@ export const canOpenEpisode = (episodeId) => episodeRequest({ episodeId }).ok
 export async function loadEpisodeContent({ levelId = null, episodeId, forLearner = true } = {}) {
   const request = episodeRequest({ levelId, episodeId, forLearner })
   if (!request.ok) throw new EpisodeContentError(request.reason, episodeId)
+  if (request.courseId) {
+    const { episode } = await loadCourseEpisode(episodeId)
+    if (!episode) throw new EpisodeContentError(REFUSED.UNKNOWN_EPISODE, episodeId)
+    return episode
+  }
 
   const loader = loaderFor(request.levelId, request.arcId)
   // the episode's words and the interface copy that names them arrive together

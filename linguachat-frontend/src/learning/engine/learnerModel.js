@@ -1,4 +1,5 @@
 import { teachingHistory, retentionProfile } from './teachingPolicy.js'
+import { belongsToCourse, DEFAULT_COURSE_ID } from '../courses/registry.js'
 import { mergeChatEvidence, sanitizeChatEvidence, sanitizeForgotten } from './chatEvidence.js'
 import { bindLearnerObject, captureLearnerAccess, captureLearnerObjectAccess } from '../../auth/localLease.js'
 import { collectDeadCopies, ownKey, storedCopies } from '../../services/writerKeys.js'
@@ -1231,10 +1232,17 @@ export function noteInterestUsed(model, interestId) {
  * learner ever met were reviewed again and again while everything that came due
  * later starved. A queue that never reaches its own tail is not a queue.
  */
-export function getDueReviews(model, atMs = Date.now()) {
+/*
+ * Reviews due in ONE course (English unless asked): a Spanish word coming due
+ * must not appear in an English session, nor the other way round. Course ids
+ * are namespaced (`es:`), so before courses existed every item was English and
+ * this returns exactly what it always did.
+ */
+export function getDueReviews(model, atMs = Date.now(), { courseId = DEFAULT_COURSE_ID } = {}) {
   const due = []
   for (const [id, it] of Object.entries(model.languageItems)) {
     if (!it.nextReviewAt || it.status === 'new') continue
+    if (!belongsToCourse(id, courseId)) continue
     const at = new Date(it.nextReviewAt).getTime()
     if (Number.isFinite(at) && at <= atMs) due.push([id, at])
   }

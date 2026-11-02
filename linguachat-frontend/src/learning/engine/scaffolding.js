@@ -48,6 +48,7 @@ import { EPISODE_SKELETON as ARC, SKELETON_BY_ID } from '../curriculum/preA1Skel
 const getEpisode = (id) => SKELETON_BY_ID[id] || null
 import { intentSubtypesForEpisode, skillPrerequisitesOf, targetsOf } from '../curriculum/preA1Map.js'
 import { canDoForIntent } from '../curriculum/levelMaps.js'
+import { belongsToCourse, courseIdOf } from '../courses/registry.js'
 
 /*
  * Which episode teaches each can-do, so its own targets can be consulted.
@@ -146,8 +147,9 @@ export function evidenceKindForStep(step) {
  * handed over. Anything genuinely different is left to the evaluator.
  */
 export function copiesShownModel(reply, shownModel) {
-  // Apostrophes are dropped, so "im" copies "I'm" just as "I'm" does.
-  const norm = value => String(value || '').toLowerCase().replace(/['’‘`]/g, '')
+  // Apostrophes are dropped, so "im" copies "I'm" just as "I'm" does — and
+  // accents too, so "como te llamas" copies "¿Cómo te llamas?" (Spanish course).
+  const norm = value => String(value || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/['’‘`]/g, '')
     .replace(/[^\p{L}\p{N} ]+/gu, ' ').replace(/\s+/g, ' ').trim()
   const a = norm(reply), b = norm(shownModel)
   if (!a || !b) return false
@@ -238,9 +240,14 @@ function hasOverdueReview(model, episode, atMs) {
   return false
 }
 
-/* Did the learner recently lean on help, or fight the same error? */
-function recentStrain(model) {
-  const runs = Object.values(model?.episodeRuns || {}).flat()
+/*
+ * Did the learner recently lean on help, or fight the same error?
+ * Within one course: struggling with Spanish gender says nothing about how
+ * much help an English episode should start with.
+ */
+function recentStrain(model, courseId) {
+  const runs = Object.entries(model?.episodeRuns || {})
+    .filter(([episodeId]) => belongsToCourse(episodeId, courseId)).flatMap(([, list]) => list)
   // Runs are grouped by episode in storage, not by when they happened.
   // Sort before sampling so a later struggle is never hidden by key order.
   const recent = runs
@@ -249,7 +256,8 @@ function recentStrain(model) {
     .slice(-3)
   const assistance = recent.reduce((a, r) => a + (r.assistanceUsed || 0), 0)
   const retries = recent.reduce((a, r) => a + (r.retriedSteps || 0), 0)
-  const errors = (model?.recurringErrors || []).reduce((a, e) => a + (e.count || 0), 0)
+  const errors = (model?.recurringErrors || []).filter(e => belongsToCourse(e?.errorType, courseId))
+    .reduce((a, e) => a + (e.count || 0), 0)
   return { assistance, retries, errors, sampled: recent.length }
 }
 
@@ -336,7 +344,7 @@ export function deriveInitialScaffold({
   const allPrereqsSolid = prereqStates.length > 0 && prereqStates.every(s => s === 'solid')
   const anyPrereqWeak = prereqStates.some(s => s !== 'solid')
 
-  const strain = recentStrain(model)
+  const strain = recentStrain(model, courseIdOf(ep?.id || episodeId))
   const overdue = ep ? hasOverdueReview(model, ep, atMs) : false
   const novelty = noveltyOf(model, ep)
 

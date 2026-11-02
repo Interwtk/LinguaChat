@@ -85,6 +85,8 @@ import {
 } from '../learning/engine/memoryContext.js'
 import { selectTopic, providerTopicContext } from '../learning/engine/topicSelection.js'
 import { asSubjectValue } from '../learning/engine/semanticContext.js'
+import { readActiveCourse, writeActiveCourse } from '../services/activeCourse.js'
+import { DEFAULT_COURSE_ID, isCourseOffered } from '../learning/courses/registry.js'
 import {
   loadSession, saveSession, getOrCreateSession, startSession,
   advanceBlock, completeSession, isDurationMode, SESSION_KEY, normalizeSession, readStoredSessionRaw,
@@ -456,6 +458,13 @@ export function AppProvider({ children }) {
   // Why this episode was opened. Never the run mode itself — see startEpisode.
   const [episodeRunOptions, setEpisodeRunOptions] = useState({ source: 'practice', wantsOtherBranch: false })
   const [episodeArcVersion, setEpisodeArcVersion] = useState(0) // bumps when episode progress changes
+  /*
+   * The course being studied (`en` or `es`). Only ever a course the learner's
+   * user_language can be taught in: switching user_language to one the Spanish
+   * course has no copy for falls back to English instead of half-translating.
+   */
+  const [chosenCourse, setChosenCourse] = useState(() => readActiveCourse(nativeLanguageInfo))
+  const activeCourse = isCourseOffered(chosenCourse, nativeLanguageInfo) ? chosenCourse : DEFAULT_COURSE_ID
   // Daily session: restored from storage on first render so a reload resumes.
   const [dailySession, setDailySession] = useState(() => loadSession(currentArc()))
   const [sessionActive, setSessionActive] = useState(false)
@@ -900,6 +909,16 @@ export function AppProvider({ children }) {
     setMobileSheet(previous => access.valid() ? null : previous)
     return access.valid() ? request : { ok: false, reason: 'stale_account' }
   }, [])
+
+  /* Switch course. Durable before visible; each course keeps its own progress. */
+  const chooseCourse = useCallback((courseId) => {
+    const access = captureLearnerAccess()
+    if (!access.valid() || !isCourseOffered(courseId, nativeLanguageInfo)) return false
+    if (!writeActiveCourse(access, courseId)) return false
+    setChosenCourse(previous => access.valid() ? courseId : previous)
+    setEpisodeArcVersion(previous => access.valid() ? previous + 1 : previous)
+    return access.valid()
+  }, [nativeLanguageInfo])
 
   const exitEpisode = useCallback(() => {
     const access = captureLearnerAccess()
@@ -1889,6 +1908,7 @@ export function AppProvider({ children }) {
       nativeLanguage, nativeLanguageInfo, interfaceReady,
       interfaceLanguage, interfaceLanguageInfo,
       targetLanguage,
+      activeCourse, chooseCourse,
       setNativeLanguage: updateNativeLanguage,
       updateNativeLanguage,
       t,

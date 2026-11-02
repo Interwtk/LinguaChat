@@ -2751,6 +2751,26 @@ const base = {
   storyChooseNewPlan: "How do you respond?",
   storyReplyConfirm: "Confirm the new plan.",
 
+  // Courses: which language is being learned (learning/courses)
+  courseSwitcherLabel: "What are you learning?",
+  courseNameEnglish: "English",
+  courseNameSpanish: "Spanish",
+  courseNewBadge: "New",
+  courseSwitchKeepsProgress: "Each course keeps its own progress. You can switch any time.",
+  courseSwitchFailed: "That change could not be saved. Please try again.",
+  courseSpanishLevel: "Spanish · Beginner (Pre-A1)",
+  courseLessonsDone: "{done} of {total} lessons completed",
+  courseContinueLabel: "Pick up where you left off",
+  courseNextLabel: "Your next lesson",
+  courseMinutes: "About {minutes} min",
+  courseContinueCta: "Continue lesson",
+  courseStartCta: "Start lesson",
+  courseReviewsDue: "Spanish words ready for review: {count}. Lessons open with a short warm-up.",
+  courseLevelDone: "You’ve completed Spanish Pre-A1. The next Spanish level isn’t available yet — replay any lesson to keep your Spanish fresh.",
+  courseChatNotice: "Lingua’s free conversation is English-only for now. Your Spanish practice happens in these lessons, with Lingua as your partner.",
+  courseAllLessons: "All lessons",
+  courseLessonDone: "Done",
+  courseLessonLocked: "Locked",
 }
 
 

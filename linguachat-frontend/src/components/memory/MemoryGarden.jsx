@@ -5,6 +5,7 @@ import { getLocalizedMeaning } from '../../services/learningContent'
 import { loadLearnerModel, LEARNING_STATE_RANK } from '../../learning/engine/learnerModel.js'
 import { selectLearnerFact } from '../../learning/engine/learnerFacts.js'
 import { asSubjectValue } from '../../learning/engine/semanticContext.js'
+import { belongsToCourse, courseVocabItem, getCourse } from '../../learning/courses/registry.js'
 
 // Demo garden: stable vocab ids + demo mastery. The visible meaning (`trans`)
 // is resolved to the learner's native language, never hardcoded Spanish.
@@ -45,17 +46,20 @@ function groupColor(group) {
 const groupProgress = (group) => (group === GROUPS.CanUse ? 1 : group === GROUPS.Practicing ? 0.6 : 0.25)
 
 export function MemoryGarden() {
-  const { localProgress, t, nativeLanguageInfo } = useApp()
+  const { localProgress, t, nativeLanguageInfo, activeCourse } = useApp()
   const [filter, setFilter] = useState('All')
   const [expanded, setExpanded] = useState(null)
   const meaningOf = (item) => getLocalizedMeaning(item?.meaning, nativeLanguageInfo)
-  const hasRealItems = localProgress.learnedItems.length > 0
+  // the words of the course being studied; the other course's words wait for it
+  const courseItems = localProgress.learnedItems.filter(item => belongsToCourse(item.vocabId || '', activeCourse))
+  const hasRealItems = courseItems.length > 0
+  const targetLang = getCourse(activeCourse)?.targetLanguage || 'en'
   // the learner model is the authority on how far each item has come
   const learnerModel = loadLearnerModel()
   const gardenWords = hasRealItems
-    ? localProgress.learnedItems.map(item => {
+    ? courseItems.map(item => {
         // A real item may carry a vocab id (localized) or a legacy `trans` label.
-        const vocab = item.vocabId ? SEED_VOCAB_BY_ID[item.vocabId] : null
+        const vocab = item.vocabId ? (courseVocabItem(item.vocabId) || SEED_VOCAB_BY_ID[item.vocabId]) : null
         const state = item.vocabId ? learnerModel.languageItems?.[item.vocabId]?.learningState : null
         return {
           ...item,
@@ -161,7 +165,7 @@ export function MemoryGarden() {
                   <span style={{ fontSize: isLarge ? 20 : 16 }}>{w.emoji}</span>
                   <div style={{ width: 7, height: 7, borderRadius: '50%', background: colors.border, marginTop: 3 }} />
                 </div>
-                <p lang="en" dir="ltr" style={{ fontWeight: 800, fontSize: isLarge ? '1rem' : '0.9375rem', color: 'var(--ink)', lineHeight: 1.2, marginBottom: 3 }}>
+                <p lang={targetLang} dir="ltr" style={{ fontWeight: 800, fontSize: isLarge ? '1rem' : '0.9375rem', color: 'var(--ink)', lineHeight: 1.2, marginBottom: 3 }}>
                   {w.word}
                 </p>
                 <p lang={nativeLanguageInfo.base} style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 500 }}>
@@ -170,13 +174,13 @@ export function MemoryGarden() {
 
                 {isExpanded && (
                   <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${colors.border}44` }}>
-                    <p lang="en" dir="ltr" style={{ fontSize: '0.8125rem', color: 'var(--ink)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: 6 }}>
+                    <p lang={targetLang} dir="ltr" style={{ fontSize: '0.8125rem', color: 'var(--ink)', fontStyle: 'italic', lineHeight: 1.5, marginBottom: 6 }}>
                       "{w.example}"
                     </p>
                     {/* A second example in the learner's own subject matter,
                         beside the real one — never instead of it. */}
                     {personalExampleFor(w.word) && (
-                      <p lang="en" dir="ltr" style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 6 }}>
+                      <p lang={targetLang} dir="ltr" style={{ fontSize: '0.75rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 6 }}>
                         {personalExampleFor(w.word)}
                       </p>
                     )}

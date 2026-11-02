@@ -6,6 +6,7 @@
  * as an optional "quick review first" flag rather than blocking the episode.
  */
 import { getEpisodeState, getDueReviews } from './learnerModel.js'
+import { courseIdOf } from '../courses/registry.js'
 
 export function prerequisitesMet(model, episode) {
   return (episode.prerequisites || []).every(id => getEpisodeState(model, id).status === 'completed')
@@ -20,8 +21,9 @@ export function arcProgress(model, arc) {
   return { completed, total: arc.length }
 }
 
-export function planDay(model, arc, { atMs = Date.now() } = {}) {
-  const due = getDueReviews(model, atMs)
+export function planDay(model, arc, { atMs = Date.now(), courseId = courseIdOf(arc?.[0]?.id) } = {}) {
+  // the reviews of the course this arc belongs to, never another course's
+  const due = getDueReviews(model, atMs, { courseId })
   const inProgress = arc.find(ep => getEpisodeState(model, ep.id).status === 'in_progress' && isEpisodeUnlocked(model, ep))
   if (inProgress) {
     return { type: 'continue_episode', episodeId: inProgress.id, hasReview: due.length > 0, reviewItems: due }

@@ -1,6 +1,6 @@
 /*
  * LinguaChat visual bench — development only, synthetic data (see
- * vite.bench.config.mjs). URL: /bench/?scene=tu|call|notes|chat|auth|archive|archive-empty|chats|mission|today|identity
+ * vite.bench.config.mjs). URL: /bench/?scene=tu|call|notes|chat|auth|archive|archive-empty|chats|mission|today|identity|course-today|course-episode
  * &lang=en|es|ja|ar|…&theme=light|dark
  *
  * Every learner shown here is invented. The summaries are derived by the real
@@ -29,6 +29,8 @@ import { LanguageIdentity } from '../src/components/identity/LanguageIdentity.js
 import { getOrCreateSession } from '../src/learning/engine/session.js'
 import { episodesOfLevel } from '../src/learning/curriculum/levels.js'
 import { workingLevelId } from '../src/learning/curriculum/learnerLevel.js'
+import { CourseToday } from '../src/components/today/CourseToday.jsx'
+import { EpisodeShell } from '../src/components/episode/EpisodeShell.jsx'
 import { createMissionIntroMessage, createMissionStepMessage, createMissionFeedbackMessage, evaluateMissionStep } from '../src/services/missions.js'
 
 const BENCH_MARKER = 'LC_VISUAL_BENCH' // asserted absent from every production build
@@ -61,7 +63,7 @@ function Scene({ t }) {
   const languageInfo = { code: lang, base, name: lang }
   const common = {
     t, darkMode: dark, profile: { name: 'Ana', preferences: { dailyGoal: 10 } },
-    nativeLanguageInfo: languageInfo, interfaceLanguageInfo: languageInfo, targetLanguage: 'en',
+    nativeLanguageInfo: languageInfo, interfaceLanguageInfo: languageInfo, targetLanguage: 'en', activeCourse: 'en',
     localProgress: { learnedItems: [{ word: 'hello', vocabId: 'hello' }], topics: [], topicsPracticed: [] },
     messages: [], isTyping: false, chatAppearance: sanitizeChatAppearance({}), episodeArcVersion: 0,
   }
@@ -165,6 +167,18 @@ function Scene({ t }) {
       <AppProvider value={value}>
         <main className='px-4 py-6' style={{ maxWidth: 1100, margin: '0 auto' }}>
           {scene === 'today' ? <TodayView onOpenPath={() => {}} /> : <LanguageIdentity />}
+        </main>
+      </AppProvider>
+    )
+  }
+  // The Spanish course (learning/courses): its Home, and one episode played for real
+  if (scene === 'course-today' || scene === 'course-episode') {
+    const value = { ...common, activeCourse: 'es', localProgress: { learnedItems: [], topics: [], topicsPracticed: [], streak: 2 },
+      awardEpisode: () => true, finishEpisode: () => { document.title = 'bench: episode finished'; return true }, tutorPreferences: {} }
+    return (
+      <AppProvider value={value}>
+        <main style={{ maxWidth: 1100, margin: '0 auto', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+          {scene === 'course-today' ? <CourseToday /> : <EpisodeShell episodeId={params.get('ep') || 'es:hola'} />}
         </main>
       </AppProvider>
     )

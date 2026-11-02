@@ -107,6 +107,7 @@ export function LanguageIdentity() {
     nativeLanguageInfo,
     interfaceLanguageInfo,
     targetLanguage,
+    activeCourse,
     setNativeLanguage,
     darkMode,
     setThemeDark,
@@ -204,7 +205,7 @@ export function LanguageIdentity() {
    * what is not evaluated at all — from the same model the engine teaches from.
    * Counts and plain words; no score is invented.
    */
-  const summary = useMemo(() => learnerSummary(loadLearnerModel()), [])
+  const summary = useMemo(() => learnerSummary(loadLearnerModel(), Date.now(), { courseId: activeCourse }), [activeCourse])
   const hasEvidence = progressData.some(d => d.count > 0)
   const practicedTopics = hasLocalProgress && localProgress.topics.length
     ? localProgress.topics
