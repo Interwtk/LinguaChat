@@ -134,6 +134,29 @@ Resultados en la sección «Ciclos r1 y r2» al final de este documento.
 
 **Nada de esto se ha ejecutado.**
 
-## Ciclos r1 y r2 (exit codes)
+## Ciclos finales (exit codes)
 
-(Se completa al terminar los ciclos.)
+**Dos ciclos consecutivos e idénticos** sobre el head `69fb86f` (árbol `764d942`, sin cambios entre ambos, `dirty=0` antes y después):
+
+| Suite | Ciclo f1 | Ciclo f2 |
+|---|---|---|
+| frontend `check:all` (101 pasos, por *exit code*) | 101/101 | 101/101 |
+| `npm run build` | ok | ok |
+| `check:i18n` (8 idiomas) | ok | ok |
+| Foundry b1/b2/c1/c2 y a2-structure | 5/5 | 5/5 |
+| integridad del registro de progreso (completa) | 29/29 (+1 que solo corre en local, igual que en la fase 7) | 29/29 |
+| política de adaptación | 10/10 | 10/10 |
+| alcance de la nube (git ls-files, autoprueba y pruebas) | ok | ok |
+| backend `compileall` | ok | ok |
+| backend `pytest` | 1243 passed / 28 skipped | 1243 passed / 28 skipped |
+| e2e HTTP con uvicorn real: tutor 4/4, continuidad 5/5 | ok | ok |
+| plantillas de correo | ok | ok |
+| garantías del producto (A1–C2 cerrados, Pre-A1 intacto contra `main`, `CLOUD_PREFERENCES_RELEASED=false`, evaluador conectado, banco fuera del bundle, sin secretos, sin CRLF) | 16/16 | 16/16 |
+| `check:github-integration` | BLOQUEADO (falta `jq`; corre en CI) | BLOQUEADO |
+
+**Historia del conteo (sin ocultar fallos):**
+- **`738617f`, ciclo 1: 99/101.**
+  - La regex estructural del conteo de palabras de Hoy no aceptaba el filtro por curso: se adaptó conservando su intención.
+  - La matriz de preparación generada quedó desfasada: se regeneró con `--write`.
+- **`e0b75b8`, ciclos r1 y r2: 100/101 + alcance de la nube en rojo.** La descripción de la nueva prueba del backend nombraba al proveedor de autenticación, y el control de alcance lo rechazó con razón. Se cambió la redacción (`edee95c`).
+- **El conteo de dos ciclos se reinició** tras cada corrección.

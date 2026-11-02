@@ -134,10 +134,20 @@
 - **Banco visual:** `bench/main.jsx`, escenas `course-today` y `course-episode`.
 
 ## 13. Últimas pruebas
-Ver `docs/release/2026-11-beta-readiness.md` §2 (resultados de ciclo con exit codes).
+**Dos ciclos limpios consecutivos sobre `69fb86f`:**
+- `check:all` 101/101, `build` e i18n ok;
+- `pytest` 1243 passed / 28 skipped;
+- e2e HTTP 4/4 y 5/5;
+- integridad 29/29 (+1 que solo corre en local);
+- alcance de la nube ok;
+- garantías 16/16;
+- `check-es-course` 343/343.
+- **Bloqueado:** `check:github-integration` (falta `jq`).
+
+Detalle: `docs/release/2026-11-beta-readiness.md` § Ciclos finales.
 
 ## 14. Próxima prioridad
-1. Confirmar los dos ciclos limpios sobre `e0b75b8` (ver la preparación de la beta) y hacer commit de la documentación.
+1. Decisiones del propietario de §10, sobre todo la autorización de *push* y PR y el entorno de autenticación de prueba.
 2. **Ventana 2 (8 al 14 de noviembre):**
    - puerta de edad;
    - filtro de seguridad en el servidor con pruebas adversariales en en, es, ja y ar;
