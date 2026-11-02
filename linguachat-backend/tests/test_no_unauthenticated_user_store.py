@@ -2,8 +2,8 @@
 
 It accepted any user object without authentication, grew without bound in the
 serverless process, was never called by the frontend, and shipped a real
-person's full name as seed data. Accounts live in Supabase Auth; learner data
-lives on the learner's device. Nothing on the backend may store users.
+person's full name as seed data. Accounts belong to the browser-side auth client;
+learner data lives on the learner's device. Nothing on the backend may store users.
 """
 from pathlib import Path
 
