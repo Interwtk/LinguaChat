@@ -1,0 +1,704 @@
+{
+  "schema_id": "linguachat.curriculum.f227.machine_readable.v1",
+  "fixture_document": "docs/curriculum/longitudinal-fixture-f227-adaptive-stopping-opportunity-censoring-independent-transfer.md",
+  "governing_contract": "docs/curriculum/longitudinal-instructional-adaptation.md",
+  "status": "DESIGN_ONLY_UNSUPPORTED",
+  "purpose": "Six deterministic synthetic histories and matched controls for adaptive stopping, informative opportunity censoring, independent transfer and honest denominators. Not an executable engine test, CEFR certification, real learner experiment or efficacy evidence.",
+  "seed": 22720261030,
+  "clock": {
+    "timezone": "UTC",
+    "anchor": "2026-10-01T12:00:00Z",
+    "trusted_occurrence_and_arrival_separate": true,
+    "meaningful_delay_requires_independent_review": true
+  },
+  "source_binding": {
+    "objective_id": "REQUIRES_EXISTING_VERSIONED_CEFR_CAN_DO_AND_INDEPENDENT_RUBRIC_REVIEW",
+    "rubric_version": "REQUIRES_INDEPENDENT_MEANING_FUNCTION_REVIEW",
+    "item_family_and_challenge_equivalence": "REQUIRES_REVIEW",
+    "policy_version": "SYNTHETIC_F227_STOP_V1",
+    "accessibility_review": "REQUIRED",
+    "stopping_and_render_chronology_oracle": "UNAVAILABLE",
+    "source_resolution": "UNSUPPORTED"
+  },
+  "global_rules": {
+    "construct": "Preserve fixed versioned CEFR can-do, prerequisites, independent exit, required channel and noncompensatory skill evidence; assisted practice and familiar recognition cannot replace delayed unseen transfer.",
+    "predecision": "Freeze feasible accessible alternatives, objective/rubric/policy versions, method/topic/channel/dose, uncertainty, propensity if known, task family, answer exposure, budget and planned opportunities before selection and stopping.",
+    "opportunity_accounting": "Keep planned, due, offered, rendered, started, completed, independently eligible, pending and not observed separately. Do not treat a not-rendered task as pass or failure. Pending started attempts are not completed.",
+    "stopping": "Distinguish learner choice, tutor policy, technical interruption and inaccessible tasks. Respect refusal; preserve due skill debt without punishment.",
+    "comparison": "Unequal stop rules, task difficulty, dose, topics or missingness make methods NOT_COMPARABLE; matched controls require reviewed equivalent independent outcomes.",
+    "chronology": "Deduplicate stable attempt IDs, keep trusted occurrence and arrival separate, retain versioned rubric bridges, and never retroactively rewrite historical choices.",
+    "interests": "Interest topics are soft weights only; rotate adjacent, neutral and unfamiliar contexts without omitting required objectives.",
+    "release": "Pre-A1 frozen, A1-C2 unavailable; no Auth/cloud/infra/production/Supabase/paid Claude/EvoLabs/auto-merge."
+  },
+  "assertions": [
+    {
+      "id": 1,
+      "check": "Preserve existing versioned CEFR objective, rubric, prerequisites, independent exit and noncompensatory channel requirements; no level release changes."
+    },
+    {
+      "id": 2,
+      "check": "Freeze pre-choice and pre-stop feasible alternatives, uncertainty, policy and stopping actor/reason, session budget, delivered method and trusted event chronology."
+    },
+    {
+      "id": 3,
+      "check": "Report planned/due/offered/rendered/started/completed/independently eligible/pending/not observed separately; completed-only accuracy is not cohort-wide mastery."
+    },
+    {
+      "id": 4,
+      "check": "Never replace first unaided, meaningfully delayed retrieval or unseen independent transfer with assisted repairs, familiar recognition, repeated success or unrendered tasks."
+    },
+    {
+      "id": 5,
+      "check": "Mark method effects NOT_COMPARABLE when stopping, exposure, baseline, challenge, channel, opportunities or missingness differ; no automatic causal winner."
+    },
+    {
+      "id": 6,
+      "check": "Keep learner-initiated pause, policy stop, technical interruption and access failure distinct; do not coerce or impute proficiency."
+    },
+    {
+      "id": 7,
+      "check": "Preserve soft interest rotation, unfamiliar contexts, receptive/productive balance and due independent skill obligations."
+    },
+    {
+      "id": 8,
+      "check": "Deduplicate attempts, retain original and revised rubric versions and arrival chronology, and never backdate policy snapshots; pending remains pending."
+    },
+    {
+      "id": 9,
+      "check": "Until reviewed CEFR/task oracles, independently executable exact-head runner and ethical longitudinal evidence exist, per-case efficacy and release verdict remain UNSUPPORTED."
+    }
+  ],
+  "required_harness_outputs": [
+    "exact_curriculum_HEAD",
+    "exact_engine_HEAD",
+    "executable_command",
+    "existing_versioned_CEFR_can_do_and_reviewer_signed_rubric",
+    "independently_reviewed_item_challenge_and_access_equivalence",
+    "pre_choice_and_pre_stop_policy_snapshots_and_actor_reason",
+    "actual_delivered_method_topic_channel_dose_and_budget",
+    "trusted_render_answer_exposure_occurrence_arrival_and_stable_deduplicated_attempt_ids",
+    "planned_due_offered_rendered_started_completed_independently_eligible_pending_not_observed",
+    "first_unaided_vs_assisted_and_delayed_unseen_transfer_evidence",
+    "matched_control_results_with_baseline_propensity_and_missingness_review",
+    "per_case_assertion_PASS_FAIL_UNSUPPORTED",
+    "independent_reviewer_signoff"
+  ],
+  "cases": [
+    {
+      "id": "A",
+      "title": "Stop on first success hides unseen transfer",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "A0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T13:00:00Z",
+          "session_id": "F227-A0-session",
+          "type": "independent_first_attempt",
+          "attempt_id": "A-T1",
+          "family": "familiar-A",
+          "first_unaided": true,
+          "correct": 1,
+          "total": 1,
+          "answer_exposure": "VERIFIED_NONE",
+          "policy_stop_after": true
+        },
+        {
+          "id": "A0S",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T13:00:00Z",
+          "session_id": "F227-A0S-session",
+          "type": "policy_stop_snapshot",
+          "stop_actor": "TUTOR_POLICY",
+          "stop_reason": "first_success",
+          "budget_minutes_remaining": 7,
+          "decision_frozen": true,
+          "unrendered_due": [
+            "A-transfer-1",
+            "A-transfer-2"
+          ]
+        },
+        {
+          "id": "A1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T13:00:00Z",
+          "session_id": "F227-A1-session",
+          "type": "independent_first_attempt",
+          "attempt_id": "A-T2",
+          "family": "familiar-B",
+          "first_unaided": true,
+          "correct": 1,
+          "total": 1,
+          "answer_exposure": "VERIFIED_NONE",
+          "policy_stop_after": true
+        },
+        {
+          "id": "A1S",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T13:00:00Z",
+          "session_id": "F227-A1S-session",
+          "type": "policy_stop_snapshot",
+          "stop_actor": "TUTOR_POLICY",
+          "stop_reason": "first_success",
+          "budget_minutes_remaining": 8,
+          "decision_frozen": true
+        },
+        {
+          "id": "A2",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T13:00:00Z",
+          "session_id": "F227-A2-session",
+          "type": "due_unseen_delayed_retrieval",
+          "attempt_id": "A-delayed",
+          "offered": false,
+          "rendered": false,
+          "started": false,
+          "completed": false
+        }
+      ],
+      "opportunities": {
+        "planned": 5,
+        "due": 5,
+        "offered": 2,
+        "rendered": 2,
+        "started": 2,
+        "completed": 2,
+        "independently_eligible": 2,
+        "pending": 0,
+        "not_observed": 3,
+        "description": "two observed independent familiar successes; two unseen transfer tasks and one delayed retrieval unobserved"
+      },
+      "expected": {
+        "observed_first_attempt_successes": "2/2",
+        "unobserved_due_obligations": 3,
+        "independent_transfer": "UNMEASURED",
+        "delayed_retention": "UNMEASURED",
+        "graduate_can_do": false,
+        "stop_is_mastery": false
+      },
+      "matched_control": {
+        "mutation": "Offer two accessible reviewed unfamiliar transfer tasks and a meaningfully delayed retrieval task with unchanged rubric and independent answer isolation.",
+        "expected": "ONLY_ACTUALLY_COMPLETED_REVIEWED_INDEPENDENT_RESULTS_CAN_UPDATE_LATER_MASTERY"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "B",
+      "title": "Unequal stopping policies reverse apparent method ranking",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "B0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T13:00:00Z",
+          "session_id": "F227-B0-session",
+          "type": "pre_choice_snapshot",
+          "methods_feasible": [
+            "P_stop_on_success",
+            "Q_fixed_three"
+          ],
+          "baseline": "REQUIRES_MATCHED_REVIEW",
+          "policy_version": "F227_V1",
+          "uncertainty": "HIGH",
+          "decision_frozen": true
+        },
+        {
+          "id": "B1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T13:00:00Z",
+          "session_id": "F227-B1-session",
+          "type": "method_arm_summary",
+          "method": "P_stop_on_success",
+          "sessions": 8,
+          "first_correct_sessions": 8,
+          "correct": 8,
+          "total_completed": 8,
+          "stop_actor": "TUTOR_POLICY",
+          "stop_rule": "first_correct",
+          "delayed_unseen_transfer": "UNOBSERVED"
+        },
+        {
+          "id": "B2",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T13:00:00Z",
+          "session_id": "F227-B2-session",
+          "type": "method_arm_summary",
+          "method": "Q_fixed_three",
+          "sessions": 8,
+          "correct": 16,
+          "total_completed": 24,
+          "stop_actor": "TUTOR_POLICY",
+          "stop_rule": "three_opportunities",
+          "delayed_unseen_transfer": "UNOBSERVED"
+        },
+        {
+          "id": "B3",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T13:00:00Z",
+          "session_id": "F227-B3-session",
+          "type": "method_comparison_requested",
+          "naive_P": "100%",
+          "naive_Q": "66.7%",
+          "matched_assessment": false,
+          "method_winner": "UNSUPPORTED"
+        }
+      ],
+      "opportunities_by_arm": {
+        "P": {
+          "planned": 24,
+          "due": 24,
+          "offered": 8,
+          "rendered": 8,
+          "started": 8,
+          "completed": 8,
+          "independently_eligible": 8,
+          "pending": 0,
+          "not_observed": 16,
+          "description": "8 sessions with first-success stop; 16 counterfactual scheduled opportunities not observed"
+        },
+        "Q": {
+          "planned": 24,
+          "due": 24,
+          "offered": 24,
+          "rendered": 24,
+          "started": 24,
+          "completed": 24,
+          "independently_eligible": 24,
+          "pending": 0,
+          "not_observed": 0,
+          "description": "8 sessions with three completed opportunities each"
+        }
+      },
+      "expected": {
+        "method_comparability": "NOT_COMPARABLE",
+        "P_correct": "8/8",
+        "Q_correct": "16/24",
+        "method_winner": "UNSUPPORTED",
+        "delayed_transfer": "UNMEASURED",
+        "imputed_P_missing_as_failure": false
+      },
+      "matched_control": {
+        "mutation": "Pre-register equal feasible stopping and assessment opportunities for P/Q; match reviewed difficulty, item family, access and baseline, then observe delayed unseen independent outcomes and missingness.",
+        "expected": "NO_CAUSAL_WINNER_WITHOUT_REVIEWED_COMPARABILITY"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "C",
+      "title": "Remediation after error is practice, not exit",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "C0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T13:00:00Z",
+          "session_id": "F227-C0-session",
+          "type": "independent_prerequisite_probe",
+          "attempt_id": "C-T0",
+          "first_unaided": true,
+          "reviewed_result": "error",
+          "answer_exposure": "VERIFIED_NONE"
+        },
+        {
+          "id": "C1",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T13:00:00Z",
+          "session_id": "F227-C1-session",
+          "type": "scaffolded_repair",
+          "attempt_id": "C-T1",
+          "assisted": true,
+          "correct": 1,
+          "total": 1,
+          "model_delivered": true,
+          "independent_credit_delta": 0
+        },
+        {
+          "id": "C2",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T13:00:00Z",
+          "session_id": "F227-C2-session",
+          "type": "scaffolded_repair",
+          "attempt_id": "C-T2",
+          "assisted": true,
+          "correct": 1,
+          "total": 1,
+          "hint_delivered": true,
+          "independent_credit_delta": 0
+        },
+        {
+          "id": "C3",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T13:00:00Z",
+          "session_id": "F227-C3-session",
+          "type": "scaffolded_repair",
+          "attempt_id": "C-T3",
+          "assisted": true,
+          "correct": 1,
+          "total": 1,
+          "scaffold_delivered": true,
+          "independent_credit_delta": 0
+        },
+        {
+          "id": "C4",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T13:00:00Z",
+          "session_id": "F227-C4-session",
+          "type": "independent_target_probe_due",
+          "attempt_id": "C-exit",
+          "stop_actor": "LEARNER",
+          "stop_reason": "session_end",
+          "offered": false,
+          "rendered": false,
+          "completed": false
+        }
+      ],
+      "opportunities": {
+        "planned": 5,
+        "due": 5,
+        "offered": 4,
+        "rendered": 4,
+        "started": 4,
+        "completed": 4,
+        "independently_eligible": 1,
+        "pending": 0,
+        "not_observed": 1,
+        "description": "one unaided diagnostic error, three assisted repair successes, one independent target exit unrendered"
+      },
+      "expected": {
+        "diagnostic_error_retained": true,
+        "assisted_correct": "3/3",
+        "independent_exit": "UNMEASURED",
+        "assisted_exit_credit": 0,
+        "learner_permanently_labeled": false,
+        "independent_probe_due": true
+      },
+      "matched_control": {
+        "mutation": "After a meaningful interval offer a reviewed, accessible, unseen independent target can-do probe, keeping assisted repairs as practice.",
+        "expected": "REVIEWED_INDEPENDENT_EXIT_ONLY; NO_PERMANENT_LEARNER_TYPE"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "D",
+      "title": "Session budget censors productive skill",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "D0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T13:00:00Z",
+          "session_id": "F227-D0-session",
+          "type": "pre_choice_snapshot",
+          "budget_minutes": 12,
+          "planned_per_session": {
+            "familiar_recognition": 4,
+            "independent_production_transfer": 2
+          },
+          "accessible": true,
+          "decision_frozen": true
+        },
+        {
+          "id": "D1",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T13:00:00Z",
+          "session_id": "F227-D1-session",
+          "type": "session_summary",
+          "budget_minutes": 12,
+          "familiar_recognition_correct": 4,
+          "familiar_recognition_completed": 4,
+          "production_transfer_rendered": 0,
+          "production_transfer_due": 2,
+          "stop_actor": "TUTOR_POLICY",
+          "stop_reason": "budget_exhausted"
+        },
+        {
+          "id": "D2",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T13:00:00Z",
+          "session_id": "F227-D2-session",
+          "type": "session_summary",
+          "budget_minutes": 12,
+          "familiar_recognition_correct": 4,
+          "familiar_recognition_completed": 4,
+          "production_transfer_rendered": 0,
+          "production_transfer_due": 2,
+          "stop_actor": "TUTOR_POLICY",
+          "stop_reason": "budget_exhausted"
+        },
+        {
+          "id": "D3",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T13:00:00Z",
+          "session_id": "F227-D3-session",
+          "type": "session_summary",
+          "budget_minutes": 12,
+          "familiar_recognition_correct": 4,
+          "familiar_recognition_completed": 4,
+          "production_transfer_rendered": 0,
+          "production_transfer_due": 2,
+          "stop_actor": "TUTOR_POLICY",
+          "stop_reason": "budget_exhausted"
+        }
+      ],
+      "opportunities": {
+        "planned": 18,
+        "due": 18,
+        "offered": 12,
+        "rendered": 12,
+        "started": 12,
+        "completed": 12,
+        "independently_eligible": 12,
+        "pending": 0,
+        "not_observed": 6,
+        "description": "12 familiar recognition completions and 6 unrendered independent productive tasks"
+      },
+      "expected": {
+        "familiar_recognition": "12/12",
+        "productive_opportunities_not_observed": 6,
+        "productive_skill": "UNMEASURED",
+        "clear_productive_skill_debt": false,
+        "learner_penalized_for_tutor_budget": false
+      },
+      "matched_control": {
+        "mutation": "Reserve a feasible accessible independent production/transfer slot before familiar review while keeping total 12-minute budget and required can-do fixed.",
+        "expected": "COMPARE_INDEPENDENT_PRODUCTIVE_OUTCOMES_AND_OPPORTUNITY_COSTS_NOT_RECOGNITION_ACCURACY_ALONE"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "E",
+      "title": "Topic preference and stopping rule confound method inference",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "E0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T13:00:00Z",
+          "session_id": "F227-E0-session",
+          "type": "pre_choice_snapshot",
+          "interest_weights": {
+            "travel": "HIGH",
+            "neutral": "ELIGIBLE",
+            "adjacent": "ELIGIBLE",
+            "unfamiliar": "ELIGIBLE"
+          },
+          "method_confidence": "LOW",
+          "topic_exclusive": false,
+          "decision_frozen": true
+        },
+        {
+          "id": "E1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T13:00:00Z",
+          "session_id": "F227-E1-session",
+          "type": "travel_summary",
+          "sessions": 3,
+          "method": "P",
+          "topic": "travel",
+          "challenge": "easy",
+          "stop_rule": "two_easy_successes",
+          "correct": 6,
+          "total_completed": 6,
+          "stop_actor": "TUTOR_POLICY"
+        },
+        {
+          "id": "E2",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T13:00:00Z",
+          "session_id": "F227-E2-session",
+          "type": "neutral_unfamiliar_summary",
+          "method": "Q",
+          "topic": "neutral_unfamiliar",
+          "challenge": "hard_negotiation",
+          "stop_rule": "longer_dialogue",
+          "correct": 4,
+          "total_completed": 9,
+          "stop_actor": "TUTOR_POLICY"
+        },
+        {
+          "id": "E3",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T13:00:00Z",
+          "session_id": "F227-E3-session",
+          "type": "missing_matched_controls",
+          "travel_negotiation_due": 1,
+          "neutral_easy_due": 1,
+          "rendered": false,
+          "independent_delayed_transfer": "UNMEASURED"
+        }
+      ],
+      "opportunities": {
+        "planned": 17,
+        "due": 17,
+        "offered": 15,
+        "rendered": 15,
+        "started": 15,
+        "completed": 15,
+        "independently_eligible": 15,
+        "pending": 0,
+        "not_observed": 2,
+        "description": "six travel easy turns, nine neutral/unfamiliar harder turns, two matched controls unrendered"
+      },
+      "expected": {
+        "travel_observed": "6/6",
+        "neutral_unfamiliar_observed": "4/9",
+        "method_comparability": "NOT_COMPARABLE",
+        "method_winner": "UNSUPPORTED",
+        "topic_exclusive": false,
+        "required_negotiation_skipped": false
+      },
+      "matched_control": {
+        "mutation": "Offer independently reviewed travel negotiation and neutral easy control with equivalent pragmatic burden, challenge, item novelty, stopping opportunities, channel, access and delayed unseen transfer.",
+        "expected": "IF_EQUIVALENCE_UNREVIEWED_KEEP_NOT_COMPARABLE_AND_ROTATE_NEUTRAL_CONTEXT"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "id": "F",
+      "title": "Duplicate, stop actor, late rubric and pending outcome remain distinct",
+      "source_binding": "REQUIRED",
+      "events": [
+        {
+          "id": "F0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T13:00:00Z",
+          "session_id": "F227-F0-session",
+          "type": "pre_choice_snapshot",
+          "policy_version": "F227_V1",
+          "feasible_accessible_methods": [
+            "P",
+            "Q"
+          ],
+          "due_independent_opportunities": 3,
+          "uncertainty": "HIGH",
+          "decision_frozen": true
+        },
+        {
+          "id": "F1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T13:00:00Z",
+          "session_id": "F227-F1-session",
+          "type": "independent_first_turn",
+          "attempt_id": "F-T1",
+          "first_unaided": true,
+          "reviewed_result": "success_v1",
+          "rubric_version": "v1",
+          "answer_exposure": "VERIFIED_NONE"
+        },
+        {
+          "id": "F2",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-05T13:00:00Z",
+          "session_id": "F227-F2-session",
+          "type": "duplicate_replay",
+          "attempt_id": "F-T1",
+          "same_as": "F1",
+          "independent_credit_delta": 0
+        },
+        {
+          "id": "F3",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-05T13:00:00Z",
+          "session_id": "F227-F3-session",
+          "type": "policy_stop_snapshot",
+          "stop_actor": "TUTOR_POLICY",
+          "stop_reason": "first_success",
+          "decision_frozen": true,
+          "unrendered_due": [
+            "F5"
+          ]
+        },
+        {
+          "id": "F4",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T13:00:00Z",
+          "session_id": "F227-F4-session",
+          "type": "learner_pause",
+          "stop_actor": "LEARNER",
+          "stop_reason": "voluntary_pause",
+          "independent_credit_delta": 0
+        },
+        {
+          "id": "F5",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T13:00:00Z",
+          "session_id": "F227-F5-session",
+          "type": "unseen_probe_due",
+          "attempt_id": "F-missing",
+          "offered": false,
+          "rendered": false,
+          "started": false,
+          "completed": false,
+          "imputed_failure": false
+        },
+        {
+          "id": "F6",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-13T13:00:00Z",
+          "session_id": "F227-F6-session",
+          "type": "late_reviewer_rubric_revision",
+          "attempt_id": "F-T1",
+          "from_rubric": "v1",
+          "to_rubric": "v2",
+          "reviewed_bridge": "PENDING",
+          "comparability": "NOT_COMPARABLE",
+          "historical_snapshot_preserved": true
+        },
+        {
+          "id": "F7",
+          "occurred_at": "2026-10-16T12:00:00Z",
+          "arrived_at": "2026-10-16T13:00:00Z",
+          "session_id": "F227-F7-session",
+          "type": "independent_probe_started",
+          "attempt_id": "F-pending",
+          "offered": true,
+          "rendered": true,
+          "started": true,
+          "completed": false,
+          "independent_outcome": "PENDING",
+          "answer_exposure": "VERIFIED_NONE"
+        }
+      ],
+      "opportunities": {
+        "planned": 3,
+        "due": 3,
+        "offered": 2,
+        "rendered": 2,
+        "started": 2,
+        "completed": 1,
+        "independently_eligible": 1,
+        "pending": 1,
+        "not_observed": 1,
+        "description": "F1 completed once, F5 unrendered, F7 started but pending; F2 duplicate adds zero"
+      },
+      "expected": {
+        "unique_F_T1_count": 1,
+        "F5_imputed_failure": false,
+        "F4_is_policy_stop": false,
+        "F0_rewritten": false,
+        "F3_rewritten": false,
+        "rubric_versions_preserved": [
+          "v1",
+          "v2"
+        ],
+        "rubric_bridge": "PENDING",
+        "F7_outcome": "PENDING",
+        "cross_version_comparability": "NOT_COMPARABLE",
+        "future_policy_reversible": true
+      },
+      "matched_control": {
+        "mutation": "Render missing accessible reviewed unseen probe under a new stable ID, preserve original v1/v2 versions and trusted event times, and await actual independent outcome.",
+        "expected": "ONLY_OBSERVED_REVIEWED_RESULTS_CHANGE_FUTURE_POLICY; NO_RETROACTIVE_REWRITE_OR_DUPLICATE_CREDIT"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    }
+  ],
+  "prohibitions": [
+    "No live learner experiment or production tracking",
+    "No Auth/cloud/infra/Supabase/production mutation",
+    "No paid Claude or EvoLabs",
+    "No auto-merge",
+    "No Pre-A1 edits or A1-C2 activation",
+    "No B2 Arc 6 policy change"
+  ]
+}

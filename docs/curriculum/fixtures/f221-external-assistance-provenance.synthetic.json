@@ -1,0 +1,562 @@
+{
+  "schema_id": "linguachat.curriculum.f221.machine_readable.v1",
+  "fixture_document": "docs/curriculum/longitudinal-fixture-f221-external-assistance-tool-provenance-independent-transfer.md",
+  "status": "DESIGN_ONLY_UNSUPPORTED",
+  "description": "Deterministic synthetic scenario inputs and matched-control mutations for independent future executable review; not a passing harness or real learner evidence.",
+  "created_for": "F221",
+  "seed": 22120261029,
+  "clock": {
+    "anchor": "2026-10-29T12:00:00Z",
+    "timezone": "UTC",
+    "day_offset_semantics": "elapsed 24-hour periods; not calendar-day-boundary proof of meaningful delay"
+  },
+  "source_binding": {
+    "cefr_can_do_id": "REQUIRES_EXISTING_VERSIONED_SOURCE_BINDING",
+    "rubric_version": "REQUIRES_REVIEWED_RUBRIC",
+    "task_version": "SYNTHETIC_F221_V1",
+    "policy_version": "F221_DESIGN_V1",
+    "channel_version": "REQUIRES_SUPPORTED_CHANNEL_BINDING",
+    "source_resolution": "UNSUPPORTED"
+  },
+  "global_invariants": [
+    "Never assert a CEFR pass without reviewed source binding and independently scored response.",
+    "Preserve first valid attempt and actual answer-bearing render chronology.",
+    "Observed aid and voluntary aid disclosure are distinct from unobservable outside use.",
+    "Assisted practice is allowed; clean independent mastery needs construct-specific eligibility.",
+    "No inference of cheating, disability, motivation or learning style from paste, accent, speed or assistive input.",
+    "All delayed/transfer evidence requires reviewed genuinely new items, meaningful intervals and distinct sessions.",
+    "Keep interest context soft and separate from method effects; preserve receptive/productive skill debt.",
+    "Deduplicate stable IDs and quarantine untrusted chronology; preserve due/offered/rendered/completed/missing follow-ups.",
+    "Compare actual rendered choices and later independent outcomes; synthetic invariant pass is not evidence of efficacy."
+  ],
+  "required_harness_outputs": [
+    "source_binding_resolution",
+    "per_case_and_control_oracle_result",
+    "per_assertion_PASS_FAIL_UNSUPPORTED",
+    "trusted_event_chronology",
+    "eligible_independent_evidence",
+    "due_offered_rendered_completed_missing_denominators",
+    "actual_next_instruction_rendered",
+    "exact_engine_HEAD",
+    "executable_command",
+    "independent_reviewer_signoff"
+  ],
+  "cases": [
+    {
+      "id": "A",
+      "title": "Dictionary lookup: pre-lookup independent attempt versus answer-bearing pre-exposure",
+      "objective_family": "request_directions_writing",
+      "events": [
+        {
+          "id": "A1",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "task_rendered",
+          "channel": "writing",
+          "context": "neutral",
+          "tool_policy": "dictionary_permitted"
+        },
+        {
+          "id": "A2",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "first_attempt",
+          "answer": "Could you tell me how to get to the station?",
+          "independent": true,
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "A3",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 3,
+          "type": "tool_output_rendered",
+          "tool": "dictionary",
+          "scope": "place_noun",
+          "answer_bearing_for_target_construct": false
+        },
+        {
+          "id": "A4",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 4,
+          "type": "revision",
+          "answer": "Could you tell me how to get to the bus station?",
+          "exposed_to": [
+            "A3"
+          ]
+        },
+        {
+          "id": "A5",
+          "session": "s2",
+          "day_offset": 8,
+          "sequence": 1,
+          "type": "unseen_transfer",
+          "answer": "Could you show me the way to the library?",
+          "independent": true,
+          "reviewed_semantic_oracle": "requires_review"
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "A3",
+            "sequence": 1.5,
+            "scope": "exact_request_phrase",
+            "answer_bearing_for_target_construct": true
+          },
+          {
+            "event_id": "A2",
+            "sequence": 2,
+            "independent": false,
+            "exposed_to": [
+              "A3"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "first_attempt_preserved": true,
+        "pre_exposure_answer_disqualifies_clean_evidence": true,
+        "post_attempt_lookup_does_not_retroactively_taint": true
+      }
+    },
+    {
+      "id": "B",
+      "title": "Full-sentence translator used in instruction versus independently authored new task",
+      "objective_family": "invitation_writing",
+      "events": [
+        {
+          "id": "B1",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "task_rendered",
+          "channel": "writing",
+          "context": "neutral"
+        },
+        {
+          "id": "B2",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "tool_output_rendered",
+          "tool": "translator",
+          "source": "Te invito mañana.",
+          "output": "I invite you tomorrow.",
+          "answer_bearing_for_target_construct": true
+        },
+        {
+          "id": "B3",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 3,
+          "type": "submission",
+          "answer": "I invite you tomorrow.",
+          "exposed_to": [
+            "B2"
+          ],
+          "independent": false
+        },
+        {
+          "id": "B4",
+          "session": "s2",
+          "day_offset": 10,
+          "sequence": 1,
+          "type": "unseen_transfer",
+          "answer": "Would you like to join us on Friday?",
+          "independent": true,
+          "reviewed_semantic_oracle": "requires_review"
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "B3",
+            "sequence": 1.5,
+            "independent": true,
+            "exposed_to": []
+          },
+          {
+            "event_id": "B2",
+            "sequence": 3
+          }
+        ]
+      },
+      "expected": {
+        "assisted_practice_legitimate": true,
+        "translation_not_clean_production": true,
+        "later_transfer_scored_separately": true
+      }
+    },
+    {
+      "id": "C",
+      "title": "Assistive input versus predictive generation of meaning-critical clause",
+      "objective_family": "information_request_writing",
+      "events": [
+        {
+          "id": "C1",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "instructions_rendered",
+          "assistive_access": "screen_reader",
+          "answer_bearing": false
+        },
+        {
+          "id": "C2",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "first_attempt",
+          "input_method": "dictation_of_learner_words",
+          "answer": "Could you send me the timetable?",
+          "independent": true,
+          "reviewed_semantic_oracle": "requires_review"
+        },
+        {
+          "id": "C3",
+          "session": "s2",
+          "day_offset": 7,
+          "sequence": 1,
+          "type": "unseen_transfer",
+          "channel": "writing",
+          "independent": true,
+          "reviewed_semantic_oracle": "requires_review"
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "C2",
+            "input_method": "predictive_completion",
+            "independent": false,
+            "exposed_to": [
+              "C1A"
+            ]
+          }
+        ],
+        "insert": [
+          {
+            "id": "C1A",
+            "session": "s1",
+            "day_offset": 0,
+            "sequence": 1.5,
+            "type": "tool_output_rendered",
+            "tool": "autocomplete",
+            "output": "Could you send me the timetable?",
+            "answer_bearing_for_target_construct": true
+          }
+        ]
+      },
+      "expected": {
+        "assistive_input_not_automatically_answer_aid": true,
+        "answer_generation_requires_assisted_provenance": true,
+        "skill_family_evidence_separate": true
+      }
+    },
+    {
+      "id": "D",
+      "title": "Peer co-writing versus solitary interaction transfer",
+      "objective_family": "conversation_repair",
+      "events": [
+        {
+          "id": "D1",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "collaborative_turn",
+          "peer_supplied_question": true,
+          "peer_corrected_reply": true,
+          "independent": false
+        },
+        {
+          "id": "D2",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "collaborative_turn",
+          "learner_reply": "Could you repeat that?",
+          "peer_prompted": true,
+          "independent": false
+        },
+        {
+          "id": "D3",
+          "session": "s2",
+          "day_offset": 12,
+          "sequence": 1,
+          "type": "unseen_transfer",
+          "new_interlocutor": true,
+          "new_context": true,
+          "peer_present": false,
+          "independent": true,
+          "reviewed_semantic_oracle": "requires_review"
+        }
+      ],
+      "matched_control": {
+        "insert": [
+          {
+            "id": "D2A",
+            "session": "s2",
+            "day_offset": 12,
+            "sequence": 0.5,
+            "type": "peer_answer_rendered",
+            "answer_bearing_for_target_construct": true
+          }
+        ],
+        "replace": [
+          {
+            "event_id": "D3",
+            "independent": false,
+            "exposed_to": [
+              "D2A"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "collaborative_practice_valid": true,
+        "peer_assisted_turns_not_clean_mastery": true,
+        "clean_later_interaction_requires_no_answer_exposure": true
+      }
+    },
+    {
+      "id": "E",
+      "title": "Unknown external assistance is not evidence of cheating or verified independence",
+      "objective_family": "free_production_writing",
+      "events": [
+        {
+          "id": "E1",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 1,
+          "type": "task_rendered",
+          "channel": "writing"
+        },
+        {
+          "id": "E2",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "submission",
+          "answer": "Could you please confirm the appointment?",
+          "input_observation": "paste",
+          "external_tool_provenance": "UNKNOWN",
+          "independent": "UNKNOWN"
+        },
+        {
+          "id": "E3",
+          "session": "s2",
+          "day_offset": 9,
+          "sequence": 1,
+          "type": "fresh_accessible_probe",
+          "new_item": true,
+          "independent": true,
+          "reviewed_semantic_oracle": "requires_review"
+        }
+      ],
+      "matched_control": {
+        "insert": [
+          {
+            "id": "E1A",
+            "session": "s1",
+            "day_offset": 0,
+            "sequence": 1.5,
+            "type": "model_answer_rendered",
+            "answer_bearing_for_target_construct": true
+          }
+        ],
+        "replace": [
+          {
+            "event_id": "E2",
+            "external_tool_provenance": "observed_in_product",
+            "independent": false,
+            "exposed_to": [
+              "E1A"
+            ]
+          }
+        ]
+      },
+      "expected": {
+        "no_inference_from_paste_speed": true,
+        "no_punitive_cheating_label": true,
+        "unknown_not_automatic_mastery": true,
+        "fresh_probe_offered": true
+      }
+    },
+    {
+      "id": "F",
+      "title": "Contradictory method outcomes, duplicate and unknown events, balanced coverage",
+      "objective_family": "information_request_writing",
+      "events": [
+        {
+          "id": "F4",
+          "session": "s4",
+          "day_offset": 21,
+          "sequence": 2,
+          "type": "delayed_transfer",
+          "method": "translator_practice",
+          "independent": true,
+          "outcome": "success",
+          "comparable": true
+        },
+        {
+          "id": "F2",
+          "session": "s2",
+          "day_offset": 7,
+          "sequence": 2,
+          "type": "delayed_transfer",
+          "method": "translator_practice",
+          "independent": true,
+          "outcome": "failure",
+          "comparable": true
+        },
+        {
+          "id": "F5",
+          "session": "s5",
+          "day_offset": 28,
+          "sequence": 2,
+          "type": "delayed_transfer",
+          "method": "dictionary_practice",
+          "independent": false,
+          "outcome": "success",
+          "duplicate_of": "F5-original",
+          "answer_generated": true
+        },
+        {
+          "id": "F5-dup",
+          "session": "s5",
+          "day_offset": 28,
+          "sequence": 2,
+          "type": "delayed_transfer",
+          "method": "dictionary_practice",
+          "independent": false,
+          "outcome": "success",
+          "duplicate_of": "F5-original",
+          "answer_generated": true
+        },
+        {
+          "id": "F1",
+          "session": "s1",
+          "day_offset": 0,
+          "sequence": 2,
+          "type": "delayed_transfer",
+          "method": "dictionary_practice",
+          "independent": true,
+          "outcome": "success",
+          "comparable": true
+        },
+        {
+          "id": "F3",
+          "session": "s3",
+          "day_offset": 14,
+          "sequence": 2,
+          "type": "delayed_transfer",
+          "method": "dictionary_practice",
+          "independent": true,
+          "outcome": "failure",
+          "comparable": true
+        },
+        {
+          "id": "F6",
+          "session": "s6",
+          "day_offset": 35,
+          "sequence": 2,
+          "type": "delayed_transfer",
+          "method": "translator_practice",
+          "independent": "UNKNOWN",
+          "outcome": "success",
+          "exposure_chronology": "UNKNOWN"
+        },
+        {
+          "id": "F7",
+          "session": "s7",
+          "day_offset": 42,
+          "sequence": 1,
+          "type": "followup_queued",
+          "skill": "listening",
+          "rendered": false
+        },
+        {
+          "id": "F8",
+          "session": "s7",
+          "day_offset": 42,
+          "sequence": 2,
+          "type": "next_instruction_rendered",
+          "method": "balanced_fallback",
+          "context": "neutral",
+          "skill": "writing",
+          "rationale": "conflicting_comparable_outcomes"
+        }
+      ],
+      "matched_control": {
+        "replace": [
+          {
+            "event_id": "F1",
+            "outcome": "failure"
+          },
+          {
+            "event_id": "F2",
+            "outcome": "success"
+          },
+          {
+            "event_id": "F3",
+            "outcome": "success"
+          },
+          {
+            "event_id": "F4",
+            "outcome": "failure"
+          }
+        ]
+      },
+      "expected": {
+        "eligible_comparable_independent_observations": 4,
+        "duplicate_group_counted_at_most_once": true,
+        "untrusted_chronology_excluded": true,
+        "missing_render_not_completed": true,
+        "contradictory_outcomes_preserved": true,
+        "method_hypothesis_revisable": true,
+        "actual_next_choice_logged": true,
+        "skill_debt_preserved": true,
+        "followup_due": 2,
+        "followup_rendered": 1,
+        "followup_completed": 0,
+        "followup_missing_unrendered": 1,
+        "followup_pending_rendered": 1
+      },
+      "followup_ledger": [
+        {
+          "id": "listening_review",
+          "skill": "listening",
+          "event": "F7",
+          "due": 1,
+          "offered": 1,
+          "rendered": 0,
+          "completed": 0,
+          "missing_unrendered": 1,
+          "pending_rendered": 0
+        },
+        {
+          "id": "neutral_production_transfer",
+          "skill": "writing",
+          "event": "F8",
+          "due": 1,
+          "offered": 1,
+          "rendered": 1,
+          "completed": 0,
+          "missing_unrendered": 0,
+          "pending_rendered": 1
+        }
+      ]
+    }
+  ],
+  "notes": [
+    "All example utterances are synthetic, and reviewed linguistic correctness remains unresolved.",
+    "Matched controls are patches to the base history, not independent real observations.",
+    "Events are listed in ingestion order, not necessarily occurrence order; occurrence order is (day_offset,sequence) when trusted.",
+    "Case F is a deliberate conflicting-outcome fallback; no fixed numerical winner is claimed.",
+    "No Auth, cloud, infra, Supabase, production, paid models, merges or learner tracking are authorized."
+  ]
+}

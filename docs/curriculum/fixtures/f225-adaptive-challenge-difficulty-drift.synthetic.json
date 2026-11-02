@@ -1,0 +1,678 @@
+{
+  "schema_id": "linguachat.curriculum.f225.machine_readable.v1",
+  "fixture_document": "docs/curriculum/longitudinal-fixture-f225-adaptive-challenge-difficulty-drift-independent-mastery.md",
+  "governing_contract": "docs/curriculum/longitudinal-instructional-adaptation.md",
+  "status": "DESIGN_ONLY_UNSUPPORTED",
+  "purpose": "Six deterministic synthetic histories and matched controls for challenge selection, difficulty drift and independent mastery; not a runnable engine test, CEFR certification or human-learning efficacy claim.",
+  "seed": 22520261030,
+  "clock": {
+    "timezone": "UTC",
+    "anchor": "2026-10-01T12:00:00Z",
+    "trusted_occurrence_and_arrival_separate": true,
+    "distinct_session_and_meaningful_delay_require_review": true
+  },
+  "source_binding": {
+    "objective_id": "REQUIRES_EXISTING_VERSIONED_CEFR_CAN_DO",
+    "rubric_version": "REQUIRES_INDEPENDENT_REVIEW",
+    "task_calibration_version": "SYNTHETIC_F225_V1",
+    "channel_version": "REQUIRES_SUPPORTED_CHANNEL",
+    "reviewed_difficulty_oracle": "REQUIRES_INDEPENDENT_REVIEW",
+    "source_resolution": "UNSUPPORTED"
+  },
+  "global_rules": {
+    "difficulty": "Calibrate communicative construct, prerequisites, language burden, channel, access, item lineage and novelty independently of observed accuracy; unmatched is NOT_COMPARABLE.",
+    "evidence": "Separate first unaided, assisted practice, delayed retrieval and reviewed unseen transfer.",
+    "selection": "Freeze pre-choice feasible candidates, policy/propensity, uncertainty and record actual delivered method/challenge/dose.",
+    "interests": "Soft context weights, preserve adjacent neutral unfamiliar contexts and CEFR objectives.",
+    "missingness": "Due, offered, rendered, completed and missing are distinct; no imputed outcomes.",
+    "release": "Pre-A1 frozen, A1-C2 unavailable; no Auth/cloud/infra/production/Supabase/paid Claude/EvoLabs/auto-merge."
+  },
+  "assertions": [
+    {
+      "id": 1,
+      "check": "Fixed existing versioned CEFR can-do, reviewed meaning/function rubric, prerequisites, modality skill debt and independent exit standards; no Pre-A1 or A1-C2 release changes."
+    },
+    {
+      "id": 2,
+      "check": "Version difficulty, construct, item familiarity, channel and calibration; unequal/unreviewed task comparisons must return NOT_COMPARABLE."
+    },
+    {
+      "id": 3,
+      "check": "Easier/familiar/assisted/repeated immediate correctness cannot substitute for first unaided, meaningfully delayed retrieval and independently reviewed unseen transfer."
+    },
+    {
+      "id": 4,
+      "check": "Ceiling D1 performance cannot prove D2/D3 mastery; valid hard failures guide support without permanent labels or automatic downgrades."
+    },
+    {
+      "id": 5,
+      "check": "Scaffolded lower-challenge practice is legitimate instruction, not unaided exit; due-but-unrendered probes are neither success nor failure."
+    },
+    {
+      "id": 6,
+      "check": "Method and interest contrasts require matched baseline, difficulty, exposure, novelty, access, channel, topic, timing and missingness; soft interests never filter required objectives."
+    },
+    {
+      "id": 7,
+      "check": "Accessible alternatives preserve the construct; inaccessible or unrendered listening/speaking probes leave skill debt rather than invented success."
+    },
+    {
+      "id": 8,
+      "check": "Deduplicate stable attempts, retain occurrence/arrival and signed calibration versions, frozen pre-choice and actual delivered tasks, and due/offered/rendered/completed/missing denominators; future changes cannot backdate decisions."
+    },
+    {
+      "id": 9,
+      "check": "Without independently bound CEFR source, difficulty/semantic/access oracles and executable exact-head harness, all synthetic verdicts remain UNSUPPORTED; human efficacy additionally needs ethical longitudinal delayed unseen comparisons."
+    }
+  ],
+  "required_harness_outputs": [
+    "exact_curriculum_HEAD",
+    "exact_engine_HEAD",
+    "executable_command",
+    "resolved_existing_CEFR_can_do_and_reviewed_rubric",
+    "independent_task_difficulty_and_semantic_equivalence_oracles",
+    "channel_accessibility_and_item_family_versions",
+    "trusted_answer_bearing_render_and_submission_chronology",
+    "first_unaided_delayed_retrieval_unseen_transfer_eligibility",
+    "pre_choice_candidate_propensity_uncertainty_and_actual_delivered_dose",
+    "due_offered_rendered_completed_missing_denominators",
+    "calibration_version_bridges_and_matched_control_outcomes",
+    "per_case_and_assertion_PASS_FAIL_UNSUPPORTED",
+    "independent_reviewer_signoff"
+  ],
+  "cases": [
+    {
+      "source_binding": "REQUIRED",
+      "id": "A",
+      "title": "Easy-task accuracy inflation is not D3 mastery",
+      "events": [
+        {
+          "id": "A0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "A0-session",
+          "type": "independent_probe",
+          "difficulty": "D3",
+          "family": "D3-A",
+          "demands_correct": 5,
+          "demands_total": 10,
+          "first_unaided": true,
+          "answer_exposure": "VERIFIED_NONE"
+        },
+        {
+          "id": "A1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T12:00:01Z",
+          "session_id": "A1-session",
+          "type": "independent_probe",
+          "difficulty": "D3",
+          "family": "D3-B",
+          "demands_correct": 6,
+          "demands_total": 10,
+          "first_unaided": true,
+          "answer_exposure": "VERIFIED_NONE"
+        },
+        {
+          "id": "A2",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T12:00:01Z",
+          "session_id": "A2-session",
+          "type": "independent_probe",
+          "difficulty": "D3",
+          "family": "D3-C",
+          "demands_correct": 6,
+          "demands_total": 10,
+          "first_unaided": true,
+          "answer_exposure": "VERIFIED_NONE"
+        },
+        {
+          "id": "A3",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T12:00:01Z",
+          "session_id": "A3-session",
+          "type": "adaptive_choice_delivered",
+          "difficulty": "D1",
+          "family": "D1-A",
+          "demands_correct": 9,
+          "demands_total": 10,
+          "first_unaided": true,
+          "answer_exposure": "VERIFIED_NONE",
+          "policy_reason": "predicted_short_term_success"
+        },
+        {
+          "id": "A4",
+          "occurred_at": "2026-10-13T12:00:00Z",
+          "arrived_at": "2026-10-13T12:00:01Z",
+          "session_id": "A4-session",
+          "type": "adaptive_choice_delivered",
+          "difficulty": "D1",
+          "family": "D1-B",
+          "demands_correct": 10,
+          "demands_total": 10,
+          "first_unaided": true,
+          "answer_exposure": "VERIFIED_NONE"
+        },
+        {
+          "id": "A5",
+          "occurred_at": "2026-10-16T12:00:00Z",
+          "arrived_at": "2026-10-16T12:00:01Z",
+          "session_id": "A5-session",
+          "type": "adaptive_choice_delivered",
+          "difficulty": "D1",
+          "family": "D1-C",
+          "demands_correct": 10,
+          "demands_total": 10,
+          "first_unaided": true,
+          "answer_exposure": "VERIFIED_NONE"
+        }
+      ],
+      "opportunities": {
+        "due": 1,
+        "offered": 0,
+        "rendered": 0,
+        "completed": 0,
+        "missing": 1,
+        "description": "reviewed_D3_unseen_delayed_transfer"
+      },
+      "expected": {
+        "cross_difficulty_comparability": "NOT_COMPARABLE",
+        "D3_exit_certified": false,
+        "D1_practice_evidence_retained": true,
+        "reviewed_D3_probe_due": true,
+        "learning_gain_claim": "UNSUPPORTED"
+      },
+      "matched_control": {
+        "mutation": "Replace A3-A5 with reviewed D3-equivalent, independent unseen probes at meaningful distinct-session delays, preserving rubric, channel, access and answer isolation.",
+        "expected": "ONLY_REVIEWED_COMPARABLE_D3_OUTCOMES_MAY_UPDATE_D3_MASTERY; NO_AUTOMATIC_CAUSAL_CLAIM"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "source_binding": "REQUIRED",
+      "id": "B",
+      "title": "Easy ceiling does not justify indefinite challenge suppression",
+      "events": [
+        {
+          "id": "B0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "B0-session",
+          "type": "independent_probe",
+          "difficulty": "D1",
+          "family": "B-D1-A",
+          "demands_correct": 10,
+          "demands_total": 10,
+          "first_unaided": true
+        },
+        {
+          "id": "B1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T12:00:01Z",
+          "session_id": "B1-session",
+          "type": "independent_probe",
+          "difficulty": "D1",
+          "family": "B-D1-B",
+          "demands_correct": 10,
+          "demands_total": 10,
+          "first_unaided": true
+        },
+        {
+          "id": "B2",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T12:00:01Z",
+          "session_id": "B2-session",
+          "type": "pre_choice_snapshot",
+          "feasible_accessible_alternatives": [
+            "reviewed_D2_probe",
+            "reviewed_D3_probe",
+            "neutral_context"
+          ],
+          "selection_propensity": "UNAVAILABLE",
+          "uncertainty": "HIGH"
+        },
+        {
+          "id": "B3",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T12:00:01Z",
+          "session_id": "B3-session",
+          "type": "adaptive_choice_delivered",
+          "difficulty": "D1",
+          "family": "B-D1-C",
+          "demands_correct": 10,
+          "demands_total": 10,
+          "first_unaided": true,
+          "policy_reason": "maximize_immediate_correctness"
+        },
+        {
+          "id": "B4",
+          "occurred_at": "2026-10-13T12:00:00Z",
+          "arrived_at": "2026-10-13T12:00:01Z",
+          "session_id": "B4-session",
+          "type": "adaptive_choice_delivered",
+          "difficulty": "D1",
+          "family": "B-D1-D",
+          "demands_correct": 10,
+          "demands_total": 10,
+          "first_unaided": true
+        }
+      ],
+      "opportunities": {
+        "due": 2,
+        "offered": 0,
+        "rendered": 0,
+        "completed": 0,
+        "missing": 2,
+        "description": "D2_and_D3_reviewed_unseen_probes"
+      },
+      "expected": {
+        "higher_challenge_mastery": "UNMEASURED",
+        "easy_ceiling_not_evidence_of_D3": true,
+        "imputed_hard_failures": 0,
+        "permanent_easy_learner_label": false,
+        "next_feasible_harder_or_novel_probe_required": true
+      },
+      "matched_control": {
+        "mutation": "Actually render one independently calibrated accessible D2 or D3 unseen probe with trusted answer isolation.",
+        "expected": "REVIEWED_PASS_OR_FAIL_MAY_INFORM_NEXT_SCAFFOLD; UNRENDERED_PROBES_REMAIN_UNMEASURED"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "source_binding": "REQUIRED",
+      "id": "C",
+      "title": "Method P versus Q is confounded by delivered difficulty",
+      "events": [
+        {
+          "id": "C0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "C0-session",
+          "type": "pre_choice_snapshot",
+          "methods_feasible": [
+            "P_worked_example",
+            "Q_retrieval_first"
+          ],
+          "baseline": "UNMATCHED",
+          "method_confidence": "LOW",
+          "decision_frozen": true
+        },
+        {
+          "id": "C1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T12:00:01Z",
+          "session_id": "C1-session",
+          "type": "method_outcome",
+          "method": "P_worked_example",
+          "difficulty": "D1",
+          "family": "familiar_P",
+          "immediate_correct": 18,
+          "total": 20,
+          "independent_unseen_delayed": false,
+          "answer_exposure": "WORKED_EXAMPLE_DELIVERED"
+        },
+        {
+          "id": "C2",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T12:00:01Z",
+          "session_id": "C2-session",
+          "type": "method_outcome",
+          "method": "Q_retrieval_first",
+          "difficulty": "D3",
+          "family": "unseen_Q",
+          "immediate_correct": 12,
+          "total": 20,
+          "independent_unseen_delayed": false,
+          "answer_exposure": "VERIFIED_NONE"
+        },
+        {
+          "id": "C3",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T12:00:01Z",
+          "session_id": "C3-session",
+          "type": "review_due",
+          "difficulty": "MATCHED_UNKNOWN",
+          "rendered": false,
+          "completed": false
+        }
+      ],
+      "opportunities": {
+        "due": 2,
+        "offered": 0,
+        "rendered": 0,
+        "completed": 0,
+        "missing": 2,
+        "description": "matched_delayed_unseen_P_Q_outcomes"
+      },
+      "expected": {
+        "method_winner": "UNSUPPORTED",
+        "P_Q_comparability": "NOT_COMPARABLE",
+        "P_permanent_preference": false,
+        "uncertainty_retained": true,
+        "alternative_sampling_allowed": true
+      },
+      "matched_control": {
+        "mutation": "Counterbalance reviewed equivalent difficulty/item families and answer exposure across P and Q; collect delayed independent unseen outcomes including noncompletion denominators.",
+        "expected": "CAUTIOUS_OBSERVATIONAL_COMPARISON_ONLY_IF_REVIEWED_COMPARABLE; NO_AUTOMATIC_CAUSALITY"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "source_binding": "REQUIRED",
+      "id": "D",
+      "title": "Legitimate reduced-challenge scaffolding is not an exit pass",
+      "events": [
+        {
+          "id": "D0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "D0-session",
+          "type": "independent_probe",
+          "difficulty": "D3",
+          "family": "D3-original",
+          "first_unaided": true,
+          "reviewed_semantic_outcome": "failure",
+          "reviewed_error": "communicative_repair_failure",
+          "answer_exposure": "VERIFIED_NONE"
+        },
+        {
+          "id": "D1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T12:00:01Z",
+          "session_id": "D1-session",
+          "type": "scaffolded_practice",
+          "difficulty": "D1",
+          "family": "D1-repair",
+          "assisted": true,
+          "model_delivered": true,
+          "reviewed_semantic_outcome": "correct_repair"
+        },
+        {
+          "id": "D2",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T12:00:01Z",
+          "session_id": "D2-session",
+          "type": "scaffolded_practice",
+          "difficulty": "D2",
+          "family": "D2-repair",
+          "assisted": true,
+          "hint_delivered": true,
+          "reviewed_semantic_outcome": "correct_repair"
+        },
+        {
+          "id": "D3",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T12:00:01Z",
+          "session_id": "D3-session",
+          "type": "scaffolded_practice",
+          "difficulty": "D2",
+          "family": "D2-repair-new",
+          "assisted": true,
+          "reviewed_semantic_outcome": "correct_repair"
+        },
+        {
+          "id": "D4",
+          "occurred_at": "2026-10-13T12:00:00Z",
+          "arrived_at": "2026-10-13T12:00:01Z",
+          "session_id": "D4-session",
+          "type": "independent_exit_scheduled",
+          "difficulty": "D3",
+          "family": "D3-unseen",
+          "rendered": false,
+          "completed": false
+        }
+      ],
+      "opportunities": {
+        "due": 1,
+        "offered": 0,
+        "rendered": 0,
+        "completed": 0,
+        "missing": 1,
+        "description": "D3_unseen_independent_exit"
+      },
+      "expected": {
+        "D0_diagnostic_retained": true,
+        "assisted_repair_count": 3,
+        "independent_D3_exit_pass": false,
+        "exit_status": "NOT_ASSESSED",
+        "scaffolding_legitimate": true,
+        "next_fade_and_accessible_probe_due": true
+      },
+      "matched_control": {
+        "mutation": "Render reviewed unseen D3 exit after meaningful delay, no prior answer-bearing exposure, with a clean independent first attempt.",
+        "expected": "ONLY_ACTUAL_REVIEWED_D3_EXIT_OUTCOME_MAY_CHANGE_INDEPENDENT_MASTERY"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "source_binding": "REQUIRED",
+      "id": "E",
+      "title": "Familiar travel context is easier than unfamiliar negotiation",
+      "events": [
+        {
+          "id": "E0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "E0-session",
+          "type": "pre_choice_snapshot",
+          "interest_weights": {
+            "travel": "HIGH",
+            "neutral": "ELIGIBLE",
+            "unfamiliar": "ELIGIBLE"
+          },
+          "methods_feasible": [
+            "P",
+            "Q"
+          ],
+          "method_confidence": "LOW"
+        },
+        {
+          "id": "E1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T12:00:01Z",
+          "session_id": "E1-session",
+          "type": "context_outcome",
+          "context": "travel_airport",
+          "difficulty": "D1",
+          "item_familiarity": "HIGH",
+          "channel": "text",
+          "correct": 9,
+          "total": 10,
+          "independent": true
+        },
+        {
+          "id": "E2",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T12:00:01Z",
+          "session_id": "E2-session",
+          "type": "context_outcome",
+          "context": "neutral",
+          "difficulty": "D3",
+          "item_familiarity": "LOW",
+          "channel": "text",
+          "correct": 5,
+          "total": 10,
+          "independent": true
+        },
+        {
+          "id": "E3",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T12:00:01Z",
+          "session_id": "E3-session",
+          "type": "context_outcome",
+          "context": "unfamiliar_negotiation",
+          "difficulty": "D3",
+          "item_familiarity": "LOW",
+          "channel": "text",
+          "correct": 5,
+          "total": 10,
+          "independent": true
+        },
+        {
+          "id": "E4",
+          "occurred_at": "2026-10-13T12:00:00Z",
+          "arrived_at": "2026-10-13T12:00:01Z",
+          "session_id": "E4-session",
+          "type": "next_context_choice",
+          "eligible": [
+            "travel",
+            "adjacent",
+            "neutral",
+            "unfamiliar"
+          ],
+          "actually_rendered": "neutral",
+          "objective_unchanged": true,
+          "method_confidence": "LOW"
+        }
+      ],
+      "opportunities": {
+        "due": 2,
+        "offered": 2,
+        "rendered": 2,
+        "completed": 2,
+        "missing": 0,
+        "description": "required_neutral_and_unfamiliar_context_coverage"
+      },
+      "expected": {
+        "interest_method_equivalence": false,
+        "topic_exclusive_filter": false,
+        "required_negotiation_objective_skipped": false,
+        "cross_context_challenge_comparability": "NOT_COMPARABLE",
+        "method_winner": "UNSUPPORTED"
+      },
+      "matched_control": {
+        "mutation": "Use independently reviewed context substitutions preserving intent, pragmatics, channel, difficulty and exposure; obtain delayed independent unseen outcomes.",
+        "expected": "IF_EQUIVALENCE_NOT_REVIEWED_KEEP_NOT_COMPARABLE_AND_USE_NEUTRAL_FALLBACK"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    },
+    {
+      "source_binding": "REQUIRED",
+      "id": "F",
+      "title": "Recalibration, duplicate and late arrival do not rewrite decisions",
+      "events": [
+        {
+          "id": "F0",
+          "occurred_at": "2026-10-01T12:00:00Z",
+          "arrived_at": "2026-10-01T12:00:01Z",
+          "session_id": "F0-session",
+          "type": "pre_choice_snapshot",
+          "difficulty_due": [
+            "D2",
+            "D3"
+          ],
+          "methods_feasible": [
+            "P",
+            "Q"
+          ],
+          "uncertainty": "HIGH",
+          "policy_version": "F225_DESIGN_V1",
+          "decision_frozen": true
+        },
+        {
+          "id": "F1",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T12:00:01Z",
+          "session_id": "F1-session",
+          "type": "independent_probe",
+          "attempt_id": "F-T1",
+          "difficulty": "D2",
+          "calibration_version": "v1",
+          "first_unaided": true,
+          "answer_exposure": "VERIFIED_NONE",
+          "reviewed_semantic_outcome": "success"
+        },
+        {
+          "id": "F2",
+          "occurred_at": "2026-10-04T12:00:00Z",
+          "arrived_at": "2026-10-04T12:00:01Z",
+          "session_id": "F2-session",
+          "type": "duplicate_replay",
+          "attempt_id": "F-T1",
+          "same_as": "F1",
+          "independent_credit_delta": 0
+        },
+        {
+          "id": "F3",
+          "occurred_at": "2026-10-07T12:00:00Z",
+          "arrived_at": "2026-10-07T12:00:01Z",
+          "session_id": "F3-session",
+          "type": "hard_probe_scheduled",
+          "difficulty": "D3",
+          "rendered": false,
+          "completed": false
+        },
+        {
+          "id": "F4",
+          "occurred_at": "2026-10-10T12:00:00Z",
+          "arrived_at": "2026-10-10T12:00:01Z",
+          "session_id": "F4-session",
+          "type": "scaffolded_practice",
+          "difficulty": "D1",
+          "assisted": true,
+          "reviewed_semantic_outcome": "success",
+          "independent_credit_delta": 0
+        },
+        {
+          "id": "F5",
+          "occurred_at": "2026-10-08T12:00:00Z",
+          "arrived_at": "2026-10-13T12:00:00Z",
+          "session_id": "F5-session",
+          "type": "signed_recalibration_review",
+          "item_family": "F-T1",
+          "from_version": "v1",
+          "from_difficulty": "D2",
+          "to_version": "v2",
+          "to_difficulty": "D1",
+          "signed_bridge": "ABSENT",
+          "historical_record_preserved": true
+        },
+        {
+          "id": "F6",
+          "occurred_at": "2026-10-16T12:00:00Z",
+          "arrived_at": "2026-10-16T12:00:01Z",
+          "session_id": "F6-session",
+          "type": "next_instruction_delivered",
+          "difficulty": "D2",
+          "method": "balanced_accessible",
+          "dose": 1,
+          "rendered": true,
+          "independent_outcome": "PENDING"
+        }
+      ],
+      "opportunities": {
+        "due": 2,
+        "offered": 2,
+        "rendered": 2,
+        "completed": 1,
+        "missing": 1,
+        "description": "D2_D3_review_and_F6_pending; completion counts only F1, no D3 rendered"
+      },
+      "expected": {
+        "unique_F_T1_count": 1,
+        "F3_imputed_failure": false,
+        "F4_independent_exit": false,
+        "calibration_versions_preserved": [
+          "v1",
+          "v2"
+        ],
+        "cross_version_comparability": "NOT_COMPARABLE",
+        "F0_rewritten": false,
+        "F6_rendered": true,
+        "F6_independent_outcome": "PENDING",
+        "method_locked": false
+      },
+      "matched_control": {
+        "mutation": "Replace F3 with a genuinely rendered independently reviewed D3 unseen attempt with trusted answer isolation; keep F5 revision and all original arrival times.",
+        "expected": "VALID_D3_RESULT_CAN_CHANGE_ONLY_SUBSEQUENT_CHOICES; NEVER_REWRITE_F0_OR_DOUBLE_COUNT_F_T1"
+      },
+      "fixture_verdict": "UNSUPPORTED_PENDING_EXECUTABLE_INDEPENDENT_REVIEW"
+    }
+  ],
+  "prohibitions": [
+    "No live learner experiment or production tracking",
+    "No Auth/cloud/infra/Supabase/production mutation",
+    "No paid Claude or EvoLabs",
+    "No auto-merge",
+    "No Pre-A1 edits or A1-C2 activation"
+  ]
+}
