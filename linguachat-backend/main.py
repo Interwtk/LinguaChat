@@ -9,7 +9,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from ai.provider_policy import describe_providers, verify_provider_config
 from app.routes.chat import router as chat_router
 from app.routes.learning import router as learning_router
-from app.routes.user import router as user_router
 
 
 load_dotenv()
@@ -56,7 +55,6 @@ app.add_middleware(
 
 app.include_router(chat_router)
 app.include_router(learning_router)
-app.include_router(user_router)
 
 
 @app.get("/")

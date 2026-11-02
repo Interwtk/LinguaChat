@@ -339,7 +339,8 @@ const html = read('index.html')
   has('an empty garden says it is empty', /noWordsYet/.test(garden))
   const today = read('src/components/today/TodayView.jsx')
   has('the streak on Home is the learner\'s own', /localProgress\?\.streak/.test(today))
-  has('the words on Home are counted from the learner model', /languageItems \|\| \{\}\)\.length/.test(today))
+  // (courses: Home counts the English course's items, still straight from the learner model)
+  has('the words on Home are counted from the learner model', /languageItems \|\| \{\}\)(?:\.filter\(.+?\))?\.length/.test(today))
 }
 
 /* ---- 10) the learning states survive the redesign ---- */
