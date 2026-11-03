@@ -56,6 +56,28 @@ Evalué lo que se puede construir **reutilizando el motor** sin prometer nada qu
 - **No se construye antes de tener:** entidad legal, procesador aprobado y respuesta del contador.
 - **El 15 de noviembre la beta sale gratuita.**
 
+### 3.1 Fase 3: primera función Premium construida (no a la venta)
+
+**Práctica adaptativa adicional:**
+- **qué ofrece:** hasta 3 bloques al día después de la sesión gratuita;
+- **cómo se arma:** con el planificador existente;
+- **quién decide:** el servidor, mediante un pase firmado;
+- **activación:** apagada por defecto;
+- **costo variable:** sin costo de IA.
+
+**Pendiente para venderla:**
+- procesador aprobado por escrito (`payment-processor-checklist.md`);
+- inicio de actividades y respuestas del contador;
+- emisión del pase vía *webhook*;
+- contador persistente;
+- recomendado: verificar el JWT en el servidor (cambio de `CLAUDE.md`).
+
+**Correcciones de comisiones** (fuente oficial, fase 3):
+- Polar Starter: **5 % + 50¢**, +1,5 % con tarjetas no estadounidenses;
+- Paddle: 5 % + 50¢.
+
+Detalle: `docs/architecture/premium-practice.md`.
+
 ## 4. Precios (escenarios, no pronósticos)
 
 | Plan candidato | Neto con Polar Starter, tarjeta de EE. UU. | Ídem, tarjeta no estadounidense |

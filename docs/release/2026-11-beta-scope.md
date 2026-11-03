@@ -25,6 +25,10 @@ Una beta **limitada, gratuita y solo para adultos**, por invitación. Dos recorr
 - Pregunta de edad neutral (solo adultos) y seguridad del tutor en el servidor.
 - Descargar y borrar los datos propios.
 - Planes honestos: todo gratis y Premium «no disponible».
+- **Fase 3:**
+  - borrar datos también pide al servidor olvidar los chats;
+  - la memoria del servidor caduca a las 24 h;
+  - el bloqueo de edad es por dispositivo.
 
 **Experimentales (con aviso):**
 - Contenido de español **sin revisión de un hablante nativo** todavía.
@@ -37,7 +41,7 @@ Una beta **limitada, gratuita y solo para adultos**, por invitación. Dos recorr
 - práctica oral evaluada;
 - IA generativa;
 - sincronización en la nube;
-- Premium.
+- Premium: la **práctica adaptativa adicional** está construida y probada, pero **apagada y no a la venta** (`docs/architecture/premium-practice.md`).
 
 ## 3. Lo que la beta NO promete
 
