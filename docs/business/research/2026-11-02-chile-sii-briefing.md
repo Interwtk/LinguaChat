@@ -1,5 +1,16 @@
 # LinguaChat: briefing tributario y societario (Chile) para el contador
 
+> **Fase 3 (2026-11-03): verificado contra fuentes oficiales** en `docs/business/research/2026-11-03-sii-official-verification.md`. Correcciones principales:
+> - **Inicio de actividades:** desde el 2-ene-2026 (Ley 21.713), Flow, Mercado Pago y otros medios de pago constituidos en Chile **deben exigir el inicio de actividades** antes de contratar. La venta directa no puede abrirse antes.
+> - **Polar:** la comisión es **5 % + 50¢** en el plan Starter (4 % + 40¢ es «Early Member»). Sigue sin resolverse la contradicción con Stripe sobre cuentas `recipient`.
+> - **Patente municipal:** el tope es **8.000 UTM**. Revisar la Ley 21.850 (DO 17-10-2026).
+> - **Factura de exportación (DTE 110):** requiere petición o el F2117 en el portal gratuito.
+> - **Exportación:** se puede autocalificar si el servicio figura en el listado de Aduanas. DUS vía SICEX es optativo.
+> - **Comisiones del MoR:** considerar el art. 12 E N°7 (exención si hay impuesto adicional).
+> - **F29:** el día 20 aplica solo a facturadores electrónicos que declaran en línea.
+> - **Contabilidad en USD:** pedirla **en el inicio de actividades**.
+> - **Descripción del producto:** tutor **por reglas, sin IA generativa** (la AUP de Polar restringe el contenido IA y los chatbots).
+
 Fecha de la investigación: 2026-11-02. Investigación web de solo lectura. **No es asesoría tributaria**: es un insumo para revisar con un contador o abogado tributario chileno.
 Convenciones: fuente oficial = sin marca; **[SEC]** = fuente secundaria (blog, estudio, agregador); **NO VERIFICADO** = no se confirmó en fuente oficial vigente.
 

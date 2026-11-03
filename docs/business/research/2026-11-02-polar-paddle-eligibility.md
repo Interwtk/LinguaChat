@@ -1,5 +1,16 @@
 # Polar.sh vs Paddle: elegibilidad y operación para LinguaChat (vendedor chileno)
 
+> **Fase 3 (2026-11-03): verificado contra fuentes oficiales** en `docs/business/research/2026-11-03-sii-official-verification.md`. Correcciones principales:
+> - **Inicio de actividades:** desde el 2-ene-2026 (Ley 21.713), Flow, Mercado Pago y otros medios de pago constituidos en Chile **deben exigir el inicio de actividades** antes de contratar. La venta directa no puede abrirse antes.
+> - **Polar:** la comisión es **5 % + 50¢** en el plan Starter (4 % + 40¢ es «Early Member»). Sigue sin resolverse la contradicción con Stripe sobre cuentas `recipient`.
+> - **Patente municipal:** el tope es **8.000 UTM**. Revisar la Ley 21.850 (DO 17-10-2026).
+> - **Factura de exportación (DTE 110):** requiere petición o el F2117 en el portal gratuito.
+> - **Exportación:** se puede autocalificar si el servicio figura en el listado de Aduanas. DUS vía SICEX es optativo.
+> - **Comisiones del MoR:** considerar el art. 12 E N°7 (exención si hay impuesto adicional).
+> - **F29:** el día 20 aplica solo a facturadores electrónicos que declaran en línea.
+> - **Contabilidad en USD:** pedirla **en el inicio de actividades**.
+> - **Descripción del producto:** tutor **por reglas, sin IA generativa** (la AUP de Polar restringe el contenido IA y los chatbots).
+
 Fecha de investigación: 2026-11-02. Solo lectura, fuentes oficiales (polar.sh/docs, polar.sh/legal, docs.stripe.com, paddle.com/help, paddle.com/legal, developer.paddle.com).
 Etiquetas: **[SEC]** = fuente secundaria; **NO VERIFICADO** = no confirmado en doc oficial.
 No repite pricing general (memo previo): Polar Starter 5%+$0.50 (+1.5% tarjetas no-US); Paddle 5%+$0.50, <$10 precio a medida, mínimo payout $100, checkout CLP desde 2026-03.

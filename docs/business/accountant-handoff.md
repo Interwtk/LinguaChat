@@ -1,5 +1,16 @@
 # Ficha para el contador — LinguaChat
 
+> **Fase 3 (2026-11-03): verificado contra fuentes oficiales** en `docs/business/research/2026-11-03-sii-official-verification.md`. Correcciones principales:
+> - **Inicio de actividades:** desde el 2-ene-2026 (Ley 21.713), Flow, Mercado Pago y otros medios de pago constituidos en Chile **deben exigir el inicio de actividades** antes de contratar. La venta directa no puede abrirse antes.
+> - **Polar:** la comisión es **5 % + 50¢** en el plan Starter (4 % + 40¢ es «Early Member»). Sigue sin resolverse la contradicción con Stripe sobre cuentas `recipient`.
+> - **Patente municipal:** el tope es **8.000 UTM**. Revisar la Ley 21.850 (DO 17-10-2026).
+> - **Factura de exportación (DTE 110):** requiere petición o el F2117 en el portal gratuito.
+> - **Exportación:** se puede autocalificar si el servicio figura en el listado de Aduanas. DUS vía SICEX es optativo.
+> - **Comisiones del MoR:** considerar el art. 12 E N°7 (exención si hay impuesto adicional).
+> - **F29:** el día 20 aplica solo a facturadores electrónicos que declaran en línea.
+> - **Contabilidad en USD:** pedirla **en el inicio de actividades**.
+> - **Descripción del producto:** tutor **por reglas, sin IA generativa** (la AUP de Polar restringe el contenido IA y los chatbots).
+
 > Documento para entregar a un contador o abogado tributario chileno. Fecha: 2026-11-02.
 > **Estado:** no hay entidad ni inicio de actividades, ni cobros ni cuenta en procesadores. Queremos operar correctamente desde el primer cobro.
 > Detalle de fuentes: `docs/business/research/2026-11-02-chile-sii-briefing.md`.
@@ -100,3 +111,16 @@
 - **Recomendación por escrito de:** estructura, régimen, códigos de actividad, tratamiento del IVA (exención o exportación), documento hacia el MoR y tratamiento de las comisiones.
 - **Lista de obligaciones mensuales y anuales** con fechas.
 - **Honorarios** del servicio contable mensual.
+
+## Preguntas adicionales (fase 3, tras la verificación oficial)
+
+27. ¿Puede una app sin docentes ampararse en la exención educacional del art. 13 N°4? ¿Conviene una consulta formal al SII? (El Oficio 2034/2022 apunta a «gravado».)
+28. Venta vía MoR: ¿qué documento se emite al MoR (factura de exportación 110 o factura afecta) y sobre qué base (venta bruta o *payout* neto)? ¿Cómo se cumple el «uso exclusivo en el extranjero» si el MoR también vende en Chile?
+29. ¿Sirve un código del listado de Aduanas (p. ej. 00550022 u 00120546) para autocalificar, o hay que pedir una calificación? ¿Hace falta agente de aduanas vía SICEX?
+30. Comisiones del MoR: ¿impuesto adicional (arts. 59 y 74 LIR) con exención de IVA (art. 12 E N°7), o IVA por cambio de sujeto con factura de compra? ¿Qué efecto tienen los convenios con EE. UU. y el Reino Unido?
+31. ¿Qué tipo de cambio se usa para los *payouts* en USD? ¿Conviene pedir contabilidad en USD (CT art. 18) en la misma declaración de inicio?
+32. Venta directa: ¿el voucher de Flow o Mercado Pago vale como boleta en una venta web? ¿Hace falta un proveedor de boleta con API?
+33. Patente: ¿qué cambió la Ley 21.850 (DO 17-10-2026)? ¿Qué corresponde en la comuna del domicilio?
+34. Si se elige 14 D N°8: ¿qué DDJJ corresponden? ¿Cómo se acredita la condición de la Ley 21.735 para la tasa rebajada?
+35. ¿Qué sanción tiene un inicio de actividades tardío?
+36. Considerando que Flow y Mercado Pago exigirán el inicio de actividades (Ley 21.713), ¿cuál es el orden recomendado: inicio, procesador, primera venta?
