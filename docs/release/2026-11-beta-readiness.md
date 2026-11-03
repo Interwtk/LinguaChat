@@ -185,7 +185,42 @@
 
 **Nada de esto se ha ejecutado.**
 
-## Ciclos finales (exit codes)
+## Ciclos finales de la fase 3 (exit codes)
+
+**Dos ciclos consecutivos e idénticos** sobre `58090dd` (árbol `4abda28`, `dirty=0` antes y después). El commit de este informe es solo documentación.
+
+| Suite | f1 | f2 |
+|---|---|---|
+| frontend `check:all` (107 pasos, por *exit code*) | **107/107** | **107/107** |
+| `build` · `check:i18n` | ok · ok | ok · ok |
+| Foundry b1/b2/c1/c2 y a2-structure | 5/5 | 5/5 |
+| integridad sin snapshot | 29/29 + 1 NOT_TESTED | 29/29 + 1 NOT_TESTED |
+| **integridad con P3 desde git (`check:ledger-rollback`)** | **30/30** | **30/30** |
+| política de adaptación | 10/10 | 10/10 |
+| alcance de la nube (git, autoprueba, pruebas) | ok | ok |
+| backend `compileall` · `pytest` | ok · **1621 passed / 28 skipped** | ok · 1621 / 28 |
+| e2e HTTP: tutor · continuidad | 4/4 · 5/5 | 4/4 · 5/5 |
+| plantillas de correo · garantías del producto | ok · 16/16 | ok · 16/16 |
+| `check:github-integration` | BLOQUEADO (falta `jq`; corre en CI) | BLOQUEADO |
+| escaneo de secretos (60 archivos cambiados desde `78666bd`) | 0 hallazgos ¹ | 0 ¹ |
+
+¹ Dentro del ciclo, el escáner falló por el formato de ruta (`/c/...` pasado a Node). Se ejecutó aparte sobre la misma cabeza `58090dd`: 60 archivos, 0 hallazgos.
+
+**Historia (sin ocultar fallos):** el ciclo 1, sobre `8a83d73`, dio **105/107** y detectó dos defectos:
+- el guardia de alcance de la nube marcó la palabra del proveedor de autenticación en un docstring del backend;
+- la matriz de preparación generada estaba desactualizada.
+
+Se corrigieron en `30d43e9`, y los ciclos f1 y f2 se ejecutaron después del último cambio.
+
+**QA en navegador real** (banco y backend local; detalle en `docs/architecture/premium-practice.md` §10):
+- Premium:
+  - con un pase válido se abre el bloque;
+  - al cuarto pedido aparece el límite;
+  - un pase alterado devuelve «parte de Premium»;
+  - con el servidor apagado no aparece nada.
+- Se encontró y corrigió un defecto: el índice del bloque se reiniciaba al volver a Hoy.
+
+## Ciclos finales de la fase 2 (exit codes)
 
 **Dos ciclos consecutivos e idénticos** sobre `f9f77b5` (árbol `1a623d0`, `dirty=0` antes y después, sin cambios entre ambos):
 
