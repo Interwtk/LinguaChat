@@ -40,4 +40,4 @@ export const PREMIUM_PLAN = {
 }
 
 /* Being built — shown only under the "not available now" heading. */
-export const LATER = ['planLaterLevels', 'planLaterVoice', 'planLaterAi']
+export const LATER = ['planLaterExtraPractice', 'planLaterLevels', 'planLaterVoice', 'planLaterAi']

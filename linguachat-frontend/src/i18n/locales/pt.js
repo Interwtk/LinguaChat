@@ -5636,4 +5636,15 @@ export default {
   // phase 3: deleting also asks the server to forget recent chat turns
   dataDeleteConfirm: "Apagar todos os seus dados de aprendizagem do LinguaChat deste dispositivo, e o que nosso servidor ainda lembra dos seus chats de prática recentes? Depois não é possível recuperar o progresso. As outras contas deste navegador não são afetadas.",
   dataDeleteDoneServerLater: "Seus dados foram apagados deste dispositivo. Não conseguimos contatar o servidor agora; ele esquece suas mensagens recentes do chat sozinho em até 24 horas.",
+  // phase 3: Premium extra practice (server-decided, inactive)
+  extraPracticeTitle: "Prática extra",
+  extraPracticeBody: "Um bloco curto com o que você está prestes a esquecer e os erros que repete. Até {n} por dia com o Premium. Sem lições novas nem pontos extras: só prática.",
+  extraPracticeStart: "Começar prática extra",
+  extraPractice_free: "A prática extra faz parte do Premium. Suas lições, correções, revisões e controles de dados continuam grátis.",
+  extraPractice_expired: "Seu Premium terminou. Todo o seu progresso continua, e tudo o que é grátis segue funcionando.",
+  extraPractice_limit: "Essa foi a prática extra de hoje. Amanhã haverá novos blocos.",
+  extraPractice_offline: "Não conseguimos verificar seu plano agora, então nada foi iniciado. Tente novamente.",
+  extraPractice_not_available: "O Premium ainda não está disponível.",
+  extraPractice_nothing: "Termine uma lição primeiro: a prática extra é montada com o que você já aprendeu.",
+  planLaterExtraPractice: "Premium (em testes, não está à venda): prática adaptativa extra depois da sessão diária, até 3 blocos curtos por dia",
 }

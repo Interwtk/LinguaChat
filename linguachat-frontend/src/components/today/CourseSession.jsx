@@ -116,7 +116,9 @@ const BLOCK_LABEL = {
 }
 
 /* Today's course session: one block at a time, persisted after each. */
-export function CourseSessionRunner({ session: initial, onExit }) {
+/* `persist={false}`: an extra-practice block lives only on screen; its answers are still filed as evidence. */
+export function CourseSessionRunner({ session: initial, onExit, persist = true }) {
+  const store = persist ? saveCourseSession : () => null
   const { t, activeCourse } = useApp()
   const [session, setSession] = useState(initial)
   const [content, setContent] = useState(null)
@@ -130,7 +132,7 @@ export function CourseSessionRunner({ session: initial, onExit }) {
     return () => { alive = false }
   }, [activeCourse])
   useEffect(() => {
-    if (session.status === 'planned') { const started = { ...session, status: 'active' }; setSession(saveCourseSession(started) || started) }
+    if (session.status === 'planned') { const started = { ...session, status: 'active' }; setSession(store(started) || started) }
   }, [])
 
   const steps = useMemo(() => (content && block ? resolveBlockSteps(block, content.ES_EPISODES, { seed: session.id }) : []), [content, block, session.id])
@@ -138,7 +140,7 @@ export function CourseSessionRunner({ session: initial, onExit }) {
   function next() {
     setTurn(0)
     const advanced = advanceCourseSession(session)
-    setSession(saveCourseSession(advanced) || advanced)
+    setSession(store(advanced) || advanced)
   }
 
   const practiceBlocks = session.blocks.filter(b => b.type !== 'session_completion').length

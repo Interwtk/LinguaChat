@@ -5636,4 +5636,15 @@ export default {
   // phase 3: deleting also asks the server to forget recent chat turns
   dataDeleteConfirm: "Supprimer toutes tes données d’apprentissage LinguaChat de cet appareil, ainsi que ce que notre serveur garde encore de tes conversations d’entraînement récentes ? Ta progression ne pourra pas être récupérée. Les autres comptes de ce navigateur ne sont pas concernés.",
   dataDeleteDoneServerLater: "Tes données ont été supprimées de cet appareil. Le serveur est injoignable pour l’instant ; il oublie de lui-même tes messages récents sous 24 heures.",
+  // phase 3: Premium extra practice (server-decided, inactive)
+  extraPracticeTitle: "Entraînement en plus",
+  extraPracticeBody: "Un court bloc avec ce que tu es sur le point d’oublier et les erreurs que tu répètes. Jusqu’à {n} par jour avec Premium. Pas de nouvelles leçons ni de points en plus : juste de l’entraînement.",
+  extraPracticeStart: "Commencer l’entraînement",
+  extraPractice_free: "L’entraînement en plus fait partie de Premium. Tes leçons, corrections, révisions et le contrôle de tes données restent gratuits.",
+  extraPractice_expired: "Ton Premium est terminé. Toute ta progression est conservée et tout ce qui est gratuit continue de fonctionner.",
+  extraPractice_limit: "C’était l’entraînement en plus d’aujourd’hui. De nouveaux blocs t’attendent demain.",
+  extraPractice_offline: "Impossible de vérifier ton offre pour l’instant, rien n’a donc été lancé. Réessaie.",
+  extraPractice_not_available: "Premium n’est pas encore disponible.",
+  extraPractice_nothing: "Termine d’abord une leçon : l’entraînement en plus se construit avec ce que tu as déjà appris.",
+  planLaterExtraPractice: "Premium (en test, pas en vente) : entraînement adaptatif en plus après ta séance du jour, jusqu’à 3 courts blocs par jour",
 }

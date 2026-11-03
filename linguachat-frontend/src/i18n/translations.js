@@ -2816,6 +2816,17 @@ const base = {
   // phase 3: deleting also asks the server to forget recent chat turns
   dataDeleteConfirm: "Delete all your LinguaChat learning data from this device, and what our server still remembers of your recent practice chats? Your progress here can’t be recovered afterwards. Other accounts on this browser are not affected.",
   dataDeleteDoneServerLater: "Your data was deleted from this device. We couldn’t reach the server just now; it forgets your recent chat turns by itself within 24 hours.",
+  // phase 3: Premium extra practice (server-decided, inactive)
+  extraPracticeTitle: "Extra practice",
+  extraPracticeBody: "A short block chosen from what you are about to forget and the mistakes you repeat. Up to {n} a day with Premium. No new lessons and no extra points: just practice.",
+  extraPracticeStart: "Start extra practice",
+  extraPractice_free: "Extra practice is part of Premium. Your lessons, corrections, reviews and data controls stay free.",
+  extraPractice_expired: "Your Premium has ended. All your progress stays, and everything free keeps working.",
+  extraPractice_limit: "That’s today’s extra practice. Your next blocks are ready tomorrow.",
+  extraPractice_offline: "We couldn’t check your plan right now, so nothing was started. Please try again.",
+  extraPractice_not_available: "Premium isn’t available yet.",
+  extraPractice_nothing: "Finish a lesson first: extra practice is built from what you have already learned.",
+  planLaterExtraPractice: "Premium (in testing, not for sale): extra adaptive practice after your daily session, up to 3 short blocks a day",
 }
 
 

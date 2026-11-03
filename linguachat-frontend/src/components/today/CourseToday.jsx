@@ -12,6 +12,7 @@ import { ScreenFallback } from '../ui/LazyBoundary'
 // the runner brings the lesson player and its content: loaded only when a session starts
 const CourseSessionRunner = lazy(() => import('./CourseSession').then(m => ({ default: m.CourseSessionRunner })))
 const CourseChat = lazy(() => import('./CourseChat').then(m => ({ default: m.CourseChat })))
+import { ExtraPractice } from './ExtraPractice'
 
 /*
  * Home for a course other than English (today: Spanish Pre-A1).
@@ -47,7 +48,7 @@ export function CourseToday() {
   const sessionStarted = session.status === 'active'
 
   if (chatting) return <Suspense fallback={<ScreenFallback label={t('screenLoading')} />}><CourseChat onExit={() => setChatting(false)} /></Suspense>
-  if (running) return <Suspense fallback={<ScreenFallback label={t('screenLoading')} />}><CourseSessionRunner session={running} onExit={() => setRunning(null)} /></Suspense>
+  if (running) return <Suspense fallback={<ScreenFallback label={t('screenLoading')} />}><CourseSessionRunner session={running} persist={!running.extra} onExit={() => setRunning(null)} /></Suspense>
 
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-7 py-5 md:py-7" style={{ background: 'var(--bg)' }}>
@@ -100,6 +101,7 @@ export function CourseToday() {
         {session.status === 'completed' && (
           <p className="rounded-2xl p-4 mb-4" style={{ fontSize: '0.875rem', background: 'var(--positive-soft)', color: 'var(--ink)' }}>{t('courseSessionDoneBody')}</p>
         )}
+        {session.status === 'completed' && <ExtraPractice model={model} todayPlan={session} onStart={setRunning} />}
 
         <section className="mission-card p-5 mb-4 animate-fade-up" style={{ animationDelay: '0.04s' }}>
           <div className="flex items-start gap-3.5">

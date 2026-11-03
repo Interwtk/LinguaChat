@@ -5660,4 +5660,15 @@ export default {
   // phase 3: deleting also asks the server to forget recent chat turns
   dataDeleteConfirm: "هل تريد حذف كل بيانات تعلّمك في LinguaChat من هذا الجهاز، وما يتذكره خادمنا من محادثات التدريب الأخيرة؟ لا يمكن استعادة تقدّمك بعد ذلك. الحسابات الأخرى في هذا المتصفح لا تتأثر.",
   dataDeleteDoneServerLater: "تم حذف بياناتك من هذا الجهاز. تعذّر الوصول إلى الخادم الآن؛ وسينسى رسائلك الأخيرة في المحادثة تلقائيًا خلال 24 ساعة.",
+  // phase 3: Premium extra practice (server-decided, inactive)
+  extraPracticeTitle: "تدريب إضافي",
+  extraPracticeBody: "مجموعة قصيرة مما أنت على وشك نسيانه والأخطاء التي تكررها. حتى {n} يوميًا مع Premium. بلا دروس جديدة ولا نقاط إضافية: تدريب فقط.",
+  extraPracticeStart: "ابدأ التدريب الإضافي",
+  extraPractice_free: "التدريب الإضافي جزء من Premium. تبقى دروسك وتصحيحاتك ومراجعاتك والتحكم في بياناتك مجانية.",
+  extraPractice_expired: "انتهى اشتراك Premium. يبقى كل تقدّمك، ويستمر كل ما هو مجاني في العمل.",
+  extraPractice_limit: "هذا هو التدريب الإضافي لليوم. ستجد مجموعات جديدة غدًا.",
+  extraPractice_offline: "تعذّر التحقق من خطتك الآن، لذلك لم يبدأ أي شيء. حاول مرة أخرى.",
+  extraPractice_not_available: "Premium غير متاح بعد.",
+  extraPractice_nothing: "أنهِ درسًا أولًا: يُبنى التدريب الإضافي مما تعلّمته بالفعل.",
+  planLaterExtraPractice: "Premium (قيد الاختبار، غير معروض للبيع): تدريب تكيّفي إضافي بعد جلستك اليومية، حتى 3 مجموعات قصيرة يوميًا",
 }

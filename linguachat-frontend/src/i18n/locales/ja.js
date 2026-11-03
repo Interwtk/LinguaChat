@@ -5630,4 +5630,15 @@ export default {
   // phase 3: deleting also asks the server to forget recent chat turns
   dataDeleteConfirm: "この端末にあるLinguaChatの学習データと、サーバーがまだ覚えている最近の練習チャットを削除しますか？削除した進み具合は元に戻せません。このブラウザのほかのアカウントには影響しません。",
   dataDeleteDoneServerLater: "この端末からデータを削除しました。いまサーバーに接続できませんでした。最近のチャットは24時間以内にサーバーから自動的に消えます。",
+  // phase 3: Premium extra practice (server-decided, inactive)
+  extraPracticeTitle: "追加の練習",
+  extraPracticeBody: "忘れかけていることと、くり返している間違いから選んだ短い練習です。Premiumで1日{n}回まで。新しいレッスンや追加ポイントはなく、練習だけです。",
+  extraPracticeStart: "追加の練習を始める",
+  extraPractice_free: "追加の練習はPremiumの機能です。レッスン、添削、復習、データの管理は無料のままです。",
+  extraPractice_expired: "Premiumは終了しました。これまでの進み具合はすべて残り、無料の機能はそのまま使えます。",
+  extraPractice_limit: "今日の追加の練習はここまでです。明日また新しい練習があります。",
+  extraPractice_offline: "いまプランを確認できなかったため、何も開始していません。もう一度お試しください。",
+  extraPractice_not_available: "Premiumはまだ利用できません。",
+  extraPractice_nothing: "まずレッスンを1つ終えてください。追加の練習は、すでに学んだ内容から作られます。",
+  planLaterExtraPractice: "Premium（テスト中・未販売）：毎日のセッションのあとに、あなたに合わせた追加の練習を1日3回まで",
 }

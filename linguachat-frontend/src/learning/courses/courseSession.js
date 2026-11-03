@@ -231,3 +231,52 @@ export const advanceCourseSession = (session) => {
   const last = session.blocks[next]?.type === 'session_completion'
   return { ...session, status: last && next === session.blocks.length - 1 ? 'completed' : 'active', currentBlockIndex: next }
 }
+
+/* ---------- Premium extra practice (decided by the server, built here) ---------- */
+
+/*
+ * One extra block of practice after today's session: the course's items whose
+ * review comes soonest (reviewed early, one per lesson), the learner's most
+ * frequent error, and a transfer turn from a lesson not used today. Built from
+ * the same planner pieces as the daily session, so it adds no new lessons and
+ * no rewards: only evidence, filed in the one learner model like any answer.
+ *
+ * `blockIndex` (0, 1, 2…) varies what each block picks. Whether a block may be
+ * played at all is the server's answer (POST /practice/extra/authorize), never
+ * this function's: it only says what the block would contain.
+ */
+export function buildExtraPracticePlan(model, courseId, { atMs = Date.now(), learnerKey = 'guest', blockIndex = 0, todayPlan = null } = {}) {
+  const episodes = courseSkeleton(courseId)
+  const dayKey = dayKeyFor(atMs)
+  const seed = `${learnerKey}:${courseId}:${dayKey}:extra:${blockIndex}`
+  const done = new Set(model.signalLog || [])
+  const usedToday = new Set((todayPlan?.blocks || []).map(b => b.payload?.itemId || b.payload?.episodeId).filter(Boolean))
+  const home = id => episodes.find(ep => completed(model, ep.id) && ((ep.gardenItems || []).includes(id) || (ep.canDoId && id.startsWith(`${courseId}:`))))
+
+  const upcoming = Object.entries(model.languageItems || {})
+    .filter(([id, it]) => belongsToCourse(id, courseId) && it.nextReviewAt && it.status !== 'new')
+    .filter(([id]) => !usedToday.has(id) && !done.has(`${dayKey}:session:review:${id}:completed`))
+    .sort((a, b) => new Date(a[1].nextReviewAt) - new Date(b[1].nextReviewAt))
+    .map(([id]) => ({ itemId: id, episode: home(id) }))
+    .filter(x => x.episode)
+  const seen = new Set()
+  const oneEach = upcoming.filter(x => !seen.has(x.episode.id) && seen.add(x.episode.id))
+  const start = oneEach.length ? (blockIndex * 2) % oneEach.length : 0
+  const reviews = [...oneEach.slice(start), ...oneEach.slice(0, start)].slice(0, 2).map(({ itemId, episode }) => ({
+    id: `extra-review:${itemId}`, type: 'course_review', estimatedMinutes: 1, payload: { itemId, episodeId: episode.id },
+  }))
+
+  const blocks = [...reviews]
+  const retry = retryBlock(model, courseId)
+  if (retry) blocks.push({ ...retry, id: `extra-${retry.id}` })
+  const transfer = transferBlock(model, episodes, seed, new Set([...usedToday, ...reviews.map(r => r.payload.episodeId)]))
+  if (transfer) blocks.push({ ...transfer, id: `extra-${transfer.id}` })
+  if (!blocks.length) return null
+  blocks.push({ id: 'completion', type: 'session_completion', estimatedMinutes: 0, payload: {} })
+  return {
+    version: COURSE_SESSION_VERSION, courseId, extra: true, blockIndex,
+    id: `${courseId}:${dayKey}:extra:${blockIndex}`, dayKey, createdAt: new Date(atMs).toISOString(), durationMode: 'quick',
+    estimatedMinutes: Math.max(1, blocks.reduce((sum, b) => sum + (b.estimatedMinutes || 0), 0)),
+    status: 'planned', currentBlockIndex: 0, blocks,
+  }
+}

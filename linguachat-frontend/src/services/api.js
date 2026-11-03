@@ -145,6 +145,40 @@ export async function sendChatMessage({
 }
 
 /*
+ * Premium (inactive until payments are authorized). The server decides; these
+ * only ask. Any failure reads as "not available" / "not granted": fail closed.
+ * The one thing a browser keeps is the server's signed pass (an opaque string
+ * in the account's namespace), never a flag of its own.
+ */
+export const PREMIUM_PASS_KEY = 'lc2-premium-pass'
+
+export async function premiumStatus({ timeoutMs = 4000 } = {}) {
+  try {
+    const res = await fetch(`${API_URL}/premium/status`, { signal: AbortSignal.timeout(timeoutMs) })
+    const body = res.ok ? await res.json() : null
+    return { available: body?.available === true, perDay: Number(body?.extra_blocks_per_day) || 0 }
+  } catch {
+    return { available: false, perDay: 0 }
+  }
+}
+
+export async function authorizeExtraBlock({ passToken, course, block }, { timeoutMs = 6000 } = {}) {
+  try {
+    const res = await fetch(`${API_URL}/practice/extra/authorize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pass_token: typeof passToken === 'string' ? passToken : null, course, block }),
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    const body = res.ok ? await res.json() : null
+    if (body?.granted === true) return { granted: true, blocksLeft: Number(body.blocks_left) || 0 }
+    return { granted: false, reason: ['free', 'expired', 'limit', 'not_available'].includes(body?.reason) ? body.reason : 'offline' }
+  } catch {
+    return { granted: false, reason: 'offline' }
+  }
+}
+
+/*
  * Ask the server to erase what it remembers of these conversations now (the
  * last turns of each practice chat; it also forgets them by itself 24 hours
  * after the last message). True only when the server confirmed.
