@@ -58,7 +58,7 @@ export function CourseChat({ onExit }) {
     setMessages(next); setDraft(''); setSending(true)
     const history = next.slice(-9, -1).map(m => ({ role: m.role === 'lingua' ? 'assistant' : 'user', text: m.text }))
     const reply = await sendChatMessage({
-      message: text, level: 'A1', history, sessionId: `${sessionId}:${activeCourse}`,
+      message: text, history, sessionId: `${sessionId}:${activeCourse}`,
       nativeLanguage: nativeLanguageInfo, interfaceLanguage: interfaceLanguageInfo,
       targetLanguage: { code: lang, base: lang, name: lang },
       topicContext: lastLingua?.focus ? { topic: lastLingua.focus } : null,
