@@ -1,6 +1,6 @@
 /*
  * LinguaChat visual bench — development only, synthetic data (see
- * vite.bench.config.mjs). URL: /bench/?scene=tu|call|notes|chat|auth|archive|archive-empty|chats|mission|today|identity|course-today|course-episode
+ * vite.bench.config.mjs). URL: /bench/?scene=tu|call|notes|chat|auth|archive|archive-empty|chats|mission|today|identity|course-today|course-episode|course-session|course-chat|plans|age|account-age
  * &lang=en|es|ja|ar|…&theme=light|dark
  *
  * Every learner shown here is invented. The summaries are derived by the real
@@ -31,6 +31,12 @@ import { episodesOfLevel } from '../src/learning/curriculum/levels.js'
 import { workingLevelId } from '../src/learning/curriculum/learnerLevel.js'
 import { CourseToday } from '../src/components/today/CourseToday.jsx'
 import { EpisodeShell } from '../src/components/episode/EpisodeShell.jsx'
+import { CourseSessionRunner } from '../src/components/today/CourseSession.jsx'
+import { CourseChat } from '../src/components/today/CourseChat.jsx'
+import { Pricing } from '../src/components/pricing/Pricing.jsx'
+import { buildCourseSessionPlan } from '../src/learning/courses/courseSession.js'
+import { ES_SKELETON } from '../src/learning/courses/es/skeleton.js'
+import { setEpisodeState, markRecurringError } from '../src/learning/engine/learnerModel.js'
 import { createMissionIntroMessage, createMissionStepMessage, createMissionFeedbackMessage, evaluateMissionStep } from '../src/services/missions.js'
 
 const BENCH_MARKER = 'LC_VISUAL_BENCH' // asserted absent from every production build
@@ -182,6 +188,29 @@ function Scene({ t }) {
         </main>
       </AppProvider>
     )
+  }
+  // Phase 2: the Spanish daily session, the practice chat, plans, and the age question
+  if (scene === 'course-session' || scene === 'course-chat') {
+    const value = { ...common, activeCourse: 'es', sessionId: 'bench-session', tutorPreferences: {}, awardEpisode: () => true, finishEpisode: () => true }
+    let body
+    if (scene === 'course-chat') body = <CourseChat onExit={() => { document.title = 'bench: chat exit' }} />
+    else {
+      const m = createLearnerModel()
+      const DAY = 86400000
+      for (const ep of ES_SKELETON) setEpisodeState(m, ep.id, { status: 'completed', awarded: true })
+      for (const ep of ES_SKELETON) for (const id of ep.gardenItems) recordItemAttempt(m, id, { correct: true, independent: true, atMs: Date.now() - 30 * DAY })
+      markRecurringError(m, 'es:es_ser_estar_feeling'); markRecurringError(m, 'es:es_ser_estar_feeling')
+      const plan = buildCourseSessionPlan(m, 'es', { durationMode: params.get('mode') || 'deep' })
+      body = <CourseSessionRunner session={plan} onExit={() => { document.title = 'bench: session exit' }} />
+    }
+    return <AppProvider value={value}><main style={{ maxWidth: 1100, margin: '0 auto', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>{body}</main></AppProvider>
+  }
+  if (scene === 'plans') return <AppProvider value={common}><Pricing /></AppProvider>
+  if (scene === 'age' || scene === 'account-age') {
+    const value = scene === 'age'
+      ? { ...common, authStep: 'age', setAuthStep: step => { document.title = `bench: step ${step}` } }
+      : { ...common, authStep: null, ageConfirmationNeeded: true, confirmAdultAge: () => { document.title = 'bench: adult confirmed'; return true }, logout: () => { document.title = 'bench: signed out' } }
+    return <AppProvider value={value}><AuthFlow /></AppProvider>
   }
   return <p>Unknown scene</p>
 }

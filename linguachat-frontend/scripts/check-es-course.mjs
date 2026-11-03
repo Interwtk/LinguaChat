@@ -82,6 +82,23 @@ check('every comprehension/choice has exactly the right options marked', ES_EPIS
   const positions = ES_EPISODES.flatMap(e => e.steps.filter(s => s.options && !s.allValid).map(s => s.options.findIndex(o => o.correct)))
   check('the right option is not always in the same place', new Set(positions).size >= 2 && positions.filter(p => p === 0).length < positions.length)
 }
+/* automated linguistic review of every Spanish line (not a substitute for a native reviewer) */
+{
+  const lines = []
+  for (const e of ES_EPISODES) e.steps.forEach((st, i) => {
+    for (const f of ['target', 'response', 'promptEn', 'sceneEn', 'suggestionEn']) if (st[f]) lines.push([`${e.id}#${i}.${f}`, st[f]])
+    for (const o of st.options || []) if (o.textEn) lines.push([`${e.id}#${i}.option`, o.textEn])
+  })
+  const count = (t, ch) => t.split(ch).length - 1
+  const ACC = { como: 'cómo', donde: 'dónde', que: 'qué', cual: 'cuál', cuanto: 'cuánto', cuantos: 'cuántos', cuantas: 'cuántas' }
+  const badQ = lines.filter(([, t]) => count(t, '¿') !== count(t, '?'))
+  const badE = lines.filter(([, t]) => count(t, '¡') !== count(t, '!'))
+  const badAcc = lines.filter(([, t]) => [...t.matchAll(/¿([^?]*)\?/g)].some(m => m[1].trim().toLowerCase().split(/\s+/).slice(0, 2).some(w => ACC[w])))
+  check(`every Spanish question opens with ¿ (${badQ.map(x => x[0]).join(', ')})`, badQ.length === 0)
+  check(`every Spanish exclamation opens with ¡ (${badE.map(x => x[0]).join(', ')})`, badE.length === 0)
+  check(`interrogatives carry their accent (${badAcc.map(x => x[0]).join(', ')})`, badAcc.length === 0)
+  check('reviewed a substantial set of lines', lines.length >= 150)
+}
 check('copy is English (aux) and never empty', Object.values(ES_COPY).every(v => typeof v === 'string' && v.trim().length > 0))
 check('vocabulary has English meanings', ES_VOCAB.every(v => v.meaning?.en))
 check('no generated copy key is missing', ES_EPISODES.every(e => e.steps.every(s => ['instructionKey', 'hintKey', 'explainKey', 'titleKey', 'bodyKey']

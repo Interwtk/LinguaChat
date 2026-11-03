@@ -29,7 +29,17 @@ export function CoursePracticeTurn({ episode, stepIndex, blockType, onDone }) {
   const step = episode.steps[stepIndex]
   const t = (key, vars) => runtime.copy[key] ?? appT(key, vars)
   const vars = { name: (profile?.name || '').trim() || 'Alex', partner: partnerFor(profile?.name || 'guest') }
-  const model = useMemo(() => fill(step.suggestionEn, vars), [step])
+  /*
+   * A recall step has no model of its own (it is asked from memory); its example
+   * is the model of the same kind of turn in the same lesson, with the same context.
+   */
+  const model = useMemo(() => {
+    if (step.suggestionEn) return fill(step.suggestionEn, vars)
+    const same = JSON.stringify(step.courseContext || {})
+    const sibling = episode.steps.find(s => s.suggestionEn && s.evalKind === step.evalKind && JSON.stringify(s.courseContext || {}) === same)
+      || episode.steps.find(s => s.suggestionEn && s.evalKind === step.evalKind)
+    return sibling ? fill(sibling.suggestionEn, vars) : ''
+  }, [step])
   const [reply, setReply] = useState('')
   const [shown, setShown] = useState(false)
   const [result, setResult] = useState(null)

@@ -67,7 +67,7 @@ const PROOFS = {
   corrections: () => /export function evaluateSpanish/.test(src('learning/courses/es/evaluator.js')) && /export function evaluateFree/.test(src('learning/engine/responseEvaluation.js')),
   reviews: () => /export function getDueReviews/.test(src('learning/engine/learnerModel.js')),
   practiceChat: () => readFileSync(new URL('../../linguachat-backend/ai/es_tutor.py', import.meta.url), 'utf8').includes('def respond') && /@router\.post\("\/chat"/.test(readFileSync(new URL('../../linguachat-backend/app/routes/chat.py', import.meta.url), 'utf8')),
-  missions: () => /export const PRACTICE_MISSIONS/.test(src('data/practiceMissions.js')),
+  missions: () => /export const PRACTICE_MISSIONS/.test(src('data/practiceMissions.js')) && /export function buildCourseSessionPlan/.test(src('learning/courses/courseSession.js')) && /course_mission/.test(src('learning/courses/courseSession.js')),
   progress: () => /export function loadLocalProgress/.test(src('services/localProgress.js')),
   dataControl: () => /export function exportLearnerData/.test(src('services/learnerData.js')) && /<DataControls \/>/.test(src('components/identity/LanguageIdentity.jsx')),
 }

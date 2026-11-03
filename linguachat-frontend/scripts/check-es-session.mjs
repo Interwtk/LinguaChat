@@ -91,6 +91,8 @@ for (const mode of ['quick', 'standard', 'deep']) {
         for (const ref of steps) {
           const step = ref.step
           ok(['free_reply', 'recall'].includes(step.type) && !step.review, `${block.id}: an open, non-warm-up step`)
+          const episode = ES_EPISODES.find(e => e.id === ref.episodeId)
+          ok(Boolean(step.suggestionEn || episode.steps.some(st => st.suggestionEn && st.evalKind === step.evalKind)), `${block.id}: an example exists if the learner asks for one`)
           if (step.suggestionEn) {
             const r = evaluateSpanish(step.evalKind, resolve(step.suggestionEn), { name: 'Ana', ...(step.courseContext || {}) })
             ok(r.completedObjective, `${block.id}: its model answer passes`)
@@ -102,6 +104,17 @@ for (const mode of ['quick', 'standard', 'deep']) {
     }
   }
   ok(resolved > 20, `blocks resolved across days (${resolved})`)
+}
+
+/* Reviews are spread across lessons, never the same lesson twice in a day. */
+{
+  const done = createLearnerModel()
+  for (const ep of ES_SKELETON) setEpisodeState(done, ep.id, { status: 'completed', awarded: true })
+  for (const ep of ES_SKELETON) for (const id of ep.gardenItems) recordItemAttempt(done, id, { correct: true, independent: true, atMs: T0 - 30 * DAY })
+  for (const mode of ['standard', 'deep']) {
+    const lessons = buildCourseSessionPlan(done, 'es', { durationMode: mode, atMs: T0 }).blocks.filter(b => b.type === 'course_review').map(b => b.payload.episodeId)
+    ok(new Set(lessons).size === lessons.length, `${mode}: at most one review per lesson (${lessons.join(', ')})`)
+  }
 }
 
 /* Same day: a review already done is not planned again. */

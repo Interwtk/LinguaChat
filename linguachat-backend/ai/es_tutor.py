@@ -200,6 +200,9 @@ def respond(message: str, topic: str | None = None) -> ChatResult:
     if _recognised(topic, f):
         nxt = _next(topic)
         react = REACT[topic].replace("{n}", f", {name}" if name else "")
+        # a learner who answers AND asks back ("Bien, ¿y tú?") gets an answer too
+        if question and question[1] is None:
+            react = f"{react} {question[0]}"
         reply = react if topic == "goodbye" else f"{react} {QUESTIONS[nxt]}"
         return _result(reply, "no_issue_detected", focus=None if topic == "goodbye" else nxt,
                        findings=[{"type": "recognised", "topic": topic}])

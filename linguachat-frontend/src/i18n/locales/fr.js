@@ -5575,7 +5575,6 @@ export default {
   planFeatLessons: "Leçons débutant (Pre-A1) avec de vrais exercices",
   planFeatReviews: "Révisions espacées de ce que tu apprends",
   planFeatPracticeChat: "Chat d’entraînement avec Lingua (une tutrice à base de règles, pas une IA générative)",
-  planFeatMissionsEnglish: "Séances quotidiennes et missions guidées (cours d’anglais)",
   planFeatDataControl: "Télécharge ou supprime tes données d’apprentissage quand tu veux",
   planPremiumNotYetTagline: "Non disponible. Nous ne vendons rien pendant cette bêta.",
   planPremiumNotYetBody: "Quand Premium arrivera, il n’inclura que des fonctions qui marchent déjà. Les leçons, les révisions, les corrections, la sécurité et tes réglages de confidentialité resteront gratuits.",
@@ -5598,7 +5597,6 @@ export default {
   ageSignOut: "Se déconnecter",
   // Course daily session and practice (learning/courses/courseSession.js)
   courseSessionTitle: "Séance d’espagnol du jour",
-  courseSessionSummary: "{count} activités · environ {minutes} min",
   courseSessionStart: "Commencer la séance",
   courseSessionContinue: "Continuer la séance",
   courseSessionStep: "{n} sur {total}",
@@ -5632,4 +5630,8 @@ export default {
   dataAccountDeletion: "Pour supprimer aussi ton compte de connexion, envoie-nous une demande de suppression :",
   dataAccountDeletionLink: "demander la suppression du compte",
   dataAccountDeletionNoContact: "La suppression du compte de connexion se fait sur demande à l’opérateur ; l’adresse de contact apparaîtra ici avant la bêta publique.",
+  // Plans: daily sessions and missions now exist in both courses
+  planFeatSessions: "Séances quotidiennes avec révision, missions et entraînement en situations nouvelles",
+  // Session summary without plural agreement
+  courseSessionSummary: "Activités : {count} · environ {minutes} min",
 }

@@ -5569,7 +5569,6 @@ export default {
   planFeatLessons: "実践的な練習つきの入門レッスン（Pre-A1）",
   planFeatReviews: "学んだことの間隔をあけた復習",
   planFeatPracticeChat: "Linguaとの練習チャット（ルールベースのチューターで、生成AIではありません）",
-  planFeatMissionsEnglish: "毎日のセッションとガイド付きミッション（英語コース）",
   planFeatDataControl: "学習データはいつでもダウンロード・削除できます",
   planPremiumNotYetTagline: "提供していません。このベータ期間中は何も販売しません。",
   planPremiumNotYetBody: "Premiumを始める場合も、すでに動いている機能だけを含めます。レッスン・復習・添削・安全機能・プライバシー設定は無料のままです。",
@@ -5592,7 +5591,6 @@ export default {
   ageSignOut: "ログアウト",
   // Course daily session and practice (learning/courses/courseSession.js)
   courseSessionTitle: "今日のスペイン語セッション",
-  courseSessionSummary: "{count}個のアクティビティ・約{minutes}分",
   courseSessionStart: "セッションを始める",
   courseSessionContinue: "セッションを続ける",
   courseSessionStep: "{total}中{n}",
@@ -5626,4 +5624,8 @@ export default {
   dataAccountDeletion: "ログイン用アカウントも削除するには、削除リクエストを送ってください：",
   dataAccountDeletionLink: "アカウント削除を依頼する",
   dataAccountDeletionNoContact: "ログイン用アカウントの削除は運営者への依頼で行います。連絡先は公開ベータ前にここに表示されます。",
+  // Plans: daily sessions and missions now exist in both courses
+  planFeatSessions: "復習・ミッション・新しい場面での練習を含む毎日のセッション",
+  // Session summary without plural agreement
+  courseSessionSummary: "アクティビティ：{count} · 約{minutes}分",
 }

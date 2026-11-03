@@ -2755,7 +2755,6 @@ const base = {
   planFeatLessons: "Beginner lessons (Pre-A1) with real exercises",
   planFeatReviews: "Spaced review of what you learn",
   planFeatPracticeChat: "Practice chat with Lingua (a rule-based tutor, not generative AI)",
-  planFeatMissionsEnglish: "Daily sessions and guided missions (English course)",
   planFeatDataControl: "Download or delete your learning data whenever you want",
   planPremiumNotYetTagline: "Not available. We are not selling anything during this beta.",
   planPremiumNotYetBody: "When Premium launches it will only include features that already work. Lessons, reviews, corrections, safety and your privacy controls stay free.",
@@ -2778,7 +2777,6 @@ const base = {
   ageSignOut: "Sign out",
   // Course daily session and practice (learning/courses/courseSession.js)
   courseSessionTitle: "Today’s Spanish session",
-  courseSessionSummary: "{count} activities · about {minutes} min",
   courseSessionStart: "Start session",
   courseSessionContinue: "Continue session",
   courseSessionStep: "{n} of {total}",
@@ -2812,6 +2810,10 @@ const base = {
   dataAccountDeletion: "To delete your sign-in account as well, send us a deletion request:",
   dataAccountDeletionLink: "request account deletion",
   dataAccountDeletionNoContact: "Deleting your sign-in account is done by request to the operator; the contact address will appear here before the public beta.",
+  // Plans: daily sessions and missions now exist in both courses
+  planFeatSessions: "Daily sessions with review, missions and practice in new situations",
+  // Session summary without plural agreement
+  courseSessionSummary: "Activities: {count} · about {minutes} min",
 }
 
 

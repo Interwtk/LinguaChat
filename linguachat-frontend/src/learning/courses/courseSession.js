@@ -66,7 +66,12 @@ function reviewBlocks(model, courseId, episodes, atMs, limit) {
     .filter(id => !done.has(`${day}:session:review:${id}:completed`))
   const home = id => episodes.find(ep => (ep.gardenItems || []).includes(id) && completed(model, ep.id))
     || episodes.find(ep => completed(model, ep.id) && ep.canDoId && id.startsWith(`${courseId}:`))
-  return due.map(itemId => ({ itemId, episode: home(itemId) })).filter(x => x.episode).slice(0, Math.max(0, limit))
+  // one review per lesson a day: three due words from the same lesson would
+  // replay the same turn three times, which is repetition, not retrieval
+  const seen = new Set()
+  return due.map(itemId => ({ itemId, episode: home(itemId) }))
+    .filter(x => x.episode && !seen.has(x.episode.id) && seen.add(x.episode.id))
+    .slice(0, Math.max(0, limit))
     .map(({ itemId, episode }) => ({
       id: `review:${itemId}`, type: 'course_review', estimatedMinutes: 1,
       payload: { itemId, episodeId: episode.id },

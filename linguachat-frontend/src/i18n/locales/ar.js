@@ -5599,7 +5599,6 @@ export default {
   planFeatLessons: "دروس المستوى المبتدئ (Pre-A1) مع تمارين حقيقية",
   planFeatReviews: "مراجعة متباعدة لما تتعلّمه",
   planFeatPracticeChat: "دردشة تدريبية مع Lingua (معلّمة تعمل بالقواعد، وليست ذكاءً اصطناعيًا توليديًا)",
-  planFeatMissionsEnglish: "جلسات يومية ومهام موجّهة (دورة الإنجليزية)",
   planFeatDataControl: "نزّل بيانات تعلّمك أو احذفها متى شئت",
   planPremiumNotYetTagline: "غير متاح. لا نبيع أي شيء خلال هذه النسخة التجريبية.",
   planPremiumNotYetBody: "عندما يتوفر Premium سيتضمن فقط ميزات تعمل بالفعل. تبقى الدروس والمراجعات والتصحيحات والأمان وإعدادات خصوصيتك مجانية.",
@@ -5622,7 +5621,6 @@ export default {
   ageSignOut: "تسجيل الخروج",
   // Course daily session and practice (learning/courses/courseSession.js)
   courseSessionTitle: "جلسة الإسبانية اليوم",
-  courseSessionSummary: "{count} أنشطة · حوالي {minutes} دقيقة",
   courseSessionStart: "ابدأ الجلسة",
   courseSessionContinue: "تابع الجلسة",
   courseSessionStep: "{n} من {total}",
@@ -5656,4 +5654,8 @@ export default {
   dataAccountDeletion: "لحذف حساب تسجيل الدخول أيضًا، أرسل إلينا طلب حذف:",
   dataAccountDeletionLink: "طلب حذف الحساب",
   dataAccountDeletionNoContact: "يتم حذف حساب تسجيل الدخول بطلب إلى المشغّل؛ وسيظهر عنوان التواصل هنا قبل النسخة التجريبية العامة.",
+  // Plans: daily sessions and missions now exist in both courses
+  planFeatSessions: "جلسات يومية مع المراجعة والمهام والتدرّب في مواقف جديدة",
+  // Session summary without plural agreement
+  courseSessionSummary: "الأنشطة: {count} · حوالي {minutes} دقيقة",
 }

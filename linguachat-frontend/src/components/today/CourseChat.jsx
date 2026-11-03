@@ -69,6 +69,8 @@ export function CourseChat({ onExit }) {
       id: `l-${Date.now()}`, role: 'lingua', text: reply.reply, focus: reply.focus || lastLingua?.focus || null,
       correction: reply.correction, explanation: reply.explanation, suggestion: reply.suggestion,
       offline: Boolean(reply.isFallback),
+      // a safety reply is written in the learner's own language, not the target one
+      safety: reply.provider === 'safety',
     }])
   }
 
@@ -89,9 +91,9 @@ export function CourseChat({ onExit }) {
               {m.role === 'lingua' && <LinguaAvatar size={30} online className="mt-0.5" />}
               <div style={{ maxWidth: '86%' }}>
                 <div className={m.role === 'user' ? 'bubble-user' : 'bubble-lingua'}>
-                  <span lang={m.offline ? undefined : lang} dir="ltr">{m.text}</span>
+                  <span lang={m.offline || m.safety ? undefined : lang} dir={m.offline || m.safety ? undefined : 'ltr'}>{m.text}</span>
                 </div>
-                {m.role === 'lingua' && !m.offline && <ListeningTurn textShown lang={lang} turnId={`course-chat:${m.id}`} text={m.text} />}
+                {m.role === 'lingua' && !m.offline && !m.safety && <ListeningTurn textShown lang={lang} turnId={`course-chat:${m.id}`} text={m.text} />}
                 {m.role === 'lingua' && (m.correction || m.explanation) && (
                   <div className="correction-card mt-2">
                     {m.correction && <span className="correction-natural" lang={lang} dir="ltr">{m.correction}</span>}

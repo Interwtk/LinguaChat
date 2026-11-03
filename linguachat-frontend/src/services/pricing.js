@@ -24,7 +24,7 @@ export const FREE_PLAN = {
     { key: 'planFeatCorrections', proof: 'corrections' },
     { key: 'planFeatReviews', proof: 'reviews' },
     { key: 'planFeatPracticeChat', proof: 'practiceChat' },
-    { key: 'planFeatMissionsEnglish', proof: 'missions' },
+    { key: 'planFeatSessions', proof: 'missions' },
     { key: 'planFeatProgress', proof: 'progress' },
     { key: 'planFeatDataControl', proof: 'dataControl' },
   ],
