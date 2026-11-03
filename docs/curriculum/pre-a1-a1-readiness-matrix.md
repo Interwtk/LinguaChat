@@ -113,9 +113,9 @@ No propongo cambiar el contenido congelado sin evidencia medida de estudiantes r
 | `what_you_like` | choose | express_preferences | 3 | 2 | 3 | sí (12) | sí | 39 | 8/8 | 10 / 11 |
 | `what_you_want` | choose | express_needs | 4 | 2 | 3 | sí (12) | sí | 35 | 8/8 | 4 / 11 |
 | `make_a_plan` | choose | make_plan | 6 | 1 | 0 | sí (9) | sí | 23 | 8/8 | 7 / 11 |
-| `a_coffee_please` | cafe | polite_request | 3 | 2 | 4 | sí (12) | sí | 34 | 8/8 | 2 / 13 |
-| `anything_else` | cafe | respond_anything_else | 3 | 2 | 3 | sí (11) | sí | 28 | 8/8 | 6 / 13 |
-| `your_first_order` | cafe | cafe_order | 4 | 1 | 0 | sí (7) | sí | 21 | 8/8 | 5 / 13 |
+| `a_coffee_please` | cafe | polite_request | 3 | 2 | 4 | sí (12) | sí | 34 | 8/8 | 2 / 14 |
+| `anything_else` | cafe | respond_anything_else | 3 | 2 | 3 | sí (11) | sí | 28 | 8/8 | 6 / 14 |
+| `your_first_order` | cafe | cafe_order | 4 | 1 | 0 | sí (7) | sí | 21 | 8/8 | 5 / 14 |
 | `lost_you` | repair | ask_for_repair | 3 | 2 | 3 | sí (11) | sí | 36 | 8/8 | 5 / 9 |
 | `say_again` | repair | ask_for_repair | 4 | 2 | 3 | sí (13) | sí | 22 | 8/8 | 5 / 9 |
 | `we_can_continue` | repair | close_an_encounter | 5 | 1 | 0 | sí (10) | sí | 22 | 8/8 | 7 / 9 |

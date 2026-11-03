@@ -1,8 +1,8 @@
 """Signed Premium passes — the server's word on who may use a Premium feature.
 
-There is no database and the server does not verify sign-in tokens (CLAUDE.md
-keeps Supabase out of the backend). So the server's decision travels as a
-short, signed pass:
+There is no database and the server does not verify sign-in tokens (the
+CLAUDE.md contract keeps the auth provider out of the backend). So the
+server's decision travels as a short, signed pass:
 
     base64url(json payload) "." base64url(HMAC-SHA256(payload, key))
 
@@ -16,7 +16,7 @@ the test-mode issuer in scripts/issue_test_pass.py can create one.
 
 Known limit, stated rather than hidden: a pass is a bearer token. Someone who
 copies it can use it until it expires. Binding it to the signed-in account
-needs the server to verify the Supabase session, which the current contract
+needs the server to verify the sign-in session, which the current contract
 does not allow (docs/architecture/premium-practice.md).
 """
 from __future__ import annotations
