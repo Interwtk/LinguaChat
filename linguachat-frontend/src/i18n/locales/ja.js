@@ -5609,5 +5609,8 @@ export default {
   courseMissionMeet: "新しい人と出会う",
   courseMissionCafe: "カフェで注文する",
   courseMissionHelp: "助けを求める",
-  courseChatNoticeLocal: "チャットでLinguaとスペイン語を練習できます。このレベル向けのルールベースの練習相手で、汎用AIではありません。理解できないときはそう伝え、ガイド付きの練習を提案します。",
+  // Course practice chat (components/today/CourseChat.jsx)
+  courseChatTitle: "スペイン語の会話練習",
+  courseChatOpen: "会話を練習する",
+  courseChatNoticeLocal: "Linguaと短い会話を練習しましょう。このレベル向けのルールベースの練習相手で、汎用AIではありません。理解できないときはそう伝え、ガイド付きの質問を出します。チャットの練習は進捗に影響しません。",
 }

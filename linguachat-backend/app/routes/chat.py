@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from ai.chat_evaluation import safe_assistance
 from ai.engine import generate_response
+from ai import es_tutor
 from ai.safety import ALLOW, assess, log_verdict, safety_reply, screen_reply
 from ai.schemas import ChatMode, ChatResult, LanguageInfo, LanguageLevel, MissionContext
 from app.services.memory import conversation_memory
@@ -135,8 +136,21 @@ def _normalize_language(value, fallback_code: str = "en") -> LanguageInfo:
     return LanguageInfo(code=code, base=base, name=name)
 
 
-def _normalize_target_language(value) -> LanguageInfo:
-    return LanguageInfo(code="en", base="en", name="English")
+SUPPORTED_TARGETS = {"en": LanguageInfo(code="en", base="en", name="English"), "es": es_tutor.TARGET}
+
+
+def _normalize_target_language(value, native_base: str = "en") -> LanguageInfo:
+    """English unless the client asks for a course this server teaches.
+
+    Spanish is the only other target (the Spanish course); it is never accepted
+    for a learner whose own language is Spanish. Anything else is English, as it
+    always was.
+    """
+    raw = value.get("base") or value.get("code") if isinstance(value, dict) else getattr(value, "base", None) or value
+    base = str(raw or "en").split("-")[0].strip().lower()
+    if base == "es" and native_base != "es":
+        return SUPPORTED_TARGETS["es"]
+    return SUPPORTED_TARGETS["en"]
 
 
 ALLOWED_OPTIONAL_CONTEXT = {"remembered_like"}
@@ -265,7 +279,7 @@ def chat(req: ChatRequest, response: Response):
         if verdict.blocked:
             ui = _normalize_language(req.native_language or "en")
             response.headers["X-LinguaChat-Provider"] = "safety"
-            return _safety_result(verdict, ui, _normalize_target_language(req.target_language))
+            return _safety_result(verdict, ui, _normalize_target_language(req.target_language, ui.base))
         client_history = [item for item in (req.history or []) if _history_is_safe(item)]
         history = conversation_memory.context(session_id, client_history)
         preferences = _safe_preferences(req.preferences)
@@ -276,7 +290,22 @@ def chat(req: ChatRequest, response: Response):
         native_language = _normalize_language(
             req.native_language or preferences.get("native_language") or "en"
         )
-        target_language = _normalize_target_language(req.target_language)
+        target_language = _normalize_target_language(req.target_language, native_language.base)
+        if target_language.base == "es":
+            # The Spanish course's local practice partner: its own rules, its own
+            # memory (the client sends a course-scoped session id), same safety.
+            result = es_tutor.respond(message, _safe_topic((req.optional_context or {}).get("topic")) if isinstance(req.optional_context, dict) else None)
+            result.detected_language = native_language
+            out = screen_reply(result.reply, result.correction, result.explanation, result.suggestion)
+            if out.action != ALLOW:
+                log_verdict(out, "output")
+                response.headers["X-LinguaChat-Provider"] = "safety"
+                return _safety_result(out, native_language, target_language)
+            if verdict.care_note:
+                result.reply = f"{result.reply}\n\n{safety_reply('care_note', native_language.base)}"
+            response.headers["X-LinguaChat-Provider"] = "local-es"
+            conversation_memory.add(session_id, message, result, req.level)
+            return result
         mission_context = _normalize_mission_context(req.mission_context or req.missionContext)
         user_profile = {
             "level": req.level.value,

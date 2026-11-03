@@ -5615,5 +5615,8 @@ export default {
   courseMissionMeet: "Jemanden kennenlernen",
   courseMissionCafe: "Im Café bestellen",
   courseMissionHelp: "Um Hilfe bitten",
-  courseChatNoticeLocal: "In Chats kannst du mit Lingua Spanisch üben. Sie ist eine regelbasierte Übungspartnerin für dieses Niveau, keine allgemeine KI: Wenn sie etwas nicht versteht, sagt sie es und bietet eine geführte Übung an.",
+  // Course practice chat (components/today/CourseChat.jsx)
+  courseChatTitle: "Gesprächsübung auf Spanisch",
+  courseChatOpen: "Ein Gespräch üben",
+  courseChatNoticeLocal: "Übe ein kurzes Gespräch mit Lingua. Sie ist eine regelbasierte Übungspartnerin für dieses Niveau, keine allgemeine KI: Versteht sie etwas nicht, sagt sie es und bietet eine geführte Frage an. Der Chat ändert deinen Fortschritt nicht.",
 }

@@ -11,6 +11,7 @@ import { DURATION_ORDER } from '../../learning/engine/session.js'
 import { ScreenFallback } from '../ui/LazyBoundary'
 // the runner brings the lesson player and its content: loaded only when a session starts
 const CourseSessionRunner = lazy(() => import('./CourseSession').then(m => ({ default: m.CourseSessionRunner })))
+const CourseChat = lazy(() => import('./CourseChat').then(m => ({ default: m.CourseChat })))
 
 /*
  * Home for a course other than English (today: Spanish Pre-A1).
@@ -39,11 +40,13 @@ export function CourseToday() {
   const greeting = hour < 12 ? t('goodMorning') : hour < 18 ? t('goodAfternoon') : t('goodEvening')
   const [duration, setDuration] = useState('standard')
   const [running, setRunning] = useState(null)
+  const [chatting, setChatting] = useState(false)
   const session = useMemo(() => getOrCreateCourseSession(model, activeCourse, { durationMode: duration, learnerKey: profile?.name || 'guest' }),
     [model, activeCourse, duration, profile?.name])
   const activities = session.blocks.filter(b => b.type !== 'session_completion').length
   const sessionStarted = session.status === 'active'
 
+  if (chatting) return <Suspense fallback={<ScreenFallback label={t('screenLoading')} />}><CourseChat onExit={() => setChatting(false)} /></Suspense>
   if (running) return <Suspense fallback={<ScreenFallback label={t('screenLoading')} />}><CourseSessionRunner session={running} onExit={() => setRunning(null)} /></Suspense>
 
   return (
@@ -129,9 +132,11 @@ export function CourseToday() {
           )}
         </section>
 
-        <p className="rounded-2xl p-4 mb-4" style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5, background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>
-          {t('courseChatNoticeLocal')}
-        </p>
+        <section aria-labelledby="course-chat-title" className="rounded-2xl p-4 mb-4" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>
+          <h2 id="course-chat-title" style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--ink)', marginBottom: 4 }}>{t('courseChatTitle')}</h2>
+          <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 10 }}>{t('courseChatNoticeLocal')}</p>
+          <button type="button" onClick={() => setChatting(true)} className="btn-quiet" style={{ minHeight: 40, padding: '9px 14px' }}>{t('courseChatOpen')}</button>
+        </section>
 
         <section aria-labelledby="course-lessons" className="mb-6">
           <h2 id="course-lessons" style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--ink)', marginBottom: 8 }}>{t('courseAllLessons')}</h2>

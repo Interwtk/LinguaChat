@@ -5615,5 +5615,8 @@ export default {
   courseMissionMeet: "Conhecer alguém",
   courseMissionCafe: "Pedir num café",
   courseMissionHelp: "Pedir ajuda",
-  courseChatNoticeLocal: "Em Chats você pode praticar espanhol com a Lingua. Ela é uma parceira de prática baseada em regras para este nível, não uma IA geral: quando não entende algo, ela diz e oferece um exercício guiado.",
+  // Course practice chat (components/today/CourseChat.jsx)
+  courseChatTitle: "Prática de conversa em espanhol",
+  courseChatOpen: "Praticar uma conversa",
+  courseChatNoticeLocal: "Pratique uma conversa curta com a Lingua. Ela é uma parceira de prática baseada em regras para este nível, não uma IA geral: quando não entende algo, ela diz e oferece uma pergunta guiada. A prática no chat não altera seu progresso.",
 }

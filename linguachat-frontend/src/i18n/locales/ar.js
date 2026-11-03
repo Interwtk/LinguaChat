@@ -5639,5 +5639,8 @@ export default {
   courseMissionMeet: "التعرّف على شخص جديد",
   courseMissionCafe: "الطلب في مقهى",
   courseMissionHelp: "طلب المساعدة",
-  courseChatNoticeLocal: "في الدردشات يمكنك التدرّب على الإسبانية مع Lingua. إنها شريكة تدريب تعمل بالقواعد لهذا المستوى، وليست ذكاءً اصطناعيًا عامًا: عندما لا تفهم شيئًا تقول ذلك وتقترح تمرينًا موجّهًا.",
+  // Course practice chat (components/today/CourseChat.jsx)
+  courseChatTitle: "التدرّب على المحادثة بالإسبانية",
+  courseChatOpen: "تدرّب على محادثة",
+  courseChatNoticeLocal: "تدرّب على محادثة قصيرة مع Lingua. إنها شريكة تدريب تعمل بالقواعد لهذا المستوى، وليست ذكاءً اصطناعيًا عامًا: عندما لا تفهم شيئًا تقول ذلك وتقترح سؤالًا موجّهًا. التدرّب في الدردشة لا يغيّر تقدّمك.",
 }

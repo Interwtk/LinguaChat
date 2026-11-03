@@ -2795,7 +2795,10 @@ const base = {
   courseMissionMeet: "Meeting someone new",
   courseMissionCafe: "Ordering at a café",
   courseMissionHelp: "Getting help",
-  courseChatNoticeLocal: "In Chats you can practise Spanish with Lingua. She’s a rule-based practice partner for this level, not a general AI: when she can’t understand something, she says so and offers a guided exercise.",
+  // Course practice chat (components/today/CourseChat.jsx)
+  courseChatTitle: "Spanish conversation practice",
+  courseChatOpen: "Practise a conversation",
+  courseChatNoticeLocal: "Practise a short conversation with Lingua. She’s a rule-based practice partner for this level, not a general AI: when she can’t understand something, she says so and offers a guided question. Chat practice doesn’t change your progress.",
 }
 
 
