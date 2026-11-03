@@ -29,6 +29,8 @@ export function plain(text) {
     .replace(/[’‘‛`´]/g, "'")
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    // chat spelling: "holaaa", "graciaaas" — no Spanish word has a letter three times
+    .replace(/(\p{L})\1{2,}/gu, '$1')
     .replace(/\s+/g, ' ')
     .trim()
 }
@@ -501,7 +503,9 @@ export function evaluateExpressLike(text, { independent = false, targetThing = '
   }
   // what follows gusta: a noun phrase or an infinitive; anything else is not ours to judge
   const after = f.split(/\bgustan?\b|\bencantan?\b/)[1]?.trim() || ''
-  if (!after) return miss(r, 'es_missing_thing')
+  // "el café me gusta": the thing can come first
+  const before = f.split(/\b(?:no )?me (?:gustan?|encantan?)\b/)[0].trim()
+  if (!after && !nounsIn(before).length) return miss(r, 'es_missing_thing')
   return ok(r, text, { praise: negative ? 'es.praise.dislike' : 'es.praise.like', variant: true, accents: likeAccents })
 }
 
@@ -546,13 +550,14 @@ function wantNeed(text, verbs, { independent, targetThing, praise }) {
 }
 
 export const evaluateWant = (text, { independent = false, targetThing = 'agua' } = {}) =>
-  wantNeed(text, ['quiero', 'quisiera'], { independent, targetThing, praise: 'es.praise.want' })
+  wantNeed(text, ['quiero', 'quisiera', 'me gustaria'], { independent, targetThing, praise: 'es.praise.want' })
 export const evaluateNeed = (text, { independent = false, targetThing = 'ayuda' } = {}) =>
   wantNeed(text, ['necesito'], { independent, targetThing, praise: 'es.praise.need' })
 
 /* ================= polite requests and the café ================= */
 
-const POLITE = /\bpor favor\b|\bquisiera\b|\bme (da|das|pone|pones|trae|traes|regala|regalas|puede dar|puedes dar|podria dar|podrias dar|daria)\b|\bme gustaria\b|\bpara mi\b.*\bpor favor\b/
+// "quería un café" is the courteous imperfect, not a past tense, in a café
+const POLITE = /\bpor favor\b|\bquisiera\b|\bqueria\b|\bme (da|das|pone|pones|trae|traes|regala|regalas|puede dar|puedes dar|podria dar|podrias dar|daria)\b|\bme gustaria\b|\bpara mi\b.*\bpor favor\b/
 
 export function evaluatePoliteRequest(text, { independent = false, targetThing = 'cafe' } = {}) {
   const r = base(independent)
