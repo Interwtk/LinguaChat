@@ -89,6 +89,7 @@
     "check:same-account-tabs": "node scripts/check-same-account-tabs.mjs",
     "check:store-concurrency": "node scripts/check-store-concurrency.mjs",
     "check:ledger-integrity": "node --max-old-space-size=4096 scripts/check-ledger-integrity.mjs",
+    "check:ledger-rollback": "node scripts/check-ledger-rollback.mjs",
     "check:learning-loop": "node scripts/check-learning-loop.mjs",
     "check:ime-enter": "node scripts/check-ime-enter.mjs",
     "check:visible-errors": "node scripts/check-visible-errors.mjs",
