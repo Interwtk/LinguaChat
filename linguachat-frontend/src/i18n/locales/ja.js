@@ -5613,4 +5613,17 @@ export default {
   courseChatTitle: "スペイン語の会話練習",
   courseChatOpen: "会話を練習する",
   courseChatNoticeLocal: "Linguaと短い会話を練習しましょう。このレベル向けのルールベースの練習相手で、汎用AIではありません。理解できないときはそう伝え、ガイド付きの質問を出します。チャットの練習は進捗に影響しません。",
+  // Your data: export / delete on this device / account deletion request
+  dataTitle: "あなたのデータ",
+  dataBody: "学習データはこのブラウザにあなたのアカウント用として保存されています。いつでもコピーをダウンロードしたり、この端末から削除したりできます。",
+  dataExport: "データをダウンロード",
+  dataDeleteLocal: "この端末からデータを削除",
+  dataDeleteConfirm: "この端末からLinguaChatの学習データをすべて削除しますか？ここでの進捗は元に戻せません。このブラウザの他のアカウントには影響しません。",
+  dataExportDone: "データファイルをダウンロードしました。",
+  dataExportFailed: "現在データを読み込めませんでした。もう一度お試しください。",
+  dataDeleteDone: "この端末からデータを削除しました。",
+  dataDeleteFailed: "一部を削除できませんでした。他のアカウントのデータには触れていません。もう一度お試しください。",
+  dataAccountDeletion: "ログイン用アカウントも削除するには、削除リクエストを送ってください：",
+  dataAccountDeletionLink: "アカウント削除を依頼する",
+  dataAccountDeletionNoContact: "ログイン用アカウントの削除は運営者への依頼で行います。連絡先は公開ベータ前にここに表示されます。",
 }

@@ -6,6 +6,7 @@ import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 import { teachingHistory } from '../../learning/engine/teachingPolicy.js'
 import { learnerSummary } from '../../learning/engine/learnerSummary.js'
 import { LearningSummaryCard } from './LearningSummaryCard'
+import { DataControls } from './DataControls'
 import { labelKeyOfLevel } from '../../learning/curriculum/levels.js'
 import { workingLevelId } from '../../learning/curriculum/learnerLevel.js'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
@@ -771,6 +772,9 @@ export function LanguageIdentity() {
             </div>
           </div>
         </div>
+
+        {/* Your data: download, delete on this device, account deletion request */}
+        <DataControls />
 
         {/* Logout */}
         <div className="flex flex-wrap gap-3 animate-fade-up" style={{ animationDelay: '0.24s' }}>

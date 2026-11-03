@@ -5619,4 +5619,17 @@ export default {
   courseChatTitle: "Práctica de conversación en español",
   courseChatOpen: "Practicar una conversación",
   courseChatNoticeLocal: "Practica una conversación corta con Lingua. Es una compañera de práctica basada en reglas para este nivel, no una IA general: cuando no entiende algo, lo dice y te ofrece una pregunta guiada. La práctica de chat no cambia tu progreso.",
+  // Your data: export / delete on this device / account deletion request
+  dataTitle: "Tus datos",
+  dataBody: "Tus datos de aprendizaje se guardan en este navegador para tu cuenta. Puedes descargar una copia o borrarlos de este dispositivo cuando quieras.",
+  dataExport: "Descargar mis datos",
+  dataDeleteLocal: "Borrar mis datos de este dispositivo",
+  dataDeleteConfirm: "¿Borrar todos tus datos de aprendizaje de LinguaChat de este dispositivo? Después no se podrá recuperar tu progreso aquí. Las otras cuentas de este navegador no se ven afectadas.",
+  dataExportDone: "Se descargó el archivo con tus datos.",
+  dataExportFailed: "No pudimos leer tus datos ahora. Inténtalo de nuevo.",
+  dataDeleteDone: "Tus datos se borraron de este dispositivo.",
+  dataDeleteFailed: "No se pudo borrar todo. No se tocó nada de otras cuentas; inténtalo de nuevo.",
+  dataAccountDeletion: "Para eliminar también tu cuenta de acceso, envíanos una solicitud de eliminación:",
+  dataAccountDeletionLink: "solicitar eliminación de la cuenta",
+  dataAccountDeletionNoContact: "La eliminación de tu cuenta de acceso se hace por solicitud al operador; la dirección de contacto aparecerá aquí antes de la beta pública.",
 }

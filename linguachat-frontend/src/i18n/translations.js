@@ -2799,6 +2799,19 @@ const base = {
   courseChatTitle: "Spanish conversation practice",
   courseChatOpen: "Practise a conversation",
   courseChatNoticeLocal: "Practise a short conversation with Lingua. She’s a rule-based practice partner for this level, not a general AI: when she can’t understand something, she says so and offers a guided question. Chat practice doesn’t change your progress.",
+  // Your data: export / delete on this device / account deletion request
+  dataTitle: "Your data",
+  dataBody: "Your learning data is stored in this browser for your account. You can download a copy or delete it from this device at any time.",
+  dataExport: "Download my data",
+  dataDeleteLocal: "Delete my data from this device",
+  dataDeleteConfirm: "Delete all your LinguaChat learning data from this device? Your progress here can’t be recovered afterwards. Other accounts on this browser are not affected.",
+  dataExportDone: "Your data file has been downloaded.",
+  dataExportFailed: "We couldn’t read your data right now. Please try again.",
+  dataDeleteDone: "Your data was deleted from this device.",
+  dataDeleteFailed: "Not everything could be deleted. Nothing from other accounts was touched; please try again.",
+  dataAccountDeletion: "To delete your sign-in account as well, send us a deletion request:",
+  dataAccountDeletionLink: "request account deletion",
+  dataAccountDeletionNoContact: "Deleting your sign-in account is done by request to the operator; the contact address will appear here before the public beta.",
 }
 
 

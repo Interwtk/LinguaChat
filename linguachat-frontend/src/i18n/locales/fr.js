@@ -5619,4 +5619,17 @@ export default {
   courseChatTitle: "Pratique de conversation en espagnol",
   courseChatOpen: "S’entraîner à converser",
   courseChatNoticeLocal: "Entraîne-toi à une courte conversation avec Lingua. C’est une partenaire à base de règles pour ce niveau, pas une IA générale : quand elle ne comprend pas, elle le dit et propose une question guidée. Le chat ne modifie pas ta progression.",
+  // Your data: export / delete on this device / account deletion request
+  dataTitle: "Tes données",
+  dataBody: "Tes données d’apprentissage sont stockées dans ce navigateur pour ton compte. Tu peux en télécharger une copie ou les supprimer de cet appareil quand tu veux.",
+  dataExport: "Télécharger mes données",
+  dataDeleteLocal: "Supprimer mes données de cet appareil",
+  dataDeleteConfirm: "Supprimer toutes tes données d’apprentissage LinguaChat de cet appareil ? Ta progression ici ne pourra pas être récupérée. Les autres comptes de ce navigateur ne sont pas touchés.",
+  dataExportDone: "Le fichier de tes données a été téléchargé.",
+  dataExportFailed: "Impossible de lire tes données pour le moment. Réessaie.",
+  dataDeleteDone: "Tes données ont été supprimées de cet appareil.",
+  dataDeleteFailed: "Tout n’a pas pu être supprimé. Rien des autres comptes n’a été touché ; réessaie.",
+  dataAccountDeletion: "Pour supprimer aussi ton compte de connexion, envoie-nous une demande de suppression :",
+  dataAccountDeletionLink: "demander la suppression du compte",
+  dataAccountDeletionNoContact: "La suppression du compte de connexion se fait sur demande à l’opérateur ; l’adresse de contact apparaîtra ici avant la bêta publique.",
 }
