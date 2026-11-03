@@ -18,7 +18,9 @@ LinguaChat ("the Service") is a language-practice web application operated by **
 
 **What is available in the beta:**
 - English, beginner level (Pre-A1);
-- Spanish for English speakers, beginner level (Pre-A1).
+- Spanish for English speakers, beginner level (Pre-A1), with a daily session and a practice chat.
+
+In the practice chat, Lingua follows rules for beginner topics. When she cannot understand a message she says so; she does not pretend to.
 
 **Not yet available:** other levels and features. We say so in the app.
 
@@ -67,7 +69,7 @@ See the Privacy Policy. Your learning progress is stored mainly on your device.
 The beta may change, pause, or lose features. We will try to warn you before material changes. Back up nothing you cannot afford to lose: progress lives in your browser, and clearing site data deletes it.
 
 ### 10. Suspension and termination
-- You may stop using the Service and ask us to delete your account at any time.
+- You may stop using the Service at any time. In the app you can download your learning data or delete it from your device, and you can ask us to delete your account.
 - We may suspend or close accounts for serious or repeated breach of these terms, illegal activity, or to protect other people, with notice where reasonable.
 
 ### 11. Liability
@@ -92,7 +94,9 @@ LinguaChat («el Servicio») es una aplicación web de práctica de idiomas oper
 
 **Disponible en la beta:**
 - inglés, nivel inicial (Pre-A1);
-- español para angloparlantes, nivel inicial (Pre-A1).
+- español para angloparlantes, nivel inicial (Pre-A1), con sesión diaria y chat de práctica.
+
+En el chat de práctica, Lingua sigue reglas para temas de principiante. Cuando no entiende un mensaje lo dice; no finge entender.
 
 **Aún no disponibles:** otros niveles y funciones. Lo indicamos en la app.
 
@@ -141,7 +145,7 @@ Ver la Política de privacidad. Tu progreso se guarda principalmente en tu dispo
 La beta puede cambiar, pausarse o perder funciones. Intentaremos avisar antes de cambios relevantes. Tu progreso vive en tu navegador: si borras los datos del sitio, se elimina.
 
 ### 10. Suspensión y término
-- Puedes dejar de usar el Servicio y pedir que eliminemos tu cuenta cuando quieras.
+- Puedes dejar de usar el Servicio cuando quieras. En la app puedes descargar tus datos de aprendizaje o borrarlos de tu dispositivo, y puedes pedirnos que eliminemos tu cuenta.
 - Podemos suspender o cerrar cuentas por incumplimientos graves o reiterados, actividad ilegal o para proteger a otras personas, con aviso cuando sea razonable.
 
 ### 11. Responsabilidad

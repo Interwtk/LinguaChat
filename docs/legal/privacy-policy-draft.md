@@ -3,21 +3,25 @@
 > **DRAFT FOR LEGAL REVIEW — NOT IN FORCE — NOT LEGAL ADVICE.**
 > **BORRADOR PARA REVISIÓN JURÍDICA — NO VIGENTE — NO ES ASESORÍA LEGAL.**
 >
-> Written on 2026-11-02 from the code of branch `beta/2026-11-es-for-en`, commit `738617f`.
+> Written on 2026-11-02 from the code of branch `beta/2026-11-es-for-en`; **re-checked against the code of phase 2 (commit `793f3ee`) on 2026-11-02**.
 >
 > Every statement below must be re-checked against the code and the providers at publication time. Fields in `[BRACKETS]` are pending decisions.
 >
 > **What the code does today (basis of this draft):**
 > - Accounts use Supabase Auth (email and password).
 > - Learning progress, profile, preferences and chat history are stored **in the learner's browser** (`localStorage`, account-namespaced).
-> - Chat messages are sent to the LinguaChat backend (a Vercel function) to produce a reply and are **not stored on the server**. The backend has no database.
+> - Chat messages are sent to the LinguaChat backend (a Vercel function) to produce a reply. The backend has **no database**. **Correction (phase 2):** the earlier draft said messages were not stored on the server. In fact the server keeps the **last 8 turns of each conversation in memory** (`app/services/memory.py`) to give context, with emails, long numbers and key-like strings masked. Nothing is written to disk, and it is lost when the server instance restarts.
+> - Every chat message passes a safety check on the server (`ai/safety.py`). A blocked message is **not** added to that memory, and only its **category** is logged, never the text.
+> - Age: sign-up asks an age **bracket**. Only the declaration "18_plus" and its date are stored, as account metadata. An under-18 answer stores no account and no age: just a 24-hour timestamp in that browser.
+> - Learners can **download** their learning data and **delete** it from the device in the app (Tú → Your data). **Deleting the sign-in account** at the authentication provider is **by request** to the privacy contact. It is not automated, because that needs a private server credential the current security contract does not authorize.
+> - Listening uses the **device or browser voices**. Some browsers' online voices send the text to the browser maker to synthesize it; LinguaChat itself sends no audio or text to any voice service.
 > - No analytics, no advertising SDKs, no payment provider.
 > - Cloud sync of preferences exists in the code but is **not released** (`CLOUD_PREFERENCES_RELEASED=false`).
 > - Fonts load from Google Fonts. The tutor is a **local rule-based engine**; no generative AI provider is active.
 >
 > **Open items before publishing:**
 > 1. Legal entity, address and contact.
-> 2. In-app account deletion. **Not implemented**; only local reset exists.
+> 2. Automated deletion of the sign-in account. **Not implemented**; local data export and deletion **are** implemented, and account deletion is by request (contact configured through `VITE_PRIVACY_CONTACT_EMAIL`).
 > 3. Data processing agreements (DPAs) with Vercel and Supabase, plus transfer clauses.
 > 4. Self-host fonts, or disclose Google Fonts (below).
 > 5. EU representative and Japanese notice **only if** those markets open.
@@ -45,7 +49,9 @@ The LinguaChat beta is for **adults aged 18 or over**. We do not knowingly colle
 | Account identifier | Supabase Auth and your browser | To keep your learning data separate from other accounts on the same device | Performance of the contract |
 | Name you choose, learning goal, level, language choices, tutor preferences, interests | **Your browser** | To personalise lessons and Lingua's examples | Performance of the contract |
 | Learning progress: lessons completed, answers' correctness, review schedule, XP, streak, saved words | **Your browser** | To adapt practice to you (individual adaptive learning) | Performance of the contract |
-| Chat messages you write to Lingua, and recent conversation context | Sent to our server **only to produce a reply**, then discarded; the conversation is kept **in your browser** | To answer you and correct your English | Performance of the contract |
+| Chat messages you write to Lingua, and recent conversation context | Sent to our server to produce a reply. The server keeps the **last 8 turns of the conversation in memory only** (emails and long numbers masked; never written to disk; lost when the server restarts). The full conversation is kept **in your browser** | To answer you and correct the language you are learning | Performance of the contract |
+| Age declaration | Your account metadata at the authentication provider (only "18 or older" and the date). No age, no birth date | To keep the beta adults-only | Legal obligation / legitimate interest |
+| Safety events | Server logs: **category only** (for example "personal_data"), never the message | To keep the tutor safe and detect abuse | Legitimate interest (safety) |
 | Technical data: IP address, browser and device type, request timestamps | Our hosting provider (Vercel), Supabase and Google Fonts process it to deliver the service | Security, abuse prevention, delivering the site | Legitimate interest (security); necessary to provide the service |
 
 **We do not:**
@@ -81,7 +87,7 @@ Your data may be processed in countries other than yours, including the United S
 ### 6. How long we keep data
 - **Data in your browser:** until you delete it ("Reset progress" in the app, or clearing site data), or until you delete your account.
 - **Account data at Supabase:** while your account exists. After a deletion request, within **[30]** days, except where the law requires us to keep something.
-- **Chat messages on our server:** not stored after the reply is produced.
+- **Chat messages on our server:** the last 8 turns of a conversation stay in the server's memory only, until the server instance restarts. Nothing is written to disk. Blocked messages are never kept.
 - **Technical logs at providers:** according to their retention policies (**[to be confirmed per provider]**).
 
 ### 7. Your rights
@@ -97,7 +103,7 @@ Depending on where you live, you can:
 
 Write to [privacy@DOMAIN]; we answer within **[15 business days / the legal deadline]**. Most of your learning data is on your own device, and you can export or delete it there.
 
-**[PENDING]** In-app account deletion and data export.
+**In the app (Tú → Your data):** download a copy of your learning data, or delete it from this device. Other accounts on the same browser are not affected. **Deleting your sign-in account** is done on request to [privacy@DOMAIN]; we confirm when it is done.
 
 ### 8. Security
 We use:
@@ -150,7 +156,9 @@ La beta de LinguaChat es para **personas de 18 años o más**. No recopilamos a 
 | Identificador de cuenta | Supabase Auth y tu navegador | Separar tus datos de los de otras cuentas en el mismo dispositivo | Ejecución del contrato |
 | Nombre que eliges, objetivo, nivel, idiomas, preferencias del tutor, intereses | **Tu navegador** | Personalizar las lecciones y los ejemplos de Lingua | Ejecución del contrato |
 | Progreso: lecciones completadas, acierto de respuestas, calendario de repasos, XP, racha, palabras guardadas | **Tu navegador** | Adaptar la práctica a ti (aprendizaje adaptativo individual) | Ejecución del contrato |
-| Mensajes que escribes a Lingua y el contexto reciente de la conversación | Se envían a nuestro servidor **solo para generar la respuesta** y luego se descartan; la conversación queda **en tu navegador** | Responderte y corregir tu inglés | Ejecución del contrato |
+| Mensajes que escribes a Lingua y el contexto reciente de la conversación | Se envían a nuestro servidor para generar la respuesta. El servidor conserva **solo en memoria los últimos 8 turnos** de la conversación (correos y números largos enmascarados; nunca se escriben en disco; se pierden al reiniciarse el servidor). La conversación completa queda **en tu navegador** | Responderte y corregir el idioma que aprendes | Ejecución del contrato |
+| Declaración de edad | Metadatos de tu cuenta en el proveedor de autenticación (solo «18 o más» y la fecha). Ni edad ni fecha de nacimiento | Mantener la beta solo para adultos | Obligación legal / interés legítimo |
+| Eventos de seguridad | Registros del servidor: **solo la categoría** (por ejemplo «personal_data»), nunca el mensaje | Mantener segura a la tutora y detectar abusos | Interés legítimo (seguridad) |
 | Datos técnicos: IP, tipo de navegador y dispositivo, hora de las solicitudes | Los procesan nuestro proveedor de alojamiento (Vercel), Supabase y Google Fonts para entregar el servicio | Seguridad, prevención de abusos, funcionamiento del sitio | Interés legítimo (seguridad); necesario para prestar el servicio |
 
 **No hacemos:**
@@ -186,7 +194,7 @@ Tus datos pueden tratarse en países distintos del tuyo, incluidos Estados Unido
 ### 6. Conservación
 - **Datos en tu navegador:** hasta que los borres («Reiniciar progreso» en la app, o borrando los datos del sitio) o elimines tu cuenta.
 - **Datos de la cuenta en Supabase:** mientras exista la cuenta. Tras una solicitud de eliminación, en un plazo de **[30]** días, salvo obligación legal.
-- **Mensajes del chat en nuestro servidor:** no se guardan después de generar la respuesta.
+- **Mensajes del chat en nuestro servidor:** los últimos 8 turnos de una conversación quedan solo en la memoria del servidor hasta que se reinicia. Nada se escribe en disco. Los mensajes bloqueados nunca se conservan.
 - **Registros técnicos de los proveedores:** según sus políticas (**[confirmar por proveedor]**).
 
 ### 7. Tus derechos
@@ -202,7 +210,7 @@ Según dónde vivas, puedes:
 
 Escribe a [privacidad@DOMINIO]; respondemos en **[15 días hábiles / el plazo legal]**. La mayor parte de tus datos de aprendizaje está en tu propio dispositivo, y puedes exportarlos o borrarlos allí.
 
-**[PENDIENTE]** Eliminación de cuenta y exportación dentro de la app.
+**En la app (Tú → Tus datos):** descarga una copia de tus datos de aprendizaje o bórralos de este dispositivo. Las otras cuentas del mismo navegador no se ven afectadas. **La eliminación de tu cuenta de acceso** se hace por solicitud a [privacidad@DOMINIO]; te confirmamos cuando esté hecha.
 
 ### 8. Seguridad
 Usamos:

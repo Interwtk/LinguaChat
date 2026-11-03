@@ -1,7 +1,32 @@
 # Política de edad y seguridad del contenido (BORRADOR)
 
 > **BORRADOR PARA REVISIÓN JURÍDICA.** Fecha: 2026-11-02.
-> **Estado de implementación: NINGUNA de las medidas de este documento está implementada todavía**, salvo donde se marca «EXISTE». Es la especificación para la ventana del 8 al 14 de noviembre.
+> **Estado de implementación (actualizado 2026-11-02, fase 2): IMPLEMENTADO en la rama local `beta/2026-11-es-for-en`, sin publicar.**
+> - **Edad (§A.2, A.3):**
+>   - `services/ageGate.js` y `AuthFlow` (pregunta neutral de tres tramos antes del registro);
+>   - confirmación única para cuentas existentes;
+>   - `check-age-gate`: 32 pruebas;
+>   - verificada en el navegador en es y ar (RTL).
+> - **Seguridad del tutor (§B.3–B.5):**
+>   - `linguachat-backend/ai/safety.py`, aplicado en `/chat` (inglés y español) antes de cualquier motor o memoria y otra vez sobre la respuesta;
+>   - **164 pruebas** en en, es, ja y ar: al menos 25 casos dañinos por idioma, más un conjunto legítimo que debe pasar;
+>   - no registra texto, solo la categoría.
+> - **Pendiente:**
+>   - recursos de crisis verificados por un profesional (hoy: EE. UU. 988, Chile \*4141);
+>   - revisión jurídica;
+>   - aplicar la misma capa a `/learning/evaluate` (hoy evalúa con patrones fijos y no devuelve texto libre del usuario);
+>   - suspensión de cuentas en el servidor tras un aviso de minoría de edad: requiere la operación con credencial privada que el contrato no autoriza. Hoy: cierre de sesión y solicitud de eliminación al contacto de privacidad.
+>
+> **Límites honestos del motor local de seguridad:**
+> - **Es un clasificador por reglas.**
+>   - Combina señales: sexual + menor; intención + objeto peligroso; tema violento + petición de detalle gráfico.
+>   - Normaliza evasiones: homoglifos, *leetspeak*, letras separadas, diacríticos árabes, ancho completo y katakana.
+>   - Deja pasar las preguntas de vocabulario, salud, prevención y protección.
+> - **No entiende** ironía, manipulación larga de varios turnos, jerga nueva ni idiomas fuera de sus léxicos.
+> - Ante la duda **redirige con calma**, no acusa.
+> - Un proveedor generativo futuro necesitará además su propia moderación (§B.6).
+>
+> Lo que sigue es la especificación original, que se mantiene como referencia.
 
 ## Parte A — Edad
 
@@ -91,7 +116,7 @@ Se aplica **en el servidor** (`/chat` y cualquier proveedor futuro detrás de la
 - Autorización escrita del propietario (`CLAUDE.md`).
 
 ## Bloqueos para la beta pública
-- [ ] Puerta de edad del §A.2 implementada y probada en 390 y 1440 px.
-- [ ] Filtro de entrada en el servidor (§B.3) con las pruebas del §B.5.
+- [x] Puerta de edad del §A.2 implementada y probada (pruebas y navegador a 390 px; 1440 px por revisar en la app completa con sesión).
+- [x] Filtro de entrada y salida en el servidor (§B.3) con las pruebas del §B.5 (164).
 - [ ] Recursos de ayuda en crisis verificados por país (CL, US al menos).
 - [ ] Revisión jurídica de esta política.

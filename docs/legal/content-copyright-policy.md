@@ -43,8 +43,8 @@
 | Tipografía Bricolage Grotesque | Google Fonts (CDN) | SIL Open Font License 1.1 | Ídem |
 | Iconos | SVG en línea en los componentes | Creados en código (no se usa ninguna biblioteca de iconos según `package.json`) | OK; verificar uno a uno si alguno se copió |
 | Sonidos / voces | No hay archivos de audio; la voz usa la síntesis del dispositivo (`src/audio/speech.js`) | Voz del sistema operativo del usuario | OK; no grabamos ni distribuimos voces |
-| Dependencias de software | `package.json`: react, react-dom, @supabase/supabase-js (+ dev) | MIT / Apache-2.0 | OK; generar el aviso de licencias antes del lanzamiento |
-| Nombre «LinguaChat» y «Lingua» | — | Sin búsqueda de marca | **Pendiente:** búsqueda en INAPI (Chile), USPTO, EUIPO y JPO antes del lanzamiento comercial |
+| Dependencias de software | Frontend: react, react-dom, @supabase/supabase-js (MIT; leído de `node_modules` el 2026-11-02). Backend: fastapi (MIT), uvicorn (BSD-3), pydantic (MIT), python-dotenv (BSD-3), httpx (BSD-3), starlette (BSD-3), openai (Apache-2.0; instalado pero sin proveedor activo) | Permisivas | OK; generar el aviso de terceros (NOTICE) antes del lanzamiento público |
+| Nombre «LinguaChat» y «Lingua» | — | **USPTO** (API pública, 2026-11-02): 0 resultados para «LINGUACHAT» y variantes; «LINGUACHET» (clase 9, idiomas) cancelada en 2021; «LINGUA*» con 90 registros vivos, muchos en las clases 9/41/42. **INAPI**: búsqueda no ejecutada (reCAPTCHA; procedimiento en `docs/business/research/2026-11-02-chile-sii-briefing.md` §8). Costo en INAPI ≈ 3 UTM por clase | **Riesgo de publicación con nombre**, no bloqueo del código: búsqueda profesional y solicitud antes del lanzamiento comercial |
 
 ## 3. Proceso de revisión antes de publicar contenido
 
@@ -67,6 +67,11 @@
 - **Registro de reclamos:** fecha, obra, decisión y plazo, sin datos innecesarios.
 
 ## 5. Bloqueos para la beta pública
+
+> **Actualización fase 2 (2026-11-02):**
+> - El código y los textos nuevos de esta fase son originales: plan de sesión, misiones, tutor de español y respuestas de seguridad.
+> - Las misiones reutilizan turnos de las lecciones propias.
+> - **Chatto sigue sin autoría ni licencia documentadas: sigue bloqueando la publicación.**
 
 - [ ] El propietario confirma la autoría y los derechos de **Chatto**.
 - [ ] Búsqueda de marca de «LinguaChat».

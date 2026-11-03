@@ -157,11 +157,23 @@ Un episodio de curso trae `runtime = { courseId, targetLanguage, copy, vocab, ev
    - o muestra `notEvaluable` en ≥20 % de los turnos.
 5. **Medición independiente de los clics.** Tasa de recuerdo sin ayuda en el paso de calentamiento del episodio siguiente, días después. Más un muestreo de respuestas reales revisadas por un hablante nativo (falsos positivos y negativos del evaluador).
 
-## 9. Pendiente (no implementado)
+## 9. Fase 2 (2026-11-02): ya implementado
 
-- Sesión diaria (`SessionRunner`), misiones y minihistorias en español: el curso usa episodios y planificador, no la sesión diaria.
-- Diagnóstico de ubicación para español: no hay; todos empiezan en el episodio 1.
-- Copia del curso en otros idiomas auxiliares (pt, fr, de, it, ja, ar).
-- Evaluador español en el backend y chat libre en español.
-- TTS en español para escuchar (el `speech.js` existente admite voz del dispositivo; falta conectarlo).
+- **Sesión diaria del curso** (`learning/courses/courseSession.js`, `components/today/CourseSession.jsx`):
+  - bloques de repaso, lección, reintento de error, transferencia y misión, armados solo con evidencia del curso;
+  - mismas reglas de evidencia que el reproductor;
+  - `check-es-session`.
+- **Chat de práctica en español** (`linguachat-backend/ai/es_tutor.py` vía `/chat` con objetivo `es`; `CourseChat.jsx`):
+  - reglas Pre-A1;
+  - explicaciones en inglés;
+  - «no entendí» en vez de corregir;
+  - no otorga evidencia de dominio.
+- **Voz del dispositivo en español** (`audio/speech.js`, `pickVoice`): nunca lee español con voz inglesa.
+- **Seguridad del tutor** (`ai/safety.py`) delante de los dos chats.
+
+## 10. Pendiente
+
+- Diagnóstico de ubicación para español: todos empiezan en el episodio 1.
+- Copia del curso de español en otros idiomas auxiliares (pt, fr, de, it, ja, ar).
+- Evaluador español en el backend para `/learning/evaluate` (hoy los episodios evalúan en el cliente).
 - Revisión del contenido por un hablante nativo.
