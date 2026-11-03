@@ -26,7 +26,7 @@
 | Clon | `C:\Users\Sebastian Gamboa\Music\LinguaChat-integration` |
 | Rama de trabajo | `beta/2026-11-es-for-en` (local, sin *upstream*, *push* deshabilitado) |
 | Puntos de recuperación | `recovery/p6-integration-e656e04` (P0–P5) · `recovery/beta-block1-ee50e1a` (bloque 1) |
-| Último commit de código | `793f3ee` (QA en navegador), más el commit con derechos inactivos y documentos (ver `git log`) |
+| Último commit de código | `f9f77b5` (dos ciclos limpios); antes `d603ef2` (derechos inactivos y documentos) y `793f3ee` (QA en navegador) |
 | `main` remoto | `086323c` (sin cambios) |
 | Bundle de entrada | 760,5 kB de un presupuesto de 850 (`check-bundle-boundaries`) |
 | `check:all` | **104 pasos** (P6 100 + `check-es-course`, `check-age-gate`, `check-es-session`, `check-learner-data`) |
@@ -177,7 +177,16 @@
 - **Documentos:** `docs/release/*`, `docs/business/*`, `docs/legal/*`, `docs/architecture/multilingual-curriculum.md`, `docs/audits/2026-11-beta-phase2.md`.
 
 ## 14. Últimas pruebas
-Ver `docs/release/2026-11-beta-readiness.md` § Ciclos finales: dos ciclos completos sobre el *head* final, con *exit codes*.
+**Dos ciclos limpios sobre `f9f77b5`:**
+- `check:all` 104/104, `build` e i18n ok;
+- `pytest` **1429 passed / 28 skipped** (incluye seguridad 164, tutor de español 12 y derechos 10);
+- e2e 4/4 y 5/5;
+- integridad 29/29 (+1 que solo corre en local);
+- alcance de la nube ok;
+- garantías 16/16.
+- **Bloqueado:** `check:github-integration` (falta `jq`).
+
+Detalle: `docs/release/2026-11-beta-readiness.md` § Ciclos finales.
 
 ## 15. Próximo paso ejecutable
 1. Con las decisiones 1 y 3: *push* de los PR en borrador → CI → Preview → los 10 recorridos de autenticación (`2026-11-beta-readiness.md` §5).

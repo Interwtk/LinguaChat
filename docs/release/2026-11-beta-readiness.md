@@ -173,4 +173,21 @@
 
 ## Ciclos finales (exit codes)
 
-(Se completa al terminar los dos ciclos sobre el *head* definitivo de la fase 2.)
+**Dos ciclos consecutivos e idénticos** sobre `f9f77b5` (árbol `1a623d0`, `dirty=0` antes y después, sin cambios entre ambos):
+
+| Suite | f1 | f2 |
+|---|---|---|
+| frontend `check:all` (104 pasos, por *exit code*) | 104/104 | 104/104 |
+| `build` · `check:i18n` (8 idiomas) | ok · ok | ok · ok |
+| Foundry b1/b2/c1/c2 y a2-structure | 5/5 | 5/5 |
+| integridad del registro de progreso (completa) | 29/29 (+1 que solo corre en local) | 29/29 |
+| política de adaptación | 10/10 | 10/10 |
+| alcance de la nube (git, autoprueba, pruebas) | ok | ok |
+| backend `compileall` · `pytest` | ok · **1429 passed / 28 skipped** | ok · 1429 / 28 |
+| e2e HTTP: tutor 4/4 · continuidad 5/5 | ok | ok |
+| plantillas de correo · garantías del producto | ok · 16/16 | ok · 16/16 |
+| `check:github-integration` | BLOQUEADO (falta `jq`; corre en CI) | BLOQUEADO |
+
+**Historia del conteo (sin ocultar fallos):**
+- Los ciclos intermedios sobre `793f3ee` y `d603ef2` dieron **103/104**: `check-a1-blueprint` detectó que el chat de español enviaba `level: 'A1'`, y solo el registro puede nombrar A1.
+- Se corrigió en `f9f77b5` y **el conteo se reinició**.
