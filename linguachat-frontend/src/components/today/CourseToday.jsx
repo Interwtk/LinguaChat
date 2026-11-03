@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { StreakFlame } from '../ui/StreakFlame'
@@ -6,6 +6,9 @@ import { CourseSwitcher } from './CourseSwitcher'
 import { loadLearnerModel, getEpisodeState } from '../../learning/engine/learnerModel.js'
 import { planDay, arcProgress, isEpisodeUnlocked } from '../../learning/engine/planner.js'
 import { courseSkeleton, courseHomeCopy } from '../../learning/courses/registry.js'
+import { getOrCreateCourseSession } from '../../learning/courses/courseSession.js'
+import { DURATION_ORDER } from '../../learning/engine/session.js'
+import { CourseSessionRunner } from './CourseSession'
 
 /*
  * Home for a course other than English (today: Spanish Pre-A1).
@@ -13,9 +16,10 @@ import { courseSkeleton, courseHomeCopy } from '../../learning/courses/registry.
  * The same planner as the English Home decides what comes next — an episode in
  * progress, then the next unlocked one — over this course's own episodes and
  * this course's own reviews. What the English Home shows and this one does not
- * is left out on purpose rather than faked: there is no Spanish daily session,
- * mission or free conversation yet, and the card says where the Spanish
- * practice lives instead of offering a button that would open English.
+ * is left out on purpose rather than faked. The course has its own daily
+ * session (courseSession.js: due reviews, the next lesson, a targeted retry, a
+ * transfer turn and, in deep sessions, a mission) and its own practice chat in
+ * Chats; nothing here opens the English session.
  */
 export function CourseToday() {
   const { t, profile, localProgress, activeCourse, startEpisode, episodeArcVersion, nativeLanguageInfo, interfaceLanguageInfo } = useApp()
@@ -31,6 +35,14 @@ export function CourseToday() {
   const reviewCount = plan.reviewItems?.length || 0
   const hour = new Date().getHours()
   const greeting = hour < 12 ? t('goodMorning') : hour < 18 ? t('goodAfternoon') : t('goodEvening')
+  const [duration, setDuration] = useState('standard')
+  const [running, setRunning] = useState(null)
+  const session = useMemo(() => getOrCreateCourseSession(model, activeCourse, { durationMode: duration, learnerKey: profile?.name || 'guest' }),
+    [model, activeCourse, duration, profile?.name])
+  const activities = session.blocks.filter(b => b.type !== 'session_completion').length
+  const sessionStarted = session.status === 'active'
+
+  if (running) return <CourseSessionRunner session={running} onExit={() => setRunning(null)} />
 
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-7 py-5 md:py-7" style={{ background: 'var(--bg)' }}>
@@ -60,6 +72,29 @@ export function CourseToday() {
         </header>
 
         <CourseSwitcher />
+
+        {activities > 0 && session.status !== 'completed' && (
+          <section aria-labelledby="course-session-title" className="rounded-2xl p-4 mb-4 animate-fade-up" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <h2 id="course-session-title" style={{ fontWeight: 800, fontSize: '0.9375rem', color: 'var(--ink)' }}>{t('courseSessionTitle')}</h2>
+            <p style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 10px' }}>{t('courseSessionSummary', { count: activities, minutes: session.estimatedMinutes })}</p>
+            {!sessionStarted && (
+              <div role="radiogroup" aria-label={t('courseSessionTitle')} className="flex gap-2 mb-3 flex-wrap">
+                {DURATION_ORDER.map(mode => (
+                  <button key={mode} type="button" role="radio" aria-checked={duration === mode} onClick={() => setDuration(mode)}
+                    className="rounded-full px-3 py-1.5 text-xs font-bold" style={{ minHeight: 36, background: duration === mode ? 'var(--accent-soft)' : 'var(--surface-soft)', border: `1px solid ${duration === mode ? 'var(--accent)' : 'var(--border)'}`, color: 'var(--ink)' }}>
+                    {t(`sessionDuration_${mode}`)}
+                  </button>
+                ))}
+              </div>
+            )}
+            <button type="button" onClick={() => setRunning(session)} className="btn-primary w-full" style={{ minHeight: 44 }}>
+              {sessionStarted ? t('courseSessionContinue') : t('courseSessionStart')}
+            </button>
+          </section>
+        )}
+        {session.status === 'completed' && (
+          <p className="rounded-2xl p-4 mb-4" style={{ fontSize: '0.875rem', background: 'var(--positive-soft)', color: 'var(--ink)' }}>{t('courseSessionDoneBody')}</p>
+        )}
 
         <section className="mission-card p-5 mb-4 animate-fade-up" style={{ animationDelay: '0.04s' }}>
           <div className="flex items-start gap-3.5">
@@ -93,7 +128,7 @@ export function CourseToday() {
         </section>
 
         <p className="rounded-2xl p-4 mb-4" style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5, background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>
-          {t('courseChatNotice')}
+          {t('courseChatNoticeLocal')}
         </p>
 
         <section aria-labelledby="course-lessons" className="mb-6">

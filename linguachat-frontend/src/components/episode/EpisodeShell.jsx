@@ -24,6 +24,7 @@ import {
 import { dayKeyFor } from '../../learning/engine/session.js'
 import { seedFrom } from '../../learning/engine/variation.js'
 import { FormatFeedback } from './FormatFeedback'
+import { ListeningTurn } from '../chat/ListeningTurn.jsx'
 import { MiniStory } from '../session/MiniStory'
 import {
   beginEpisodeRun, completeEpisodeRun, updateActiveRun, recordRunActivitySignal, stageDelayedRetrieval, runEarnsReward, otherBranch, RUN_BRANCH_REPLAY,
@@ -849,6 +850,8 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
         {step.type === 'model' && (
           <div>
             <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.target, vars)}</En>{step.response && <> <En style={{ opacity: 0.85 }}>{resolve(step.response, vars)}</En></>}</LinguaLine>
+            {/* a course episode can be heard in its own language (device voice; support, never speaking evidence) */}
+            {runtime && <ListeningTurn textShown lang={targetLang} turnId={`${ep.id}:${stepIndex}:model`} text={[resolve(step.target, vars), step.response ? resolve(step.response, vars) : ''].join(' ').trim()} />}
             {(showHelp || showsHintByDefault(scaffold)) && (
               <div className="rounded-2xl p-4 mb-3 animate-fade-up" style={{ background: 'var(--accent-soft)', border: '1px solid var(--accent)' }}>
                 <p lang={nativeLang} style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{(step.meaningItems || []).map(meaningOf).join(' · ')}</p>
@@ -1035,6 +1038,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
                     <p lang={nativeLang} style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)' }}>{t(step.instructionKey)}</p>
                   </div>
                 )}
+            {runtime && (step.promptEn || step.sceneEn) && <ListeningTurn textShown lang={targetLang} turnId={`${ep.id}:${stepIndex}:prompt`} text={resolve(step.promptEn || step.sceneEn, vars)} />}
             {(step.promptEn || step.sceneEn) && <p lang={nativeLang} style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginBottom: 10 }}>{t(step.instructionKey)}</p>}
 
             {/*

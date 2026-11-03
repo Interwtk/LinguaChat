@@ -1,7 +1,7 @@
 # LINGUACHAT — MAESTRO DEL PROYECTO
 
 > **Documento vivo.** Se actualiza al terminar cada bloque significativo.
-> - Última actualización: **2026-11-02**, bloque 1 de la «Operación Beta 30-N».
+> - Última actualización: **2026-11-02**, Fase 2 en curso (bloque A+B terminado en `e434e60`; ver §11).
 > - Regla: nada se marca «listo» si solo está diseñado. Cada afirmación cita su evidencia.
 >
 > **Relación con el protocolo de `CLAUDE.md`:**
@@ -121,6 +121,11 @@
   - escenas del banco visual.
   - Documentos: los 10 entregables y dos memorias de investigación.
 - **`e0b75b8`:** eliminado `POST /user` y los datos personales de ejemplo; la regex de `check-visual-identity` acepta el conteo filtrado por curso; matriz de preparación regenerada.
+- **Fase 2, bloque A+B (`e434e60`, 2026-11-02):**
+  - **Planes honestos:** solo lo que existe; Premium «no disponible, no vendemos nada»; lo futuro bajo «no disponible ahora».
+  - **Seguridad del tutor en el backend:** `ai/safety.py`, antes de cualquier motor o memoria, con 164 pruebas en en/es/ja/ar.
+  - **Control de edad neutral** (`services/ageGate.js`, `check-age-gate` con 32 comprobaciones).
+  - Punto de recuperación del bloque 1: etiqueta `recovery/beta-block1-ee50e1a`.
 
 ## 12. Archivos y ramas clave
 - **Código del curso:** `linguachat-frontend/src/learning/courses/` (`registry.js`, `transform.js`, `es/skeleton.js`, `es/preA1Content.js`, `es/evaluator.js`, `es/evaluatorCopy.js`).
