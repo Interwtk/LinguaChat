@@ -86,6 +86,7 @@ import {
 import { selectTopic, providerTopicContext } from '../learning/engine/topicSelection.js'
 import { asSubjectValue } from '../learning/engine/semanticContext.js'
 import { readActiveCourse, writeActiveCourse } from '../services/activeCourse.js'
+import { ageGatePassed, accountAgeConfirmed, confirmAccountAdult } from '../services/ageGate.js'
 import { DEFAULT_COURSE_ID, isCourseOffered } from '../learning/courses/registry.js'
 import {
   loadSession, saveSession, getOrCreateSession, startSession,
@@ -120,7 +121,7 @@ function providerUser(user) {
   if (!user) return null
   const email = String(user.email || '')
   const name = String(user.user_metadata?.display_name || email.split('@')[0] || '').trim()
-  return { id: user.id, name, email }
+  return { id: user.id, name, email, ageDeclared: user.user_metadata?.age_declaration === '18_plus' }
 }
 
 function currentAuthAction() {
@@ -715,6 +716,8 @@ export function AppProvider({ children }) {
       email,
       password,
       language: interfaceLanguageInfo.base,
+      // only ever sent after the neutral age question was answered "18 or older"
+      adultDeclaredAt: ageGatePassed() ? new Date().toISOString() : null,
     })
   }, [getAuthService, interfaceLanguageInfo.base])
 
@@ -908,6 +911,19 @@ export function AppProvider({ children }) {
     setView(previous => access.valid() ? 'practice' : previous)
     setMobileSheet(previous => access.valid() ? null : previous)
     return access.valid() ? request : { ok: false, reason: 'stale_account' }
+  }, [])
+
+  /*
+   * Accounts that existed before the age gate (or were made elsewhere) answer the
+   * same neutral question once after signing in. Until then nothing else opens.
+   */
+  const [ageTick, setAgeTick] = useState(0)
+  const ageConfirmationNeeded = useMemo(() => Boolean(authUser) && !accountAgeConfirmed(authUser, captureLearnerAccess()),
+    [authUser, ageTick])
+  const confirmAdultAge = useCallback(() => {
+    const ok = confirmAccountAdult(captureLearnerAccess())
+    if (ok) setAgeTick(n => n + 1)
+    return ok
   }, [])
 
   /* Switch course. Durable before visible; each course keeps its own progress. */
@@ -1909,6 +1925,7 @@ export function AppProvider({ children }) {
       interfaceLanguage, interfaceLanguageInfo,
       targetLanguage,
       activeCourse, chooseCourse,
+      ageConfirmationNeeded, confirmAdultAge,
       setNativeLanguage: updateNativeLanguage,
       updateNativeLanguage,
       t,

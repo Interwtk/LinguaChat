@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from ai.chat_evaluation import safe_assistance
 from ai.engine import generate_response
+from ai.safety import ALLOW, assess, log_verdict, safety_reply, screen_reply
 from ai.schemas import ChatMode, ChatResult, LanguageInfo, LanguageLevel, MissionContext
 from app.services.memory import conversation_memory
 
@@ -230,13 +231,43 @@ def _normalize_mission_context(value) -> dict | None:
     return None
 
 
+def _safety_result(verdict, native_language: LanguageInfo, target_language: LanguageInfo) -> ChatResult:
+    """A safe, localized reply. Nothing about the message is evaluated or kept."""
+    return ChatResult(
+        reply=safety_reply(verdict.category, native_language.base),
+        correction=None,
+        explanation=None,
+        suggestion=None,
+        mode=ChatMode.CHAT,
+        detected_language=native_language,
+        target_language=target_language,
+        analysis={"verdict": "not_evaluated", "findings": [], "safety": {"category": verdict.category, "action": verdict.action}},
+    )
+
+
+def _history_is_safe(item) -> bool:
+    if not isinstance(item, dict):
+        return False
+    text = item.get("text") or item.get("content") or ""
+    return not assess(text if isinstance(text, str) else "").blocked
+
+
 @router.post("/chat", response_model=ChatResult)
 def chat(req: ChatRequest, response: Response):
     session_id = req.session_id.strip()
     message = req.message.strip()
 
     try:
-        history = conversation_memory.context(session_id, req.history)
+        # Safety first: nothing below (engine, provider, memory) sees a blocked
+        # message, and earlier blocked turns a client replays are dropped too.
+        verdict = assess(message)
+        log_verdict(verdict, "input")
+        if verdict.blocked:
+            ui = _normalize_language(req.native_language or "en")
+            response.headers["X-LinguaChat-Provider"] = "safety"
+            return _safety_result(verdict, ui, _normalize_target_language(req.target_language))
+        client_history = [item for item in (req.history or []) if _history_is_safe(item)]
+        history = conversation_memory.context(session_id, client_history)
         preferences = _safe_preferences(req.preferences)
         tutor_preferences = _safe_tutor_preferences(req.tutor_preferences or {})
         active_companion = (req.active_companion or "lingua").strip().lower()
@@ -274,6 +305,14 @@ def chat(req: ChatRequest, response: Response):
         result = generated.response
         result.detected_language = result.detected_language or native_language
         result.target_language = result.target_language or target_language
+        # The same policy on what Lingua is about to say (a correction can echo).
+        out = screen_reply(result.reply, result.correction, result.explanation, result.suggestion)
+        if out.action != ALLOW:
+            log_verdict(out, "output")
+            response.headers["X-LinguaChat-Provider"] = "safety"
+            return _safety_result(out, native_language, target_language)
+        if verdict.care_note:
+            result.reply = f"{result.reply}\n\n{safety_reply('care_note', native_language.base)}"
         response.headers["X-LinguaChat-Provider"] = generated.provider
         conversation_memory.add(session_id, message, result, req.level)
         return result

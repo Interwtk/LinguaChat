@@ -1,170 +1,91 @@
-import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { ChattoMascot } from '../mascot/ChattoMascot'
-import {
-  PLANS,
-  REGIONS,
-  REGION_ORDER,
-  DEFAULT_REGION,
-  PREMIUM_PRICING,
-  formatPrice,
-} from '../../services/pricing'
+import { FREE_PLAN, PREMIUM_PLAN, LATER } from '../../services/pricing'
 
-function PriceLabel({ plan, region, t }) {
-  if (plan.price.type === 'free') {
-    return (
-      <div className="flex items-baseline gap-1.5">
-        <span style={{ fontWeight: 900, fontSize: '1.75rem', color: 'var(--ink)' }}>{t('planFree')}</span>
-      </div>
-    )
-  }
-  const amount = PREMIUM_PRICING[region]
-  const formatted = formatPrice(region, amount)
-  if (!formatted) {
-    return (
-      <span style={{ fontWeight: 800, fontSize: '1.1875rem', color: 'var(--accent)' }}>{t('planComingSoon')}</span>
-    )
-  }
+/*
+ * Plans, honestly: everything that exists is free during the beta, Premium is
+ * not for sale, and what is being built is listed as NOT available. No price,
+ * no region selector and no button that looks like it buys something.
+ */
+function Check() {
   return (
-    <div className="flex items-baseline gap-1">
-      <span style={{ fontWeight: 900, fontSize: '1.75rem', color: 'var(--ink)' }}>{formatted}</span>
-      <span style={{ fontSize: '0.8125rem', color: 'var(--muted)', fontWeight: 600 }}>{t('planPerMonth')}</span>
-    </div>
-  )
-}
-
-function PlanCard({ plan, region, t, onChoose }) {
-  const highlighted = plan.highlighted
-  const isPremium = plan.id === 'premium'
-  const premiumUndecided = isPremium && PREMIUM_PRICING[region] == null
-  return (
-    <div
-      className="card-lift rounded-3xl p-6 flex flex-col"
-      style={{
-        background: 'var(--surface)',
-        border: `1px solid ${highlighted ? 'var(--accent)' : 'var(--border)'}`,
-        boxShadow: highlighted ? '0 0 0 3px var(--accent-soft), var(--shadow-lg)' : 'none',
-      }}
-    >
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <h2 style={{ fontWeight: 800, fontSize: '1.125rem', color: 'var(--ink)' }}>{t(plan.nameKey)}</h2>
-        {highlighted && (
-          <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#fff', background: 'var(--accent)', padding: '3px 9px', borderRadius: 999 }}>
-            {t('planPopular')}
-          </span>
-        )}
-      </div>
-      <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 14 }}>{t(plan.taglineKey)}</p>
-
-      <div style={{ marginBottom: 18 }}>
-        <PriceLabel plan={plan} region={region} t={t} />
-      </div>
-
-      <ul className="flex flex-col gap-2.5 mb-6" style={{ flex: 1 }}>
-        {plan.featureKeys.map(key => (
-          <li key={key} className="flex items-start gap-2.5">
-            <span style={{
-              flexShrink: 0, marginTop: 2, width: 18, height: 18, borderRadius: '50%',
-              background: highlighted ? 'var(--accent-soft)' : 'var(--positive-soft)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-                <path d="M2 6l3 3 5-5" stroke={highlighted ? 'var(--accent)' : 'var(--positive)'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </span>
-            <span style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.45 }}>{t(key)}</span>
-          </li>
-        ))}
-      </ul>
-
-      <button
-        type="button"
-        onClick={onChoose}
-        disabled={premiumUndecided}
-        className="w-full py-3 rounded-2xl font-bold text-sm transition-all hover:-translate-y-px active:scale-[0.98]"
-        style={
-          highlighted
-            ? { background: 'var(--accent)', color: '#fff', border: 'none', opacity: premiumUndecided ? 0.6 : 1, cursor: premiumUndecided ? 'not-allowed' : 'pointer' }
-            : { background: 'var(--surface-soft)', color: 'var(--ink)', border: '1px solid var(--border)' }
-        }
-      >
-        {premiumUndecided ? t('planComingSoon') : t(plan.ctaKey)}
-      </button>
-    </div>
+    <span aria-hidden="true" style={{
+      flexShrink: 0, marginTop: 2, width: 18, height: 18, borderRadius: '50%', background: 'var(--positive-soft)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
+        <path d="M2 6l3 3 5-5" stroke="var(--positive)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </span>
   )
 }
 
 export function Pricing() {
   const { t, navigateTo } = useApp()
-  const [region, setRegion] = useState(DEFAULT_REGION)
 
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8" style={{ background: 'var(--bg)' }}>
       <div style={{ maxWidth: 860, margin: '0 auto' }}>
-        {/* Header */}
         <div className="flex flex-col items-center text-center mb-8 animate-fade-up">
           <ChattoMascot mood="supportive" size="small" variant="green" decorative />
           <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--accent)', marginTop: 12, marginBottom: 8 }}>
             {t('pricingEyebrow')}
           </p>
           <h1 style={{ fontWeight: 800, fontSize: 'clamp(1.5rem, 4vw, 2rem)', color: 'var(--ink)', lineHeight: 1.15, marginBottom: 10 }}>
-            {t('pricingTitle')}
+            {t('pricingHonestTitle')}
           </h1>
-          <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', lineHeight: 1.6, maxWidth: 460 }}>
-            {t('pricingSubtitle')}
+          <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', lineHeight: 1.6, maxWidth: 480 }}>
+            {t('pricingHonestSubtitle')}
           </p>
         </div>
 
-        {/* Region selector (structure ready for regional pricing) */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-6 animate-fade-up" style={{ animationDelay: '0.04s' }}>
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--muted)', marginRight: 4 }}>{t('pricingRegion')}:</span>
-          {REGION_ORDER.map(code => {
-            const selected = region === code
-            return (
-              <button
-                key={code}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => setRegion(code)}
-                className="rounded-full px-3 py-1.5 text-xs font-bold transition-all active:scale-[0.98]"
-                style={{
-                  background: selected ? 'var(--accent-soft)' : 'var(--surface-soft)',
-                  border: `1px solid ${selected ? 'var(--accent)' : 'var(--border)'}`,
-                  color: selected ? 'var(--accent)' : 'var(--muted)',
-                }}
-              >
-                {t(REGIONS[code].labelKey)}
-              </button>
-            )
-          })}
+        <div className="grid gap-4 animate-fade-up" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', animationDelay: '0.06s' }}>
+          <section className="rounded-3xl p-6 flex flex-col" aria-labelledby="plan-free"
+            style={{ background: 'var(--surface)', border: '1px solid var(--accent)', boxShadow: '0 0 0 3px var(--accent-soft)' }}>
+            <h2 id="plan-free" style={{ fontWeight: 800, fontSize: '1.125rem', color: 'var(--ink)', marginBottom: 4 }}>{t(FREE_PLAN.nameKey)}</h2>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 12 }}>{t(FREE_PLAN.taglineKey)}</p>
+            <p style={{ fontWeight: 900, fontSize: '1.75rem', color: 'var(--ink)', marginBottom: 16 }}>{t('planFree')}</p>
+            <ul className="flex flex-col gap-2.5 mb-6" style={{ flex: 1 }}>
+              {FREE_PLAN.features.map(feature => (
+                <li key={feature.key} className="flex items-start gap-2.5">
+                  <Check />
+                  <span style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.45 }}>{t(feature.key)}</span>
+                </li>
+              ))}
+            </ul>
+            <button type="button" onClick={() => navigateTo('today')} className="w-full py-3 rounded-2xl font-bold text-sm transition-all active:scale-[0.98]"
+              style={{ background: 'var(--accent)', color: '#fff', border: 'none', minHeight: 44 }}>
+              {t(FREE_PLAN.ctaKey)}
+            </button>
+          </section>
+
+          <section className="rounded-3xl p-6 flex flex-col" aria-labelledby="plan-premium"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <h2 id="plan-premium" style={{ fontWeight: 800, fontSize: '1.125rem', color: 'var(--ink)' }}>{t(PREMIUM_PLAN.nameKey)}</h2>
+              <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', background: 'var(--surface-soft)', border: '1px solid var(--border)', padding: '3px 9px', borderRadius: 999 }}>
+                {t('planNotAvailable')}
+              </span>
+            </div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--ink)', lineHeight: 1.5, marginBottom: 10, fontWeight: 700 }}>{t(PREMIUM_PLAN.taglineKey)}</p>
+            <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.55 }}>{t(PREMIUM_PLAN.bodyKey)}</p>
+          </section>
         </div>
 
-        {/* Plans */}
-        <div className="grid gap-4 animate-fade-up" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', animationDelay: '0.08s' }}>
-          {PLANS.map(plan => (
-            <PlanCard
-              key={plan.id}
-              plan={plan}
-              region={region}
-              t={t}
-              onChoose={() => plan.id === 'basic' ? navigateTo('today') : undefined}
-            />
-          ))}
-        </div>
+        <section aria-labelledby="plans-later" className="rounded-2xl p-4 mt-6 animate-fade-up" style={{ animationDelay: '0.1s', background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>
+          <h2 id="plans-later" style={{ fontSize: '0.875rem', fontWeight: 800, color: 'var(--ink)', marginBottom: 8 }}>{t('planLaterTitle')}</h2>
+          <ul className="flex flex-col gap-1.5">
+            {LATER.map(key => (
+              <li key={key} style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>· {t(key)}</li>
+            ))}
+          </ul>
+        </section>
 
-        {/* Honest note: pricing is not decided yet */}
-        <div className="rounded-2xl p-4 mt-6 flex items-start gap-3 animate-fade-up" style={{ animationDelay: '0.12s', background: 'var(--accent-soft)', border: '1px solid var(--accent-tint)' }}>
-          <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span>
-          <p style={{ fontSize: '0.8125rem', color: 'var(--ink)', lineHeight: 1.55 }}>{t('pricingPendingNote')}</p>
-        </div>
+        <p className="mt-4 animate-fade-up" style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.55, textAlign: 'center' }}>{t('pricingHonestNote')}</p>
 
-        <div className="flex justify-center mt-6 animate-fade-up" style={{ animationDelay: '0.16s' }}>
-          <button
-            type="button"
-            onClick={() => navigateTo('today')}
-            className="px-5 py-3 rounded-2xl font-bold text-sm transition-all hover:opacity-80 active:scale-[0.98]"
-            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)' }}
-          >
+        <div className="flex justify-center mt-6">
+          <button type="button" onClick={() => navigateTo('today')} className="px-5 py-3 rounded-2xl font-bold text-sm transition-all hover:opacity-80 active:scale-[0.98]"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)' }}>
             {t('backToToday')}
           </button>
         </div>
