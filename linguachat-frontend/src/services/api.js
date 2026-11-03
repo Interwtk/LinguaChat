@@ -1,7 +1,9 @@
-import { translate } from '../i18n/translations'
+import { translate } from '../i18n/translations.js'
 import { safeAnalysis } from './chatAnalysis.js'
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : '/api')
+// `|| {}`: the checks import this module under plain Node, where there is no env
+const ENV = import.meta.env || {}
+const API_URL = ENV.VITE_API_URL || (ENV.DEV ? 'http://127.0.0.1:8000' : '/api')
 const VALID_MODES = new Set(['chat', 'translation', 'correction'])
 
 /*
