@@ -106,6 +106,20 @@
 | Reversión | 🟡 Etiquetas de recuperación; no probada en un navegador |
 | QA en Preview o producción | ❌ Sin autorización |
 
+### 3.1 Cambios de la fase 3 (2026-11-03)
+
+| Criterio | Estado en la fase 3 |
+|---|---|
+| Usuario adulto | ✅ El bloqueo es por dispositivo y no se evita volviendo a responder ni iniciando sesión (`check-age-gate` 41). 🟡 Es una autodeclaración: `/chat` no exige autenticación |
+| Registro y recuperación | 🟡 **Simulado** 10/10 (`check-auth-journeys` 25). ❌ Real sin probar (`2026-11-auth-journeys.md`) |
+| Aprender español desde inglés | ✅ El evaluador pasó 79 respuestas nuevas sin correcciones falsas. ❌ Sin revisión nativa |
+| Aprender inglés | ✅ 🟡 Defecto de orden de opciones: corrección lista, **pendiente de aprobación** |
+| Eliminar la propia información | ✅ Local y memoria del servidor (`/chat/forget`). 🟡 Cuenta de acceso por solicitud |
+| Seguridad del tutor | 🟡 174 frases nuevas: ≈40 % de detección antes de ajustar, 100 % de regresión después. **No cumple ≥95 % en frases nuevas** |
+| Premium | ✅ Construido, apagado y no a la venta (servidor 11 y navegador 33, más QA real en el banco) |
+| Integridad | ✅ 30/30 reproducible desde git (`check:ledger-rollback`) y en CI |
+| Entrega de informes | ✅ `scripts/export_reports.py` → Descargas |
+
 ## 4. Plan hacia el 15 de noviembre
 
 | Fecha | Qué | Quién |
