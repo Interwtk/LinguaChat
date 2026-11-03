@@ -2802,7 +2802,6 @@ const base = {
   dataBody: "Your learning data is stored in this browser for your account. You can download a copy or delete it from this device at any time.",
   dataExport: "Download my data",
   dataDeleteLocal: "Delete my data from this device",
-  dataDeleteConfirm: "Delete all your LinguaChat learning data from this device? Your progress here can’t be recovered afterwards. Other accounts on this browser are not affected.",
   dataExportDone: "Your data file has been downloaded.",
   dataExportFailed: "We couldn’t read your data right now. Please try again.",
   dataDeleteDone: "Your data was deleted from this device.",
@@ -2814,6 +2813,9 @@ const base = {
   planFeatSessions: "Daily sessions with review, missions and practice in new situations",
   // Session summary without plural agreement
   courseSessionSummary: "Activities: {count} · about {minutes} min",
+  // phase 3: deleting also asks the server to forget recent chat turns
+  dataDeleteConfirm: "Delete all your LinguaChat learning data from this device, and what our server still remembers of your recent practice chats? Your progress here can’t be recovered afterwards. Other accounts on this browser are not affected.",
+  dataDeleteDoneServerLater: "Your data was deleted from this device. We couldn’t reach the server just now; it forgets your recent chat turns by itself within 24 hours.",
 }
 
 

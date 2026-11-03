@@ -143,6 +143,27 @@ export async function sendChatMessage({
 }
 
 /*
+ * Ask the server to erase what it remembers of these conversations now (the
+ * last turns of each practice chat; it also forgets them by itself 24 hours
+ * after the last message). True only when the server confirmed.
+ */
+export async function forgetServerConversations(sessionIds, { timeoutMs = 6000 } = {}) {
+  const ids = (sessionIds || []).filter(id => typeof id === 'string' && id.trim()).slice(0, 4)
+  if (!ids.length) return true
+  try {
+    const res = await fetch(`${API_URL}/chat/forget`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_ids: ids }),
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
+}
+
+/*
  * Remote evaluator for LinguaLoop free replies (Level 2 of the hybrid pipeline).
  *
  * Isolated from /chat: posts to /learning/evaluate and returns the parsed JSON,

@@ -1,5 +1,6 @@
 /*
- * The learner's own data: download it, or delete it from this device.
+ * The learner's own data: download it, or delete it from this device and from
+ * the server's short conversation memory.
  *
  * Everything LinguaChat keeps about a learner on a device lives under `lc2-`
  * keys in that account's namespace (auth/localLease.js). Both operations work
@@ -11,6 +12,11 @@
  *                       none is left. Another account's data on the same
  *                       browser is not listed by this access, so it cannot be
  *                       touched.
+ *
+ * The server keeps the last turns of each practice chat in its memory for at
+ * most 24 hours (linguachat-backend/app/services/memory.py). Deleting asks it to
+ * forget this account's conversations first (conversationIdsOf), so the ids are
+ * still readable; if the server cannot be reached, it forgets them on its own.
  *
  * What this does NOT do (stated in the UI and the privacy policy draft): delete
  * the sign-in account held by the authentication provider. That needs a server
@@ -35,6 +41,17 @@ export function exportLearnerData(access, { now = Date.now(), accountId = null }
     account: accountId ? { id: accountId } : null,
     note: 'Learning data stored by LinguaChat in this browser for this account. Your sign-in details are held by the authentication provider and are not included.',
     data,
+  }
+}
+
+/* This account's practice-chat ids on the server: English, then each course. */
+export function conversationIdsOf(access, courseIds = ['es']) {
+  try {
+    if (!access?.valid?.()) return []
+    const id = access.getItem('lc2-session-id')
+    return id ? [id, ...courseIds.map(course => `${id}:${course}`)] : []
+  } catch {
+    return []
   }
 }
 

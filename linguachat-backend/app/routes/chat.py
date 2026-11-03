@@ -79,12 +79,17 @@ def _safe_tutor_preferences(preferences: dict) -> dict:
     return safe
 
 
+# A request without its own session id shares this one. Nothing is remembered
+# under it: one client's turns must never reach another client's context.
+SHARED_SESSION = "local-session"
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     level: LanguageLevel = LanguageLevel.A1
     mode: str | None = None
     history: list[dict] = Field(default_factory=list)
-    session_id: str = Field(default="local-session", min_length=1, max_length=128)
+    session_id: str = Field(default=SHARED_SESSION, min_length=1, max_length=128)
     preferences: dict = Field(default_factory=dict)
     native_language: str | LanguageInfo | dict | None = None
     interface_language: str | LanguageInfo | dict | None = None
@@ -269,6 +274,8 @@ def _history_is_safe(item) -> bool:
 @router.post("/chat", response_model=ChatResult)
 def chat(req: ChatRequest, response: Response):
     session_id = req.session_id.strip()
+    # "" is never written, so a shared id reads and keeps nothing
+    memory_id = "" if session_id in ("", SHARED_SESSION) else session_id
     message = req.message.strip()
 
     try:
@@ -281,7 +288,7 @@ def chat(req: ChatRequest, response: Response):
             response.headers["X-LinguaChat-Provider"] = "safety"
             return _safety_result(verdict, ui, _normalize_target_language(req.target_language, ui.base))
         client_history = [item for item in (req.history or []) if _history_is_safe(item)]
-        history = conversation_memory.context(session_id, client_history)
+        history = conversation_memory.context(memory_id, client_history)
         preferences = _safe_preferences(req.preferences)
         tutor_preferences = _safe_tutor_preferences(req.tutor_preferences or {})
         active_companion = (req.active_companion or "lingua").strip().lower()
@@ -304,7 +311,8 @@ def chat(req: ChatRequest, response: Response):
             if verdict.care_note:
                 result.reply = f"{result.reply}\n\n{safety_reply('care_note', native_language.base)}"
             response.headers["X-LinguaChat-Provider"] = "local-es"
-            conversation_memory.add(session_id, message, result, req.level)
+            if memory_id:
+                conversation_memory.add(memory_id, message, result, req.level)
             return result
         mission_context = _normalize_mission_context(req.mission_context or req.missionContext)
         user_profile = {
@@ -315,10 +323,10 @@ def chat(req: ChatRequest, response: Response):
             "preferences": preferences,
             "tutor_preferences": tutor_preferences,
             "active_companion": active_companion,
-            "recent_errors": conversation_memory.recent_errors(session_id),
+            "recent_errors": conversation_memory.recent_errors(memory_id),
             # Which error rules fired recently, so the tutor can change strategy
             # when an explanation did not work (ai/local_engine.choose_strategy).
-            "recent_error_types": conversation_memory.recent_error_types(session_id),
+            "recent_error_types": conversation_memory.recent_error_types(memory_id),
             "mission_context": mission_context,
             "optional_context": _safe_optional_context(req.optional_context),
             "learning_memory": _safe_learning_memory(req.learning_memory),
@@ -343,7 +351,8 @@ def chat(req: ChatRequest, response: Response):
         if verdict.care_note:
             result.reply = f"{result.reply}\n\n{safety_reply('care_note', native_language.base)}"
         response.headers["X-LinguaChat-Provider"] = generated.provider
-        conversation_memory.add(session_id, message, result, req.level)
+        if memory_id:
+            conversation_memory.add(memory_id, message, result, req.level)
         return result
     except Exception:
         return JSONResponse(
@@ -360,3 +369,19 @@ def chat(req: ChatRequest, response: Response):
             },
             headers={"X-LinguaChat-Provider": "local"},
         )
+
+
+class ForgetRequest(BaseModel):
+    # the learner's own conversation ids (English and course-scoped), nothing else
+    session_ids: list[str] = Field(min_length=1, max_length=4)
+
+
+@router.post("/chat/forget")
+def forget(req: ForgetRequest):
+    """Erase what the server remembers of these conversations, now.
+
+    Holding a conversation id is what lets a client continue it, so the same id
+    is enough to end it. Answers only how many were held: no content, ever.
+    """
+    ids = [sid.strip() for sid in req.session_ids if isinstance(sid, str) and 0 < len(sid.strip()) <= 128]
+    return {"forgotten": conversation_memory.forget([sid for sid in ids if sid != SHARED_SESSION])}

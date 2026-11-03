@@ -5616,7 +5616,6 @@ export default {
   dataBody: "学習データはこのブラウザにあなたのアカウント用として保存されています。いつでもコピーをダウンロードしたり、この端末から削除したりできます。",
   dataExport: "データをダウンロード",
   dataDeleteLocal: "この端末からデータを削除",
-  dataDeleteConfirm: "この端末からLinguaChatの学習データをすべて削除しますか？ここでの進捗は元に戻せません。このブラウザの他のアカウントには影響しません。",
   dataExportDone: "データファイルをダウンロードしました。",
   dataExportFailed: "現在データを読み込めませんでした。もう一度お試しください。",
   dataDeleteDone: "この端末からデータを削除しました。",
@@ -5628,4 +5627,7 @@ export default {
   planFeatSessions: "復習・ミッション・新しい場面での練習を含む毎日のセッション",
   // Session summary without plural agreement
   courseSessionSummary: "アクティビティ：{count} · 約{minutes}分",
+  // phase 3: deleting also asks the server to forget recent chat turns
+  dataDeleteConfirm: "この端末にあるLinguaChatの学習データと、サーバーがまだ覚えている最近の練習チャットを削除しますか？削除した進み具合は元に戻せません。このブラウザのほかのアカウントには影響しません。",
+  dataDeleteDoneServerLater: "この端末からデータを削除しました。いまサーバーに接続できませんでした。最近のチャットは24時間以内にサーバーから自動的に消えます。",
 }

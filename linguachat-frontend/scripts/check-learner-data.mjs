@@ -12,7 +12,7 @@
 import assert from 'node:assert/strict'
 import { activateLocalAccount } from '../src/auth/browserDataIsolation.js'
 import { learnerStorage, captureLearnerAccess } from '../src/auth/localLease.js'
-import { exportLearnerData, deleteLearnerData, privacyContact, deletionRequestMailto, EXPORT_FORMAT } from '../src/services/learnerData.js'
+import { exportLearnerData, deleteLearnerData, conversationIdsOf, privacyContact, deletionRequestMailto, EXPORT_FORMAT } from '../src/services/learnerData.js'
 import { FREE_PLAN, PREMIUM_PLAN, LATER } from '../src/services/pricing.js'
 import { readFileSync } from 'node:fs'
 
@@ -53,6 +53,21 @@ const result = deleteLearnerData(a)
 ok(result.ok && result.removed === 3 && result.remaining === 0, 'every key of A is deleted and checked')
 ok([...shared.values.keys()].filter(k => k.includes(':A:')).length === 0, 'no physical key of A is left')
 ok(JSON.stringify([...shared.values.keys()].filter(k => k.includes(':B:'))) === JSON.stringify(bKeysBefore), "B's data is untouched")
+
+// the server's short chat memory is erased first, with this account's ids
+{
+  const m = new Map([['lc2-session-id', 'sess-1']])
+  const access = { valid: () => true, getItem: k => m.get(k) ?? null }
+  ok(JSON.stringify(conversationIdsOf(access)) === '["sess-1","sess-1:es"]', 'the English and course conversation ids are both forgotten')
+  ok(conversationIdsOf({ valid: () => false, getItem: () => 'x' }).length === 0, 'a stale access names no conversation')
+  ok(conversationIdsOf({ valid: () => true, getItem: () => null }).length === 0, 'no session yet: nothing to forget')
+  const controls = readFileSync(new URL('../src/components/identity/DataControls.jsx', import.meta.url), 'utf8')
+  const forgetAt = controls.indexOf('forgetServerConversations(conversationIdsOf(access))')
+  ok(forgetAt > 0 && forgetAt < controls.indexOf('deleteLearnerData(access)', forgetAt), 'the server is asked before the local ids are deleted')
+  ok(/dataDeleteDoneServerLater/.test(controls), 'an unreachable server is said, not hidden')
+  const route = readFileSync(new URL('../../linguachat-backend/app/routes/chat.py', import.meta.url), 'utf8')
+  ok(/@router\.post\("\/chat\/forget"\)/.test(route), 'the server route exists')
+}
 
 // contact is configuration, never invented
 ok(privacyContact({}) === null && privacyContact({ VITE_PRIVACY_CONTACT_EMAIL: 'not an email' }) === null, 'no contact unless configured')

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { captureLearnerAccess } from '../../auth/localLease.js'
-import { exportLearnerData, deleteLearnerData, privacyContact, deletionRequestMailto, downloadJson } from '../../services/learnerData.js'
+import { exportLearnerData, deleteLearnerData, conversationIdsOf, privacyContact, deletionRequestMailto, downloadJson } from '../../services/learnerData.js'
+import { forgetServerConversations } from '../../services/api.js'
 
 /*
  * "Your data": download it, delete it from this device, and ask for the
@@ -25,9 +26,11 @@ export function DataControls() {
   async function removeLocal() {
     const access = captureLearnerAccess()
     if (!access.valid() || !window.confirm(t('dataDeleteConfirm'))) return
+    // the server first, while this device still knows the conversation ids
+    const serverForgot = await forgetServerConversations(conversationIdsOf(access))
     const result = deleteLearnerData(access)
     if (!result.ok) { setStatus('dataDeleteFailed'); return }
-    setStatus('dataDeleteDone')
+    setStatus(serverForgot ? 'dataDeleteDone' : 'dataDeleteDoneServerLater')
     try { if (authUser) await logout() } finally { window.location.reload() }
   }
 

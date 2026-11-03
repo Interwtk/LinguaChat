@@ -5646,7 +5646,6 @@ export default {
   dataBody: "تُحفظ بيانات تعلّمك في هذا المتصفح لحسابك. يمكنك تنزيل نسخة منها أو حذفها من هذا الجهاز متى شئت.",
   dataExport: "تنزيل بياناتي",
   dataDeleteLocal: "حذف بياناتي من هذا الجهاز",
-  dataDeleteConfirm: "هل تريد حذف كل بيانات تعلّمك في LinguaChat من هذا الجهاز؟ لا يمكن استعادة تقدّمك هنا بعد ذلك. لا تتأثر الحسابات الأخرى في هذا المتصفح.",
   dataExportDone: "تم تنزيل ملف بياناتك.",
   dataExportFailed: "تعذّرت قراءة بياناتك الآن. حاول مرة أخرى.",
   dataDeleteDone: "تم حذف بياناتك من هذا الجهاز.",
@@ -5658,4 +5657,7 @@ export default {
   planFeatSessions: "جلسات يومية مع المراجعة والمهام والتدرّب في مواقف جديدة",
   // Session summary without plural agreement
   courseSessionSummary: "الأنشطة: {count} · حوالي {minutes} دقيقة",
+  // phase 3: deleting also asks the server to forget recent chat turns
+  dataDeleteConfirm: "هل تريد حذف كل بيانات تعلّمك في LinguaChat من هذا الجهاز، وما يتذكره خادمنا من محادثات التدريب الأخيرة؟ لا يمكن استعادة تقدّمك بعد ذلك. الحسابات الأخرى في هذا المتصفح لا تتأثر.",
+  dataDeleteDoneServerLater: "تم حذف بياناتك من هذا الجهاز. تعذّر الوصول إلى الخادم الآن؛ وسينسى رسائلك الأخيرة في المحادثة تلقائيًا خلال 24 ساعة.",
 }

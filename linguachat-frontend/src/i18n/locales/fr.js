@@ -5622,7 +5622,6 @@ export default {
   dataBody: "Tes données d’apprentissage sont stockées dans ce navigateur pour ton compte. Tu peux en télécharger une copie ou les supprimer de cet appareil quand tu veux.",
   dataExport: "Télécharger mes données",
   dataDeleteLocal: "Supprimer mes données de cet appareil",
-  dataDeleteConfirm: "Supprimer toutes tes données d’apprentissage LinguaChat de cet appareil ? Ta progression ici ne pourra pas être récupérée. Les autres comptes de ce navigateur ne sont pas touchés.",
   dataExportDone: "Le fichier de tes données a été téléchargé.",
   dataExportFailed: "Impossible de lire tes données pour le moment. Réessaie.",
   dataDeleteDone: "Tes données ont été supprimées de cet appareil.",
@@ -5634,4 +5633,7 @@ export default {
   planFeatSessions: "Séances quotidiennes avec révision, missions et entraînement en situations nouvelles",
   // Session summary without plural agreement
   courseSessionSummary: "Activités : {count} · environ {minutes} min",
+  // phase 3: deleting also asks the server to forget recent chat turns
+  dataDeleteConfirm: "Supprimer toutes tes données d’apprentissage LinguaChat de cet appareil, ainsi que ce que notre serveur garde encore de tes conversations d’entraînement récentes ? Ta progression ne pourra pas être récupérée. Les autres comptes de ce navigateur ne sont pas concernés.",
+  dataDeleteDoneServerLater: "Tes données ont été supprimées de cet appareil. Le serveur est injoignable pour l’instant ; il oublie de lui-même tes messages récents sous 24 heures.",
 }
