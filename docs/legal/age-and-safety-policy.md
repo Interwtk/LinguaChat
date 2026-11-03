@@ -1,6 +1,40 @@
 # Política de edad y seguridad del contenido (BORRADOR)
 
-> **BORRADOR PARA REVISIÓN JURÍDICA.** Fecha: 2026-11-02.
+> **BORRADOR PARA REVISIÓN JURÍDICA.** Fecha: 2026-11-02; actualización de la fase 3: 2026-11-03.
+>
+> **Fase 3 — evasión del control de edad (revisado):**
+> - **Corregido:**
+>   - el bloqueo «menos de 18» quedaba dentro del espacio de la cuenta: no se guardaba en un navegador donde otra cuenta había iniciado sesión antes, y no se veía en la pregunta posterior al inicio de sesión. Ahora pertenece al **dispositivo** (`lc-device-age-gate-block`), sin edad ni respuesta;
+>   - volver a responder en 24 h sigue bloqueado;
+>   - la pregunta tras iniciar sesión respeta y registra el bloqueo.
+>   - Pruebas: `check-age-gate` 41.
+> - **No evitable desde la app:** no hay modo invitado (sin sesión solo se ve la entrada); una cuenta creada fuera de la app pregunta la edad tras iniciar sesión; ninguna ruta abre la app antes.
+> - **Evitable, por diseño de una autodeclaración (no se oculta):**
+>   - mentir sobre la edad;
+>   - borrar los datos del sitio o usar otro navegador para repetir la pregunta;
+>   - modificar el frontend o el `localStorage`;
+>   - llamar directamente a `POST /chat`, que **no exige autenticación**. El tutor es por reglas y pasa por el filtro de seguridad, pero el servidor no sabe quién llama ni su edad. Cerrar esto requiere verificar el JWT de Supabase en el servidor, que el contrato de `CLAUDE.md` todavía no autoriza (ver `docs/project/claude-md-multilingual-proposal.md`).
+> - **Un selector de edad no es verificación de identidad ni de edad.**
+>
+> **Fase 3 — filtro del tutor medido con frases no vistas:**
+> - Se escribieron 4 conjuntos de frases ajenas a las reglas (174 casos, 8 idiomas).
+> - Sin ajustar, los conjuntos 3 y 4 detectaron **7 de 18 y 7 de 16** mensajes dañinos (≈40 %), y dejaron pasar 26 de 28 legítimos.
+> - Después se corrigieron las reglas:
+>   - autolesión en fr, de, it y pt;
+>   - método + morir;
+>   - intención contra una persona, con negación;
+>   - captación de menores (*grooming*);
+>   - juego de rol sexual;
+>   - acceso a cuentas ajenas;
+>   - modismos permitidos.
+> - Los 174 casos quedaron como regresión (`tests/test_safety_unseen_phrasing.py`).
+> - **El criterio §B.5 (≥95 %) se cumple en los conjuntos usados para escribir reglas; NO en frases nuevas.** Un filtro de palabras y combinaciones no puede ser la única barrera. La protección de esta beta descansa también en que:
+>   - el motor no genera texto libre;
+>   - cada respuesta se vuelve a filtrar;
+>   - la beta es solo para adultos.
+> - **Decisión del revisor:** si este nivel es aceptable para una beta limitada.
+>
+> **Memoria del servidor (fase 3):** como máximo 24 h tras el último mensaje, con un número acotado de conversaciones. Sin identificador propio de conversación, no se recuerda nada. «Borrar mis datos» pide al servidor que olvide (`POST /chat/forget`).
 > **Estado de implementación (actualizado 2026-11-02, fase 2): IMPLEMENTADO en la rama local `beta/2026-11-es-for-en`, sin publicar.**
 > - **Edad (§A.2, A.3):**
 >   - `services/ageGate.js` y `AuthFlow` (pregunta neutral de tres tramos antes del registro);
@@ -117,6 +151,7 @@ Se aplica **en el servidor** (`/chat` y cualquier proveedor futuro detrás de la
 
 ## Bloqueos para la beta pública
 - [x] Puerta de edad del §A.2 implementada y probada (pruebas y navegador a 390 px; 1440 px por revisar en la app completa con sesión).
-- [x] Filtro de entrada y salida en el servidor (§B.3) con las pruebas del §B.5 (164).
+- [x] Filtro de entrada y salida en el servidor (§B.3) con las pruebas del §B.5 (164 + 174 de frases no vistas).
+- [ ] Aceptación del revisor sobre la cobertura medida en frases nuevas (≈40 % antes de ajustar; §B.5 exige ≥95 %).
 - [ ] Recursos de ayuda en crisis verificados por país (CL, US al menos).
 - [ ] Revisión jurídica de esta política.
