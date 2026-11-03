@@ -1,5 +1,20 @@
 # Matriz de jurisdicciones — LinguaChat beta (BORRADOR)
 
+## Criterio de mercados habilitados (fase 3, 2026-11-03)
+
+Ningún mercado está habilitado comercialmente. **No se promete cumplimiento legal mundial.** Antes de cualquier beta comercial, la política de privacidad y los términos deben revisarlos profesionales.
+
+| Mercado | Beta gratuita limitada (adultos, por invitación) | Venta | Condición para habilitar la venta |
+|---|---|---|---|
+| **Chile** | Posible tras la QA real de autenticación y con el contacto de privacidad configurado | **Pendiente de revisión legal y tributaria** | Contador (inicio de actividades, régimen, documentos de venta), revisión legal (Ley 19.628 y Ley 21.719 desde el 1-12-2026, Ley 19.496 del consumidor), procesador aprobado por escrito |
+| **Estados Unidos** | Posible con las mismas condiciones | **Pendiente de revisión de privacidad, consumidores y comercialización** | Revisión de privacidad estatal (CCPA/CPRA y otras), renovaciones automáticas (ROSCA y leyes estatales), COPPA (solo adultos), impuestos indirectos vía MoR |
+| **UE/EEE** | No | **No habilitar** | Representante art. 27 RGPD, base jurídica y transferencias, AI Act art. 50 si hay IA generativa, IVA OSS vía MoR, derecho de desistimiento |
+| **Japón** | No | **No habilitar** | Aviso APPI y transferencias, Ley de Transacciones Comerciales Especificadas (表示), consumo vía MoR |
+| Resto | No | No | Caso por caso |
+
+El bloqueo técnico por país no existe todavía. Mientras tanto, la beta se distribuye **por invitación**, no por registro abierto.
+
+
 > **BORRADOR PARA REVISIÓN JURÍDICA. NO ES ASESORÍA LEGAL.**
 > - **Fecha de consulta:** 2026-11-01.
 > - **Fuentes:** primarias u oficiales cuando se pudieron obtener; `[SEC]` = fuente secundaria (despacho, prensa), usada solo para ubicar o corroborar.
