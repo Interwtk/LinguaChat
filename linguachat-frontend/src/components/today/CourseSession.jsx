@@ -153,7 +153,7 @@ export function CourseSessionRunner({ session: initial, onExit, persist = true }
       <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
         <div className="rounded-2xl px-4 py-3 mb-5 flex items-center justify-between gap-3" style={{ background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <div style={{ minWidth: 0 }}>
-            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--accent)' }}>{t('courseSessionTitle')}</p>
+            <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--accent)' }}>{t(session.extra ? 'extraPracticeTitle' : 'courseSessionTitle')}</p>
             <p style={{ fontSize: '0.9375rem', fontWeight: 800, color: 'var(--ink)' }}>
               {block?.type === 'session_completion' ? t('courseSessionDone') : `${t(BLOCK_LABEL[block?.type] || 'courseBlockLesson')} · ${t('courseSessionStep', { n: position, total: practiceBlocks })}`}
             </p>

@@ -90,6 +90,14 @@ def test_passes_cannot_claim_a_lifetime_longer_than_allowed():
     assert state == "valid" and payload["exp"] - payload["iat"] <= 40 * 86400
 
 
+def test_the_server_allocates_the_next_block_so_returning_never_replays(monkeypatch):
+    _on(monkeypatch)
+    token = issue_pass(KEY, "acct-n", lifetime_seconds=600)
+    ask = lambda: client.post("/practice/extra/authorize", json={"pass_token": token, "course": "es"}).json()
+    assert [ask()["block"] for _ in range(3)] == [0, 1, 2]
+    assert ask() == {"granted": False, "reason": "limit", "blocks_left": 0}
+
+
 def test_each_account_has_its_own_daily_limit(monkeypatch):
     _on(monkeypatch)
     a, b = issue_pass(KEY, "acct-a", lifetime_seconds=600), issue_pass(KEY, "acct-b", lifetime_seconds=600)

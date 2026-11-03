@@ -34,7 +34,8 @@ import { EpisodeShell } from '../src/components/episode/EpisodeShell.jsx'
 import { CourseSessionRunner } from '../src/components/today/CourseSession.jsx'
 import { CourseChat } from '../src/components/today/CourseChat.jsx'
 import { Pricing } from '../src/components/pricing/Pricing.jsx'
-import { buildCourseSessionPlan } from '../src/learning/courses/courseSession.js'
+import { buildCourseSessionPlan, saveCourseSession } from '../src/learning/courses/courseSession.js'
+import { loadLearnerModel, saveLearnerModel } from '../src/learning/engine/learnerModel.js'
 import { ES_SKELETON } from '../src/learning/courses/es/skeleton.js'
 import { setEpisodeState, markRecurringError } from '../src/learning/engine/learnerModel.js'
 import { createMissionIntroMessage, createMissionStepMessage, createMissionFeedbackMessage, evaluateMissionStep } from '../src/services/missions.js'
@@ -179,6 +180,17 @@ function Scene({ t }) {
   }
   // The Spanish course (learning/courses): its Home, and one episode played for real
   if (scene === 'course-today' || scene === 'course-episode') {
+    // ?extra=<test pass>: six lessons done, today's session completed, the pass stored (Premium QA)
+    if (scene === 'course-today' && params.get('extra') && !localStorage.getItem('lc2-premium-pass')) {
+      const seeded = loadLearnerModel()
+      for (const ep of ES_SKELETON.slice(0, 6)) setEpisodeState(seeded, ep.id, { status: 'completed', awarded: true })
+      for (const id of ['es:me_llamo', 'es:como_te_llamas', 'es:estoy_bien', 'es:soy_de', 'es:no_entiendo']) recordItemAttempt(seeded, id, { correct: true, independent: true, atMs: Date.now() - 3 * 86400000 })
+      markRecurringError(seeded, 'es:es_ser_estar_feeling'); markRecurringError(seeded, 'es:es_ser_estar_feeling')
+      saveLearnerModel(seeded)
+      const today = buildCourseSessionPlan(seeded, 'es', { durationMode: 'standard', learnerKey: 'Ana' })
+      saveCourseSession({ ...today, status: 'completed', currentBlockIndex: today.blocks.length - 1 })
+      if (params.get('extra') !== 'none') localStorage.setItem('lc2-premium-pass', params.get('extra'))
+    }
     const value = { ...common, activeCourse: 'es', localProgress: { learnedItems: [], topics: [], topicsPracticed: [], streak: 2 },
       awardEpisode: () => true, finishEpisode: () => { document.title = 'bench: episode finished'; return true }, tutorPreferences: {} }
     return (

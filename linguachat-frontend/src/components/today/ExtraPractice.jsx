@@ -16,7 +16,6 @@ import { premiumStatus, authorizeExtraBlock, PREMIUM_PASS_KEY } from '../../serv
 export function ExtraPractice({ model, todayPlan, onStart }) {
   const { t, activeCourse, profile } = useApp()
   const [status, setStatus] = useState(null)
-  const [next, setNext] = useState(0)
   const [note, setNote] = useState(null)
   const [busy, setBusy] = useState(false)
 
@@ -33,12 +32,12 @@ export function ExtraPractice({ model, todayPlan, onStart }) {
     setNote(null)
     const access = captureLearnerAccess()
     const passToken = access.valid() ? access.getItem(PREMIUM_PASS_KEY) : null
-    const answer = await authorizeExtraBlock({ passToken, course: activeCourse, block: next })
+    // the server picks the block: coming back to this screen never replays one
+    const answer = await authorizeExtraBlock({ passToken, course: activeCourse })
     setBusy(false)
     if (answer.granted !== true) { setNote(`extraPractice_${answer.reason || 'offline'}`); return }
-    const plan = buildExtraPracticePlan(model, activeCourse, { blockIndex: next, todayPlan, learnerKey: profile?.name || 'guest' })
+    const plan = buildExtraPracticePlan(model, activeCourse, { blockIndex: answer.block, todayPlan, learnerKey: profile?.name || 'guest' })
     if (!plan) { setNote('extraPractice_nothing'); return }
-    setNext(n => n + 1)
     onStart(plan)
   }
 

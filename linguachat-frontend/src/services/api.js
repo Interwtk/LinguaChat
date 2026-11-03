@@ -162,16 +162,16 @@ export async function premiumStatus({ timeoutMs = 4000 } = {}) {
   }
 }
 
-export async function authorizeExtraBlock({ passToken, course, block }, { timeoutMs = 6000 } = {}) {
+export async function authorizeExtraBlock({ passToken, course, block = null }, { timeoutMs = 6000 } = {}) {
   try {
     const res = await fetch(`${API_URL}/practice/extra/authorize`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ pass_token: typeof passToken === 'string' ? passToken : null, course, block }),
+      body: JSON.stringify({ pass_token: typeof passToken === 'string' ? passToken : null, course, ...(Number.isInteger(block) ? { block } : {}) }),
       signal: AbortSignal.timeout(timeoutMs),
     })
     const body = res.ok ? await res.json() : null
-    if (body?.granted === true) return { granted: true, blocksLeft: Number(body.blocks_left) || 0 }
+    if (body?.granted === true && Number.isInteger(body.block)) return { granted: true, block: body.block, blocksLeft: Number(body.blocks_left) || 0 }
     return { granted: false, reason: ['free', 'expired', 'limit', 'not_available'].includes(body?.reason) ? body.reason : 'offline' }
   } catch {
     return { granted: false, reason: 'offline' }

@@ -65,13 +65,21 @@ ok((await authorizeExtraBlock({ passToken: 'x', course: 'es', block: 0 })).grant
 respond({ granted: false, reason: 'expired' })
 ok((await authorizeExtraBlock({ passToken: 'x', course: 'es', block: 0 })).reason === 'expired', 'expiry is reported as such')
 respond({ granted: true, blocks_left: 2 })
-ok((await authorizeExtraBlock({ passToken: 'x', course: 'es', block: 0 })).granted === true, 'the server yes is a yes')
+ok((await authorizeExtraBlock({ passToken: 'x', course: 'es' })).granted === false, 'a grant without the block the server allocated is not a grant')
+respond({ granted: true, block: 1, blocks_left: 1 })
+const yes = await authorizeExtraBlock({ passToken: 'x', course: 'es' })
+ok(yes.granted === true && yes.block === 1, 'the server yes is a yes, for the block it allocated')
+let sent = null
+globalThis.fetch = async (_url, init) => { sent = JSON.parse(init.body); return { ok: true, json: async () => ({ granted: true, block: 0, blocks_left: 2 }) } }
+await authorizeExtraBlock({ passToken: 'x', course: 'es' })
+ok(!('block' in sent), 'the screen asks for "the next block": the server allocates it')
 
 // the browser keeps no flag of its own
 const src = (p) => readFileSync(new URL(`../src/${p}`, import.meta.url), 'utf8')
 const ui = src('components/today/ExtraPractice.jsx')
 ok(/if \(!status\?\.available\) return null/.test(ui), 'nothing is shown while Premium is not available (no teaser, no lock)')
 ok(/if \(answer\.granted !== true\)/.test(ui) && ui.indexOf('answer.granted !== true') < ui.indexOf('buildExtraPracticePlan(model'), 'a block is built only after the server granted it')
+ok(/blockIndex: answer\.block/.test(ui), 'the block built is the one the server allocated')
 ok(PREMIUM_PASS_KEY === 'lc2-premium-pass' && !/setItem\(/.test(ui), 'the screen stores nothing; the only kept value is the server pass')
 const all = ['services/api.js', 'components/today/ExtraPractice.jsx', 'components/today/CourseToday.jsx', 'learning/courses/courseSession.js', 'services/pricing.js'].map(src).join('\n')
 ok(!/isPremium|premium:\s*true|lc2-premium(?!-pass)/.test(all), 'no "isPremium" flag anywhere in the browser')

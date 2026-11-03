@@ -60,7 +60,9 @@ def status():
 class ExtraBlockRequest(BaseModel):
     pass_token: str | None = Field(default=None, max_length=1024)
     course: str = Field(min_length=2, max_length=8)
-    block: int = Field(ge=0, le=50)
+    # None: "the next block" — the server allocates it, so leaving the screen
+    # and coming back never replays a block or resets the count
+    block: int | None = Field(default=None, ge=0, le=50)
 
 
 @router.post("/practice/extra/authorize")
@@ -79,13 +81,14 @@ def authorize(req: ExtraBlockRequest):
     slot = (payload["sub"], day)
     with _lock:
         used = _used.setdefault(slot, set())
+        block = req.block if req.block is not None else next(i for i in range(len(used) + 1) if i not in used)
         # asking again for a block already granted today is not a new block
-        if req.block not in used:
+        if block not in used:
             if len(used) >= EXTRA_BLOCKS_PER_DAY:
                 return {"granted": False, "reason": "limit", "blocks_left": 0}
-            used.add(req.block)
+            used.add(block)
         if len(_used) > _MAX_TRACKED:
             for old in [s for s in _used if s[1] != day]:
                 _used.pop(old, None)
         left = EXTRA_BLOCKS_PER_DAY - len(used)
-    return {"granted": True, "blocks_left": left, "expires_at": payload["exp"]}
+    return {"granted": True, "block": block, "blocks_left": left, "expires_at": payload["exp"]}
