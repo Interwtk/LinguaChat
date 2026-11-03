@@ -267,7 +267,8 @@ function AgeGate() {
 /* An account from before the age question answers it once, after signing in. */
 function AccountAgeGate() {
   const { confirmAdultAge, logout, t } = useApp()
-  const [state, setState] = useState('ask')
+  // the same device answered "under 18" before signing in: no second chance here
+  const [state, setState] = useState(() => (isRecentlyBlocked() ? 'blocked' : 'ask'))
   return (
     <AuthShell>
       {state === 'blocked'
@@ -275,8 +276,8 @@ function AccountAgeGate() {
             <button type="button" onClick={() => logout()} className="px-6 py-3 rounded-2xl font-bold text-sm"
               style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)' }}>{t('ageSignOut')}</button>} />
         : <AgeQuestion titleKey="ageAccountTitle" bodyKey="ageAccountBody" onAnswer={(bracket) => {
-            if (bracket === '18_plus') { if (!confirmAdultAge()) setState('error') }
-            else setState('blocked')
+            if (answerAgeGate(bracket) !== 'continue') setState('blocked')
+            else if (!confirmAdultAge()) setState('error')
           }} />}
       {state === 'error' && <p role="alert" style={{ fontSize: '0.8125rem', color: 'var(--accent)', marginTop: 12 }}>{t('authGenericError')}</p>}
     </AuthShell>

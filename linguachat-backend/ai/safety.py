@@ -90,8 +90,15 @@ def _latin_variants(s: str) -> list[str]:
     """The text as written, with leetspeak undone, and with split letters joined."""
     leet = s.translate(_LEET)
     # "s e x", "s.e.x", "s-e-x" → "sex": join runs of single letters separated by one mark
-    joined = re.sub(r"\b(?:[a-zñ][\s.\-_*]){2,}[a-zñ]\b", lambda m: re.sub(r"[\s.\-_*]", "", m.group(0)), leet)
-    return list(dict.fromkeys([s, leet, joined]))
+    run = r"\b(?:[a-zñ][\s.\-_*]){2,}[a-zñ]\b"
+
+    def join(m: re.Match) -> str:
+        return re.sub(r"[\s.\-_*]", "", m.group(0))
+
+    joined = re.sub(run, join, leet)
+    # "a b o m b" also reads "a bomb": a one-letter word before the run stays apart
+    apart = re.sub(run, join, re.sub(r"(?<=[a-zñ]{2} )([aeiouy]) (?=[a-zñ][\s.\-_*][a-zñ])", r"\1  ", leet))
+    return list(dict.fromkeys([s, leet, joined, apart]))
 
 
 # ---------------------------------------------------------------- lexicons
@@ -114,11 +121,18 @@ def _compile(words: list[str]) -> re.Pattern:
 
 SEXUAL_EXPLICIT = _compile([
     "porn*", "nudes", "nude pics", "naked pics", "naked photos", "send nudes", "sexting", "blowjob", "handjob", "dick pic*", "horny",
-    "erotic story", "erotic stories", "nsfw", "sex with me", "sex chat", "dirty talk",
+    "erotic story", "erotic stories", "nsfw", "sex with me", "sex chat", "dirty talk", "sex scene", "sex scenes",
+    "sex story", "sex stories", "explicit sex", "sexual roleplay", "in a sexual way", "de forma sexual", "de manera sexual", "talk dirty", "hablame sucio",
     "pornografia", "fotos desnuda", "fotos desnudo", "fotos desnudas", "foto desnuda", "fotos intimas", "sexo explicito", "follar", "follame",
-    "mamada", "relato erotico", "chat sexual", "cachonda", "cachondo", "manda nudes",
+    "mamada", "relato erotico", "chat sexual", "cachonda", "cachondo", "manda nudes", "escena de sexo", "escena sexual",
+    "historia de sexo", "historia sexual", "rol sexual",
     "えろ動画", "えろい話", "ぽるの", "裸の写真", "あだると動画", "せっくすしよう", "おなにー",
     "اباحي", "اباحيه", "صور عاريه", "مضاجعه", "محادثه جنسيه",
+])
+# Asking the tutor to play a partner. Only matters together with sexual words.
+ROLEPLAY = _compile([
+    "act as my", "pretend to be my", "pretend you are my", "be my girlfriend", "be my boyfriend", "roleplay", "role play",
+    "finge ser mi", "actua como mi", "se mi novia", "se mi novio", "what you'd do to me", "what you would do to me",
 ])
 # Words that are sexual but not explicit by themselves ("sexual health"): they
 # only matter combined with a minor.
@@ -133,7 +147,21 @@ MINOR = _compile([
     "طفل", "طفله", "اطفال", "قاصر", "قاصره",
 ])
 TEEN = _compile(["teen", "teens", "teenager", "adolescente", "adolescentes", "少女", "少年", "مراهق", "مراهقه"])
-YOUNG_AGE = re.compile(r"\b(?:[1-9]|1[0-7])\s*(?:years?\s*old|yo|y/o|años|año|anos|ano)\b|(?:[1-9]|1[0-7])\s*歳|(?:[1-9]|1[0-7])\s*(?:سنه|سنوات|عاما)")
+YOUNG_AGE = re.compile(
+    r"\b(?:[1-9]|1[0-7])\s*(?:years?\s*old|yo|y/o|años|año|anos|ano)\b|(?:[1-9]|1[0-7])\s*歳|(?:[1-9]|1[0-7])\s*(?:سنه|سنوات|عاما)"
+    # "I'm 12", "tengo 13": only ever read together with a sexual or grooming signal
+    r"|\b(?:i am|i'm|im|i m|tengo|j'ai|ich bin|tenho|ho)\s+(?:[1-9]|1[0-7])\b"
+    r"(?!\s*(?:am|pm|h|%|:|minutes?|min|hours?|euros?|dollars?|pesos?)\b)")
+# An adult asking a child for secrecy or pictures. With a minor, this is a
+# protection case: the reply is the protective one, never content.
+GROOMING = _compile([
+    "keep it a secret", "keep our secret", "keep this secret", "our little secret", "don't tell your parents", "dont tell your parents",
+    "send him photos", "send him pictures", "send him pics", "send her photos", "send me photos", "send me pictures",
+    "photos of yourself", "meet him alone", "meet me alone", "send pictures", "send photos", "not to tell", "don't tell mom",
+    "dont tell mom", "no le digas a nadie", "no se lo digas", "mandar fotos", "enviar fotos",
+    "nuestro secreto", "no le digas a tus padres", "no les digas a tus papas", "mandarle fotos", "enviarle fotos", "mandame fotos",
+    "fotos tuyas", "vernos a solas",
+])
 
 # Protection, prevention and education framing. Generous on purpose: what it
 # unlocks is a safe, supportive reply with no sexual content in it.
@@ -147,18 +175,56 @@ SELF_HARM = _compile([
     "kill myself", "killing myself", "suicide", "suicidal", "end my life", "want to die", "wanna die", "self harm", "self-harm",
     "cut myself", "hurt myself", "no reason to live",
     "suicidarme", "suicidio", "suicida", "quitarme la vida", "quiero morir", "quiero morirme", "hacerme daño", "cortarme",
-    "autolesion", "no quiero vivir",
+    "autolesion", "no quiero vivir", "matarme", "mejor me mato", "me voy a matar", "me quiero matar",
+    "cutting my arms", "cutting my wrists", "cutting my legs", "cut my wrists", "cut my arms", "me corto los brazos",
+    "better off without me", "better without me", "mejor sin mi", "disappear forever", "desaparecer para siempre",
+    "disparaitre pour toujours",
+    "take all my pills", "can't go on anymore", "cant go on anymore", "tomarme todas las pastillas",
+    "me faire du mal", "mich selbst verletzen", "mich verletzen", "farmi del male", "me machucar", "end it all", "ending it all", "acabar con todo", "quitarme de en medio",
+    "en finir", "farla finita",
+    "me suicider", "me tuer", "envie de mourir", "je veux mourir",
+    "mich umbringen", "selbstmord", "will sterben", "nicht mehr leben",
+    "uccidermi", "suicidarmi", "voglio morire", "togliermi la vita",
+    "me matar", "me suicidar", "quero morrer", "tirar minha vida",
     "死にたい", "自殺", "消えたい", "りすとかっと", "自傷",
     "انتحار", "انتحر", "اريد ان اموت", "اقتل نفسي", "ايذاء نفسي",
 ])
+# Asking for a method together with dying: "how many pills would kill me".
+SELF_METHOD = _compile(["pills", "pastillas", "overdose", "sobredosis", "lethal dose", "dosis letal", "jump off", "tirarme de"])
+SELF_END = _compile(["kill me", "to die", "die", "morir", "morirme", "matarme", "end it", "acabar con todo"])
 # Direct threats: someone says they will hurt someone.
 THREAT = _compile([
     "i will kill you", "im going to kill you", "i'm going to kill you", "gonna kill you", "kill you", "i will hurt you",
     "i will rape", "going to shoot up", "shoot up the school", "bomb threat", "i will kill them", "kill them all",
+    "find where you live", "know where you live", "se donde vives", "and hurt you",
+    "burn down his house", "burn down her house", "burn down the house of", "quemar la casa de", "prenderle fuego",
     "te voy a matar", "voy a matarte", "te mato", "matarte", "te voy a violar", "los voy a matar", "voy a matar a",
     "殺してやる", "ぶっ殺す", "お前を殺す", "あなたを殺す", "爆破予告",
     "ساقتلك", "سوف اقتلك", "ساقتلهم",
 ])
+# Intent toward a person: "going to stab my teacher", "para envenenar a mi vecino".
+# A negated sentence ("I don't want to hurt my friend") is not a threat.
+HARM_PERSON = re.compile(
+    r"\b(?:going|gonna|want|wanna|plan(?:ning)?|will|'ll|to)\s+(?:to\s+)?(?:kill|stab|shoot|hurt|poison|murder|beat up)\s+"
+    r"(?:people|someone|somebody|everyone|everybody|a person|my|his|her|him|them)\b(?!'s)"
+    r"|\b(?:voy a|vamos a|quiero|para|como)\s+(?:matar|apuñalar|apunalar|disparar|envenenar|golpear|herir|lastimar"
+    r"|hacer daño|hacerle daño|hacerles daño)\s+"
+    r"(?:a\s+(?:mi|mis|su|sus|la|el|los|las|alguien|gente|un|una|todos)|al|mi|mis|su|sus|alguien|gente|todos)\b"
+    r"|\b(?:poisoning|stabbing|shooting|murdering)\s+(?:my|his|her|someone|somebody|people|everyone)\b"
+    r"|\bmatar\s+(?:a\s+)?gente\b|\bshoot\s+(?:people|everyone|everybody)\b")
+# Breaking into another person's account ("hack into my boss's email").
+HACK_OTHER = re.compile(r"\bhack(?:ear)?\s+(?:into\s+)?(?:my\s+\w+'s|someone|somebody|his|her|their|la cuenta|el correo)\b")
+NEGATION = re.compile(r"\b(?:don't|dont|do not|never|not|no|nunca|jamas)\b[^.!?]{0,20}$")
+
+
+def _harm_to_person(variants: list[str]) -> bool:
+    for v in variants:
+        for m in HARM_PERSON.finditer(v):
+            if not NEGATION.search(v[max(0, m.start() - 30):m.start()]):
+                return True
+    return False
+
+
 # Violent topics are only refused when someone asks for the graphic detail.
 VIOLENCE_TOPIC = _compile([
     "rape", "massacre", "gore", "behead*", "dismember*", "torture*", "mutilat*",
@@ -166,14 +232,14 @@ VIOLENCE_TOPIC = _compile([
     "れいぷ", "虐殺", "拷問", "斬首", "اغتصاب", "مذبحه", "تعذيب", "ذبح",
 ])
 GRAPHIC_REQUEST = _compile([
-    "describe in detail", "in graphic detail", "graphic details", "describe the blood", "as gory as", "step by step how they",
+    "describe in detail", "in graphic detail", "graphic details", "very graphic", "with lots of detail", "muy explicito", "muy grafico", "describe the blood", "as gory as", "step by step how they",
     "describe con detalle", "con todo detalle", "detalles graficos", "describe la sangre",
     "詳しく描写", "生々しく", "بالتفصيل", "وصف دموي",
 ])
 DANGER_INTENT = _compile([
-    "how to make", "how do i make", "how to build", "how to cook", "how to synthesize", "how to get", "how to buy", "recipe for",
-    "instructions for", "step by step", "how to hack", "how do i hack", "how to poison",
-    "como hacer", "como fabricar", "como preparar", "como construir", "como conseguir", "como comprar", "receta para",
+    "how to make", "how do i make", "where can i buy", "where can i get", "how can i make", "way to make", "way to build", "how can i build", "ingredients to make", "how to build", "how to cook", "how to synthesize", "how to get", "how to buy", "recipe for",
+    "instructions for", "step by step", "how to hack", "how do i hack", "how to poison", "mix to make", "can i mix",
+    "como hacer", "como fabricar", "como consigo", "donde consigo", "donde compro", "forma de hacer", "manera de hacer", "como puedo hacer", "como puedo fabricar", "ingredientes para hacer", "como preparar", "como construir", "como conseguir", "como comprar", "receta para",
     "instrucciones para", "paso a paso", "como hackear", "como envenenar",
     "作り方", "作る方法", "手に入れる方法", "買い方", "ハッキングの方法",
     "كيف اصنع", "طريقه صنع", "كيف احضر", "كيف اشتري", "كيف اخترق",
@@ -181,7 +247,11 @@ DANGER_INTENT = _compile([
 DANGER_OBJECT = _compile([
     "bomb", "bombs", "explosive*", "pipe bomb", "napalm", "meth", "methamphetamine", "fentanyl", "poison", "nerve agent",
     "untraceable gun", "ghost gun", "ransomware", "malware", "keylogger", "someone's account", "someones account",
+    "silencer", "suppressor", "silenciador", "arma sin papeles", "gun without papers", "gun without a license", "gun at home", "can't be traced", "cant be traced", "untraceable", "poison gas", "toxic gas", "chlorine gas", "cocaine", "heroin", "mdma", "molotov", "thermite", "ricin", "sarin", "anthrax",
+    "friend's instagram", "friends instagram", "friend's account", "friends account", "her instagram", "his instagram",
+    "her account", "his account", "ex's account", "instagram de mi", "cuenta de mi", "whatsapp de mi",
     "bomba", "bombas", "explosivo*", "metanfetamina", "fentanilo", "veneno", "arma casera", "cuenta de otra persona", "cuenta ajena",
+    "gas toxico", "gas venenoso", "cocaina", "heroina", "pasta base",
     "爆弾", "爆発物", "覚醒剤", "毒", "毒薬", "マルウェア",
     "قنبله", "متفجرات", "سم", "مخدرات", "حساب شخص",
 ])
@@ -199,8 +269,8 @@ HATE_TARGET = _compile([
     "ゆだや人", "いすらむ教徒", "黒人", "同性愛者", "移民", "女", "اليهود", "المسلمين", "السود", "المثليين", "المهاجرين", "النساء",
 ])
 HATE_VERB = _compile([
-    "i hate all", "hate all", "are all criminals", "are all terrorists", "are animals", "are vermin",
-    "odio a todos los", "odio a todas las", "odio a los", "odio a las", "son todos criminales", "son unos animales", "son terroristas",
+    "i hate all", "hate all", "are inferior", "son inferiores", "are all criminals", "are all terrorists", "are criminals", "are terrorists", "are animals", "are vermin",
+    "odio a todos los", "odio a todas las", "odio a los", "odio a las", "son todos criminales", "son criminales", "son delincuentes", "son unos animales", "son terroristas",
     "が大嫌い", "は全員犯罪者", "اكره كل", "كلهم مجرمون",
 ])
 INSULT_AT_TUTOR = _compile([
@@ -210,7 +280,8 @@ INSULT_AT_TUTOR = _compile([
 ])
 INJECTION = _compile([
     "ignore all previous", "ignore previous instructions", "ignore your instructions", "ignore your rules", "forget your instructions",
-    "system prompt", "developer mode", "jailbreak", "you are now", "act as an unrestricted", "no restrictions", "dan mode",
+    "system prompt", "developer mode", "disregard the rules", "disregard your", "disregard previous", "disregard all",
+    "ignore the rules", "evil ai", "have no rules", "you have no rules", "sin reglas", "no tienes reglas", "ignora las reglas", "jailbreak", "you are now", "act as an unrestricted", "no restrictions", "dan mode",
     "ignora tus instrucciones", "ignora las instrucciones", "olvida tus instrucciones", "olvida tus reglas", "modo desarrollador",
     "sin restricciones", "ahora eres",
     "以前の指示を無視", "指示を無視", "システムプロンプト", "制限なし", "開発者もーど",
@@ -224,7 +295,8 @@ INFO_REQUEST = _compile([
     "の住所を教えて", "の電話番号を教えて", "عنوان منزل", "ابحث عن عنوان",
 ])
 LANGUAGE_QUESTION = _compile([
-    "how do you say", "how do i say", "how to say", "what does", "what is the word", "translate", "meaning of", "in spanish", "in english",
+    "how do you say", "how do i say", "how to say", "is it rude to say", "is it ok to say", "is it okay to say", "a bad word",
+    "es grosero decir", "una mala palabra", "what does", "what is the word", "translate", "meaning of", "in spanish", "in english",
     "como se dice", "que significa", "que quiere decir", "como se traduce", "traduce", "en ingles", "en español",
     "って何", "どういう意味", "英語で", "スペイン語で", "ما معنى", "كيف اقول", "كيف نقول", "ترجم",
 ])
@@ -270,6 +342,7 @@ def assess(text: str) -> Verdict:
         return Verdict()
     if not base.strip():
         return Verdict()
+    base = re.sub(r"\bdie(?=\s+(?:my|your|her|his|their|the)\s+hair)", "dye", base)
     v = _latin_variants(base)
     language_question = _any(LANGUAGE_QUESTION, v)
 
@@ -281,9 +354,11 @@ def assess(text: str) -> Verdict:
         if _any(PROTECT, v) and not _any(SEXUAL_EXPLICIT, v):
             return Verdict(SUPPORT, "child_protection", signals=("sexual", "minor", "protect"))
         return Verdict(REFUSE, "minor_sexual", signals=("sexual", "minor"))
+    if minor and _any(GROOMING, v):
+        return Verdict(SUPPORT, "child_protection", signals=("grooming", "minor"))
 
     # 2. Wellbeing comes before everything else that is not about a child.
-    if _any(SELF_HARM, v):
+    if _any(SELF_HARM, v) or (_any(SELF_METHOD, v) and _any(SELF_END, v)):
         if language_question:
             return Verdict(ALLOW, None, care_note=True, signals=("self_harm", "language_question"))
         return Verdict(SUPPORT, "self_harm", signals=("self_harm",))
@@ -300,11 +375,11 @@ def assess(text: str) -> Verdict:
     if language_question:
         return Verdict()
 
-    if _any(SEXUAL_EXPLICIT, v):
+    if _any(SEXUAL_EXPLICIT, v) or (_any(SEXUAL_MILD, v) and (_any(GRAPHIC_REQUEST, v) or _any(ROLEPLAY, v))):
         return Verdict(REFUSE, "sexual_explicit", signals=("sexual_explicit",))
-    if _any(THREAT, v) or (_any(VIOLENCE_TOPIC, v) and _any(GRAPHIC_REQUEST, v)):
+    if _any(THREAT, v) or _harm_to_person(v) or (_any(VIOLENCE_TOPIC, v) and _any(GRAPHIC_REQUEST, v)):
         return Verdict(REFUSE, "violence_threat", signals=("threat",))
-    if _any(DANGER_INTENT, v) and _any(DANGER_OBJECT, v):
+    if (_any(DANGER_INTENT, v) and _any(DANGER_OBJECT, v)) or _any(HACK_OTHER, v):
         return Verdict(REFUSE, "dangerous_instructions", signals=("intent", "object"))
     if _any(HATE, v) or (_any(HATE_VERB, v) and _any(HATE_TARGET, v)):
         return Verdict(REFUSE, "hate", signals=("hate",))
