@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { StreakFlame } from '../ui/StreakFlame'
@@ -8,7 +8,9 @@ import { planDay, arcProgress, isEpisodeUnlocked } from '../../learning/engine/p
 import { courseSkeleton, courseHomeCopy } from '../../learning/courses/registry.js'
 import { getOrCreateCourseSession } from '../../learning/courses/courseSession.js'
 import { DURATION_ORDER } from '../../learning/engine/session.js'
-import { CourseSessionRunner } from './CourseSession'
+import { ScreenFallback } from '../ui/LazyBoundary'
+// the runner brings the lesson player and its content: loaded only when a session starts
+const CourseSessionRunner = lazy(() => import('./CourseSession').then(m => ({ default: m.CourseSessionRunner })))
 
 /*
  * Home for a course other than English (today: Spanish Pre-A1).
@@ -42,7 +44,7 @@ export function CourseToday() {
   const activities = session.blocks.filter(b => b.type !== 'session_completion').length
   const sessionStarted = session.status === 'active'
 
-  if (running) return <CourseSessionRunner session={running} onExit={() => setRunning(null)} />
+  if (running) return <Suspense fallback={<ScreenFallback label={t('screenLoading')} />}><CourseSessionRunner session={running} onExit={() => setRunning(null)} /></Suspense>
 
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-7 py-5 md:py-7" style={{ background: 'var(--bg)' }}>
