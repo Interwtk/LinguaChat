@@ -5671,4 +5671,6 @@ export default {
   extraPractice_not_available: "Premium غير متاح بعد.",
   extraPractice_nothing: "أنهِ درسًا أولًا: يُبنى التدريب الإضافي مما تعلّمته بالفعل.",
   planLaterExtraPractice: "Premium (قيد الاختبار، غير معروض للبيع): تدريب تكيّفي إضافي بعد جلستك اليومية، حتى 3 مجموعات قصيرة يوميًا",
+  // phase 4: permanent note in both chats
+  chatSafetyNote: "Lingua أداة للتدريب على جمل بسيطة وليست شخصًا، ولا تستطيع المساعدة في حالات الطوارئ. إذا كنت بحاجة إلى دعم الآن: الولايات المتحدة 988 · تشيلي ‎*4141.",
 }

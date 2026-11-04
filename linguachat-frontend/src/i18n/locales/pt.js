@@ -5647,4 +5647,6 @@ export default {
   extraPractice_not_available: "O Premium ainda não está disponível.",
   extraPractice_nothing: "Termine uma lição primeiro: a prática extra é montada com o que você já aprendeu.",
   planLaterExtraPractice: "Premium (em testes, não está à venda): prática adaptativa extra depois da sessão diária, até 3 blocos curtos por dia",
+  // phase 4: permanent note in both chats
+  chatSafetyNote: "A Lingua é uma ferramenta de prática com frases simples, não uma pessoa, e não pode ajudar numa emergência. Se precisar de apoio agora: EUA 988 · Chile *4141.",
 }

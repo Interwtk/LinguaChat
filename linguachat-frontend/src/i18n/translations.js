@@ -2827,6 +2827,8 @@ const base = {
   extraPractice_not_available: "Premium isn’t available yet.",
   extraPractice_nothing: "Finish a lesson first: extra practice is built from what you have already learned.",
   planLaterExtraPractice: "Premium (in testing, not for sale): extra adaptive practice after your daily session, up to 3 short blocks a day",
+  // phase 4: permanent note in both chats
+  chatSafetyNote: "Lingua is a practice tool for simple sentences, not a person, and can’t help in an emergency. If you need support now: US 988 · Chile *4141.",
 }
 
 

@@ -69,6 +69,11 @@ ok(JSON.stringify([...shared.values.keys()].filter(k => k.includes(':B:'))) === 
   ok(/@router\.post\("\/chat\/forget"\)/.test(route), 'the server route exists')
 }
 
+// both chats always say what Lingua is and where help is
+for (const file of ['components/layout/ConversationRoom.jsx', 'components/today/CourseChat.jsx']) {
+  ok(/t\('chatSafetyNote'\)/.test(readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8')), `${file} shows the permanent safety note`)
+}
+
 // contact is configuration, never invented
 ok(privacyContact({}) === null && privacyContact({ VITE_PRIVACY_CONTACT_EMAIL: 'not an email' }) === null, 'no contact unless configured')
 ok(privacyContact({ VITE_PRIVACY_CONTACT_EMAIL: ' privacy@example.test ' }) === 'privacy@example.test', 'a configured contact is used')

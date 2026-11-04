@@ -5641,4 +5641,6 @@ export default {
   extraPractice_not_available: "Premiumはまだ利用できません。",
   extraPractice_nothing: "まずレッスンを1つ終えてください。追加の練習は、すでに学んだ内容から作られます。",
   planLaterExtraPractice: "Premium（テスト中・未販売）：毎日のセッションのあとに、あなたに合わせた追加の練習を1日3回まで",
+  // phase 4: permanent note in both chats
+  chatSafetyNote: "Linguaは簡単な文を練習するためのツールで、人間ではなく、緊急時の助けにはなれません。いま支えが必要なら：米国 988・チリ *4141。",
 }

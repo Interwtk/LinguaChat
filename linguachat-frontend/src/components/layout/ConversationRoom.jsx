@@ -549,6 +549,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
           <p style={{ fontSize: 11.5, color: 'var(--muted)', textAlign: 'center', marginTop: 7 }}>
             {activeMissionDetails ? t('missionInputHint') : t('inputHint')}
           </p>
+          <p style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginTop: 3 }}>{t('chatSafetyNote')}</p>
         </div>
       </div>
 

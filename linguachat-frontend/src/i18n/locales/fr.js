@@ -5647,4 +5647,6 @@ export default {
   extraPractice_not_available: "Premium n’est pas encore disponible.",
   extraPractice_nothing: "Termine d’abord une leçon : l’entraînement en plus se construit avec ce que tu as déjà appris.",
   planLaterExtraPractice: "Premium (en test, pas en vente) : entraînement adaptatif en plus après ta séance du jour, jusqu’à 3 courts blocs par jour",
+  // phase 4: permanent note in both chats
+  chatSafetyNote: "Lingua est un outil d’entraînement avec des phrases simples, pas une personne, et ne peut pas aider en cas d’urgence. Si tu as besoin de soutien maintenant : États-Unis 988 · Chili *4141.",
 }

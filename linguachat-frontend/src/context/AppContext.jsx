@@ -1802,7 +1802,8 @@ export function AppProvider({ children }) {
         id: `l${Date.now()}`,
         role: 'lingua',
         text: response.reply,
-        audioEligible: profile.style !== 'translation',
+        // a safety or guided reply is in the learner's language: never read aloud as English
+        audioEligible: profile.style !== 'translation' && !['safety', 'guided'].includes(response.provider),
         feedback: {
           correction:  response.correction  || null,
           why:         response.explanation || null,

@@ -81,6 +81,7 @@ export function CourseChat({ onExit }) {
           <div style={{ minWidth: 0 }}>
             <p style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--accent)' }}>{t('courseChatTitle')}</p>
             <p style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.45 }}>{t('courseChatNoticeLocal')}</p>
+            <p style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.45, marginTop: 3 }}>{t('chatSafetyNote')}</p>
           </div>
           <button type="button" onClick={onExit} className="tool-chip flex-shrink-0">{t('backToToday')}</button>
         </div>

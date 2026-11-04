@@ -32,3 +32,6 @@ Thumbs.db
 # local QA cycles and auth QA output
 .qa/
 auth-qa-result.json
+
+# per-cycle safety measurements (the committed baselines stay)
+linguachat-backend/tests/safety_eval/results/*-qa-*.json
