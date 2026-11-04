@@ -56,3 +56,15 @@ def no_real_openai_client(monkeypatch):
         )
 
     monkeypatch.setattr(openai, "OpenAI", refuse)
+
+
+@pytest.fixture(autouse=True)
+def _readable_session_ids(request, monkeypatch):
+    # The route remembers only unguessable ids (app/routes/chat.py). Tests about
+    # what memory does use readable ids; test_server_memory_privacy proves the floor.
+    if "real_id_floor" not in request.keywords:
+        monkeypatch.setattr("app.routes.chat.MIN_MEMORY_ID_LENGTH", 1)
+
+
+def pytest_configure(config):
+    config.addinivalue_line("markers", "real_id_floor: keep the route's real minimum conversation-id length")

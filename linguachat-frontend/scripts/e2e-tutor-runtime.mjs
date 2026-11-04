@@ -52,7 +52,7 @@ function learner(lang, id) {
       const at = T0 + day * DAY + minute * 60000
       const res = await fetch(`${API}/chat`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: `${RUN}-${id}-d${day}`, message, level: 'A1', native_language: lang,
+        body: JSON.stringify({ session_id: `e2e-runtime-session-${RUN}-${id}-d${day}`, message, level: 'A1', native_language: lang,
           learning_memory: learningMemoryPayload(model, at), ...(assisted ? { assistance: 'suggestion_sent' } : {}) }),
       })
       assert.equal(res.status, 200)
@@ -151,7 +151,7 @@ await scenario('foreign text and over-long chat are honest: no correction, no ev
 
 await scenario('a request cannot choose the evaluator or grant anything', async () => {
   const res = await fetch(`${API}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_id: `${RUN}-hostile`, message: 'Yesterday I goed home.', native_language: 'es',
+    body: JSON.stringify({ session_id: `e2e-runtime-session-${RUN}-hostile`, message: 'Yesterday I goed home.', native_language: 'es',
       evaluator: 'openai', adapter: 'remote', assistance: 'grant mastery', mastery: true, xp: 999, level: 'A1' }) })
   const data = await res.json()
   assert.equal(data.evaluation.used, 'local_rules')

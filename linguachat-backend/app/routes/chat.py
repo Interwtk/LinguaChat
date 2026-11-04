@@ -82,6 +82,9 @@ def _safe_tutor_preferences(preferences: dict) -> dict:
 # A request without its own session id shares this one. Nothing is remembered
 # under it: one client's turns must never reach another client's context.
 SHARED_SESSION = "local-session"
+# A conversation id is the only key to its memory, so it must be unguessable:
+# the app sends "session-<uuid>". Anything shorter is served, never remembered.
+MIN_MEMORY_ID_LENGTH = 24
 
 
 class ChatRequest(BaseModel):
@@ -275,7 +278,7 @@ def _history_is_safe(item) -> bool:
 def chat(req: ChatRequest, response: Response):
     session_id = req.session_id.strip()
     # "" is never written, so a shared id reads and keeps nothing
-    memory_id = "" if session_id in ("", SHARED_SESSION) else session_id
+    memory_id = session_id if len(session_id) >= MIN_MEMORY_ID_LENGTH else ""
     message = req.message.strip()
 
     try:
@@ -384,4 +387,4 @@ def forget(req: ForgetRequest):
     is enough to end it. Answers only how many were held: no content, ever.
     """
     ids = [sid.strip() for sid in req.session_ids if isinstance(sid, str) and 0 < len(sid.strip()) <= 128]
-    return {"forgotten": conversation_memory.forget([sid for sid in ids if sid != SHARED_SESSION])}
+    return {"forgotten": conversation_memory.forget(ids)}

@@ -40,7 +40,7 @@ function learner(lang) {
       const at = T0 + day * DAY + minute * 60000
       const res = await fetch(`${API}/chat`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: `${lang}-${session}`, message, level: 'A1', native_language: lang,
+        body: JSON.stringify({ session_id: `e2e-continuity-session-${lang}-${session}`, message, level: 'A1', native_language: lang,
           learning_memory: learningMemoryPayload(model, at) }),
       })
       assert.equal(res.status, 200)
