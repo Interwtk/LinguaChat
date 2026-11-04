@@ -60,7 +60,8 @@ t-shirt table take takes talk talking tall taxi tea teach teacher team teeth tel
 umbrella uncle under understand university until up us use used usually vacation vegetable vegetables very video view village visit visited visiting voice volleyball
 wait waiter waitress wake walk walked walking wall want wanted wants warm was wash watch watched watching water way we wear weather wednesday week weekend weeks welcome well went were west what when where which white who why wife will win wind window windy wine winter with without woman women wonderful word words work worked worker working works world would write writer writing wrote
 yeah year years yellow yes yesterday yet you you're young your yours zero zoo
-explain since difference pronounce spell grammar sentence verb noun mean means correct wrong mistake practise
+ate began bit blew built caught chose drank drew fell felt flew forgot found grew heard held hid hit hurried kept lay led lent lost meant met paid rang rode sat slept sold spent spoke stood swam taught thought threw told understood woke won wore
+back agree agrees happen happened hope lake mountains explain since difference pronounce spell grammar sentence verb noun mean means correct wrong mistake practise
 isn't aren't wasn't weren't doesn't didn't can't won't we're they're he's she's what's where's
 """.split())
 

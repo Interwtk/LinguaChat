@@ -56,7 +56,7 @@ function learner(lang, id) {
           learning_memory: learningMemoryPayload(model, at), ...(assisted ? { assistance: 'suggestion_sent' } : {}) }),
       })
       assert.equal(res.status, 200)
-      assert.equal(res.headers.get('x-linguachat-provider'), 'local')
+      assert.ok(['local', 'guided'].includes(res.headers.get('x-linguachat-provider')), 'never a paid provider')
       const data = await res.json()
       const analysis = safeAnalysis(data.analysis, data.evaluation)
       const c = classifyChatTurn({ turnId: `${id}-t${++n}`, at, message, analysis, assisted, model,
@@ -146,7 +146,8 @@ await scenario('foreign text and over-long chat are honest: no correction, no ev
     assert.equal(kind, 'not_evaluable')
   }
   const { data } = await l.say('I like music. '.repeat(250))
-  assert.equal(data.evaluation.used, 'local_rules', 'a 3,500-character message is evaluated (first 2,000) without error')
+  assert.equal(data.analysis.guided, true, 'guided chat: a 3,500-character message gets the neutral turn, not an evaluation')
+  assert.equal(data.correction, null)
 })
 
 await scenario('a request cannot choose the evaluator or grant anything', async () => {

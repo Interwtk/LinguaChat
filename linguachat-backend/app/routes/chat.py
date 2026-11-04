@@ -270,8 +270,12 @@ def _safety_result(verdict, native_language: LanguageInfo, target_language: Lang
     )
 
 
-def _guided_result(native_language: LanguageInfo, target_language: LanguageInfo) -> ChatResult:
-    """The honest turn for what the tutor cannot read: no praise, no correction, no quote."""
+def _guided_result(native_language: LanguageInfo, target_language: LanguageInfo, engine_verdict: str | None = None) -> ChatResult:
+    """The honest turn for what the tutor cannot read: no praise, no correction, no quote.
+
+    It is never evidence: the learner's record reads it as text in another
+    language or as too little to judge, whatever the rules thought they saw.
+    """
     lang = native_language.base
     return ChatResult(
         reply=say("guided_reply", lang),
@@ -283,7 +287,8 @@ def _guided_result(native_language: LanguageInfo, target_language: LanguageInfo)
         focus=say("focus_practice", lang),
         detected_language=native_language,
         target_language=target_language,
-        analysis={"verdict": "not_evaluated", "findings": [], "guided": True},
+        analysis={"verdict": "not_english" if engine_verdict == "not_english" else "insufficient",
+                  "confidence": "low", "findings": [], "source": "local_rules", "guided": True},
     )
 
 
@@ -385,7 +390,7 @@ def chat(req: ChatRequest, response: Response):
         elif guided and result.mode != ChatMode.TRANSLATION and not verdict.care_note:
             if not in_scope(message, result.correction):
                 response.headers["X-LinguaChat-Provider"] = "guided"
-                return _guided_result(native_language, target_language)
+                return _guided_result(native_language, target_language, (result.analysis or {}).get("verdict"))
             result.reply = neutral_reply(result.reply)
         if verdict.care_note:
             result.reply = f"{result.reply}\n\n{safety_reply('care_note', native_language.base)}"

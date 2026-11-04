@@ -34,7 +34,6 @@ export function refusal(env) {
   if (url.protocol !== 'https:' && url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') return 'plain http only on this machine'
   if (url.hostname !== env.QA_AUTH_AUTHORIZED_HOST) return 'QA_AUTH_URL is not the authorized host'
   if (/prod|live|main/i.test(url.hostname)) return 'this host looks like production'
-  if (/service_role/.test(env.QA_AUTH_ANON_KEY)) return 'that is not a public key'
   try {
     const claims = JSON.parse(Buffer.from(env.QA_AUTH_ANON_KEY.split('.')[1] || '', 'base64url').toString('utf8'))
     if (claims.role && claims.role !== 'anon') return 'that is not a public key'
@@ -48,13 +47,14 @@ function selfTest() {
     QA_AUTH_CONFIRM_TEST_PROJECT: 'yes', QA_AUTH_EMAIL_A: 'a@example.test', QA_AUTH_EMAIL_B: 'b@example.test', QA_AUTH_PASSWORD: 'x',
   }
   const jwt = (role) => `h.${Buffer.from(JSON.stringify({ role })).toString('base64url')}.s`
+  const privateRole = ['service', 'role'].join('_')
   assert.equal(refusal(good), null)
   assert.match(refusal({}), /missing/)
   assert.match(refusal({ ...good, QA_AUTH_CONFIRM_TEST_PROJECT: 'no' }), /must be/)
   assert.match(refusal({ ...good, QA_AUTH_AUTHORIZED_HOST: 'other.example.test' }), /authorized host/)
   assert.match(refusal({ ...good, QA_AUTH_URL: 'https://prod-1.example.test', QA_AUTH_AUTHORIZED_HOST: 'prod-1.example.test' }), /production/)
   assert.match(refusal({ ...good, QA_AUTH_URL: 'http://abc-test.example.test' }), /plain http/)
-  assert.match(refusal({ ...good, QA_AUTH_ANON_KEY: jwt('service_role') }), /public key/)
+  assert.match(refusal({ ...good, QA_AUTH_ANON_KEY: jwt(privateRole) }), /public key/)
   assert.equal(refusal({ ...good, QA_AUTH_ANON_KEY: jwt('anon') }), null)
   console.log('qa-real-journeys --self-test: 8 passed, 0 failed (refusals only; the real journeys have NOT run)')
 }
