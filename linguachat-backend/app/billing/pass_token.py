@@ -6,7 +6,7 @@ server's decision travels as a short, signed pass:
 
     base64url(json payload) "." base64url(HMAC-SHA256(payload, key))
 
-payload: {"v": 1, "sub": <account id>, "plan": "premium", "iat": <s>, "exp": <s>}
+payload: {"v": 1, "jti": <pass id>, "sub": <account id>, "plan": "premium", "iat": <s>, "exp": <s>}
 
 The browser stores the pass as an opaque string. It cannot mint or extend one:
 any change to the payload breaks the signature, and the key exists only on the
@@ -25,6 +25,7 @@ import base64
 import hashlib
 import hmac
 import json
+import secrets
 import time
 
 PASS_VERSION = 1
@@ -55,7 +56,7 @@ def issue_pass(key: str, sub: str, *, lifetime_seconds: int, now: float | None =
         raise ValueError("invalid subject")
     lifetime = max(60, min(int(lifetime_seconds), MAX_LIFETIME_SECONDS))
     at = int(time.time() if now is None else now)
-    payload = {"v": PASS_VERSION, "sub": sub, "plan": "premium", "iat": at, "exp": at + lifetime}
+    payload = {"v": PASS_VERSION, "jti": secrets.token_urlsafe(12), "sub": sub, "plan": "premium", "iat": at, "exp": at + lifetime}
     body = _b64(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8"))
     return f"{body}.{_mac(key, body)}"
 
@@ -75,6 +76,8 @@ def read_pass(key: str | None, token: str | None, *, now: float | None = None) -
         return "invalid", None
     exp, iat = payload.get("exp"), payload.get("iat")
     if not isinstance(exp, int) or not isinstance(iat, int) or exp - iat > MAX_LIFETIME_SECONDS:
+        return "invalid", None
+    if not isinstance(payload.get("sub"), str) or not isinstance(payload.get("jti"), str):
         return "invalid", None
     at = time.time() if now is None else now
     return ("valid" if at < exp else "expired"), payload

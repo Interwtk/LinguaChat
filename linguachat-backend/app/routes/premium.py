@@ -1,46 +1,57 @@
 """Premium extra practice — the server decides, the browser only asks.
 
-OFF unless both LINGUACHAT_PREMIUM_ENABLED=true and a signing key are set.
-Off, every answer is "not_available" and nothing else is read.
+OFF unless LINGUACHAT_PREMIUM_ENABLED=true, a signing key, AND a durable usage
+store are configured. Off, every answer is "not_available" and nothing else is
+read.
 
 The extra practice itself is built on the learner's device from the existing
-planner (learning/courses/extraPractice.js); it costs no AI call. What the
-server owns is the decision: a valid pass, and at most EXTRA_BLOCKS_PER_DAY
-blocks per account per (server, UTC) day. The browser cannot turn a refusal
-into a grant: it needs this answer for every block.
+planner (learning/courses/courseSession.js); it costs no AI call. What the
+server owns is the decision: a valid, unrevoked pass, and at most
+EXTRA_BLOCKS_PER_DAY blocks per account per (server, UTC) day, claimed
+atomically in the usage store. The browser cannot turn a refusal into a grant:
+it needs this answer for every block, and the server chooses the block.
 
-The day counter lives in this process's memory (no database): a restart or a
-second instance forgets it. The limit is therefore a fair-use limit, not a
-security boundary, and is documented as such.
+EXTRA_BLOCKS_PER_DAY is a provisional setting, not a commercial decision.
 """
 from __future__ import annotations
 
 import os
 import time
 from datetime import datetime, timezone
-from threading import Lock
 
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
 from app.billing.pass_token import read_pass, usable_key
+from app.billing.usage_store import MemoryUsageStore, SqliteUsageStore
 
 router = APIRouter()
 
 EXTRA_BLOCKS_PER_DAY = 3
 COURSES = {"en", "es"}
-_MAX_TRACKED = 20000
 
-_lock = Lock()
-_used: dict[tuple[str, str], set[int]] = {}
+_stores: dict[str, object] = {}
 
 
 def _key() -> str | None:
     return os.getenv("LINGUACHAT_PASS_SIGNING_KEY")
 
 
+def usage_store():
+    """The configured store, or None: Premium never runs on a store that forgets by accident."""
+    path = os.getenv("LINGUACHAT_USAGE_DB", "").strip()
+    if path:
+        if path not in _stores:
+            _stores[path] = SqliteUsageStore(path)
+        return _stores[path]
+    if os.getenv("LINGUACHAT_PREMIUM_ALLOW_MEMORY_STORE", "").strip().lower() == "true":
+        return _stores.setdefault("memory", MemoryUsageStore())
+    return None
+
+
 def premium_available() -> bool:
-    return os.getenv("LINGUACHAT_PREMIUM_ENABLED", "").strip().lower() == "true" and usable_key(_key())
+    return (os.getenv("LINGUACHAT_PREMIUM_ENABLED", "").strip().lower() == "true"
+            and usable_key(_key()) and usage_store() is not None)
 
 
 def _utc_day(now: float) -> str:
@@ -48,8 +59,7 @@ def _utc_day(now: float) -> str:
 
 
 def reset_usage_for_tests() -> None:
-    with _lock:
-        _used.clear()
+    _stores.clear()
 
 
 @router.get("/premium/status")
@@ -60,9 +70,6 @@ def status():
 class ExtraBlockRequest(BaseModel):
     pass_token: str | None = Field(default=None, max_length=1024)
     course: str = Field(min_length=2, max_length=8)
-    # None: "the next block" — the server allocates it, so leaving the screen
-    # and coming back never replays a block or resets the count
-    block: int | None = Field(default=None, ge=0, le=50)
 
 
 @router.post("/practice/extra/authorize")
@@ -77,18 +84,11 @@ def authorize(req: ExtraBlockRequest):
         return {"granted": False, "reason": "free"}
     if state == "expired":
         return {"granted": False, "reason": "expired"}
+    store = usage_store()
+    if store.is_revoked(payload["jti"], payload["sub"], payload["iat"]):
+        return {"granted": False, "reason": "expired"}
     day = _utc_day(now)
-    slot = (payload["sub"], day)
-    with _lock:
-        used = _used.setdefault(slot, set())
-        block = req.block if req.block is not None else next(i for i in range(len(used) + 1) if i not in used)
-        # asking again for a block already granted today is not a new block
-        if block not in used:
-            if len(used) >= EXTRA_BLOCKS_PER_DAY:
-                return {"granted": False, "reason": "limit", "blocks_left": 0}
-            used.add(block)
-        if len(_used) > _MAX_TRACKED:
-            for old in [s for s in _used if s[1] != day]:
-                _used.pop(old, None)
-        left = EXTRA_BLOCKS_PER_DAY - len(used)
-    return {"granted": True, "block": block, "blocks_left": left, "expires_at": payload["exp"]}
+    block = store.claim(payload["sub"], day, EXTRA_BLOCKS_PER_DAY)
+    if block is None:
+        return {"granted": False, "reason": "limit", "blocks_left": 0}
+    return {"granted": True, "block": block, "blocks_left": EXTRA_BLOCKS_PER_DAY - block - 1, "expires_at": payload["exp"]}

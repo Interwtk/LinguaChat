@@ -1,0 +1,34 @@
+{
+  "_note": "EXAMPLE VALUES ONLY. No price here is approved or announced. Fees are the processors' published list rates at 2026-11-03; taxes and purchasing-power indexes are placeholders to be set with the accountant and real data.",
+  "base_region": "global_usd",
+  "plans": {
+    "premium_monthly": {
+      "entitlements": ["extra_practice_blocks"],
+      "provisional_limits": { "extra_practice_blocks_per_day": 3 }
+    }
+  },
+  "regions": {
+    "global_usd": {
+      "status": "draft",
+      "countries": ["US"],
+      "currency": "USD",
+      "tax_rate": 0,
+      "fee_pct": 0.05,
+      "fee_fixed": 0.5,
+      "ppp_index": 1.0,
+      "variable_cost": 0,
+      "prices": { "premium_monthly": 6.99 }
+    },
+    "chile_clp": {
+      "status": "draft",
+      "countries": ["CL"],
+      "currency": "CLP",
+      "tax_rate": 0.19,
+      "fee_pct": 0.065,
+      "fee_fixed": 470,
+      "ppp_index": 0.55,
+      "variable_cost": 0,
+      "prices": { "premium_monthly": 4490 }
+    }
+  }
+}
