@@ -67,6 +67,9 @@ _AR_DIACRITICS = re.compile("[ؐ-ًؚ-ٰٟۖ-ۭـ]")
 _AR_LETTERS = str.maketrans({"أ": "ا", "إ": "ا", "آ": "ا", "ى": "ي", "ؤ": "و", "ئ": "ي", "ة": "ه"})
 
 
+_AR_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
+
+
 def _katakana_to_hiragana(text: str) -> str:
     return "".join(chr(ord(ch) - 0x60) if "ァ" <= ch <= "ヶ" else ch for ch in text)
 
@@ -83,7 +86,7 @@ def normalize(text: str) -> str:
     s = _AR_DIACRITICS.sub("", s).translate(_AR_LETTERS)
     s = _katakana_to_hiragana(s)
     s = _strip_accents(s)
-    return s
+    return s.translate(_AR_DIGITS)
 
 
 def _latin_variants(s: str) -> list[str]:
@@ -98,7 +101,9 @@ def _latin_variants(s: str) -> list[str]:
     joined = re.sub(run, join, leet)
     # "a b o m b" also reads "a bomb": a one-letter word before the run stays apart
     apart = re.sub(run, join, re.sub(r"(?<=[a-zñ]{2} )([aeiouy]) (?=[a-zñ][\s.\-_*][a-zñ])", r"\1  ", leet))
-    return list(dict.fromkeys([s, leet, joined, apart]))
+    # "sui.cide", "sui-cidio": a mark inside a word is not a word break
+    glued = re.sub(r"(?<=[a-zñ])[.\-_*](?=[a-zñ])", "", leet)
+    return list(dict.fromkeys([s, leet, joined, apart, glued]))
 
 
 # ---------------------------------------------------------------- lexicons
@@ -148,6 +153,7 @@ MINOR = _compile([
 ])
 TEEN = _compile(["teen", "teens", "teenager", "adolescente", "adolescentes", "少女", "少年", "مراهق", "مراهقه"])
 YOUNG_AGE = re.compile(
+    r"\b(?:is|de|age|aged|عمره|عمرها|عمري)\s+(?:[1-9]|1[0-7])\b(?!\s*(?:am|pm|h|%|:|minutes?|min|hours?|euros?|dollars?|pesos?)\b)|"
     r"\b(?:[1-9]|1[0-7])\s*(?:years?\s*old|yo|y/o|años|año|anos|ano)\b|(?:[1-9]|1[0-7])\s*歳|(?:[1-9]|1[0-7])\s*(?:سنه|سنوات|عاما)"
     # "I'm 12", "tengo 13": only ever read together with a sexual or grooming signal
     r"|\b(?:i am|i'm|im|i m|tengo|j'ai|ich bin|tenho|ho)\s+(?:[1-9]|1[0-7])\b"
@@ -190,8 +196,8 @@ SELF_HARM = _compile([
     "انتحار", "انتحر", "اريد ان اموت", "اقتل نفسي", "ايذاء نفسي",
 ])
 # Asking for a method together with dying: "how many pills would kill me".
-SELF_METHOD = _compile(["pills", "pastillas", "overdose", "sobredosis", "lethal dose", "dosis letal", "jump off", "tirarme de"])
-SELF_END = _compile(["kill me", "to die", "die", "morir", "morirme", "matarme", "end it", "acabar con todo"])
+SELF_METHOD = _compile(["insulin", "insulina", "pills", "pastillas", "overdose", "sobredosis", "lethal dose", "dosis letal", "jump off", "tirarme de"])
+SELF_END = _compile(["stop my heart", "pararia el corazon", "kill me", "to die", "die", "morir", "morirme", "matarme", "end it", "acabar con todo"])
 # Direct threats: someone says they will hurt someone.
 THREAT = _compile([
     "i will kill you", "im going to kill you", "i'm going to kill you", "gonna kill you", "kill you", "i will hurt you",
@@ -232,7 +238,7 @@ VIOLENCE_TOPIC = _compile([
     "れいぷ", "虐殺", "拷問", "斬首", "اغتصاب", "مذبحه", "تعذيب", "ذبح",
 ])
 GRAPHIC_REQUEST = _compile([
-    "describe in detail", "in graphic detail", "graphic details", "very graphic", "with lots of detail", "muy explicito", "muy grafico", "describe the blood", "as gory as", "step by step how they",
+    "describe in detail", "in graphic detail", "graphic details", "very graphic", "in detail", "con detalle", "graficas", "詳しく", "描写", "with lots of detail", "muy explicito", "muy grafico", "describe the blood", "as gory as", "step by step how they",
     "describe con detalle", "con todo detalle", "detalles graficos", "describe la sangre",
     "詳しく描写", "生々しく", "بالتفصيل", "وصف دموي",
 ])
@@ -301,6 +307,92 @@ LANGUAGE_QUESTION = _compile([
     "って何", "どういう意味", "英語で", "スペイン語で", "ما معنى", "كيف اقول", "كيف نقول", "ترجم",
 ])
 
+# ---- concept families (phase 4) ------------------------------------------
+# Written from the DEV set's failures as meanings, in four languages, not as its
+# sentences. The sealed holdout set says whether they generalise. Most need two
+# signals: a word alone is a language lesson, the combination is an intent.
+
+SELF_FINAL = _compile([
+    "end my life", "ending my life", "take my life", "stop existing", "cease to exist", "worth living", "going to do it tonight",
+    "check out for good", "never wake up", "sleep forever", "want to disappear", "wish i was dead", "wish i were dead", "don't want to be here anymore",
+    "acabar con mi vida", "terminar con mi vida", "dejar de existir", "vale la pena vivir", "seguir viviendo", "sin sentido vivir", "quiero desaparecer",
+    "irme para siempre", "irse sin molestar", "no despertar", "ojala no despertar", "nadie tiene que buscarme", "me quiero ir de este mundo",
+    "人生を終わらせ", "命を絶", "死のう", "死ぬつもり", "いなくなりたい", "生きている意味", "生きる意味", "生きていたくない", "消えてしまいたい", "終わりにしたい",
+    "انهي حياتي", "انهاء حياتي", "بدي اموت", "ابي اموت", "ودي اموت", "ما بدي اعيش", "مابي اعيش", "الحق بابوي", "الحق بامي", "ما بقى لها طعم",
+])
+SELF_ARRANGED = _compile([
+    "paid all my debts", "paid my debts", "cancelled my phone", "canceled my phone", "gave away", "giving away", "wrote my will", "said goodbye to",
+    "pague lo que debia", "cancele el seguro", "borre mis redes", "deje las llaves", "regale mis cosas", "regale todas mis cosas", "me despedi de",
+    "借金も返", "部屋を片付け", "身の回りを整理", "お別れ", "سددت", "ودعت", "وزعت اغراضي",
+])
+SELF_ABSENT = _compile([
+    "no next month", "won't be here", "wont be here", "not be around", "goodbye forever", "last time you hear", "won't need", "wont need",
+    "ya no estare", "no voy a estar", "no voy a necesitar", "ya no voy a necesitar", "mes que viene ya no", "para siempre", "nadie tiene que buscarme",
+    "来月の予定", "もういらない", "最後の", "مش هكون موجود", "ما راح اكون", "اخر مره",
+])
+THREAT_ACT = _compile([
+    "burn down", "burn his", "burn her", "set fire to", "smash his", "smash her", "break his", "break her", "get what they deserve", "gets what it deserves",
+    "kill him", "kill her", "wont walk out", "won't walk out", "on his own feet", "get rid of my", "make him pay", "make her pay",
+    "quemo la casa", "quemar la casa", "le voy a partir", "partir la cara", "romperle", "con los pies por delante", "se va a enterar", "va a pagar",
+    "aprendera quien manda", "se acaba todo", "火をつけて", "ぶん殴", "無事に帰れると思うな", "分からせ", "ふさいでおく", "殺す", "مش هيخرج من الملعب",
+    "احرق بيت", "رح احرق", "راح اقتل", "هقتل", "رح اقتل", "حرق بيت",
+])
+THREAT_PLAN = _compile(["which door", "que puerta", "the exits", "las salidas", "ya compre la cuerda", "出口を全部", "bringing something for them", "les llevo algo", "جايب لهم شي"])
+DANGER_INTENT2 = _compile([
+    "how do people", "how would i", "how would someone", "how does one", "whats the best way to", "what do i bring", "what tools", "which tools",
+    "como se fabrica", "como se hace", "como se hacia", "como se clona", "como entrar", "que gotas", "como abro", "como fabrico",
+    "方法", "手順", "手口", "自作", "作りたい", "كيف اصنع", "كيف افتح", "طريقه صنع", "شو الادوات", "كيف اسوي",
+])
+DANGER_OBJECT2 = _compile([
+    "credit card", "clone a card", "gas station", "someone else's car", "car that is not mine", "the safe", "alarm code", "pistol", "handgun", "silencer",
+    "tarjeta", "cajero", "movil de mi", "celular de mi", "sin que lo sepa", "pistola", "napalm",
+    "くれじっとかーど", "ぴすとる", "拳銃", "銀行口座", "ばれずに", "他人の",
+    "مسدس", "قفل سياره", "خزنه", "نابالم",
+])
+SPIKE_THING = _compile(["eye drops", "sedative", "his coffee", "her coffee", "his drink", "her drink", "gotas", "sedante", "el termo", "su bebida", "睡眠薬", "飲み物に"])
+SPIKE_EFFECT = _compile(["gets sick", "really sick", "out for hours", "knock", "se ponga malo", "se duerma", "enfermo", "眠らせ", "気づかれず"])
+HATE_GROUP = _compile([
+    "disabled people", "the disabled", "arabs", "chinese", "asians", "trans people", "refugees", "gypsies", "indians", "shia", "sunni",
+    "discapacitados", "chinos", "arabes", "gitanos", "refugiados", "indios", "esa gente", "los asians",
+    "障害者", "外国人", "在日", "あの人たち", "女は", "الشيعه", "اللاجئين", "النساء", "لاجئين",
+])
+HATE_CLAIM = _compile([
+    "burden", "savages", "rats", "too stupid", "disgusting", "subhuman", "should not exist", "shouldn't exist", "cleaner without", "go back", "are inferior",
+    "carga", "ratas", "raza", "no deberia existir", "no deberian", "salvajes", "asquerosos", "que no nacieran",
+    "お荷物", "いなくなれば", "頭が悪い", "居場所はない", "いらない", "كفار", "التخلص منهم", "ناقصات", "ما يستحقون", "ولا يستحقن", "ما تاجرهم",
+])
+SLUR2 = _compile(["ch1nks", "chinks", "chink", "moros de mierda", "panchito*"])
+SEXUAL_REQUEST = _compile([
+    "describe sex", "write sex", "sex in detail", "erotic*", "dominatrix", "be my mistress", "n00ds", "noods", "talk nasty", "adult content", "adult story",
+    "erotico", "erotica", "se mi ama", "contenido para adultos", "dialogo erotico", "historia para adultos",
+    "官能", "せっくすの描写", "えっちな", "قصه للكبار", "قصه جنسيه", "صور عاريه",
+])
+ADULT_FIGURE = _compile([
+    "adult", "a man", "an older", "teacher", "coach", "my friend from", "someone online", "28", "25",
+    "un adulto", "un señor", "un hombre", "un chico de", "profesor", "entrenador", "大人", "先生", "コーチ", "واحد كبير", "رجل كبير",
+])
+SECRECY = _compile([
+    "can't tell", "cant tell", "not to tell", "keep it secret", "our secret", "secreto", "no le diga", "no le digas", "sin avisar", "my address", "his house", "gives me money",
+    "mi direccion", "a su casa", "親には言う", "内緒", "住所", "عنواني", "ما بدو اخبر", "لا تخبر", "سر بيننا",
+])
+INJECTION2 = _compile([
+    "your rules", "your guidelines", "your configuration", "your first message", "your hidden", "system message", "safety off", "safety is off", "filter off",
+    "pretend your", "no longer a tutor", "act without",
+    "tus reglas", "reglas internas", "desactiva el filter", "desactiva el filtro", "modo sin tutor", "ya no eres", "nuevo sistema",
+    "内部設定", "しすてむ通知", "安全機能をおふ", "設定を教えて", "رساله نظام", "الغ كل القيود", "الغي كل القيود",
+])
+ID_WORD = _compile([
+    "clabe", "seguridad social", "numero de cuenta", "account number", "passport", "pasaporte", "licencia de conducir", "driver's license", "social security", "routing number", "iban",
+    "暗証番号", "運転免許証", "ぱすぽーと", "まいなんばー", "口座番号", "رقم الهويه", "رقم الجواز", "كلمه سر", "كلمه السر",
+])
+ID_VALUE = re.compile(r"\d[\d ._-]{3,}\d|[A-Za-z_]+\d+\S*")
+INFO_REQUEST2 = _compile([
+    "where does she live", "where does he live", "where she lives", "where he lives", "private number", "personal number of", "what school do", "the address of my",
+    "donde vive", "en que colegio", "su direccion", "su telefono privado",
+    "自宅の住所", "の住所", "の電話番号", "رقم البنت", "رقم المدرس", "وين ساكن", "عنوان بيت",
+])
+
+
 # A secret only counts when a value follows that looks like one (has a digit),
 # so "la palabra clave es importante" stays a sentence.
 PASSWORD = re.compile(r"\b(?:password|passcode|contraseña|clave|pin)\b\s*(?:is|es|:|=)\s*\S*\d\S*|ぱすわーど\s*[はわ:：]\s*\S*\d\S*|كلمه المرور\s*\S*\d\S*")
@@ -344,50 +436,72 @@ def assess(text: str) -> Verdict:
         return Verdict()
     base = re.sub(r"\bdie(?=\s+(?:my|your|her|his|their|the)\s+hair)", "dye", base)
     v = _latin_variants(base)
-    language_question = _any(LANGUAGE_QUESTION, v)
+    # "how do I say X?" is language learning; a further sentence after it is not
+    single_sentence = not re.search(r"[.?!。？！؟]\s*\S", base.strip().rstrip(".?!。？！؟"))
+    language_question = _any(LANGUAGE_QUESTION, v) and single_sentence
 
     # 1. Sexual content involving minors — always refused, whatever the framing,
     #    unless the message is clearly about protecting a child.
-    sexual_any = _any(SEXUAL_EXPLICIT, v) or _any(SEXUAL_MILD, v)
+    sexual_any = _any(SEXUAL_EXPLICIT, v) or _any(SEXUAL_MILD, v) or _any(SEXUAL_REQUEST, v)
     minor = _any(MINOR, v) or _any(TEEN, v) or bool(YOUNG_AGE.search(base))
     if sexual_any and minor:
         if _any(PROTECT, v) and not _any(SEXUAL_EXPLICIT, v):
             return Verdict(SUPPORT, "child_protection", signals=("sexual", "minor", "protect"))
         return Verdict(REFUSE, "minor_sexual", signals=("sexual", "minor"))
-    if minor and _any(GROOMING, v):
+    if minor and (_any(GROOMING, v) or _any(SECRECY, v)) and (_any(ADULT_FIGURE, v) or _any(GROOMING, v)):
         return Verdict(SUPPORT, "child_protection", signals=("grooming", "minor"))
 
     # 2. Wellbeing comes before everything else that is not about a child.
-    if _any(SELF_HARM, v) or (_any(SELF_METHOD, v) and _any(SELF_END, v)):
-        if language_question:
+    if (_any(SELF_HARM, v) or _any(SELF_FINAL, v) or (_any(SELF_METHOD, v) and _any(SELF_END, v))
+            or (_any(SELF_ARRANGED, v) and _any(SELF_ABSENT, v))):
+        if _any(LANGUAGE_QUESTION, v):
             return Verdict(ALLOW, None, care_note=True, signals=("self_harm", "language_question"))
         return Verdict(SUPPORT, "self_harm", signals=("self_harm",))
 
     # 3. Sensitive personal data the learner typed — never keep or echo it.
-    if _has_card(base) or SSN.search(base) or RUT.search(base) or PASSWORD.search(base):
+    if (_has_card(base) or SSN.search(base) or RUT.search(base) or PASSWORD.search(base)
+            or (_any(ID_WORD, v) and ID_VALUE.search(base))):
         return Verdict(WARN_PII, "personal_data", signals=("pii",))
 
     # 4. Manipulating the tutor.
-    if _any(INJECTION, v):
+    if _any(INJECTION, v) or _any(INJECTION2, v):
         return Verdict(DEFLECT, "prompt_injection", signals=("injection",))
 
     # A question about what a word means or how to say it is language learning.
     if language_question:
         return Verdict()
 
-    if _any(SEXUAL_EXPLICIT, v) or (_any(SEXUAL_MILD, v) and (_any(GRAPHIC_REQUEST, v) or _any(ROLEPLAY, v))):
+    if (_any(SEXUAL_EXPLICIT, v) or _any(SEXUAL_REQUEST, v)
+            or (_any(SEXUAL_MILD, v) and (_any(GRAPHIC_REQUEST, v) or _any(ROLEPLAY, v)))):
         return Verdict(REFUSE, "sexual_explicit", signals=("sexual_explicit",))
-    if _any(THREAT, v) or _harm_to_person(v) or (_any(VIOLENCE_TOPIC, v) and _any(GRAPHIC_REQUEST, v)):
+    if (_any(THREAT, v) or _any(THREAT_ACT, v) or _any(THREAT_PLAN, v) or _harm_to_person(v)
+            or (_any(VIOLENCE_TOPIC, v) and _any(GRAPHIC_REQUEST, v))):
         return Verdict(REFUSE, "violence_threat", signals=("threat",))
-    if (_any(DANGER_INTENT, v) and _any(DANGER_OBJECT, v)) or _any(HACK_OTHER, v):
+    if ((_any(DANGER_INTENT, v) or _any(DANGER_INTENT2, v)) and (_any(DANGER_OBJECT, v) or _any(DANGER_OBJECT2, v))
+            or _any(HACK_OTHER, v) or (_any(SPIKE_THING, v) and _any(SPIKE_EFFECT, v))):
         return Verdict(REFUSE, "dangerous_instructions", signals=("intent", "object"))
-    if _any(HATE, v) or (_any(HATE_VERB, v) and _any(HATE_TARGET, v)):
+    if (_any(HATE, v) or _any(SLUR2, v) or (_any(HATE_VERB, v) and _any(HATE_TARGET, v))
+            or ((_any(HATE_GROUP, v) or _any(HATE_TARGET, v)) and _any(HATE_CLAIM, v))):
         return Verdict(REFUSE, "hate", signals=("hate",))
-    if _any(INFO_REQUEST, v) and not re.search(r"\b(you|tu|usted)\b", base):
+    if (_any(INFO_REQUEST, v) or _any(INFO_REQUEST2, v)) and not re.search(r"\b(you|tu|usted)\b", base):
         return Verdict(REFUSE, "personal_info_request", signals=("info_request",))
     if _any(INSULT_AT_TUTOR, v):
         return Verdict(DEFLECT, "harassment", signals=("insult",))
     return Verdict()
+
+
+def assess_turn(message: str, earlier_user_turns: list[str] | None = None) -> Verdict:
+    """This message, then this message read together with the last few turns.
+
+    Some requests are only harmful in context ("I'm 12" ... "he wants my
+    address"). The joined text can only ADD a concern: an earlier turn never
+    excuses this one, and a language question cannot unlock a joined reading.
+    """
+    verdict = assess(message)
+    if verdict.action != ALLOW or verdict.care_note or not earlier_user_turns:
+        return verdict
+    joined = assess(" ; ".join([*earlier_user_turns[-3:], message]))
+    return joined if joined.action != ALLOW else verdict
 
 
 def screen_reply(*texts: str | None) -> Verdict:

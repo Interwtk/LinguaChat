@@ -74,7 +74,7 @@ def test_the_id_the_app_really_sends_is_remembered():
     conversation_memory.clear()
     app_id = "session-3f2b8c1e-9a4d-4e6b-8f10-2c7d5a9e1b34"
     client.post("/chat", json={"message": "I like music", "session_id": app_id})
-    client.post("/chat", json={"message": "hola", "session_id": f"{app_id}:es", "target_language": "es"})
+    client.post("/chat", json={"message": "Me llamo Ana", "session_id": f"{app_id}:es", "target_language": "es"})
     assert conversation_memory.get(app_id) and conversation_memory.get(f"{app_id}:es")
 
 

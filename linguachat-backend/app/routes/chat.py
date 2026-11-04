@@ -7,8 +7,11 @@ from pydantic import BaseModel, Field
 from ai.chat_evaluation import safe_assistance
 from ai.engine import generate_response
 from ai import es_tutor
-from ai.safety import ALLOW, assess, log_verdict, safety_reply, screen_reply
-from ai.schemas import ChatMode, ChatResult, LanguageInfo, LanguageLevel, MissionContext
+from ai.guided_scope import guided_mode, in_scope, neutral_reply
+from ai.provider_policy import real_provider_allowed
+from ai.safety import ALLOW, assess, assess_turn, log_verdict, safety_reply, screen_reply
+from ai.schemas import ChatMode, ChatResult, LanguageInfo, LanguageLevel, LearningAction, MissionContext
+from ai.tutor_i18n import say
 from app.services.memory import conversation_memory
 
 
@@ -267,6 +270,23 @@ def _safety_result(verdict, native_language: LanguageInfo, target_language: Lang
     )
 
 
+def _guided_result(native_language: LanguageInfo, target_language: LanguageInfo) -> ChatResult:
+    """The honest turn for what the tutor cannot read: no praise, no correction, no quote."""
+    lang = native_language.base
+    return ChatResult(
+        reply=say("guided_reply", lang),
+        correction=None,
+        explanation=None,
+        suggestion=say("guided_suggestion", lang),
+        mode=ChatMode.CHAT,
+        learning_action=LearningAction(type="complete_sentence", prompt=say("guided_activity", lang), options=None),
+        focus=say("focus_practice", lang),
+        detected_language=native_language,
+        target_language=target_language,
+        analysis={"verdict": "not_evaluated", "findings": [], "guided": True},
+    )
+
+
 def _history_is_safe(item) -> bool:
     if not isinstance(item, dict):
         return False
@@ -284,12 +304,18 @@ def chat(req: ChatRequest, response: Response):
     try:
         # Safety first: nothing below (engine, provider, memory) sees a blocked
         # message, and earlier blocked turns a client replays are dropped too.
-        verdict = assess(message)
+        earlier = conversation_memory.recent_user_turns(memory_id) if memory_id else []
+        if not earlier:
+            earlier = [str(item.get("text") or item.get("content") or "") for item in (req.history or [])
+                       if isinstance(item, dict) and item.get("role") == "user"][-3:]
+        verdict = assess_turn(message, earlier)
         log_verdict(verdict, "input")
         if verdict.blocked:
             ui = _normalize_language(req.native_language or "en")
             response.headers["X-LinguaChat-Provider"] = "safety"
             return _safety_result(verdict, ui, _normalize_target_language(req.target_language, ui.base))
+        if memory_id:
+            conversation_memory.note_user_turn(memory_id, message)
         client_history = [item for item in (req.history or []) if _history_is_safe(item)]
         history = conversation_memory.context(memory_id, client_history)
         preferences = _safe_preferences(req.preferences)
@@ -313,8 +339,9 @@ def chat(req: ChatRequest, response: Response):
                 return _safety_result(out, native_language, target_language)
             if verdict.care_note:
                 result.reply = f"{result.reply}\n\n{safety_reply('care_note', native_language.base)}"
-            response.headers["X-LinguaChat-Provider"] = "local-es"
-            if memory_id:
+            not_understood = (result.analysis or {}).get("verdict") == "insufficient"
+            response.headers["X-LinguaChat-Provider"] = "guided" if not_understood else "local-es"
+            if memory_id and not not_understood:
                 conversation_memory.add(memory_id, message, result, req.level)
             return result
         mission_context = _normalize_mission_context(req.mission_context or req.missionContext)
@@ -351,6 +378,12 @@ def chat(req: ChatRequest, response: Response):
             log_verdict(out, "output")
             response.headers["X-LinguaChat-Provider"] = "safety"
             return _safety_result(out, native_language, target_language)
+        guided = guided_mode() and generated.provider == "local" and not mission_context
+        if guided and result.mode != ChatMode.TRANSLATION and not verdict.care_note:
+            if not in_scope(message, result.correction):
+                response.headers["X-LinguaChat-Provider"] = "guided"
+                return _guided_result(native_language, target_language)
+            result.reply = neutral_reply(result.reply)
         if verdict.care_note:
             result.reply = f"{result.reply}\n\n{safety_reply('care_note', native_language.base)}"
         response.headers["X-LinguaChat-Provider"] = generated.provider
