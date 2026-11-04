@@ -24,6 +24,19 @@
 - un nombre suelto («Alex») en la presentación;
 - «la cuenta» sin «por favor».
 
+**Fase 4: revisión con 591 respuestas** de un revisor (IA en papel de profesor ELE, **no un humano nativo**) que no había leído el evaluador. `check-es-teacher-cases`:
+
+| Medida | Antes | Después |
+|---|---|---|
+| Respuestas válidas aceptadas | 300/351 | 325/351 |
+| Español válido marcado como error | 17 | 5 (empujes aceptados) |
+| Errores detectados | 180/240 | 206/240 |
+| Errores aceptados como correctos | 29 | 12 |
+
+Defecto más grave, corregido: la nota de acentos convertía el pronombre de la **frase modelo** en una bebida («¿Té gusta la música?»). Otro defecto sistemático: las reglas decían «manana» y «espana» cuando el texto normalizado conserva la ñ, y por eso «Hasta mañana» era error.
+
+Tras corregir, estas respuestas son regresión: no miden frases nuevas. Siguen sin aceptarse diminutivos y regionalismos (21 «no evaluable», sin penalización).
+
 ## 2. Qué debe revisar un hablante nativo
 
 Perfil: profesor/a de ELE, preferentemente con experiencia en A1 y con alumnos angloparlantes. Idealmente dos revisores: España y Latinoamérica.

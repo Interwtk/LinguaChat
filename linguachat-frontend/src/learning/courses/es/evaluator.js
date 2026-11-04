@@ -116,6 +116,9 @@ export function accentNote(raw, canonical) {
     const canon = want.get(key)
     if (!canon || core.toLowerCase() === canon) return tok
     if (canon === 'tú' && i !== lastWordIndex) return tok
+    // "te" is a pronoun ("¿te gusta?"); only after these words is it the drink
+    const before = tokens.slice(0, i).filter(t => /\S/.test(t)).pop() || ''
+    if (canon === 'té' && !/^(un|el|del|al|mi|tu|su|de|con|o|y)$/i.test(fold(before))) return tok
     if (core.toLowerCase().replace(/[áéíóúü]/g, ch => ACCENT_MAP[ch]) !== core.toLowerCase()) return tok
     changed = true
     const fixed = core[0] === core[0].toUpperCase() ? canon[0].toUpperCase() + canon.slice(1) : canon
@@ -218,7 +221,7 @@ const nounsIn = (folded) => words(folded).map(w => nounForm(w)).filter(Boolean)
 
 /* ---------- language checks ---------- */
 
-const ENGLISH = /\b(my name|i am|i m|im|hello|hi|hey|what is|what s|whats|how are you|where are you|i like|i want|i need|nice to meet|good morning|thank you|thanks|please|don t|dont|understand|repeat|slowly|this is|it s|bye|goodbye|and you|a coffee|one coffee|the check|how much|what does|how do you say)\b/
+const ENGLISH = /\b(my name|i am|i m|im|hello|hi|hey|what is|what s|whats|how are you|where are you|i like|i want|i need|nice to meet|good morning|thank you|thanks|please|don t|dont|understand|repeat|slowly|this is|it s|bye|goodbye|and you|a coffee|one coffee|the check|how much|what does|how do you say|do you|i do|it is|you|the|book|water)\b/
 const SPANISH = /\b(hola|me|soy|estoy|eres|estas|esta|de|el|la|los|las|un|una|por favor|gracias|que|como|tu|usted|es|no|quiero|necesito|gusta|llamo|donde|bien|muy|mas|puede|entiendo)\b/
 
 /* Mostly English and not Spanish: the learner answered in the wrong language. */
@@ -243,6 +246,11 @@ export function evaluateGreet(text, { independent = false } = {}) {
   const f = fold(text)
   r.naturalVersion = '¡Hola!'
   if (!f) return empty(r)
+  const agreement = f.match(/\b(?:buenas? dias?|buenos? (tardes?|noches?)|buena (tarde|noche))\b/)
+  if (agreement && !/\bbuenos dias\b|\bbuenas (tardes|noches)\b/.test(f)) {
+    r.naturalVersion = agreement[1] || agreement[2] ? `Buenas ${(agreement[1] || agreement[2]).replace(/s$/, '')}s.` : 'Buenos días.'
+    return miss(r, 'es_greeting_agreement')
+  }
   if (GREET.test(f)) return ok(r, text, { praise: 'es.praise.greet', variant: !/^hola\b/.test(f), accents: ['días', 'qué'] })
   if (looksEnglish(f)) return miss(r, 'es_english_reply')
   return words(f).length <= 2 ? miss(r, 'es_missing_greeting') : notEvaluable(r)
@@ -299,8 +307,8 @@ export function evaluateNiceToMeet(text, { independent = false } = {}) {
   const f = fold(text)
   r.naturalVersion = 'Mucho gusto.'
   if (!f) return empty(r)
-  if (/\b(bueno|agradable|bonito) (conocerte|conocerle|conocer)\b|\bbien conocerte\b/.test(f)) return miss(r, 'es_calque_nice')
-  if (/\bmucho gusto\b|\bencantad[oa]\b|\bigualmente\b|\bun (placer|gusto)\b|\bel gusto es mio\b|\bmucho gusto tambien\b|\bun gusto conocerte\b/.test(f)) {
+  if (/\b(bueno|agradable|bonito) (conocerte|conocerle|conocer)\b|\bbien conocerte\b|\bsoy encantad[oa]\b/.test(f)) return miss(r, 'es_calque_nice')
+  if (/\bmucho gusto\b|\bencantad[oa]\b|\bigualmente\b|\bun (placer|gusto)\b|\btanto gusto\b|\bel gusto es mio\b|\bmucho gusto tambien\b|\bun gusto conocerte\b/.test(f)) {
     return ok(r, text, { praise: 'es.praise.nice', variant: !/^mucho gusto$/.test(f), accents: ['mío', 'también'] })
   }
   if (looksEnglish(f)) return miss(r, 'es_english_reply')
@@ -317,9 +325,10 @@ export function evaluateAnswerWellbeing(text, { independent = false } = {}) {
   r.naturalVersion = 'Bien, gracias.'
   if (!f) return empty(r)
   const accents = ['más', 'así', 'tú', 'súper']
-  if (new RegExp(`\\b(yo )?soy ${FEELING}\\b`).test(f)) return miss(r, 'es_ser_estar_feeling')
+  if (new RegExp(`\\b(yo )?(soy|tengo) ${FEELING}\\b`).test(f)) return miss(r, 'es_ser_estar_feeling')
+  if (/^(yo )?estar\b/.test(f)) return miss(r, 'es_infinitive_verb')
   if (/\b(estoy )?(bueno|buena)\b/.test(f) && !/\bbien\b/.test(f)) return miss(r, 'es_bien_bueno')
-  if (new RegExp(`(^|\\s)(estoy )?${FEELING}\\b`).test(f) || /^(todo )?bien\b/.test(f)) {
+  if (new RegExp(`(^|\\s)(estoy )?${FEELING}\\b`).test(f) || /^(todo )?bien\b/.test(f) || /\btengo (sueño|hambre|sed|frio|calor)\b/.test(f)) {
     return ok(r, text, { praise: 'es.praise.feeling', variant: !/^bien( gracias)?/.test(f), accents })
   }
   if (looksEnglish(f)) return miss(r, 'es_english_reply')
@@ -346,8 +355,10 @@ export function evaluateReciprocal(text, { independent = false } = {}) {
   const f = fold(text)
   r.naturalVersion = '¿Y tú?'
   if (!f) return empty(r)
-  if (/\by a ti\b/.test(f) && !/\bgusta\b/.test(f)) return miss(r, 'es_y_a_ti')
-  if (/^(y )?(tu|usted|vos)( que tal| como estas| como esta)?$/.test(f) || /\by (tu|usted|vos)\b/.test(f) || /\bcomo (estas|esta)\b/.test(f)) {
+  if (new RegExp(`\\b(yo )?soy ${FEELING}\\b`).test(f)) return miss(r, 'es_ser_estar_feeling')
+  if (/\b(estoy )?(bueno|buena)\b/.test(f) && !/\bbien\b/.test(f)) return miss(r, 'es_bien_bueno')
+  if (/\by a ti\b/.test(f) && !/\b(gusta|te va)\b/.test(f)) return miss(r, 'es_y_a_ti')
+  if (/^(y )?(tu|usted|vos)( que tal| como estas| como esta)?$/.test(f) || /\by (tu|usted|vos)\b/.test(f) || /\bcomo (estas|esta|te va|has estado)\b/.test(f)) {
     return ok(r, text, { praise: 'es.praise.reciprocal', variant: !/^y tu$/.test(f), accents: ['tú', 'cómo', 'estás', 'está'] })
   }
   if (looksEnglish(f)) return miss(r, 'es_english_reply')
@@ -356,8 +367,8 @@ export function evaluateReciprocal(text, { independent = false } = {}) {
 
 /* ================= where from ================= */
 
-const COUNTRIES = /\b(chile|estados unidos|eeuu|ee uu|usa|mexico|canada|inglaterra|reino unido|espana|colombia|argentina|peru|venezuela|ecuador|bolivia|uruguay|paraguay|cuba|puerto rico|guatemala|honduras|el salvador|nicaragua|costa rica|panama|republica dominicana|australia|irlanda|escocia|alemania|francia|italia|brasil|japon|china|india|nueva zelanda|sudafrica|filipinas|nigeria|jamaica|portugal)\b/
-const NATIONALITY = /\b(estadounidense|american[oa]|norteamerican[oa]|canadiense|ingles|inglesa|britanic[oa]|australian[oa]|irlandes|irlandesa|escoces|escocesa|chilen[oa]|mexican[oa]|argentin[oa]|colombian[oa]|peruan[oa]|espanol|espanola|venezolan[oa]|cuban[oa]|puertorriquen[oa]|aleman|alemana|frances|francesa|italian[oa]|brasilen[oa]|japones|japonesa|chin[oa]|indi[oa]|neozelandes|neozelandesa|sudafrican[oa]|filipin[oa]|nigerian[oa]|jamaican[oa]|portugues|portuguesa)\b/
+const COUNTRIES = /\b(chile|estados unidos|eeuu|ee uu|usa|mexico|canada|inglaterra|reino unido|españa|colombia|argentina|peru|venezuela|ecuador|bolivia|uruguay|paraguay|cuba|puerto rico|guatemala|honduras|el salvador|nicaragua|costa rica|panama|republica dominicana|australia|irlanda|escocia|alemania|francia|italia|brasil|japon|china|india|nueva zelanda|sudafrica|filipinas|nigeria|jamaica|portugal)\b/
+const NATIONALITY = /\b(estadounidense|american[oa]|norteamerican[oa]|canadiense|ingles|inglesa|britanic[oa]|australian[oa]|irlandes|irlandesa|escoces|escocesa|chilen[oa]|mexican[oa]|argentin[oa]|colombian[oa]|peruan[oa]|español|española|venezolan[oa]|cuban[oa]|puertorriqueñ[oa]|aleman|alemana|frances|francesa|italian[oa]|brasileñ[oa]|japones|japonesa|chin[oa]|indi[oa]|neozelandes|neozelandesa|sudafrican[oa]|filipin[oa]|nigerian[oa]|jamaican[oa]|portugues|portuguesa)\b/
 
 export function evaluateSayOrigin(text, { independent = false, place = '' } = {}) {
   const r = base(independent)
@@ -366,9 +377,10 @@ export function evaluateSayOrigin(text, { independent = false, place = '' } = {}
   if (!f) return empty(r)
   const accents = ['méxico', 'canadá', 'perú', 'panamá', 'japón', 'españa', 'inglés', 'francés', 'alemán', 'japonés', 'portugués']
   if (/\bestoy de\b/.test(f)) return miss(r, 'es_ser_estar_origin')
+  if (/^eres\b/.test(f)) return miss(r, 'es_conjugation_yo')
   if (/\b(soy|estoy) en\b/.test(f)) return miss(r, 'es_en_vs_de')
   if (/\bsoy de\s*$/.test(f)) return miss(r, 'es_missing_place')
-  if (/\b(soy|vengo|somos) de\s+\S/.test(f) || /^de\s+\S/.test(f)) return ok(r, text, { praise: 'es.praise.origin', variant: !/\bsoy de\b/.test(f), accents })
+  if (/\b(soy|vengo|somos) del?\s+\S/.test(f) || /^del?\s+\S/.test(f)) return ok(r, text, { praise: 'es.praise.origin', variant: !/\bsoy de\b/.test(f), accents })
   if (/\bsoy\b/.test(f) && NATIONALITY.test(f)) return ok(r, text, { praise: 'es.praise.origin', variant: true, accents })
   if (/\bsoy\b/.test(f) && COUNTRIES.test(f)) return miss(r, 'es_missing_de')
   if (/\bvivo en\b/.test(f)) return miss(r, 'es_live_vs_from')
@@ -399,7 +411,7 @@ export function evaluateGoodbye(text, { independent = false } = {}) {
   const f = fold(text)
   r.naturalVersion = '¡Adiós, hasta luego!'
   if (!f) return empty(r)
-  if (/\b(adios|hasta luego|hasta manana|hasta pronto|hasta la proxima|nos vemos|chao|chau|cuidate|que te vaya bien|hasta la vista)\b/.test(f)) {
+  if (/\b(adios|hasta luego|hasta mañana|hasta pronto|hasta la proxima|nos vemos|chao|chau|cuidate|que te vaya bien|hasta la vista)\b/.test(f)) {
     return ok(r, text, { praise: 'es.praise.goodbye', variant: !/\b(adios|hasta luego)\b/.test(f), accents: ['adiós', 'mañana', 'próxima', 'cuídate'] })
   }
   if (looksEnglish(f)) return miss(r, 'es_english_reply')
@@ -409,11 +421,11 @@ export function evaluateGoodbye(text, { independent = false } = {}) {
 /* ================= repair ================= */
 
 const REPAIR = {
-  repeat: /\b(puede|puedes|podria|podrias) repetir(lo)?\b|\b(me lo )?(repite|repita|repites)\b|\botra vez\b|^(como|perdon|perdona|disculpa|disculpe|mande|que)$|\bque dijiste\b|\bque dijo\b|\b(puede|puedes) decirlo otra vez\b/,
-  slow_down: /\bmas despacio\b|\bmas lento\b|\bmas lentamente\b|\bhablar despacio\b/,
-  not_understand: /\bno (te |le |lo )?(entiendo|comprendo|entendi)\b/,
+  repeat: /\b(puede|puedes|podes|podria|podrias) repetir(lo)?\b|\bcomo dij(o|iste)\b|\buna vez mas\b|\brepeti\b|\b(me lo )?(repite|repita|repites)\b|\botra vez\b|^(como|perdon|perdona|disculpa|disculpe|mande|que)$|\bque dijiste\b|\bque dijo\b|\b(puede|puedes) decirlo otra vez\b/,
+  slow_down: /\bmas despac(io|ito)\b|^despacio\b|\bmas lento\b|\bmas lentamente\b|\bhablar despacio\b/,
+  not_understand: /\bno (te |le |lo )?(entiendo|comprendo|entendi|he entendido|estoy entendiendo)\b/,
   ask_meaning: /\bque (significa|quiere decir)\b/,
-  how_to_say: /\bcomo se dice\b/,
+  how_to_say: /\bcomo se dice\b|\bcomo digo\b/,
 }
 
 export function evaluateRepair(text, { independent = false, repairKind = 'repeat', meaningWord = '' } = {}) {
@@ -452,6 +464,8 @@ export function evaluateRepair(text, { independent = false, repairKind = 'repeat
 function likeShape(f) {
   if (/\b(yo )?gusto\b/.test(f) && !/\bme gusto\b/.test(f)) return 'es_gustar_structure'
   if (/\byo me gusta\b/.test(f)) return 'es_gustar_structure'
+  if (/(^|\s)(a )?mi gusta\b|\byo gusta\b|^no gusta\b/.test(f)) return 'es_gustar_structure'
+  if (/\bgustan? (a|de) (?!mi\b|ti\b|el\b|usted\b)\S|\bgustan? [a-zñ]+ndo\b/.test(f)) return 'es_gustar_infinitive'
   if (/\bme gusto\b/.test(f)) return 'es_gustar_form'
   if (/\bme no gusta\b/.test(f)) return 'es_negation_position'
   return null
@@ -462,6 +476,8 @@ function gustarNumber(f) {
   const m = f.match(/\bgustan?\s+(?:(el|la|los|las|mucho|muchos|muchas)\s+)?([a-zñ]+)/)
   if (!m) return null
   const verbPlural = /\bgustan\b/.test(f)
+  // two things are plural whatever the first one is: "me gustan la música y el café"
+  if (verbPlural && /\s(y|e) (el|la|los|las)\s/.test(f)) return null
   const form = nounForm(m[2])
   if (!form) return null
   if (form.plural !== verbPlural) return form.plural ? 'es_gustar_plural' : 'es_gustar_singular'
@@ -493,7 +509,11 @@ export function evaluateExpressLike(text, { independent = false, targetThing = '
     return words(f).length >= 3 ? notEvaluable(r) : miss(r, 'es_missing_gustar', { conclusive: false })
   }
   const number = gustarNumber(f)
-  if (number) return miss(r, number)
+  if (number) {
+    const named = nounForm(f.match(/\bgustan?\s+(?:(?:el|la|los|las|mucho|muchos|muchas)\s+)?([a-zñ]+)/)[1])
+    r.naturalVersion = `${negative ? 'No me' : 'Me'} ${named.plural ? 'gustan' : 'gusta'} ${withArticleEs(named.key, 'def', named.plural)}.`
+    return miss(r, number)
+  }
   const mismatch = articleMismatch(f)
   if (mismatch) { r.naturalVersion = (negative ? 'No me gusta ' : 'Me gusta ') + mismatch.want + '.'; return miss(r, mismatch.type) }
   const bare = missingArticle(f)
@@ -505,7 +525,8 @@ export function evaluateExpressLike(text, { independent = false, targetThing = '
   const after = f.split(/\bgustan?\b|\bencantan?\b/)[1]?.trim() || ''
   // "el café me gusta": the thing can come first
   const before = f.split(/\b(?:no )?me (?:gustan?|encantan?)\b/)[0].trim()
-  if (!after && !nounsIn(before).length) return miss(r, 'es_missing_thing')
+  // "No, no me gusta." answers a question: the thing was already said
+  if (!after && !nounsIn(before).length && !/^(si|no)\b/.test(before)) return miss(r, 'es_missing_thing')
   return ok(r, text, { praise: negative ? 'es.praise.dislike' : 'es.praise.like', variant: true, accents: likeAccents })
 }
 
@@ -525,6 +546,11 @@ export function evaluateAskLike(text, { independent = false, targetThing = 'musi
   if (number) return miss(r, number)
   const mismatch = articleMismatch(f)
   if (mismatch) { r.naturalVersion = `¿Te gusta ${mismatch.want}?`; return miss(r, mismatch.type) }
+  const bare = missingArticle(f)
+  if (bare) {
+    r.naturalVersion = `¿Te ${bare.plural ? 'gustan' : 'gusta'} ${withArticleEs(bare.key, 'def', bare.plural)}?`
+    return miss(r, 'es_missing_article_like')
+  }
   return ok(r, text, { praise: 'es.praise.ask_like', variant: true, accents: likeAccents })
 }
 
@@ -532,7 +558,8 @@ function wantNeed(text, verbs, { independent, targetThing, praise }) {
   const r = base(independent)
   const f = fold(text)
   const verb = verbs[0]
-  r.naturalVersion = `${cap(verb)} ${withArticleEs(targetThing, 'ind') || 'un café'}.`
+  // "ayuda" is not counted: "necesito ayuda", never "una ayuda"
+  r.naturalVersion = `${cap(verb)} ${targetThing === 'ayuda' ? 'ayuda' : withArticleEs(targetThing, 'ind') || 'un café'}.`
   if (!f) return empty(r)
   if (/\b(quere|quero|nesesito|necessito)\b/.test(f)) return miss(r, 'es_spelling_verb', { confidence: 0.75 })
   if (/\b(yo )?(quiere|queremos|necesita|necesitas)\b/.test(f) && !new RegExp(`\\b(${verbs.join('|')})\\b`).test(f)) return miss(r, 'es_conjugation_yo')
@@ -557,7 +584,7 @@ export const evaluateNeed = (text, { independent = false, targetThing = 'ayuda' 
 /* ================= polite requests and the café ================= */
 
 // "quería un café" is the courteous imperfect, not a past tense, in a café
-const POLITE = /\bpor favor\b|\bquisiera\b|\bqueria\b|\bme (da|das|pone|pones|trae|traes|regala|regalas|puede dar|puedes dar|podria dar|podrias dar|daria)\b|\bme gustaria\b|\bpara mi\b.*\bpor favor\b/
+const POLITE = /\bpor favor\b|\bquisiera\b|\bqueria\b|\b(me|nos) (da|das|pone|pones|trae|traes|regala|regalas|puede dar|puedes dar|podria dar|podrias dar|daria)\b|\bme gustaria\b|\bpara mi\b.*\bpor favor\b/
 
 export function evaluatePoliteRequest(text, { independent = false, targetThing = 'cafe' } = {}) {
   const r = base(independent)
@@ -567,6 +594,7 @@ export function evaluatePoliteRequest(text, { independent = false, targetThing =
   if (!f) return empty(r)
   const accents = ['café', 'té', 'podría', 'gustaría', 'mí']
   if (/\buno\s+([a-zñ]+)/.test(f) && nounForm(f.match(/\buno\s+([a-zñ]+)/)[1])) return miss(r, 'es_uno_un')
+  if (/\bpuedo tener\b|\bvoy a tener\b|\byo tendre\b/.test(f)) return miss(r, 'es_calque_have')
   if (looksEnglish(f) && !POLITE.test(f)) return miss(r, 'es_english_reply')
   const named = nounsIn(f)
   if (!named.length && !/\b(algo|eso|esto)\b/.test(f)) {
@@ -586,7 +614,8 @@ export function evaluateThank(text, { independent = false } = {}) {
   const f = fold(text)
   r.naturalVersion = 'Gracias.'
   if (!f) return empty(r)
-  if (/\bgracias\b|\bte lo agradezco\b|\bse lo agradezco\b/.test(f)) return ok(r, text, { praise: 'es.praise.thanks', variant: !/^(muchas )?gracias$/.test(f) })
+  if (/\b(mucho|muy) gracias\b|\bgracias mucho\b/.test(f)) { r.naturalVersion = 'Muchas gracias.'; return miss(r, 'es_gracias_form') }
+  if (/\bgracias+\b|\bte lo agradezco\b|\bse lo agradezco\b/.test(f)) return ok(r, text, { praise: 'es.praise.thanks', variant: !/^(muchas )?gracias$/.test(f) })
   if (/\bgrasias\b/.test(f)) return miss(r, 'es_spelling_gracias', { confidence: 0.75 })
   if (looksEnglish(f)) return miss(r, 'es_english_reply')
   return words(f).length >= 3 ? notEvaluable(r) : miss(r, 'es_missing_thanks', { conclusive: false })
@@ -599,6 +628,7 @@ export function evaluateAnythingElse(text, { independent = false } = {}) {
   r.naturalVersion = 'No, gracias. Nada más.'
   if (!f) return empty(r)
   const accents = ['más', 'sí']
+  if (/\b(thanks|thank you)\b/.test(f)) return miss(r, 'es_english_reply')
   if (/^(no|nada|nada mas|eso es todo|es todo|no gracias|nada mas gracias|eso seria todo|no nada mas|asi esta bien|esta bien asi)\b/.test(f) && !/\bno quiero\b/.test(f)) {
     return ok(r, text, { praise: 'es.praise.anything_else', variant: true, accents })
   }
@@ -618,8 +648,9 @@ export function evaluateAskBill(text, { independent = false } = {}) {
   r.naturalVersion = 'La cuenta, por favor.'
   if (!f) return empty(r)
   if (/\bel cuenta\b/.test(f)) return miss(r, 'es_gender_article')
-  if (/\bla cuenta\b|\bcuanto es\b|\bcuanto le debo\b|\bcuanto te debo\b|\bcuanto cuesta\b/.test(f)) {
-    if (/\bla cuenta\b/.test(f) && !POLITE.test(f) && !/\bme trae|\bme da/.test(f)) return miss(r, 'es_missing_politeness', { confidence: 0.75 })
+  if (/\bpuedo tener\b/.test(f)) return miss(r, 'es_calque_have')
+  if (/\bla cuenta\b|\bla adicion\b|\bme cobra\b|\bcobrame\b|\bcuanto es\b|\bcuanto le debo\b|\bcuanto te debo\b|\bcuanto cuesta\b/.test(f)) {
+    if (/\bla cuenta\b/.test(f) && !POLITE.test(f)) return miss(r, 'es_missing_politeness', { confidence: 0.75 })
     return ok(r, text, { praise: 'es.praise.bill', variant: !/^la cuenta por favor$/.test(f), accents: ['cuánto'] })
   }
   if (looksEnglish(f)) return miss(r, 'es_english_reply')
@@ -684,7 +715,7 @@ export function evaluateAskWhat(text, { independent = false } = {}) {
   if (/\bque (esto|eso) es\b/.test(f)) return miss(r, 'es_word_order_q')
   if (/\bque esta (esto|eso)\b/.test(f)) return miss(r, 'es_ser_estar_thing')
   if (/\bque es (este|esta|ese|esa)$/.test(f)) return miss(r, 'es_esto_neuter')
-  if (/\bque es (esto|eso|aquello)\b|\bcomo se llama (esto|eso)\b|\bcomo se dice (esto|eso)\b|^(y )?(esto|eso)$/.test(f)) {
+  if (/\bque es (esto|eso|aquello)\b|\bque cosa es (esto|eso)\b|\bque es esta cosa\b|\by (esto|eso) que es\b|^que es$|\bcomo se llama (esto|eso)\b|\bcomo se dice (esto|eso)\b|^(y )?(esto|eso)$/.test(f)) {
     return ok(r, text, { praise: 'es.praise.ask_what', variant: !/\bque es esto\b/.test(f), accents })
   }
   if (looksEnglish(f)) return miss(r, 'es_english_reply')
@@ -698,6 +729,7 @@ export function evaluateIdentifyThing(text, { independent = false, targetThing =
   if (!f) return empty(r)
   const accents = ['teléfono', 'móvil', 'bolígrafo', 'lápiz']
   if (/\besta (un|una)\b/.test(f)) return miss(r, 'es_ser_estar_thing_answer')
+  if (/\buno\s+([a-zñ]+)/.test(f) && nounForm(f.match(/\buno\s+([a-zñ]+)/)[1])) return miss(r, 'es_uno_un')
   const named = nounsIn(f)
   if (!named.length) {
     if (looksEnglish(f)) return miss(r, 'es_english_reply')
