@@ -6,9 +6,18 @@
  * (`npm run check:github-integration`), outside the portable check:all.
  */
 import { spawnSync } from 'node:child_process'
+import { delimiter } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { runWithPausedWorkflowFixtures } from '../../.github/scripts/paused-workflow-fixtures.mjs'
 
-const missing = ['bash', 'jq'].filter(tool => spawnSync(tool, ['--version'], { stdio: 'ignore' }).status !== 0)
+// LINGUACHAT_JQ_LITE=1 (local only, never CI): jq-lite stands in for jq on Windows
+if (process.env.LINGUACHAT_JQ_LITE === '1' && !process.env.CI) {
+  process.env.PATH = `${fileURLToPath(new URL('./tools/jq-bin', import.meta.url))}${delimiter}${process.env.PATH}`
+  process.env.JQ_LITE_NODE = process.execPath
+  console.log('check-merge-blocker-gate — using jq-lite (local subset); CI with real jq stays the authority')
+}
+const available = (tool) => spawnSync('bash', ['-c', `command -v ${tool}`], { stdio: 'ignore' }).status === 0
+const missing = spawnSync('bash', ['--version'], { stdio: 'ignore' }).status !== 0 ? ['bash', 'jq'] : available('jq') ? [] : ['jq']
 if (missing.length) {
   console.error(`check-merge-blocker-gate — cannot run here: needs ${missing.join(' and ')} (GitHub-integration check; runs in CI)`)
   process.exit(1)

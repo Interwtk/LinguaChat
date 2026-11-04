@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import { chmodSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { delimiter, join, resolve } from 'node:path'
 
 const mergeAgent = readFileSync('../.github/scripts/merge-agent-pr.sh', 'utf8')
 const mentionWorkflow = readFileSync('../.github/workflows/claude-mention.yml', 'utf8')
@@ -155,7 +155,7 @@ exit 0
     encoding: 'utf8',
     env: {
       ...process.env,
-      PATH: `${bin}:${process.env.PATH}`,
+      PATH: `${bin}${delimiter}${process.env.PATH}`,
       TRACE_FILE: trace,
       FAKE_LIVE_NUMBER: liveNumber,
       FAKE_LIVE_BRANCH: branch,
