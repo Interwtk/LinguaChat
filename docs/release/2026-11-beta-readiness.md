@@ -185,6 +185,39 @@
 
 **Nada de esto se ha ejecutado.**
 
+## Ciclos de la fase 4 (`scripts/qa-cycle.mjs`)
+
+**Commit de código probado: `fc55417`** (árbol limpio antes y después). Dos ciclos consecutivos; `--compare` dio **IDENTICAL AND CLEAN**. Los commits posteriores solo tocan documentación.
+
+| Etapa | f1 | f2 |
+|---|---|---|
+| Etapas del ciclo | **22/22** | **22/22** |
+| `check:all`, paso a paso | **110/110** | **110/110** |
+| `build` · `check:i18n` | ok · ok | ok · ok |
+| `check:github-integration` (con `jq-lite`; en CI, `jq` real) | 11 grupos ok | 11 grupos ok |
+| Foundry b1/b2/c1/c2 y a2-structure | 5/5 | 5/5 |
+| Integridad con *rollback* P3 desde git | 30/30 | 30/30 |
+| Política de adaptación | 10/10 | 10/10 |
+| Alcance de la nube (git, autoprueba, 30 casos) | ok | ok |
+| Backend `compileall` · `pytest` | ok · **1666 / 28 omitidas** | igual |
+| Evaluación sellada (mide, no aprueba) | 35,0 % · insegura 0,0 % | igual |
+| e2e HTTP: tutor · continuidad | 4/4 · 5/5 | 4/4 · 5/5 |
+| Plantillas de correo · garantías | ok · 16/16 | ok · 16/16 |
+| Escaneo de secretos | 0 coincidencias | 0 coincidencias |
+
+**Cobertura del escaneo:** autoprueba 9/9 muestras plantadas; 778 archivos versionados, 735 leídos, 42 binarios omitidos, 1 omitido (el propio escáner, que contiene los patrones), 9 patrones. Aparte, en el historial: 567.000 líneas de diferencias, solo líneas añadidas, sin el `package-lock`; un aviso, verificado como el marcador `sk-your-…` de un `.env.example`. **Cero coincidencias no prueba que no haya secretos:** no cubre otras formas, archivos sin versionar ni binarios.
+
+**Historia (sin ocultar fallos).** El primer ciclo del repositorio, sobre `291b738`, dio **17/22**:
+- el guardia de alcance rechazó el script real de autenticación;
+- dos e2e fallaron por el chat guiado: los turnos guiados no traían veredicto y faltaban pasados comunes;
+- el árbol quedó sucio por archivos de otros agentes.
+
+Se corrigieron en `fc55417`. Una expectativa e2e cambió a propósito: un mensaje de 3.500 caracteres ya no se evalúa, recibe el turno guiado.
+
+**Navegador real, fase 4** (banco y backend local, 375 px, es y ar RTL): aviso permanente visible, sin desbordes. Premium se verificó en la fase 3; los cambios de esta fase se probaron en el servidor. **Sin pasar por navegador esta fase:** flujo completo de autenticación, Safari y Firefox, lector de pantalla.
+
+**Criterios que siguen sin cumplirse para usuarios externos:** autenticación real, revisión humana de contenido, revisión legal, contacto de privacidad, derechos de Chatto, aceptación del nivel de seguridad.
+
 ## Ciclos finales de la fase 3 (exit codes)
 
 **Dos ciclos consecutivos e idénticos** sobre `58090dd` (árbol `4abda28`, `dirty=0` antes y después). El commit de este informe es solo documentación.

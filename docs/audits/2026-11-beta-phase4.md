@@ -70,6 +70,15 @@ Sin investigación nueva. Aclarado que las 8.000 UTM son el máximo anual, no un
 - Una frase dañina con palabras comunes recibe un turno normal, sin elogio.
 - Autenticación real sin probar.
 - `/chat` sin autenticación ni límite de peticiones.
+- Defecto de orden de opciones: en A1 completo es 35/35 (26/26 en arcos 1–5 y 9/9 en arcos 6–7). La rama de propuesta parte de `d788370` y su check solo mide arcos 1–5.
 - Sin revisión humana de ningún idioma.
 - Pase Premium al portador.
 - La práctica extra no tiene interfaz en el curso de inglés.
+
+## 9. Hallazgos para decidir (revisión de currículo)
+
+- El registro tiene `levelId` y `available` por curso, sin «curso × nivel»; español no tiene readiness ni hito. Resolver antes de construir español A1.
+- `transform.js` no admite `mini_story`.
+- `pedagogyBank.mjs` sale de las regex del evaluador inglés: esos recorridos no miden falsos rechazos reales.
+- De los 39 pasos de recuerdo de A1, 21 ocurren en la misma lección; el motor exige otra sesión, no un día.
+- Varios documentos de currículo quedaron desactualizados (`a1-map.md`, `blueprints/a1.md`, `multilingual-curriculum.md`); lista en `en-a1-readiness-review.md`.

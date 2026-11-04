@@ -24,7 +24,7 @@
 |---|---|
 | Base | `main` @ `086323c`, sin commits nuevos; es ancestro de A, y A es ancestro de B |
 | PR A frente a `main` | 8 commits, 146 archivos |
-| PR B frente a A | Ver la cifra final en § Ciclos de `2026-11-beta-readiness.md` |
+| PR B frente a A | Sobre el commit final; código probado en `fc55417` (§ Ciclos de `2026-11-beta-readiness.md`) |
 | Dependencias | Sin cambios en `requirements.txt`; `package.json` solo añade scripts |
 | Base de datos | **Sin migraciones** ni SQL |
 | Workflows | Cambian `qa.yml` (`fetch-depth: 0` y paso de *rollback*) y el guardia de alcance; los `claude-*` no se tocan; `workflows-paused/` sigue pausado |

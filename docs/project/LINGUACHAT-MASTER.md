@@ -1,7 +1,7 @@
 # LINGUACHAT — MAESTRO DEL PROYECTO
 
 > **Documento vivo.** Se actualiza al terminar cada bloque significativo.
-> - **Última actualización: 2026-11-03, fin de la Fase 3** («Cerrar los bloqueos de lanzamiento, preparar las primeras ventas y garantizar la entrega de informes»). El §0 resume el estado actual; los §1–§18 conservan el detalle de la fase 2, con las correcciones marcadas.
+> - **Última actualización: 2026-11-04, fin de la Fase 4** («Cierre de riesgos críticos, preparación de beta externa y avance curricular»). El §0 resume el estado actual; los §1–§18 conservan el detalle de la fase 2, con correcciones marcadas.
 > - Regla: nada se marca «listo» si solo está diseñado. Cada afirmación cita su evidencia.
 >
 > **Relación con el protocolo de `CLAUDE.md`:**
@@ -11,62 +11,49 @@
 
 ---
 
-## 0. Estado al cierre de la Fase 3 (2026-11-03)
+## 0. Estado al cierre de la Fase 4 (2026-11-04)
 
-**Rama y commit.** `beta/2026-11-es-for-en`, solo local; la cabeza exacta está en `docs/release/2026-11-beta-readiness.md` § Ciclos. Propuesta aparte: `proposal/pre-a1-option-order` @ `7e6d48e`. Respaldos: etiquetas `recovery/*` y las ramas anteriores, intactas.
+**Rama y commits.** `beta/2026-11-es-for-en`, solo local. **Código probado: `fc55417`**; lo posterior es solo documentación (`docs/release/2026-11-beta-readiness.md` § Ciclos). Propuesta aparte: `proposal/pre-a1-option-order` @ `7e6d48e`. Respaldos: etiquetas `recovery/*` y ramas anteriores, intactas.
 
-**Entrega de informes (permanente).** `python scripts/export_reports.py --label <fase> --report <informe>` escribe en `Descargas\LinguaChat-Reportes-ChatGPT\<fase>\`: TXT, ZIP, manifiesto con SHA-256 y verificación.
+**Entrega de informes (permanente).** `python scripts/export_reports.py --label <fase> --report <informe>` escribe en `Descargas\LinguaChat-Reportes-ChatGPT\<fase>\`.
 
-| Área | Estado |
+| Área | Estado real |
 |---|---|
-| **Inglés** | Pre-A1 completo y congelado. Defecto reproducido: la opción correcta aparece primera en 21/21 preguntas (también en 26/26 de A1 y 14/18 de la prueba de nivel). Corrección lista en la rama de propuesta, **pendiente de tu aprobación**. A1 construido y **cerrado** (no aprobado pedagógicamente) |
-| **Español** | Pre-A1, 12 lecciones, sesión, misiones, chat y voz. Evaluador probado con 79 respuestas nuevas: 3 correcciones falsas corregidas. **Sin revisión nativa** (protocolo en `docs/curriculum/es-pre-a1-review.md`) |
-| **Autenticación** | 10 recorridos **simulados** en verde (`check-auth-journeys`). **Real: no probada** (no hay entorno). Procedimiento en `docs/release/2026-11-auth-journeys.md` |
-| **Seguridad** | Filtro medido con 174 frases nuevas: ≈40 % de detección sin ajustar y 100 % de regresión tras corregir. **No cumple ≥95 % en frases nuevas** (declarado). Bloqueo de edad por dispositivo. `/chat` sin autenticación en el servidor |
-| **Privacidad** | La memoria del servidor caduca a las 24 h, no se comparte sin identificador y se borra con «Borrar mis datos». Textos actualizados. Revisión profesional pendiente |
-| **SII** | Afirmaciones verificadas con fuentes oficiales (`docs/business/research/2026-11-03-sii-official-verification.md`). Novedad: Flow y Mercado Pago exigen el inicio de actividades desde el 2-ene-2026. **Sin inicio de actividades, sin régimen y sin entidad** (decisiones tuyas y del contador) |
-| **Procesador** | Polar primero, condicionado a: la respuesta escrita sobre las cuentas `recipient` de Stripe, la AUP (IA y chatbots restringidos) y la comisión de 5 % + 50¢. Paddle como alternativa. **Nada activado** (`docs/business/payment-processor-checklist.md`) |
-| **Premium** | **Práctica adaptativa adicional construida y probada, apagada y no a la venta.** El servidor decide con un pase firmado, máximo 3 bloques al día; la Preview lo fuerza apagado |
-| **Integridad** | 30/30 reproducible desde git (`check:ledger-rollback`), añadido a CI |
+| **Seguridad** | Conjunto sellado de 515 ítems, escrito sin ver las reglas: detección **25,2 % → 35,0 %**; respuestas inseguras **29,3 % → 0,0 %**; falsos positivos 2,3 %. **El filtro no es apto para chat libre.** La beta usa **chat guiado** por defecto (`docs/architecture/tutor-safety-evaluation.md`) |
+| **Autenticación** | Simulada 10/10. **Real: sin probar**, sin proyecto de prueba autorizado. Script y procedimiento listos. El servidor no conoce la identidad: `/chat` queda abierto, con filtro y chat guiado (`docs/architecture/authz-review.md`) |
+| **Edad** | Autodeclaración con bloqueo por dispositivo. Evitable: mentir, otro navegador, frontend modificado, `/chat` directo |
+| **Privacidad** | Memoria de 24 h, solo con ids no adivinables, olvidable. Textos actualizados. Sin revisión profesional |
+| **Inglés** | Pre-A1 congelado. Defecto de orden de opciones confirmado (21/21 en Pre-A1, 35/35 en A1, 14/18 en la prueba de nivel); corrección solo de presentación en la rama de propuesta, **pendiente de tu aprobación**. A1 construido, cerrado y sin aprobación pedagógica (`docs/curriculum/en-a1-readiness-review.md`) |
+| **Español** | 12 lecciones, sesión, misiones, chat guiado y voz. Revisión de 591 respuestas (IA): correcciones falsas 17 → 5; errores aceptados 29 → 12; corregido «¿Té gusta…?». **Sin revisión humana nativa** |
+| **A1–C2** | Inglés: contenido integrado hasta C2, todo cerrado. Español: **diseño** de A1 (`docs/curriculum/es-a1-design.md`), nada construido. Nada demostrado con estudiantes |
+| **Premium** | Práctica adicional construida, **apagada, no a la venta**. Contador persistente y atómico, revocación, límite por cuenta. Falta base gestionada, emisión del pase y atarlo a la cuenta |
+| **Precios regionales** | Modelo configurable, todo en borrador, sin precios aprobados (`docs/business/regional-pricing-policy.md`). Tres bloques al día probablemente no justifican una suscripción por sí solos |
+| **Legal** | Borradores al día con el código. Criterio de mercados: ninguno habilitado para vender. Chatto sin documentar |
+| **SII y pagos** | Sin inicio de actividades, régimen ni entidad. Polar **no** ha aprobado LinguaChat; preguntas escritas pendientes. Ningún procesador activo. Las 8.000 UTM son el máximo anual de patente, no un costo previsto |
+| **QA** | `scripts/qa-cycle.mjs`: cada etapa cuenta. Dos ciclos limpios sobre `fc55417`: `check:all` 110/110, pytest 1666 / 28 omitidas |
 
-**Decisiones pendientes del propietario** (actualiza el §11):
+**Decisiones pendientes del propietario:**
 
-| # | Decisión | Bloquea |
+| # | Decisión | Cambio concreto y consecuencia |
 |---|---|---|
-| 1 | Autorizar el *push* y los dos PR en borrador (`docs/release/2026-11-pr-procedure.md`); correo `noreply` | Preview, CI y beta |
-| 2 | Crear el Supabase **de prueba** y entregar la URL y la clave pública para Preview | Autenticación real y beta externa |
-| 3 | Aprobar la corrección del orden de opciones en Pre-A1 (rama de propuesta) | Calidad del inglés |
-| 4 | Aprobar el cambio de `CLAUDE.md` (verificar el JWT con JWKS) | Atar Premium y `/chat` a la cuenta |
-| 5 | Correo de privacidad y nombre del operador | Beta pública |
-| 6 | Derechos de Chatto | Publicación |
-| 7 | Revisión nativa del español y revisión legal (CL y US) | Beta pública |
-| 8 | Contador (preguntas 1–36) e inicio de actividades | Cualquier cobro |
-| 9 | Escribir a Polar y Paddle (preguntas «escrito») y abrir el *sandbox* | Integración de pagos |
-| 10 | Aceptar o no la cobertura medida del filtro para la beta limitada | Beta externa |
-| 11 | Apertura de inglés A1 | Ese contenido |
+| 1 | Autorizar el *push* y los dos PR en borrador | Publica las ramas; Vercel crea Previews, sin producción (`docs/release/2026-11-pr-procedure.md`) |
+| 2 | Crear un Supabase **de prueba** y entregar URL y clave pública | Permite los 10 recorridos reales. Bloquea toda beta externa |
+| 3 | Aprobar el orden de opciones en Pre-A1 | Cambia solo la presentación de contenido congelado |
+| 4 | Aprobar el cambio de `CLAUDE.md` (verificar JWT con JWKS) | El servidor podría exigir sesión en `/chat` y atar Premium a la cuenta |
+| 5 | Correo de privacidad y nombre del operador | Requisito de los textos legales |
+| 6 | Derechos de Chatto | Bloquea la publicación |
+| 7 | Revisión humana de inglés y español, y revisión legal (CL y US) | `docs/curriculum/human-review-plan.md` |
+| 8 | Aceptar el nivel de seguridad medido para una beta limitada y revisar los mensajes de crisis con un profesional | Beta externa |
+| 9 | Contador e inicio de actividades; escribir a Polar y Paddle | Cualquier cobro |
+| 10 | Apertura de inglés A1 | Ese contenido |
 
-**Riesgos principales:**
-- autenticación real sin probar;
-- el filtro de seguridad no detecta frases nuevas (≈40 %);
-- `/chat` y el pase Premium son al portador;
-- el español no tiene revisión nativa;
-- la elegibilidad de Polar sin confirmar;
-- la dependencia de un contador para emitir los primeros documentos.
+**Riesgos principales:** filtro que no generaliza; crisis indirecta sin apoyo específico; autenticación sin probar; `/chat` sin autenticación ni límite de peticiones; contenido sin revisión humana.
 
-**Meta del 15 de noviembre:**
-- **Beta gratuita, limitada y por invitación**, solo si se cumplen tres condiciones: decisiones 1 y 2 tomadas, los 10 recorridos reales de autenticación aprobados en Preview y el contacto de privacidad (decisión 5) configurado.
-- **Si falta algo:** solo una prueba interna.
-- **Nunca cobros** antes de 8–9.
+**Meta del 15 de noviembre:** beta gratuita, por invitación, solo adultos, solo con decisiones 1, 2, 5 y 8 tomadas y los 10 recorridos reales aprobados. Si falta algo: prueba interna. Nunca cobros.
 
-**Del 16 al 30:**
-- práctica extra en inglés;
-- persistencia del contador Premium;
-- emisión del pase con el *sandbox* del procesador;
-- más español;
-- A1 si se aprueba;
-- mejoras del tutor y la retención.
+**Del 16 al 30:** interfaz de práctica extra en inglés; ampliación del español y corrección de hallazgos humanos; preparar la decisión de A1 (12 condiciones en `en-a1-readiness-review.md`); curso × nivel en el registro antes de construir español A1; clasificador semántico si se autoriza; piloto con estudiantes.
 
-**Próximo paso:** tu respuesta a las decisiones 1–3. Con 1 y 2 ejecuto el procedimiento de PR y los 10 recorridos reales.
+**Próximo paso:** decisiones 1 y 2. Con ellas ejecuto el procedimiento de PR y los recorridos reales.
 
 ## 1. Visión del producto
 - **Qué es:** una plataforma multidioma de práctica conversacional. El estudiante elige qué idioma aprender. Un solo motor educativo.
@@ -277,7 +264,7 @@ Detalle: `docs/release/2026-11-beta-readiness.md` § Ciclos finales.
    - todo en LF.
 4. **i18n:** `node scripts/i18n-apply.mjs src/i18n <spec.json>`, con un JSON `{remove, add}` con los 8 idiomas. `check-i18n` exige completitud.
 5. **QA:**
-   - `npm run check:all` (107 pasos desde la fase 3, por *exit code*), `npm run build` y `npm run check:ledger-rollback` (30/30) en el frontend;
+   - `node scripts/qa-cycle.mjs <nombre>` y `--compare a b` desde la raíz: todas las etapas, con secretos y evaluación sellada;
    - en el backend: `.venv/Scripts/python -m pytest` con `LINGUACHAT_PROVIDER=local`;
    - **dos ciclos limpios** tras cualquier corrección.
 6. **Navegador sin cuenta:**
@@ -286,7 +273,8 @@ Detalle: `docs/release/2026-11-beta-readiness.md` § Ciclos finales.
    - El chat necesita el backend local con CORS para `127.0.0.1:5190` (variable `CORS_ORIGINS`).
 7. Nunca abras A1–C2, actives cobros ni reactives rutinas. Actualiza este maestro al cerrar cada bloque.
 8. **Al cerrar cada fase:** ejecuta `python scripts/export_reports.py --label faseN-AAAA-MM-DD --report docs/audits/<informe>.md` y entrega las rutas absolutas de Windows de la carpeta y del ZIP. Los enlaces Markdown al clon no los puede abrir el propietario.
-9. **Premium en modo de prueba (solo en local):**
-   - inicia el backend con `LINGUACHAT_PREMIUM_ENABLED=true` y `LINGUACHAT_PASS_SIGNING_KEY` (32 caracteres o más, solo local);
+9. **Seguridad:** no abras `tests/safety_eval/holdout_v1.jsonl` ni ajustes reglas con él; si alguien lo lee, hay que pedir otro. Usa `dev_v1`.
+10. **Premium en modo de prueba (solo en local):**
+   - inicia el backend con `LINGUACHAT_PREMIUM_ENABLED=true`, `LINGUACHAT_USAGE_DB=<archivo>` y `LINGUACHAT_PASS_SIGNING_KEY` (32 caracteres o más, solo local);
    - emite un pase con `python scripts/issue_test_pass.py --sub qa-1`;
    - usa la escena del banco `course-today&extra=<pase>`.
