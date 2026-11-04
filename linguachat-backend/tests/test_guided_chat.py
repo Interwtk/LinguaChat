@@ -96,3 +96,16 @@ def test_spanish_course_reports_what_it_could_not_follow_as_guided():
     response, data = post("regalé todas mis cosas", target_language="es", native_language="en")
     assert response.headers["X-LinguaChat-Provider"] == "guided"
     assert data["correction"] is None
+
+
+def test_every_practice_button_of_the_chat_opens_a_guided_activity():
+    import re
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2] / "linguachat-frontend" / "src" / "components"
+    source = (root / "layout" / "ConversationRoom.jsx").read_text(encoding="utf-8") + (root / "chat" / "PracticeToolbar.jsx").read_text(encoding="utf-8")
+    prompts = set(re.findall(r"(?:text|prompt): '([^']+)'", source))
+    assert len(prompts) >= 6
+    for prompt in prompts:
+        response, data = post(prompt)
+        assert response.headers["X-LinguaChat-Provider"] == "local", prompt
+        assert data["correction"] is None

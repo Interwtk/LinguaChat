@@ -111,3 +111,19 @@ def neutral_reply(reply: str) -> str:
         if reply.startswith(opener):
             return "Thanks. " + reply[len(opener):]
     return reply
+
+
+# The chat's own practice buttons (ConversationRoom, PracticeToolbar). Each one is
+# a guided activity with a fixed opening, in English, the language practised.
+ACTIVITIES = {
+    "correct my next sentence and give me one tiny challenge.": "OK. Write one short sentence about today. I will check it.",
+    "ask me one question for my level.": "What do you like to eat for breakfast?",
+    "start a short cafe roleplay with me.": "Hello! Welcome to the cafe. What would you like to drink?",
+    "give me two options and ask me to choose the best answer.": "Choose the best answer: \"I am from Chile\" or \"I from Chile\"?",
+    "make the next exercise a little harder.": "OK. Write two sentences about your family. Use \"and\" or \"but\".",
+    "explain the next correction in very simple words.": "OK. Write a short sentence, and I will explain any mistake in simple words.",
+}
+
+
+def activity_reply(message: str) -> str | None:
+    return ACTIVITIES.get(message.strip().lower())

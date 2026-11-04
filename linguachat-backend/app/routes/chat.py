@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from ai.chat_evaluation import safe_assistance
 from ai.engine import generate_response
 from ai import es_tutor
-from ai.guided_scope import guided_mode, in_scope, neutral_reply
+from ai.guided_scope import activity_reply, guided_mode, in_scope, neutral_reply
 from ai.provider_policy import real_provider_allowed
 from ai.safety import ALLOW, assess, assess_turn, log_verdict, safety_reply, screen_reply
 from ai.schemas import ChatMode, ChatResult, LanguageInfo, LanguageLevel, LearningAction, MissionContext
@@ -379,7 +379,10 @@ def chat(req: ChatRequest, response: Response):
             response.headers["X-LinguaChat-Provider"] = "safety"
             return _safety_result(out, native_language, target_language)
         guided = guided_mode() and generated.provider == "local" and not mission_context
-        if guided and result.mode != ChatMode.TRANSLATION and not verdict.care_note:
+        activity = activity_reply(message) if guided else None
+        if activity:
+            result.reply, result.correction, result.explanation = activity, None, None
+        elif guided and result.mode != ChatMode.TRANSLATION and not verdict.care_note:
             if not in_scope(message, result.correction):
                 response.headers["X-LinguaChat-Provider"] = "guided"
                 return _guided_result(native_language, target_language)
