@@ -20,7 +20,7 @@ Una beta **limitada, gratuita y solo para adultos**, por invitación. Dos recorr
 - Correcciones con explicación en el idioma del estudiante, por evaluadores separados por idioma.
 - Repasos espaciados y sesión diaria **por curso**.
 - Misiones de español armadas con lecciones completadas.
-- Chat de práctica con Lingua en inglés y en español, por reglas. Lo dice y ofrece actividades guiadas cuando no entiende.
+- Chat **guiado** con Lingua en inglés y en español, por reglas: reacciona solo a frases simples de principiante; lo demás recibe un turno neutro con una actividad guiada. **No hay chat libre** (`docs/architecture/tutor-safety-evaluation.md`).
 - Voz del navegador para escuchar español e inglés: apoyo, no evaluación del habla.
 - Pregunta de edad neutral (solo adultos) y seguridad del tutor en el servidor.
 - Descargar y borrar los datos propios.

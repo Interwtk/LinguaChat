@@ -89,7 +89,7 @@ La marca «afecto» del catálogo no decide la tributación real (interpretació
 | Boleta electrónica obligatoria desde 2021 | **CONFIRMADO** | https://www.sii.cl/destacados/boletas_electronicas/index.html [F] | La Res. 53/2022 eliminó el resumen diario [B] |
 | F29: día 12, o día 20 si se declara por internet | **CORREGIDO (precisión)** | FAQ SII [B] | El día 20 es para 1.ª categoría **facturadora electrónica** que declara y paga en línea. «Sin pago», hasta el día 28 |
 | F22 en abril | Sin cambio | — | No se reverificó |
-| Patente municipal: 2,5 ‰ a 5 ‰ del capital propio, mínimo 1 UTM | **CORREGIDO** | DL 3.063, arts. 23 y 24 (BCN) [F] | **Tope de 8.000 UTM**, no 4.000. La BCN registra la Ley 21.850 (DO 17-10-2026): revisar qué cambió (PENDIENTE) |
+| Patente municipal: 2,5 ‰ a 5 ‰ del capital propio, mínimo 1 UTM | **CORREGIDO** | DL 3.063, arts. 23 y 24 (BCN) [F] | **Tope legal anual de 8.000 UTM**, no 4.000. Es un máximo, no el costo previsto para una empresa pequeña. La BCN registra la Ley 21.850 (DO 17-10-2026): revisar qué cambió (PENDIENTE) |
 | Conservar documentos 6 años | **CONFIRMADO** | https://www.sii.cl/preguntas_frecuentes/declaracion_renta/001_140_4628.htm [F] | Más tiempo para pérdidas o remanentes |
 | Tipo de cambio para ingresos en USD | **PENDIENTE** | Solo indicios del buscador (dólar observado) [B] | Pregunta al contador |
 

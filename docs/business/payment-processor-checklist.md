@@ -22,6 +22,25 @@
 | Webhooks y verificación | **Standard Webhooks**: coincide con `app/billing/entitlements.py::verify_standard_webhook` | `Paddle-Signature` (`ts:raw_body`, HMAC-SHA256, tolerancia 5 s): **hace falta un verificador propio** |
 | *Sandbox* | Sí (`sandbox-api.polar.sh`, tarjeta 4242); KYC: escrito | Sí, sin verificación; simulador de webhooks |
 
+## Cómo describir el producto
+
+**Hoy:** «Aplicación web para aprender idiomas con lecciones y un tutor local guiado por reglas. Sin IA generativa: las respuestas son plantillas y las prácticas son guiadas.»
+
+**Futuro:** cualquier función basada en modelos generativos cambia la descripción y debe evaluarse otra vez contra la política del procesador **antes** de activarse.
+
+**Polar no ha aprobado LinguaChat.** Que Chile aparezca en su lista no implica aprobación: depende de su política vigente y de su confirmación escrita. Lo mismo vale para Paddle.
+
+## Procedimiento cuando el propietario decida empezar (nada de esto se ha hecho)
+
+1. Consultar al contador: estructura, régimen, inicio de actividades, documentos (preguntas 1–36).
+2. Enviar las preguntas escritas a Polar y Paddle.
+3. Elegir procesador con esas respuestas.
+4. Crear la cuenta (propietario), leer el contrato con revisión legal y pasar el KYC.
+5. Abrir el *sandbox*. Autorizar la integración de pruebas y una base de datos para el contador Premium.
+6. Publicar términos de suscripción: renovación, cancelación, reembolso, derecho de retracto aplicable.
+7. Probar compra, renovación, cancelación, reembolso y contracargo en el *sandbox*.
+8. Autorizar por escrito el primer cobro real, en mercados habilitados (`docs/legal/jurisdiction-matrix.md`).
+
 ## Decisión sugerida (no tomada)
 
 1. **Primero Polar**, por los *payouts* en CLP y porque su webhook ya está implementado. **Condición:** la respuesta escrita resuelve la contradicción de Stripe y la clasificación en la AUP.

@@ -44,7 +44,7 @@ Al terminar la sesión gratuita del día aparecen bloques cortos adicionales. Ho
 
 **Límites declarados:**
 - **El pase es un token al portador.** Copiado, otro podría usarlo hasta que venza. Atarlo a la cuenta exige que el servidor verifique la sesión de Supabase, algo que `CLAUDE.md` no permite hoy. Propuesta: §8.
-- **El contador diario vive en la memoria del proceso.** Un reinicio o una segunda instancia lo olvidan, así que es un límite de uso justo, no una frontera de seguridad. Para que sea firme hace falta persistencia (KV/DB), que requiere autorización.
+- **El contador** ya es persistente y atómico en SQLite (fase 4), pero el sistema de archivos de Vercel no persiste: en producción hace falta una base gestionada (§11).
 - **El planificador está en el paquete del navegador.** Alguien que modifique el JavaScript podría armar su propia práctica local. Eso solo le da lo que el planificador gratuito ya permite construir; el valor vendido es la selección diaria y su límite, que decide el servidor.
 
 ## 4. Costo por usuario
@@ -98,12 +98,44 @@ Para activar **sin** cambiar el contrato:
 ## 9. Pendiente
 
 - Interfaz de práctica extra para el curso de inglés. El planificador inglés (`engine/session.js`) ya tiene las piezas; falta su tarjeta y su ejecutor sin persistencia.
-- Persistencia del contador (KV) al activar.
+- Base gestionada para el contador al activar (§11).
 - Emisión real del pase (*webhook* y *checkout*), bloqueada por el procesador.
+
+## 11. Revisión técnica (fase 4)
+
+| Tema | Estado | Evidencia |
+|---|---|---|
+| Pases firmados | HMAC-SHA256, clave solo en el servidor | Pruebas: falso, editado, otra clave → «free» |
+| Caducidad | `exp`, vida máxima 40 días | Prueba |
+| Revocación | Por pase (`jti`) y por cuenta (todo lo emitido antes de una fecha, para reembolsos) | Pruebas; sobrevive a un reinicio |
+| Vinculación a la cuenta | **No.** El pase declara `sub`, pero el servidor no verifica la sesión (`docs/architecture/authz-review.md` §4) | Bloqueado por contrato |
+| Manipulación del navegador | El navegador no elige bloque ni guarda bandera | Pruebas; `check-premium-practice` |
+| Reutilización del pase | Funciona en otro dispositivo; el límite es **por cuenta** | Prueba |
+| Límites entre dispositivos | Compartidos por `sub` | Prueba |
+| Concurrencia | Una transacción `BEGIN IMMEDIATE` por reclamo: 24 hilos, 3 bloques | Prueba |
+| Reinicio del servidor | El contador y las revocaciones persisten en SQLite | Pruebas |
+| Cambio de fecha | Día UTC **del servidor**; el reloj del navegador no cuenta | Prueba |
+| Expiración de suscripción | Pase vencido → «tu Premium terminó» | Prueba |
+| Sin conexión | Falla cerrado | `check-premium-practice`, navegador |
+
+**Qué depende de qué:**
+
+| Dato | Hoy | Producción |
+|---|---|---|
+| Uso diario | SQLite (`LINGUACHAT_USAGE_DB`) | Base gestionada con la misma interfaz (`app/billing/usage_store.py`) |
+| Revocaciones | SQLite | Igual |
+| Estado de suscripción | Máquina de estados sin persistir (`entitlements.py`) | Base gestionada, alimentada por *webhooks* |
+| Pase | Lo emite solo el emisor de prueba | Se emite tras un evento verificado |
+
+Premium **se niega a activarse** sin almacén durable. La memoria solo existe con `LINGUACHAT_PREMIUM_ALLOW_MEMORY_STORE=true`, para QA local.
+
+**Arquitectura mínima para activar:** una tabla `usage(sub, day, used)`, `revoked_pass(jti)`, `revoked_subject(sub, before_iat)` y `entitlement(sub, state, period_end, last_event)`, en una base gestionada que el propietario autorice. Ninguna guarda contenido de aprendizaje.
+
+**Valor y precio:** `docs/business/regional-pricing-policy.md`. El límite de 3 es provisional.
 
 ## 10. Pruebas
 
-- Servidor: `tests/test_premium_practice.py` (11):
+- Servidor: `tests/test_premium_practice.py` (20) y `tests/test_regional_pricing.py` (9):
   - apagado por defecto;
   - la Preview no puede encenderlo;
   - pase falso o editado → gratis;

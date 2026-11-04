@@ -1,6 +1,11 @@
 # Política de edad y seguridad del contenido (BORRADOR)
 
-> **BORRADOR PARA REVISIÓN JURÍDICA.** Fecha: 2026-11-02; actualización de la fase 3: 2026-11-03.
+> **BORRADOR PARA REVISIÓN JURÍDICA.** Fecha: 2026-11-02; actualizaciones: fase 3 (2026-11-03) y fase 4 (2026-11-04).
+>
+> **Fase 4 — evaluación independiente (sustituye a las cifras de la fase 3 como medida de generalización):**
+> - Conjunto sellado de 515 ítems, escrito sin ver las reglas: detección **25,2 % → 35,0 %**; respuestas inseguras **29,3 % → 0,0 %**; falsos positivos 2,3 %.
+> - **El filtro no es apto como barrera de chat libre.** La beta usa chat guiado por defecto.
+> - Detalle, categorías y limitaciones: `docs/architecture/tutor-safety-evaluation.md`. Edad y rutas alternativas: `docs/architecture/authz-review.md` §5.
 >
 > **Fase 3 — evasión del control de edad (revisado):**
 > - **Corregido:**
