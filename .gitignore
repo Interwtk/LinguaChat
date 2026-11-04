@@ -28,3 +28,7 @@ Thumbs.db
 # User-owned archives live beside the repo and are never part of it. CI already
 # refuses a tracked .zip; this stops `git add -A` from staging one in the first place.
 *.zip
+
+# local QA cycles and auth QA output
+.qa/
+auth-qa-result.json
