@@ -1,7 +1,7 @@
 # LINGUACHAT — MAESTRO DEL PROYECTO
 
 > **Documento vivo.** Se actualiza al terminar cada bloque significativo.
-> - **Última actualización: 2026-11-07, fin de la Fase 6** («Operación Beta Real»). El §0 resume el estado actual; los §1–§18 conservan el detalle de la fase 2, con correcciones marcadas.
+> - **Última actualización: 2026-11-07, fin de la Fase 7** («Release readiness», con la actualización del propietario: proyecto Supabase actual). El §0 resume el estado actual; los §1–§18 conservan el detalle de la fase 2, con correcciones marcadas.
 > - Regla: nada se marca «listo» si solo está diseñado. Cada afirmación cita su evidencia.
 >
 > **Relación con el protocolo de `CLAUDE.md`:**
@@ -11,50 +11,49 @@
 
 ---
 
-## 0. Estado al cierre de la Fase 6 (2026-11-07)
+## 0. Estado al cierre de la Fase 7 (2026-11-07)
 
-**Rama y commits.** `beta/2026-11-es-for-en`, solo local. **Código probado: `409bbf0`**; lo posterior es solo documentación. Propuestas sin fusionar: `proposal/backend-jwt-verify` @ `ff6e7d8`; `proposal/pre-a1-option-order` @ `7e6d48e` (antecedente). Respaldos: `recovery/*`, intactos.
+**Rama y commits.** `beta/2026-11-es-for-en`, solo local. **Código probado: `4778fb8`**; lo posterior es solo documentación. Sin publicar: A 8 commits, B 82, propuestas JWT 52 y orden de opciones 27. `origin/main` @ `086323c`, sin cambios. Respaldos `recovery/*` intactos. Informe: `docs/audits/2026-11-beta-phase7.md`.
 
 **Entrega de informes (permanente).** `python scripts/export_reports.py --label <fase> --report <informe>` → `Descargas\LinguaChat-Reportes-ChatGPT\<fase>\`.
 
-**Estado del producto: A (beta interna) sí; B (beta externa gratuita) no; C (comercial) no** (`docs/business/commercial-readiness-checklist.md`).
+**Estado: A (interna) sí; B (externa gratuita) no; C (comercial) no.** Matriz completa en el informe de la fase 7, §7.
 
 | Área | Estado real |
 |---|---|
-| **Tutor guiado** | Sellado v2 nuevo (480): válidas **75,5 %**, correcciones falsas 0,9 %, errores 61,5 %, errores aceptados 5,2 %, preguntas **63,9 %**. Sellado v1: válidas 63,1 → 69,9 %, preguntas 40,9 → 61,4 % (`docs/architecture/guided-tutor.md`) |
-| **Seguridad** | Detección sellada 35 %; crisis indirectas **5 %**. Seguridad manejada en situaciones: v1 52,3 %, v2 **29,2 %** (desarrollo 87,5 %: no generaliza). Dañinos tratados como respuesta: **0 de 44, 0 de 48, 0 de 294**. Chat libre: **cerrado** |
-| **Autenticación** | Simulada 10/10. **Real: sin probar.** Frontend listo para enviar el token, apagado. Backend en rama de propuesta. Guía Supabase de prueba lista; nada configurado (`docs/architecture/jwt-integration-review.md`) |
-| **Edad** | Solo adultos. Autodeclaración evitable. No es verificación |
-| **Inglés** | Pre-A1 abierto, congelado. A1 cerrado: 24 defectos medidos, 2 corregidos en el evaluador, 11 de 12 condiciones sin cumplir. Orden de opciones: equivalencia probada, **espera tu aprobación** |
-| **Español** | Pre-A1 abierto (12). Sellado v2: válidas 91,7 %, correcciones falsas 1,3 %, errores detectados 60,5 %, errores aceptados 15,8 %. Débil: variantes regionales y vocabulario. A1: **6 de 20 lecciones, cerrado**. A2–C2: nada. **Sin revisión humana** |
-| **Curso × nivel** | Lector compatible, sin migración; progreso antiguo intacto en pruebas simuladas |
-| **Experiencia** | Recorrido en navegador: 3 textos engañosos corregidos; situaciones visibles desde el chat |
-| **Premium** | **Apagado, no a la venta.** Hoy no justifica suscripción; propuestas de valor sin quitar lo gratuito |
-| **Precios** | Modelo completo; ninguna región vendible; ningún precio aprobado |
-| **GitHub** | Repositorio **público**, `main` sin protección, commits con correo personal; Preview no verificada como privada (`docs/release/2026-11-pr-authorization-request.md`) |
-| **Legal y SII** | Borradores al día; privacidad cubre situaciones y token. Sin inicio de actividades; Polar y Paddle sin confirmar; Chatto sin documentar |
-| **QA** | Dos ciclos idénticos sobre `409bbf0`: 25/25, `check:all` 117/117, pytest 1799 / 28 omitidas |
+| **Git y PR** | Nada publicado. Repositorio **público**, `main` **sin protección**. #135 en conflicto, #137 en borrador y fusionable, sin tocar |
+| **Correo personal** | En autor y *committer* de todos los commits sin publicar. Publicarlo es **irreversible**. Script de reescritura a noreply ensayado en un clon: mismos árboles, la cadena main → A → B se conserva. **No aplicado** |
+| **Conjuntos sellados** | 5 archivos se harían públicos con el *push* y dejarían de medir. Recomendación: retirarlos del historial publicado en la misma reescritura |
+| **Preview de Vercel** | **No verificada como privada.** Usará el **mismo** proyecto Supabase que producción, así que la protección es imprescindible. Guía clic a clic: `docs/release/2026-11-hosting-and-preview-protection.md` |
+| **Supabase** | **Decisión del propietario:** el proyecto actual, sin otro proyecto ni plan nuevo. La app solo toca Auth y metadatos de edad (`learner_preferences` no, con `CLOUD_PREFERENCES_RELEASED=false`). Revisión previa de solo lectura y cuentas `+lcqa`: `docs/release/2026-11-supabase-existing-project-qa.md` |
+| **Autenticación** | Simulada 10/10. **Real: 0 de 10, sin ejecutar.** Ejecutor listo con pruebas negativas del servidor. Claves `anon` y `sb_publishable_` aceptadas; secreta rechazada en el navegador |
+| **JWT** | Propuesta sin fusionar, apagada. Ensayo de integración: **1886 pruebas** pasan. Activación atómica documentada: frontend y backend a la vez, solo en Preview. **No migrar ni rotar claves** de un proyecto en uso sin plan aprobado |
+| **Seguridad del tutor** | Sin cambios en esta fase. Sellado v2: válidas 75,5 %, preguntas 63,9 %, seguridad manejada **29,2 %**, dañinos como respuesta **0 de 48**. Detección global 35 %; crisis indirectas **5 %**. Chat libre cerrado |
+| **Inglés** | Pre-A1 abierto, congelado. A1 cerrado (22 defectos abiertos). Orden de opciones **esperando aprobación** |
+| **Español** | Pre-A1 abierto. A1: 6 de 20 lecciones, cerrado. Sellado v2: válidas 91,7 %, errores detectados 60,5 % |
+| **Premium y precios** | **Apagado.** 13 requisitos para vender, ninguno completo. Ninguna región vendible |
+| **Hosting** | **Vercel Hobby prohíbe el uso comercial.** Cobrar exige Pro (USD 20 al mes) u otra opción. Si una beta gratuita ya cuenta como comercial: **ambiguo** |
+| **SII** | Sin inicio de actividades ni régimen; contador pendiente. Polar y Paddle: *merchant of record*, Chile admitido, aceptación de un producto con IA **ambigua** |
+| **QA** | Dos ciclos idénticos sobre `4778fb8`: 25/25, `check:all` 118/118, pytest 1799 / 28 omitidas |
 
-**Decisiones pendientes del propietario:**
+**Autorizaciones pendientes, en orden:**
 
-| # | Decisión | Cambio y consecuencia |
+| # | Decisión | Consecuencia |
 |---|---|---|
-| 1 | Correo de autor: reescribir a noreply o publicar con el personal | Reescribir cambia todos los hashes y obliga a repetir QA; publicar expone el correo para siempre |
-| 2 | Revisar *Deployment Protection* y variables de Preview en Vercel | Sin esto, una Preview puede ser pública o tocar el Supabase de producción |
-| 3 | *Push* y dos PR en borrador | Publica ramas en un repositorio público; Vercel crea Previews |
-| 4 | Crear el Supabase **de prueba** (guía) y entregar URL y clave pública | Permite los 10 recorridos reales |
-| 5 | JWT: `CLAUDE.md`, rama y `PyJWT[crypto]` | `/chat` exige sesión; encender frontend y backend a la vez, solo en Preview |
-| 6 | Orden de opciones en Pre-A1 y prueba de nivel | Solo presentación; equivalencia probada |
-| 7 | Correo de privacidad, operador, derechos de Chatto | Requisito de B |
-| 8 | Revisión humana (inglés, español, crisis) y legal | Requisito de B |
-| 9 | Contador, inicio de actividades, Polar o Paddle | Requisito de C |
-| 10 | Apertura de inglés A1 | Bloqueada por sus defectos |
+| 1 | Reescribir commits a noreply (dirección copiada de GitHub → Settings → Emails) y retirar los conjuntos sellados del historial | Hashes nuevos y dos ciclos de QA más. Sin esto, el correo y los sellados quedan públicos para siempre |
+| 2 | Activar *Standard Protection* con *Vercel Authentication* y revisar las variables | Sin esto, una Preview puede ser pública y llegar al proyecto de producción |
+| 3 | *Push* y dos PR en borrador | Código público y Previews |
+| 4 | Revisión previa de solo lectura del proyecto Supabase, y añadir la URL de Preview en *Redirect URLs* | Permite los 10 recorridos con cuentas `+lcqa` |
+| 5 | Ejecutar los recorridos (ejecutor y navegador) | La única prueba real de B |
+| 6 | JWT: `CLAUDE.md`, rama y dependencia | Encender después de 5 |
+| 7 | Orden de opciones · contacto de privacidad · Chatto · revisión humana y legal | Requisitos de B |
+| 8 | Hosting comercial, contador, procesador | Requisitos de C |
 
-**Meta del 15 de noviembre:** sin las decisiones 2, 3, 4, 7 y 8 y los 10 recorridos reales, el 15 es una **beta interna (A)**, no externa. Nunca cobros.
+**Meta del 15 de noviembre:** beta externa gratuita por invitación (5 a 15 adultos, sin Premium) **solo si** se completan 1 a 5 y los 10 recorridos pasan, más el contacto de privacidad. Si no: beta interna. Nunca cobros.
 
-**Del 16 al 30:** frases reales de un piloto con consentimiento para ampliar situaciones; corregir defectos de inglés A1; arcos 3 a 6 de español A1, cerrados; variantes regionales del español; encender JWT en Preview si se aprueba; informe de retención como candidato Premium.
+**Del 16 al 30 y después:** defectos de inglés A1 y decisión de apertura; español A1 hasta 20 lecciones; frases reales del piloto, con consentimiento, para el tutor; JWT en Preview y luego producción; preparar C (hosting, contador, procesador) sin cobrar; A2 en adelante solo con revisión humana.
 
-**Próximo paso ejecutable:** decisiones 1 a 4, en ese orden.
+**Próximo paso que desbloquea el lanzamiento:** decisiones 1 y 2, y después 4.
 
 ## 1. Visión del producto
 - **Qué es:** una plataforma multidioma de práctica conversacional. El estudiante elige qué idioma aprender. Un solo motor educativo.

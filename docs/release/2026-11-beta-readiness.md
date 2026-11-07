@@ -185,6 +185,29 @@
 
 **Nada de esto se ha ejecutado.**
 
+## Ciclos de la fase 7 (`scripts/qa-cycle.mjs`)
+
+**Commit de código probado: `4778fb8`** (árbol limpio antes y después). Dos ciclos; `--compare`: **IDENTICAL AND CLEAN**. Lo posterior es documentación.
+
+| Etapa | h1 y h2 |
+|---|---|
+| Etapas · `check:all` | **25/25** · **118/118** (nueva: clave pública en el navegador) |
+| `build` · `check:i18n` · GitHub integration · Foundry · *rollback* · adaptación · alcance de la nube | todo ok |
+| Backend `pytest` | **1799 / 28 omitidas** |
+| Sellados (miden, no aprueban) | seguridad 35,4 %; guiado v1 69,9 %; v2 75,5 %; por escenarios 35,0 %; dañinos como respuesta 0 |
+| e2e · correo · garantías | 4/4 y 5/5 · ok · 16/16 |
+| Secretos | árbol: autoprueba 9/9, 841 versionados, 0; historial: 537.356 líneas, 0 |
+
+**Además (fuera del ciclo):**
+- Ensayo de fusión de la rama JWT en un *worktree* desechable: 1886 pruebas, guardia en verde.
+- Ensayo de reescritura a noreply en un clon: árboles idénticos.
+
+**Historia.**
+- Un ciclo se detuvo a propósito: cambió la decisión sobre Supabase y había que tocar el ejecutor.
+- El guardia de alcance rechazó dos veces textos míos: un nombre de rol privado, una URL de ejemplo y el nombre de otra organización. Corregidos sin debilitar el guardia.
+
+**Tipos de prueba.** Simuladas: 10 recorridos (25 casos), autoprueba del ejecutor (14). Reales: **ninguna**. Pendiente: revisión previa del proyecto actual, recorridos con cuentas `+lcqa`, Preview en incógnito.
+
 ## Ciclos de la fase 6 (`scripts/qa-cycle.mjs`)
 
 **Commit de código probado: `409bbf0`** (árbol limpio antes y después). Dos ciclos; `--compare`: **IDENTICAL AND CLEAN**. Lo posterior es documentación.
