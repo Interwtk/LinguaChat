@@ -39,14 +39,6 @@ Reglas: eventos idempotentes por id del procesador; un evento viejo no retrocede
 
 **Hoy no justifica una suscripción.** Gratis ya incluye lecciones, repaso, misiones y situaciones. Premium solo añade tres bloques al día de lo mismo, y A1 sigue cerrado. Además, el tutor local tiene costo casi cero: no hay costo que justifique limitar.
 
-| Función con bajo costo marginal | Valor | Riesgo |
-|---|---|---|
-| Plan de repaso espaciado ampliado (ya hay datos locales) | Alto si `retained` predice retención | Bajo |
-| Informe mensual: qué retuviste, qué perdiste | Alto y comprensible | Debe ser honesto |
-| Más situaciones por nivel | Medio; el tutor las sigue | Requiere autoría y revisión |
-| Niveles superiores | El mayor, cuando estén aprobados | Exige revisión humana y evidencia |
-| Exportar progreso en PDF | Bajo a medio | Bajo |
-
 **Fase 6: qué podría valer la pena, sin quitar nada a lo gratuito**
 
 | Propuesta | Costo marginal | Qué lo haría valioso | Requisito |
