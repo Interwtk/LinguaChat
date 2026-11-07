@@ -341,7 +341,7 @@ diff -ruN a/docs/audits/2026-10-31-claude-local-audit.md b/docs/audits/2026-10-3
 +
 +| Dato | Valor |
 +|---|---|
-+| Ruta local | `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\LinguaChat-main` (anidada: el ZIP creó una carpeta dentro de otra) |
++| Ruta local | `C:\Users\<usuario>\Music\LinguaChat-main\LinguaChat-main` (anidada: el ZIP creó una carpeta dentro de otra) |
 +| Origen | ZIP de la rama `main` de `Interwtk/LinguaChat`, sin `.git` |
 +| Versión verificada | `main@086323c41f5f93ff8af12ee70304c30b1633f2d0` (2026-10-31T03:50:42Z) |
 +| Método | Hash de blob local con `git hash-object` (sin repositorio) frente al árbol remoto (`gh api git/trees`, solo lectura). Resultado: 607 = 607, 0 diferencias |
@@ -737,7 +737,7 @@ diff -ruN a/docs/audits/2026-10-31-claude-local-audit.md b/docs/audits/2026-10-3
 +
 +## 12. Guía de continuidad para futuras sesiones locales
 +
-+- **Ruta del proyecto:** `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\LinguaChat-main`. Ojo con la carpeta anidada.
++- **Ruta del proyecto:** `C:\Users\<usuario>\Music\LinguaChat-main\LinguaChat-main`. Ojo con la carpeta anidada.
 +- **No hay `.git`.** Para comparar con GitHub (solo lectura):
 +  - `git hash-object --stdin-paths` sobre la lista de archivos;
 +  - `gh api repos/Interwtk/LinguaChat/git/trees/<sha>?recursive=1`.
@@ -3107,7 +3107,7 @@ diff -ruN a/docs/audits/2026-10-31-p0-hardening.md b/docs/audits/2026-10-31-p0-h
 +**Alcance:** solo P0-1 (pérdida de progreso entre pestañas) y P0-2 (perfil local corrupto). Ningún P1 se tocó.
 +
 +**Copias de seguridad:**
-+- `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_originals-086323c\` guarda una copia exacta de cada archivo existente antes de modificarlo. Las 17 copias tienen el mismo hash que `main` en GitHub.
++- `C:\Users\<usuario>\Music\LinguaChat-main\_originals-086323c\` guarda una copia exacta de cada archivo existente antes de modificarlo. Las 17 copias tienen el mismo hash que `main` en GitHub.
 +- `docs/audits/2026-10-31-p0-hardening.diff` contiene el diff unificado completo para revisión (no hay `.git`).
 +
 +---
@@ -3479,7 +3479,7 @@ diff -ruN a/docs/audits/2026-10-31-p0-hardening.md b/docs/audits/2026-10-31-p0-h
 +
 +## 11. Instrucciones de continuación
 +
-+- **Para volver al estado original:** copiar `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_originals-086323c\` sobre la carpeta del proyecto y borrar los 4 archivos nuevos de código y pruebas.
++- **Para volver al estado original:** copiar `C:\Users\<usuario>\Music\LinguaChat-main\_originals-086323c\` sobre la carpeta del proyecto y borrar los 4 archivos nuevos de código y pruebas.
 +- **Para reproducir la verificación:**
 +  - `cd linguachat-frontend`;
 +  - `node scripts/check-same-account-tabs.mjs`;
@@ -7007,8 +7007,8 @@ diff -ruN a/docs/audits/2026-10-31-p1-teaching-intelligence.md b/docs/audits/202
 +- No incluye secretos, archivos `.env`, copias de seguridad, `node_modules`, `dist` ni `.venv`.
 +
 +**Copias de seguridad:**
-+- `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_snapshot-p0\` guarda el estado completo al terminar P0.
-+- `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_originals-086323c\` guarda los originales de `main`.
++- `C:\Users\<usuario>\Music\LinguaChat-main\_snapshot-p0\` guarda el estado completo al terminar P0.
++- `C:\Users\<usuario>\Music\LinguaChat-main\_originals-086323c\` guarda los originales de `main`.
 +
 +**Lo que no se hizo:**
 +- No hubo push, merge, despliegue ni cambios en Supabase o Vercel.
@@ -17237,7 +17237,7 @@ diff -ruN a/docs/audits/2026-10-31-p2-product-hardening.md b/docs/audits/2026-10
 +- No incluye secretos, archivos `.env`, copias de seguridad, `node_modules`, `dist`, `.venv` ni cachés.
 +
 +**Copia de seguridad previa a editar:**
-+- `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_snapshot-p1\` guarda el estado completo de P1.
++- `C:\Users\<usuario>\Music\LinguaChat-main\_snapshot-p1\` guarda el estado completo de P1.
 +- `_snapshot-p0\` y `_originals-086323c\` siguen intactos.
 +
 +**Lo que no se hizo:**
@@ -21909,7 +21909,7 @@ diff -ruN a/docs/audits/2026-10-31-p3-intelligent-tutor.md b/docs/audits/2026-10
 +
 +**Base de partida:**
 +- Estado final de la fase 3 (`docs/audits/2026-10-31-p2-product-hardening.md`).
-+- Se respaldó entero antes de editar en `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_snapshot-p2\`.
++- Se respaldó entero antes de editar en `C:\Users\<usuario>\Music\LinguaChat-main\_snapshot-p2\`.
 +- Los informes y diffs anteriores, y los respaldos `_originals-086323c`, `_snapshot-p0` y `_snapshot-p1`, siguen intactos.
 +
 +**Diff de esta fase:**

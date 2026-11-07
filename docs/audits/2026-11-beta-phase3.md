@@ -7,7 +7,7 @@
 ## 0. Entrega de informes (prioridad inmediata)
 
 **Causa del «archivo no encontrado»:**
-- Los documentos viven en `C:\Users\Sebastian Gamboa\Music\LinguaChat-integration`, pero la sesión de Claude trabaja en `C:\Users\Sebastian Gamboa\Music\LinguaChat-main`.
+- Los documentos viven en `C:\Users\<usuario>\Music\LinguaChat-integration`, pero la sesión de Claude trabaja en `C:\Users\<usuario>\Music\LinguaChat-main`.
 - Los enlaces relativos de las respuestas (`docs/...`) apuntaban a `LinguaChat-main\docs\...`, que no existe; el panel de la app solo abre archivos de la carpeta de la sesión.
 - Se descartaron otras causas: los archivos existen, se leen, están en UTF-8 y su tamaño es normal.
 

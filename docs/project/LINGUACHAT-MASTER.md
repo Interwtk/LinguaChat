@@ -68,7 +68,7 @@
 
 | Elemento | Valor |
 |---|---|
-| Clon | `C:\Users\Sebastian Gamboa\Music\LinguaChat-integration` |
+| Clon | `C:\Users\<usuario>\Music\LinguaChat-integration` |
 | Rama de trabajo | `beta/2026-11-es-for-en` (local, sin *upstream*, *push* deshabilitado) |
 | Puntos de recuperación | `recovery/p6-integration-e656e04` (P0–P5) · `recovery/beta-block1-ee50e1a` (bloque 1) |
 | Último commit de código | `f9f77b5` (dos ciclos limpios); antes `d603ef2` (derechos inactivos y documentos) y `793f3ee` (QA en navegador) |

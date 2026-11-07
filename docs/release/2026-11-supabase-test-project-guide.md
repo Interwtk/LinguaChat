@@ -139,7 +139,7 @@ Comprueba contraseña errónea y correcta, token alterado rechazado, sesión rec
 
    ```powershell
    cd C:\Users\<tú>\linguachat-qa-privado
-   node --env-file=auth-qa.env "C:\Users\Sebastian Gamboa\Music\LinguaChat-integration\linguachat-frontend\src\auth\qa-real-journeys.mjs"
+   node --env-file=auth-qa.env "C:\Users\<usuario>\Music\LinguaChat-integration\linguachat-frontend\src\auth\qa-real-journeys.mjs"
    ```
 
 4. Primera vez: crea A y B y envía dos correos de confirmación. Fallará «J2 right password» con el aviso de confirmar los correos. Abre ambos correos, confirma y vuelve a ejecutar.

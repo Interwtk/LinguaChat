@@ -88,7 +88,7 @@ Hay cuatro archivos en `.github/workflows/`, iguales de nombre en `main`, A y B.
 ## 5. Correo de autor
 
 **Comprobado:**
-- `git log --format='%an <%ae> | %cn <%ce>'`: los **57 commits** (8 de A y 49 de B) tienen como autor y como *committer* el correo personal de Outlook (`s…7@outlook.com`).
+- `git log --format='%an <%ae> | %cn <%ce>'`: los **57 commits** (8 de A y 49 de B) tienen como autor y como *committer* el correo personal de Outlook (correo personal, no se repite aquí).
 - `main` usa `119076338+Interwtk@users.noreply.github.com` (200 de 200 commits recientes).
 - Forma `noreply`, obtenida con `gh api user --jq '.id,.login'` (resultado `119076338`, `Interwtk`): **`119076338+Interwtk@users.noreply.github.com`**.
 

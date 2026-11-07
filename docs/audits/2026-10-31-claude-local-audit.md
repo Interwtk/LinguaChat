@@ -34,7 +34,7 @@ Auditoría de solo diagnóstico. **No se modificó ninguna funcionalidad.** El �
 
 | Dato | Valor |
 |---|---|
-| Ruta local | `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\LinguaChat-main` (anidada: el ZIP creó una carpeta dentro de otra) |
+| Ruta local | `C:\Users\<usuario>\Music\LinguaChat-main\LinguaChat-main` (anidada: el ZIP creó una carpeta dentro de otra) |
 | Origen | ZIP de la rama `main` de `Interwtk/LinguaChat`, sin `.git` |
 | Versión verificada | `main@086323c41f5f93ff8af12ee70304c30b1633f2d0` (2026-10-31T03:50:42Z) |
 | Método | Hash de blob local con `git hash-object` (sin repositorio) frente al árbol remoto (`gh api git/trees`, solo lectura). Resultado: 607 = 607, 0 diferencias |
@@ -430,7 +430,7 @@ No se encontraron P0 de seguridad:
 
 ## 12. Guía de continuidad para futuras sesiones locales
 
-- **Ruta del proyecto:** `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\LinguaChat-main`. Ojo con la carpeta anidada.
+- **Ruta del proyecto:** `C:\Users\<usuario>\Music\LinguaChat-main\LinguaChat-main`. Ojo con la carpeta anidada.
 - **No hay `.git`.** Para comparar con GitHub (solo lectura):
   - `git hash-object --stdin-paths` sobre la lista de archivos;
   - `gh api repos/Interwtk/LinguaChat/git/trees/<sha>?recursive=1`.

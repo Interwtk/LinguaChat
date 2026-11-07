@@ -9,8 +9,8 @@
 - No incluye secretos, archivos `.env`, copias de seguridad, `node_modules`, `dist` ni `.venv`.
 
 **Copias de seguridad:**
-- `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_snapshot-p0\` guarda el estado completo al terminar P0.
-- `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_originals-086323c\` guarda los originales de `main`.
+- `C:\Users\<usuario>\Music\LinguaChat-main\_snapshot-p0\` guarda el estado completo al terminar P0.
+- `C:\Users\<usuario>\Music\LinguaChat-main\_originals-086323c\` guarda los originales de `main`.
 
 **Lo que no se hizo:**
 - No hubo push, merge, despliegue ni cambios en Supabase o Vercel.

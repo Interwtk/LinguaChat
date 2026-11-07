@@ -12,7 +12,7 @@
 
 ## 1. Rama y commits
 
-- **Clon:** `C:\Users\Sebastian Gamboa\Music\LinguaChat-integration`.
+- **Clon:** `C:\Users\<usuario>\Music\LinguaChat-integration`.
 - **Rama:** `beta/2026-11-es-for-en`, local, sin *upstream*, *push* deshabilitado.
 - **Puntos de recuperación:**
   - `recovery/p6-integration-e656e04`: fases P0–P5;

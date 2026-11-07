@@ -5,7 +5,7 @@
 **Alcance:** solo P0-1 (pérdida de progreso entre pestañas) y P0-2 (perfil local corrupto). Ningún P1 se tocó.
 
 **Copias de seguridad:**
-- `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_originals-086323c\` guarda una copia exacta de cada archivo existente antes de modificarlo. Las 17 copias tienen el mismo hash que `main` en GitHub.
+- `C:\Users\<usuario>\Music\LinguaChat-main\_originals-086323c\` guarda una copia exacta de cada archivo existente antes de modificarlo. Las 17 copias tienen el mismo hash que `main` en GitHub.
 - `docs/audits/2026-10-31-p0-hardening.diff` contiene el diff unificado completo para revisión (no hay `.git`).
 
 ---
@@ -377,7 +377,7 @@ Orden de revisión sugerido:
 
 ## 11. Instrucciones de continuación
 
-- **Para volver al estado original:** copiar `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_originals-086323c\` sobre la carpeta del proyecto y borrar los 4 archivos nuevos de código y pruebas.
+- **Para volver al estado original:** copiar `C:\Users\<usuario>\Music\LinguaChat-main\_originals-086323c\` sobre la carpeta del proyecto y borrar los 4 archivos nuevos de código y pruebas.
 - **Para reproducir la verificación:**
   - `cd linguachat-frontend`;
   - `node scripts/check-same-account-tabs.mjs`;
