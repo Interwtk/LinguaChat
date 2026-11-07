@@ -16,9 +16,9 @@ const BUILD_PUBLIC_AUTH_ENV = Object.freeze({
 
 /*
  * The one variable carries either public key form: the legacy `anon` JWT or the
- * newer publishable key (`sb_publishable_…`). A secret key (`sb_secret_…`) or a
- * legacy `service_role` JWT is refused before any client exists: copied into a
- * browser build by mistake, it would be readable by every visitor.
+ * newer publishable key (`sb_publishable_…`). A secret key, in either the new
+ * form or a legacy JWT with a private role, is refused before any client exists:
+ * copied into a browser build by mistake, it would be readable by every visitor.
  */
 function isPrivateKey(key) {
   if (/^sb_secret_/i.test(key)) return true

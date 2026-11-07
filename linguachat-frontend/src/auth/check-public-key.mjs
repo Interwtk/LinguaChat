@@ -9,7 +9,7 @@ import { readPublicAuthConfig } from './client.js'
 let passed = 0
 const check = (name, run) => { run(); passed++; console.log('  ok  ' + name) }
 const jwt = (role) => `h.${Buffer.from(JSON.stringify({ role })).toString('base64url')}.s`
-const config = (key) => readPublicAuthConfig({ VITE_SUPABASE_URL: 'https://example-test.supabase.co', VITE_SUPABASE_ANON_KEY: key })
+const config = (key) => readPublicAuthConfig({ VITE_SUPABASE_URL: 'https://auth.example.test', VITE_SUPABASE_ANON_KEY: key })
 
 check('a legacy anon key is accepted', () => assert.equal(config(jwt('anon')).anonKey, jwt('anon')))
 check('a publishable key is accepted in the same variable', () => assert.equal(config('sb_publishable_example').anonKey, 'sb_publishable_example'))
