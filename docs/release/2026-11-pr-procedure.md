@@ -31,6 +31,10 @@
 | Secretos | `scripts/secret-scan.mjs` en árbol e historial (cobertura en cada ciclo) |
 | Compatibilidad en Windows | `check:github-integration` corre en local con `jq-lite`; CI usa `jq` real |
 
+## 1.1b Fase 5
+
+Nada publicado. PR A sin cambios. PR B añade la fase 5 sobre la misma rama. **Sin migraciones ni dependencias nuevas en PR B.** La verificación JWT queda fuera: es `proposal/backend-jwt-verify`, con una dependencia nueva, para PR aparte si se aprueba. Datos y autorizaciones para validar: `2026-11-real-validation-needs.md`.
+
 ## 1.2 Reversibilidad y *rollback*
 
 - **Sin migraciones ni datos en servidor:** revertir es desplegar el commit anterior.

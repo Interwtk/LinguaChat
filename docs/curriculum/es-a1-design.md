@@ -1,7 +1,7 @@
 # Español A1 para angloparlantes — primer diseño curricular
 
 > 2026-11-04 · rama local `beta/2026-11-es-for-en`.
-> **Esto es un diseño. Nada está construido. Nada está abierto.** No hay episodios, evaluador, vocabulario ni nivel `es_a1`. `COURSES.es` solo conoce `es_pre_a1` (`src/learning/courses/registry.js`).
+> **Fase 5:** el primer arco (`es_a1_vida`, 3 lecciones, `es/a1Content.js`) está construido, **cerrado** y sin revisión humana, con el mismo motor. El resto sigue siendo diseño. Nivel `es_a1` en `available: false`. Identidad: `docs/architecture/course-level-identity.md`.
 > **Sin revisión humana.** Autoría IA. Lo marcado *propuesta* no tiene fuente en el repo; un docente de ELE debe contrastarlo con el Plan Curricular del Instituto Cervantes, que aquí no se consultó.
 > No traduce inglés A1. Reutiliza arquitectura común: registro de cursos, un modelo del alumno, ids `es:`, evaluador por lengua.
 

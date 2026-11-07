@@ -97,6 +97,8 @@ Para activar **sin** cambiar el contrato:
 
 ## 9. Pendiente
 
+Diseño de identidad, base, emisión, estados y revocación: `docs/architecture/premium-entitlements-design.md` (fase 5, sin construir).
+
 - Interfaz de práctica extra para el curso de inglés. El planificador inglés (`engine/session.js`) ya tiene las piezas; falta su tarjeta y su ejecutor sin persistencia.
 - Base gestionada para el contador al activar (§11).
 - Emisión real del pase (*webhook* y *checkout*), bloqueada por el procesador.

@@ -542,7 +542,7 @@ _REPLIES = {
         "minor_sexual": "No puedo ayudar con eso. El contenido sexual que involucra a menores nunca está permitido. Si un niño o una niña puede estar en peligro, contacta a los servicios de emergencia.",
         "child_protection": "Es una preocupación importante. Si un niño o una niña puede estar en peligro, contacta de inmediato a emergencias o a las autoridades de protección de la infancia. Soy una tutora de idiomas, pero puedo ayudarte con las palabras para pedir ayuda.",
         "sexual_explicit": "Mantengamos la práctica apta para todo público. Cuéntame otra cosa: tu día, un lugar que te guste o un plan para el fin de semana.",
-        "self_harm": "Siento mucho que te sientas así, y me alegra que lo digas. Si podrías actuar sobre estos pensamientos, llama ahora a emergencias. También puedes contactar una línea de crisis ({lines}). Soy una tutora de idiomas, no un servicio de crisis, pero aquí estaré cuando quieras practicar.",
+        "self_harm": "Siento mucho que te sientas así, y me alegra que lo digas. Si crees que podrías actuar sobre estos pensamientos, llama ahora a emergencias. También puedes contactar una línea de crisis ({lines}). Soy una tutora de idiomas, no un servicio de crisis, pero aquí estaré cuando quieras practicar.",
         "violence_threat": "No puedo ayudar con amenazas ni violencia. Si alguien está en peligro, contacta a emergencias. Cuando quieras, volvemos a practicar.",
         "dangerous_instructions": "No puedo dar instrucciones para eso. Puedo ayudarte con el vocabulario o practicar otro tema.",
         "hate": "Mantengamos el respeto hacia todas las personas. Con gusto sigo practicando contigo.",

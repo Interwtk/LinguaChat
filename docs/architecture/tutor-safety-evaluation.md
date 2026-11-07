@@ -1,6 +1,7 @@
 # Seguridad del tutor: auditoría y evaluación independiente
 
 > Fase 4, 2026-11-04. Rama local `beta/2026-11-es-for-en`. Código: `ai/safety.py`, `ai/guided_scope.py`, `app/routes/chat.py`.
+> **Fase 5:** la experiencia guiada pasó a escenarios (`docs/architecture/guided-tutor.md`), con evaluación propia. Las cifras de abajo son de la fase 4; en la fase 5 la detección sellada sigue en 35 %.
 > **Conclusión:** el filtro no sirve como barrera para chat libre. La beta funciona en **chat guiado** por defecto. Ningún porcentaje de esta página garantiza seguridad.
 
 ## 1. Auditoría del diseño anterior
@@ -80,7 +81,7 @@ El filtro enumera lo dañino y siempre fallará con lo nuevo. Por eso la beta in
 
 ## 6. Limitaciones reales
 
-- Una frase dañina hecha solo de palabras comunes queda «dentro» y recibe un turno normal sin elogio («Thanks. Tell me one more thing.»). No es una respuesta adecuada a una crisis; solo es no dañina.
+- Fuera de un escenario, una frase dañina hecha solo de palabras comunes queda «dentro». Desde la fase 5 recibe «solo reviso frases cortas», no un turno normal. Dentro de un escenario no recibe reacción.
 - La detección de crisis indirectas es muy baja. Quien escriba algo grave recibirá casi siempre el turno neutro, no apoyo específico. Por eso el aviso es permanente.
 - La lectura de contexto usa los últimos 3 turnos y solo suma señales.
 - `/chat` no exige autenticación: el filtro aplica, la edad no.

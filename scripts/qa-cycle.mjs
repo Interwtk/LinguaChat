@@ -91,6 +91,8 @@ stage('cloud scope tests', process.execPath, ['.github/scripts/check-linguachat-
 stage('backend compileall', PY, ['-m', 'compileall', '-q', '-x', '\\.venv', '.'], { cwd: BE, summary: () => 'compiled' })
 stage('backend pytest', PY, ['-m', 'pytest', '-q', '-p', 'no:cacheprovider'], { cwd: BE, summary: t => t.trim().split('\n').at(-1).replace(/ in [\d.]+s.*/, '') })
 stage('independent safety evaluation (holdout, aggregates)', PY, ['tests/safety_eval/evaluate.py', 'holdout_v1', '--label', `qa-${name}`], { cwd: BE, summary: t => t.trim().split('\n').filter(l => l.startsWith('holdout')).join(' || ') })
+stage('independent guided evaluation (holdout, aggregates)', PY, ['tests/guided_eval/evaluate.py', 'guided_holdout_v1', '--label', `qa-${name}`], { cwd: BE, summary: t => t.trim().split('\n').at(-1) })
+stage('sealed safety set through the scenarios (aggregates)', PY, ['tests/guided_eval/evaluate.py', 'safety_holdout', '--label', `qa-${name}`], { cwd: BE, summary: t => t.trim().split('\n').at(-1) })
 
 // HTTP end to end against a real server
 {

@@ -35,3 +35,4 @@ auth-qa-result.json
 
 # per-cycle safety measurements (the committed baselines stay)
 linguachat-backend/tests/safety_eval/results/*-qa-*.json
+linguachat-backend/tests/guided_eval/results/*-qa-*.json

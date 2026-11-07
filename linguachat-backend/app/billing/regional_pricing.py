@@ -13,7 +13,13 @@ the arithmetic and the residence policy are already reviewed:
     alone. IP may choose what to DISPLAY first; it can never unlock a price.
     Without two agreeing non-IP signals the customer gets the base region.
   * a price is fixed for the paid period. A change of country takes effect at
-    the next renewal, with notice, and never touches progress.
+    the next renewal, with notice, and never touches progress;
+  * refunds and exchange rates are part of the margin, not an afterthought: a
+    region declares its expected refund rate and how many base-currency units one
+    local unit is worth on a dated rate, so regions can be compared;
+  * a region names the processor it assumes. The processor's policy decides what
+    may be sold where: an unverified one keeps the region a draft, whatever else
+    is filled in (`sellable`).
 """
 from __future__ import annotations
 
@@ -52,6 +58,12 @@ def validate_config(config: dict) -> list[str]:
             seen[country] = region_id
         if not 0 <= float(region.get("tax_rate", 0)) < 1:
             problems.append(f"{region_id}: tax_rate must be a fraction")
+        if not 0 <= float(region.get("refund_rate", 0)) < 1:
+            problems.append(f"{region_id}: refund_rate must be a fraction")
+        if region.get("fx_to_base") is not None and float(region["fx_to_base"]) <= 0:
+            problems.append(f"{region_id}: fx_to_base must be positive")
+        if region.get("processor") and region["processor"] not in (config.get("processors") or {}):
+            problems.append(f"{region_id}: unknown processor {region['processor']}")
         for plan_id in region.get("prices", {}):
             if plan_id not in plans:
                 problems.append(f"{region_id}: price for unknown plan {plan_id}")
@@ -82,6 +94,8 @@ class Quote:
     variable_cost: float
     margin: float
     margin_pct: float
+    expected_refunds: float
+    margin_base_currency: float | None
     approved: bool
     entitlements: tuple[str, ...]
 
@@ -95,7 +109,32 @@ def quote(config: dict, region_id: str, plan_id: str) -> Quote:
     fees = gross * float(region["fee_pct"]) + float(region["fee_fixed"])
     net = gross - tax - fees
     cost = float(region.get("variable_cost", 0))
-    margin = net - cost
+    # a refunded sale gives back what the operator kept, and processors usually keep their fee
+    refunds = float(region.get("refund_rate", 0)) * (gross - tax)
+    margin = net - cost - refunds
+    fx = region.get("fx_to_base")
     return Quote(region_id, region["currency"], round(gross, 2), round(tax, 2), round(fees, 2), round(net, 2),
                  round(cost, 2), round(margin, 2), round(100 * margin / gross, 1) if gross else 0.0,
+                 round(refunds, 2), round(margin * float(fx), 2) if fx else None,
                  region.get("status") == "approved", tuple(plan["entitlements"]))
+
+
+def sellable(config: dict, region_id: str) -> tuple[bool, list[str]]:
+    """May this region be sold, and if not, what is missing. Nothing here turns sales on."""
+    region = config["regions"][region_id]
+    processor = (config.get("processors") or {}).get(region.get("processor"))
+    missing = []
+    if region.get("status") != "approved":
+        missing.append("price not approved by the owner")
+    if not processor:
+        missing.append("no processor named")
+    else:
+        if processor.get("status") != "confirmed_in_writing":
+            missing.append("processor has not confirmed this product in writing")
+        if any(c not in processor.get("countries", []) for c in region.get("countries", [])):
+            missing.append("processor does not cover every country of the region")
+    if not region.get("fx_date"):
+        missing.append("no dated exchange rate")
+    if "refund_rate" not in region:
+        missing.append("no expected refund rate")
+    return not missing, missing

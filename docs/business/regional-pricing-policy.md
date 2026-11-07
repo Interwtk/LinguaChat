@@ -8,6 +8,8 @@ Cada región define: países, moneda, tasa de impuesto, comisión (porcentaje y 
 
 `quote()` muestra por precio: lo que paga el cliente, impuesto, comisiones, neto, costo variable, margen y si está aprobado. Un precio local no se elige sin ver su margen.
 
+**Fase 5.** Cada región declara también procesador, tasa de reembolso esperada y tipo de cambio con fecha. `quote` resta los reembolsos del margen y da el margen en moneda base para comparar regiones. `sellable` responde si una región puede venderse y qué falta: precio aprobado, confirmación escrita del procesador, país cubierto, tipo de cambio fechado y tasa de reembolso. **Hoy ninguna región es vendible.** Polar y Paddle siguen `unverified`: estar disponible técnicamente no autoriza nada. Todos los valores del ejemplo son marcadores.
+
 ## 2. Política de residencia, moneda y cambio de país
 
 | Regla | Detalle |

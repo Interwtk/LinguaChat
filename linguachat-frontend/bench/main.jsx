@@ -39,6 +39,7 @@ import { loadLearnerModel, saveLearnerModel } from '../src/learning/engine/learn
 import { ES_SKELETON } from '../src/learning/courses/es/skeleton.js'
 import { setEpisodeState, markRecurringError } from '../src/learning/engine/learnerModel.js'
 import { createMissionIntroMessage, createMissionStepMessage, createMissionFeedbackMessage, evaluateMissionStep } from '../src/services/missions.js'
+import { ScenarioPractice } from '../src/components/chat/ScenarioPractice.jsx'
 
 const BENCH_MARKER = 'LC_VISUAL_BENCH' // asserted absent from every production build
 const params = new URLSearchParams(location.search)
@@ -111,6 +112,14 @@ function Scene({ t }) {
       <AppProvider value={{ ...common, messages: lesson, selectedMessage: lesson[1] }}>
         <main className="px-4 py-6"><p>{t('tutorNotes')}</p></main>
         <NotesSheet onClose={() => { window.__benchClosed = 'notes' }} />
+      </AppProvider>
+    )
+  }
+  if (scene === 'scenario') {
+    const course = params.get('course') || 'en'
+    return (
+      <AppProvider value={{ ...common, sessionId: 'session-bench-00000000-0000-0000-0000-000000000000' }}>
+        <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}><ScenarioPractice courseId={course} targetLanguage={course} /></div>
       </AppProvider>
     )
   }
