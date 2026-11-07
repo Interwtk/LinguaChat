@@ -870,7 +870,7 @@ const KNOWN_MISTAKES = {
   es_repair: [[/\bno soy comprendo\b/, 'es_ser_plus_verb']],
 }
 const KNOWN_VARIANTS = {
-  es_repair: [/^(perdon )?no (comprendi|comprendo|entendi)\b/, /^que significa$/],
+  es_repair: [/^(perdon )?no (comprendi|comprendo|entendi)\b/],
   es_nice_to_meet: [/\bgusto en conocer(te|le|la|lo)\b/, /^un gusto\b/],
   es_anything_else: [/^(un|una) (sandwich|bocata|bocadillo|emparedado|pastel|cafe|agua|te)( por favor)?$/],
   es_reciprocal: [/^(muy )?(bien|mal|regular)( gracias)? (y tu|y usted|que tal)\b/],
