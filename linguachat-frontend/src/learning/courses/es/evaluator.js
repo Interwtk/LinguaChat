@@ -152,6 +152,7 @@ export const NOUNS = {
   dia: N('m', 'día'), problema: N('m', 'problema'), mano: N('f', 'mano'), foto: N('f', 'foto'), perro: N('m', 'perro'), gato: N('m', 'gato'),
   casa: N('f', 'casa'), ciudad: N('f', 'ciudad', { pl: 'ciudades' }), clase: N('f', 'clase'), bano: N('m', 'baño'), idioma: N('m', 'idioma'),
   arte: N('m', 'arte'), deporte: N('m', 'deporte'), viaje: N('m', 'viaje'), trabajo: N('m', 'trabajo'), tarea: N('f', 'tarea'),
+  cafecito: N('m', 'cafecito'), tecito: N('m', 'tecito'), aguita: N('f', 'aguita'), cortado: N('m', 'cortado'), tinto: N('m', 'tinto'),
 }
 
 const pluralOf = (noun) => noun.pl || (/[aeiouáéíóú]$/.test(noun.sg) ? `${noun.sg}s` : `${noun.sg}es`)
@@ -171,6 +172,10 @@ export const SYNONYMS = {
   jugo: ['jugo', 'zumo'],
   sandwich: ['sandwich', 'bocadillo'],
   pastel: ['pastel', 'torta'],
+  // a diminutive is the same thing, said warmly; a bottle of water can be "un agua"
+  cafe: ['cafe', 'cafecito', 'cortado', 'tinto'],
+  te: ['te', 'tecito'],
+  botella: ['botella', 'agua', 'aguita'],
 }
 const conceptOf = (key) => Object.keys(SYNONYMS).find(c => SYNONYMS[c].includes(key)) || key
 
@@ -584,7 +589,7 @@ export const evaluateNeed = (text, { independent = false, targetThing = 'ayuda' 
 /* ================= polite requests and the café ================= */
 
 // "quería un café" is the courteous imperfect, not a past tense, in a café
-const POLITE = /\bpor favor\b|\bquisiera\b|\bqueria\b|\b(me|nos) (da|das|pone|pones|trae|traes|regala|regalas|puede dar|puedes dar|podria dar|podrias dar|daria)\b|\bme gustaria\b|\bpara mi\b.*\bpor favor\b/
+const POLITE = /\bpor favor\b|\bporfa\b|\b(me )?(podes|puedes|puede|podrias|podria) (traer|dar)(me)?\b|\bquisiera\b|\bqueria\b|\b(me|nos) (da|das|pone|pones|trae|traes|regala|regalas|puede dar|puedes dar|podria dar|podrias dar|daria)\b|\bme gustaria\b|\bpara mi\b.*\bpor favor\b/
 
 export function evaluatePoliteRequest(text, { independent = false, targetThing = 'cafe' } = {}) {
   const r = base(independent)
@@ -939,15 +944,69 @@ const KNOWN_MISTAKES = {
   es_repair: [[/\bno soy comprendo\b/, 'es_ser_plus_verb']],
 }
 const KNOWN_VARIANTS = {
-  es_repair: [/^(perdon )?no (comprendi|comprendo|entendi)\b/],
+  es_repair: [/^(perdon )?no (comprendi|comprendo|entendi)\b/, /\bmenos rapido\b/, /\bme lo repetis\b/],
   es_nice_to_meet: [/\bgusto en conocer(te|le|la|lo)\b/, /^un gusto\b/],
-  es_anything_else: [/^(un|una) (sandwich|bocata|bocadillo|emparedado|pastel|cafe|agua|te)( por favor)?$/],
+  es_anything_else: [/^(un|una) (sandwich|bocata|bocadillo|emparedado|pastel|cafe|agua|te)( por favor)?$/, /^si (quiero|quisiera) (un|una) [a-zñ]+$/],
   es_reciprocal: [/^(muy )?(bien|mal|regular)( gracias)? (y tu|y usted|que tal)\b/],
   es_polite_request: [/^un cortado por favor$/],
   es_thank: [/\b(te|le) agradezco\b/],
-  es_need: [/\b(me )?(puedes|puede) ayudar(me)?\b/],
-  es_ask_bill: [/\b(puede|puedes) traerme la cuenta\b/, /\bme cobra(s)?\b/],
-  es_express_dislike: [/^(a mi )?no me gusta$/],
+  es_need: [/\b(me )?(puedes|puede|podes|podria|podrias) ayudar(me)?\b/, /^ayuda( por favor)?$/, /\bme ayudas\b/, /\bme hace falta\b/],
+  es_ask_bill: [/\b(puede|puedes) traerme la cuenta\b/, /\bme cobra(s)?\b/, /\bpuedo pagar\b/],
+  es_express_dislike: [/^(a mi )?no me gusta$/, /^odio (el|la|los|las) /],
+  es_express_like: [/\bme (flipa|mola|fascina|encanta)\b/],
+  es_ask_like: [/\bte (mola|flipa|encanta)\b/],
+  es_goodbye: [/\b(chaito|chau|chao)\b/],
+  es_ask_what: [/^esto que es$/],
+  es_answer_wellbeing: [/^(estoy )?(nervios[oa]|content[oa]|feliz|aburrid[oa]|enferm[oa]|ocupad[oa])$/],
+  es_want: [/^(un |una )?(agua|cafe|te|jugo|zumo)( por favor)?$/],
+}
+
+/*
+ * Mistakes of form that do not depend on the turn (second blind review, phase 6,
+ * development set only): a verb in the wrong person, a greeting that does not
+ * agree, a spelling that changes a word. Each pattern names one mistake.
+ */
+const ANY_TURN_MISTAKES = [
+  [/\byo (esta|es|paga|quiere|trabaja|habla|tiene|necesita|vive)\b/, 'es_conjugation_yo'],
+  [/\bcomo esta tu\b|\bde donde es tu\b/, 'es_conjugation_tu'],
+  [/\bsos usted\b|\bvos\b.*\beres\b/, 'es_voseo_mix'],
+  [/^me (bien|mal|regular)\b/, 'es_missing_estar'],
+  [/\bmi (da|das|pone|trae)\b/, 'es_mi_me'],
+  [/\b(quero|quisiero)\b/, 'es_spelling_quiero'],
+  [/\b(puede|puedes|podes) (hablas|habla|repites|repite|dices|dice)\b/, 'es_infinitive_after_poder'],
+  [/\bmuchos gracias\b|\bmucha gracias\b/, 'es_gracias_form'],
+  [/\bbuenas dias\b|\bbuenos (noches|tardes)\b/, 'es_greeting_agreement'],
+  [/\bpara favor\b/, 'es_por_favor'],
+  [/\bte puede repetir\b/, 'es_me_te'],
+  [/\bestoy [a-zñ]+(os|as)\b/, 'es_adjective_number'],
+]
+const REQUEST_MISTAKES = [
+  [/\bme doy\b|\bte (da|doy)\b/, 'es_dar_form'],
+  [/\bme gusta (un|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\b/, 'es_want_like'],
+  [/^soy (uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\b/, 'es_ser_number'],
+  [/\b(dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez) (los|las|de) [a-zñ]+/, 'es_quantity_article'],
+]
+const REQUEST_KINDS = new Set(['es_polite_request', 'es_quantity', 'es_want', 'es_anything_else', 'es_need'])
+
+/* An adjective after a noun this file knows must agree with it: "un café sola" is not. */
+const ADJECTIVES = ['nuev', 'pequeñ', 'sol', 'negr', 'fri', 'roj', 'blanc', 'calient:e', 'grande:e', 'bonit', 'buen', 'car', 'barat', 'verd:e', 'amarill']
+function adjectiveMismatch(f) {
+  const tokens = words(f)
+  for (let i = 0; i + 1 < tokens.length; i++) {
+    const noun = nounForm(tokens[i])
+    if (!noun) continue
+    const gender = NOUNS[noun.key].g
+    const next = tokens[i + 1]
+    for (const entry of ADJECTIVES) {
+      const [stem, invariant] = entry.split(':')
+      const m = next.match(new RegExp(`^${stem}(${invariant ? 'e|es' : 'o|a|os|as'})$`))
+      if (!m) continue
+      const plural = m[1].endsWith('s')
+      if (plural !== noun.plural) return 'es_adjective_number'
+      if (!invariant && (m[1][0] === 'a') !== (gender === 'f')) return 'es_adjective_agreement'
+    }
+  }
+  return null
 }
 
 /* Unknown kinds fail closed as not evaluable — never as a wrong answer. */
@@ -956,6 +1015,9 @@ export function evaluateSpanish(kind, text, ctx = {}) {
   if (!fn) return notEvaluable(base(ctx.independent))
   const verdict = fn(text, ctx)
   const f = fold(text)
+  const general = [...ANY_TURN_MISTAKES, ...(REQUEST_KINDS.has(kind) ? REQUEST_MISTAKES : [])].find(([pattern]) => pattern.test(f))
+  const agreement = adjectiveMismatch(f)
+  if (general || agreement) return { ...miss(base(ctx.independent), general ? general[1] : agreement), naturalVersion: verdict.naturalVersion }
   const mistake = (KNOWN_MISTAKES[kind] || []).find(([pattern]) => pattern.test(f))
   if (mistake) return { ...miss(base(ctx.independent), mistake[1]), naturalVersion: verdict.naturalVersion }
   if (!verdict.completedObjective && (KNOWN_VARIANTS[kind] || []).some(pattern => pattern.test(f))) {

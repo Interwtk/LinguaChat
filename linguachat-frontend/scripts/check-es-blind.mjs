@@ -13,13 +13,16 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { evaluateSpanish } from '../src/learning/courses/es/evaluator.js'
+import { ES_EVALUATOR_COPY } from '../src/learning/courses/es/evaluatorCopy.js'
 
-const HOLDOUT_SHA256 = 'cfe8b9ade1bfdd01eb0dc860acdfcc9c0dd54cd860456c02cda07bf554261cdb'
+const v2 = process.argv.includes('--v2')
+// v1 (phase 5) and v2 (phase 6, a new blind author): both sealed, both measured
+const HOLDOUT_SHA256 = v2 ? '44433a381b1ec20175d4cdd8dc588a9947dd2ecce43facb1c1f789ca806247f2' : 'cfe8b9ade1bfdd01eb0dc860acdfcc9c0dd54cd860456c02cda07bf554261cdb'
 const dev = process.argv.includes('--dev')
 const show = process.argv.includes('--show')
 if (show && !dev) { console.error('the holdout is sealed: aggregates only'); process.exit(2) }
 
-const raw = readFileSync(new URL(`./fixtures/es-blind-${dev ? 'dev' : 'holdout'}.jsonl`, import.meta.url))
+const raw = readFileSync(new URL(`./fixtures/es-blind-${dev ? 'dev' : 'holdout'}${v2 ? '-v2' : ''}.jsonl`, import.meta.url))
 if (!dev && createHash('sha256').update(raw).digest('hex') !== HOLDOUT_SHA256) { console.error('the sealed set changed'); process.exit(1) }
 const items = raw.toString('utf8').split('\n').filter(Boolean).map(line => JSON.parse(line))
 
@@ -28,6 +31,10 @@ const verdictOf = (item) => {
   return r.completedObjective ? 'accepted' : r.notEvaluable || r.conclusive === false ? 'not_evaluable' : 'corrected'
 }
 const rows = items.map(item => ({ item, verdict: verdictOf(item) }))
+// every correction a learner can see must have its explanation
+const uncovered = [...new Set(items.map(item => evaluateSpanish(item.kind, item.text, { independent: true, ...(item.context || {}) }).errorType)
+  .filter(type => type && !['empty', 'es_not_evaluable'].includes(type) && !ES_EVALUATOR_COPY.en[`es.err.${type}`]))]
+if (uncovered.length) { console.error(`errors without an explanation: ${uncovered.join(', ')}`); process.exit(1) }
 const pct = (n, d) => (d ? `${(100 * n / d).toFixed(1)}%` : 'n/a')
 const count = (list, verdict) => list.filter(r => r.verdict === verdict).length
 const summary = (list) => {
@@ -47,4 +54,4 @@ for (const topic of [...new Set(items.map(i => i.topic))].sort()) {
   const s = summary(rows.filter(r => r.item.topic === topic))
   console.log(`  ${topic.padEnd(24)} valid accepted ${s.accepted} (${s.good}) · false corrections ${s.falseCorrections} · errors caught ${s.caught} (${s.bad}) · errors accepted ${s.wronglyAccepted}`)
 }
-console.log(`check-es-blind ${dev ? 'dev' : 'sealed'}: ${items.length} items · valid accepted ${all.accepted} · false corrections ${all.falseCorrections} · errors caught ${all.caught} · errors accepted ${all.wronglyAccepted} · errors not evaluable ${all.notEvaluable}`)
+console.log(`check-es-blind ${v2 ? 'v2 ' : ''}${dev ? 'dev' : 'sealed'}: ${items.length} items · valid accepted ${all.accepted} · false corrections ${all.falseCorrections} · errors caught ${all.caught} · errors accepted ${all.wronglyAccepted} · errors not evaluable ${all.notEvaluable}`)
