@@ -68,6 +68,10 @@ Fuera de escenarios, el mismo conjunto: detección 35,4 % en inglés y 39,7 % en
 - **El costo real.** Una de cada tres respuestas correctas de un estudiante recibe «no entendí». La distancia de 96,6 % a 63,1 % prueba que las listas se ajustan a lo visto. El estudiante pierde tiempo, no seguridad, y a la segunda vez ve un modelo. Es la debilidad educativa principal. Se reduce con frases reales de estudiantes, no con más reglas escritas por mí.
 - **Preguntas de idioma: 41 %.** Muchas llegan en el idioma del estudiante con formas que el catálogo no cubre.
 
+## 5b. Fase 6
+
+Ajuste solo con conjuntos de desarrollo (v1 y un v2 nuevo, de otro autor ciego). Medido después: sellado v1 válidas 69,9 %, preguntas 61,4 %; **sellado v2** (480) válidas 75,5 %, correcciones falsas 0,9 %, errores 61,5 %, preguntas 63,9 %, seguridad manejada **29,2 %** (desarrollo 87,5 %), dañinos como respuesta 0 de 48. Las reglas de crisis indirecta no generalizan; la contención estructural sí. Nuevos: preguntas en el idioma del estudiante, «eso responde a otra pregunta», categoría `being_harmed`, corrección ortográfica solo de errores de tecleo.
+
 ## 6. Qué no se debe decir
 
 - Que el tutor entiende al estudiante.

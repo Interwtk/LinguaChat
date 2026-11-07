@@ -1,7 +1,7 @@
 # LINGUACHAT — MAESTRO DEL PROYECTO
 
 > **Documento vivo.** Se actualiza al terminar cada bloque significativo.
-> - **Última actualización: 2026-11-07, fin de la Fase 5** («Consolidación educativa, seguridad del tutor y preparación de la beta real»). El §0 resume el estado actual; los §1–§18 conservan el detalle de la fase 2, con correcciones marcadas.
+> - **Última actualización: 2026-11-07, fin de la Fase 6** («Operación Beta Real»). El §0 resume el estado actual; los §1–§18 conservan el detalle de la fase 2, con correcciones marcadas.
 > - Regla: nada se marca «listo» si solo está diseñado. Cada afirmación cita su evidencia.
 >
 > **Relación con el protocolo de `CLAUDE.md`:**
@@ -11,52 +11,50 @@
 
 ---
 
-## 0. Estado al cierre de la Fase 5 (2026-11-07)
+## 0. Estado al cierre de la Fase 6 (2026-11-07)
 
-**Rama y commits.** `beta/2026-11-es-for-en`, solo local. **Código probado: `24065ba`**; lo posterior es solo documentación (`docs/release/2026-11-beta-readiness.md` § Ciclos). Propuestas aparte, sin fusionar: `proposal/backend-jwt-verify` @ `ff6e7d8`; `proposal/pre-a1-option-order` @ `7e6d48e` (antecedente). Respaldos: etiquetas `recovery/*` y ramas anteriores, intactas.
+**Rama y commits.** `beta/2026-11-es-for-en`, solo local. **Código probado: `409bbf0`**; lo posterior es solo documentación. Propuestas sin fusionar: `proposal/backend-jwt-verify` @ `ff6e7d8`; `proposal/pre-a1-option-order` @ `7e6d48e` (antecedente). Respaldos: `recovery/*`, intactos.
 
-**Entrega de informes (permanente).** `python scripts/export_reports.py --label <fase> --report <informe>` escribe en `Descargas\LinguaChat-Reportes-ChatGPT\<fase>\`.
+**Entrega de informes (permanente).** `python scripts/export_reports.py --label <fase> --report <informe>` → `Descargas\LinguaChat-Reportes-ChatGPT\<fase>\`.
+
+**Estado del producto: A (beta interna) sí; B (beta externa gratuita) no; C (comercial) no** (`docs/business/commercial-readiness-checklist.md`).
 
 | Área | Estado real |
 |---|---|
-| **Tutor** | Situaciones guiadas en ambos chats: 6 por curso. En conjunto sellado nuevo: válidas aceptadas **63,1 %**, correcciones falsas 0 %, errores detectados 61,8 %, preguntas 40,9 %. Una de cada tres respuestas correctas recibe «no entendí» (`docs/architecture/guided-tutor.md`) |
-| **Seguridad** | Detección en sellado **35 %**, crisis indirectas **5 %**: no mejoró. Dentro de un escenario, **0 de 294** mensajes dañinos se trató como respuesta. Nada garantiza seguridad. **Chat libre: no apto** |
-| **Autenticación** | Simulada 10/10. **Real: sin probar.** Propuesta JWT en rama aparte, apagada, sin aprobar; el frontend aún no envía el token. `/chat` abierto. Qué hace falta: `docs/release/2026-11-real-validation-needs.md` |
-| **Edad** | Beta solo adultos. Autodeclaración evitable. No es verificación ni cumplimiento completo sobre menores |
-| **Privacidad** | Memoria de 24 h, ids no adivinables, olvidable. Las situaciones no guardan nada en el dispositivo. Sin revisión profesional |
-| **Inglés por nivel** | Pre-A1 abierto y congelado. A1 a C2: contenido integrado, **cerrado**. Orden de opciones: defecto real 17/17 y 34/34; A1 ya rota; Pre-A1 y prueba de nivel **pendientes de tu aprobación** |
-| **Español por nivel** | Pre-A1 abierto: 12 lecciones. Sellado a ciegas: válidas 89,4 %, correcciones falsas 2,5 %, errores detectados 48,9 %, errores aceptados 15,0 %. A1: **1 arco de 6 construido y cerrado**. A2 a C2: nada. **Sin revisión humana** |
-| **Curso × nivel** | Lector compatible, sin migración ni segunda base. Progreso antiguo intacto (`docs/architecture/course-level-identity.md`). Probado con almacenes simulados |
-| **Personalización** | Señal de retención por ítem; el repaso trae primero lo perdido. Sin evidencia de personas |
-| **Premium** | Construido, **apagado, no a la venta**. Diseño de derechos sin construir. Hoy no justifica una suscripción |
-| **Precios regionales** | Modelo con impuestos, comisiones, conversión, margen y reembolsos. **Ninguna región vendible**, ningún precio aprobado |
-| **Legal** | Borradores. Ningún mercado habilitado para vender |
-| **SII y pagos** | Sin inicio de actividades, régimen ni entidad. Polar y Paddle en evaluación, sin confirmación escrita. Ningún procesador activo. Sin cambios en esta fase |
-| **Derechos de activos** | Chatto sin documentar: bloquea la publicación |
-| **QA** | Dos ciclos limpios e idénticos sobre `24065ba`: 24/24 etapas, `check:all` 115/115, pytest 1781 / 28 omitidas |
+| **Tutor guiado** | Sellado v2 nuevo (480): válidas **75,5 %**, correcciones falsas 0,9 %, errores 61,5 %, errores aceptados 5,2 %, preguntas **63,9 %**. Sellado v1: válidas 63,1 → 69,9 %, preguntas 40,9 → 61,4 % (`docs/architecture/guided-tutor.md`) |
+| **Seguridad** | Detección sellada 35 %; crisis indirectas **5 %**. Seguridad manejada en situaciones: v1 52,3 %, v2 **29,2 %** (desarrollo 87,5 %: no generaliza). Dañinos tratados como respuesta: **0 de 44, 0 de 48, 0 de 294**. Chat libre: **cerrado** |
+| **Autenticación** | Simulada 10/10. **Real: sin probar.** Frontend listo para enviar el token, apagado. Backend en rama de propuesta. Guía Supabase de prueba lista; nada configurado (`docs/architecture/jwt-integration-review.md`) |
+| **Edad** | Solo adultos. Autodeclaración evitable. No es verificación |
+| **Inglés** | Pre-A1 abierto, congelado. A1 cerrado: 24 defectos medidos, 2 corregidos en el evaluador, 11 de 12 condiciones sin cumplir. Orden de opciones: equivalencia probada, **espera tu aprobación** |
+| **Español** | Pre-A1 abierto (12). Sellado v2: válidas 91,7 %, correcciones falsas 1,3 %, errores detectados 60,5 %, errores aceptados 15,8 %. Débil: variantes regionales y vocabulario. A1: **6 de 20 lecciones, cerrado**. A2–C2: nada. **Sin revisión humana** |
+| **Curso × nivel** | Lector compatible, sin migración; progreso antiguo intacto en pruebas simuladas |
+| **Experiencia** | Recorrido en navegador: 3 textos engañosos corregidos; situaciones visibles desde el chat |
+| **Premium** | **Apagado, no a la venta.** Hoy no justifica suscripción; propuestas de valor sin quitar lo gratuito |
+| **Precios** | Modelo completo; ninguna región vendible; ningún precio aprobado |
+| **GitHub** | Repositorio **público**, `main` sin protección, commits con correo personal; Preview no verificada como privada (`docs/release/2026-11-pr-authorization-request.md`) |
+| **Legal y SII** | Borradores al día; privacidad cubre situaciones y token. Sin inicio de actividades; Polar y Paddle sin confirmar; Chatto sin documentar |
+| **QA** | Dos ciclos idénticos sobre `409bbf0`: 25/25, `check:all` 117/117, pytest 1799 / 28 omitidas |
 
 **Decisiones pendientes del propietario:**
 
-| # | Decisión | Cambio concreto y consecuencia |
+| # | Decisión | Cambio y consecuencia |
 |---|---|---|
-| 1 | Autorizar el *push* y los dos PR en borrador | Publica las ramas; Vercel crea Previews, sin producción |
-| 2 | Crear un Supabase **de prueba** y entregar URL y clave pública | Permite los 10 recorridos reales. Bloquea toda beta externa |
-| 3 | Aprobar el orden de opciones en Pre-A1 y prueba de nivel | Quita dos entradas de una lista; solo cambia lo que se ve |
-| 4 | Aprobar JWT: cambio de `CLAUDE.md`, rama y `PyJWT[crypto]` | `/chat` podría exigir sesión y Premium atarse a la cuenta. Falta enviar el token desde el frontend |
-| 5 | Correo de privacidad y nombre del operador | Requisito de los textos legales |
-| 6 | Derechos de Chatto | Bloquea la publicación |
-| 7 | Revisión humana de inglés y español, y revisión legal (CL y US) | `docs/curriculum/human-review-plan.md` |
-| 8 | Aceptar el nivel medido para una beta limitada y revisar los mensajes de crisis con un profesional | Beta externa |
-| 9 | Contador e inicio de actividades; escribir a Polar y Paddle | Cualquier cobro |
-| 10 | Apertura de inglés A1 | Ese contenido |
+| 1 | Correo de autor: reescribir a noreply o publicar con el personal | Reescribir cambia todos los hashes y obliga a repetir QA; publicar expone el correo para siempre |
+| 2 | Revisar *Deployment Protection* y variables de Preview en Vercel | Sin esto, una Preview puede ser pública o tocar el Supabase de producción |
+| 3 | *Push* y dos PR en borrador | Publica ramas en un repositorio público; Vercel crea Previews |
+| 4 | Crear el Supabase **de prueba** (guía) y entregar URL y clave pública | Permite los 10 recorridos reales |
+| 5 | JWT: `CLAUDE.md`, rama y `PyJWT[crypto]` | `/chat` exige sesión; encender frontend y backend a la vez, solo en Preview |
+| 6 | Orden de opciones en Pre-A1 y prueba de nivel | Solo presentación; equivalencia probada |
+| 7 | Correo de privacidad, operador, derechos de Chatto | Requisito de B |
+| 8 | Revisión humana (inglés, español, crisis) y legal | Requisito de B |
+| 9 | Contador, inicio de actividades, Polar o Paddle | Requisito de C |
+| 10 | Apertura de inglés A1 | Bloqueada por sus defectos |
 
-**Riesgos principales:** crisis indirecta sin apoyo específico; una de cada tres respuestas correctas sin reconocer; autenticación sin probar; `/chat` sin autenticación ni límite de peticiones; contenido sin revisión humana.
+**Meta del 15 de noviembre:** sin las decisiones 2, 3, 4, 7 y 8 y los 10 recorridos reales, el 15 es una **beta interna (A)**, no externa. Nunca cobros.
 
-**Meta del 15 de noviembre:** beta gratuita, por invitación, solo adultos, solo con decisiones 1, 2, 5, 6 y 8 tomadas y los 10 recorridos reales aprobados. Si falta algo: prueba interna. Nunca cobros.
+**Del 16 al 30:** frases reales de un piloto con consentimiento para ampliar situaciones; corregir defectos de inglés A1; arcos 3 a 6 de español A1, cerrados; variantes regionales del español; encender JWT en Preview si se aprueba; informe de retención como candidato Premium.
 
-**Del 16 al 30:** recoger frases reales del piloto para ampliar situaciones (con consentimiento); enviar el token desde el frontend si se aprueba; arcos 2 y 3 de español A1, cerrados; errores de conjugación en español; interfaz de práctica extra en inglés; decisión sobre inglés A1 (12 condiciones); clasificador semántico si se autoriza.
-
-**Próximo paso ejecutable:** decisiones 1 y 2. Con ellas ejecuto el procedimiento de PR y los recorridos reales.
+**Próximo paso ejecutable:** decisiones 1 a 4, en ese orden.
 
 ## 1. Visión del producto
 - **Qué es:** una plataforma multidioma de práctica conversacional. El estudiante elige qué idioma aprender. Un solo motor educativo.

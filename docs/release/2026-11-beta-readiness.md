@@ -185,6 +185,27 @@
 
 **Nada de esto se ha ejecutado.**
 
+## Ciclos de la fase 6 (`scripts/qa-cycle.mjs`)
+
+**Commit de código probado: `409bbf0`** (árbol limpio antes y después). Dos ciclos; `--compare`: **IDENTICAL AND CLEAN**. Lo posterior es documentación.
+
+| Etapa | g1 y g2 |
+|---|---|
+| Etapas | **25/25** |
+| `check:all` | **117/117** (nuevas: token apagado, español a ciegas v2, curso × nivel con A1 arco 2, equivalencia del orden de opciones) |
+| `build` · `check:i18n` · GitHub integration (`jq-lite`) | ok · ok · 11 grupos |
+| Foundry · *rollback* P3 · adaptación · alcance de la nube | 5/5 · 30/30 · 10/10 · ok |
+| Backend `pytest` | **1799 / 28 omitidas** |
+| Seguridad sellada (fase 4) | inglés 35,4 %, español 39,7 %; insegura 0,0 % |
+| Tutor guiado sellado v1 · v2 | válidas 69,9 % · 75,5 %; dañinos como respuesta 0 |
+| Seguridad sellada por escenarios | 35,0 %; como respuesta 0,0 % |
+| e2e · correo · garantías | 4/4 y 5/5 · ok · 16/16 |
+| Secretos | árbol: autoprueba 9/9, 835 versionados, 0 coincidencias; historial: 592229 líneas de diferencias, 0 coincidencias |
+
+**Historia.** El primer intento no corrió: una cadena rota en `scripts/qa-cycle.mjs` (mía). Corregida en `409bbf0`. Expectativa cambiada a propósito: `test_guided_chat` usaba «regalé todas mis cosas» como ejemplo de texto ilegible; ahora recibe respuesta de seguridad, y la prueba lo comprueba.
+
+**Tipos de prueba.** Simuladas: autenticación, curso × nivel, retención. Locales reales: backend por HTTP, e2e, navegador con banco de pruebas. Pendientes: Supabase de prueba, Preview, producción.
+
 ## Ciclos de la fase 5 (`scripts/qa-cycle.mjs`)
 
 **Commit de código probado: `24065ba`** (árbol limpio antes y después). Dos ciclos consecutivos; `--compare` dio **IDENTICAL AND CLEAN**. Los commits posteriores solo tocan documentación.

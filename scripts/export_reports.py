@@ -98,6 +98,12 @@ DOCUMENTS = [
     ("QA, riesgos y bloqueos", "docs/audits/2026-11-beta-phase3.md"),
     ("QA, riesgos y bloqueos", "docs/audits/2026-11-beta-phase4.md"),
     ("QA, riesgos y bloqueos", "docs/audits/2026-11-beta-phase5.md"),
+    ("QA, riesgos y bloqueos", "docs/audits/2026-11-beta-phase6.md"),
+    ("Beta y preparación", "docs/release/2026-11-supabase-test-project-guide.md"),
+    ("Beta y preparación", "docs/release/2026-11-pr-authorization-request.md"),
+    ("Seguridad", "docs/architecture/jwt-integration-review.md"),
+    ("Inglés y español", "docs/curriculum/en-a1-defects-phase6.md"),
+    ("Monetización", "docs/business/commercial-readiness-checklist.md"),
 ]
 
 # Documents whose absence must fail the export (the rest are optional: a
