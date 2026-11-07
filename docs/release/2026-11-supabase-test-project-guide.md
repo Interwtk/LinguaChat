@@ -1,5 +1,7 @@
 # Guía: proyecto Supabase de prueba y los diez recorridos reales de inicio de sesión
 
+> **Fase 7, decisión del propietario:** no se crea un proyecto Supabase de prueba. Las pruebas reales usan el proyecto **actual** con cuentas `+lcqa`: `docs/release/2026-11-supabase-existing-project-qa.md`. Lo que este documento dice sobre crear otro proyecto queda **sustituido**.
+
 > 2026-11-07. Para el propietario. Complementa `2026-11-real-validation-needs.md` y `2026-11-auth-journeys.md`.
 > **Estado: nada de esto se ha configurado ni ejecutado.** Ningún valor de esta guía está rellenado: todo lo que aparece entre `<...>` lo pones tú, en tu equipo.
 > Menús comprobados contra la documentación oficial de Supabase y Vercel el 2026-11-07. Si un menú se llama distinto en tu pantalla, la guía lo avisa donde la documentación no es clara.

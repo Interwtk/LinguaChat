@@ -3,6 +3,15 @@
 > **Rama local:** `beta/2026-11-es-for-en`, sin *push*. Base: `8463649`. Código probado: ver `docs/release/2026-11-beta-readiness.md` § Ciclos de la fase 7.
 > **Sin acciones remotas:** ningún *push*, PR, *merge*, *deploy*, cuenta, plan ni cambio en Vercel o Supabase. Solo lectura: `git fetch` y `gh` de consulta. Rutinas pausadas sin tocar.
 
+## 0. Actualización del propietario (misma fase)
+
+No se crea otro proyecto Supabase ni se contrata nada. Las pruebas reales usan el **proyecto actual**, sin borrar, reiniciar ni alterar sus datos:
+- **Ejecutor:** exige dos cuentas marcadas `+lcqa`, nunca borra ni cambia ajustes, y se niega con otro proyecto o una clave secreta.
+- **Guía nueva:** `docs/release/2026-11-supabase-existing-project-qa.md`. Incluye el inventario de lo que la app toca: solo Auth y metadatos de edad; `learner_preferences` no mientras `CLOUD_PREFERENCES_RELEASED=false`.
+- **Consultas de solo lectura** para revisar tablas, RLS, disparadores, funciones y usuarios antes de probar. No las ejecuté: abrir el proyecto con el conector requiere tu autorización y mostraría proyectos de otra organización.
+- **Riesgo nuevo:** la Preview usará el mismo proyecto que producción. Por eso su protección pasa a ser **imprescindible**.
+- **Migrar o rotar las claves JWT** en un proyecto en uso afecta a todas las sesiones. Solo con un plan propio aprobado.
+
 ## 1. Git: qué se publicaría y con qué riesgo
 
 **Verificado el 2026-11-07:** `origin/main` @ `086323c`, sin cambios. Repositorio **público**. `main` **sin protección**. #135 abierto, no borrador, en conflicto. #137 en borrador, fusionable. No se tocaron.
@@ -61,13 +70,13 @@ Hechos con fuentes: `docs/release/2026-11-hosting-and-preview-protection.md`.
   - Se niega con una clave secreta y con el host de producción.
   - Acepta el valor de *bypass* de Vercel solo desde su archivo local.
 - **JWT, ensayo de integración** en un *worktree* desechable: la rama de propuesta se fusiona con la beta sin conflictos de código (solo la copia del documento). Pasan **1886 pruebas** y el guardia de alcance.
-- **Estado:** ningún recorrido real ejecutado. No hay proyecto de prueba.
+- **Estado:** ningún recorrido real ejecutado. Se harán en el proyecto actual, con cuentas `+lcqa`, cuando lo autorices (§0).
 
 ## 4. Activación atómica del JWT (después de aprobar)
 
 1. Aprobar el cambio de `CLAUDE.md` (`docs/project/claude-md-jwt-proposal.md`) y la dependencia `PyJWT[crypto]`.
 2. Fusionar la propuesta en un PR propio, **apagada**.
-3. Proyecto de prueba con claves asimétricas. Comprobar el JWKS en `https://<ref>.supabase.co/auth/v1/.well-known/jwks.json`.
+3. Comprobar en el proyecto **actual** que el JWKS (`https://<ref>.supabase.co/auth/v1/.well-known/jwks.json`) no está vacío. Si lo está, **parar**: migrar las claves de un proyecto en uso necesita un plan aparte.
 4. En **Preview** solamente: emisor `https://<ref>.supabase.co/auth/v1`, audiencia `authenticated` y URL del JWKS.
 5. **En un solo despliegue:** `LINGUACHAT_AUTH_REQUIRED=true` y `VITE_AUTH_SEND_TOKEN=true`.
 6. Recorridos reales y la mitad del servidor del ejecutor.
@@ -107,10 +116,10 @@ Hechos con fuentes: `docs/release/2026-11-hosting-and-preview-protection.md`.
 | **Completo** | Producto local, dos cursos, QA, seguridad medida | Guías, ejecutor de recorridos, guardias, textos legales borrador | Modelo de precios, diseño de derechos |
 | **Incompleto** | — | Autenticación real, aislamiento real, revisión humana y legal, contacto de privacidad, Chatto | Todo B, más cobro, derechos, base, soporte, términos |
 | **Depende de autorización** | — | *Push*/PR, correo noreply, JWT, sellados fuera del historial | Plan de hosting, procesador, precios |
-| **Depende de un proveedor** | — | Supabase de prueba, Vercel (protección y variables) | Polar o Paddle, base gestionada |
+| **Depende de un proveedor** | — | Proyecto Supabase actual (revisión previa, *Redirect URLs*), Vercel (protección y variables) | Polar o Paddle, base gestionada |
 | **Pruebas que faltan** | — | 10 recorridos reales, servidor con JWT, Preview en incógnito | Sandbox de pagos, *webhooks*, reembolsos |
 | **Riesgo que impide abrir** | — | Cuentas sin probar; Preview posiblemente pública; crisis indirecta 5 % | Cobrar en Hobby; tributación; aceptación del procesador |
 
 **Alcance defendible para el 15 de noviembre:**
-- Si el propietario resuelve correo, protección de Preview, PR y Supabase de prueba, y los 10 recorridos pasan: **beta externa gratuita por invitación**, adultos, 5 a 15 personas conocidas, sin Premium, con el aviso de límites del tutor.
+- Si el propietario resuelve correo, protección de Preview y PR, hace la revisión previa del proyecto actual, y los 10 recorridos pasan con cuentas `+lcqa`: **beta externa gratuita por invitación**, adultos, 5 a 15 personas conocidas, sin Premium, con el aviso de límites del tutor.
 - Si falta algo: **beta interna (A)**, sin excepción.

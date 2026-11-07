@@ -1,5 +1,7 @@
 # Qué hace falta para validar en real
 
+> **Fase 7, decisión del propietario:** no se crea un proyecto Supabase de prueba. Las pruebas reales usan el proyecto **actual** con cuentas `+lcqa`: `docs/release/2026-11-supabase-existing-project-qa.md`. Lo que este documento dice sobre crear otro proyecto queda **sustituido**.
+
 > Fase 5, 2026-11-07. Plan para Vercel Preview y Supabase de prueba. **Nada de esto se ha ejecutado.** Procedimiento de PR: `2026-11-pr-procedure.md`. Recorridos: `2026-11-auth-journeys.md`.
 
 ## Lo que el propietario debe entregar o autorizar

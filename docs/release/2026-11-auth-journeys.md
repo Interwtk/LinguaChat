@@ -1,5 +1,7 @@
 # Recorridos de autenticación de la beta — procedimiento exacto
 
+> **Fase 7, decisión del propietario:** no se crea un proyecto Supabase de prueba. Las pruebas reales usan el proyecto **actual** con cuentas `+lcqa`: `docs/release/2026-11-supabase-existing-project-qa.md`. Lo que este documento dice sobre crear otro proyecto queda **sustituido**.
+
 > Fase 3, 2026-11-03. Rama local `beta/2026-11-es-for-en`.
 > **Estado:** recorridos **simulados** automatizados (`npm run check:auth-journeys`, 25 comprobaciones, proveedor falso sin red).
 > **Recorridos reales: NO ejecutados.** No existe un entorno Supabase de prueba autorizado. No se usó ni se tocó producción.
