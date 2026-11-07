@@ -67,3 +67,10 @@
 6. Si los recuerdos inmediatos (D15) se rotulan como práctica o se mueven.
 7. Recorrido con un estudiante real con lector de pantalla y en RTL (árabe) para los prompts sin espacios y la escritura en inglés.
 8. Firmar o rechazar cada fila; nada aquí está aprobado.
+
+## Corregido después de esta revisión (fase 6)
+
+- **D3:** el evaluador acepta «How much does it cost?», «How much for…?» y «What's the price?». «How much?» sola sigue como pista: la lección enseña la estructura.
+- **D4:** se aceptan «eleven», «twelve», «half past…», «quarter to…», «noon» y «midnight».
+- Solo cambió el evaluador; ningún contenido. Siguen en verde los recorridos pedagógicos, A1 y la congelación de Pre-A1. Los demás defectos quedan abiertos.
+

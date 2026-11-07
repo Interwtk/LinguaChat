@@ -1430,7 +1430,8 @@ const ROUTINE_WRONG_PERSON = /\b(he|she|they|we|you)\s+(usually\s+|sometimes\s+)
 const PART_OF_DAY = /\bin\s+the\s+(morning|afternoon|evening)\b/
 const AT_NIGHT = /\bat\s+night\b/
 /* "at seven" — the hours the level owns, as a word or a digit */
-const CLOCK_TIME = /\bat\s+(one|two|three|four|five|six|seven|eight|nine|ten|\d{1,2})\b/
+// eleven, twelve, "half past six" and "quarter to eight" are hours a learner says too (phase 6 review, D4)
+const CLOCK_TIME = /\bat\s+((half|quarter)\s+(past|to)\s+)?(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\d{1,2})\b|\bat\s+(noon|midnight)\b/
 const FREQUENCY = /\b(usually|sometimes)\b/
 
 export function evaluateStateRoutine(text, { independent = false, timeForm = null, usualTime = '' } = {}) {
@@ -1986,7 +1987,9 @@ export function evaluateAskTransport(text, { independent = false, placeName = ''
  * dispatched evaluator the moment it is used — LC-CURR-005b is the routing,
  * provider-payload and backend-parity pass over this and the rest of the arc.
  */
-const HOW_MUCH = /\bhow\s+much\s+(is|are)\b/
+// "how much does it cost?" and "what's the price?" ask the same thing (phase 6 review, D3).
+// A bare "how much?" stays a nudge: the lesson teaches the frame.
+const HOW_MUCH = /\bhow\s+much\s+(is|are|does\s+(it|this|that)\s+cost|do\s+(they|these|those)\s+cost|for)\b|\bwhat(\s+is|\s*'?s)\s+the\s+price\b/
 
 export function evaluateAskPrice(text, { independent = false, placeName = '' } = {}) {
   const n = normalize(text)
