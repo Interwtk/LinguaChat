@@ -12,6 +12,8 @@ have not yet been reviewed by native-speaking teachers.
 """
 from __future__ import annotations
 
+from ai.scenario_i18n import SCENARIO_MESSAGES
+
 SUPPORTED = ("en", "es", "pt", "fr", "it", "de", "ja", "ar")
 
 MESSAGES: dict[str, dict[str, str]] = {
@@ -471,6 +473,9 @@ def resolve_language(value) -> tuple[str, bool]:
         base = value
     base = str(base or "en").strip().lower().replace("_", "-").split("-", 1)[0]
     return (base, True) if base in SUPPORTED else ("en", base == "en")
+
+
+MESSAGES.update(SCENARIO_MESSAGES)
 
 
 def say(key: str, lang: str, **values) -> str:

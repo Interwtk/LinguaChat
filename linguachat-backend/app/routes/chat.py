@@ -6,9 +6,10 @@ from pydantic import BaseModel, Field
 
 from ai.chat_evaluation import safe_assistance
 from ai.engine import generate_response
-from ai import es_tutor
+from ai import es_tutor, guided_tutor
 from ai.guided_scope import activity_reply, guided_mode, in_scope, neutral_reply
 from ai.provider_policy import real_provider_allowed
+from ai.scenarios import scenario_list
 from ai.safety import ALLOW, assess, assess_turn, log_verdict, safety_reply, screen_reply
 from ai.schemas import ChatMode, ChatResult, LanguageInfo, LanguageLevel, LearningAction, MissionContext
 from ai.tutor_i18n import say
@@ -90,6 +91,12 @@ SHARED_SESSION = "local-session"
 MIN_MEMORY_ID_LENGTH = 24
 
 
+class ScenarioTurn(BaseModel):
+    id: str = Field(min_length=1, max_length=40)
+    step: int = Field(default=0, ge=0, le=20)
+    attempt: int = Field(default=0, ge=0, le=20)
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     level: LanguageLevel = LanguageLevel.A1
@@ -118,6 +125,9 @@ class ChatRequest(BaseModel):
     # A closed set; anything else is treated as "none". It can only LOWER what
     # the turn is worth (assisted is never independent), never raise it.
     assistance: str | None = None
+    # P-guided: which scenario step this message answers. The server's catalogue
+    # decides what that means; an unknown or closed id is treated as no scenario.
+    scenario: ScenarioTurn | None = None
 
 
 def _language_name(base: str) -> str:
@@ -318,9 +328,22 @@ def chat(req: ChatRequest, response: Response):
         if verdict.blocked:
             ui = _normalize_language(req.native_language or "en")
             response.headers["X-LinguaChat-Provider"] = "safety"
-            return _safety_result(verdict, ui, _normalize_target_language(req.target_language, ui.base))
+            blocked = _safety_result(verdict, ui, _normalize_target_language(req.target_language, ui.base))
+            if req.scenario:
+                # the exercise waits where it was; the safety reply does not advance it
+                blocked.analysis["scenario"] = {"id": req.scenario.id, "step": req.scenario.step, "attempt": req.scenario.attempt, "turn_class": "safety", "done": False}
+            return blocked
         if memory_id:
             conversation_memory.note_user_turn(memory_id, message)
+        if req.scenario:
+            scenario_language = _normalize_language(req.native_language or "en")
+            guided_turn = guided_tutor.respond(req.scenario.id, req.scenario.step, req.scenario.attempt, message, scenario_language,
+                                               safe_assistance(req.assistance) != "none")
+            if guided_turn:
+                response.headers["X-LinguaChat-Provider"] = "scenario"
+                if verdict.care_note:
+                    guided_turn.reply = f"{guided_turn.reply}\n\n{safety_reply('care_note', scenario_language.base)}"
+                return guided_turn
         client_history = [item for item in (req.history or []) if _history_is_safe(item)]
         history = conversation_memory.context(memory_id, client_history)
         preferences = _safe_preferences(req.preferences)
@@ -413,6 +436,13 @@ def chat(req: ChatRequest, response: Response):
             },
             headers={"X-LinguaChat-Provider": "local"},
         )
+
+
+@router.get("/chat/scenarios")
+def scenarios(target: str = "en", aux: str = "en"):
+    """The open guided scenarios of a course, titled in the learner's language."""
+    base = aux.split("-")[0].strip().lower()[:8]
+    return {"scenarios": scenario_list("es" if target.split("-")[0].strip().lower() == "es" else "en", base)}
 
 
 class ForgetRequest(BaseModel):

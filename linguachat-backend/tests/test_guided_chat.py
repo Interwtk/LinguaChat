@@ -2,7 +2,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from ai.guided_scope import in_scope, neutral_reply
+from ai.guided_scope import NOTHING_READ, in_scope, neutral_reply
 from main import app
 
 pytestmark = pytest.mark.guided_chat
@@ -70,7 +70,9 @@ def test_the_engine_never_praises_what_it_cannot_read():
 
 
 def test_neutral_reply_removes_the_judgement_only():
-    assert neutral_reply("Nice! Tell me one more thing.") == "Thanks. Tell me one more thing."
+    assert neutral_reply("Nice! Tell me one more thing.") == NOTHING_READ
+    assert neutral_reply("Tell me more.") == NOTHING_READ
+    assert neutral_reply("Nice! Where do you work?") == "Thanks. Where do you work?"
     assert neutral_reply("Hi! How are you?") == "Hi! How are you?"
 
 

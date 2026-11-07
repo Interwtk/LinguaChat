@@ -17,9 +17,11 @@ The vocabulary leaves out on purpose the words a beginner rarely needs and a
 person in trouble might use (die, hurt, alone, secret, touch, gone, nobody...):
 such a sentence loses its small talk, never its safety.
 
-Limit, stated: a harmful sentence made only of ordinary words is in scope and
-can get an ordinary reply. That reply carries no praise (`neutral_reply`) and
-the chat always shows where to get help. This is not comprehension.
+Limit, stated: a harmful sentence made only of ordinary words is in scope. Its
+reply carries no praise and no pretence of having followed (`neutral_reply`), and
+the chat always shows where to get help. This is not comprehension. The turns
+that really teach are the scenarios (ai/guided_tutor.py), where an answer must
+match the whole of what a step expects.
 """
 from __future__ import annotations
 
@@ -106,12 +108,19 @@ def in_scope(message: str, corrected: str | None = None) -> bool:
 PRAISE_OPENERS = ("Nice! ", "Cool. ", "Nice choice. ", "That sounds interesting. ", "Interesting. ", "That's intriguing. ")
 
 
+# What the engine says when it read nothing in particular. As a reply it pretends
+# to have followed, so the guided chat says what actually happened.
+GENERIC_TURNS = ("Tell me one more thing.", "Tell me one more thing about it.", "Tell me more.", "Got it. Tell me a little more.")
+NOTHING_READ = "OK. I can only check short practice sentences. Choose a situation to keep practising."
+
+
 def neutral_reply(reply: str) -> str:
     """The same turn without the judgement: in guided chat nothing unread is praised."""
-    for opener in PRAISE_OPENERS:
-        if reply.startswith(opener):
-            return "Thanks. " + reply[len(opener):]
-    return reply
+    opener = next((o for o in PRAISE_OPENERS if reply.startswith(o)), "")
+    rest = reply[len(opener):]
+    if rest in GENERIC_TURNS:
+        return NOTHING_READ
+    return f"Thanks. {rest}" if opener else reply
 
 
 # The chat's own practice buttons (ConversationRoom, PracticeToolbar). Each one is
