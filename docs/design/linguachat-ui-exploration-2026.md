@@ -4,7 +4,7 @@
 
 - Repositorio conectado: `Interwtk/LinguaChat`, rama `main`, commit `086323c41f5f93ff8af12ee70304c30b1633f2d0`.
 - Frontend: `linguachat-frontend/src/App.jsx`, `src/index.css` y componentes de autenticación, navegación, Hoy, Chats, sala de conversación, memoria/palabras, identidad personal, configuración, lecciones, práctica, sesión, audio, archivo y planes.
-- Backend: `linguachat-backend/app/routes/chat.py` y el contrato del estado del producto en `.ai/STATE.md` y `README.md`.
+- Backend: `linguachat-backend/app/routes/chat.py`, `routes/learning.py`, `routes/user.py`, `app/services/memory.py` y el contrato de producto en `.ai/STATE.md` y `README.md`.
 - Despliegue: `vercel.json`, Vercel `linguachat`; la rama de diseño es aislada y no reemplaza producción.
 - El código del repositorio refleja su estado remoto; no equivale a inspeccionar un servidor con usuarios reales o ejecutar pruebas end-to-end con credenciales.
 
@@ -14,7 +14,7 @@ Lingua es el tutor y agente de conversación. Chatto es una mascota visual y de 
 
 ## Estado funcional: evitar falsas promesas
 
-El sistema dispone de autenticación pública web con Supabase y flujos UI de registro/inicio/recuperación. Sin embargo, el contrato actual no certifica entrega real de correo en producción ni integración completa de persistencia en la nube. Hay progreso de aprendizaje local, Pre-A1 habilitado y contenido integrado A1–C2 que permanece bloqueado. Existe reproducción TTS vía navegador para actividades de escucha, sin micrófono ni evaluación de pronunciación. Las superficies de llamadas de voz/video son anticipos de interfaz y no llamadas reales. Los planes/pricing que aparecen en el código no deben interpretarse como pasarela de cobro completada. Los prototipos respetan esas distinciones y simulan los eventos sin contactar datos del usuario.
+El endpoint de evaluación guiada `/learning/evaluate` tiene fallback determinista; el historial temporal de `/chat` usa memoria de sesión limitada en proceso, no almacenamiento persistente. La ruta `/user` guarda en un diccionario en memoria; tampoco equivale a una base de datos productiva. El sistema dispone de autenticación pública web con Supabase y flujos UI de registro/inicio/recuperación. Sin embargo, el contrato actual no certifica entrega real de correo en producción ni integración completa de persistencia en la nube. Hay progreso de aprendizaje local, Pre-A1 habilitado y contenido integrado A1–C2 que permanece bloqueado. Existe reproducción TTS vía navegador para actividades de escucha, sin micrófono ni evaluación de pronunciación. Las superficies de llamadas de voz/video son anticipos de interfaz y no llamadas reales. Los planes/pricing que aparecen en el código no deben interpretarse como pasarela de cobro completada. Los prototipos respetan esas distinciones y simulan los eventos sin contactar datos del usuario.
 
 ## Cinco direcciones de identidad
 
