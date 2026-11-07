@@ -5,6 +5,7 @@
  * The actual client is injected so auth behavior is testable without network,
  * secrets, SMTP or account creation.
  */
+import { noteSession } from './sessionToken.js'
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function requireEmail(value) {
@@ -111,12 +112,13 @@ export function createEmailPasswordAuth(client, { origin } = {}) {
 
     async getSession() {
       const data = unwrap(await client.auth.getSession())
+      noteSession(data?.session ?? null)
       return data?.session ?? null
     },
 
     onAuthStateChange(listener) {
       if (typeof listener !== 'function') throw new Error('Auth listener required.')
-      return client.auth.onAuthStateChange((event, session) => listener(event, session))
+      return client.auth.onAuthStateChange((event, session) => { noteSession(session); listener(event, session) })
     },
 
     async consumeCallbackCode(code) {

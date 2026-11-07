@@ -1,5 +1,6 @@
 import { translate } from '../i18n/translations.js'
 import { safeAnalysis } from './chatAnalysis.js'
+import { authHeaders } from '../auth/sessionToken.js'
 
 // `|| {}`: the checks import this module under plain Node, where there is no env
 const ENV = import.meta.env || {}
@@ -124,7 +125,7 @@ export async function sendChatMessage({
     }
     const res = await fetch(`${API_URL}/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({
         message,
         level,
@@ -176,7 +177,7 @@ export const PREMIUM_PASS_KEY = 'lc2-premium-pass'
 
 export async function premiumStatus({ timeoutMs = 4000 } = {}) {
   try {
-    const res = await fetch(`${API_URL}/premium/status`, { signal: AbortSignal.timeout(timeoutMs) })
+    const res = await fetch(`${API_URL}/premium/status`, { headers: authHeaders(), signal: AbortSignal.timeout(timeoutMs) })
     const body = res.ok ? await res.json() : null
     return { available: body?.available === true, perDay: Number(body?.extra_blocks_per_day) || 0 }
   } catch {
@@ -188,7 +189,7 @@ export async function authorizeExtraBlock({ passToken, course }, { timeoutMs = 6
   try {
     const res = await fetch(`${API_URL}/practice/extra/authorize`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ pass_token: typeof passToken === 'string' ? passToken : null, course }),
       signal: AbortSignal.timeout(timeoutMs),
     })
@@ -211,7 +212,7 @@ export async function forgetServerConversations(sessionIds, { timeoutMs = 6000 }
   try {
     const res = await fetch(`${API_URL}/chat/forget`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ session_ids: ids }),
       signal: AbortSignal.timeout(timeoutMs),
     })
