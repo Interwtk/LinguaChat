@@ -47,4 +47,16 @@ Reglas: eventos idempotentes por id del procesador; un evento viejo no retrocede
 | Niveles superiores | El mayor, cuando estén aprobados | Exige revisión humana y evidencia |
 | Exportar progreso en PDF | Bajo a medio | Bajo |
 
+**Fase 6: qué podría valer la pena, sin quitar nada a lo gratuito**
+
+| Propuesta | Costo marginal | Qué lo haría valioso | Requisito |
+|---|---|---|---|
+| Más situaciones guiadas por nivel, con variantes | Bajo: plantillas, sin modelo | Más práctica que el tutor sí sigue | Autoría y revisión; medir con un conjunto ciego |
+| Informe mensual de retención: qué sigue, qué se perdió, qué repasar | Casi cero: datos ya locales | Mide aprendizaje, no clics (`learner-retention-signal.md`) | Que `retained` prediga retención en el piloto |
+| Repaso reforzado según errores recurrentes | Casi cero | Ataca lo que más falla a cada persona | Ya existen errores por curso |
+| Niveles superiores cuando estén aprobados | Alto en autoría y revisión | El mayor valor | Revisión humana y evidencia |
+| Exportar progreso en PDF | Bajo | Útil para docentes y empleadores | Ninguno técnico |
+
+Lo gratuito conserva lecciones, repaso, situaciones, misiones, privacidad y eliminación. No se promete un tutor generativo: no existe.
+
 **Recomendación:** no fijar precio hasta tener A1 abierto y datos de retención del piloto. Nunca poner tras un pago la seguridad, la eliminación de datos ni la privacidad.
