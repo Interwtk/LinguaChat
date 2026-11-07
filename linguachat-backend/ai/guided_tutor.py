@@ -39,25 +39,25 @@ MOVE_ON_AFTER = 3         # failed tries at one step before the tutor shows the 
 ENGLISH = LanguageInfo(code="en", base="en", name="English")
 
 CONTRACTIONS = (
-    (r"\bi'm\b", "i am"), (r"\bim\b", "i am"), (r"\bit's\b", "it is"), (r"\bthat's\b", "that is"), (r"\bwhat's\b", "what is"),
+    (r"\bi'm\b", "i am"), (r"\bim\b", "i am"), (r"\bit's\b", "it is"), (r"\bits (?=an? )", "it is "), (r"\bname's\b", "name is"), (r"\bthat's\b", "that is"), (r"\bwhat's\b", "what is"),
     (r"\bdon't\b", "do not"), (r"\bdont\b", "do not"), (r"\bdidn't\b", "did not"), (r"\bdoesn't\b", "does not"),
     (r"\bi'd\b", "i would"), (r"\bid like\b", "i would like"), (r"\bi'll\b", "i will"), (r"\bcan't\b", "can not"),
 )
-LEAD = {"en": r"^(hi|hello|hey|ok|okay|yes|well|um|uh|oh|sure|sorry|thanks|thank you|just|maybe)\s+",
-        "es": r"^(hola|si|bueno|pues|ok|vale|claro|mira|gracias|buenos dias|buenas tardes|perdon|para mi|tambien)\s+"}
-TAIL = {"en": r"\s+(please|thanks|thank you|and you|how about you|what about you|nice to meet you|sir|today|now|too)$",
-        "es": r"\s+(por favor|gracias|muchas gracias|y tu|y usted|mucho gusto|encantado|encantada|hoy)$"}
-COURTESY = re.compile(r"hi|hello|hey|ok|okay|yes|no|thanks|thank you|please|sorry|nice to meet you|and you|hola|si|gracias|por favor|mucho gusto|y tu|perdon|encantado|encantada")
+LEAD = {"en": r"^(hi|hello|hey|ok|okay|yes|well|um|uh|oh|sure|sorry|thanks|thank you|just|maybe|lingua|hello lingua|hi lingua)\s+",
+        "es": r"^(hola|si|bueno|pues|ok|vale|claro|mira|gracias|buenos dias|buenas tardes|perdon|para mi|tambien|hola lingua|lingua)\s+"}
+TAIL = {"en": r"\s+(please|thanks|thank you|and you|how about you|what about you|nice to meet you|sir|today|now|too|lingua|if possible|is that ok|is that okay)$",
+        "es": r"\s+(por favor|porfa|gracias|muchas gracias|y tu|y vos|y usted|mucho gusto|encantado|encantada|hoy|lingua)$"}
+COURTESY = re.compile(r"hi|hello|hey|ok|okay|yes|no|thanks|thank you|please|sorry|nice to meet you|and you|lingua|hola|si|gracias|por favor|porfa|mucho gusto|y tu|y vos|perdon|encantado|encantada|verdad")
 ES_COMMON = frozenset("triste solo sola mal bien muerto muerta cansado cansada feo fea malo mala nadie nada hoy aqui".split())
 
-_QUESTION_MEANING = re.compile(r"(?:what does (\w+) mean|what is (\w+)|what means (\w+)|what is the meaning of (\w+)|que significa (\w+)|que quiere decir (\w+)|o que e (\w+)|o que significa (\w+)|que veut dire (\w+)|que significa (\w+) en (?:ingles|espanol)|(\w+) means what)")
-_QUESTION_SAY = re.compile(r"(?:how do you say (.{1,40}?)(?: in (?:english|spanish))?|how can i say (.{1,40}?)|what is (\w+) in (?:english|spanish)|como se dice (.{1,40}?)(?: en (?:ingles|espanol))?|como digo (.{1,40}?)|comment dit on (.{1,40}?)(?: en anglais)?)")
+_QUESTION_MEANING = re.compile(r"(?:what does (\w+(?: \w+){0,3}) mean|what is (\w+) in (?:spanish|english)\?|what is (\w+)|what means (\w+)|what is the meaning of (\w+)|que significa (\w+)|que quiere decir (\w+)|o que e (\w+)|o que significa (\w+)|que veut dire (\w+)|que significa (\w+) en (?:ingles|espanol)|(\w+) means what)")
+_QUESTION_SAY = re.compile(r"(?:how do you say (.{1,40}?)(?: in (?:english|spanish))?|how do i say (.{1,40}?)(?: in (?:english|spanish))?|how do i ask (.{1,40}?)|how can i say (.{1,40}?)|what is (\w+) in (?:english|spanish)|como se dice (.{1,40}?)(?: en (?:ingles|espanol))?|como digo (.{1,40}?)|comment dit on (.{1,40}?)(?: en anglais)?)")
 _REPAIR = re.compile(r"(?:(?:can|could) you (?:please )?(?:repeat|say that again|speak more slowly|speak slower)(?: the question)?|repeat(?: that| the question)?|again|slower|more slowly|i no understand"
                      r"|i do not understand|i did not understand|no entiendo|no entendi|no te entiendo|mas despacio|mas lento|puede repetir(?: la pregunta)?|puedes repetir(?: la pregunta)?|otra vez|repite"
                      r"|pode repetir|nao entendo|nao entendi|vous pouvez repeter|tu peux repeter|je ne comprends pas|non capisco|ich verstehe nicht|pardon vous pouvez repeter)")
-_HELP = re.compile(r"(?:help|help me|help me what should i say|hint|i need help|what do i say|what can i say|i do not know|what should i say|ayuda|ayudame|no se|no lo se|que digo|que puedo decir|una pista)")
+_HELP = re.compile(r"(?:help|help me|help me what should i say|hint|can you give me a hint|give me a hint|what should i answer|what should i say here|what do i say here|i do not know what to say|i do not understand what i should say|can you give me (?:some )?examples(?: of \w+)?|como respondo(?: a .{1,30})?|i need help|what do i say|what can i say|i do not know|what should i say|ayuda|ayudame|no se|no lo se|que digo|que puedo decir|una pista)")
 _WHO = re.compile(r"(?:who are you|what are you|are you (?:a )?(?:real|human|person|robot|bot|ai)(?: person)?|quien eres|que eres|eres (?:una )?(?:persona|real|robot|ia|humana|humano))")
-_CHECK = re.compile(r"(?:is (?:this|it|that) (?:correct|right|ok|okay)|am i (?:right|correct)|esta bien(?: asi)?|es correcto|esta correcto|lo dije bien|c est correct|e correto|esta certo|ist das richtig|e giusto)")
+_CHECK = re.compile(r"(?:is (?:this|it|that) (?:correct|right|ok|okay)|is .{1,30} (?:correct|polite|right)(?: here)?|is it .{1,25} or .{1,25}|do i say .{1,30} or .{1,30}|what is the difference between .{1,30}|why .{1,30} and not .{1,30}|am i (?:right|correct)|esta bien(?: asi)?|es correcto|esta correcto|lo dije bien|c est correct|e correto|esta certo|ist das richtig|e giusto)")
 
 # A language question in the learner's own language. Searched, not matched whole:
 # these scripts are not folded like Latin text. Kinds: meaning, say, repair, help.
@@ -128,8 +128,8 @@ def _expand(pattern: str, lang: str) -> str:
     word = r"[a-zñ][a-zñ'-]{0,19}"
     table = {
         "{name}": rf"(?P<name>{word}(?: {word}){{0,2}})", "{cname}": rf"(?P<cname>{word}(?: {word}){{0,2}})",
-        "{place}": rf"(?P<place>{word}(?: {word}){{0,2}})", "{place2}": rf"(?P<place2>{word}(?: {word})?)", "{cplace}": rf"(?P<cplace>{word}(?: {word})?)",
-        "{any}": rf"(?P<any>{word}(?: {word})?)", "{thing2}": rf"(?P<thing2>{slots['thing']})", "{food2}": rf"(?P<food2>{slots['food']})",
+        "{place}": rf"(?P<place>{word}(?: {word}){{0,3}})", "{place2}": rf"(?P<place2>{word}(?: {word})?)", "{cplace}": rf"(?P<cplace>{word}(?: {word})?)",
+        "{any}": rf"(?P<any>{word}(?: {word})?)", "{thing2}": rf"(?P<thing2>{slots['thing']})", "{food2}": rf"(?P<food2>{slots['food']})", "{verb2}": rf"(?P<verb2>{slots['verb']})",
         "{art}": rf"(?:{slots['art']})",
     }
     for slot in ("drink", "food", "thing", "number", "feel", "verb"):

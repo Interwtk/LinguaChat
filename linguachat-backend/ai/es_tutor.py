@@ -61,6 +61,9 @@ NOUNS = {
     "cafe": ("m", "café"), "te": ("m", "té"), "agua": ("f", "agua"), "musica": ("f", "música"), "futbol": ("m", "fútbol"),
     "cine": ("m", "cine"), "pizza": ("f", "pizza"), "playa": ("f", "playa"), "libro": ("m", "libro"), "mesa": ("f", "mesa"),
     "chocolate": ("m", "chocolate"), "cerveza": ("f", "cerveza"), "jugo": ("m", "jugo"), "zumo": ("m", "zumo"), "leche": ("f", "leche"),
+    "pollo": ("m", "pollo"), "pescado": ("m", "pescado"), "arroz": ("m", "arroz"), "pan": ("m", "pan"), "queso": ("m", "queso"), "sopa": ("f", "sopa"),
+    "ensalada": ("f", "ensalada"), "carne": ("f", "carne"), "paella": ("f", "paella"), "tortilla": ("f", "tortilla"), "pasta": ("f", "pasta"), "tostada": ("f", "tostada"),
+    "empanada": ("f", "empanada"), "pastel": ("m", "pastel"), "bocadillo": ("m", "bocadillo"), "manzana": ("f", "manzana"), "mesa": ("f", "mesa"),
     "sandwich": ("m", "sándwich"), "pelicula": ("f", "película"), "comida": ("f", "comida"), "fruta": ("f", "fruta"), "helado": ("m", "helado"),
 }
 GLOSSARY = {
