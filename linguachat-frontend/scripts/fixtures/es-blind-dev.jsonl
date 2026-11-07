@@ -1,0 +1,180 @@
+{"id": "e0001", "kind": "es_anything_else", "context": {}, "text": "Un pan, por favor.", "expect": "unsure", "topic": "vocabulary_context"}
+{"id": "e0002", "kind": "es_repair", "context": {"repairKind": "not_understand"}, "text": "No comprendí.", "expect": "accept", "topic": "conjugation"}
+{"id": "e0003", "kind": "es_introduce", "context": {}, "text": "Buenos días, me llamo Victoria.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0004", "kind": "es_greet", "context": {}, "text": "Hola, buenas tardes, señor.", "expect": "accept", "topic": "vocabulary_context"}
+{"id": "e0005", "kind": "es_quantity", "context": {"targetThing": "cafe", "targetCount": 4, "quantityForm": "bare"}, "text": "Cuatra.", "expect": "reject", "topic": "gender_agreement", "error": "number changed to feminine"}
+{"id": "e0006", "kind": "es_reciprocal", "context": {}, "text": "Estoy muy bien, ¿y tú?", "expect": "accept", "topic": "ser_estar"}
+{"id": "e0007", "kind": "es_goodbye", "context": {}, "text": "Chao, gracias.", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0008", "kind": "es_polite_request", "context": {"targetThing": "te"}, "text": "Una té.", "expect": "reject", "topic": "gender_agreement", "error": "té is masculine, not polite"}
+{"id": "e0009", "kind": "es_ask_name", "context": {}, "text": "Buenas tardes, ¿cómo se llama?", "expect": "accept", "topic": "independent_production"}
+{"id": "e0010", "kind": "es_nice_to_meet", "context": {}, "text": "Gusto en conocerte.", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0011", "kind": "es_thank", "context": {}, "text": "Muchas gracias.", "expect": "accept", "topic": "gender_agreement"}
+{"id": "e0012", "kind": "es_identify_thing", "context": {"targetThing": "telefono"}, "text": "Es celular.", "expect": "reject", "topic": "articles", "error": "missing article"}
+{"id": "e0013", "kind": "es_express_like", "context": {"targetThing": "musica"}, "text": "Me gusta cantar.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0014", "kind": "es_answer_wellbeing", "context": {}, "text": "Mal.", "expect": "accept", "topic": "vocabulary_context"}
+{"id": "e0015", "kind": "es_want", "context": {"targetThing": "agua"}, "text": "Quiero agua.", "expect": "accept", "topic": "articles"}
+{"id": "e0016", "kind": "es_want", "context": {"targetThing": "cafe"}, "text": "Quiero comer.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0017", "kind": "es_anything_else", "context": {}, "text": "Un sandwich, por favor.", "expect": "accept", "topic": "articles"}
+{"id": "e0018", "kind": "es_identify_thing", "context": {"targetThing": "libro"}, "text": "Es un libro.", "expect": "accept", "topic": "articles"}
+{"id": "e0019", "kind": "es_introduce", "context": {}, "text": "Yo Paul.", "expect": "reject", "topic": "ser_estar", "error": "missing verb"}
+{"id": "e0020", "kind": "es_ask_name", "context": {}, "text": "¿Tú te llamas cómo?", "expect": "unsure", "topic": "questions"}
+{"id": "e0021", "kind": "es_ask_origin", "context": {}, "text": "¿Vos de dónde sos?", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0022", "kind": "es_want", "context": {"targetThing": "agua"}, "text": "Sí, quiero un poco de agua.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0023", "kind": "es_ask_what", "context": {}, "text": "¿Qué tienes ahí?", "expect": "unsure", "topic": "vocabulary_context"}
+{"id": "e0024", "kind": "es_thank", "context": {}, "text": "Perdón.", "expect": "reject", "topic": "comprehension_of_prompt", "error": "apologized instead of thanking"}
+{"id": "e0025", "kind": "es_nice_to_meet", "context": {}, "text": "Encantado de conocerte.", "expect": "accept", "topic": "gender_agreement"}
+{"id": "e0026", "kind": "es_ask_origin", "context": {}, "text": "¿De dónde eres tú?", "expect": "accept", "topic": "ser_estar"}
+{"id": "e0027", "kind": "es_nice_to_meet", "context": {}, "text": "Igual.", "expect": "unsure", "topic": "vocabulary_context"}
+{"id": "e0028", "kind": "es_answer_wellbeing", "context": {}, "text": "Tengo hambre.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0029", "kind": "es_reciprocal", "context": {}, "text": "Bien, gracia, ¿y tú?", "expect": "reject", "topic": "vocabulary_context", "error": "gracia instead of gracias"}
+{"id": "e0030", "kind": "es_repair", "context": {"repairKind": "slow_down"}, "text": "¿Podés hablar más despacio?", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0031", "kind": "es_express_like", "context": {"targetThing": "musica"}, "text": "Me gusta escuchar música.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0032", "kind": "es_ask_wellbeing", "context": {}, "text": "¿Cómo te llamas?", "expect": "reject", "topic": "comprehension_of_prompt", "error": "asked name, not wellbeing"}
+{"id": "e0033", "kind": "es_polite_request", "context": {"targetThing": "cafe"}, "text": "Me da un café por favor", "expect": "accept", "topic": "questions"}
+{"id": "e0034", "kind": "es_greet", "context": {}, "text": "Buenas días.", "expect": "reject", "topic": "gender_agreement", "error": "días is masculine"}
+{"id": "e0035", "kind": "es_express_like", "context": {"targetThing": "cafe"}, "text": "Me gusta el chocolate caliente.", "expect": "accept", "topic": "articles"}
+{"id": "e0036", "kind": "es_ask_like", "context": {"targetThing": "musica"}, "text": "¿Le gusta a usted la música?", "expect": "accept", "topic": "pronouns"}
+{"id": "e0037", "kind": "es_polite_request", "context": {"targetThing": "agua"}, "text": "¿Me da un agua, por favor?", "expect": "accept", "topic": "vocabulary_context"}
+{"id": "e0038", "kind": "es_goodbye", "context": {}, "text": "Buenas noches.", "expect": "unsure", "topic": "vocabulary_context"}
+{"id": "e0039", "kind": "es_ask_what", "context": {}, "text": "¿Qué es esto?", "expect": "accept", "topic": "questions"}
+{"id": "e0040", "kind": "es_say_origin", "context": {}, "text": "Soy un inglés.", "expect": "reject", "topic": "articles", "error": "article before nationality"}
+{"id": "e0041", "kind": "es_answer_wellbeing", "context": {}, "text": "Yo soy cansado.", "expect": "reject", "topic": "ser_estar", "error": "ser instead of estar"}
+{"id": "e0042", "kind": "es_goodbye", "context": {}, "text": "Nos ver.", "expect": "reject", "topic": "conjugation", "error": "infinitive not conjugated"}
+{"id": "e0043", "kind": "es_ask_bill", "context": {}, "text": "Perdón, la cuenta, por favor.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0044", "kind": "es_want", "context": {"targetThing": "cafe"}, "text": "Quiero un té.", "expect": "accept", "topic": "articles"}
+{"id": "e0045", "kind": "es_quantity", "context": {"targetThing": "cafe", "targetCount": 2, "quantityForm": "with_object"}, "text": "Dos cafés.", "expect": "accept", "topic": "gender_agreement"}
+{"id": "e0046", "kind": "es_nice_to_meet", "context": {}, "text": "Es un placer.", "expect": "accept", "topic": "vocabulary_context"}
+{"id": "e0047", "kind": "es_reciprocal", "context": {}, "text": "Bien, ¿qué tal?", "expect": "accept", "topic": "questions"}
+{"id": "e0048", "kind": "es_ask_origin", "context": {}, "text": "¿De dónde es?", "expect": "accept", "topic": "ser_estar"}
+{"id": "e0049", "kind": "es_introduce", "context": {}, "text": "Buenos días.", "expect": "reject", "topic": "comprehension_of_prompt", "error": "greeting only, no name"}
+{"id": "e0050", "kind": "es_polite_request", "context": {"targetThing": "agua"}, "text": "¿Le da un agua?", "expect": "reject", "topic": "pronouns", "error": "le instead of me"}
+{"id": "e0051", "kind": "es_quantity", "context": {"targetThing": "libro", "targetCount": 1, "quantityForm": "with_object"}, "text": "Un libro, por favor.", "expect": "accept", "topic": "articles"}
+{"id": "e0052", "kind": "es_ask_what", "context": {}, "text": "¿Cómo estás?", "expect": "reject", "topic": "comprehension_of_prompt", "error": "asked wellbeing, not what"}
+{"id": "e0053", "kind": "es_say_origin", "context": {}, "text": "Estoy en Boston.", "expect": "reject", "topic": "ser_estar", "error": "location, not origin"}
+{"id": "e0054", "kind": "es_introduce", "context": {}, "text": "Me dicen Bobby.", "expect": "unsure", "topic": "vocabulary_context"}
+{"id": "e0055", "kind": "es_ask_origin", "context": {}, "text": "¿De dónde son?", "expect": "reject", "topic": "conjugation", "error": "plural to one person"}
+{"id": "e0056", "kind": "es_greet", "context": {}, "text": "Buenas tardes, ¿qué tal?", "expect": "accept", "topic": "independent_production"}
+{"id": "e0057", "kind": "es_ask_what", "context": {}, "text": "¿Y eso qué es?", "expect": "accept", "topic": "questions"}
+{"id": "e0058", "kind": "es_greet", "context": {}, "text": "Buenas, ¿cómo va?", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0059", "kind": "es_express_dislike", "context": {"targetThing": "cafe"}, "text": "No tengo café.", "expect": "reject", "topic": "comprehension_of_prompt", "error": "said don't have, not don't like"}
+{"id": "e0060", "kind": "es_ask_origin", "context": {}, "text": "¿De dónde viene?", "expect": "accept", "topic": "questions"}
+{"id": "e0061", "kind": "es_reciprocal", "context": {}, "text": "Muy bien, gracias, ¿y usted?", "expect": "accept", "topic": "pronouns"}
+{"id": "e0062", "kind": "es_need", "context": {"targetThing": "ayuda"}, "text": "Soy perdido.", "expect": "reject", "topic": "ser_estar", "error": "ser instead of estar"}
+{"id": "e0063", "kind": "es_identify_thing", "context": {"targetThing": "mesa"}, "text": "Es una mesa pequeña.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0064", "kind": "es_ask_origin", "context": {}, "text": "¿Dónde es?", "expect": "reject", "topic": "questions", "error": "missing de"}
+{"id": "e0065", "kind": "es_ask_bill", "context": {}, "text": "Quiere la cuenta.", "expect": "reject", "topic": "conjugation", "error": "third person instead of quiero"}
+{"id": "e0066", "kind": "es_identify_thing", "context": {"targetThing": "telefono"}, "text": "Un móvil.", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0067", "kind": "es_ask_wellbeing", "context": {}, "text": "¿Qué hubo?", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0068", "kind": "es_anything_else", "context": {}, "text": "No, nada más, gracias.", "expect": "accept", "topic": "vocabulary_context"}
+{"id": "e0069", "kind": "es_quantity", "context": {"targetThing": "libro", "targetCount": 1, "quantityForm": "with_object"}, "text": "Un libro.", "expect": "accept", "topic": "articles"}
+{"id": "e0070", "kind": "es_ask_what", "context": {}, "text": "¿Qué está?", "expect": "reject", "topic": "ser_estar", "error": "estar instead of ser"}
+{"id": "e0071", "kind": "es_say_origin", "context": {}, "text": "Soy americano.", "expect": "accept", "topic": "gender_agreement"}
+{"id": "e0072", "kind": "es_ask_wellbeing", "context": {}, "text": "¿Cómo está usted?", "expect": "accept", "topic": "ser_estar"}
+{"id": "e0073", "kind": "es_ask_origin", "context": {}, "text": "¿De dónde usted es?", "expect": "unsure", "topic": "questions"}
+{"id": "e0074", "kind": "es_identify_thing", "context": {"targetThing": "mesa"}, "text": "Mesa es.", "expect": "reject", "topic": "questions", "error": "wrong word order, missing article"}
+{"id": "e0075", "kind": "es_anything_else", "context": {}, "text": "Yo quieres un sándwich.", "expect": "reject", "topic": "conjugation", "error": "second-person verb with yo"}
+{"id": "e0076", "kind": "es_repair", "context": {"repairKind": "repeat"}, "text": "¿Perdón?", "expect": "accept", "topic": "vocabulary_context"}
+{"id": "e0077", "kind": "es_anything_else", "context": {}, "text": "Un bocata, por favor.", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0078", "kind": "es_need", "context": {"targetThing": "libro"}, "text": "Yo necesita un libro.", "expect": "reject", "topic": "conjugation", "error": "third-person verb with yo"}
+{"id": "e0079", "kind": "es_goodbye", "context": {}, "text": "Adiós, Mateo.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0080", "kind": "es_ask_bill", "context": {}, "text": "La cuenta, por favor.", "expect": "accept", "topic": "articles"}
+{"id": "e0081", "kind": "es_express_like", "context": {"targetThing": "cafe"}, "text": "Me gustan el café.", "expect": "reject", "topic": "conjugation", "error": "plural verb with singular noun"}
+{"id": "e0082", "kind": "es_identify_thing", "context": {"targetThing": "libro"}, "text": "Es un libro interesante.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0083", "kind": "es_thank", "context": {}, "text": "Muchas gracia.", "expect": "reject", "topic": "gender_agreement", "error": "gracia instead of gracias"}
+{"id": "e0084", "kind": "es_anything_else", "context": {}, "text": "Una sandwich.", "expect": "reject", "topic": "gender_agreement", "error": "sándwich is masculine"}
+{"id": "e0085", "kind": "es_quantity", "context": {"targetThing": "cafe", "targetCount": 2, "quantityForm": "polite_request"}, "text": "¿Nos da dos cafés?", "expect": "accept", "topic": "conjugation"}
+{"id": "e0086", "kind": "es_express_dislike", "context": {"targetThing": "cafe"}, "text": "No me gusta el café.", "expect": "accept", "topic": "articles"}
+{"id": "e0087", "kind": "es_ask_what", "context": {}, "text": "Hola, ¿qué es eso?", "expect": "accept", "topic": "independent_production"}
+{"id": "e0088", "kind": "es_greet", "context": {}, "text": "Hello.", "expect": "reject", "topic": "comprehension_of_prompt", "error": "answered in English"}
+{"id": "e0089", "kind": "es_ask_wellbeing", "context": {}, "text": "Hola, ¿cómo estás?", "expect": "accept", "topic": "ser_estar"}
+{"id": "e0090", "kind": "es_introduce", "context": {}, "text": "Mi nombre es Jack.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0091", "kind": "es_express_dislike", "context": {"targetThing": "cafe"}, "text": "A mí no me gusta.", "expect": "accept", "topic": "pronouns"}
+{"id": "e0092", "kind": "es_express_like", "context": {"targetThing": "cafe"}, "text": "A mí me gusta el café.", "expect": "accept", "topic": "pronouns"}
+{"id": "e0093", "kind": "es_polite_request", "context": {"targetThing": "cafe"}, "text": "Un cortado, por favor.", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0094", "kind": "es_ask_like", "context": {"targetThing": "musica"}, "text": "¿A ti te gusta mucho la música?", "expect": "accept", "topic": "pronouns"}
+{"id": "e0095", "kind": "es_quantity", "context": {"targetThing": "botella", "targetCount": 6, "quantityForm": "polite_request"}, "text": "¿Puede traer seis botellas de agua, por favor?", "expect": "accept", "topic": "questions"}
+{"id": "e0096", "kind": "es_quantity", "context": {"targetThing": "cafe", "targetCount": 3, "quantityForm": "polite_request"}, "text": "Quiero tres cafés.", "expect": "reject", "topic": "comprehension_of_prompt", "error": "not polite"}
+{"id": "e0097", "kind": "es_answer_wellbeing", "context": {}, "text": "Me llamo Sam.", "expect": "reject", "topic": "comprehension_of_prompt", "error": "answered name, not wellbeing"}
+{"id": "e0098", "kind": "es_repair", "context": {"repairKind": "not_understand"}, "text": "No soy comprendo.", "expect": "reject", "topic": "ser_estar", "error": "ser plus conjugated verb"}
+{"id": "e0099", "kind": "es_ask_name", "context": {}, "text": "¿Cómo te llamas?", "expect": "accept", "topic": "questions"}
+{"id": "e0100", "kind": "es_identify_thing", "context": {"targetThing": "llave"}, "text": "Es uno llave.", "expect": "reject", "topic": "gender_agreement", "error": "uno with feminine noun"}
+{"id": "e0101", "kind": "es_ask_wellbeing", "context": {}, "text": "¿Cómo estar?", "expect": "reject", "topic": "conjugation", "error": "infinitive not conjugated"}
+{"id": "e0102", "kind": "es_express_like", "context": {"targetThing": "musica"}, "text": "Yo amo la música.", "expect": "unsure", "topic": "vocabulary_context"}
+{"id": "e0103", "kind": "es_polite_request", "context": {"targetThing": "cafe"}, "text": "Una café.", "expect": "reject", "topic": "gender_agreement", "error": "café is masculine, not polite"}
+{"id": "e0104", "kind": "es_need", "context": {"targetThing": "libro"}, "text": "Necesito libros.", "expect": "unsure", "topic": "articles"}
+{"id": "e0105", "kind": "es_quantity", "context": {"targetThing": "libro", "targetCount": 1, "quantityForm": "with_object"}, "text": "Uno libros.", "expect": "reject", "topic": "gender_agreement", "error": "uno instead of un, plural noun"}
+{"id": "e0106", "kind": "es_say_origin", "context": {}, "text": "Soy inglesa.", "expect": "accept", "topic": "gender_agreement"}
+{"id": "e0107", "kind": "es_nice_to_meet", "context": {}, "text": "Hola, Mateo.", "expect": "reject", "topic": "comprehension_of_prompt", "error": "greeting instead of nice to meet you"}
+{"id": "e0108", "kind": "es_identify_thing", "context": {"targetThing": "libro"}, "text": "Son un libro.", "expect": "reject", "topic": "conjugation", "error": "plural verb"}
+{"id": "e0109", "kind": "es_repair", "context": {"repairKind": "repeat"}, "text": "Lo siento, ¿puedes repetir, por favor?", "expect": "accept", "topic": "independent_production"}
+{"id": "e0110", "kind": "es_quantity", "context": {"targetThing": "botella", "targetCount": 6, "quantityForm": "polite_request"}, "text": "Seis botellas de agua, gracias.", "expect": "unsure", "topic": "vocabulary_context"}
+{"id": "e0111", "kind": "es_quantity", "context": {"targetThing": "cafe", "targetCount": 2, "quantityForm": "with_object"}, "text": "Dos cafés para nosotros.", "expect": "accept", "topic": "gender_agreement"}
+{"id": "e0112", "kind": "es_answer_wellbeing", "context": {}, "text": "Estoy cansado.", "expect": "accept", "topic": "gender_agreement"}
+{"id": "e0113", "kind": "es_say_origin", "context": {}, "text": "Eres de Canadá.", "expect": "reject", "topic": "conjugation", "error": "second person instead of soy"}
+{"id": "e0114", "kind": "es_repair", "context": {"repairKind": "ask_meaning", "meaningWord": "biblioteca"}, "text": "¿Qué significa?", "expect": "accept", "topic": "questions"}
+{"id": "e0115", "kind": "es_repair", "context": {"repairKind": "slow_down"}, "text": "Habla más lento.", "expect": "accept", "topic": "conjugation"}
+{"id": "e0116", "kind": "es_polite_request", "context": {"targetThing": "agua"}, "text": "¿Me das un agua?", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0117", "kind": "es_need", "context": {"targetThing": "ayuda"}, "text": "Necesite ayuda.", "expect": "reject", "topic": "conjugation", "error": "subjunctive-like form instead of necesito"}
+{"id": "e0118", "kind": "es_ask_bill", "context": {}, "text": "¿Puede traerme la cuenta?", "expect": "accept", "topic": "questions"}
+{"id": "e0119", "kind": "es_want", "context": {"targetThing": "agua"}, "text": "Yo quieres agua.", "expect": "reject", "topic": "conjugation", "error": "second-person verb with yo"}
+{"id": "e0120", "kind": "es_introduce", "context": {}, "text": "Hola, soy Ben.", "expect": "accept", "topic": "ser_estar"}
+{"id": "e0121", "kind": "es_say_origin", "context": {}, "text": "Soy de Miami, en Florida.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0122", "kind": "es_want", "context": {"targetThing": "cafe"}, "text": "Quiero el café.", "expect": "unsure", "topic": "articles"}
+{"id": "e0123", "kind": "es_identify_thing", "context": {"targetThing": "llave"}, "text": "Es una llave grande.", "expect": "accept", "topic": "independent_production"}
+{"id": "e0124", "kind": "es_identify_thing", "context": {"targetThing": "telefono"}, "text": "Es un celu.", "expect": "unsure", "topic": "regional_variant"}
+{"id": "e0125", "kind": "es_need", "context": {"targetThing": "libro"}, "text": "Necesito un libro.", "expect": "accept", "topic": "articles"}
+{"id": "e0126", "kind": "es_ask_like", "context": {"targetThing": "musica"}, "text": "¿Y a vos te gusta la música?", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0127", "kind": "es_say_origin", "context": {}, "text": "Soy de Estados Unidos.", "expect": "accept", "topic": "ser_estar"}
+{"id": "e0128", "kind": "es_ask_like", "context": {"targetThing": "musica"}, "text": "¿Le gusta el música?", "expect": "reject", "topic": "gender_agreement", "error": "música is feminine"}
+{"id": "e0129", "kind": "es_identify_thing", "context": {"targetThing": "mesa"}, "text": "Esto es una mesa.", "expect": "accept", "topic": "articles"}
+{"id": "e0130", "kind": "es_goodbye", "context": {}, "text": "See you later.", "expect": "reject", "topic": "comprehension_of_prompt", "error": "answered in English"}
+{"id": "e0131", "kind": "es_express_like", "context": {"targetThing": "cafe"}, "text": "Yo me gusta el café.", "expect": "reject", "topic": "pronouns", "error": "yo instead of a mí"}
+{"id": "e0132", "kind": "es_ask_like", "context": {"targetThing": "musica"}, "text": "¿Tú gusta música?", "expect": "reject", "topic": "pronouns", "error": "tú instead of te, missing article"}
+{"id": "e0133", "kind": "es_repair", "context": {"repairKind": "how_to_say", "meaningWord": "see you tomorrow"}, "text": "¿Cómo se llama see you tomorrow?", "expect": "reject", "topic": "vocabulary_context", "error": "llamarse instead of decir"}
+{"id": "e0134", "kind": "es_ask_bill", "context": {}, "text": "Adiós.", "expect": "reject", "topic": "comprehension_of_prompt", "error": "did not ask for the bill"}
+{"id": "e0135", "kind": "es_goodbye", "context": {}, "text": "Hasta el luego.", "expect": "reject", "topic": "articles", "error": "article added to fixed phrase"}
+{"id": "e0136", "kind": "es_repair", "context": {"repairKind": "how_to_say", "meaningWord": "see you tomorrow"}, "text": "¿Cómo se dice?", "expect": "unsure", "topic": "comprehension_of_prompt"}
+{"id": "e0137", "kind": "es_repair", "context": {"repairKind": "how_to_say", "meaningWord": "see you tomorrow"}, "text": "¿Qué significa biblioteca?", "expect": "reject", "topic": "comprehension_of_prompt", "error": "asked meaning of the wrong word"}
+{"id": "e0138", "kind": "es_express_dislike", "context": {"targetThing": "cafe"}, "text": "No me gusta.", "expect": "accept", "topic": "articles"}
+{"id": "e0139", "kind": "es_thank", "context": {}, "text": "Muchas gracias por el café.", "expect": "accept", "topic": "vocabulary_context"}
+{"id": "e0140", "kind": "es_ask_bill", "context": {}, "text": "Un cuenta, por favor.", "expect": "reject", "topic": "gender_agreement", "error": "cuenta is feminine"}
+{"id": "e0141", "kind": "es_repair", "context": {"repairKind": "ask_meaning", "meaningWord": "biblioteca"}, "text": "¿Cómo se dice biblioteca?", "expect": "reject", "topic": "comprehension_of_prompt", "error": "how to say, not meaning"}
+{"id": "e0142", "kind": "es_thank", "context": {}, "text": "Te agradezco.", "expect": "accept", "topic": "pronouns"}
+{"id": "e0143", "kind": "es_quantity", "context": {"targetThing": "botella", "targetCount": 6, "quantityForm": "polite_request"}, "text": "¿Me pone seis botellas de agua?", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0144", "kind": "es_repair", "context": {"repairKind": "not_understand"}, "text": "No te entendí.", "expect": "accept", "topic": "pronouns"}
+{"id": "e0145", "kind": "es_need", "context": {"targetThing": "ayuda"}, "text": "¿Puedes ayudarme?", "expect": "accept", "topic": "questions"}
+{"id": "e0146", "kind": "es_ask_name", "context": {}, "text": "¿Vos cómo te llamás?", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0147", "kind": "es_need", "context": {"targetThing": "ayuda"}, "text": "Estoy perdido, necesito ayuda por favor.", "expect": "accept", "topic": "ser_estar"}
+{"id": "e0148", "kind": "es_express_like", "context": {"targetThing": "musica"}, "text": "A mí me gusta la música.", "expect": "accept", "topic": "pronouns"}
+{"id": "e0149", "kind": "es_reciprocal", "context": {}, "text": "Gracias, ¿y tú?", "expect": "unsure", "topic": "comprehension_of_prompt"}
+{"id": "e0150", "kind": "es_ask_bill", "context": {}, "text": "¿Me cobras, por favor?", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0151", "kind": "es_want", "context": {"targetThing": "cafe"}, "text": "Yo quiero una cerveza.", "expect": "accept", "topic": "pronouns"}
+{"id": "e0152", "kind": "es_ask_what", "context": {}, "text": "¿Qué es esto cosa?", "expect": "reject", "topic": "gender_agreement", "error": "esto before a feminine noun"}
+{"id": "e0153", "kind": "es_goodbye", "context": {}, "text": "¡Adiós, hasta luego!", "expect": "accept", "topic": "vocabulary_context"}
+{"id": "e0154", "kind": "es_ask_what", "context": {}, "text": "Lingua, ¿qué es esto?", "expect": "accept", "topic": "independent_production"}
+{"id": "e0155", "kind": "es_want", "context": {"targetThing": "agua"}, "text": "Quieres un agua.", "expect": "reject", "topic": "conjugation", "error": "second person instead of quiero"}
+{"id": "e0156", "kind": "es_want", "context": {"targetThing": "cafe"}, "text": "Yo quiere café.", "expect": "reject", "topic": "conjugation", "error": "third-person verb with yo"}
+{"id": "e0157", "kind": "es_polite_request", "context": {"targetThing": "te"}, "text": "Quisiera un té, por favor.", "expect": "accept", "topic": "vocabulary_context"}
+{"id": "e0158", "kind": "es_express_dislike", "context": {"targetThing": "cafe"}, "text": "No gusto.", "expect": "reject", "topic": "pronouns", "error": "missing me, wrong verb form"}
+{"id": "e0159", "kind": "es_quantity", "context": {"targetThing": "cafe", "targetCount": 2, "quantityForm": "polite_request"}, "text": "Dos cafés.", "expect": "reject", "topic": "comprehension_of_prompt", "error": "not polite"}
+{"id": "e0160", "kind": "es_answer_wellbeing", "context": {}, "text": "Estar bien.", "expect": "reject", "topic": "conjugation", "error": "infinitive not conjugated"}
+{"id": "e0161", "kind": "es_quantity", "context": {"targetThing": "cafe", "targetCount": 4, "quantityForm": "bare"}, "text": "Estoy cuatro.", "expect": "reject", "topic": "ser_estar", "error": "estar, singular verb"}
+{"id": "e0162", "kind": "es_answer_wellbeing", "context": {}, "text": "Estoy bien, gracias.", "expect": "accept", "topic": "ser_estar"}
+{"id": "e0163", "kind": "es_anything_else", "context": {}, "text": "Un emparedado, por favor.", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0164", "kind": "es_quantity", "context": {"targetThing": "cafe", "targetCount": 3, "quantityForm": "polite_request"}, "text": "¿Me das tres cafés?", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0165", "kind": "es_repair", "context": {"repairKind": "slow_down"}, "text": "¿Puedes hablar más despacio, por favor?", "expect": "accept", "topic": "conjugation"}
+{"id": "e0166", "kind": "es_ask_origin", "context": {}, "text": "¿De dónde estás tú?", "expect": "reject", "topic": "ser_estar", "error": "estar instead of ser for origin"}
+{"id": "e0167", "kind": "es_need", "context": {"targetThing": "libro"}, "text": "Necesito un libro para clase.", "expect": "accept", "topic": "articles"}
+{"id": "e0168", "kind": "es_anything_else", "context": {}, "text": "Algo más, por favor.", "expect": "reject", "topic": "comprehension_of_prompt", "error": "named no item"}
+{"id": "e0169", "kind": "es_ask_name", "context": {}, "text": "¿Cuál nombre?", "expect": "reject", "topic": "questions", "error": "incomplete question"}
+{"id": "e0170", "kind": "es_goodbye", "context": {}, "text": "Hasta luego, gracias.", "expect": "accept", "topic": "vocabulary_context"}
+{"id": "e0171", "kind": "es_introduce", "context": {}, "text": "Mi llamo Steve.", "expect": "reject", "topic": "pronouns", "error": "mi instead of me"}
+{"id": "e0172", "kind": "es_introduce", "context": {}, "text": "hola soy matt", "expect": "accept", "topic": "questions"}
+{"id": "e0173", "kind": "es_ask_name", "context": {}, "text": "¿Qué te llamas?", "expect": "reject", "topic": "questions", "error": "qué instead of cómo"}
+{"id": "e0174", "kind": "es_nice_to_meet", "context": {}, "text": "Mucho gustas.", "expect": "reject", "topic": "conjugation", "error": "verb form instead of noun gusto"}
+{"id": "e0175", "kind": "es_express_like", "context": {"targetThing": "musica"}, "text": "Me gusta fútbol.", "expect": "reject", "topic": "articles", "error": "missing article"}
+{"id": "e0176", "kind": "es_reciprocal", "context": {}, "text": "Bien, ¿y tú eres?", "expect": "reject", "topic": "ser_estar", "error": "ser instead of estar"}
+{"id": "e0177", "kind": "es_repair", "context": {"repairKind": "ask_meaning", "meaningWord": "biblioteca"}, "text": "¿Qué quiere biblioteca?", "expect": "reject", "topic": "questions", "error": "missing decir"}
+{"id": "e0178", "kind": "es_reciprocal", "context": {}, "text": "Bien, gracias, ¿y vos?", "expect": "accept", "topic": "regional_variant"}
+{"id": "e0179", "kind": "es_repair", "context": {"repairKind": "repeat"}, "text": "¿Cómo se dice?", "expect": "reject", "topic": "comprehension_of_prompt", "error": "wrong repair request"}
+{"id": "e0180", "kind": "es_repair", "context": {"repairKind": "repeat"}, "text": "¿Me repites, por favor?", "expect": "accept", "topic": "pronouns"}

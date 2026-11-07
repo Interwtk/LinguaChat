@@ -847,9 +847,50 @@ const EVALUATORS = {
 
 export const ES_EVAL_KINDS = Object.keys(EVALUATORS)
 
+/*
+ * From a review with sentences written blind to these rules (scripts/check-es-blind.mjs,
+ * development set): what each turn's own rules could not name. Read over the
+ * turn's verdict, so a sentence here never needs a change in the rules above.
+ */
+const KNOWN_MISTAKES = {
+  es_reciprocal: [[/\bgracia\b/, 'es_spelling_gracias'], [/\by tu eres\b/, 'es_reciprocal_extra']],
+  es_thank: [[/\bgracia\b/, 'es_spelling_gracias']],
+  es_say_origin: [[/\bsoy (un|una) [a-zñ]+/, 'es_nationality_article']],
+  es_goodbye: [[/\bnos ver\b/, 'es_infinitive_verb'], [/\bhasta el luego\b/, 'es_goodbye_form']],
+  es_identify_thing: [[/^[a-zñ]+ es$/, 'es_word_order_is'], [/^son (un|una)\b/, 'es_ser_number']],
+  es_anything_else: [[/\b(yo )?quieres\b/, 'es_conjugation_yo'], [/\buna sandwich\b/, 'es_gender_article']],
+  es_need: [[/\bsoy perdid[oa]\b/, 'es_ser_estar_feeling'], [/\bnecesite\b/, 'es_conjugation_yo']],
+  es_want: [[/\b(yo )?quieres\b/, 'es_conjugation_yo']],
+  es_ask_like: [[/\btu gusta\b/, 'es_gustar_structure']],
+  es_ask_wellbeing: [[/\bcomo estar\b/, 'es_infinitive_verb']],
+  es_ask_bill: [[/\bun cuenta\b/, 'es_gender_article']],
+  es_ask_what: [[/\besto cosa\b/, 'es_gender_article'], [/^que esta\b/, 'es_ser_estar_identity']],
+  es_ask_name: [[/^que te llamas\b/, 'es_que_cual']],
+  es_nice_to_meet: [[/\bmucho gustas\b/, 'es_nice_form']],
+  es_repair: [[/\bno soy comprendo\b/, 'es_ser_plus_verb']],
+}
+const KNOWN_VARIANTS = {
+  es_repair: [/^(perdon )?no (comprendi|comprendo|entendi)\b/, /^que significa$/],
+  es_nice_to_meet: [/\bgusto en conocer(te|le|la|lo)\b/, /^un gusto\b/],
+  es_anything_else: [/^(un|una) (sandwich|bocata|bocadillo|emparedado|pastel|cafe|agua|te)( por favor)?$/],
+  es_reciprocal: [/^(muy )?(bien|mal|regular)( gracias)? (y tu|y usted|que tal)\b/],
+  es_polite_request: [/^un cortado por favor$/],
+  es_thank: [/\b(te|le) agradezco\b/],
+  es_need: [/\b(me )?(puedes|puede) ayudar(me)?\b/],
+  es_ask_bill: [/\b(puede|puedes) traerme la cuenta\b/, /\bme cobra(s)?\b/],
+  es_express_dislike: [/^(a mi )?no me gusta$/],
+}
+
 /* Unknown kinds fail closed as not evaluable — never as a wrong answer. */
 export function evaluateSpanish(kind, text, ctx = {}) {
   const fn = EVALUATORS[kind]
   if (!fn) return notEvaluable(base(ctx.independent))
-  return fn(text, ctx)
+  const verdict = fn(text, ctx)
+  const f = fold(text)
+  const mistake = (KNOWN_MISTAKES[kind] || []).find(([pattern]) => pattern.test(f))
+  if (mistake) return { ...miss(base(ctx.independent), mistake[1]), naturalVersion: verdict.naturalVersion }
+  if (!verdict.completedObjective && (KNOWN_VARIANTS[kind] || []).some(pattern => pattern.test(f))) {
+    return { ...ok(base(ctx.independent), text, { praise: 'es.praise.good', variant: true }), naturalVersion: verdict.naturalVersion }
+  }
+  return verdict
 }

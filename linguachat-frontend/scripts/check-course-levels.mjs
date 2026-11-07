@@ -19,6 +19,7 @@ import {
 import {
   COURSES, belongsToCourse, courseEpisodeMeta, courseEpisodeRequest, courseIdOf, courseScopedId, courseSkeleton, courseVocabItem, isCourseEpisodeId, loadCourseEpisode,
 } from '../src/learning/courses/registry.js'
+import { COURSE_READINESS_REASONS, deriveCourseReadiness } from '../src/learning/courses/courseReadiness.js'
 import { ES_A1_EPISODES, ES_A1_COPY, validateSpanishA1 } from '../src/learning/courses/es/a1Content.js'
 import { ES_A1_SKELETON, ES_A1_VOCAB } from '../src/learning/courses/es/a1Skeleton.js'
 import { ES_SKELETON, ES_VOCAB } from '../src/learning/courses/es/skeleton.js'
@@ -208,6 +209,42 @@ check('a recurring error follows the learner across levels of a course, never ac
   const spanish = m.recurringErrors.filter(e => belongsToCourse(e.errorType, 'es'))
   assert.equal(spanish.length, 1)
   assert.equal(spanish[0].count, 2)
+})
+
+/* ================= D2. readiness ================= */
+const finish = (m, days) => {
+  for (const ep of courseSkeleton('es')) {
+    setEpisodeState(m, ep.id, { status: 'completed' })
+    recordCanDoAttempt(m, ep.canDoId, { success: true, independent: true, atMs: AT })
+    for (const id of ep.gardenItems) for (let d = 0; d < days; d++) recordItemAttempt(m, id, { correct: true, independent: true, atMs: AT + d * DAY })
+  }
+  return m
+}
+check('an empty learner is not ready, and says why', () => {
+  const r = deriveCourseReadiness(createLearnerModel(), 'es', 'pre_a1', { atMs: AT })
+  assert.equal(r.ready, false)
+  assert.equal(r.missingLessons.length, 12)
+  assert.ok(r.reasons.includes(COURSE_READINESS_REASONS.LESSONS))
+})
+check('finishing everything in one sitting is not ready: nothing survived to a later day', () => {
+  const r = deriveCourseReadiness(finish(createLearnerModel(), 1), 'es', 'pre_a1', { atMs: AT })
+  assert.equal(r.ready, false)
+  assert.deepEqual(r.reasons, [COURSE_READINESS_REASONS.RETENTION])
+})
+check('unaided use on two days, kept up, is ready', () => {
+  const r = deriveCourseReadiness(finish(createLearnerModel(), 2), 'es', 'pre_a1', { atMs: AT + DAY })
+  assert.deepEqual(r.reasons, [])
+  assert.equal(r.ready, true)
+})
+check('much forgotten is not ready', () => {
+  const m = finish(createLearnerModel(), 2)
+  const ids = Object.keys(m.languageItems)
+  for (const id of ids.slice(0, Math.ceil(ids.length / 2))) recordItemAttempt(m, id, { correct: false, atMs: AT + 10 * DAY })
+  assert.ok(deriveCourseReadiness(m, 'es', 'pre_a1', { atMs: AT + 10 * DAY }).reasons.includes(COURSE_READINESS_REASONS.LAPSED))
+})
+check('readiness opens nothing: the next level stays closed', () => {
+  deriveCourseReadiness(finish(createLearnerModel(), 2), 'es', 'pre_a1', { atMs: AT + DAY })
+  assert.equal(courseEpisodeRequest('es:a1:trabajo_estudio').reason, 'level_unavailable')
 })
 
 /* ================= E. old data ================= */

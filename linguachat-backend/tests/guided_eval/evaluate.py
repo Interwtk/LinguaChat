@@ -150,7 +150,8 @@ def main() -> int:
                     print(f"{item['expect']:8} -> {result['class']:14} {item['scenario']}:{item['step']} {item['text']!r} {result['correction']!r}")
     results = HERE / "results"
     results.mkdir(exist_ok=True)
-    (results / f"{name}-{label}.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8")
+    (results / f"{name}-{label}.json").write_text(json.dumps(report, ensure_ascii=False, indent=1), encoding="utf-8", newline="
+")
     print(line)
     return 0
 
