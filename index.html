@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#151923"><title>LinguaChat · Laboratorio de diseño — 5 conceptos</title><meta name="description" content="Cinco propuestas integrales de diseño para LinguaChat: 20 pantallas, vistas desktop y móvil, comparación interactiva."><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400,20,1;9..144,600,20,1&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#151923"><title>LinguaChat · Laboratorio de diseño — 5 conceptos</title><meta name="description" content="Cinco propuestas integrales de diseño para LinguaChat: 17 pantallas, vistas desktop y móvil, comparación interactiva."><style>@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400,20,1;9..144,600,20,1&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#11151a;color:#e7e9ec;font-family:'DM Sans',system-ui,sans-serif}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #7ebfd4;outline-offset:3px}a{color:inherit}button:disabled{cursor:not-allowed;opacity:.5}
 #studio{max-width:1750px;margin:auto;padding:0 3.5%}.studio-top{height:84px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #2b313a}.studio-brand{display:flex;align-items:center;gap:12px;line-height:1.1}.studio-brand b{font-size:18px;letter-spacing:-.05em}.studio-brand small{display:block;font-size:9px;letter-spacing:.19em;color:#858f9b;margin-top:5px}.studio-symbol{display:grid;place-items:center;position:relative;width:38px;height:38px;border:1px solid #c7fb9a;border-radius:12px;color:#c7fb9a;font-size:25px;font-weight:800;font-family:'Fraunces',serif}.small-ring{position:absolute;width:8px;height:8px;border:2px solid #c7fb9a;border-radius:50%;right:-4px;top:-3px;background:#11151a}.studio-top-right{display:flex;align-items:center;gap:22px}.concept-count{font-size:10px;color:#8e97a1;letter-spacing:.16em}.studio-quiet{border:0;background:none;color:#c9d0d6;font-size:12px}
 .intro{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;padding:65px 0 50px}.intro-kicker{font-size:11px;letter-spacing:.18em;color:#d0fcaa;font-weight:800}.intro h1{font-family:'Fraunces',Georgia,serif;font-size:clamp(42px,5.1vw,80px);letter-spacing:-.045em;font-weight:400;line-height:1.03;margin:19px 0 16px}.intro h1 em{font-weight:400;color:#d0fcaa}.intro p{font-size:15px;line-height:1.7;max-width:580px;color:#9ca6b1;margin:0}.intro-aside{width:245px;flex-shrink:0;border-left:1px solid #45505a;padding-left:20px;font-size:13px;line-height:1.5;color:#9ca6b1}.intro-aside strong{color:#f0f2f2}.intro-number{display:block;font-size:45px;font-family:'Fraunces',serif;color:#fff;margin-bottom:12px}
@@ -37,6 +37,38 @@
 @media(max-width:1100px){#studio{padding:0 22px}.gallery.single .render-grid.both .frame-preview.desktop{width:100%}.gallery.comparing{grid-template-columns:1fr}.intro-aside{display:none}.concept-note{align-items:flex-start}}@media(max-width:680px){#studio{padding:0 14px}.studio-top{height:69px}.studio-brand b{font-size:16px}.studio-brand small{font-size:8px}.concept-count{display:none}.intro{padding:43px 0 28px}.intro h1{font-size:43px}.intro p{font-size:13px}.themes{gap:6px}.themes button{padding:11px;font-size:11px}.themes button .theme-num{display:none}.theme-swatch{width:10px;height:10px}.tools{gap:12px}.field-control{width:100%;justify-content:space-between}.field-control select{min-width:0;width:calc(100% - 96px)}.view-control{flex:1}.view-control button{flex:1;padding:10px 7px}.concept-note{flex-direction:column}.concept-note p{font-size:12px}.gallery.single .render-grid.both .frame-preview.desktop{width:100%}.gallery.single .render-grid.both .frame-preview.mobile{width:100%}.device-stage.desktop{padding:4px;border-radius:8px}.device-stage.desktop .browser-chrome{display:none}.gallery.single .app-shell.is-desktop{width:950px;transform:scale(.37);transform-origin:top left;margin-bottom:-454px}.gallery.single .frame-preview.desktop .device-stage{height:285px}.gallery.single .render-grid.both{flex-direction:column}.gallery.comparing .render-grid.both{grid-template-columns:1fr}.gallery.comparing .app-shell.is-desktop{width:900px;transform:scale(.36);transform-origin:top left;margin-bottom:-395px}.gallery.comparing .frame-preview.desktop .device-stage{height:232px}.gallery-footer button{padding:10px 9px;font-size:10px}.gallery-footer{font-size:10px}}
 /* Chat remains a full-height workspace without being cropped by the app scroll area. */
 .app-body{min-height:0}.app-scroll{min-height:0}.app-scroll:has(.chat-page){padding:0;overflow:hidden}.chat-page{height:100%;max-width:none!important}.chat-page .chat-workspace{height:100%;margin:0}.is-mobile .app-scroll:has(.chat-page){padding:0 0 67px}.is-mobile .chat-page .chat-workspace{margin:0}.is-mobile .chat-page .chat-conversation{height:100%}
+/* Five intentionally different information architectures on large screens. */
+.concept-platica.is-desktop .app-main-layout{flex-direction:column}
+.concept-platica.is-desktop .app-sidebar{height:79px;width:100%;flex-direction:row;align-items:center;justify-content:space-between;gap:12px;padding:10px 24px;border-right:0;border-bottom:2px solid var(--ink)}
+.concept-platica.is-desktop .app-sidebar>div:nth-child(2){display:flex;align-items:center;gap:9px}
+.concept-platica.is-desktop .app-sidebar .nav-eyebrow,.concept-platica.is-desktop .app-sidebar-bottom{display:none}
+.concept-platica.is-desktop .app-sidebar .app-nav{display:flex;gap:5px}
+.concept-platica.is-desktop .app-sidebar .app-nav button{width:auto;min-height:39px;padding:9px 11px}
+.concept-platica.is-desktop .app-body{min-height:0;flex:1}
+.concept-platica.is-desktop .app-header{height:49px}
+.concept-platica.is-desktop .app-scroll{padding-top:21px}
+.concept-umbral.is-desktop .app-sidebar{width:83px;padding:19px 7px 12px;align-items:center;background:#121419}
+.concept-umbral.is-desktop .app-sidebar .app-wordmark{font-size:0;margin-left:0}
+.concept-umbral.is-desktop .app-sidebar .app-wordmark .logo-mark{font-size:21px}
+.concept-umbral.is-desktop .app-sidebar .nav-eyebrow,.concept-umbral.is-desktop .app-sidebar-bottom{display:none}
+.concept-umbral.is-desktop .app-sidebar>div:nth-child(2){width:100%}
+.concept-umbral.is-desktop .app-nav button{font-size:0;justify-content:center;padding:10px 0;gap:0;width:100%}
+.concept-umbral.is-desktop .app-nav .nav-icon{font-size:23px;width:auto}
+.concept-umbral.is-desktop .app-nav{gap:11px;margin:11px 0 30px}
+.concept-umbral.is-desktop .app-sidebar .app-nav button.active{border-left:0;border-bottom:2px solid var(--accent);border-radius:4px}
+.concept-umbral.is-desktop .auth-art{grid-column:2;grid-row:1}
+.concept-umbral.is-desktop .auth-right{grid-column:1;grid-row:1}
+.concept-folio.is-desktop .app-sidebar{width:242px;padding:32px 23px 22px}
+.concept-folio.is-desktop .app-header{height:78px}
+.concept-folio.is-desktop .app-header-title{font-family:'DM Serif Display',serif;font-size:22px;letter-spacing:0;text-transform:none;font-weight:400}
+.concept-folio.is-desktop .app-content h2{font-size:52px}
+.concept-folio.is-desktop .auth-layout{grid-template-columns:42% 58%}
+.concept-jardin.is-desktop .app-sidebar{width:232px;padding:34px 19px}
+.concept-jardin.is-desktop .two-col{grid-template-columns:1fr 1.05fr}
+.concept-jardin.is-desktop .feature-big{min-height:270px}
+.concept-brujula.is-desktop .app-header-title::before{content:'COORD. 01  /  ';color:var(--muted);font-size:9px}
+.concept-brujula.is-desktop .app-content .screen-head{border-bottom:1px dashed var(--line);padding-bottom:19px}
+@media(max-width:680px){.gallery.single .app-shell.is-desktop{width:950px}.gallery.comparing .app-shell.is-desktop{width:900px}}
 </style></head>
 <body><div id="studio">
 <header class="studio-top"><div class="studio-brand"><span class="studio-symbol">L<span class="small-ring"></span></span><div><b>LinguaChat</b><small>DESIGN EXPLORATIONS · 2026</small></div></div><div class="studio-top-right"><span class="concept-count">05 CONCEPTOS · 20 PANTALLAS · 2 FORMATOS</span><button id="helpBtn" class="studio-quiet" title="Información del prototipo">Acerca de <span aria-hidden="true">↗</span></button></div></header>
