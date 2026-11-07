@@ -743,6 +743,76 @@ export function evaluateIdentifyThing(text, { independent = false, targetThing =
   return ok(r, text, { praise: 'es.praise.identify', variant: right.key !== targetThing, accents })
 }
 
+/* ================= A1: present tense, yo and tú (closed level) ================= */
+
+const LIFE_VERB = /\b(trabajo|estudio)\b/
+const LIFE_INFINITIVE = /^(yo )?(trabajar|estudiar|vivir)\b/
+const PROFESSION = /\b(profesor|profesora|medico|medica|doctor|doctora|enfermero|enfermera|ingeniero|ingeniera|estudiante|camarero|camarera|cocinero|cocinera|abogado|abogada)\b/
+
+export function evaluateSayLife(text, { independent = false } = {}) {
+  const r = base(independent)
+  const f = fold(text)
+  r.naturalVersion = 'Trabajo en una oficina.'
+  if (!f) return empty(r)
+  if (LIFE_INFINITIVE.test(f)) return miss(r, 'es_infinitive_verb')
+  if (/^(yo )?(trabaja|estudia|trabajas|estudias)\b/.test(f)) return miss(r, 'es_conjugation_yo')
+  if (/^(yo )?(soy|estoy) (trabajo|estudio|trabajando|estudiando)\b/.test(f) && !/^estoy (trabajando|estudiando)\b/.test(f)) return miss(r, 'es_ser_plus_verb')
+  if (/^(yo )?soy (un|una) /.test(f) && PROFESSION.test(f)) { r.naturalVersion = 'Soy profesora.'; return miss(r, 'es_profession_article') }
+  const mismatch = articleMismatch(f)
+  if (mismatch) return miss(r, mismatch.type)
+  if (LIFE_VERB.test(f) || /^(yo )?soy\b/.test(f) && PROFESSION.test(f) || /^estoy (trabajando|estudiando)\b/.test(f)) {
+    return words(f).length <= 9 ? ok(r, text, { praise: 'es.praise.good', variant: !/^trabajo en una oficina$/.test(f) }) : notEvaluable(r)
+  }
+  if (looksEnglish(f)) return miss(r, 'es_english_reply')
+  return notEvaluable(r)
+}
+
+export function evaluateAskLife(text, { independent = false } = {}) {
+  const r = base(independent)
+  const f = fold(text)
+  r.naturalVersion = '¿Trabajas?'
+  if (!f) return empty(r)
+  if (/\b(haces|hace) (tu )?trabajo\b/.test(f)) return miss(r, 'es_calque_do')
+  if (/^(tu )?(trabajar|estudiar)\b/.test(f)) return miss(r, 'es_infinitive_verb')
+  if (/^(yo )?(trabajo|estudio)\b/.test(f)) return miss(r, 'es_conjugation_tu')
+  if (/\b(trabajas|estudias|trabaja|estudia|trabajais|a que te dedicas|a que se dedica|que haces|que hace)\b/.test(f)) {
+    return words(f).length <= 8 ? ok(r, text, { praise: 'es.praise.ask_like', variant: !/^trabajas$/.test(f), accents: ['qué'] }) : notEvaluable(r)
+  }
+  if (looksEnglish(f)) return miss(r, 'es_english_reply')
+  return notEvaluable(r)
+}
+
+export function evaluateSayLive(text, { independent = false } = {}) {
+  const r = base(independent)
+  const f = fold(text)
+  r.naturalVersion = 'Vivo en Chicago.'
+  if (!f) return empty(r)
+  if (/^(yo )?vivir\b/.test(f)) return miss(r, 'es_infinitive_verb')
+  if (/^(yo )?(vive|vives)\b/.test(f)) return miss(r, 'es_conjugation_yo')
+  if (/^(yo )?estoy vivo\b/.test(f)) return miss(r, 'es_estar_vivo')
+  if (/^(yo )?vivo (a|de)\b/.test(f)) return miss(r, 'es_live_preposition')
+  if (/^(si )?(yo )?vivo( aqui| alli| cerca| lejos)?$/.test(f) || /^(si )?(yo )?vivo (en|cerca de) [a-zñ]+( [a-zñ]+){0,3}$/.test(f)) {
+    return ok(r, text, { praise: 'es.praise.good', variant: !/^vivo en /.test(f), accents: ['aquí', 'allí'] })
+  }
+  if (looksEnglish(f)) return miss(r, 'es_english_reply')
+  return notEvaluable(r)
+}
+
+export function evaluateAskLive(text, { independent = false } = {}) {
+  const r = base(independent)
+  const f = fold(text)
+  r.naturalVersion = '¿Dónde vives?'
+  if (!f) return empty(r)
+  if (/\bdonde (tu )?vivir\b/.test(f)) return miss(r, 'es_infinitive_verb')
+  if (/\bdonde (yo )?vivo\b/.test(f)) return miss(r, 'es_conjugation_tu')
+  if (/\bdonde (estas )?(tu )?viviendo\b/.test(f)) return ok(r, text, { praise: 'es.praise.ask_like', variant: true, accents: ['dónde'] })
+  if (/^(y )?(tu )?donde (vives|vive|vivis)( tu| usted)?( ahora)?$/.test(f) || /^(tu )?(vives|vive) (aqui|en [a-zñ]+)$/.test(f)) {
+    return ok(r, text, { praise: 'es.praise.ask_like', variant: !/^donde vives$/.test(f), accents: ['dónde', 'aquí'] })
+  }
+  if (looksEnglish(f)) return miss(r, 'es_english_reply')
+  return notEvaluable(r)
+}
+
 /* ================= dispatch ================= */
 
 const EVALUATORS = {
@@ -769,6 +839,10 @@ const EVALUATORS = {
   es_quantity: evaluateQuantity,
   es_ask_what: evaluateAskWhat,
   es_identify_thing: evaluateIdentifyThing,
+  es_a1_say_life: evaluateSayLife,
+  es_a1_ask_life: evaluateAskLife,
+  es_a1_say_live: evaluateSayLive,
+  es_a1_ask_live: evaluateAskLive,
 }
 
 export const ES_EVAL_KINDS = Object.keys(EVALUATORS)

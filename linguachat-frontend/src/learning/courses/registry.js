@@ -22,10 +22,14 @@
  * XP, streak and the account itself stay account-wide on purpose: they measure
  * the learner's practice, not one language.
  *
+ * Later levels of a course add a level segment (`es:a1:…`): see
+ * curriculumIdentity.js. Pre-A1's short ids stay exactly as they are.
+ *
  * This module is metadata only and stays in the first chunk; each course's
  * content, copy and evaluator arrive with its own lazy chunk.
  */
 import { ES_SKELETON, ES_SKELETON_BY_ID, ES_VOCAB_BY_ID, ES_HOME_COPY } from './es/skeleton.js'
+import { ES_A1_SKELETON_BY_ID, ES_A1_VOCAB_BY_ID } from './es/a1Skeleton.js'
 
 export const COURSE_SEPARATOR = ':'
 export const DEFAULT_COURSE_ID = 'en'
@@ -50,6 +54,15 @@ export const COURSES = {
     episodeLevel: 'ES-Pre-A1',
     available: true,
     loadContent: () => import('./es/preA1Content.js'),
+    /*
+     * Course × level. Each level of a course opens on its own: a closed level is
+     * refused before its chunk loads, exactly like a closed English level. Ids of
+     * each level: curriculumIdentity.js.
+     */
+    levels: {
+      pre_a1: { levelId: 'es_pre_a1', available: true, loadContent: () => import('./es/preA1Content.js') },
+      a1: { levelId: 'es_a1', available: false, loadContent: () => import('./es/a1Content.js') },
+    },
   },
 }
 
@@ -95,12 +108,19 @@ export function courseSkeleton(courseId) {
 }
 
 export function courseEpisodeMeta(episodeId) {
-  return courseIdOf(episodeId) === 'es' ? (ES_SKELETON_BY_ID[episodeId] || null) : null
+  return courseIdOf(episodeId) === 'es' ? (ES_SKELETON_BY_ID[episodeId] || ES_A1_SKELETON_BY_ID[episodeId] || null) : null
+}
+
+/* The level of a course an id belongs to: its own segment, or the first level. */
+function courseLevelOf(id, course) {
+  const parts = String(id).split(COURSE_SEPARATOR)
+  const declared = parts.length > 2 ? course.levels?.[parts[1]] : null
+  return declared || course.levels?.pre_a1 || course
 }
 
 /* A course word for the Garden and the meaning line, or null. */
 export function courseVocabItem(itemId) {
-  return courseIdOf(itemId) === 'es' ? (ES_VOCAB_BY_ID[itemId] || null) : null
+  return courseIdOf(itemId) === 'es' ? (ES_VOCAB_BY_ID[itemId] || ES_A1_VOCAB_BY_ID[itemId] || null) : null
 }
 
 /*
@@ -118,15 +138,16 @@ export function courseEpisodeRequest(episodeId) {
   const courseId = courseIdOf(episodeId)
   const course = getCourse(courseId)
   if (!course || courseId === DEFAULT_COURSE_ID) return { ok: false, reason: 'unknown_episode' }
-  if (course.available === false) return { ok: false, reason: 'level_unavailable', levelId: course.levelId }
+  const level = courseLevelOf(episodeId, course)
+  if (course.available === false || level.available === false) return { ok: false, reason: 'level_unavailable', levelId: level.levelId }
   const meta = courseEpisodeMeta(episodeId)
   if (!meta) return { ok: false, reason: 'unknown_episode' }
-  return { ok: true, levelId: course.levelId, arcId: meta.arc, episodeId, courseId }
+  return { ok: true, levelId: level.levelId, arcId: meta.arc, episodeId, courseId }
 }
 
 export async function loadCourseEpisode(episodeId) {
   const request = courseEpisodeRequest(episodeId)
   if (!request.ok) return { request, episode: null }
-  const module = await getCourse(request.courseId).loadContent()
+  const module = await courseLevelOf(episodeId, getCourse(request.courseId)).loadContent()
   return { request, episode: module.getEpisode(episodeId) }
 }

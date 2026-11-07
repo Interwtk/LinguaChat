@@ -33,6 +33,7 @@ import {
   recordLearnerFact, selectLearnerFact, factsOfType, captureStatedLifeFact, captureStatedUsualTime,
 } from '../../learning/engine/learnerFacts.js'
 import { isSubmitEnter } from '../../services/keyboard.js'
+import { shownEpisodeOptions } from '../../learning/engine/optionOrder.js'
 
 // Fill {name} / {partner} / {place} / {partnerPlace} in the English target text.
 // An unknown placeholder is left untouched rather than printed as "undefined".
@@ -871,7 +872,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
             <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{t(step.instructionKey)}</p>
             <div className="rounded-2xl p-3 mb-4" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)' }}><En style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--ink)' }}>{resolve(step.target, vars)}</En></div>
             <div className="flex flex-col gap-2">
-              {step.options.map((opt, i) => {
+              {shownEpisodeOptions(step.options, ep.id, stepIndex).map((opt, i) => {
                 const chosen = choice === i
                 const done = choice != null
                 return (
@@ -898,7 +899,7 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
             <p style={{ fontSize: '0.9375rem', fontWeight: 700, color: 'var(--ink)', marginBottom: 4 }}>{t(step.instructionKey)}</p>
             {step.promptEn && <LinguaLine><En style={{ fontWeight: 700 }}>{resolve(step.promptEn, vars)}</En></LinguaLine>}
             <div className="flex flex-col gap-2 mt-2">
-              {step.options.map((opt, i) => {
+              {shownEpisodeOptions(step.options, ep.id, stepIndex).map((opt, i) => {
                 const chosen = choice === i
                 const done = choice != null
                 return (
