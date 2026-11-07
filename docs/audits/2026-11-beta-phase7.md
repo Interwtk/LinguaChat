@@ -57,6 +57,10 @@ Hechos con fuentes: `docs/release/2026-11-hosting-and-preview-protection.md`.
 - **No verificado:** si está activada en tu proyecto. No puedo leer el panel. Comprobación obligatoria: abrir la Preview en una ventana de incógnito sin sesión de Vercel.
 - **Variables:** los valores de Supabase de producción solo en *Production*; los del proyecto de prueba en *Preview*. Las `VITE_*` se fijan al compilar: hay que volver a desplegar tras cambiarlas.
 - **Backend:** `api/index.py` fuerza proveedor local, sin OpenAI, y Premium apagado. No lee Supabase.
+- **Variables que lee el código** (revisado en el repositorio):
+  - Navegador: solo `VITE_API_URL`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_PRIVACY_CONTACT_EMAIL`, `VITE_AUTH_SEND_TOKEN` y `VITE_AUTH_REDIRECT_ORIGIN`. Todo lo que empieza por `VITE_` termina en el *bundle* público, así que **nunca** debe llevar un secreto.
+  - Servidor: `OPENAI_*`, que `api/index.py` anula, y `LINGUACHAT_PASS_SIGNING_KEY`, sin uso mientras Premium está apagado.
+  - **No pude ver las variables reales de Vercel.** Revísalas tú: ninguna `VITE_*` con un secreto, y ninguna clave de servicio en Preview.
 - **Plan Hobby:** «solo uso personal no comercial»; cobrar exige **Pro (USD 20 al mes)**. Si una beta gratuita de un producto pensado para cobrar ya cuenta como comercial: **ambiguo**. Decisión y alternativas en el documento.
 
 ## 3. Autenticación real
