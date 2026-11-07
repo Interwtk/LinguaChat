@@ -75,7 +75,7 @@ Nota: Supabase anuncia que retirará las claves `anon` y `service_role` antes de
 5. Opcional: plantillas de LinguaChat en **Authentication → Email Templates** (*Confirm signup* y *Reset password*), copiando `docs/auth-email/confirm-signup.html` y `reset-password.html`.
 
 Límites del correo integrado de Supabase (sin SMTP propio):
-- unas **2 mensajes por hora**;
+- unos **2 mensajes por hora** (Supabase avisa que puede cambiar);
 - **solo entrega a direcciones del equipo** de la organización; a las demás responde «Email address not authorized».
 
 La documentación **no dice** si un alias `+test1` de tu propio correo cuenta como dirección del equipo. Si un correo no llega o da ese error, apúntalo como fallo de entorno y decide antes de añadir un SMTP propio. Espacia los recorridos que envían correo (1, 3 y el script).

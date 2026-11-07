@@ -12,6 +12,7 @@ import { AWAITING_OWNER_APPROVAL, displayOrder, shownEpisodeOptions, shownPlacem
 import * as preA1 from '../src/learning/episodes/index.js'
 import { PLACEMENT_QUESTIONS } from '../src/data/placementQuestions.js'
 import { levelIdOfEpisodeId } from '../src/learning/curriculum/levels.js'
+import { evaluateAnswer, getInitialPlacementState } from '../src/services/placement.js'
 
 let passed = 0
 const ok = (cond, msg) => { assert.ok(cond, msg); passed++ }
@@ -63,6 +64,43 @@ const shell = readFileSync(new URL('../src/components/episode/EpisodeShell.jsx',
 ok((shell.match(/shownEpisodeOptions\(step\.options, ep\.id, stepIndex\)/g) || []).length === 2, 'comprehension and choice steps both go through the policy')
 ok(!/\{step\.options\.map\(/.test(shell), 'no option list renders around the policy')
 ok(/shownPlacementOptions\(question\)/.test(readFileSync(new URL('../src/components/setup/SetupFlow.jsx', import.meta.url), 'utf8')), 'placement goes through the policy')
+
+/*
+ * Equivalence: what approval would change is ONLY where things are drawn. Each
+ * displayed option is the same object, a click records `opt.correct` (never the
+ * index), the chosen index lives in component state only, and placement scores
+ * by option id. So answers, scoring, progress, evidence and persistence are the
+ * same whether the order is authored or rotated.
+ */
+const approveAll = () => { const was = [...AWAITING_OWNER_APPROVAL]; AWAITING_OWNER_APPROVAL.clear(); return () => was.forEach(x => AWAITING_OWNER_APPROVAL.add(x)) }
+{
+  const restore = approveAll()
+  let equal = 0
+  for (const ep of found.values()) {
+    ep.steps.forEach((step, stepIndex) => {
+      if (!Array.isArray(step.options)) return
+      const shown = shownEpisodeOptions(step.options, ep.id, stepIndex)
+      // clicking each option, in either order, records the same correctness for the same option
+      for (const opt of step.options) {
+        const at = shown.indexOf(opt)
+        ok(at >= 0 && shown[at].correct === opt.correct, `${ep.id}:${stepIndex} same option object, same correctness`)
+      }
+      const sum = (list) => list.filter(o => o.correct).length
+      ok(sum(shown) === sum(step.options), `${ep.id}:${stepIndex} same number of right answers`)
+      equal++
+    })
+  }
+  const answers = PLACEMENT_QUESTIONS.map(q => evaluateAnswer(q, q.correctOptionId, getInitialPlacementState('A2')))
+  ok(PLACEMENT_QUESTIONS.every(q => shownPlacementOptions(q).some(o => o.id === q.correctOptionId)), 'placement: the right option is still offered')
+  ok(answers.every(a => a.answer.isCorrect === true), 'placement scores by option id, not position')
+  restore()
+  ok(AWAITING_OWNER_APPROVAL.has('pre_a1'), 'the simulation of approval is undone')
+  ok(equal > 50, `equivalence measured on ${equal} steps`)
+}
+const shellSource = readFileSync(new URL('../src/components/episode/EpisodeShell.jsx', import.meta.url), 'utf8')
+ok((shellSource.match(/recordItems\(\[step\.itemId\]\.filter\(Boolean\), \{ correct: Boolean\(opt\.correct\), independent: false \}\)/g) || []).length === 2, 'both choice steps record opt.correct, never the index')
+ok(/const \[choice, setChoice\] = useState\(null\)/.test(shellSource) && !/save\w*\([^)]*choice/.test(shellSource), 'the chosen position is component state, never stored')
+ok(/onClick=\{\(\) => chooseOption\(option\.id\)\}/.test(readFileSync(new URL('../src/components/setup/SetupFlow.jsx', import.meta.url), 'utf8')), 'placement answers by id')
 
 console.log('Right answer in position 1 / 2 / 3 / 4:')
 console.log(`  Pre-A1    (${stats.pre_a1.steps})  authored ${count(stats.pre_a1.authored)} · shown today ${count(stats.pre_a1.shown)} · if approved ${count(stats.pre_a1.approved)}`)
