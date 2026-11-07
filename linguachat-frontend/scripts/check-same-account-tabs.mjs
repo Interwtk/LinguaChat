@@ -58,7 +58,10 @@ function scenario(name, run) {
 }
 
 const DAY = 86400000
-const T0 = Date.UTC(2026, 9, 30, 15, 0, 0)
+// Two days ago, at 15:00 UTC. It must move with the clock: the ledger folds events
+// past its 7-day horizon, so a fixed date stopped being "recent" on 2026-11-06.
+const T0 = Math.floor(Date.now() / DAY) * DAY - 2 * DAY + 15 * 3600000
+const dayBefore = new Date(T0 - DAY).toLocaleDateString('sv-SE')
 const reply = (fields = {}) => ({ mode: 'chat', reply: 'Nice!', correction: null, suggestion: null, ...fields })
 
 /*
@@ -355,10 +358,10 @@ scenario('an existing version-1 record keeps every total exactly', () => {
   const shared = new Store()
   const a = openTab(shared, 'A')
   const legacy = {
-    version: 1, startedAt: 1700000000000, lastPracticeDate: '2026-10-29', streak: 6,
+    version: 1, startedAt: 1700000000000, lastPracticeDate: dayBefore, streak: 6,
     messagesSent: 41, correctionsReceived: 7, xp: 455, confidence: 95,
     topics: ['travel'], learnedItems: [{ id: 'water', word: 'water', mastery: 0.5, seen: 2 }],
-    sessions: [{ id: '2026-10-29', messages: 4 }], missionsCompleted: 2,
+    sessions: [{ id: dayBefore, messages: 4 }], missionsCompleted: 2,
   }
   a.act(() => a.access.setItem('lc2-local-progress', JSON.stringify(legacy)))
   const loaded = freshLoad(shared, 'A').progress
@@ -367,7 +370,7 @@ scenario('an existing version-1 record keeps every total exactly', () => {
     assert.deepEqual(loaded[field], value, field + ' survives the upgrade')
   }
   const next = freshLoad(shared, 'A')
-  practice(next, 'next', Date.UTC(2026, 9, 30, 12)); persist(next)
+  practice(next, 'next', T0 - 3 * 3600000); persist(next)
   const after = freshLoad(shared, 'A').progress
   assert.equal(after.xp, 465)
   assert.equal(after.messagesSent, 42)

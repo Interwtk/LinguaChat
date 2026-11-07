@@ -28,7 +28,7 @@ from ai import es_tutor
 from ai.grammar_check import analyze, corrected_sentence
 from ai.guided_scope import LEXICON
 from ai.scenario_i18n import ES_EXPLANATIONS, TARGET_LINES
-from ai.scenarios import SCENARIOS, SLOTS, Scenario, Step
+from ai.scenarios import REWRITES, SCENARIOS, SLOTS, Scenario, Step
 from ai.schemas import ChatMode, ChatResult, LanguageInfo, LearningAction
 from ai.tutor_i18n import say
 
@@ -43,18 +43,19 @@ CONTRACTIONS = (
     (r"\bdon't\b", "do not"), (r"\bdont\b", "do not"), (r"\bdidn't\b", "did not"), (r"\bdoesn't\b", "does not"),
     (r"\bi'd\b", "i would"), (r"\bid like\b", "i would like"), (r"\bi'll\b", "i will"), (r"\bcan't\b", "can not"),
 )
-LEAD = {"en": r"^(hi|hello|hey|ok|okay|yes|well|um|uh|oh|sure|sorry|thanks|thank you)\s+",
-        "es": r"^(hola|si|bueno|pues|ok|vale|claro|mira|gracias|buenos dias|buenas tardes|perdon)\s+"}
-TAIL = {"en": r"\s+(please|thanks|thank you|and you|how about you|what about you|nice to meet you|sir|today|now)$",
+LEAD = {"en": r"^(hi|hello|hey|ok|okay|yes|well|um|uh|oh|sure|sorry|thanks|thank you|just|maybe)\s+",
+        "es": r"^(hola|si|bueno|pues|ok|vale|claro|mira|gracias|buenos dias|buenas tardes|perdon|para mi|tambien)\s+"}
+TAIL = {"en": r"\s+(please|thanks|thank you|and you|how about you|what about you|nice to meet you|sir|today|now|too)$",
         "es": r"\s+(por favor|gracias|muchas gracias|y tu|y usted|mucho gusto|encantado|encantada|hoy)$"}
 COURTESY = re.compile(r"hi|hello|hey|ok|okay|yes|no|thanks|thank you|please|sorry|nice to meet you|and you|hola|si|gracias|por favor|mucho gusto|y tu|perdon|encantado|encantada")
 ES_COMMON = frozenset("triste solo sola mal bien muerto muerta cansado cansada feo fea malo mala nadie nada hoy aqui".split())
 
-_QUESTION_MEANING = re.compile(r"(?:what does (\w+) mean|what is (\w+)|what is the meaning of (\w+)|que significa (\w+)|que quiere decir (\w+))")
-_QUESTION_SAY = re.compile(r"(?:how do you say (\w+)(?: in (?:english|spanish))?|como se dice (\w+)(?: en (?:ingles|espanol))?)")
-_REPAIR = re.compile(r"(?:(?:can|could) you (?:please )?(?:repeat|say that again|speak more slowly|speak slower)|repeat(?: that)?|again|slower|more slowly"
-                     r"|i do not understand|no entiendo|no te entiendo|mas despacio|puede repetir|puedes repetir|otra vez|repite)")
-_HELP = re.compile(r"(?:help|help me|hint|i need help|what do i say|what can i say|i do not know|what should i say|ayuda|ayudame|no se|no lo se|que digo|que puedo decir|una pista)")
+_QUESTION_MEANING = re.compile(r"(?:what does (\w+) mean|what is (\w+)|what means (\w+)|what is the meaning of (\w+)|que significa (\w+)|que quiere decir (\w+)|o que e (\w+)|o que significa (\w+)|que veut dire (\w+)|que significa (\w+) en (?:ingles|espanol)|(\w+) means what)")
+_QUESTION_SAY = re.compile(r"(?:how do you say (.{1,40}?)(?: in (?:english|spanish))?|how can i say (.{1,40}?)|what is (\w+) in (?:english|spanish)|como se dice (.{1,40}?)(?: en (?:ingles|espanol))?|como digo (.{1,40}?)|comment dit on (.{1,40}?)(?: en anglais)?)")
+_REPAIR = re.compile(r"(?:(?:can|could) you (?:please )?(?:repeat|say that again|speak more slowly|speak slower)(?: the question)?|repeat(?: that| the question)?|again|slower|more slowly|i no understand"
+                     r"|i do not understand|i did not understand|no entiendo|no entendi|no te entiendo|mas despacio|mas lento|puede repetir(?: la pregunta)?|puedes repetir(?: la pregunta)?|otra vez|repite"
+                     r"|pode repetir|nao entendo|nao entendi|vous pouvez repeter|tu peux repeter|je ne comprends pas|non capisco|ich verstehe nicht|pardon vous pouvez repeter)")
+_HELP = re.compile(r"(?:help|help me|help me what should i say|hint|i need help|what do i say|what can i say|i do not know|what should i say|ayuda|ayudame|no se|no lo se|que digo|que puedo decir|una pista)")
 _WHO = re.compile(r"(?:who are you|what are you|are you (?:a )?(?:real|human|person|robot|bot|ai)(?: person)?|quien eres|que eres|eres (?:una )?(?:persona|real|robot|ia|humana|humano))")
 _BACK = re.compile(r"(?:and you|how are you|what is your name|where are you from|y tu|como estas|como te llamas|de donde eres)")
 
@@ -83,6 +84,11 @@ ES_SAY = {"coffee": "café", "tea": "té", "water": "agua", "please": "por favor
           "apple": "manzana", "book": "libro", "table": "mesa", "food": "comida"}
 
 
+SAMPLES = {"name": "Ana", "cname": "Ana", "place": "Chile", "place2": "Chile", "cplace": "Chile", "any": "el té"}
+ES_ACCENTS = {"cafe": "café", "te": "té", "adios": "adiós", "si": "sí", "mas": "más", "cuanto": "cuánto", "tambien": "también", "musica": "música", "futbol": "fútbol", "sandwich": "sándwich",
+              "peliculas": "películas", "trafico": "tráfico", "platanos": "plátanos"}
+
+
 def normalise(text: str, lang: str) -> str:
     low = str(text or "").lower().replace("’", "'")
     if lang == "en":
@@ -101,14 +107,14 @@ def _strip(f: str, lang: str) -> str:
 
 def _expand(pattern: str, lang: str) -> str:
     slots = SLOTS[lang]
-    word = r"[a-zñ][a-zñ'-]{1,19}"
+    word = r"[a-zñ][a-zñ'-]{0,19}"
     table = {
-        "{name}": rf"(?P<name>{word}(?: {word})?)", "{cname}": rf"(?P<cname>{word}(?: {word})?)",
+        "{name}": rf"(?P<name>{word}(?: {word}){{0,2}})", "{cname}": rf"(?P<cname>{word}(?: {word}){{0,2}})",
         "{place}": rf"(?P<place>{word}(?: {word}){{0,2}})", "{place2}": rf"(?P<place2>{word}(?: {word})?)", "{cplace}": rf"(?P<cplace>{word}(?: {word})?)",
         "{any}": rf"(?P<any>{word}(?: {word})?)", "{thing2}": rf"(?P<thing2>{slots['thing']})", "{food2}": rf"(?P<food2>{slots['food']})",
         "{art}": rf"(?:{slots['art']})",
     }
-    for slot in ("drink", "food", "thing", "number", "feel"):
+    for slot in ("drink", "food", "thing", "number", "feel", "verb"):
         table[f"{{{slot}}}"] = rf"(?P<{slot}>{slots[slot]})"
     for key, value in table.items():
         pattern = pattern.replace(key, value)
@@ -128,7 +134,7 @@ def _vocabulary(scenario_id: str, step_id: str) -> frozenset:
     words = set(normalise(" ".join([step.ask, step.model, step.distractor, *[e[2] for e in step.errors]]), lang).split())
     patterns = " ".join((*step.valid, *[e[0] for e in step.errors]))
     words.update(re.findall(r"[a-zñ]{2,}", re.sub(r"\{\w+\}", " ", patterns)))
-    for slot in ("drink", "food", "thing", "feel"):
+    for slot in ("drink", "food", "thing", "feel", "verb"):
         if "{" + slot + "}" in patterns:
             words.update(re.findall(r"[a-zñ]{2,}", SLOTS[lang][slot]))
     return frozenset(words)
@@ -179,8 +185,17 @@ def is_valid(step: Step, raw: str, lang: str) -> bool:
     return answered
 
 
-def _spell_fixed(scenario: Scenario, step: Step, f: str, raw: str) -> bool:
-    """A single misspelt word, if fixing it makes the whole message a valid answer."""
+def _rewritten(step: Step, f: str, raw: str, lang: str) -> tuple[str, str, str] | None:
+    """(rule, rewritten answer, explanation key) when one known rewrite makes this a valid answer."""
+    for pattern, replacement, rule, key in REWRITES[lang]:
+        fixed = re.sub(pattern, replacement, f)
+        if fixed != f and _match(step.valid, fixed, raw, lang):
+            return rule, fixed, key
+    return None
+
+
+def _spell_fixed(scenario: Scenario, step: Step, f: str, raw: str) -> str | None:
+    """The message with a single misspelt word fixed, if that makes it a valid answer."""
     lang = scenario.target
     vocabulary = _vocabulary(scenario.id, step.id)
     tokens = f.split()
@@ -188,9 +203,24 @@ def _spell_fixed(scenario: Scenario, step: Step, f: str, raw: str) -> bool:
         if token in vocabulary or len(token) < 4:
             continue
         close = get_close_matches(token, vocabulary, n=1, cutoff=0.75)
-        if close and _match(step.valid, " ".join([*tokens[:i], close[0], *tokens[i + 1:]]), raw, lang):
-            return True
-    return False
+        fixed = " ".join([*tokens[:i], *close[:1], *tokens[i + 1:]])
+        if close and _match(step.valid, fixed, raw, lang):
+            return fixed
+    return None
+
+
+def _as_written(fixed: str, step: Step, lang: str, raw: str) -> str:
+    """The learner's own answer, repaired and presentable. Open slots are never shown:
+    a sample takes their place, so a correction cannot repeat what someone wrote."""
+    m = _match(step.valid, fixed, raw, lang)
+    spans = sorted(((m.span(k), SAMPLES[k]) for k in SAMPLES if m and m.groupdict().get(k)), reverse=True)
+    for (start, end), sample in spans:
+        fixed = f"{fixed[:start]}{sample}{fixed[end:]}"
+    if lang == "es":
+        fixed = " ".join(ES_ACCENTS.get(w, w) for w in fixed.split())
+    question = step.model.endswith("?")
+    text = f"{fixed[0].upper()}{fixed[1:]}{'?' if question else '.'}"
+    return f"¿{text}" if question and lang == "es" else text
 
 
 def _closed_fix(fix: str, m: re.Match, step: Step) -> str:
@@ -229,8 +259,15 @@ def _known_mistake(scenario: Scenario, step: Step, raw: str) -> tuple[str, str, 
 def _repairable(scenario: Scenario, step: Step, raw: str) -> tuple[str, str, str] | None:
     """A slip whose repair is a whole valid answer: one misspelt word, or a grammar finding."""
     lang = scenario.target
-    if any(_spell_fixed(scenario, step, f, raw) for f in _forms(raw, lang)):
-        return "spelling", step.model, "sc_spelling"
+    for f in _forms(raw, lang):
+        found = _rewritten(step, f, raw, lang)
+        if found:
+            rule, fixed, key = found
+            return rule, _as_written(fixed, step, lang, raw), key
+    for f in _forms(raw, lang):
+        fixed = _spell_fixed(scenario, step, f, raw)
+        if fixed:
+            return "spelling", _as_written(fixed, step, lang, raw), "sc_spelling"
     if lang == "en":
         findings = analyze(raw)
         if findings:
@@ -258,7 +295,7 @@ def _question(scenario: Scenario, f: str, aux: str) -> tuple[str, bool] | None:
         return (say("sc_word_means", aux, word=word, meaning=meaning) if meaning else say("sc_no_word", aux)), False
     m = _QUESTION_SAY.fullmatch(f)
     if m:
-        word = next(g for g in m.groups() if g)
+        word = next(g for g in m.groups() if g).strip()
         if lang == "es":
             answer = ES_SAY.get(word)
         else:
@@ -270,6 +307,20 @@ def _question(scenario: Scenario, f: str, aux: str) -> tuple[str, bool] | None:
         return say("sc_help", aux), True
     if _WHO.fullmatch(f) or _BACK.fullmatch(f):
         return say("sc_who", aux), False
+    return None
+
+
+def _asked(scenario: Scenario, raw: str, aux: str) -> tuple[str, bool] | None:
+    """The whole message, or every one of its clauses, is a question with a closed answer."""
+    lang = scenario.target
+    for f in _forms(raw, lang):
+        found = _question(scenario, f, aux)
+        if found:
+            return found
+    clauses = [c for c in re.split(r"[.!?;,]+", raw) if c.strip()]
+    answers = [next(filter(None, (_question(scenario, f, aux) for f in _forms(c, lang))), None) or (None if not any(COURTESY.fullmatch(f) for f in _forms(c, lang)) else False) for c in clauses]
+    if len(clauses) > 1 and all(a is not None for a in answers) and any(answers):
+        return next(a for a in answers if a)
     return None
 
 
@@ -331,7 +382,7 @@ def turn(scenario: Scenario, index: int, attempt: int, message: str, native: Lan
         return _result(f"{TARGET_LINES['sc_try_again'][lang]} {step.ask}", scenario, _state(scenario, index, attempt + 1, "error", rule=rule), native,
                        correction=fix, explanation=why, verdict="error", findings=findings)
 
-    asked = (_question(scenario, f, aux) or _question(scenario, _strip(f, lang) or f, aux)) if bounded else None
+    asked = _asked(scenario, raw, aux) if bounded else None
     if asked:
         text, helped = asked
         return _result(step.ask, scenario, _state(scenario, index, attempt + (1 if helped else 0), "question"), native, explanation=text,

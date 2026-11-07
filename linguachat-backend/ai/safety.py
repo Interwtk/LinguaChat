@@ -125,6 +125,7 @@ def _compile(words: list[str]) -> re.Pattern:
 
 
 SEXUAL_EXPLICIT = _compile([
+    "want sex", "sex with you", "sexy photo", "sexy photos", "fotos tuyas sin ropa", "hablame de sexo",
     "porn*", "nudes", "nude pics", "naked pics", "naked photos", "send nudes", "sexting", "blowjob", "handjob", "dick pic*", "horny",
     "erotic story", "erotic stories", "nsfw", "sex with me", "sex chat", "dirty talk", "sex scene", "sex scenes",
     "sex story", "sex stories", "explicit sex", "sexual roleplay", "in a sexual way", "de forma sexual", "de manera sexual", "talk dirty", "hablame sucio",
@@ -161,6 +162,7 @@ YOUNG_AGE = re.compile(
 # An adult asking a child for secrecy or pictures. With a minor, this is a
 # protection case: the reply is the protective one, never content.
 GROOMING = _compile([
+    "quiere verme solo", "quiere verme sola", "wants to see me alone",
     "keep it a secret", "keep our secret", "keep this secret", "our little secret", "don't tell your parents", "dont tell your parents",
     "send him photos", "send him pictures", "send him pics", "send her photos", "send me photos", "send me pictures",
     "photos of yourself", "meet him alone", "meet me alone", "send pictures", "send photos", "not to tell", "don't tell mom",
@@ -178,6 +180,7 @@ PROTECT = _compile([
     "通報", "守る", "防止", "相談", "虐待", "説明", "教育", "حمايه", "الابلاغ", "ابلاغ", "منع", "مساعده", "اساءه", "اشرح", "تعليم", "تربيه",
 ])
 SELF_HARM = _compile([
+    "don't want to live", "do not want to live", "dont want to live", "don't want to be alive", "do not want to be alive", "don't like being alive", "do not like being alive", "reason to keep going", "no reason to live", "better off without me", "happier without me", "happier if i am not here", "never see me again", "no voy a molestar a nadie", "no quiero seguir viviendo", "no quiero despertar",
     "kill myself", "killing myself", "suicide", "suicidal", "end my life", "want to die", "wanna die", "self harm", "self-harm",
     "cut myself", "hurt myself", "no reason to live",
     "suicidarme", "suicidio", "suicida", "quitarme la vida", "quiero morir", "quiero morirme", "hacerme daño", "cortarme",
@@ -200,6 +203,7 @@ SELF_METHOD = _compile(["insulin", "insulina", "pills", "pastillas", "overdose",
 SELF_END = _compile(["stop my heart", "pararia el corazon", "kill me", "to die", "die", "morir", "morirme", "matarme", "end it", "acabar con todo"])
 # Direct threats: someone says they will hurt someone.
 THREAT = _compile([
+    "with a knife and kill", "kill that man", "kill that woman",
     "i will kill you", "im going to kill you", "i'm going to kill you", "gonna kill you", "kill you", "i will hurt you",
     "i will rape", "going to shoot up", "shoot up the school", "bomb threat", "i will kill them", "kill them all",
     "find where you live", "know where you live", "se donde vives", "and hurt you",
@@ -349,7 +353,7 @@ DANGER_OBJECT2 = _compile([
     "くれじっとかーど", "ぴすとる", "拳銃", "銀行口座", "ばれずに", "他人の",
     "مسدس", "قفل سياره", "خزنه", "نابالم",
 ])
-SPIKE_THING = _compile(["eye drops", "sedative", "his coffee", "her coffee", "his drink", "her drink", "gotas", "sedante", "el termo", "su bebida", "睡眠薬", "飲み物に"])
+SPIKE_THING = _compile(["la bebida de mi amiga", "la bebida de mi amigo", "my friend's drink", "eye drops", "sedative", "his coffee", "her coffee", "his drink", "her drink", "gotas", "sedante", "el termo", "su bebida", "睡眠薬", "飲み物に"])
 SPIKE_EFFECT = _compile(["gets sick", "really sick", "out for hours", "knock", "se ponga malo", "se duerma", "enfermo", "眠らせ", "気づかれず"])
 HATE_GROUP = _compile([
     "disabled people", "the disabled", "arabs", "chinese", "asians", "trans people", "refugees", "gypsies", "indians", "shia", "sunni",

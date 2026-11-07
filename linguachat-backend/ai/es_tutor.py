@@ -149,7 +149,7 @@ def _recognised(topic: str, f: str) -> bool:
         "origin": _has(r"\b(soy|vengo) de\s+\w|^de\s+\w", f) or _has(r"\bsoy (estadounidense|american[oa]|chilen[oa]|mexican[oa]|canadiense|ingles[a]?|espanol[a]?|argentin[oa]|colombian[oa])\b", f),
         "likes": _has(r"\b(me|no me) (gusta|gustan|encanta|encantan)\b", f),
         "wants": _has(r"\b(quiero|quisiera|me da|me pone|necesito)\b|\b(un|una|dos|tres)\s+\w+.*\bpor favor\b|\bpor favor\b", f),
-        "goodbye": _has(r"\b(adios|hasta luego|hasta manana|chao|chau|nos vemos|hasta pronto)\b", f),
+        "goodbye": _has(r"\b(adios|hasta luego|hasta mañana|chao|chau|nos vemos|hasta pronto)\b", f),
     }.get(topic, False)
 
 

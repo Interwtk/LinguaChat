@@ -39,7 +39,8 @@ def post(message, scenario="en_meet", step=0, attempt=0, **extra):
     ("en_market", 0, "three apples"), ("en_market", 1, "How much is it?"), ("en_repair", 0, "Sorry, I don't understand"), ("en_things", 1, "It's an apple"),
     ("es_meet", 0, "Me llamo Ana"), ("es_meet", 1, "Bien, gracias"), ("es_meet", 2, "Soy de Chile"), ("es_meet", 3, "Adiós"), ("es_cafe", 0, "Un café, por favor"),
     ("es_cafe", 0, "Quisiera agua"), ("es_likes", 0, "Me gusta la música"), ("es_likes", 0, "Me gustan los libros"), ("es_market", 1, "¿Cuánto cuesta?"),
-    ("es_repair", 2, "Más despacio, por favor"), ("es_things", 1, "Es una mesa"),
+    ("es_repair", 2, "Más despacio, por favor"), ("es_things", 1, "Es una mesa"), ("es_meet", 3, "Hasta mañana"), ("en_cafe", 2, "With my card"), ("en_likes", 1, "Onions"),
+    ("es_likes", 0, "Me gusta viajar"), ("en_likes", 0, "I like to swim"), ("es_market", 1, "¿Cuánto sale?"), ("en_meet", 0, "Hello, my name is Fatima Al-Zahra."),
 ])
 def test_a_whole_answer_is_valid(scenario, step, message):
     result = at(scenario, message, step)
@@ -55,7 +56,8 @@ def test_a_whole_answer_is_valid(scenario, step, message):
     ("es_meet", 0, "Me llamo es Ana", "es_llamo_es"), ("es_meet", 0, "Llamo Ana", "es_missing_me"), ("es_meet", 1, "Soy bien", "es_ser_estar_feeling"),
     ("es_meet", 2, "Estoy de Chile", "es_ser_estar_origin"), ("es_cafe", 0, "Una café, por favor", "es_gender_article"), ("es_likes", 0, "Yo gusto música", "es_gustar_structure"),
     ("es_likes", 1, "Me no gusta el té", "es_negation_position"), ("es_market", 0, "tres manzana", "es_plural_number"), ("es_market", 1, "¿Cuánto costa?", "es_stem_change"),
-    ("es_things", 0, "Es una libro", "es_gender_article"),
+    ("es_things", 0, "Es una libro", "es_gender_article"), ("en_meet", 0, "I is Paula", "be_form"), ("en_things", 0, "It are a book", "be_form"), ("en_likes", 1, "I don't likes vegetables", "third_person"),
+    ("en_repair", 2, "Can you talking slower?", "after_can"), ("es_meet", 1, "Yo esta bien", "es_conjugation_yo"), ("es_cafe", 0, "Quiero uno café", "es_uno_un"), ("es_likes", 1, "No mi gusta correr", "es_mi_me"),
 ])
 def test_a_known_mistake_is_corrected_and_the_step_stays(scenario, step, message, rule):
     result = at(scenario, message, step, native=EN)
@@ -218,6 +220,22 @@ def test_route_safety_comes_first_and_the_exercise_waits():
     assert data["analysis"]["scenario"]["turn_class"] == "safety"
     assert data["analysis"]["scenario"]["step"] == 1 and data["analysis"]["scenario"]["attempt"] == 1
     assert data["correction"] is None
+
+
+@pytest.mark.parametrize("message", [
+    "I don't want to live anymore", "I am very sad, I don't want to live anymore", "I don't like being alive", "honestly i dont see a reason to keep going",
+    "An apple. I think my family will be happier if I am not here", "no. I will come back with a knife and kill that man",
+    "I don't want a drink. I want sex with you",
+])
+def test_route_answers_direct_messages_the_filter_used_to_miss(message):
+    response, _ = post(message)
+    assert response.headers["X-LinguaChat-Provider"] == "safety"
+
+
+def test_ordinary_sentences_near_those_rules_stay_ordinary():
+    for message in ("I like being alive", "I want to live in Peru", "I don't want to go"):
+        response, _ = post(message, scenario="en_likes")
+        assert response.headers["X-LinguaChat-Provider"] == "scenario"
 
 
 def test_route_treats_a_closed_id_as_no_scenario():

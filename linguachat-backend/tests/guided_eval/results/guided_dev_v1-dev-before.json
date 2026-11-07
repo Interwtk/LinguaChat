@@ -1,0 +1,162 @@
+{
+ "en": {
+  "valid": {
+   "n": 44,
+   "classes": {
+    "valid": 26,
+    "not_understood": 18
+   }
+  },
+  "error": {
+   "n": 27,
+   "classes": {
+    "error": 14,
+    "not_understood": 12,
+    "valid": 1
+   }
+  },
+  "question": {
+   "n": 11,
+   "classes": {
+    "not_understood": 10,
+    "question": 1
+   }
+  },
+  "unknown": {
+   "n": 17,
+   "classes": {
+    "not_understood": 17
+   }
+  },
+  "safety": {
+   "n": 11,
+   "classes": {
+    "safety": 4,
+    "not_understood": 7
+   }
+  },
+  "measures": {
+   "valid_accepted_pct": 59.1,
+   "valid_falsely_corrected_pct": 0.0,
+   "valid_blocked_by_safety_pct": 0.0,
+   "errors_caught_pct": 51.9,
+   "errors_accepted_as_valid_pct": 3.7,
+   "corrections_matching_expected_pct": 85.7,
+   "questions_answered_pct": 9.1,
+   "unknown_recognised_as_unknown_pct": 100.0,
+   "unknown_treated_as_answer_pct": 0.0,
+   "safety_handled_pct": 36.4,
+   "safety_not_understood_pct": 63.6,
+   "safety_treated_as_answer_pct": 0.0,
+   "praise_on_unknown_or_safety_pct": 0.0
+  }
+ },
+ "es": {
+  "valid": {
+   "n": 44,
+   "classes": {
+    "not_understood": 23,
+    "valid": 20,
+    "error": 1
+   }
+  },
+  "error": {
+   "n": 27,
+   "classes": {
+    "not_understood": 15,
+    "error": 10,
+    "valid": 2
+   }
+  },
+  "question": {
+   "n": 11,
+   "classes": {
+    "question": 4,
+    "not_understood": 7
+   }
+  },
+  "unknown": {
+   "n": 17,
+   "classes": {
+    "not_understood": 16,
+    "safety": 1
+   }
+  },
+  "safety": {
+   "n": 11,
+   "classes": {
+    "not_understood": 6,
+    "safety": 5
+   }
+  },
+  "measures": {
+   "valid_accepted_pct": 45.5,
+   "valid_falsely_corrected_pct": 2.3,
+   "valid_blocked_by_safety_pct": 0.0,
+   "errors_caught_pct": 37.0,
+   "errors_accepted_as_valid_pct": 7.4,
+   "corrections_matching_expected_pct": 50.0,
+   "questions_answered_pct": 36.4,
+   "unknown_recognised_as_unknown_pct": 94.1,
+   "unknown_treated_as_answer_pct": 0.0,
+   "safety_handled_pct": 45.5,
+   "safety_not_understood_pct": 54.5,
+   "safety_treated_as_answer_pct": 0.0,
+   "praise_on_unknown_or_safety_pct": 0.0
+  }
+ },
+ "all": {
+  "valid": {
+   "n": 88,
+   "classes": {
+    "valid": 46,
+    "not_understood": 41,
+    "error": 1
+   }
+  },
+  "error": {
+   "n": 54,
+   "classes": {
+    "not_understood": 27,
+    "error": 24,
+    "valid": 3
+   }
+  },
+  "question": {
+   "n": 22,
+   "classes": {
+    "question": 5,
+    "not_understood": 17
+   }
+  },
+  "unknown": {
+   "n": 34,
+   "classes": {
+    "not_understood": 33,
+    "safety": 1
+   }
+  },
+  "safety": {
+   "n": 22,
+   "classes": {
+    "not_understood": 13,
+    "safety": 9
+   }
+  },
+  "measures": {
+   "valid_accepted_pct": 52.3,
+   "valid_falsely_corrected_pct": 1.1,
+   "valid_blocked_by_safety_pct": 0.0,
+   "errors_caught_pct": 44.4,
+   "errors_accepted_as_valid_pct": 5.6,
+   "corrections_matching_expected_pct": 70.8,
+   "questions_answered_pct": 22.7,
+   "unknown_recognised_as_unknown_pct": 97.1,
+   "unknown_treated_as_answer_pct": 0.0,
+   "safety_handled_pct": 40.9,
+   "safety_not_understood_pct": 59.1,
+   "safety_treated_as_answer_pct": 0.0,
+   "praise_on_unknown_or_safety_pct": 0.0
+  }
+ }
+}

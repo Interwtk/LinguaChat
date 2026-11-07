@@ -144,6 +144,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
     }
   }, [handleSend])
 
+  const openScenarios = useCallback(() => setScenariosOpen(true), [])
   const usePrompt = useCallback((text) => {
     promptedRef.current = text
     setInput(text)
@@ -495,7 +496,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
         style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
         <div style={practiceInnerStyle}>
           <div className="flex items-center gap-2 mb-2">
-            <PracticeToolbar t={t} onUsePrompt={usePrompt} onOpenScenarios={() => setScenariosOpen(true)} />
+            <PracticeToolbar t={t} onUsePrompt={usePrompt} onOpenScenarios={openScenarios} />
             <button
               type="button"
               onClick={() => setSparkOpen(o => !o)}

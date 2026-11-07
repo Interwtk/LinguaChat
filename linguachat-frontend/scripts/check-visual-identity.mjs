@@ -283,7 +283,7 @@ const html = read('index.html')
   has('the practice tools prefill the existing conversation flow', /onUsePrompt\(action\.prompt\)/.test(toolbar))
   has('the tools are a labelled group', /aria-label=\{t\('practiceTools'\)\}/.test(toolbar))
   const room = read('src/components/layout/ConversationRoom.jsx')
-  has('the toolbar sits with the composer', /<PracticeToolbar t=\{t\} onUsePrompt=\{usePrompt\} \/>/.test(room))
+  has('the toolbar sits with the composer', /<PracticeToolbar t=\{t\} onUsePrompt=\{usePrompt\} onOpenScenarios=\{openScenarios\} \/>/.test(room))
   /*
    * NO CONTROL FOR A FEATURE THAT DOES NOT EXIST. A permanently disabled
    * microphone with an English tooltip was an affordance for voice, which is not

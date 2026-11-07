@@ -466,6 +466,7 @@ export function mergeLanguageItems(mine, theirs) {
       independentCorrect: maxNum('independentCorrect'),
       guidedCorrect: maxNum('guidedCorrect'),
       recognisedCorrect: maxNum('recognisedCorrect'),
+      ...mergedRetention(x, y, fresher),
       // A failed attempt resets the consecutive-success streak. Merging a
       // newer failure with a stale snapshot must not resurrect the old streak.
       // Equal timestamps are ambiguous without per-attempt ids; be conservative.
@@ -798,6 +799,50 @@ const emptyItem = () => ({
 })
 
 /*
+ * `can_use` says "produced unaided, twice". A lesson asks for the same thing in
+ * a turn and again in its recall a minute later, so a learner can reach it inside
+ * one sitting, and nothing then tells remembering apart from having just seen it.
+ * These three fields keep that apart without moving `can_use`:
+ *
+ *   independentDays  distinct days with unaided production (a few, newest last)
+ *   lapses           times it failed on a later day after being produced unaided
+ *   lapsed           the last word on it is a failure not yet recovered
+ *
+ * Spaced retrieval is the design principle (docs/research/learning-science-
+ * foundation.md); docs/architecture/learner-retention-signal.md says what would
+ * prove this useless.
+ */
+export const INDEPENDENT_DAYS_KEPT = 6
+export const DAYS_TO_RETAINED = 2
+const dayOf = (atMs) => new Date(atMs).toISOString().slice(0, 10)
+const distinctDays = (list) => [...new Set((Array.isArray(list) ? list : []).filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)))].sort().slice(-INDEPENDENT_DAYS_KEPT)
+
+function nextRetention(prev, { correct, independent, evidenceKind, atMs }) {
+  const today = dayOf(atMs)
+  const days = distinctDays(prev.independentDays)
+  if (correct && independent && evidenceKind === 'open') return { independentDays: distinctDays([...days, today]), lapses: Number(prev.lapses) || 0, lapsed: false }
+  // a slip in the same sitting is learning; a miss on a later day is forgetting
+  const forgotten = !correct && days.length > 0 && days[days.length - 1] < today
+  return { independentDays: days, lapses: (Number(prev.lapses) || 0) + (forgotten && !prev.lapsed ? 1 : 0), lapsed: Boolean(prev.lapsed) || forgotten }
+}
+
+/* Absent until there is something to say: items stored before this signal stay as they were. */
+function mergedRetention(x, y, fresher) {
+  const independentDays = distinctDays([...(x.independentDays || []), ...(y.independentDays || [])])
+  const lapses = Math.max(Number(x.lapses) || 0, Number(y.lapses) || 0)
+  if (!independentDays.length && !lapses) return {}
+  // the copy with the newest evidence knows whether the failure was recovered
+  return { independentDays, lapses, lapsed: Boolean((fresher || x).lapsed) }
+}
+
+/* none · same_day (only one sitting so far) · retained · lapsed */
+export function retentionOfItem(item) {
+  if (item?.lapsed) return 'lapsed'
+  const days = distinctDays(item?.independentDays).length
+  return days === 0 ? 'none' : days < DAYS_TO_RETAINED ? 'same_day' : 'retained'
+}
+
+/*
  * The state an answer can justify on its own. `evidenceKind` comes from the
  * activity format (see scaffolding.js): recognition proves understanding,
  * guided work proves practice, and only unaided open production can reach
@@ -843,6 +888,7 @@ export function recordItemAttempt(model, itemId, { correct, independent = false,
   // learning state only ever climbs
   const earned = stateFromEvidence({ evidenceKind, correct, independent, independentCorrect })
   const learningState = higherLearningState(prev.learningState || 'seen', earned || 'seen')
+  const retention = nextRetention(prev, { correct, independent, evidenceKind, atMs })
 
   /*
    * `status` is kept for everything that already reads it (review scheduling,
@@ -855,6 +901,7 @@ export function recordItemAttempt(model, itemId, { correct, independent = false,
     status, learningState, correct: correctCount, incorrect: incorrectCount,
     independentCorrect, guidedCorrect, recognisedCorrect,
     streak: review.streak, nextReviewAt: review.nextReviewAt, lastSeenAt: new Date(atMs).toISOString(),
+    ...retention,
   }
   return model
 }
@@ -1244,7 +1291,8 @@ export function getDueReviews(model, atMs = Date.now(), { courseId = DEFAULT_COU
     if (!it.nextReviewAt || it.status === 'new') continue
     if (!belongsToCourse(id, courseId)) continue
     const at = new Date(it.nextReviewAt).getTime()
-    if (Number.isFinite(at) && at <= atMs) due.push([id, at])
+    if (Number.isFinite(at) && at <= atMs) due.push([id, at, it.lapsed ? 0 : 1])
   }
-  return due.sort((a, b) => a[1] - b[1]).map(([id]) => id)
+  // what the learner lost comes back first; otherwise the oldest debt first
+  return due.sort((a, b) => a[2] - b[2] || a[1] - b[1]).map(([id]) => id)
 }

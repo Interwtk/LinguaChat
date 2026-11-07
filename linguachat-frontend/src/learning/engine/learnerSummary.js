@@ -1,5 +1,5 @@
 import { teachingHistory, retentionProbes, skillEvidence, evidenceSummary } from './teachingPolicy.js'
-import { getDueReviews } from './learnerModel.js'
+import { getDueReviews, retentionOfItem } from './learnerModel.js'
 import { belongsToCourse, DEFAULT_COURSE_ID } from '../courses/registry.js'
 import { derivePreA1Readiness, readinessFocus } from '../curriculum/readiness.js'
 
@@ -25,6 +25,9 @@ export function learnerSummary(model, atMs = Date.now(), { courseId = DEFAULT_CO
     canUse: countState('can_use'),
     practicing: countState('practicing'),
     started: countState('seen') + countState('understood'),
+    // on more than one day, unaided; and what was had and then missed
+    retained: items.filter(x => retentionOfItem(x) === 'retained').length,
+    lapsed: items.filter(x => retentionOfItem(x) === 'lapsed').length,
   }
 
   let toReview = 0
