@@ -813,6 +813,71 @@ export function evaluateAskLive(text, { independent = false } = {}) {
   return notEvaluable(r)
 }
 
+const ROUTINE = /\b(me levanto|me despierto|me ducho|me acuesto|desayuno|como|ceno|trabajo|estudio|voy al trabajo|voy a la escuela|leo|camino|corro|descanso|duermo|veo la tele|hago deporte)\b/
+const HOUR = /\ba (las (una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez|once|doce|\d{1,2})|la una)( y media| y cuarto| menos cuarto)?( de la (manana|mañana|tarde|noche))?\b/
+const DAY = /\b(los|el) (lunes|martes|miercoles|jueves|viernes|sabados?|domingos?)\b|\bel fin de semana\b|\blos fines de semana\b/
+
+export function evaluateSayRoutine(text, { independent = false } = {}) {
+  const r = base(independent)
+  const f = fold(text)
+  r.naturalVersion = 'Me levanto y desayuno.'
+  if (!f) return empty(r)
+  if (/^(yo )?levanto\b/.test(f)) return miss(r, 'es_missing_me')
+  if (/\b(me )?(levantar|desayunar|despertar)\b/.test(f)) return miss(r, 'es_infinitive_verb')
+  if (/\b(tengo|tomo) (el )?desayuno\b/.test(f)) return miss(r, 'es_calque_have_breakfast')
+  if (/\b(me levanta|se levanto)\b/.test(f)) return miss(r, 'es_conjugation_yo')
+  if (ROUTINE.test(f)) return words(f).length <= 10 ? ok(r, text, { praise: 'es.praise.good', variant: true }) : notEvaluable(r)
+  if (looksEnglish(f)) return miss(r, 'es_english_reply')
+  return notEvaluable(r)
+}
+
+export function evaluateSayTime(text, { independent = false } = {}) {
+  const r = base(independent)
+  const f = fold(text)
+  r.naturalVersion = 'Me levanto a las siete.'
+  if (!f) return empty(r)
+  if (/\ba las una\b/.test(f)) { r.naturalVersion = 'A la una.'; return miss(r, 'es_hour_una') }
+  if (/\ben las \w+/.test(f)) return miss(r, 'es_hour_prep')
+  if (/\ba (siete|ocho|nueve|diez|once|doce|dos|tres|cuatro|cinco|seis|\d{1,2})\b/.test(f) && !/\ba las\b/.test(f)) return miss(r, 'es_hour_article')
+  if (/\b(siete|ocho|nueve|diez|once|doce|dos|tres|cuatro|cinco|seis) en punto\b/.test(f) && !HOUR.test(f)) return miss(r, 'es_hour_article')
+  if (/^(yo )?levanto\b/.test(f)) return miss(r, 'es_missing_me')
+  if (HOUR.test(f)) return words(f).length <= 10 ? ok(r, text, { praise: 'es.praise.good', variant: !/^me levanto a las siete$/.test(f) }) : notEvaluable(r)
+  if (looksEnglish(f)) return miss(r, 'es_english_reply')
+  return notEvaluable(r)
+}
+
+export function evaluateAskTime(text, { independent = false } = {}) {
+  const r = base(independent)
+  const f = fold(text)
+  r.naturalVersion = '¿A qué hora comes?'
+  if (!f) return empty(r)
+  if (/^que hora (comes|te levantas|desayunas|cenas|trabajas)\b/.test(f)) return miss(r, 'es_hour_question_a')
+  if (/\bcuando hora\b/.test(f)) return miss(r, 'es_hour_question_a')
+  if (/\ba que hora (yo )?(como|desayuno|ceno|me levanto)\b/.test(f)) return miss(r, 'es_conjugation_tu')
+  if (/\ba que hora (tu )?(comer|desayunar|levantarte)\b/.test(f)) return miss(r, 'es_infinitive_verb')
+  if (/\ba que hora\b/.test(f) && /\b(comes|desayunas|cenas|te levantas|trabajas|sales|empiezas|come|desayuna|se levanta|comen)\b/.test(f)) {
+    return ok(r, text, { praise: 'es.praise.ask_like', variant: !/^a que hora comes$/.test(f), accents: ['qué'] })
+  }
+  if (looksEnglish(f)) return miss(r, 'es_english_reply')
+  return notEvaluable(r)
+}
+
+export function evaluateSayDays(text, { independent = false } = {}) {
+  const r = base(independent)
+  const f = fold(text)
+  r.naturalVersion = 'Los lunes trabajo.'
+  if (!f) return empty(r)
+  if (/\ben (el |los )?(lunes|martes|miercoles|jueves|viernes|sabados?|domingos?)\b/.test(f)) return miss(r, 'es_day_preposition')
+  if (/\blos (sabado|domingo)\b(?!s)/.test(f)) return miss(r, 'es_day_plural')
+  if (/\bno nunca\b/.test(f)) return miss(r, 'es_double_negative_order')
+  if (DAY.test(f) && (ROUTINE.test(f) || /\b(voy|juego|veo|salgo|visito|trabajo|estudio|descanso|cocino|limpio)\b/.test(f))) {
+    return words(f).length <= 10 ? ok(r, text, { praise: 'es.praise.good', variant: true }) : notEvaluable(r)
+  }
+  if (DAY.test(f)) return miss(r, 'es_missing_activity', { conclusive: false })
+  if (looksEnglish(f)) return miss(r, 'es_english_reply')
+  return notEvaluable(r)
+}
+
 /* ================= dispatch ================= */
 
 const EVALUATORS = {
@@ -843,6 +908,10 @@ const EVALUATORS = {
   es_a1_ask_life: evaluateAskLife,
   es_a1_say_live: evaluateSayLive,
   es_a1_ask_live: evaluateAskLive,
+  es_a1_say_routine: evaluateSayRoutine,
+  es_a1_say_time: evaluateSayTime,
+  es_a1_ask_time: evaluateAskTime,
+  es_a1_say_days: evaluateSayDays,
 }
 
 export const ES_EVAL_KINDS = Object.keys(EVALUATORS)

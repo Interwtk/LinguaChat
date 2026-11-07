@@ -1,5 +1,5 @@
 /*
- * Spanish A1, first arc — episodes (lazy chunk, CLOSED, no human review).
+ * Spanish A1, arcs 1 and 2 — episodes (lazy chunk, CLOSED, no human review).
  *
  * Same engine as Pre-A1: same step types, same evaluator, same player. The
  * learner meets the present tense with yo/tú, and the mistakes that matter here
@@ -55,6 +55,50 @@ const AUTHORED = [
       { type: 'free_reply', variation: true, scene: '¿Vives aquí?', instruction: 'A neighbour asks if you live here. Say where you live.', eval: 'es_a1_say_live', suggestion: 'Sí, vivo aquí.', items: ['a1:vivo_en'] },
       { type: 'recall', instruction: 'From memory: ask someone where they live.', eval: 'es_a1_ask_live', items: ['a1:donde_vives'] },
       { type: 'completion', title: '¡Felicidades!', body: 'You can talk about your life in the present tense.', cta: 'Finish' },
+    ],
+  },
+  {
+    id: 'a1:mi_dia',
+    steps: [
+      { type: 'recall', review: true, instruction: 'Warm-up: say where you live.', eval: 'es_a1_say_live', items: ['a1:vivo_en'] },
+      { type: 'scene', mood: 'welcoming', title: 'Your morning', body: 'Mateo, from Argentina, tells you about his morning. Some verbs take “me”: me levanto = I get up.', ctaKey: 'ep1Continue' },
+      { type: 'model', target: 'Me levanto a las siete y desayuno.', meaning: ['a1:me_levanto', 'a1:desayuno'], explain: 'Me levanto = I get up (literally “I raise myself”). Desayuno = I have breakfast: one verb, no “have”.' },
+      { type: 'comprehension', instruction: 'What does Mateo do first?', target: 'Me levanto, desayuno y voy al trabajo.', item: 'a1:me_levanto',
+        options: [{ label: 'He gets up.', correct: true }, { label: 'He has lunch.' }, { label: 'He goes to bed.' }] },
+      { type: 'fill_blank', instruction: 'Fill the gap: “I get up early.”', hint: 'This verb needs “me”.', placeholder: 'missing word', item: 'a1:me_levanto', before: 'Me', after: ' temprano.', expects: 'levanto' },
+      { type: 'free_reply', speaker: 'lingua', prompt: '¿Qué haces por la mañana?', instruction: 'Say one or two things you do in the morning.', eval: 'es_a1_say_routine', suggestion: 'Me levanto y desayuno.', items: ['a1:me_levanto'] },
+      { type: 'free_reply', variation: true, scene: '¿Y al mediodía?', instruction: 'Now say what you do at midday.', eval: 'es_a1_say_routine', suggestion: 'Como en casa.', items: ['a1:como'] },
+      { type: 'recall', instruction: 'From memory: say what you do in the morning.', eval: 'es_a1_say_routine', items: ['a1:desayuno'] },
+      { type: 'completion', title: '¡Muy bien!', body: 'You can describe your morning. Next: at what time.', cta: 'Finish' },
+    ],
+  },
+  {
+    id: 'a1:a_las_siete',
+    steps: [
+      { type: 'recall', review: true, instruction: 'Warm-up: say what you do in the morning.', eval: 'es_a1_say_routine', items: ['a1:me_levanto'] },
+      { type: 'model', target: 'Me levanto a las siete.', response: '¿A qué hora desayunas?', meaning: ['a1:a_las', 'a1:que_hora'], explain: 'A las + number: a las siete. One o’clock is singular: a la una. To ask: ¿A qué hora…?' },
+      { type: 'comprehension', instruction: 'When does Carmen have lunch?', target: 'Como a las dos.', item: 'a1:a_las',
+        options: [{ label: 'At two.', correct: true }, { label: 'At twelve.' }, { label: 'Two times a day.' }] },
+      { type: 'word_order', instruction: 'Build the question: “At what time do you get up?”', hint: 'Start with “¿A”.', item: 'a1:que_hora', tokens: ['¿A', 'qué', 'hora', 'te', 'levantas?'] },
+      { type: 'free_reply', speaker: 'lingua', prompt: '¿A qué hora te levantas?', instruction: 'Say at what time you get up.', eval: 'es_a1_say_time', suggestion: 'Me levanto a las siete.', items: ['a1:a_las'] },
+      { type: 'free_reply', speaker: 'lingua', prompt: 'Yo desayuno a las ocho.', instruction: 'Ask Lingua at what time she has lunch.', eval: 'es_a1_ask_time', suggestion: '¿A qué hora comes?', items: ['a1:que_hora'] },
+      { type: 'free_reply', variation: true, scene: '¿Y a qué hora comes?', instruction: 'Say when you have lunch. Try one o’clock.', eval: 'es_a1_say_time', suggestion: 'Como a la una.', items: ['a1:a_la_una'] },
+      { type: 'recall', instruction: 'From memory: ask someone at what time they get up.', eval: 'es_a1_ask_time', items: ['a1:que_hora'] },
+      { type: 'completion', title: '¡Bien hecho!', body: 'You can say and ask the time of things. Next: days of the week.', cta: 'Finish' },
+    ],
+  },
+  {
+    id: 'a1:los_lunes',
+    steps: [
+      { type: 'recall', review: true, instruction: 'Warm-up: say at what time you get up.', eval: 'es_a1_say_time', items: ['a1:a_las'] },
+      { type: 'model', target: 'Los lunes trabajo. El viernes voy al cine.', meaning: ['a1:los_lunes', 'a1:el_viernes'], explain: 'Days need no “on”: los lunes = on Mondays (every Monday), el viernes = on Friday (this one). Days are not capitalised.' },
+      { type: 'comprehension', instruction: 'What does “los sábados” mean?', target: 'Los sábados juego al fútbol.', item: 'a1:los_lunes',
+        options: [{ label: 'Every Saturday.', correct: true }, { label: 'Only this Saturday.' }, { label: 'Some Saturdays, in the past.' }] },
+      { type: 'model', target: 'Siempre desayuno. Nunca como carne.', meaning: ['a1:siempre_nunca'], explain: 'Siempre = always. Nunca = never; with nunca first, no “no” is needed.' },
+      { type: 'free_reply', speaker: 'lingua', prompt: '¿Qué haces los lunes?', instruction: 'Say what you do on Mondays.', eval: 'es_a1_say_days', suggestion: 'Los lunes trabajo.', items: ['a1:los_lunes'] },
+      { type: 'free_reply', variation: true, scene: '¿Y el fin de semana?', instruction: 'Say what you do on Saturdays or Sundays.', eval: 'es_a1_say_days', suggestion: 'Los domingos descanso.', items: ['a1:los_lunes'] },
+      { type: 'recall', instruction: 'From memory: say one thing you do on a day of the week.', eval: 'es_a1_say_days', items: ['a1:el_viernes'] },
+      { type: 'completion', title: '¡Felicidades!', body: 'You can talk about your week. This closes the second arc of A1.', cta: 'Finish' },
     ],
   },
 ]

@@ -124,8 +124,9 @@ check('metadata of closed episodes exists for the Garden and the record', () => 
 /* ================= C. A1 content ================= */
 const problems = validateSpanishA1()
 check(`the closed arc validates (${problems.slice(0, 2).join('; ')})`, () => assert.equal(problems.length, 0))
-check('three lessons, every one with production, transfer and recall', () => {
-  assert.equal(ES_A1_EPISODES.length, 3)
+check('six lessons in two arcs, every one with production, transfer and recall', () => {
+  assert.equal(ES_A1_EPISODES.length, 6)
+  assert.deepEqual([...new Set(ES_A1_EPISODES.map(e => e.arc))], ['es_a1_vida', 'es_a1_dia'])
   for (const e of ES_A1_EPISODES) {
     assert.ok(e.steps.some(s => s.type === 'free_reply'), e.id)
     assert.ok(e.steps.some(s => s.variation), e.id)
@@ -147,6 +148,14 @@ const A1_CASES = [
   ['es_a1_ask_life', '¿Trabajas?', true], ['es_a1_ask_life', '¿En qué trabajas?', true], ['es_a1_ask_life', '¿A qué te dedicas?', true], ['es_a1_ask_life', '¿Usted trabaja?', true],
   ['es_a1_ask_life', '¿Tú trabajar?', 'es_infinitive_verb'], ['es_a1_ask_life', '¿Trabajo?', 'es_conjugation_tu'],
   ['es_a1_say_live', 'Vivo en Chicago', true], ['es_a1_say_live', 'Sí, vivo aquí', true], ['es_a1_say_live', 'Yo vivir en Lima', 'es_infinitive_verb'], ['es_a1_say_live', 'Estoy vivo en Lima', 'es_estar_vivo'], ['es_a1_say_live', 'Vivo a Lima', 'es_live_preposition'],
+  ['es_a1_say_routine', 'Me levanto y desayuno', true], ['es_a1_say_routine', 'Me ducho y voy al trabajo', true], ['es_a1_say_routine', 'Levanto a las siete', 'es_missing_me'],
+  ['es_a1_say_routine', 'Tengo desayuno', 'es_calque_have_breakfast'], ['es_a1_say_routine', 'Yo levantar temprano', 'es_infinitive_verb'],
+  ['es_a1_say_time', 'Me levanto a las siete', true], ['es_a1_say_time', 'A la una', true], ['es_a1_say_time', 'como a las dos y media', true],
+  ['es_a1_say_time', 'A las una', 'es_hour_una'], ['es_a1_say_time', 'Me levanto en las siete', 'es_hour_prep'], ['es_a1_say_time', 'Me levanto a siete', 'es_hour_article'],
+  ['es_a1_ask_time', '¿A qué hora comes?', true], ['es_a1_ask_time', '¿A qué hora se levanta usted?', true], ['es_a1_ask_time', '¿Qué hora comes?', 'es_hour_question_a'],
+  ['es_a1_ask_time', '¿A qué hora como?', 'es_conjugation_tu'],
+  ['es_a1_say_days', 'Los lunes trabajo', true], ['es_a1_say_days', 'Los domingos descanso', true], ['es_a1_say_days', 'el viernes voy al cine', true],
+  ['es_a1_say_days', 'En lunes trabajo', 'es_day_preposition'], ['es_a1_say_days', 'Los sabado juego', 'es_day_plural'],
   ['es_a1_ask_live', '¿Dónde vives?', true], ['es_a1_ask_live', '¿Y tú dónde vives?', true], ['es_a1_ask_live', '¿Dónde vivir?', 'es_infinitive_verb'], ['es_a1_ask_live', '¿Dónde vivo?', 'es_conjugation_tu'],
 ]
 for (const [kind, text, want] of A1_CASES) {
