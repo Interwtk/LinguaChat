@@ -14,7 +14,7 @@ export function PracticeToolbar({ t, onUsePrompt, onOpenScenarios }) {
   const actions = [
     { id: 'correct', label: t('correctMe'), prompt: 'Correct my next sentence and give me one tiny challenge.' },
     { id: 'explain', label: t('explainSimple'), prompt: 'Explain the next correction in very simple words.' },
-    { id: 'roleplay', label: t('roleplay'), prompt: 'Start a short cafe roleplay with me.' },
+    { id: 'roleplay', label: onOpenScenarios ? t('scenarioChip') : t('roleplay'), prompt: 'Start a short cafe roleplay with me.' },
     { id: 'question', label: t('askMeQuestion'), prompt: 'Ask me one question for my level.' },
   ]
 

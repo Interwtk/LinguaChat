@@ -54,7 +54,7 @@ const base = {
   // Plans & pricing
   plansTitle: 'Plans',
   plansDesc: 'Basic & Premium',
-  linguaReadyQuote: "I'm here when you're ready. Write anything, ask anything. No judgment, just practice.",
+  linguaReadyQuote: "Practise short situations with me. I correct what I can follow, and I tell you when I can't.",
   // Onboarding: tutor personalities + learning preferences
   persGentleName: 'Gentle Guide',
   persGentleDesc: 'Patient, encouraging, celebrates every step. Perfect if you get nervous about mistakes.',
@@ -122,7 +122,7 @@ const base = {
   ep1ContinuePrefix: 'Continue',
   ep1StartCta: 'Start episode',
   ep1ReviewCta: 'Review',
-  ep1FreeChatCta: 'Chat freely',
+  ep1FreeChatCta: "Practise a conversation",
   ep1IntroTitle: "You're about to meet someone new",
   ep1IntroBody: "You're going to meet someone for the first time. Ready?",
   ep1Start: "Let's go",
@@ -2802,6 +2802,7 @@ const base = {
   scenarioOther: "Choose another situation",
   scenarioBack: "Back to the chat",
   scenarioOffline: "Situations need a connection. Try again in a moment.",
+  scenarioChip: "Situations",
   // Your data: export / delete on this device / account deletion request
   dataTitle: "Your data",
   dataBody: "Your learning data is stored in this browser for your account. You can download a copy or delete it from this device at any time.",
