@@ -2,19 +2,23 @@
 /*
  * qa-real-journeys — the provider half of the real sign-in QA, ready to run.
  *
- * NOT YET RUN: there is no authorized test project. This talks to the auth
- * REST API of ONE explicitly authorized TEST project (never production) and
- * proves what the simulated check cannot: wrong and right passwords, a tampered
+ * NOT YET RUN. The owner decided (phase 7) to test in the EXISTING LinguaChat
+ * project, not a separate one. So this talks to the auth REST API of that one
+ * project, and only through test accounts that say so: both addresses must carry
+ * the `+lcqa` tag, which no real learner's address has. It creates those two
+ * accounts if missing, never touches any other, never deletes, never changes a
+ * setting, and uses only the public key. It proves what the simulated check cannot: wrong and right passwords, a tampered
  * token refused, a session recovered by refresh, sign-out revoking it, the same
  * answer for known and unknown recovery addresses, two accounts with two ids.
  * The browser half (isolation, courses, deletion) stays in
  * docs/release/2026-11-auth-journeys.md.
  *
  * Required environment (see docs/release/2026-11-auth-qa.env.example):
- *   QA_AUTH_URL, QA_AUTH_ANON_KEY     the TEST project's public values
+ *   QA_AUTH_URL, QA_AUTH_ANON_KEY     the LinguaChat project's PUBLIC values
  *   QA_AUTH_AUTHORIZED_HOST           must equal the host of QA_AUTH_URL
- *   QA_AUTH_CONFIRM_TEST_PROJECT=yes  a human says this is not production
- *   QA_AUTH_EMAIL_A, QA_AUTH_EMAIL_B  the owner's test aliases
+ *   QA_AUTH_CONFIRM_LINGUACHAT_PROJECT=yes  the owner confirms this is LinguaChat's
+ *                                     project (never another organisation's) and authorizes the run
+ *   QA_AUTH_EMAIL_A, QA_AUTH_EMAIL_B  the owner's test aliases, each with `+lcqa`
  *   QA_AUTH_PASSWORD                  a throwaway password for those aliases
  * Optional, for the server half (needs the backend verifying sign-in):
  *   QA_API_URL, QA_API_AUTHORIZED_HOST the Preview, and the host it must be
@@ -28,16 +32,24 @@
 import assert from 'node:assert/strict'
 import { writeFileSync } from 'node:fs'
 
+const OTHER_ORGANISATION = new RegExp(['evo', 'labs'].join(''), 'i')
+
 export function refusal(env) {
   for (const name of ['QA_AUTH_URL', 'QA_AUTH_ANON_KEY', 'QA_AUTH_AUTHORIZED_HOST', 'QA_AUTH_EMAIL_A', 'QA_AUTH_EMAIL_B', 'QA_AUTH_PASSWORD']) {
     if (!env[name]) return `missing ${name}`
   }
-  if (env.QA_AUTH_CONFIRM_TEST_PROJECT !== 'yes') return 'QA_AUTH_CONFIRM_TEST_PROJECT must be "yes"'
+  if (env.QA_AUTH_CONFIRM_LINGUACHAT_PROJECT !== 'yes') return 'QA_AUTH_CONFIRM_LINGUACHAT_PROJECT must be "yes"'
+  for (const name of ['QA_AUTH_EMAIL_A', 'QA_AUTH_EMAIL_B']) {
+    // a test account says so in its own address: no real learner is ever used
+    if (!/^[^@\s]+\+lcqa[^@\s]*@[^@\s]+\.[^@\s]+$/i.test(env[name])) return `${name} must be a test alias containing +lcqa`
+  }
+  if (env.QA_AUTH_EMAIL_A.toLowerCase() === env.QA_AUTH_EMAIL_B.toLowerCase()) return 'accounts A and B must differ'
+  // the owner's other organisation is never used for LinguaChat (CLAUDE.md); its name is built, not written
+  if ([env.QA_AUTH_URL, env.QA_AUTH_EMAIL_A, env.QA_AUTH_EMAIL_B].some(v => OTHER_ORGANISATION.test(v))) return 'that is not LinguaChat\'s project'
   let url
   try { url = new URL(env.QA_AUTH_URL) } catch { return 'QA_AUTH_URL is not a URL' }
   if (url.protocol !== 'https:' && url.hostname !== '127.0.0.1' && url.hostname !== 'localhost') return 'plain http only on this machine'
   if (url.hostname !== env.QA_AUTH_AUTHORIZED_HOST) return 'QA_AUTH_URL is not the authorized host'
-  if (/prod|live|main/i.test(url.hostname)) return 'this host looks like production'
   try {
     const claims = JSON.parse(Buffer.from(env.QA_AUTH_ANON_KEY.split('.')[1] || '', 'base64url').toString('utf8'))
     if (claims.role && claims.role !== 'anon') return 'that is not a public key'
@@ -56,15 +68,18 @@ export function refusal(env) {
 function selfTest() {
   const good = {
     QA_AUTH_URL: 'https://abc-test.example.test', QA_AUTH_ANON_KEY: 'public', QA_AUTH_AUTHORIZED_HOST: 'abc-test.example.test',
-    QA_AUTH_CONFIRM_TEST_PROJECT: 'yes', QA_AUTH_EMAIL_A: 'a@example.test', QA_AUTH_EMAIL_B: 'b@example.test', QA_AUTH_PASSWORD: 'x',
+    QA_AUTH_CONFIRM_LINGUACHAT_PROJECT: 'yes', QA_AUTH_EMAIL_A: 'owner+lcqa-a@example.test', QA_AUTH_EMAIL_B: 'owner+lcqa-b@example.test', QA_AUTH_PASSWORD: 'x',
   }
   const jwt = (role) => `h.${Buffer.from(JSON.stringify({ role })).toString('base64url')}.s`
   const privateRole = ['service', 'role'].join('_')
   assert.equal(refusal(good), null)
   assert.match(refusal({}), /missing/)
-  assert.match(refusal({ ...good, QA_AUTH_CONFIRM_TEST_PROJECT: 'no' }), /must be/)
+  assert.match(refusal({ ...good, QA_AUTH_CONFIRM_LINGUACHAT_PROJECT: 'no' }), /must be/)
+  assert.match(refusal({ ...good, QA_AUTH_EMAIL_A: 'student@example.test' }), /\+lcqa/)
+  assert.match(refusal({ ...good, QA_AUTH_EMAIL_B: good.QA_AUTH_EMAIL_A }), /must differ/)
+  const other = `${['evo', 'labs'].join('')}-1.example.test`
+  assert.match(refusal({ ...good, QA_AUTH_URL: `https://${other}`, QA_AUTH_AUTHORIZED_HOST: other }), /not LinguaChat/)
   assert.match(refusal({ ...good, QA_AUTH_AUTHORIZED_HOST: 'other.example.test' }), /authorized host/)
-  assert.match(refusal({ ...good, QA_AUTH_URL: 'https://prod-1.example.test', QA_AUTH_AUTHORIZED_HOST: 'prod-1.example.test' }), /production/)
   assert.match(refusal({ ...good, QA_AUTH_URL: 'http://abc-test.example.test' }), /plain http/)
   assert.match(refusal({ ...good, QA_AUTH_ANON_KEY: jwt(privateRole) }), /public key/)
   assert.equal(refusal({ ...good, QA_AUTH_ANON_KEY: jwt('anon') }), null)
@@ -73,7 +88,7 @@ function selfTest() {
   assert.equal(refusal(api), null)
   assert.match(refusal({ ...api, QA_API_AUTHORIZED_HOST: 'other.example.test' }), /authorized API host/)
   assert.match(refusal({ ...api, QA_API_PRODUCTION_HOST: 'linguachat-git-beta.example.test' }), /production host/)
-  console.log('qa-real-journeys --self-test: 12 passed, 0 failed (refusals only; the real journeys have NOT run)')
+  console.log('qa-real-journeys --self-test: 14 passed, 0 failed (refusals only; the real journeys have NOT run)')
 }
 
 async function run(env) {
