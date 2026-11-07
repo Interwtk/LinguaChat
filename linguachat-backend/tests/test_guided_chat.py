@@ -95,9 +95,12 @@ def test_scope_counts_the_corrected_sentence():
 
 
 def test_spanish_course_reports_what_it_could_not_follow_as_guided():
-    response, data = post("regalé todas mis cosas", target_language="es", native_language="en")
+    response, data = post("la mecánica cuántica de los refrigeradores", target_language="es", native_language="en")
     assert response.headers["X-LinguaChat-Provider"] == "guided"
     assert data["correction"] is None
+    # since phase 6 this farewell is read as a warning sign and gets the safety reply instead
+    response, _ = post("regalé todas mis cosas", target_language="es", native_language="en")
+    assert response.headers["X-LinguaChat-Provider"] == "safety"
 
 
 def test_every_practice_button_of_the_chat_opens_a_guided_activity():

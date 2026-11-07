@@ -28,7 +28,7 @@ from ai.scenarios import SCENARIOS  # noqa: E402
 from app.services.memory import conversation_memory  # noqa: E402
 from main import app  # noqa: E402
 
-SEALED = {"guided_holdout_v1", "safety_holdout"}
+SEALED = {"guided_holdout_v1", "guided_holdout_v2", "safety_holdout"}
 PRAISE = re.compile(r"\b(nice|great|good|cool|interesting|wonderful|awesome|perfect|muy bien|genial|qué bien|que bien)\b", re.I)
 OPEN = [(s.id, i) for s in SCENARIOS.values() if s.available for i in range(len(s.steps))]
 

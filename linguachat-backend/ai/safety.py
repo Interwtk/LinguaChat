@@ -40,7 +40,7 @@ WARN_PII = "warn_pii"      # sensitive personal data: warn, do not keep or echo
 DEFLECT = "deflect"        # manipulation or rudeness toward the tutor: stay in role
 
 CATEGORIES = (
-    "minor_sexual", "child_protection", "sexual_explicit", "self_harm", "violence_threat",
+    "minor_sexual", "child_protection", "being_harmed", "sexual_explicit", "self_harm", "violence_threat",
     "dangerous_instructions", "hate", "harassment", "personal_data", "personal_info_request",
     "prompt_injection",
 )
@@ -107,6 +107,11 @@ def _latin_variants(s: str) -> list[str]:
 
 
 # ---------------------------------------------------------------- lexicons
+
+# Someone says they are being hurt or are not safe. Disclosure, not a threat.
+PERSON = r"(?:partner|husband|wife|boyfriend|girlfriend|dad|father|mom|mum|mother|stepdad|stepfather|stepmom|stepmother|brother|sister|uncle|boss|someone|somebody|esposo|esposa|marido|novio|novia|padre|madre|padrastro|madrastra|papa|mama|hermano|hermana|tio|jefe|alguien)"
+BEING_HARMED = re.compile(PERSON + r"(?:\s+\S+){0,4}?\s+(?:hits me|beats me|hurts me|is hurting me|keeps hurting me|is following me|takes my money|me pega|me golpea|me hace dano|me sigue|me quita el dinero)\b"
+                          r"|\b(?:not safe at home|no estoy (?:segura|seguro) en casa)\b")
 # Latin entries are matched as whole words (prefix with `*` to allow a stem);
 # Japanese and Arabic entries are matched as substrings of the normalised text.
 
@@ -317,6 +322,8 @@ LANGUAGE_QUESTION = _compile([
 # signals: a word alone is a language lesson, the combination is an intent.
 
 SELF_FINAL = _compile([
+    "gave away all my things", "giving my things away", "giving my stuff away", "regale todas mis cosas", "ya regale todas mis cosas",
+    "tired of being alive", "tired of living", "why i'm still alive", "why i am still alive", "nothing matters anymore", "no reason to keep going", "my last goodbye", "last goodbye", "better off without me", "mieux sans moi", "plus envie de vivre", "a burden to everyone", "burden to everyone", "me despido de todos", "por que sigo aqui", "nada tiene sentido", "pronto no voy a estar", "me voy para siempre", "no voy a molestar",
     "end my life", "ending my life", "take my life", "stop existing", "cease to exist", "worth living", "going to do it tonight",
     "check out for good", "never wake up", "sleep forever", "want to disappear", "wish i was dead", "wish i were dead", "don't want to be here anymore",
     "acabar con mi vida", "terminar con mi vida", "dejar de existir", "vale la pena vivir", "seguir viviendo", "sin sentido vivir", "quiero desaparecer",
@@ -325,11 +332,13 @@ SELF_FINAL = _compile([
     "انهي حياتي", "انهاء حياتي", "بدي اموت", "ابي اموت", "ودي اموت", "ما بدي اعيش", "مابي اعيش", "الحق بابوي", "الحق بامي", "ما بقى لها طعم",
 ])
 SELF_ARRANGED = _compile([
+    "giving my things away", "giving my stuff away", "giving all my books away", "gave away all my things", "written letters to my family", "letters to my family", "voy a regalar todo", "regale todas mis cosas", "estoy regalando", "dejarle todo mi dinero", "es la ultima vez",
     "paid all my debts", "paid my debts", "cancelled my phone", "canceled my phone", "gave away", "giving away", "wrote my will", "said goodbye to",
     "pague lo que debia", "cancele el seguro", "borre mis redes", "deje las llaves", "regale mis cosas", "regale todas mis cosas", "me despedi de",
     "借金も返", "部屋を片付け", "身の回りを整理", "お別れ", "سددت", "ودعت", "وزعت اغراضي",
 ])
 SELF_ABSENT = _compile([
+    "won't need them", "won't need it", "won't need them anymore", "won't be around", "won't be anywhere", "won't be at the next", "never see me again", "ya no los voy a necesitar", "ya no lo voy a necesitar", "ya no lo necesito", "no voy a necesitar dinero", "ni en ninguna", "para siempre", "after tonight", "this week",
     "no next month", "won't be here", "wont be here", "not be around", "goodbye forever", "last time you hear", "won't need", "wont need",
     "ya no estare", "no voy a estar", "no voy a necesitar", "ya no voy a necesitar", "mes que viene ya no", "para siempre", "nadie tiene que buscarme",
     "来月の予定", "もういらない", "最後の", "مش هكون موجود", "ما راح اكون", "اخر مره",
@@ -462,6 +471,10 @@ def assess(text: str) -> Verdict:
             return Verdict(ALLOW, None, care_note=True, signals=("self_harm", "language_question"))
         return Verdict(SUPPORT, "self_harm", signals=("self_harm",))
 
+    # 2b. Being hurt by someone: a caring reply with where to go, never a correction.
+    if any(BEING_HARMED.search(x) for x in v):
+        return Verdict(SUPPORT, "being_harmed", signals=("being_harmed",))
+
     # 3. Sensitive personal data the learner typed — never keep or echo it.
     if (_has_card(base) or SSN.search(base) or RUT.search(base) or PASSWORD.search(base)
             or (_any(ID_WORD, v) and ID_VALUE.search(base))):
@@ -529,6 +542,7 @@ _REPLIES = {
         "child_protection": "That’s an important concern. If a child may be in danger, contact local emergency services or child-protection authorities right away. I’m a language tutor, but I can help you with the words you need to ask for help.",
         "sexual_explicit": "Let’s keep our practice suitable for everyone. Tell me about something else — your day, a place you like, a plan for the weekend.",
         "self_harm": "I’m really sorry you’re feeling this way, and I’m glad you said it. If you might act on these thoughts, please call your local emergency number now. You can also reach a crisis line ({lines}). I’m a language tutor, not a crisis service — but I’m here whenever you want to practise.",
+        "being_harmed": "I’m sorry this is happening to you. If you are in danger now, call your local emergency number. If you can, tell someone you trust or a support service where you live. I’m a language practice tool and can’t help directly, but your safety matters more than this lesson.",
         "violence_threat": "I can’t help with threats or violence. If someone is in danger, contact local emergency services. When you’re ready, let’s get back to practising.",
         "dangerous_instructions": "I can’t give instructions for that. I can help you with the vocabulary, or we can practise another topic.",
         "hate": "Let’s keep this respectful toward everyone. I’m happy to keep practising with you.",
@@ -543,6 +557,7 @@ _REPLIES = {
         "child_protection": "Es una preocupación importante. Si un niño o una niña puede estar en peligro, contacta de inmediato a emergencias o a las autoridades de protección de la infancia. Soy una tutora de idiomas, pero puedo ayudarte con las palabras para pedir ayuda.",
         "sexual_explicit": "Mantengamos la práctica apta para todo público. Cuéntame otra cosa: tu día, un lugar que te guste o un plan para el fin de semana.",
         "self_harm": "Siento mucho que te sientas así, y me alegra que lo digas. Si crees que podrías actuar sobre estos pensamientos, llama ahora a emergencias. También puedes contactar una línea de crisis ({lines}). Soy una tutora de idiomas, no un servicio de crisis, pero aquí estaré cuando quieras practicar.",
+        "being_harmed": "Siento mucho que te esté pasando esto. Si estás en peligro ahora, llama al número de emergencias de tu país. Si puedes, cuéntaselo a alguien de confianza o a un servicio de apoyo de donde vives. Soy una herramienta de práctica de idiomas y no puedo ayudarte directamente, pero tu seguridad importa más que esta lección.",
         "violence_threat": "No puedo ayudar con amenazas ni violencia. Si alguien está en peligro, contacta a emergencias. Cuando quieras, volvemos a practicar.",
         "dangerous_instructions": "No puedo dar instrucciones para eso. Puedo ayudarte con el vocabulario o practicar otro tema.",
         "hate": "Mantengamos el respeto hacia todas las personas. Con gusto sigo practicando contigo.",
@@ -557,6 +572,7 @@ _REPLIES = {
         "child_protection": "É uma preocupação importante. Se uma criança puder estar em perigo, contate já os serviços de emergência ou as autoridades de proteção à infância. Sou uma tutora de idiomas, mas posso ajudar com as palavras para pedir ajuda.",
         "sexual_explicit": "Vamos manter a prática adequada para todos. Me conte outra coisa: seu dia, um lugar de que você gosta, um plano para o fim de semana.",
         "self_harm": "Sinto muito que você esteja se sentindo assim, e fico feliz que tenha dito. Se você puder agir sobre esses pensamentos, ligue agora para a emergência. Você também pode contatar uma linha de crise ({lines}). Sou uma tutora de idiomas, não um serviço de crise, mas estou aqui quando quiser praticar.",
+        "being_harmed": "Sinto muito que isso esteja acontecendo com você. Se você estiver em perigo agora, ligue para o número de emergência do seu país. Se puder, conte a alguém de confiança ou a um serviço de apoio onde você mora. Sou uma ferramenta de prática de idiomas e não posso ajudar diretamente, mas a sua segurança importa mais do que esta lição.",
         "violence_threat": "Não posso ajudar com ameaças ou violência. Se alguém estiver em perigo, contate a emergência. Quando quiser, voltamos a praticar.",
         "dangerous_instructions": "Não posso dar instruções para isso. Posso ajudar com o vocabulário ou praticar outro tema.",
         "hate": "Vamos manter o respeito por todas as pessoas. Fico feliz em continuar praticando com você.",
@@ -571,6 +587,7 @@ _REPLIES = {
         "child_protection": "C’est une inquiétude importante. Si un enfant peut être en danger, contacte tout de suite les urgences ou la protection de l’enfance. Je suis une tutrice de langues, mais je peux t’aider avec les mots pour demander de l’aide.",
         "sexual_explicit": "Gardons un entraînement adapté à tout le monde. Parle-moi d’autre chose : ta journée, un endroit que tu aimes, un projet pour le week-end.",
         "self_harm": "Je suis vraiment désolée que tu te sentes ainsi, et merci de l’avoir dit. Si tu risques de passer à l’acte, appelle tout de suite les urgences. Tu peux aussi joindre une ligne d’écoute ({lines}). Je suis une tutrice de langues, pas un service de crise, mais je suis là quand tu veux t’entraîner.",
+        "being_harmed": "Je suis désolée que cela t’arrive. Si tu es en danger maintenant, appelle le numéro d’urgence de ton pays. Si tu peux, parles-en à quelqu’un de confiance ou à un service d’aide près de chez toi. Je suis un outil d’entraînement aux langues et je ne peux pas t’aider directement, mais ta sécurité compte plus que cette leçon.",
         "violence_threat": "Je ne peux pas aider avec des menaces ou de la violence. Si quelqu’un est en danger, contacte les urgences. Quand tu veux, on reprend l’entraînement.",
         "dangerous_instructions": "Je ne peux pas donner d’instructions pour ça. Je peux t’aider avec le vocabulaire ou un autre sujet.",
         "hate": "Restons respectueux envers tout le monde. Je continue volontiers à m’entraîner avec toi.",
@@ -585,6 +602,7 @@ _REPLIES = {
         "child_protection": "Das ist eine wichtige Sorge. Wenn ein Kind in Gefahr sein könnte, wende dich sofort an den Notruf oder den Kinderschutz. Ich bin eine Sprachtutorin, aber ich helfe dir mit den Wörtern, um Hilfe zu holen.",
         "sexual_explicit": "Lass uns beim Üben für alle geeignet bleiben. Erzähl mir etwas anderes: deinen Tag, einen Ort, den du magst, einen Plan fürs Wochenende.",
         "self_harm": "Es tut mir sehr leid, dass es dir so geht, und gut, dass du es sagst. Wenn du diesen Gedanken folgen könntest, ruf bitte sofort den Notruf an. Du kannst dich auch an eine Krisenhotline wenden ({lines}). Ich bin eine Sprachtutorin, kein Krisendienst – aber ich bin da, wenn du üben möchtest.",
+        "being_harmed": "Es tut mir leid, dass dir das passiert. Wenn du jetzt in Gefahr bist, ruf den Notruf deines Landes an. Wenn du kannst, erzähl es jemandem, dem du vertraust, oder einer Beratungsstelle in deiner Nähe. Ich bin ein Übungswerkzeug für Sprachen und kann nicht direkt helfen, aber deine Sicherheit ist wichtiger als diese Lektion.",
         "violence_threat": "Bei Drohungen oder Gewalt kann ich nicht helfen. Wenn jemand in Gefahr ist, ruf den Notruf. Wenn du so weit bist, üben wir weiter.",
         "dangerous_instructions": "Dafür gebe ich keine Anleitung. Ich helfe dir gern mit dem Wortschatz oder einem anderen Thema.",
         "hate": "Bleiben wir respektvoll gegenüber allen. Ich übe gern weiter mit dir.",
@@ -599,6 +617,7 @@ _REPLIES = {
         "child_protection": "È una preoccupazione importante. Se un bambino può essere in pericolo, contatta subito i servizi di emergenza o di tutela dei minori. Sono una tutor di lingue, ma posso aiutarti con le parole per chiedere aiuto.",
         "sexual_explicit": "Manteniamo la pratica adatta a tutti. Raccontami altro: la tua giornata, un posto che ti piace, un programma per il fine settimana.",
         "self_harm": "Mi dispiace davvero che tu ti senta così, e grazie per averlo detto. Se potresti agire su questi pensieri, chiama subito i servizi di emergenza. Puoi anche contattare una linea di crisi ({lines}). Sono una tutor di lingue, non un servizio di crisi, ma sono qui quando vuoi esercitarti.",
+        "being_harmed": "Mi dispiace che ti stia succedendo questo. Se sei in pericolo adesso, chiama il numero di emergenza del tuo paese. Se puoi, parlane con qualcuno di cui ti fidi o con un servizio di supporto dove vivi. Sono uno strumento per esercitarsi con le lingue e non posso aiutarti direttamente, ma la tua sicurezza conta più di questa lezione.",
         "violence_threat": "Non posso aiutare con minacce o violenza. Se qualcuno è in pericolo, contatta i servizi di emergenza. Quando vuoi, torniamo a esercitarci.",
         "dangerous_instructions": "Non posso dare istruzioni per questo. Posso aiutarti con il vocabolario o con un altro argomento.",
         "hate": "Restiamo rispettosi verso tutti. Continuo volentieri a esercitarmi con te.",
@@ -613,6 +632,7 @@ _REPLIES = {
         "child_protection": "大切な心配ですね。子どもが危険にさらされているかもしれない場合は、すぐに緊急通報するか児童相談所などに連絡してください。私は語学チューターですが、助けを求めるための言葉なら手伝えます。",
         "sexual_explicit": "練習はどなたにも適した内容にしましょう。今日のこと、好きな場所、週末の予定など、別の話を聞かせてください。",
         "self_harm": "そんな気持ちでいるなんて本当につらいですね。話してくれてありがとう。行動に移してしまいそうなときは、今すぐ緊急通報してください。相談窓口もあります（{lines}）。私は語学チューターで相談窓口ではありませんが、練習したいときはいつでもここにいます。",
+        "being_harmed": "つらい思いをしているのですね。今危険なら、あなたの国の緊急番号に電話してください。できれば、信頼できる人や近くの相談窓口に話してください。わたしは語学練習のツールで直接助けることはできませんが、あなたの安全はこのレッスンより大切です。",
         "violence_threat": "脅しや暴力には協力できません。誰かが危険なときは緊急通報してください。落ち着いたら、また練習しましょう。",
         "dangerous_instructions": "その方法はお伝えできません。単語の練習や別の話題ならお手伝いできます。",
         "hate": "すべての人への敬意を大切にしましょう。練習はこのまま続けられます。",
@@ -627,6 +647,7 @@ _REPLIES = {
         "child_protection": "هذا قلق مهم. إذا كان طفل قد يكون في خطر، فاتصل فورًا بالطوارئ أو بجهات حماية الطفل. أنا معلّمة لغات، لكن يمكنني مساعدتك في الكلمات اللازمة لطلب المساعدة.",
         "sexual_explicit": "لنحافظ على تدريب مناسب للجميع. حدّثني عن شيء آخر: يومك، أو مكان تحبه، أو خطة لعطلة نهاية الأسبوع.",
         "self_harm": "يؤسفني كثيرًا أنك تشعر بهذا، وأنا سعيدة لأنك قلته. إذا كنت قد تتصرف بناءً على هذه الأفكار، فاتصل بالطوارئ الآن. يمكنك أيضًا التواصل مع خط أزمات ({lines}). أنا معلّمة لغات ولست خدمة أزمات، لكنني هنا متى أردت التدرّب.",
+        "being_harmed": "يؤسفني أن هذا يحدث لك. إن كنت في خطر الآن، فاتصل برقم الطوارئ في بلدك. وإن استطعت، أخبر شخصًا تثق به أو جهة دعم قريبة منك. أنا أداة للتدرّب على اللغات ولا أستطيع المساعدة مباشرة، لكن سلامتك أهم من هذا الدرس.",
         "violence_threat": "لا أستطيع المساعدة في التهديد أو العنف. إذا كان أحد في خطر، فاتصل بالطوارئ. عندما تكون مستعدًا، نعود إلى التدرّب.",
         "dangerous_instructions": "لا أستطيع تقديم تعليمات لذلك. يمكنني مساعدتك في المفردات أو في موضوع آخر.",
         "hate": "لنحافظ على الاحترام تجاه الجميع. يسعدني أن نواصل التدرّب.",

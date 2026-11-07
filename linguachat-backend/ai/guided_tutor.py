@@ -345,11 +345,16 @@ def _question(scenario: Scenario, f: str, aux: str) -> tuple[str, bool] | None:
 
 def _foreign_question(scenario: Scenario, raw: str, aux: str) -> tuple[str, bool] | None:
     """The same closed answers, for a question asked in the learner's own language."""
-    if len(raw) > 80:
+    # one short question, nothing riding along: "¿Repetir? No. Hoy me despido de todos." is not one
+    if len(raw) > 80 or len(re.findall(r"\w+", raw)) > 10:
         return None
+    clauses = [c for c in re.split(r"[.!?;。？！؟]+", raw.lower()) if c.strip()]
     for kind, pattern in FOREIGN_QUESTIONS:
         if not pattern.search(raw.lower()):
             continue
+        # every clause of more than one word must be the question itself
+        if any(len(c.split()) > 1 and not pattern.search(c) for c in clauses):
+            return None
         if kind in ("meaning", "say"):
             latin = [w for w in re.findall(r"[a-zA-ZñÑáéíóúÁÉÍÓÚ]+", raw) if es_tutor._fold(w) in (ES_GLOSS if scenario.target == "es" else EN_GLOSS)]
             word = es_tutor._fold(latin[0]) if len(latin) == 1 else None
