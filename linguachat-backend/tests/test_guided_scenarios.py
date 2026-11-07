@@ -254,3 +254,23 @@ def test_catalogue_route_lists_only_open_scenarios_in_the_learners_language():
     assert all("a1" not in item["id"] for item in data)
     spanish = client.get("/chat/scenarios", params={"target": "es", "aux": "en"}).json()["scenarios"]
     assert len(spanish) == 6 and spanish[0]["opening"].startswith("¡Hola!")
+
+
+def test_a_real_word_is_not_spell_corrected_into_an_answer():
+    for message in ("I like killing", "I like knives", "I like hurting"):
+        assert at("en_likes", message).analysis["scenario"]["turn_class"] == "not_understood", message
+    assert at("en_cafe", "i want a cofee").analysis["scenario"]["rule"] == "spelling"
+    assert at("en_meet", "my naem is Ana").analysis["scenario"]["rule"] == "spelling"
+
+
+def test_an_answer_to_another_question_is_named_as_such():
+    result = at("en_meet", "My name is Ana", step=1)
+    assert result.analysis["scenario"]["turn_class"] == "not_understood"
+    assert "otra pregunta" in result.explanation
+
+
+@pytest.mark.parametrize("message,aux", [("これは何という意味？ name", "ja"), ("o que significa today?", "pt"), ("que veut dire please ?", "fr"), ("لا أفهم", "ar"), ("is this correct?", "es")])
+def test_language_questions_in_the_learners_own_language(message, aux):
+    result = turn(SCENARIOS["en_meet"], 0, 0, message, LanguageInfo(code=aux, base=aux, name=aux))
+    assert result.analysis["scenario"]["turn_class"] == "question"
+

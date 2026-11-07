@@ -57,6 +57,17 @@ _REPAIR = re.compile(r"(?:(?:can|could) you (?:please )?(?:repeat|say that again
                      r"|pode repetir|nao entendo|nao entendi|vous pouvez repeter|tu peux repeter|je ne comprends pas|non capisco|ich verstehe nicht|pardon vous pouvez repeter)")
 _HELP = re.compile(r"(?:help|help me|help me what should i say|hint|i need help|what do i say|what can i say|i do not know|what should i say|ayuda|ayudame|no se|no lo se|que digo|que puedo decir|una pista)")
 _WHO = re.compile(r"(?:who are you|what are you|are you (?:a )?(?:real|human|person|robot|bot|ai)(?: person)?|quien eres|que eres|eres (?:una )?(?:persona|real|robot|ia|humana|humano))")
+_CHECK = re.compile(r"(?:is (?:this|it|that) (?:correct|right|ok|okay)|am i (?:right|correct)|esta bien(?: asi)?|es correcto|esta correcto|lo dije bien|c est correct|e correto|esta certo|ist das richtig|e giusto)")
+
+# A language question in the learner's own language. Searched, not matched whole:
+# these scripts are not folded like Latin text. Kinds: meaning, say, repair, help.
+FOREIGN_QUESTIONS = (
+    ("meaning", re.compile(r"意味|どういう(?:意味|こと)|ماذا يعني|ما معنى|ما معني|o que (?:e|é|significa|quer dizer)|que veut dire|ça veut dire|ca veut dire|che cosa significa|cosa significa|was bedeutet|was heißt|was heisst")),
+    ("say", re.compile(r"(?:英語|スペイン語)で(?:何|なん|どう)|كيف (?:أقول|اقول|نقول)|بالإنجليزية|بالانجليزية|بالإسبانية|como (?:se )?diz|comment (?:on )?dit|comment dire|come si dice|wie sagt man")),
+    ("repair", re.compile(r"もう一度|もういちど|ゆっくり|わかりません|分かりません|わからない|أعد|اعد|مرة أخرى|ببطء|لا أفهم|لا افهم|repete|repita|repetir|mais devagar|nao entendo|não entendo|repete|répète|répétez|plus lentement|je ne comprends pas|ripeti|piu piano|più piano|non capisco|wiederholen|langsamer|verstehe nicht")),
+    ("help", re.compile(r"ヒント|助けて|何て言えば|なんて言えば|ساعدني|ماذا أقول|ajuda|o que eu digo|aide|que dois-je dire|aiuto|cosa dico|hilfe|was soll ich sagen")),
+)
+
 _BACK = re.compile(r"(?:and you|how are you|what is your name|where are you from|y tu|como estas|como te llamas|de donde eres)")
 
 # word glosses a learner may ask for, closed. In the learner's language or not at all.
@@ -105,6 +116,13 @@ def _strip(f: str, lang: str) -> str:
     return f
 
 
+# one or two everyday words from the guided vocabulary, never a pronoun or a verb form
+LEX_NOUN = "(?:" + "|".join(sorted((w for w in LEXICON if w.isalpha() and len(w) > 2 and w not in {
+    "and", "but", "the", "you", "she", "they", "him", "her", "them", "his", "its", "our", "your", "their", "not", "nothing", "something", "what", "when", "where", "which", "who", "why", "how",
+    "was", "were", "are", "did", "does", "will", "would", "could", "should", "must", "can", "may", "have", "has", "had", "get", "got", "for", "from", "with", "without", "about", "after", "before",
+    "this", "that", "these", "those", "there", "here", "then", "than", "too", "very", "just", "yet", "still", "away", "out", "off", "over", "under", "into", "until"}), key=len, reverse=True)) + ")"
+
+
 def _expand(pattern: str, lang: str) -> str:
     slots = SLOTS[lang]
     word = r"[a-zñ][a-zñ'-]{0,19}"
@@ -116,6 +134,7 @@ def _expand(pattern: str, lang: str) -> str:
     }
     for slot in ("drink", "food", "thing", "number", "feel", "verb"):
         table[f"{{{slot}}}"] = rf"(?P<{slot}>{slots[slot]})"
+    table["{lex}"] = rf"(?P<lex>{LEX_NOUN}(?: {LEX_NOUN})?)"
     for key, value in table.items():
         pattern = pattern.replace(key, value)
     return pattern
@@ -194,6 +213,17 @@ def _rewritten(step: Step, f: str, raw: str, lang: str) -> tuple[str, str, str] 
     return None
 
 
+def _edits(a: str, b: str) -> int:
+    """Damerau-Levenshtein distance (adjacent transpositions count as one)."""
+    d = [[i + j if i * j == 0 else 0 for j in range(len(b) + 1)] for i in range(len(a) + 1)]
+    for i in range(1, len(a) + 1):
+        for j in range(1, len(b) + 1):
+            d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] != b[j - 1]))
+            if i > 1 and j > 1 and a[i - 1] == b[j - 2] and a[i - 2] == b[j - 1]:
+                d[i][j] = min(d[i][j], d[i - 2][j - 2] + 1)
+    return d[len(a)][len(b)]
+
+
 def _spell_fixed(scenario: Scenario, step: Step, f: str, raw: str) -> str | None:
     """The message with a single misspelt word fixed, if that makes it a valid answer."""
     lang = scenario.target
@@ -202,7 +232,8 @@ def _spell_fixed(scenario: Scenario, step: Step, f: str, raw: str) -> str | None
     for i, token in enumerate(tokens):
         if token in vocabulary or len(token) < 4:
             continue
-        close = get_close_matches(token, vocabulary, n=1, cutoff=0.75)
+        # a typo, not another word: one edit (two in a long word), transposition included
+        close = [w for w in get_close_matches(token, vocabulary, n=3, cutoff=0.75) if _edits(token, w) <= (2 if len(token) >= 8 else 1)][:1]
         fixed = " ".join([*tokens[:i], *close[:1], *tokens[i + 1:]])
         if close and _match(step.valid, fixed, raw, lang):
             return fixed
@@ -307,6 +338,24 @@ def _question(scenario: Scenario, f: str, aux: str) -> tuple[str, bool] | None:
         return say("sc_help", aux), True
     if _WHO.fullmatch(f) or _BACK.fullmatch(f):
         return say("sc_who", aux), False
+    if _CHECK.fullmatch(f):
+        return say("sc_check", aux), False
+    return None
+
+
+def _foreign_question(scenario: Scenario, raw: str, aux: str) -> tuple[str, bool] | None:
+    """The same closed answers, for a question asked in the learner's own language."""
+    if len(raw) > 80:
+        return None
+    for kind, pattern in FOREIGN_QUESTIONS:
+        if not pattern.search(raw.lower()):
+            continue
+        if kind in ("meaning", "say"):
+            latin = [w for w in re.findall(r"[a-zA-ZñÑáéíóúÁÉÍÓÚ]+", raw) if es_tutor._fold(w) in (ES_GLOSS if scenario.target == "es" else EN_GLOSS)]
+            word = es_tutor._fold(latin[0]) if len(latin) == 1 else None
+            meaning = (ES_GLOSS.get(word) if scenario.target == "es" else EN_GLOSS.get(word, {}).get(aux)) if word and kind == "meaning" else None
+            return (say("sc_word_means", aux, word=word, meaning=meaning) if meaning else say("sc_no_word", aux)), False
+        return (say("sc_repair_ok", aux), False) if kind == "repair" else (say("sc_help", aux), True)
     return None
 
 
@@ -317,6 +366,9 @@ def _asked(scenario: Scenario, raw: str, aux: str) -> tuple[str, bool] | None:
         found = _question(scenario, f, aux)
         if found:
             return found
+    found = _foreign_question(scenario, raw, aux)
+    if found:
+        return found
     clauses = [c for c in re.split(r"[.!?;,]+", raw) if c.strip()]
     answers = [next(filter(None, (_question(scenario, f, aux) for f in _forms(c, lang))), None) or (None if not any(COURTESY.fullmatch(f) for f in _forms(c, lang)) else False) for c in clauses]
     if len(clauses) > 1 and all(a is not None for a in answers) and any(answers):
@@ -390,7 +442,8 @@ def turn(scenario: Scenario, index: int, attempt: int, message: str, native: Lan
 
     # not understood: the question again, then the model, then a choice, then the way past
     following = attempt + 1
-    text = say("sc_unclear", aux) if bounded and _looks_like_practice(scenario, step, f) else say("sc_out_of_scope", aux)
+    other = bounded and any(is_valid(s, raw, lang) for s in scenario.steps if s is not step)
+    text = say("sc_other_step", aux) if other else say("sc_unclear", aux) if bounded and _looks_like_practice(scenario, step, f) else say("sc_out_of_scope", aux)
     if following > MOVE_ON_AFTER:
         return _advance(scenario, index, "", "not_understood", native, aux, explanation=f"{text} {say('sc_skip', aux)}")
     if following == MOVE_ON_AFTER and step.distractor:

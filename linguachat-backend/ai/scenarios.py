@@ -47,6 +47,9 @@ SLOTS = {
         "number": "one|two|three|four|five|six|seven|eight|nine|ten|[0-9]{1,2}",
         "feel": "very well|very good|not bad|so so|very tired|very happy|not good|not very well|fine|good|ok|okay|great|well|tired|happy|busy|hungry|cold|hot|sick|bad|sad",
         "art": "a cup of|a glass of|a bottle of|a|an|some|one|two",
+        # everyday nouns from the guided vocabulary, which leaves out on purpose the
+        # words a person in trouble might use (ai/guided_scope.py)
+        "lex": "",
     },
     "es": {
         "drink": _alt(ES_DRINK), "food": _alt(ES_FOOD), "thing": _alt(ES_THING), "verb": _alt(ES_VERB),
@@ -180,7 +183,7 @@ EN_PAY = Step(
 )
 EN_LIKE = Step(
     "like", "What do you like?", "I like music.",
-    (r"i (really )?(like|love|enjoy) {thing}( very much| a lot)?", r"i (really )?(like|love|enjoy) {food}( very much| a lot)?", r"{thing}", r"{food}", r"i (really )?(like|love) {thing} and {thing2}", r"i (really )?(like|love|enjoy) to {verb}", r"i (really )?(like|love|enjoy) {verb}ing"),
+    (r"i (really )?(like|love|enjoy) {thing}( very much| a lot)?", r"i (really )?(like|love|enjoy) {food}( very much| a lot)?", r"{thing}", r"{food}", r"i (really )?(like|love) {thing} and {thing2}", r"i (really )?(like|love|enjoy) to {verb}", r"i (really )?(like|love|enjoy) {verb}ing", r"i (really )?(like|love|enjoy) (my |the )?{lex}( very much| a lot)?"),
     "Thanks for telling me.",
     ((r"i am like {thing}", "be_plus_verb", "I like {thing}.", "sc_be_plus_verb"), (r"i likes {thing}", "third_person", "I like {thing}.", "sc_third_person"),
      (r"me like {thing}", "missing_subject", "I like {thing}.", "sc_missing_subject"), (r"i like very much {thing}", "word_order", "I like {thing} very much.", "sc_word_order"),
@@ -190,7 +193,7 @@ EN_LIKE = Step(
 NO_TEA = "I don't like tea."
 EN_DISLIKE = Step(
     "dislike", "What don't you like?", NO_TEA,
-    (r"i do not (really )?like {thing}", r"i do not (really )?like {food}", r"i (hate|dislike) {thing}", r"i (hate|dislike) {food}", r"not {thing}", r"not {food}", r"{thing}", r"{food}", r"nothing( i like everything)?", r"i like everything", r"i do not (really )?like to {verb}"),
+    (r"i do not (really )?like {thing}", r"i do not (really )?like {food}", r"i (hate|dislike) {thing}", r"i (hate|dislike) {food}", r"not {thing}", r"not {food}", r"{thing}", r"{food}", r"nothing( i like everything)?", r"i like everything", r"i do not (really )?like to {verb}", r"i do not (really )?like (my |the )?{lex}"),
     "OK.",
     ((r"i no like {any}", "negation", NO_TEA, "sc_negation"), (r"i not like {any}", "negation", NO_TEA, "sc_negation"),
      (r"i like not {any}", "negation", NO_TEA, "sc_negation"), (r"i am not like {any}", "negation", NO_TEA, "sc_negation"),
