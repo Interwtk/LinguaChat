@@ -63,3 +63,7 @@ Material para el revisor:
 | 1–12 | — | — | pendiente | pendiente | pendiente | pendiente | — |
 
 **Criterio para retirar «sin revisión nativa» de la interfaz y del alcance:** las 12 filas completas, los hallazgos bloqueantes corregidos y la firma del revisor en este documento.
+
+## Fase 5: evaluación a ciegas (2026-11-07)
+
+Un autor que solo vio los 68 turnos escribió 180 frases de desarrollo y 360 selladas (`scripts/check-es-blind.mjs`). Las reglas nuevas salieron solo de desarrollo. Sellado: válidas aceptadas 89,4 %, correcciones falsas 2,5 %, errores detectados 48,9 %, errores aceptados 15,0 %. Desarrollo: 99,0 %, 0,0 %, 79,1 %, 1,5 %. **No sustituye la revisión humana nativa**, que sigue sin ocurrir.

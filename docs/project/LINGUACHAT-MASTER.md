@@ -1,7 +1,7 @@
 # LINGUACHAT — MAESTRO DEL PROYECTO
 
 > **Documento vivo.** Se actualiza al terminar cada bloque significativo.
-> - **Última actualización: 2026-11-04, fin de la Fase 4** («Cierre de riesgos críticos, preparación de beta externa y avance curricular»). El §0 resume el estado actual; los §1–§18 conservan el detalle de la fase 2, con correcciones marcadas.
+> - **Última actualización: 2026-11-07, fin de la Fase 5** («Consolidación educativa, seguridad del tutor y preparación de la beta real»). El §0 resume el estado actual; los §1–§18 conservan el detalle de la fase 2, con correcciones marcadas.
 > - Regla: nada se marca «listo» si solo está diseñado. Cada afirmación cita su evidencia.
 >
 > **Relación con el protocolo de `CLAUDE.md`:**
@@ -11,49 +11,52 @@
 
 ---
 
-## 0. Estado al cierre de la Fase 4 (2026-11-04)
+## 0. Estado al cierre de la Fase 5 (2026-11-07)
 
-**Rama y commits.** `beta/2026-11-es-for-en`, solo local. **Código probado: `fc55417`**; lo posterior es solo documentación (`docs/release/2026-11-beta-readiness.md` § Ciclos). Propuesta aparte: `proposal/pre-a1-option-order` @ `7e6d48e`. Respaldos: etiquetas `recovery/*` y ramas anteriores, intactas.
+**Rama y commits.** `beta/2026-11-es-for-en`, solo local. **Código probado: `24065ba`**; lo posterior es solo documentación (`docs/release/2026-11-beta-readiness.md` § Ciclos). Propuestas aparte, sin fusionar: `proposal/backend-jwt-verify` @ `ff6e7d8`; `proposal/pre-a1-option-order` @ `7e6d48e` (antecedente). Respaldos: etiquetas `recovery/*` y ramas anteriores, intactas.
 
 **Entrega de informes (permanente).** `python scripts/export_reports.py --label <fase> --report <informe>` escribe en `Descargas\LinguaChat-Reportes-ChatGPT\<fase>\`.
 
 | Área | Estado real |
 |---|---|
-| **Seguridad** | Conjunto sellado de 515 ítems, escrito sin ver las reglas: detección **25,2 % → 35,0 %**; respuestas inseguras **29,3 % → 0,0 %**; falsos positivos 2,3 %. **El filtro no es apto para chat libre.** La beta usa **chat guiado** por defecto (`docs/architecture/tutor-safety-evaluation.md`) |
-| **Autenticación** | Simulada 10/10. **Real: sin probar**, sin proyecto de prueba autorizado. Script y procedimiento listos. El servidor no conoce la identidad: `/chat` queda abierto, con filtro y chat guiado (`docs/architecture/authz-review.md`) |
-| **Edad** | Autodeclaración con bloqueo por dispositivo. Evitable: mentir, otro navegador, frontend modificado, `/chat` directo |
-| **Privacidad** | Memoria de 24 h, solo con ids no adivinables, olvidable. Textos actualizados. Sin revisión profesional |
-| **Inglés** | Pre-A1 congelado. Defecto de orden de opciones confirmado (21/21 en Pre-A1, 35/35 en A1, 14/18 en la prueba de nivel); corrección solo de presentación en la rama de propuesta, **pendiente de tu aprobación**. A1 construido, cerrado y sin aprobación pedagógica (`docs/curriculum/en-a1-readiness-review.md`) |
-| **Español** | 12 lecciones, sesión, misiones, chat guiado y voz. Revisión de 591 respuestas (IA): correcciones falsas 17 → 5; errores aceptados 29 → 12; corregido «¿Té gusta…?». **Sin revisión humana nativa** |
-| **A1–C2** | Inglés: contenido integrado hasta C2, todo cerrado. Español: **diseño** de A1 (`docs/curriculum/es-a1-design.md`), nada construido. Nada demostrado con estudiantes |
-| **Premium** | Práctica adicional construida, **apagada, no a la venta**. Contador persistente y atómico, revocación, límite por cuenta. Falta base gestionada, emisión del pase y atarlo a la cuenta |
-| **Precios regionales** | Modelo configurable, todo en borrador, sin precios aprobados (`docs/business/regional-pricing-policy.md`). Tres bloques al día probablemente no justifican una suscripción por sí solos |
-| **Legal** | Borradores al día con el código. Criterio de mercados: ninguno habilitado para vender. Chatto sin documentar |
-| **SII y pagos** | Sin inicio de actividades, régimen ni entidad. Polar **no** ha aprobado LinguaChat; preguntas escritas pendientes. Ningún procesador activo. Las 8.000 UTM son el máximo anual de patente, no un costo previsto |
-| **QA** | `scripts/qa-cycle.mjs`: cada etapa cuenta. Dos ciclos limpios sobre `fc55417`: `check:all` 110/110, pytest 1666 / 28 omitidas |
+| **Tutor** | Situaciones guiadas en ambos chats: 6 por curso. En conjunto sellado nuevo: válidas aceptadas **63,1 %**, correcciones falsas 0 %, errores detectados 61,8 %, preguntas 40,9 %. Una de cada tres respuestas correctas recibe «no entendí» (`docs/architecture/guided-tutor.md`) |
+| **Seguridad** | Detección en sellado **35 %**, crisis indirectas **5 %**: no mejoró. Dentro de un escenario, **0 de 294** mensajes dañinos se trató como respuesta. Nada garantiza seguridad. **Chat libre: no apto** |
+| **Autenticación** | Simulada 10/10. **Real: sin probar.** Propuesta JWT en rama aparte, apagada, sin aprobar; el frontend aún no envía el token. `/chat` abierto. Qué hace falta: `docs/release/2026-11-real-validation-needs.md` |
+| **Edad** | Beta solo adultos. Autodeclaración evitable. No es verificación ni cumplimiento completo sobre menores |
+| **Privacidad** | Memoria de 24 h, ids no adivinables, olvidable. Las situaciones no guardan nada en el dispositivo. Sin revisión profesional |
+| **Inglés por nivel** | Pre-A1 abierto y congelado. A1 a C2: contenido integrado, **cerrado**. Orden de opciones: defecto real 17/17 y 34/34; A1 ya rota; Pre-A1 y prueba de nivel **pendientes de tu aprobación** |
+| **Español por nivel** | Pre-A1 abierto: 12 lecciones. Sellado a ciegas: válidas 89,4 %, correcciones falsas 2,5 %, errores detectados 48,9 %, errores aceptados 15,0 %. A1: **1 arco de 6 construido y cerrado**. A2 a C2: nada. **Sin revisión humana** |
+| **Curso × nivel** | Lector compatible, sin migración ni segunda base. Progreso antiguo intacto (`docs/architecture/course-level-identity.md`). Probado con almacenes simulados |
+| **Personalización** | Señal de retención por ítem; el repaso trae primero lo perdido. Sin evidencia de personas |
+| **Premium** | Construido, **apagado, no a la venta**. Diseño de derechos sin construir. Hoy no justifica una suscripción |
+| **Precios regionales** | Modelo con impuestos, comisiones, conversión, margen y reembolsos. **Ninguna región vendible**, ningún precio aprobado |
+| **Legal** | Borradores. Ningún mercado habilitado para vender |
+| **SII y pagos** | Sin inicio de actividades, régimen ni entidad. Polar y Paddle en evaluación, sin confirmación escrita. Ningún procesador activo. Sin cambios en esta fase |
+| **Derechos de activos** | Chatto sin documentar: bloquea la publicación |
+| **QA** | Dos ciclos limpios e idénticos sobre `24065ba`: 24/24 etapas, `check:all` 115/115, pytest 1781 / 28 omitidas |
 
 **Decisiones pendientes del propietario:**
 
 | # | Decisión | Cambio concreto y consecuencia |
 |---|---|---|
-| 1 | Autorizar el *push* y los dos PR en borrador | Publica las ramas; Vercel crea Previews, sin producción (`docs/release/2026-11-pr-procedure.md`) |
+| 1 | Autorizar el *push* y los dos PR en borrador | Publica las ramas; Vercel crea Previews, sin producción |
 | 2 | Crear un Supabase **de prueba** y entregar URL y clave pública | Permite los 10 recorridos reales. Bloquea toda beta externa |
-| 3 | Aprobar el orden de opciones en Pre-A1 | Cambia solo la presentación de contenido congelado |
-| 4 | Aprobar el cambio de `CLAUDE.md` (verificar JWT con JWKS) | El servidor podría exigir sesión en `/chat` y atar Premium a la cuenta |
+| 3 | Aprobar el orden de opciones en Pre-A1 y prueba de nivel | Quita dos entradas de una lista; solo cambia lo que se ve |
+| 4 | Aprobar JWT: cambio de `CLAUDE.md`, rama y `PyJWT[crypto]` | `/chat` podría exigir sesión y Premium atarse a la cuenta. Falta enviar el token desde el frontend |
 | 5 | Correo de privacidad y nombre del operador | Requisito de los textos legales |
 | 6 | Derechos de Chatto | Bloquea la publicación |
 | 7 | Revisión humana de inglés y español, y revisión legal (CL y US) | `docs/curriculum/human-review-plan.md` |
-| 8 | Aceptar el nivel de seguridad medido para una beta limitada y revisar los mensajes de crisis con un profesional | Beta externa |
+| 8 | Aceptar el nivel medido para una beta limitada y revisar los mensajes de crisis con un profesional | Beta externa |
 | 9 | Contador e inicio de actividades; escribir a Polar y Paddle | Cualquier cobro |
 | 10 | Apertura de inglés A1 | Ese contenido |
 
-**Riesgos principales:** filtro que no generaliza; crisis indirecta sin apoyo específico; autenticación sin probar; `/chat` sin autenticación ni límite de peticiones; contenido sin revisión humana.
+**Riesgos principales:** crisis indirecta sin apoyo específico; una de cada tres respuestas correctas sin reconocer; autenticación sin probar; `/chat` sin autenticación ni límite de peticiones; contenido sin revisión humana.
 
-**Meta del 15 de noviembre:** beta gratuita, por invitación, solo adultos, solo con decisiones 1, 2, 5 y 8 tomadas y los 10 recorridos reales aprobados. Si falta algo: prueba interna. Nunca cobros.
+**Meta del 15 de noviembre:** beta gratuita, por invitación, solo adultos, solo con decisiones 1, 2, 5, 6 y 8 tomadas y los 10 recorridos reales aprobados. Si falta algo: prueba interna. Nunca cobros.
 
-**Del 16 al 30:** interfaz de práctica extra en inglés; ampliación del español y corrección de hallazgos humanos; preparar la decisión de A1 (12 condiciones en `en-a1-readiness-review.md`); curso × nivel en el registro antes de construir español A1; clasificador semántico si se autoriza; piloto con estudiantes.
+**Del 16 al 30:** recoger frases reales del piloto para ampliar situaciones (con consentimiento); enviar el token desde el frontend si se aprueba; arcos 2 y 3 de español A1, cerrados; errores de conjugación en español; interfaz de práctica extra en inglés; decisión sobre inglés A1 (12 condiciones); clasificador semántico si se autoriza.
 
-**Próximo paso:** decisiones 1 y 2. Con ellas ejecuto el procedimiento de PR y los recorridos reales.
+**Próximo paso ejecutable:** decisiones 1 y 2. Con ellas ejecuto el procedimiento de PR y los recorridos reales.
 
 ## 1. Visión del producto
 - **Qué es:** una plataforma multidioma de práctica conversacional. El estudiante elige qué idioma aprender. Un solo motor educativo.

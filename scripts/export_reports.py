@@ -59,6 +59,13 @@ DOCUMENTS = [
     ("Arquitectura multidioma", "docs/architecture/premium-practice.md"),
     ("Seguridad", "docs/architecture/tutor-safety-evaluation.md"),
     ("Seguridad", "docs/architecture/authz-review.md"),
+    ("Seguridad", "docs/architecture/guided-tutor.md"),
+    ("Arquitectura multidioma", "docs/architecture/course-level-identity.md"),
+    ("Arquitectura multidioma", "docs/architecture/learner-retention-signal.md"),
+    ("Arquitectura multidioma", "docs/architecture/premium-entitlements-design.md"),
+    ("Estado del proyecto", "docs/project/claude-md-jwt-proposal.md"),
+    ("Inglés y español", "docs/curriculum/option-order-comparison.md"),
+    ("Beta y preparación", "docs/release/2026-11-real-validation-needs.md"),
     ("Inglés y español", "docs/curriculum/pre-a1-freeze.md"),
     ("Inglés y español", "docs/curriculum/pre-a1-a1-readiness-matrix.md"),
     ("Inglés y español", "docs/curriculum/a1-readiness-design.md"),
@@ -90,6 +97,7 @@ DOCUMENTS = [
     ("QA, riesgos y bloqueos", "docs/audits/2026-11-beta-phase2.md"),
     ("QA, riesgos y bloqueos", "docs/audits/2026-11-beta-phase3.md"),
     ("QA, riesgos y bloqueos", "docs/audits/2026-11-beta-phase4.md"),
+    ("QA, riesgos y bloqueos", "docs/audits/2026-11-beta-phase5.md"),
 ]
 
 # Documents whose absence must fail the export (the rest are optional: a

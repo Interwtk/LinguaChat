@@ -185,6 +185,38 @@
 
 **Nada de esto se ha ejecutado.**
 
+## Ciclos de la fase 5 (`scripts/qa-cycle.mjs`)
+
+**Commit de código probado: `24065ba`** (árbol limpio antes y después). Dos ciclos consecutivos; `--compare` dio **IDENTICAL AND CLEAN**. Los commits posteriores solo tocan documentación.
+
+| Etapa | f1 y f2 |
+|---|---|
+| Etapas del ciclo | **24/24** |
+| `check:all`, paso a paso | **115/115** (incluye situaciones, curso × nivel, orden de opciones, retención, español a ciegas, edad, Premium inactivo, recorridos simulados) |
+| `build` · `check:i18n` | ok · ok |
+| `check:github-integration` (con `jq-lite`; en CI, `jq` real) | 11 grupos ok |
+| Foundry b1/b2/c1/c2 y a2-structure | 5/5 |
+| Integridad con *rollback* P3 desde git | 30/30 |
+| Política de adaptación | 10/10 |
+| Alcance de la nube (git, autoprueba, 30 casos) | ok |
+| Backend `compileall` · `pytest` | ok · **1781 / 28 omitidas** |
+| Evaluación sellada de seguridad (mide, no aprueba) | inglés 35,4 %, español 39,7 %; insegura 0,0 %; falsos positivos 2,3 % |
+| Evaluación sellada del tutor guiado (mide) | válidas 63,1 %; errores 61,8 %; dañinos como respuesta 0,0 % |
+| Seguridad sellada por escenarios (mide) | respuesta de seguridad 35,0 %; como respuesta 0,0 % |
+| e2e HTTP: tutor · continuidad | 4/4 · 5/5 |
+| Plantillas de correo · garantías | ok · 16/16 |
+| Escaneo de secretos | 0 coincidencias |
+
+**Cobertura del escaneo:** autoprueba 9/9; 812 archivos versionados, 769 leídos, 42 binarios omitidos, 1 omitido (el propio escáner), 9 patrones. Historial aparte: 585.031 líneas de diferencias, solo líneas añadidas, 0 coincidencias. **Cero coincidencias no prueba que no haya secretos.**
+
+**Tipos de prueba.** Simuladas: recorridos, curso × nivel, retención. Locales reales: backend por HTTP, e2e, navegador con banco de pruebas. Pendientes: Preview, Supabase de prueba, producción.
+
+**Historia (sin ocultar fallos).** El primer ciclo, sobre `6bf179d`, dio **21/24** por un error de sintaxis en `tests/guided_eval/evaluate.py`; corregido en `24065ba`. `check-same-account-tabs` había caducado el 2026-11-06 por una fecha fija en la prueba, también en `1c6005f`; ahora se mueve con el reloj. Expectativas cambiadas a propósito: la respuesta genérica en `test_guided_chat`, el margen con reembolsos en `test_regional_pricing` y el toolbar en `check-visual-identity`.
+
+**Navegador real, fase 5** (banco y backend local, 375 px): situaciones en es, ar RTL y curso de español; error corregido, mensaje ajeno sin reacción, respuesta de crisis; sin desbordes ni errores de consola. **Sin pasar por navegador:** autenticación completa, Safari y Firefox, lector de pantalla.
+
+**Criterios sin cumplir para usuarios externos:** autenticación real, revisión humana de contenido, revisión legal, contacto de privacidad, derechos de Chatto, aceptación del nivel de seguridad.
+
 ## Ciclos de la fase 4 (`scripts/qa-cycle.mjs`)
 
 **Commit de código probado: `fc55417`** (árbol limpio antes y después). Dos ciclos consecutivos; `--compare` dio **IDENTICAL AND CLEAN**. Los commits posteriores solo tocan documentación.
