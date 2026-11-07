@@ -5617,6 +5617,11 @@ export default {
   courseChatTitle: "Práctica de conversación en español",
   courseChatOpen: "Practicar una conversación",
   courseChatNoticeLocal: "Practica una conversación corta con Lingua. Es una compañera de práctica basada en reglas para este nivel, no una IA general: cuando no entiende algo, lo dice y te ofrece una pregunta guiada. La práctica de chat no cambia tu progreso.",
+  scenarioTitle: "Practica una situación",
+  scenarioNotice: "Conversaciones guiadas cortas. Lingua solo sigue lo que cada situación espera; no entiende otros mensajes.",
+  scenarioOther: "Elegir otra situación",
+  scenarioBack: "Volver al chat",
+  scenarioOffline: "Las situaciones necesitan conexión. Inténtalo en un momento.",
   // Your data: export / delete on this device / account deletion request
   dataTitle: "Tus datos",
   dataBody: "Tus datos de aprendizaje se guardan en este navegador para tu cuenta. Puedes descargar una copia o borrarlos de este dispositivo cuando quieras.",

@@ -5617,6 +5617,11 @@ export default {
   courseChatTitle: "Gesprächsübung auf Spanisch",
   courseChatOpen: "Ein Gespräch üben",
   courseChatNoticeLocal: "Übe ein kurzes Gespräch mit Lingua. Sie ist eine regelbasierte Übungspartnerin für dieses Niveau, keine allgemeine KI: Versteht sie etwas nicht, sagt sie es und bietet eine geführte Frage an. Der Chat ändert deinen Fortschritt nicht.",
+  scenarioTitle: "Übe eine Situation",
+  scenarioNotice: "Kurze geführte Gespräche. Lingua folgt nur dem, was die Situation erwartet; andere Nachrichten versteht sie nicht.",
+  scenarioOther: "Andere Situation wählen",
+  scenarioBack: "Zurück zum Chat",
+  scenarioOffline: "Situationen brauchen eine Verbindung. Versuch es gleich noch einmal.",
   // Your data: export / delete on this device / account deletion request
   dataTitle: "Deine Daten",
   dataBody: "Deine Lerndaten werden für dein Konto in diesem Browser gespeichert. Du kannst jederzeit eine Kopie herunterladen oder sie von diesem Gerät löschen.",

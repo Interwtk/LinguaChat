@@ -7,8 +7,10 @@
  * full quick-prompt panel is still there behind the toolbar for the rest.
  *
  * Four is the limit on purpose: a row of tools that scrolls is a row nobody reads.
+ * Role play opens the guided situations when the screen offers them: those are the
+ * conversations the tutor can really follow.
  */
-export function PracticeToolbar({ t, onUsePrompt }) {
+export function PracticeToolbar({ t, onUsePrompt, onOpenScenarios }) {
   const actions = [
     { id: 'correct', label: t('correctMe'), prompt: 'Correct my next sentence and give me one tiny challenge.' },
     { id: 'explain', label: t('explainSimple'), prompt: 'Explain the next correction in very simple words.' },
@@ -19,7 +21,8 @@ export function PracticeToolbar({ t, onUsePrompt }) {
   return (
     <div className="practice-toolbar" role="group" aria-label={t('practiceTools')}>
       {actions.map(action => (
-        <button key={action.id} type="button" className="tool-chip" onClick={() => onUsePrompt(action.prompt)}>
+        <button key={action.id} type="button" className="tool-chip"
+          onClick={() => (action.id === 'roleplay' && onOpenScenarios ? onOpenScenarios() : onUsePrompt(action.prompt))}>
           {action.label}
         </button>
       ))}

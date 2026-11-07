@@ -2797,6 +2797,11 @@ const base = {
   courseChatTitle: "Spanish conversation practice",
   courseChatOpen: "Practise a conversation",
   courseChatNoticeLocal: "Practise a short conversation with Lingua. She’s a rule-based practice partner for this level, not a general AI: when she can’t understand something, she says so and offers a guided question. Chat practice doesn’t change your progress.",
+  scenarioTitle: "Practise a situation",
+  scenarioNotice: "Short guided conversations. Lingua follows only what each situation expects; it doesn’t understand other messages.",
+  scenarioOther: "Choose another situation",
+  scenarioBack: "Back to the chat",
+  scenarioOffline: "Situations need a connection. Try again in a moment.",
   // Your data: export / delete on this device / account deletion request
   dataTitle: "Your data",
   dataBody: "Your learning data is stored in this browser for your account. You can download a copy or delete it from this device at any time.",

@@ -51,7 +51,26 @@ export function normalizeChatResponse(payload) {
     target_language: data.target_language ?? null,
     mission_feedback: data.mission_feedback ?? null,
     analysis: safeAnalysis(data.analysis, data.evaluation),
+    scenario: safeScenario(data.analysis?.scenario),
   }
+}
+
+/* The guided state the server handed back: closed values, echoed on the next turn. */
+const TURN_CLASSES = new Set(['valid', 'error', 'question', 'not_understood', 'safety'])
+export function safeScenario(raw) {
+  if (!raw || !/^[a-z0-9_]{1,40}$/.test(String(raw.id || ''))) return null
+  const count = (value) => (Number.isInteger(value) && value >= 0 && value <= 20 ? value : 0)
+  return { id: raw.id, step: count(raw.step), attempt: count(raw.attempt), done: raw.done === true, turnClass: TURN_CLASSES.has(raw.turn_class) ? raw.turn_class : null }
+}
+
+/* The open situations of a course, or an empty list when the server can't be reached. */
+export async function listScenarios({ target, aux }, { timeoutMs = 5000 } = {}) {
+  try {
+    const query = new URLSearchParams({ target, aux })
+    const res = await fetch(`${API_URL}/chat/scenarios?${query}`, { signal: AbortSignal.timeout(timeoutMs) })
+    const payload = res.ok ? await res.json() : null
+    return Array.isArray(payload?.scenarios) ? payload.scenarios : []
+  } catch { return [] }
 }
 
 export async function sendChatMessage({
@@ -88,6 +107,8 @@ export async function sendChatMessage({
    * sent a suggestion Lingua offered. It can only lower what the turn is worth.
    */
   assistance = 'none',
+  // The guided step this message answers: { id, step, attempt }, as the server gave it.
+  scenario = null,
 }) {
   try {
     /*
@@ -119,6 +140,7 @@ export async function sendChatMessage({
         active_companion: activeCompanion,
         ...(Array.isArray(learningMemory) && learningMemory.length ? { learning_memory: learningMemory } : {}),
         ...(assistance && assistance !== 'none' ? { assistance } : {}),
+        ...(scenario ? { scenario } : {}),
         ...(Object.keys(optionalContext).length ? { optional_context: optionalContext } : {}),
       }),
       signal: AbortSignal.timeout(8000),

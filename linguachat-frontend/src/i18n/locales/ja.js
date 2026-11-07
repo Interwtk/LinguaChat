@@ -5611,6 +5611,11 @@ export default {
   courseChatTitle: "スペイン語の会話練習",
   courseChatOpen: "会話を練習する",
   courseChatNoticeLocal: "Linguaと短い会話を練習しましょう。このレベル向けのルールベースの練習相手で、汎用AIではありません。理解できないときはそう伝え、ガイド付きの質問を出します。チャットの練習は進捗に影響しません。",
+  scenarioTitle: "場面を練習する",
+  scenarioNotice: "短いガイド付きの会話です。Linguaは各場面で想定された内容だけに対応し、それ以外のメッセージは理解できません。",
+  scenarioOther: "別の場面を選ぶ",
+  scenarioBack: "チャットに戻る",
+  scenarioOffline: "場面の練習には接続が必要です。少ししてからもう一度お試しください。",
   // Your data: export / delete on this device / account deletion request
   dataTitle: "あなたのデータ",
   dataBody: "学習データはこのブラウザにあなたのアカウント用として保存されています。いつでもコピーをダウンロードしたり、この端末から削除したりできます。",

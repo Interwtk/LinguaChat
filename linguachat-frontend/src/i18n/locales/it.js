@@ -5617,6 +5617,11 @@ export default {
   courseChatTitle: "Pratica di conversazione in spagnolo",
   courseChatOpen: "Esercitati in una conversazione",
   courseChatNoticeLocal: "Esercitati in una breve conversazione con Lingua. È una partner basata su regole per questo livello, non un’IA generale: quando non capisce qualcosa lo dice e ti propone una domanda guidata. La chat non modifica i tuoi progressi.",
+  scenarioTitle: "Esercitati in una situazione",
+  scenarioNotice: "Brevi conversazioni guidate. Lingua segue solo ciò che ogni situazione prevede; non capisce altri messaggi.",
+  scenarioOther: "Scegli un'altra situazione",
+  scenarioBack: "Torna alla chat",
+  scenarioOffline: "Le situazioni richiedono una connessione. Riprova tra poco.",
   // Your data: export / delete on this device / account deletion request
   dataTitle: "I tuoi dati",
   dataBody: "I tuoi dati di apprendimento sono salvati in questo browser per il tuo account. Puoi scaricarne una copia o eliminarli da questo dispositivo quando vuoi.",

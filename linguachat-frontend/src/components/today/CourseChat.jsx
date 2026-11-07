@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { ListeningTurn } from '../chat/ListeningTurn.jsx'
@@ -17,6 +17,8 @@ import { getCourse } from '../../learning/courses/registry.js'
  * conversation lives in its own course-scoped key and its own server session,
  * apart from the English chat.
  */
+const ScenarioPractice = lazy(() => import('../chat/ScenarioPractice.jsx').then(m => ({ default: m.ScenarioPractice })))
+
 const MAX_KEPT = 30
 const storageKey = (courseId) => `lc2-course-chat-${courseId}`
 
@@ -45,6 +47,7 @@ export function CourseChat({ onExit }) {
   const [draft, setDraft] = useState('')
   const [assisted, setAssisted] = useState(false)
   const [sending, setSending] = useState(false)
+  const [scenariosOpen, setScenariosOpen] = useState(false)
   const endRef = useRef(null)
   useEffect(() => { saveMessages(activeCourse, messages); try { endRef.current?.scrollIntoView({ block: 'end' }) } catch { /* noop */ } }, [messages, activeCourse])
 
@@ -74,6 +77,10 @@ export function CourseChat({ onExit }) {
     }])
   }
 
+  if (scenariosOpen) {
+    return <Suspense fallback={null}><ScenarioPractice courseId={activeCourse} targetLanguage={lang} onExit={() => setScenariosOpen(false)} /></Suspense>
+  }
+
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6" style={{ background: 'var(--bg)' }}>
       <div style={{ width: '100%', maxWidth: 680, margin: '0 auto' }}>
@@ -85,6 +92,7 @@ export function CourseChat({ onExit }) {
           </div>
           <button type="button" onClick={onExit} className="tool-chip flex-shrink-0">{t('backToToday')}</button>
         </div>
+        <button type="button" onClick={() => setScenariosOpen(true)} className="tool-chip mb-4">{t('scenarioTitle')}</button>
 
         <ol className="flex flex-col gap-3 mb-4" aria-live="polite">
           {messages.map(m => (
