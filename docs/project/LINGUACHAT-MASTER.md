@@ -13,7 +13,7 @@
 
 ## 0. Estado al cierre de la Fase 7 (2026-11-07)
 
-**Rama y commits.** `beta/2026-11-es-for-en`, solo local. **Código probado: `4778fb8`**; lo posterior es solo documentación. Sin publicar: A 8 commits, B 82, propuestas JWT 52 y orden de opciones 27. `origin/main` @ `086323c`, sin cambios. Respaldos `recovery/*` intactos. Informe: `docs/audits/2026-11-beta-phase7.md`.
+**Rama y commits.** `beta/2026-11-es-for-en`, solo local. **Código probado: `4778fb8`**; lo posterior es solo documentación. Sin publicar: A 8 commits, B 82 (con este), propuestas JWT 52 y orden de opciones 27. `origin/main` @ `086323c`, sin cambios. Respaldos `recovery/*` intactos. Informe: `docs/audits/2026-11-beta-phase7.md`.
 
 **Entrega de informes (permanente).** `python scripts/export_reports.py --label <fase> --report <informe>` → `Descargas\LinguaChat-Reportes-ChatGPT\<fase>\`.
 
