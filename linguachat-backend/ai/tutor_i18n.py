@@ -12,6 +12,8 @@ have not yet been reviewed by native-speaking teachers.
 """
 from __future__ import annotations
 
+from ai.scenario_i18n import SCENARIO_MESSAGES
+
 SUPPORTED = ("en", "es", "pt", "fr", "it", "de", "ja", "ar")
 
 MESSAGES: dict[str, dict[str, str]] = {
@@ -390,6 +392,36 @@ MESSAGES: dict[str, dict[str, str]] = {
         "en": "Useful translation", "es": "Traducción útil", "pt": "Tradução útil", "fr": "Traduction utile",
         "it": "Traduzione utile", "de": "Nützliche Übersetzung", "ja": "役に立つ訳", "ar": "ترجمة مفيدة",
     },
+    "guided_reply": {
+        "en": "I can't follow that, so I won't comment on it. I'm a practice tool for simple sentences, not a person. If something serious is happening, please talk to someone you trust.",
+        "es": "No puedo seguir eso, así que no voy a comentarlo. Soy una herramienta de práctica con frases simples, no una persona. Si te está pasando algo serio, habla con alguien de confianza.",
+        "pt": "Não consigo acompanhar isso, então não vou comentar. Sou uma ferramenta de prática com frases simples, não uma pessoa. Se algo sério estiver acontecendo, fale com alguém de confiança.",
+        "fr": "Je ne peux pas suivre cela, donc je ne vais pas le commenter. Je suis un outil d'entraînement avec des phrases simples, pas une personne. Si quelque chose de grave se passe, parle à quelqu'un de confiance.",
+        "it": "Non riesco a seguire questo, quindi non lo commento. Sono uno strumento di pratica con frasi semplici, non una persona. Se sta succedendo qualcosa di serio, parla con qualcuno di cui ti fidi.",
+        "de": "Das kann ich nicht verstehen, darum sage ich nichts dazu. Ich bin ein Übungswerkzeug für einfache Sätze, kein Mensch. Wenn etwas Ernstes passiert, sprich bitte mit jemandem, dem du vertraust.",
+        "ja": "その内容は理解できないので、コメントはしません。わたしは簡単な文を練習するためのツールで、人間ではありません。深刻なことが起きているなら、信頼できる人に話してください。",
+        "ar": "لا أستطيع متابعة ذلك، لذلك لن أعلّق عليه. أنا أداة للتدريب على جمل بسيطة ولست شخصًا. إن كان هناك أمر خطير، فتحدّث مع شخص تثق به.",
+    },
+    "guided_suggestion": {
+        "en": "Try a short sentence about your day, your food or your family.",
+        "es": "Prueba con una frase corta sobre tu día, tu comida o tu familia.",
+        "pt": "Tente uma frase curta sobre o seu dia, a sua comida ou a sua família.",
+        "fr": "Essaie une phrase courte sur ta journée, ta nourriture ou ta famille.",
+        "it": "Prova una frase breve sulla tua giornata, sul cibo o sulla tua famiglia.",
+        "de": "Versuch einen kurzen Satz über deinen Tag, dein Essen oder deine Familie.",
+        "ja": "一日のこと、食べ物、家族について短い文を書いてみましょう。",
+        "ar": "جرّب جملة قصيرة عن يومك أو طعامك أو عائلتك.",
+    },
+    "guided_activity": {
+        "en": "Complete it in English: 'I like ____.'",
+        "es": "Complétala en inglés: 'I like ____.'",
+        "pt": "Complete em inglês: 'I like ____.'",
+        "fr": "Complète en anglais : 'I like ____.'",
+        "it": "Completa in inglese: 'I like ____.'",
+        "de": "Ergänze auf Englisch: 'I like ____.'",
+        "ja": "英語で完成させましょう：'I like ____.'",
+        "ar": "أكملها بالإنجليزية: 'I like ____.'",
+    },
     "focus_practice": {
         "en": "Guided practice", "es": "Práctica guiada", "pt": "Prática guiada", "fr": "Pratique guidée",
         "it": "Pratica guidata", "de": "Angeleitetes Üben", "ja": "ガイド付き練習", "ar": "تدريب موجَّه",
@@ -441,6 +473,9 @@ def resolve_language(value) -> tuple[str, bool]:
         base = value
     base = str(base or "en").strip().lower().replace("_", "-").split("-", 1)[0]
     return (base, True) if base in SUPPORTED else ("en", base == "en")
+
+
+MESSAGES.update(SCENARIO_MESSAGES)
 
 
 def say(key: str, lang: str, **values) -> str:

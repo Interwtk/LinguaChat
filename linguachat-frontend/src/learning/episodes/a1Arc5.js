@@ -98,7 +98,7 @@ const PAY_01 = {
      * range is new.
      */
     { type: 'free_reply', speaker: 'lingua', promptEn: 'This ticket is 20. Say the number back to me.', instructionKey: 'ep30OpenInstruction',
-      evalKind: 'use_quantity', quantityForm: 'bare', suggestionEn: 'Twenty.', itemIds: ['numbers_11_100'] },
+      evalKind: 'use_quantity', quantityForm: 'bare', exactNumber: 20, numberRange: [11, 100], suggestionEn: 'Twenty.', itemIds: ['numbers_11_100'] },
     /*
      * REUSE, BECAUSE THE SITUATION NEEDS IT: a number said too fast, and the
      * repair that was always the way through it. The blueprint lists
@@ -114,9 +114,9 @@ const PAY_01 = {
      * number above ten.
      */
     { type: 'free_reply', speaker: 'lingua', promptEn: 'Now say this number: 45.', instructionKey: 'ep30AgainInstruction',
-      evalKind: 'use_quantity', quantityForm: 'bare', itemIds: ['numbers_11_100'] },
+      evalKind: 'use_quantity', quantityForm: 'bare', exactNumber: 45, numberRange: [11, 100], itemIds: ['numbers_11_100'] },
     /* Remember: the range, unaided. */
-    { type: 'recall', instructionKey: 'ep30FinalInstruction', evalKind: 'use_quantity', itemIds: ['numbers_11_100'] },
+    { type: 'recall', instructionKey: 'ep30FinalInstruction', evalKind: 'use_quantity', numberRange: [11, 100], itemIds: ['numbers_11_100'] },
     { type: 'completion', canDoNameKey: 'ep30CanDoName', titleKey: 'ep30CloseTitle', bodyKey: 'ep30CloseBody', ctaKey: 'ep1CloseCta' },
   ],
 }

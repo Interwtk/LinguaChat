@@ -14,10 +14,27 @@ const BUILD_PUBLIC_AUTH_ENV = Object.freeze({
   VITE_SUPABASE_ANON_KEY: HAS_VITE_ENV ? import.meta.env.VITE_SUPABASE_ANON_KEY : undefined,
 })
 
+/*
+ * The one variable carries either public key form: the legacy `anon` JWT or the
+ * newer publishable key (`sb_publishable_…`). A secret key, in either the new
+ * form or a legacy JWT with a private role, is refused before any client exists:
+ * copied into a browser build by mistake, it would be readable by every visitor.
+ */
+function isPrivateKey(key) {
+  if (/^sb_secret_/i.test(key)) return true
+  const payload = key.split('.')[1]
+  if (!payload) return false
+  try {
+    const claims = JSON.parse(atob(payload.replace(/-/g, '+').replace(/_/g, '/')))
+    return Boolean(claims?.role) && claims.role !== 'anon'
+  } catch { return false }
+}
+
 function readPublicAuthConfig(env = BUILD_PUBLIC_AUTH_ENV) {
   const url = String(env?.VITE_SUPABASE_URL ?? '').trim()
   const anonKey = String(env?.VITE_SUPABASE_ANON_KEY ?? '').trim()
   if (!url || !anonKey) throw new Error('LinguaChat public auth configuration is missing.')
+  if (isPrivateKey(anonKey)) throw new Error('VITE_SUPABASE_ANON_KEY holds a secret key. Only the public key may reach a browser.')
 
   const parsed = new URL(url)
   const local = ['localhost', '127.0.0.1'].includes(parsed.hostname)

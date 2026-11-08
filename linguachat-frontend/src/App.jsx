@@ -129,7 +129,7 @@ function MobileNav() {
   )
 }
 
-const AUTH_STEPS = ['entry', 'login', 'signup', 'forgot', 'reset']
+const AUTH_STEPS = ['entry', 'age', 'login', 'signup', 'forgot', 'reset']
 const SETUP_STEPS = ['placement', 'level-reveal', 'setup-choice', 'tutor-personality', 'learning-prefs', 'personalize']
 const FOCUS_MODE_KEY = 'lc2-focus-mode'
 
@@ -260,7 +260,7 @@ function DesktopSidebar() {
 
 /* ─── Main app shell ─── */
 function AppShell() {
-  const { authStep, view, navigateTo, showWelcome, showTutorial, mobileSheet, setMobileSheet, t } = useApp()
+  const { authStep, view, navigateTo, showWelcome, showTutorial, mobileSheet, setMobileSheet, t, ageConfirmationNeeded } = useApp()
   const { focusMode, setFocusMode, toggleFocusMode } = useFocusMode()
   // Exactly one shell is mounted. Rendering both and hiding one with CSS keeps a
   // second, stale copy of every stateful view alive (see services/viewport.js).
@@ -272,6 +272,8 @@ function AppShell() {
   }, [focusMode, view, setFocusMode])
 
   if (authStep && AUTH_STEPS.includes(authStep)) return <AuthFlowScreen {...screenLabels} />
+  // a signed-in account that never answered the age question answers it first
+  if (ageConfirmationNeeded) return <AuthFlowScreen {...screenLabels} />
   if (authStep && SETUP_STEPS.includes(authStep)) return <SetupFlowScreen {...screenLabels} />
 
   /*

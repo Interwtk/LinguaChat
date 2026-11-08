@@ -1,6 +1,6 @@
 /*
  * LinguaChat visual bench — development only, synthetic data (see
- * vite.bench.config.mjs). URL: /bench/?scene=tu|call|notes|chat|auth|archive|archive-empty|chats|mission|today|identity
+ * vite.bench.config.mjs). URL: /bench/?scene=tu|call|notes|chat|auth|archive|archive-empty|chats|mission|today|identity|course-today|course-episode|course-session|course-chat|plans|age|account-age
  * &lang=en|es|ja|ar|…&theme=light|dark
  *
  * Every learner shown here is invented. The summaries are derived by the real
@@ -29,7 +29,17 @@ import { LanguageIdentity } from '../src/components/identity/LanguageIdentity.js
 import { getOrCreateSession } from '../src/learning/engine/session.js'
 import { episodesOfLevel } from '../src/learning/curriculum/levels.js'
 import { workingLevelId } from '../src/learning/curriculum/learnerLevel.js'
+import { CourseToday } from '../src/components/today/CourseToday.jsx'
+import { EpisodeShell } from '../src/components/episode/EpisodeShell.jsx'
+import { CourseSessionRunner } from '../src/components/today/CourseSession.jsx'
+import { CourseChat } from '../src/components/today/CourseChat.jsx'
+import { Pricing } from '../src/components/pricing/Pricing.jsx'
+import { buildCourseSessionPlan, saveCourseSession } from '../src/learning/courses/courseSession.js'
+import { loadLearnerModel, saveLearnerModel } from '../src/learning/engine/learnerModel.js'
+import { ES_SKELETON } from '../src/learning/courses/es/skeleton.js'
+import { setEpisodeState, markRecurringError } from '../src/learning/engine/learnerModel.js'
 import { createMissionIntroMessage, createMissionStepMessage, createMissionFeedbackMessage, evaluateMissionStep } from '../src/services/missions.js'
+import { ScenarioPractice } from '../src/components/chat/ScenarioPractice.jsx'
 
 const BENCH_MARKER = 'LC_VISUAL_BENCH' // asserted absent from every production build
 const params = new URLSearchParams(location.search)
@@ -61,7 +71,7 @@ function Scene({ t }) {
   const languageInfo = { code: lang, base, name: lang }
   const common = {
     t, darkMode: dark, profile: { name: 'Ana', preferences: { dailyGoal: 10 } },
-    nativeLanguageInfo: languageInfo, interfaceLanguageInfo: languageInfo, targetLanguage: 'en',
+    nativeLanguageInfo: languageInfo, interfaceLanguageInfo: languageInfo, targetLanguage: 'en', activeCourse: 'en',
     localProgress: { learnedItems: [{ word: 'hello', vocabId: 'hello' }], topics: [], topicsPracticed: [] },
     messages: [], isTyping: false, chatAppearance: sanitizeChatAppearance({}), episodeArcVersion: 0,
   }
@@ -102,6 +112,14 @@ function Scene({ t }) {
       <AppProvider value={{ ...common, messages: lesson, selectedMessage: lesson[1] }}>
         <main className="px-4 py-6"><p>{t('tutorNotes')}</p></main>
         <NotesSheet onClose={() => { window.__benchClosed = 'notes' }} />
+      </AppProvider>
+    )
+  }
+  if (scene === 'scenario') {
+    const course = params.get('course') || 'en'
+    return (
+      <AppProvider value={{ ...common, sessionId: 'session-bench-00000000-0000-0000-0000-000000000000' }}>
+        <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column' }}><ScenarioPractice courseId={course} targetLanguage={course} /></div>
       </AppProvider>
     )
   }
@@ -168,6 +186,52 @@ function Scene({ t }) {
         </main>
       </AppProvider>
     )
+  }
+  // The Spanish course (learning/courses): its Home, and one episode played for real
+  if (scene === 'course-today' || scene === 'course-episode') {
+    // ?extra=<test pass>: six lessons done, today's session completed, the pass stored (Premium QA)
+    if (scene === 'course-today' && params.get('extra') && !localStorage.getItem('lc2-premium-pass')) {
+      const seeded = loadLearnerModel()
+      for (const ep of ES_SKELETON.slice(0, 6)) setEpisodeState(seeded, ep.id, { status: 'completed', awarded: true })
+      for (const id of ['es:me_llamo', 'es:como_te_llamas', 'es:estoy_bien', 'es:soy_de', 'es:no_entiendo']) recordItemAttempt(seeded, id, { correct: true, independent: true, atMs: Date.now() - 3 * 86400000 })
+      markRecurringError(seeded, 'es:es_ser_estar_feeling'); markRecurringError(seeded, 'es:es_ser_estar_feeling')
+      saveLearnerModel(seeded)
+      const today = buildCourseSessionPlan(seeded, 'es', { durationMode: 'standard', learnerKey: 'Ana' })
+      saveCourseSession({ ...today, status: 'completed', currentBlockIndex: today.blocks.length - 1 })
+      if (params.get('extra') !== 'none') localStorage.setItem('lc2-premium-pass', params.get('extra'))
+    }
+    const value = { ...common, activeCourse: 'es', localProgress: { learnedItems: [], topics: [], topicsPracticed: [], streak: 2 },
+      awardEpisode: () => true, finishEpisode: () => { document.title = 'bench: episode finished'; return true }, tutorPreferences: {} }
+    return (
+      <AppProvider value={value}>
+        <main style={{ maxWidth: 1100, margin: '0 auto', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+          {scene === 'course-today' ? <CourseToday /> : <EpisodeShell episodeId={params.get('ep') || 'es:hola'} />}
+        </main>
+      </AppProvider>
+    )
+  }
+  // Phase 2: the Spanish daily session, the practice chat, plans, and the age question
+  if (scene === 'course-session' || scene === 'course-chat') {
+    const value = { ...common, activeCourse: 'es', sessionId: 'bench-session', tutorPreferences: {}, awardEpisode: () => true, finishEpisode: () => true }
+    let body
+    if (scene === 'course-chat') body = <CourseChat onExit={() => { document.title = 'bench: chat exit' }} />
+    else {
+      const m = createLearnerModel()
+      const DAY = 86400000
+      for (const ep of ES_SKELETON) setEpisodeState(m, ep.id, { status: 'completed', awarded: true })
+      for (const ep of ES_SKELETON) for (const id of ep.gardenItems) recordItemAttempt(m, id, { correct: true, independent: true, atMs: Date.now() - 30 * DAY })
+      markRecurringError(m, 'es:es_ser_estar_feeling'); markRecurringError(m, 'es:es_ser_estar_feeling')
+      const plan = buildCourseSessionPlan(m, 'es', { durationMode: params.get('mode') || 'deep' })
+      body = <CourseSessionRunner session={plan} onExit={() => { document.title = 'bench: session exit' }} />
+    }
+    return <AppProvider value={value}><main style={{ maxWidth: 1100, margin: '0 auto', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>{body}</main></AppProvider>
+  }
+  if (scene === 'plans') return <AppProvider value={common}><Pricing /></AppProvider>
+  if (scene === 'age' || scene === 'account-age') {
+    const value = scene === 'age'
+      ? { ...common, authStep: 'age', setAuthStep: step => { document.title = `bench: step ${step}` } }
+      : { ...common, authStep: null, ageConfirmationNeeded: true, confirmAdultAge: () => { document.title = 'bench: adult confirmed'; return true }, logout: () => { document.title = 'bench: signed out' } }
+    return <AppProvider value={value}><AuthFlow /></AppProvider>
   }
   return <p>Unknown scene</p>
 }

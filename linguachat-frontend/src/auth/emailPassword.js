@@ -5,6 +5,7 @@
  * The actual client is injected so auth behavior is testable without network,
  * secrets, SMTP or account creation.
  */
+import { noteSession } from './sessionToken.js'
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 function requireEmail(value) {
@@ -54,7 +55,7 @@ export function createEmailPasswordAuth(client, { origin } = {}) {
   const resetRedirect = redirect(origin, 'reset')
 
   return Object.freeze({
-    async signUp({ name, email, password, language = 'en' }) {
+    async signUp({ name, email, password, language = 'en', adultDeclaredAt = null }) {
       const displayName = String(name ?? '').trim().slice(0, 80)
       if (!displayName) throw new Error('Enter your name.')
       const locale = ['en', 'es', 'pt', 'fr', 'it', 'de', 'ja', 'ar'].includes(String(language).toLowerCase())
@@ -65,7 +66,9 @@ export function createEmailPasswordAuth(client, { origin } = {}) {
         password: requirePassword(password),
         options: {
           emailRedirectTo: confirmRedirect,
-          data: { display_name: displayName, language: locale },
+          // the age declaration is a fixed fact, never the age itself (services/ageGate.js)
+          data: { display_name: displayName, language: locale,
+            ...(adultDeclaredAt ? { age_declaration: '18_plus', age_declared_at: String(adultDeclaredAt).slice(0, 30) } : {}) },
         },
       }))
       // A null session means confirmation is pending; do not log in locally.
@@ -109,12 +112,13 @@ export function createEmailPasswordAuth(client, { origin } = {}) {
 
     async getSession() {
       const data = unwrap(await client.auth.getSession())
+      noteSession(data?.session ?? null)
       return data?.session ?? null
     },
 
     onAuthStateChange(listener) {
       if (typeof listener !== 'function') throw new Error('Auth listener required.')
-      return client.auth.onAuthStateChange((event, session) => listener(event, session))
+      return client.auth.onAuthStateChange((event, session) => { noteSession(session); listener(event, session) })
     },
 
     async consumeCallbackCode(code) {

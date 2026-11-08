@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { Suspense, lazy, useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { MessageBubble, TypingIndicator } from '../chat/MessageBubble'
@@ -18,6 +18,8 @@ import { selectLearnerFact } from '../../learning/engine/learnerFacts.js'
 import { loadMemoryContext, dismissFact } from '../../learning/engine/memoryContext.js'
 import { asSubjectValue } from '../../learning/engine/semanticContext.js'
 import { isSubmitEnter } from '../../services/keyboard.js'
+
+const ScenarioPractice = lazy(() => import('../chat/ScenarioPractice.jsx').then(m => ({ default: m.ScenarioPractice })))
 
 /*
  * The episodes this screen may talk about, as structure only.
@@ -76,6 +78,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
   /* the personalization sheet — frames 2l / 2m, opened from Lingua's name */
   const [appearanceOpen, setAppearanceOpen] = useState(false)
   const [sparkOpen, setSparkOpen] = useState(false)
+  const [scenariosOpen, setScenariosOpen] = useState(false)
   /*
    * "Use another topic" is remembered for the day, not for the mount: walking
    * to Home and back used to bring the same suggestion straight back. Nothing
@@ -141,6 +144,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
     }
   }, [handleSend])
 
+  const openScenarios = useCallback(() => setScenariosOpen(true), [])
   const usePrompt = useCallback((text) => {
     promptedRef.current = text
     setInput(text)
@@ -182,6 +186,14 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
     return (
       <div className="flex flex-col h-full" style={{ background: 'var(--bg)' }}>
         <EpisodePlayer {...playerLabels} episodeId={episodeActiveId} runOptions={episodeRunOptions} />
+      </div>
+    )
+  }
+
+  if (scenariosOpen) {
+    return (
+      <div className="flex flex-col h-full" style={{ background: 'var(--bg)' }}>
+        <Suspense fallback={null}><ScenarioPractice onExit={() => setScenariosOpen(false)} /></Suspense>
       </div>
     )
   }
@@ -484,7 +496,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
         style={{ borderTop: '1px solid var(--border)', background: 'var(--surface)' }}>
         <div style={practiceInnerStyle}>
           <div className="flex items-center gap-2 mb-2">
-            <PracticeToolbar t={t} onUsePrompt={usePrompt} />
+            <PracticeToolbar t={t} onUsePrompt={usePrompt} onOpenScenarios={openScenarios} />
             <button
               type="button"
               onClick={() => setSparkOpen(o => !o)}
@@ -549,6 +561,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
           <p style={{ fontSize: 11.5, color: 'var(--muted)', textAlign: 'center', marginTop: 7 }}>
             {activeMissionDetails ? t('missionInputHint') : t('inputHint')}
           </p>
+          <p style={{ fontSize: 11, color: 'var(--muted)', textAlign: 'center', marginTop: 3 }}>{t('chatSafetyNote')}</p>
         </div>
       </div>
 

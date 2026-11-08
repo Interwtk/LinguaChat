@@ -1,7 +1,10 @@
-import { translate } from '../i18n/translations'
+import { translate } from '../i18n/translations.js'
 import { safeAnalysis } from './chatAnalysis.js'
+import { authHeaders } from '../auth/sessionToken.js'
 
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : '/api')
+// `|| {}`: the checks import this module under plain Node, where there is no env
+const ENV = import.meta.env || {}
+const API_URL = ENV.VITE_API_URL || (ENV.DEV ? 'http://127.0.0.1:8000' : '/api')
 const VALID_MODES = new Set(['chat', 'translation', 'correction'])
 
 /*
@@ -49,7 +52,26 @@ export function normalizeChatResponse(payload) {
     target_language: data.target_language ?? null,
     mission_feedback: data.mission_feedback ?? null,
     analysis: safeAnalysis(data.analysis, data.evaluation),
+    scenario: safeScenario(data.analysis?.scenario),
   }
+}
+
+/* The guided state the server handed back: closed values, echoed on the next turn. */
+const TURN_CLASSES = new Set(['valid', 'error', 'question', 'not_understood', 'safety'])
+export function safeScenario(raw) {
+  if (!raw || !/^[a-z0-9_]{1,40}$/.test(String(raw.id || ''))) return null
+  const count = (value) => (Number.isInteger(value) && value >= 0 && value <= 20 ? value : 0)
+  return { id: raw.id, step: count(raw.step), attempt: count(raw.attempt), done: raw.done === true, turnClass: TURN_CLASSES.has(raw.turn_class) ? raw.turn_class : null }
+}
+
+/* The open situations of a course, or an empty list when the server can't be reached. */
+export async function listScenarios({ target, aux }, { timeoutMs = 5000 } = {}) {
+  try {
+    const query = new URLSearchParams({ target, aux })
+    const res = await fetch(`${API_URL}/chat/scenarios?${query}`, { signal: AbortSignal.timeout(timeoutMs) })
+    const payload = res.ok ? await res.json() : null
+    return Array.isArray(payload?.scenarios) ? payload.scenarios : []
+  } catch { return [] }
 }
 
 export async function sendChatMessage({
@@ -86,6 +108,8 @@ export async function sendChatMessage({
    * sent a suggestion Lingua offered. It can only lower what the turn is worth.
    */
   assistance = 'none',
+  // The guided step this message answers: { id, step, attempt }, as the server gave it.
+  scenario = null,
 }) {
   try {
     /*
@@ -101,7 +125,7 @@ export async function sendChatMessage({
     }
     const res = await fetch(`${API_URL}/chat`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({
         message,
         level,
@@ -117,6 +141,7 @@ export async function sendChatMessage({
         active_companion: activeCompanion,
         ...(Array.isArray(learningMemory) && learningMemory.length ? { learning_memory: learningMemory } : {}),
         ...(assistance && assistance !== 'none' ? { assistance } : {}),
+        ...(scenario ? { scenario } : {}),
         ...(Object.keys(optionalContext).length ? { optional_context: optionalContext } : {}),
       }),
       signal: AbortSignal.timeout(8000),
@@ -139,6 +164,61 @@ export async function sendChatMessage({
       isFallback: true,
       connectionMessage: translate(interfaceLanguage?.base || nativeLanguage?.base || 'en', 'chatOfflineNotice'),
     }
+  }
+}
+
+/*
+ * Premium (inactive until payments are authorized). The server decides; these
+ * only ask. Any failure reads as "not available" / "not granted": fail closed.
+ * The one thing a browser keeps is the server's signed pass (an opaque string
+ * in the account's namespace), never a flag of its own.
+ */
+export const PREMIUM_PASS_KEY = 'lc2-premium-pass'
+
+export async function premiumStatus({ timeoutMs = 4000 } = {}) {
+  try {
+    const res = await fetch(`${API_URL}/premium/status`, { headers: authHeaders(), signal: AbortSignal.timeout(timeoutMs) })
+    const body = res.ok ? await res.json() : null
+    return { available: body?.available === true, perDay: Number(body?.extra_blocks_per_day) || 0 }
+  } catch {
+    return { available: false, perDay: 0 }
+  }
+}
+
+export async function authorizeExtraBlock({ passToken, course }, { timeoutMs = 6000 } = {}) {
+  try {
+    const res = await fetch(`${API_URL}/practice/extra/authorize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ pass_token: typeof passToken === 'string' ? passToken : null, course }),
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    const body = res.ok ? await res.json() : null
+    if (body?.granted === true && Number.isInteger(body.block)) return { granted: true, block: body.block, blocksLeft: Number(body.blocks_left) || 0 }
+    return { granted: false, reason: ['free', 'expired', 'limit', 'not_available'].includes(body?.reason) ? body.reason : 'offline' }
+  } catch {
+    return { granted: false, reason: 'offline' }
+  }
+}
+
+/*
+ * Ask the server to erase what it remembers of these conversations now (the
+ * last turns of each practice chat; it also forgets them by itself 24 hours
+ * after the last message). True only when the server confirmed.
+ */
+export async function forgetServerConversations(sessionIds, { timeoutMs = 6000 } = {}) {
+  const ids = (sessionIds || []).filter(id => typeof id === 'string' && id.trim()).slice(0, 4)
+  if (!ids.length) return true
+  try {
+    const res = await fetch(`${API_URL}/chat/forget`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ session_ids: ids }),
+      signal: AbortSignal.timeout(timeoutMs),
+    })
+    return res.ok
+  } catch {
+    return false
   }
 }
 

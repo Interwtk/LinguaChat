@@ -335,7 +335,10 @@ try {
  * store; this one reads, extends and rewrites it; the P3 one reads it back
  * (a rollback). Totals must be exact at every step, and nothing paid twice.
  */
-const previousRoot = resolve(here, '../../../_snapshot-p3/linguachat-frontend/src')
+// LINGUACHAT_P3_TREE: a P3 tree extracted from git (scripts/check-ledger-rollback.mjs), for CI
+const previousRoot = process.env.LINGUACHAT_P3_TREE
+  ? resolve(process.env.LINGUACHAT_P3_TREE, 'linguachat-frontend/src')
+  : resolve(here, '../../../_snapshot-p3/linguachat-frontend/src')
 let previous = null
 try { previous = ROOT === previousRoot ? null : await loadImplementation(previousRoot) } catch { previous = null }
 if (!previous) {

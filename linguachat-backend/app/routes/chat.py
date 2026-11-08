@@ -6,7 +6,13 @@ from pydantic import BaseModel, Field
 
 from ai.chat_evaluation import safe_assistance
 from ai.engine import generate_response
-from ai.schemas import ChatMode, ChatResult, LanguageInfo, LanguageLevel, MissionContext
+from ai import es_tutor, guided_tutor
+from ai.guided_scope import activity_reply, guided_mode, in_scope, neutral_reply
+from ai.provider_policy import real_provider_allowed
+from ai.scenarios import scenario_list
+from ai.safety import ALLOW, assess, assess_turn, log_verdict, safety_reply, screen_reply
+from ai.schemas import ChatMode, ChatResult, LanguageInfo, LanguageLevel, LearningAction, MissionContext
+from ai.tutor_i18n import say
 from app.services.memory import conversation_memory
 
 
@@ -77,12 +83,26 @@ def _safe_tutor_preferences(preferences: dict) -> dict:
     return safe
 
 
+# A request without its own session id shares this one. Nothing is remembered
+# under it: one client's turns must never reach another client's context.
+SHARED_SESSION = "local-session"
+# A conversation id is the only key to its memory, so it must be unguessable:
+# the app sends "session-<uuid>". Anything shorter is served, never remembered.
+MIN_MEMORY_ID_LENGTH = 24
+
+
+class ScenarioTurn(BaseModel):
+    id: str = Field(min_length=1, max_length=40)
+    step: int = Field(default=0, ge=0, le=20)
+    attempt: int = Field(default=0, ge=0, le=20)
+
+
 class ChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
     level: LanguageLevel = LanguageLevel.A1
     mode: str | None = None
     history: list[dict] = Field(default_factory=list)
-    session_id: str = Field(default="local-session", min_length=1, max_length=128)
+    session_id: str = Field(default=SHARED_SESSION, min_length=1, max_length=128)
     preferences: dict = Field(default_factory=dict)
     native_language: str | LanguageInfo | dict | None = None
     interface_language: str | LanguageInfo | dict | None = None
@@ -105,6 +125,9 @@ class ChatRequest(BaseModel):
     # A closed set; anything else is treated as "none". It can only LOWER what
     # the turn is worth (assisted is never independent), never raise it.
     assistance: str | None = None
+    # P-guided: which scenario step this message answers. The server's catalogue
+    # decides what that means; an unknown or closed id is treated as no scenario.
+    scenario: ScenarioTurn | None = None
 
 
 def _language_name(base: str) -> str:
@@ -134,8 +157,21 @@ def _normalize_language(value, fallback_code: str = "en") -> LanguageInfo:
     return LanguageInfo(code=code, base=base, name=name)
 
 
-def _normalize_target_language(value) -> LanguageInfo:
-    return LanguageInfo(code="en", base="en", name="English")
+SUPPORTED_TARGETS = {"en": LanguageInfo(code="en", base="en", name="English"), "es": es_tutor.TARGET}
+
+
+def _normalize_target_language(value, native_base: str = "en") -> LanguageInfo:
+    """English unless the client asks for a course this server teaches.
+
+    Spanish is the only other target (the Spanish course); it is never accepted
+    for a learner whose own language is Spanish. Anything else is English, as it
+    always was.
+    """
+    raw = value.get("base") or value.get("code") if isinstance(value, dict) else getattr(value, "base", None) or value
+    base = str(raw or "en").split("-")[0].strip().lower()
+    if base == "es" and native_base != "es":
+        return SUPPORTED_TARGETS["es"]
+    return SUPPORTED_TARGETS["en"]
 
 
 ALLOWED_OPTIONAL_CONTEXT = {"remembered_like"}
@@ -230,13 +266,86 @@ def _normalize_mission_context(value) -> dict | None:
     return None
 
 
+def _safety_result(verdict, native_language: LanguageInfo, target_language: LanguageInfo) -> ChatResult:
+    """A safe, localized reply. Nothing about the message is evaluated or kept."""
+    return ChatResult(
+        reply=safety_reply(verdict.category, native_language.base),
+        correction=None,
+        explanation=None,
+        suggestion=None,
+        mode=ChatMode.CHAT,
+        detected_language=native_language,
+        target_language=target_language,
+        analysis={"verdict": "not_evaluated", "findings": [], "safety": {"category": verdict.category, "action": verdict.action}},
+    )
+
+
+def _guided_result(native_language: LanguageInfo, target_language: LanguageInfo, engine_verdict: str | None = None) -> ChatResult:
+    """The honest turn for what the tutor cannot read: no praise, no correction, no quote.
+
+    It is never evidence: the learner's record reads it as text in another
+    language or as too little to judge, whatever the rules thought they saw.
+    """
+    lang = native_language.base
+    return ChatResult(
+        reply=say("guided_reply", lang),
+        correction=None,
+        explanation=None,
+        suggestion=say("guided_suggestion", lang),
+        mode=ChatMode.CHAT,
+        learning_action=LearningAction(type="complete_sentence", prompt=say("guided_activity", lang), options=None),
+        focus=say("focus_practice", lang),
+        detected_language=native_language,
+        target_language=target_language,
+        analysis={"verdict": "not_english" if engine_verdict == "not_english" else "insufficient",
+                  "confidence": "low", "findings": [], "source": "local_rules", "guided": True},
+    )
+
+
+def _history_is_safe(item) -> bool:
+    if not isinstance(item, dict):
+        return False
+    text = item.get("text") or item.get("content") or ""
+    return not assess(text if isinstance(text, str) else "").blocked
+
+
 @router.post("/chat", response_model=ChatResult)
 def chat(req: ChatRequest, response: Response):
     session_id = req.session_id.strip()
+    # "" is never written, so a shared id reads and keeps nothing
+    memory_id = session_id if len(session_id) >= MIN_MEMORY_ID_LENGTH else ""
     message = req.message.strip()
 
     try:
-        history = conversation_memory.context(session_id, req.history)
+        # Safety first: nothing below (engine, provider, memory) sees a blocked
+        # message, and earlier blocked turns a client replays are dropped too.
+        earlier = conversation_memory.recent_user_turns(memory_id) if memory_id else []
+        if not earlier:
+            earlier = [str(item.get("text") or item.get("content") or "") for item in (req.history or [])
+                       if isinstance(item, dict) and item.get("role") == "user"][-3:]
+        verdict = assess_turn(message, earlier)
+        log_verdict(verdict, "input")
+        if verdict.blocked:
+            ui = _normalize_language(req.native_language or "en")
+            response.headers["X-LinguaChat-Provider"] = "safety"
+            blocked = _safety_result(verdict, ui, _normalize_target_language(req.target_language, ui.base))
+            if req.scenario:
+                # the exercise waits where it was; the safety reply does not advance it
+                blocked.analysis["scenario"] = {"id": req.scenario.id, "step": req.scenario.step, "attempt": req.scenario.attempt, "turn_class": "safety", "done": False}
+            return blocked
+        if memory_id:
+            conversation_memory.note_user_turn(memory_id, message)
+        if req.scenario:
+            scenario_language = _normalize_language(req.native_language or "en")
+            guided_turn = guided_tutor.respond(req.scenario.id, req.scenario.step, req.scenario.attempt, message, scenario_language,
+                                               safe_assistance(req.assistance) != "none")
+            if guided_turn:
+                response.headers["X-LinguaChat-Provider"] = "scenario"
+                if verdict.care_note:
+                    guided_turn.reply = f"{guided_turn.reply}\n\n{safety_reply('care_note', scenario_language.base)}"
+                return guided_turn
+        client_history = [item for item in (req.history or []) if _history_is_safe(item)]
+        history = conversation_memory.context(memory_id, client_history)
         preferences = _safe_preferences(req.preferences)
         tutor_preferences = _safe_tutor_preferences(req.tutor_preferences or {})
         active_companion = (req.active_companion or "lingua").strip().lower()
@@ -245,7 +354,24 @@ def chat(req: ChatRequest, response: Response):
         native_language = _normalize_language(
             req.native_language or preferences.get("native_language") or "en"
         )
-        target_language = _normalize_target_language(req.target_language)
+        target_language = _normalize_target_language(req.target_language, native_language.base)
+        if target_language.base == "es":
+            # The Spanish course's local practice partner: its own rules, its own
+            # memory (the client sends a course-scoped session id), same safety.
+            result = es_tutor.respond(message, _safe_topic((req.optional_context or {}).get("topic")) if isinstance(req.optional_context, dict) else None)
+            result.detected_language = native_language
+            out = screen_reply(result.reply, result.correction, result.explanation, result.suggestion)
+            if out.action != ALLOW:
+                log_verdict(out, "output")
+                response.headers["X-LinguaChat-Provider"] = "safety"
+                return _safety_result(out, native_language, target_language)
+            if verdict.care_note:
+                result.reply = f"{result.reply}\n\n{safety_reply('care_note', native_language.base)}"
+            not_understood = (result.analysis or {}).get("verdict") == "insufficient"
+            response.headers["X-LinguaChat-Provider"] = "guided" if not_understood else "local-es"
+            if memory_id and not not_understood:
+                conversation_memory.add(memory_id, message, result, req.level)
+            return result
         mission_context = _normalize_mission_context(req.mission_context or req.missionContext)
         user_profile = {
             "level": req.level.value,
@@ -255,10 +381,10 @@ def chat(req: ChatRequest, response: Response):
             "preferences": preferences,
             "tutor_preferences": tutor_preferences,
             "active_companion": active_companion,
-            "recent_errors": conversation_memory.recent_errors(session_id),
+            "recent_errors": conversation_memory.recent_errors(memory_id),
             # Which error rules fired recently, so the tutor can change strategy
             # when an explanation did not work (ai/local_engine.choose_strategy).
-            "recent_error_types": conversation_memory.recent_error_types(session_id),
+            "recent_error_types": conversation_memory.recent_error_types(memory_id),
             "mission_context": mission_context,
             "optional_context": _safe_optional_context(req.optional_context),
             "learning_memory": _safe_learning_memory(req.learning_memory),
@@ -274,8 +400,26 @@ def chat(req: ChatRequest, response: Response):
         result = generated.response
         result.detected_language = result.detected_language or native_language
         result.target_language = result.target_language or target_language
+        # The same policy on what Lingua is about to say (a correction can echo).
+        out = screen_reply(result.reply, result.correction, result.explanation, result.suggestion)
+        if out.action != ALLOW:
+            log_verdict(out, "output")
+            response.headers["X-LinguaChat-Provider"] = "safety"
+            return _safety_result(out, native_language, target_language)
+        guided = guided_mode() and generated.provider == "local" and not mission_context
+        activity = activity_reply(message) if guided else None
+        if activity:
+            result.reply, result.correction, result.explanation = activity, None, None
+        elif guided and result.mode != ChatMode.TRANSLATION and not verdict.care_note:
+            if not in_scope(message, result.correction):
+                response.headers["X-LinguaChat-Provider"] = "guided"
+                return _guided_result(native_language, target_language, (result.analysis or {}).get("verdict"))
+            result.reply = neutral_reply(result.reply)
+        if verdict.care_note:
+            result.reply = f"{result.reply}\n\n{safety_reply('care_note', native_language.base)}"
         response.headers["X-LinguaChat-Provider"] = generated.provider
-        conversation_memory.add(session_id, message, result, req.level)
+        if memory_id:
+            conversation_memory.add(memory_id, message, result, req.level)
         return result
     except Exception:
         return JSONResponse(
@@ -292,3 +436,26 @@ def chat(req: ChatRequest, response: Response):
             },
             headers={"X-LinguaChat-Provider": "local"},
         )
+
+
+@router.get("/chat/scenarios")
+def scenarios(target: str = "en", aux: str = "en"):
+    """The open guided scenarios of a course, titled in the learner's language."""
+    base = aux.split("-")[0].strip().lower()[:8]
+    return {"scenarios": scenario_list("es" if target.split("-")[0].strip().lower() == "es" else "en", base)}
+
+
+class ForgetRequest(BaseModel):
+    # the learner's own conversation ids (English and course-scoped), nothing else
+    session_ids: list[str] = Field(min_length=1, max_length=4)
+
+
+@router.post("/chat/forget")
+def forget(req: ForgetRequest):
+    """Erase what the server remembers of these conversations, now.
+
+    Holding a conversation id is what lets a client continue it, so the same id
+    is enough to end it. Answers only how many were held: no content, ever.
+    """
+    ids = [sid.strip() for sid in req.session_ids if isinstance(sid, str) and 0 < len(sid.strip()) <= 128]
+    return {"forgotten": conversation_memory.forget(ids)}

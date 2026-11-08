@@ -1160,6 +1160,15 @@ const NUMBER_WORDS = {
 }
 /* the ten this level owns: the first ten entries above, and only those */
 export const TAUGHT_NUMBERS = Object.keys(NUMBER_WORDS).slice(0, 10)
+
+/* 1–100 in words, for a model answer that names a number above ten. */
+export function numberWords(value) {
+  const n = Math.round(Number(value))
+  if (!(n >= 1 && n <= 100)) return ''
+  const byValue = Object.fromEntries(Object.entries(NUMBER_WORDS).map(([word, v]) => [v, word]))
+  if (byValue[n]) return n === 100 ? 'one hundred' : byValue[n]
+  return `${byValue[n - (n % 10)]}-${byValue[n % 10]}`
+}
 const TENS_AND_UNIT = /\b(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)[\s-]+(one|two|three|four|five|six|seven|eight|nine)\b/
 const VAGUE_QUANTITY = /\b(many|a lot|lots|some|a few|several|much)\b/
 
@@ -1256,7 +1265,7 @@ export function evaluateIdentifyThing(text, { independent = false, targetThing =
  *   polite_request  "Can I have two sandwiches, please?" — the caf\u00e9 frame,
  *                   now with a quantity in it
  */
-export function evaluateUseQuantity(text, { independent = false, quantityForm = 'bare', targetThing = 'book', targetCount = 2 } = {}) {
+export function evaluateUseQuantity(text, { independent = false, quantityForm = 'bare', targetThing = 'book', targetCount = 2, exactNumber = null, numberRange = null } = {}) {
   const form = QUANTITY_FORMS.includes(quantityForm) ? quantityForm : 'bare'
   const n = normalize(text)
   const r = base(independent)
@@ -1269,6 +1278,17 @@ export function evaluateUseQuantity(text, { independent = false, quantityForm = 
     polite_request: `Can I have ${numberWord} ${counted || 'books'}, please?`,
   }
   r.naturalVersion = TARGET[form]
+  /*
+   * A1 (review D1, phase 6): "This ticket is 20. Say it back." has ONE right
+   * answer. Without this, "Five." passed and even earned the 11–100 item, while a
+   * correct "Forty-five." earned nothing. A step that names its number says so
+   * (`exactNumber`); a step about a range names the range (`numberRange`).
+   */
+  const exact = Number.isInteger(exactNumber) && exactNumber >= 1 && exactNumber <= 100 ? exactNumber : null
+  if (exact && form === 'bare') {
+    const word = numberWords(exact)
+    r.naturalVersion = `${word[0].toUpperCase()}${word.slice(1)}.`
+  }
   if (!n) return { ...r, understood: false, confidence: 0.95, errorType: 'empty', retryRequired: true, retryPrompt: 'ep17RetryPromptEmpty' }
   /*
    * "two water" is not a sentence this level should ever be asked to produce.
@@ -1300,6 +1320,10 @@ export function evaluateUseQuantity(text, { independent = false, quantityForm = 
     return { ...r, errorType: 'no_quantity', conclusive: wordCount(n) < 4, confidence: wordCount(n) < 4 ? 0.85 : 0.5, priorityCorrection: 'ep17RetryExplainNumber', explanation: 'ep17RetryExplainNumber', retryRequired: true, retryPrompt: `ep17RetryPrompt_${form}` }
   }
 
+  if (exact && count !== exact) {
+    return { ...r, errorType: 'wrong_number', confidence: 0.9, priorityCorrection: 'ep30RetryExplainExact', explanation: 'ep30RetryExplainExact', retryRequired: true, retryPrompt: 'ep17RetryPromptEmpty' }
+  }
+
   const done = form === 'bare' ? true
     : form === 'with_object' ? namesCorrectForm
       : asks && namesCorrectForm
@@ -1315,7 +1339,8 @@ export function evaluateUseQuantity(text, { independent = false, quantityForm = 
      * nothing records practice of one-to-ten. Saying "Eleven." is not a mistake
      * and is not evidence of the curriculum item either.
      */
-    r.targetEvidence = count >= 1 && count <= 10
+    const [low, high] = Array.isArray(numberRange) && numberRange.length === 2 ? numberRange : [1, 10]
+    r.targetEvidence = count >= low && count <= high
     r.acceptedVariant = count > 10 || normalize(TARGET[form]) !== n
     r.praiseKey = r.masteryEvidence.independent ? 'ep17PraiseIndependent' : 'ep17PraiseCounted'
     return r
@@ -1430,7 +1455,8 @@ const ROUTINE_WRONG_PERSON = /\b(he|she|they|we|you)\s+(usually\s+|sometimes\s+)
 const PART_OF_DAY = /\bin\s+the\s+(morning|afternoon|evening)\b/
 const AT_NIGHT = /\bat\s+night\b/
 /* "at seven" — the hours the level owns, as a word or a digit */
-const CLOCK_TIME = /\bat\s+(one|two|three|four|five|six|seven|eight|nine|ten|\d{1,2})\b/
+// eleven, twelve, "half past six" and "quarter to eight" are hours a learner says too (phase 6 review, D4)
+const CLOCK_TIME = /\bat\s+((half|quarter)\s+(past|to)\s+)?(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\d{1,2})\b|\bat\s+(noon|midnight)\b/
 const FREQUENCY = /\b(usually|sometimes)\b/
 
 export function evaluateStateRoutine(text, { independent = false, timeForm = null, usualTime = '' } = {}) {
@@ -1986,7 +2012,9 @@ export function evaluateAskTransport(text, { independent = false, placeName = ''
  * dispatched evaluator the moment it is used — LC-CURR-005b is the routing,
  * provider-payload and backend-parity pass over this and the rest of the arc.
  */
-const HOW_MUCH = /\bhow\s+much\s+(is|are)\b/
+// "how much does it cost?" and "what's the price?" ask the same thing (phase 6 review, D3).
+// A bare "how much?" stays a nudge: the lesson teaches the frame.
+const HOW_MUCH = /\bhow\s+much\s+(is|are|does\s+(it|this|that)\s+cost|do\s+(they|these|those)\s+cost|for)\b|\bwhat(\s+is|\s*'?s)\s+the\s+price\b/
 
 export function evaluateAskPrice(text, { independent = false, placeName = '' } = {}) {
   const n = normalize(text)

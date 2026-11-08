@@ -16,9 +16,9 @@
 
 | | Ruta |
 |---|---|
-| Proyecto original (fuente de verdad, intacto) | `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\LinguaChat-main` |
-| Respaldos (intactos) | `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_originals-086323c`, `_snapshot-p0` … `_snapshot-p4` |
-| **Clon de integración** (nuevo) | `C:\Users\Sebastian Gamboa\Music\LinguaChat-integration` |
+| Proyecto original (fuente de verdad, intacto) | `C:\Users\<usuario>\Music\LinguaChat-main\LinguaChat-main` |
+| Respaldos (intactos) | `C:\Users\<usuario>\Music\LinguaChat-main\_originals-086323c`, `_snapshot-p0` … `_snapshot-p4` |
+| **Clon de integración** (nuevo) | `C:\Users\<usuario>\Music\LinguaChat-integration` |
 
 **La carpeta original no se tocó:**
 - no hubo `git init` ni ningún cambio dentro;

@@ -2,7 +2,7 @@
 
 **Base de partida:**
 - Estado final de la fase 3 (`docs/audits/2026-10-31-p2-product-hardening.md`).
-- Se respaldó entero antes de editar en `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_snapshot-p2\`.
+- Se respaldó entero antes de editar en `C:\Users\<usuario>\Music\LinguaChat-main\_snapshot-p2\`.
 - Los informes y diffs anteriores, y los respaldos `_originals-086323c`, `_snapshot-p0` y `_snapshot-p1`, siguen intactos.
 
 **Diff de esta fase:**

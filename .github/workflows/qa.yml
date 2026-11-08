@@ -38,6 +38,9 @@ jobs:
         working-directory: linguachat-frontend
     steps:
       - uses: actions/checkout@v4
+        with:
+          # check:ledger-rollback rebuilds the P3 tree from history (pinned by tree id)
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -61,6 +64,10 @@ jobs:
           NODE
       - run: npm run build
       - run: npm run check:i18n
+      # The 30th integrity scenario (migration from P3 and rollback), which
+      # check:all's --quick pass and a fresh clone cannot run: P3 from history.
+      - name: ledger integrity with the P3 rollback scenario (30/30)
+        run: npm run check:ledger-rollback -- --require
       # Executes the real workflow scripts against a fake `gh` (needs bash + jq,
       # present on this runner). Kept out of check:all so the functional suite
       # runs anywhere, including Windows; it still runs on every PR here.

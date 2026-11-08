@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# jq-lite on PATH for local runs only (see ../jq-lite.mjs). CI uses the real jq.
+# JQ_LITE_NODE: the merge-script fixtures put a fake `node` first on PATH.
+exec "${JQ_LITE_NODE:-node}" "$(dirname "${BASH_SOURCE[0]}")/../jq-lite.mjs" "$@"

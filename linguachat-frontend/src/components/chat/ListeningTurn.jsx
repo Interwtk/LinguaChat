@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { createSpeechController } from '../../audio/speech.js'
 
-export function ListeningTurn({ text, turnId = text, onSignals }) {
+export function ListeningTurn({ text, turnId = text, onSignals, lang = 'en', textShown = false }) {
   // A new turn owns fresh playback evidence and a hidden transcript, even when
   // React reuses the surrounding message/practice component.
-  return <ListeningTurnContent key={JSON.stringify([turnId, text])} text={text} onSignals={onSignals} />
+  return <ListeningTurnContent key={JSON.stringify([turnId, text, lang])} text={text} onSignals={onSignals} lang={lang} textShown={textShown} />
 }
 
-function ListeningTurnContent({ text, onSignals }) {
+/* `textShown`: the line is already on screen, so there is no transcript to reveal. */
+function ListeningTurnContent({ text, onSignals, lang, textShown }) {
   const { t } = useApp()
   const controller = useRef(null)
   if (!controller.current) controller.current = createSpeechController()
@@ -23,7 +24,7 @@ function ListeningTurnContent({ text, onSignals }) {
   }, [text])
   function play(slow = false) {
     stats.current.plays++; stats.current.slow ||= slow; publish()
-    controller.current.play(text, { slow, onState: next => {
+    controller.current.play(text, { slow, lang, onState: next => {
       setState(next)
       if (next === 'error') { stats.current.unavailable = true; stats.current.transcript = true; setTranscript(true); publish() }
     }, onFinished: () => { stats.current.completed++; publish() } })
@@ -34,9 +35,9 @@ function ListeningTurnContent({ text, onSignals }) {
       <button type="button" className="tool-chip" disabled={!controller.current.supported || state === 'playing'} onClick={() => play()}>{t(stats.current.plays ? 'listeningReplay' : 'listeningPlay')}</button>
       <button type="button" className="tool-chip" disabled={!controller.current.supported || state === 'playing'} onClick={() => play(true)}>{t('listeningSlow')}</button>
       {state === 'playing' && <button type="button" className="tool-chip" onClick={() => controller.current.stop()}>{t('listeningStop')}</button>}
-      <button type="button" className="tool-chip" aria-expanded={transcript} onClick={() => { stats.current.transcript = true; setTranscript(v => !v); publish() }}>{t(transcript ? 'listeningHide' : 'listeningTranscript')}</button>
+      {!textShown && <button type="button" className="tool-chip" aria-expanded={transcript} onClick={() => { stats.current.transcript = true; setTranscript(v => !v); publish() }}>{t(transcript ? 'listeningHide' : 'listeningTranscript')}</button>}
     </div>
     <p role="status" aria-live="polite" className="text-xs">{t(!controller.current.supported || state === 'error' ? 'listeningUnavailable' : state === 'playing' ? 'listeningPlaying' : 'listeningStopped')}</p>
-    {transcript && <p lang="en" dir="ltr" className="mt-2">{text}</p>}
+    {transcript && !textShown && (lang === 'en' ? <p lang="en" dir="ltr" className="mt-2">{text}</p> : <p lang={lang} dir="ltr" className="mt-2">{text}</p>)}
   </section>
 }

@@ -10,7 +10,7 @@
 - No incluye secretos, archivos `.env`, copias de seguridad, `node_modules`, `dist`, `.venv` ni cachés.
 
 **Copia de seguridad previa a editar:**
-- `C:\Users\Sebastian Gamboa\Music\LinguaChat-main\_snapshot-p1\` guarda el estado completo de P1.
+- `C:\Users\<usuario>\Music\LinguaChat-main\_snapshot-p1\` guarda el estado completo de P1.
 - `_snapshot-p0\` y `_originals-086323c\` siguen intactos.
 
 **Lo que no se hizo:**

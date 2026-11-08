@@ -26,6 +26,7 @@ import {
   labelKeyFor,
   personalityName,
 } from '../../services/tutorPreferences'
+import { shownPlacementOptions } from '../../learning/engine/optionOrder.js'
 
 function SetupShell({ children, step, totalSteps }) {
   const { profileRecoveryNotice, dismissProfileRecoveryNotice, t } = useApp()
@@ -224,7 +225,7 @@ function PlacementTest() {
           </div>
 
           <div className="grid gap-3">
-            {question.options.map((option, index) => {
+            {shownPlacementOptions(question).map((option, index) => {
               const isSelected = selectedOption === option.id
               const isCorrect = option.id === question.correctOptionId
               const showResult = Boolean(selectedOption)

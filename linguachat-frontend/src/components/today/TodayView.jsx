@@ -7,6 +7,9 @@ import { getMissionForToday } from '../../services/missions'
 import { getLocalizedMeaning } from '../../services/localizedMeaning'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { StreakFlame } from '../ui/StreakFlame'
+import { CourseSwitcher } from './CourseSwitcher'
+import { CourseToday } from './CourseToday'
+import { belongsToCourse } from '../../learning/courses/registry.js'
 // Home names episodes and shows their keys; it never renders their content
 import { SKELETON_BY_ID } from '../../learning/curriculum/preA1Skeleton.generated.js'
 import { episodesOfLevel } from '../../learning/curriculum/levels.js'
@@ -80,7 +83,7 @@ function SmallWindow({ eyebrow, children, tone = 'paper', className = '', style 
 
 export function TodayView({ onOpenPath }) {
   const { navigateTo, profile, t, nativeLanguageInfo, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions, episodeArcVersion, startEpisode,
-    dailySession, previewSession, beginSession, localProgress, messages } = useApp()
+    dailySession, previewSession, beginSession, localProgress, messages, activeCourse } = useApp()
   const ARC = levelArc()
   const plan = planDay(loadLearnerModel(), ARC)
   const planEpisode = plan.episodeId ? getEpisode(plan.episodeId) : null
@@ -159,7 +162,8 @@ export function TodayView({ onOpenPath }) {
    * counts. The mockup's numbers were illustrations.
    */
   const streak = localProgress?.streak ?? 0
-  const wordCount = useMemo(() => Object.keys(loadLearnerModel().languageItems || {}).length, [episodeArcVersion])
+  // English words only: the Spanish course counts its own on its own Home
+  const wordCount = useMemo(() => Object.keys(loadLearnerModel().languageItems || {}).filter(id => belongsToCourse(id, 'en')).length, [episodeArcVersion])
   /*
    * The most recent thing Lingua helped fix, taken from the conversation itself:
    * what the learner wrote, and the version Lingua offered back. An internal
@@ -177,6 +181,9 @@ export function TodayView({ onOpenPath }) {
     }
     return null
   }, [messages])
+
+  // Another course has its own Home; everything above is the English course's.
+  if (activeCourse && activeCourse !== 'en') return <CourseToday />
 
   return (
     <div className="flex-1 overflow-y-auto px-4 md:px-7 py-5 md:py-7" style={{ background: 'var(--bg)' }}>
@@ -215,6 +222,8 @@ export function TodayView({ onOpenPath }) {
             )}
           </div>
         </header>
+
+        <CourseSwitcher />
 
         {/* ─── 2. Lingua, present rather than hidden behind a button ─── */}
         <section className="rounded-2xl p-4 mb-4 animate-fade-up"

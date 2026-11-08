@@ -104,7 +104,7 @@ No propongo cambiar el contenido congelado sin evidencia medida de estudiantes r
 
 | Episodio | Arco | Capacidad | Abiertas | Recuerdo | Cerradas | Contenido carga (pasos) | Estudiante puede abrir | Claves i18n | Idiomas completos | Pruebas: por id / por arco o nivel |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `first_greeting` | greetings | introduce_self | 2 | 1 | 3 | sí (9) | sí | 53 | 8/8 | 17 / 11 |
+| `first_greeting` | greetings | introduce_self | 2 | 1 | 3 | sí (9) | sí | 53 | 8/8 | 19 / 11 |
 | `ask_name` | greetings | ask_name | 1 | 2 | 4 | sí (10) | sí | 28 | 8/8 | 21 / 11 |
 | `nice_to_meet` | greetings | full_greeting | 2 | 2 | 4 | sí (10) | sí | 27 | 8/8 | 15 / 11 |
 | `how_are_you` | connect | ask_wellbeing | 3 | 2 | 3 | sí (11) | sí | 33 | 8/8 | 11 / 9 |
@@ -113,9 +113,9 @@ No propongo cambiar el contenido congelado sin evidencia medida de estudiantes r
 | `what_you_like` | choose | express_preferences | 3 | 2 | 3 | sí (12) | sí | 39 | 8/8 | 10 / 11 |
 | `what_you_want` | choose | express_needs | 4 | 2 | 3 | sí (12) | sí | 35 | 8/8 | 4 / 11 |
 | `make_a_plan` | choose | make_plan | 6 | 1 | 0 | sí (9) | sí | 23 | 8/8 | 7 / 11 |
-| `a_coffee_please` | cafe | polite_request | 3 | 2 | 4 | sí (12) | sí | 34 | 8/8 | 2 / 12 |
-| `anything_else` | cafe | respond_anything_else | 3 | 2 | 3 | sí (11) | sí | 28 | 8/8 | 6 / 12 |
-| `your_first_order` | cafe | cafe_order | 4 | 1 | 0 | sí (7) | sí | 21 | 8/8 | 5 / 12 |
+| `a_coffee_please` | cafe | polite_request | 3 | 2 | 4 | sí (12) | sí | 34 | 8/8 | 2 / 14 |
+| `anything_else` | cafe | respond_anything_else | 3 | 2 | 3 | sí (11) | sí | 28 | 8/8 | 6 / 14 |
+| `your_first_order` | cafe | cafe_order | 4 | 1 | 0 | sí (7) | sí | 21 | 8/8 | 5 / 14 |
 | `lost_you` | repair | ask_for_repair | 3 | 2 | 3 | sí (11) | sí | 36 | 8/8 | 5 / 9 |
 | `say_again` | repair | ask_for_repair | 4 | 2 | 3 | sí (13) | sí | 22 | 8/8 | 5 / 9 |
 | `we_can_continue` | repair | close_an_encounter | 5 | 1 | 0 | sí (10) | sí | 22 | 8/8 | 7 / 9 |
@@ -156,7 +156,7 @@ No propongo cambiar el contenido congelado sin evidencia medida de estudiantes r
 | `where_is_it` | finding_your_way | ask_where_something_is | 3 | 2 | 4 | sí (12) | no (cerrado) | 30 | 8/8 | 1 / 9 |
 | `its_over_there` | finding_your_way | say_where_something_is | 3 | 2 | 5 | sí (13) | no (cerrado) | 31 | 8/8 | 1 / 9 |
 | `how_do_i_get_there` | finding_your_way | ask_about_getting_somewhere | 2 | 2 | 1 | sí (8) | no (cerrado) | 23 | 8/8 | 1 / 9 |
-| `more_than_ten` | paying_and_choosing | use_bigger_numbers | 3 | 2 | 4 | sí (12) | no (cerrado) | 23 | 8/8 | 2 / 8 |
+| `more_than_ten` | paying_and_choosing | use_bigger_numbers | 3 | 2 | 4 | sí (12) | no (cerrado) | 24 | 8/8 | 2 / 8 |
 | `how_much_is_it` | paying_and_choosing | ask_the_price | 3 | 2 | 4 | sí (12) | no (cerrado) | 28 | 8/8 | 1 / 8 |
 | `this_one_or_that_one` | paying_and_choosing | ask_the_price | 3 | 2 | 4 | sí (12) | no (cerrado) | 23 | 8/8 | 1 / 8 |
 | `buying_it` | paying_and_choosing | buy_something | 3 | 2 | 1 | sí (9) | no (cerrado) | 19 | 8/8 | 1 / 8 |

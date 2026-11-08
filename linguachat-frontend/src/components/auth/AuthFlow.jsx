@@ -5,6 +5,7 @@ import { ThemeToggle } from '../ui/ThemeToggle'
 import { LanguageSwitcher } from '../ui/LanguageSwitcher'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { authErrorKey, AUTH_PROVIDER_ERROR_KEYS } from '../../auth/authErrorKey.js'
+import { AGE_BRACKETS, ageGatePassed, answerAgeGate, isRecentlyBlocked } from '../../services/ageGate.js'
 
 function AuthShell({ children, back, onBack }) {
   const { t } = useApp()
@@ -132,7 +133,7 @@ function EntryScreen() {
           </div>
         )}
         <div className="flex flex-col gap-3 w-full" style={{ maxWidth: 340 }}>
-          <button onClick={() => setAuthStep('signup')}
+          <button onClick={() => setAuthStep('age')}
             className="w-full py-3.5 rounded-2xl font-bold text-white text-sm transition-all hover:opacity-90 hover:-translate-y-px active:scale-[0.98]"
             style={{ background: 'var(--accent)' }}>
             {t('entryStart')}
@@ -200,7 +201,7 @@ function LoginForm() {
         </form>
         <p style={{ textAlign: 'center', marginTop: 24, fontSize: '0.875rem', color: 'var(--muted)' }}>
           {t('newHere')}{' '}
-          <button onClick={() => setAuthStep('signup')} style={{ color: 'var(--accent)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>{t('startJourney')}</button>
+          <button onClick={() => setAuthStep('age')} style={{ color: 'var(--accent)', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer' }}>{t('startJourney')}</button>
         </p>
       </div>
     </AuthShell>
@@ -208,7 +209,88 @@ function LoginForm() {
 }
 
 /* ---- Signup ---- */
+const AGE_LABEL_KEY = { under_13: 'ageUnder13', '13_17': 'age13to17', '18_plus': 'age18plus' }
+
+/*
+ * The neutral age question (services/ageGate.js, docs/legal/age-and-safety-policy.md).
+ * Three equal answers, none preselected, nothing that hints at the "right" one,
+ * no birth date. Under 18: no account and a calm message — never how to get past it.
+ */
+function AgeQuestion({ titleKey, bodyKey, onAnswer }) {
+  const { t } = useApp()
+  const labelId = useId()
+  return (
+    <div className="animate-fade-up">
+      <h2 id={labelId} style={{ fontWeight: 800, fontSize: '1.5rem', color: 'var(--ink)', marginBottom: 6 }}>{t(titleKey)}</h2>
+      <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: 24, lineHeight: 1.55 }}>{t(bodyKey)}</p>
+      <div role="group" aria-labelledby={labelId} className="flex flex-col gap-3">
+        {AGE_BRACKETS.map(bracket => (
+          <button key={bracket} type="button" onClick={() => onAnswer(bracket)}
+            className="w-full py-3.5 rounded-2xl font-bold text-sm transition-all active:scale-[0.98]"
+            style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)', minHeight: 48 }}>
+            {t(AGE_LABEL_KEY[bracket])}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function AgeBlocked({ bodyKey = 'ageBlockedBody', action = null }) {
+  const { t } = useApp()
+  return (
+    <div role="status" className="animate-fade-up flex flex-col items-center text-center py-8">
+      <div style={{ marginBottom: 20 }}><ChattoMascot mood="supportive" size={72} decorative /></div>
+      <h2 style={{ fontWeight: 800, fontSize: '1.375rem', color: 'var(--ink)', marginBottom: 8 }}>{t('ageBlockedTitle')}</h2>
+      <p style={{ fontSize: '0.9375rem', color: 'var(--muted)', lineHeight: 1.6, marginBottom: 20, maxWidth: 360 }}>{t(bodyKey)}</p>
+      {action}
+    </div>
+  )
+}
+
+function AgeGate() {
+  const { setAuthStep } = useApp()
+  const [blocked, setBlocked] = useState(() => isRecentlyBlocked())
+  return (
+    <AuthShell back onBack={() => setAuthStep('entry')}>
+      {blocked
+        ? <AgeBlocked />
+        : <AgeQuestion titleKey="ageGateTitle" bodyKey="ageGateBody" onAnswer={(bracket) => {
+            const outcome = answerAgeGate(bracket)
+            if (outcome === 'continue') setAuthStep('signup')
+            else if (outcome === 'blocked') setBlocked(true)
+          }} />}
+    </AuthShell>
+  )
+}
+
+/* An account from before the age question answers it once, after signing in. */
+function AccountAgeGate() {
+  const { confirmAdultAge, logout, t } = useApp()
+  // the same device answered "under 18" before signing in: no second chance here
+  const [state, setState] = useState(() => (isRecentlyBlocked() ? 'blocked' : 'ask'))
+  return (
+    <AuthShell>
+      {state === 'blocked'
+        ? <AgeBlocked bodyKey="ageAccountBlockedBody" action={
+            <button type="button" onClick={() => logout()} className="px-6 py-3 rounded-2xl font-bold text-sm"
+              style={{ background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--ink)' }}>{t('ageSignOut')}</button>} />
+        : <AgeQuestion titleKey="ageAccountTitle" bodyKey="ageAccountBody" onAnswer={(bracket) => {
+            if (answerAgeGate(bracket) !== 'continue') setState('blocked')
+            else if (!confirmAdultAge()) setState('error')
+          }} />}
+      {state === 'error' && <p role="alert" style={{ fontSize: '0.8125rem', color: 'var(--accent)', marginTop: 12 }}>{t('authGenericError')}</p>}
+    </AuthShell>
+  )
+}
+
 function SignupForm() {
+  // the sign-up form exists only after the age question was answered 18+
+  if (!ageGatePassed()) return <AgeGate />
+  return <SignupFormFields />
+}
+
+function SignupFormFields() {
   const { setAuthStep, signup, resendConfirmation, t } = useApp()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -427,9 +509,11 @@ function ResetPassword() {
 }
 
 export function AuthFlow() {
-  const { authStep } = useApp()
+  const { authStep, ageConfirmationNeeded } = useApp()
+  if (ageConfirmationNeeded && !['reset'].includes(authStep)) return <AccountAgeGate />
   const screens = {
     entry: <EntryScreen />,
+    age: <AgeGate />,
     login: <LoginForm />,
     signup: <SignupForm />,
     forgot: <ForgotPassword />,

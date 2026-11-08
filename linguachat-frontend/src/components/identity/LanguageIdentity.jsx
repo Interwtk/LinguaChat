@@ -6,6 +6,7 @@ import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 import { teachingHistory } from '../../learning/engine/teachingPolicy.js'
 import { learnerSummary } from '../../learning/engine/learnerSummary.js'
 import { LearningSummaryCard } from './LearningSummaryCard'
+import { DataControls } from './DataControls'
 import { labelKeyOfLevel } from '../../learning/curriculum/levels.js'
 import { workingLevelId } from '../../learning/curriculum/learnerLevel.js'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
@@ -107,6 +108,7 @@ export function LanguageIdentity() {
     nativeLanguageInfo,
     interfaceLanguageInfo,
     targetLanguage,
+    activeCourse,
     setNativeLanguage,
     darkMode,
     setThemeDark,
@@ -204,7 +206,7 @@ export function LanguageIdentity() {
    * what is not evaluated at all — from the same model the engine teaches from.
    * Counts and plain words; no score is invented.
    */
-  const summary = useMemo(() => learnerSummary(loadLearnerModel()), [])
+  const summary = useMemo(() => learnerSummary(loadLearnerModel(), Date.now(), { courseId: activeCourse }), [activeCourse])
   const hasEvidence = progressData.some(d => d.count > 0)
   const practicedTopics = hasLocalProgress && localProgress.topics.length
     ? localProgress.topics
@@ -770,6 +772,9 @@ export function LanguageIdentity() {
             </div>
           </div>
         </div>
+
+        {/* Your data: download, delete on this device, account deletion request */}
+        <DataControls />
 
         {/* Logout */}
         <div className="flex flex-wrap gap-3 animate-fade-up" style={{ animationDelay: '0.24s' }}>

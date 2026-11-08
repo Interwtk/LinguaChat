@@ -1,0 +1,47 @@
+{
+ "harmful_items": 294,
+ "harmful": {
+  "safety": 103,
+  "not_understood": 185,
+  "question": 6
+ },
+ "legit": {
+  "not_understood": 152,
+  "question": 17,
+  "safety": 4
+ },
+ "safety_reply_pct": 35.0,
+ "treated_as_answer_pct": 0.0,
+ "by_kind": {
+  "contextual": {
+   "not_understood": 35,
+   "question": 5,
+   "safety": 4
+  },
+  "direct": {
+   "safety": 45,
+   "not_understood": 22
+  },
+  "indirect": {
+   "not_understood": 41,
+   "safety": 2
+  },
+  "manipulation": {
+   "not_understood": 16,
+   "safety": 10,
+   "question": 1
+  },
+  "mixed_language": {
+   "safety": 13,
+   "not_understood": 7
+  },
+  "obfuscated": {
+   "not_understood": 18,
+   "safety": 11
+  },
+  "reformulated": {
+   "not_understood": 46,
+   "safety": 18
+  }
+ }
+}

@@ -1,73 +1,43 @@
 /*
- * Pricing configuration — single source of truth for the plans UI.
+ * Plans — what LinguaChat honestly offers, and what it does not yet.
  *
- * IMPORTANT: no paid amount has been decided for LinguaChat yet. Premium is
- * therefore shown as "coming soon" and the data below is structured for regional
- * pricing without inventing numbers. When the commercial decision is made, fill
- * PREMIUM_PRICING[region] with real amounts — the UI switches from "coming soon"
- * to a formatted price automatically. Do not hardcode prices in components.
+ * Nothing is for sale during the beta. The free plan lists only features that
+ * exist and work today; each one names the capability that backs it (`proof`),
+ * and `scripts/check-honest-plans.mjs` fails the build when a listed feature
+ * has no such capability in the code. Premium carries NO feature list: it will
+ * list only what already works on the day it launches, and never safety,
+ * privacy controls or the core lessons.
+ *
+ * The "later" list is shown under an explicit "not available now" heading, so
+ * a learner can see what is being built without reading it as a promise.
+ *
+ * When a paid plan exists, its price, billing period, renewal and how to
+ * cancel are shown before payment (docs/business/monetization-plan.md); the
+ * structure for that is added then, not invented now.
  */
-
-// Feature rows reference i18n keys so the comparison stays localized.
-export const PLANS = [
-  {
-    id: 'basic',
-    nameKey: 'planBasicName',
-    taglineKey: 'planBasicTagline',
-    price: { type: 'free' },
-    featureKeys: [
-      'planFeatChatDaily',
-      'planFeatCorrections',
-      'planFeatPlacement',
-      'planFeatMissions',
-      'planFeatProgress',
-    ],
-    ctaKey: 'planBasicCta',
-    highlighted: false,
-  },
-  {
-    id: 'premium',
-    nameKey: 'planPremiumName',
-    taglineKey: 'planPremiumTagline',
-    price: { type: 'coming_soon' },
-    featureKeys: [
-      'planFeatEverythingBasic',
-      'planFeatUnlimited',
-      'planFeatDeeperFeedback',
-      'planFeatVoiceSoon',
-      'planFeatPriority',
-    ],
-    ctaKey: 'planPremiumCta',
-    highlighted: true,
-  },
-]
-
-// Regional scaffolding. Amounts stay null until a price is decided; a null amount
-// renders as "coming soon". `locale` drives Intl currency formatting.
-export const REGIONS = {
-  US: { labelKey: 'regionUS', currency: 'USD', locale: 'en-US' },
-  CL: { labelKey: 'regionCL', currency: 'CLP', locale: 'es-CL' },
-  MX: { labelKey: 'regionMX', currency: 'MXN', locale: 'es-MX' },
-  ES: { labelKey: 'regionES', currency: 'EUR', locale: 'es-ES' },
-  BR: { labelKey: 'regionBR', currency: 'BRL', locale: 'pt-BR' },
+export const FREE_PLAN = {
+  id: 'free',
+  nameKey: 'planFreeName',
+  taglineKey: 'planFreeTagline',
+  features: [
+    { key: 'planFeatLessons', proof: 'lessons' },
+    { key: 'planFeatCorrections', proof: 'corrections' },
+    { key: 'planFeatReviews', proof: 'reviews' },
+    { key: 'planFeatPracticeChat', proof: 'practiceChat' },
+    { key: 'planFeatSessions', proof: 'missions' },
+    { key: 'planFeatProgress', proof: 'progress' },
+    { key: 'planFeatDataControl', proof: 'dataControl' },
+  ],
+  ctaKey: 'planFreeCta',
 }
 
-export const REGION_ORDER = ['US', 'CL', 'MX', 'ES', 'BR']
-export const DEFAULT_REGION = 'US'
-
-// premium monthly amount per region — all null (undecided) on purpose.
-export const PREMIUM_PRICING = { US: null, CL: null, MX: null, ES: null, BR: null }
-
-export function formatPrice(region, amount) {
-  if (amount == null) return null
-  const config = REGIONS[region] || REGIONS[DEFAULT_REGION]
-  try {
-    return new Intl.NumberFormat(config.locale, {
-      style: 'currency',
-      currency: config.currency,
-      maximumFractionDigits: 0,
-    }).format(amount)
-  } catch {
-    return `${amount} ${config.currency}`
-  }
+export const PREMIUM_PLAN = {
+  id: 'premium',
+  nameKey: 'planPremiumName',
+  taglineKey: 'planPremiumNotYetTagline',
+  bodyKey: 'planPremiumNotYetBody',
+  available: false,
 }
+
+/* Being built — shown only under the "not available now" heading. */
+export const LATER = ['planLaterExtraPractice', 'planLaterLevels', 'planLaterVoice', 'planLaterAi']

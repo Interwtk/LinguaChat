@@ -1,5 +1,6 @@
 import { teachingHistory, retentionProbes, skillEvidence, evidenceSummary } from './teachingPolicy.js'
-import { getDueReviews } from './learnerModel.js'
+import { getDueReviews, retentionOfItem } from './learnerModel.js'
+import { belongsToCourse, DEFAULT_COURSE_ID } from '../courses/registry.js'
 import { derivePreA1Readiness, readinessFocus } from '../curriculum/readiness.js'
 
 const DAY = 86400000
@@ -16,19 +17,23 @@ const HELP_WINDOW_DAYS = 30
  * independent success on a capability whose earlier later-day probe failed —
  * not more clicks, not a streak.
  */
-export function learnerSummary(model, atMs = Date.now()) {
-  const items = Object.values(model?.languageItems || {})
+export function learnerSummary(model, atMs = Date.now(), { courseId = DEFAULT_COURSE_ID } = {}) {
+  // one course at a time: Spanish words are not English words learned
+  const items = Object.entries(model?.languageItems || {}).filter(([id]) => belongsToCourse(id, courseId)).map(([, item]) => item)
   const countState = state => items.filter(x => x?.learningState === state).length
   const words = {
     canUse: countState('can_use'),
     practicing: countState('practicing'),
     started: countState('seen') + countState('understood'),
+    // on more than one day, unaided; and what was had and then missed
+    retained: items.filter(x => retentionOfItem(x) === 'retained').length,
+    lapsed: items.filter(x => retentionOfItem(x) === 'lapsed').length,
   }
 
   let toReview = 0
-  try { toReview = model?.languageItems ? getDueReviews(model, atMs).length : 0 } catch { toReview = 0 }
+  try { toReview = model?.languageItems ? getDueReviews(model, atMs, { courseId }).length : 0 } catch { toReview = 0 }
 
-  const history = teachingHistory(model?.teachingHistory).filter(x => x.at <= atMs)
+  const history = teachingHistory(model?.teachingHistory).filter(x => x.at <= atMs && belongsToCourse(x.capability, courseId))
   const capabilities = [...new Set(history.map(x => x.capability))]
   const totals = { written: { successes: 0, failures: 0 }, listening: { successes: 0, failures: 0 } }
   let improved = 0
@@ -64,7 +69,8 @@ export function learnerSummary(model, atMs = Date.now()) {
   }
 
   let readiness = null
-  try { readiness = derivePreA1Readiness(model, { atMs }) } catch { readiness = null }
+  // the English Pre-A1 readiness reading describes the English course only
+  try { readiness = courseId === DEFAULT_COURSE_ID ? derivePreA1Readiness(model, { atMs }) : null } catch { readiness = null }
   const strengthen = (readiness?.fragileSkills || []).slice(0, 3)
   const notStarted = (readiness?.missingSkills || []).length
 

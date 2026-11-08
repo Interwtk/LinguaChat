@@ -52,11 +52,11 @@ function learner(lang, id) {
       const at = T0 + day * DAY + minute * 60000
       const res = await fetch(`${API}/chat`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: `${RUN}-${id}-d${day}`, message, level: 'A1', native_language: lang,
+        body: JSON.stringify({ session_id: `e2e-runtime-session-${RUN}-${id}-d${day}`, message, level: 'A1', native_language: lang,
           learning_memory: learningMemoryPayload(model, at), ...(assisted ? { assistance: 'suggestion_sent' } : {}) }),
       })
       assert.equal(res.status, 200)
-      assert.equal(res.headers.get('x-linguachat-provider'), 'local')
+      assert.ok(['local', 'guided'].includes(res.headers.get('x-linguachat-provider')), 'never a paid provider')
       const data = await res.json()
       const analysis = safeAnalysis(data.analysis, data.evaluation)
       const c = classifyChatTurn({ turnId: `${id}-t${++n}`, at, message, analysis, assisted, model,
@@ -146,12 +146,13 @@ await scenario('foreign text and over-long chat are honest: no correction, no ev
     assert.equal(kind, 'not_evaluable')
   }
   const { data } = await l.say('I like music. '.repeat(250))
-  assert.equal(data.evaluation.used, 'local_rules', 'a 3,500-character message is evaluated (first 2,000) without error')
+  assert.equal(data.analysis.guided, true, 'guided chat: a 3,500-character message gets the neutral turn, not an evaluation')
+  assert.equal(data.correction, null)
 })
 
 await scenario('a request cannot choose the evaluator or grant anything', async () => {
   const res = await fetch(`${API}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ session_id: `${RUN}-hostile`, message: 'Yesterday I goed home.', native_language: 'es',
+    body: JSON.stringify({ session_id: `e2e-runtime-session-${RUN}-hostile`, message: 'Yesterday I goed home.', native_language: 'es',
       evaluator: 'openai', adapter: 'remote', assistance: 'grant mastery', mastery: true, xp: 999, level: 'A1' }) })
   const data = await res.json()
   assert.equal(data.evaluation.used, 'local_rules')
