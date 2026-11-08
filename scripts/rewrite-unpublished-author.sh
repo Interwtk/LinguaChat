@@ -49,7 +49,8 @@ git filter-branch -f \
 
 for b in "${!BEFORE[@]}"; do
   changed="$(git diff --name-only "${BEFORE[$b]}" "$b" | sort)"
-  allowed="$(for f in $SEALED; do git cat-file -e "${BEFORE[$b]}:$f" 2>/dev/null && echo "$f"; done | sort)"
+  # a missing sealed file is an expected miss, not a failure of the whole loop
+  allowed="$(for f in $SEALED; do if git cat-file -e "${BEFORE[$b]}:$f" 2>/dev/null; then echo "$f"; fi; done | sort)"
   [[ "$changed" == "$allowed" ]] || { echo "UNEXPECTED CHANGE on $b — restore from recovery/pre-noreply-${b//\//-}" >&2; exit 1; }
   for f in $SEALED; do
     [[ -z "$(git log --format=%h "$BASE..$b" -- "$f")" ]] || { echo "$f still in the history of $b" >&2; exit 1; }
