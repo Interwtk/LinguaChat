@@ -50,8 +50,8 @@ Plan y garantías: `docs/release/2026-11-history-rewrite-plan.md`. Ensayado en u
 ## 5. Mejoras independientes
 
 - **Inglés A1 (cerrado), D1:** «di 45» aceptaba cualquier número y acreditaba 11–100 con «Five.». Ahora acepta solo el número pedido y muestra el modelo correcto. Pre-A1 sin cambios.
-- **Inglés A1, D2:** «How are you?» evaluaba una pregunta en vez de una respuesta.
-- **Nueva comprobación:** las 52 respuestas modelo de A1 pasan su propio evaluador. Antes una no pasaba.
+- **Inglés A1, D2:** corregido y **revertido**. Cambiaba el esqueleto curricular generado, que las garantías protegen frente a `main`; lo detectó el ciclo de QA. Pendiente de tu aprobación.
+- **Nueva comprobación:** 51 de 52 respuestas modelo de A1 pasan su propio evaluador. D2 queda listado como pendiente.
 - **Sellados privados:** fuera del árbol, comprobación en `check-sealed-private` y en el ciclo de QA.
 - **Script de reescritura:** quita también los sellados. El ensayo destapó un error del script, corregido.
 

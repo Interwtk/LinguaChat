@@ -77,6 +77,6 @@
 ## Corregido en la fase 8
 
 - **D1:** un paso que nombra su número (`exactNumber`) solo acepta ese número y muestra el modelo correcto («Forty-five.»). Un paso de rango (`numberRange: [11, 100]`) acredita 11–100 solo con números de ese rango. Pre-A1 no cambia: sin esos campos, todo sigue igual.
-- **D2:** el paso «How are you?» evalúa una respuesta (`answer_wellbeing`), no una pregunta. «Fine.» sola sigue como pista: el evaluador compartido enseña «I'm …».
-- Nuevo `check-a1-model-answers`: las 52 respuestas modelo de A1 pasan su propio evaluador. A1 sigue cerrado.
+- **D2: corregido y revertido.** El cambio (`answer_wellbeing`) modifica el esqueleto curricular generado, que las garantías de producto protegen frente a `main`. Espera tu aprobación.
+- Nuevo `check-a1-model-answers`: 51 de 52 respuestas modelo pasan su propio evaluador. D2 queda en una lista de pendientes que solo puede reducirse. A1 sigue cerrado.
 
