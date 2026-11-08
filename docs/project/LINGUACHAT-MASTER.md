@@ -17,7 +17,7 @@
 
 | Estado | Hoy |
 |---|---|
-| Código local | `beta/2026-11-es-for-en`, 88 commits sin publicar; A 8; propuestas JWT 52 y orden de opciones 27 |
+| Código local | `beta/2026-11-es-for-en`, 91 commits sin publicar (con este); A 8; propuestas JWT 52 y orden de opciones 27 |
 | Código listo para PR | Sí, **después** de reescribir el historial (sellados y correo) |
 | Código publicado | Nada nuevo. `origin/main` @ `086323c` |
 | Autenticación simulada | 10/10 (25 casos) |
