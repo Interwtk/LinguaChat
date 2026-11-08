@@ -39,7 +39,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # check:ledger-rollback rebuilds the P3 tree from history (a9f5bac)
+          # check:ledger-rollback rebuilds the P3 tree from history (pinned by tree id)
           fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
