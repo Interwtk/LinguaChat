@@ -25,6 +25,7 @@
 
 | Área | Estado real |
 |---|---|
+| **Bloqueo de *push*** | Restaurado el 2026-11-07: se había perdido en un ensayo de la fase 7. Sin ningún *push*, verificado en GitHub |
 | **Recuperación** | *Bundle* privado verificado en `%USERPROFILE%\LinguaChat-private\backups\`, con mapa de hashes. Etiquetas `recovery/pre-noreply-*` y `refs/original/*`, **solo locales** |
 | **Correo personal** | Ya no está en ningún commit sin publicar. **Sigue en `main`** (129 commits): no se reescribe historial publicado |
 | **Conjuntos sellados** | Fuera del historial a publicar y del árbol. Copia privada con hashes verificados |

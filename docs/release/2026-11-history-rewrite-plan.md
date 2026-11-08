@@ -74,4 +74,5 @@ Solo sobre commits **no publicados**. Para cada uno:
 - **Contenido:** ningún correo personal en el árbol de B. Queda una URL de Vercel con tu usuario en `docs/auth-email/README.md`, que **ya está en `main`** y no se modificó.
 - **Equivalencias de hashes citados en informes anteriores:** `54f5f27` → `2bf3cb5`, `4778fb8` → `51c9f5c`, `409bbf0` → `3d68de9`, `24065ba` → `b882094`, `fc55417` → `e10ae97`.
 - **QA sobre `31367fb`:** dos ciclos idénticos, 26/26, `check:all` 119/119, pytest 1799 / 28 omitidas, garantías 16/16, *rollback* desde git 30/30. Escaneo del historial: 0 coincidencias.
+- **Incidente encontrado y corregido.** El bloqueo de *push* del repositorio (`pushurl`) se había perdido en la fase 7. El primer ensayo falló al clonar por rutas largas, y sus comandos de remoto se ejecutaron en el repositorio real. Restaurado el 2026-11-07. Comprobado en GitHub: ninguna de las cuatro ramas ni ninguna etiqueta `recovery/*` existe en el remoto, y `main` sigue en `086323c`. No hubo *push*.
 
