@@ -1,7 +1,7 @@
 # LINGUACHAT — MAESTRO DEL PROYECTO
 
 > **Documento vivo.** Se actualiza al terminar cada bloque significativo.
-> - **Última actualización: 2026-11-07, fin de la Fase 7** («Release readiness», con la actualización del propietario: proyecto Supabase actual). El §0 resume el estado actual; los §1–§18 conservan el detalle de la fase 2, con correcciones marcadas.
+> - **Última actualización: 2026-11-07, fin de la Fase 8** («Preparación de la beta externa con la infraestructura existente»). El §0 resume el estado actual; los §1–§18 conservan el detalle de la fase 2, con correcciones marcadas.
 > - Regla: nada se marca «listo» si solo está diseñado. Cada afirmación cita su evidencia.
 >
 > **Relación con el protocolo de `CLAUDE.md`:**
@@ -11,49 +11,54 @@
 
 ---
 
-## 0. Estado al cierre de la Fase 7 (2026-11-07)
+## 0. Estado al cierre de la Fase 8 (2026-11-07)
 
-**Rama y commits.** `beta/2026-11-es-for-en`, solo local. **Código probado: `4778fb8`**; lo posterior es solo documentación. Sin publicar: A 8 commits, B 82 (con este), propuestas JWT 52 y orden de opciones 27. `origin/main` @ `086323c`, sin cambios. Respaldos `recovery/*` intactos. Informe: `docs/audits/2026-11-beta-phase7.md`.
+**Código probado: `54f5f27`** (dos ciclos idénticos). Lo posterior es solo documentación. Informe: `docs/audits/2026-11-beta-phase8.md`.
 
-**Entrega de informes (permanente).** `python scripts/export_reports.py --label <fase> --report <informe>` → `Descargas\LinguaChat-Reportes-ChatGPT\<fase>\`.
-
-**Estado: A (interna) sí; B (externa gratuita) no; C (comercial) no.** Matriz completa en el informe de la fase 7, §7.
+| Estado | Hoy |
+|---|---|
+| Código local | `beta/2026-11-es-for-en`, 88 commits sin publicar; A 8; propuestas JWT 52 y orden de opciones 27 |
+| Código listo para PR | Sí, **después** de reescribir el historial (sellados y correo) |
+| Código publicado | Nada nuevo. `origin/main` @ `086323c` |
+| Autenticación simulada | 10/10 (25 casos) |
+| Autenticación real | **0 de 10** |
+| Beta interna (A) | **Sí** |
+| Beta externa (B) | **No** |
+| Beta comercial (C) | **No** |
 
 | Área | Estado real |
 |---|---|
-| **Git y PR** | Nada publicado. Repositorio **público**, `main` **sin protección**. #135 en conflicto, #137 en borrador y fusionable, sin tocar |
-| **Correo personal** | En autor y *committer* de todos los commits sin publicar. Publicarlo es **irreversible**. Script de reescritura a noreply ensayado en un clon: mismos árboles, la cadena main → A → B se conserva. **No aplicado** |
-| **Conjuntos sellados** | 5 archivos se harían públicos con el *push* y dejarían de medir. Recomendación: retirarlos del historial publicado en la misma reescritura |
-| **Preview de Vercel** | **No verificada como privada.** Usará el **mismo** proyecto Supabase que producción, así que la protección es imprescindible. Guía clic a clic: `docs/release/2026-11-hosting-and-preview-protection.md` |
-| **Supabase** | **Decisión del propietario:** el proyecto actual, sin otro proyecto ni plan nuevo. La app solo toca Auth y metadatos de edad (`learner_preferences` no, con `CLOUD_PREFERENCES_RELEASED=false`). Revisión previa de solo lectura y cuentas `+lcqa`: `docs/release/2026-11-supabase-existing-project-qa.md` |
-| **Autenticación** | Simulada 10/10. **Real: 0 de 10, sin ejecutar.** Ejecutor listo con pruebas negativas del servidor. Claves `anon` y `sb_publishable_` aceptadas; secreta rechazada en el navegador |
-| **JWT** | Propuesta sin fusionar, apagada. Ensayo de integración: **1886 pruebas** pasan. Activación atómica documentada: frontend y backend a la vez, solo en Preview. **No migrar ni rotar claves** de un proyecto en uso sin plan aprobado |
-| **Seguridad del tutor** | Sin cambios en esta fase. Sellado v2: válidas 75,5 %, preguntas 63,9 %, seguridad manejada **29,2 %**, dañinos como respuesta **0 de 48**. Detección global 35 %; crisis indirectas **5 %**. Chat libre cerrado |
-| **Inglés** | Pre-A1 abierto, congelado. A1 cerrado (22 defectos abiertos). Orden de opciones **esperando aprobación** |
-| **Español** | Pre-A1 abierto. A1: 6 de 20 lecciones, cerrado. Sellado v2: válidas 91,7 %, errores detectados 60,5 % |
-| **Premium y precios** | **Apagado.** 13 requisitos para vender, ninguno completo. Ninguna región vendible |
-| **Hosting** | **Vercel Hobby prohíbe el uso comercial.** Cobrar exige Pro (USD 20 al mes) u otra opción. Si una beta gratuita ya cuenta como comercial: **ambiguo** |
-| **SII** | Sin inicio de actividades ni régimen; contador pendiente. Polar y Paddle: *merchant of record*, Chile admitido, aceptación de un producto con IA **ambigua** |
-| **QA** | Dos ciclos idénticos sobre `4778fb8`: 25/25, `check:all` 118/118, pytest 1799 / 28 omitidas |
+| **Correo personal** | **Ya público en `main`** (129 commits, Outlook y Gmail). Las fases 6 y 7 lo describieron mal. Reescribir los commits locales evita sumar más; no retira lo publicado. No se reescribe `main` |
+| **Conjuntos sellados** | Fuera del árbol versionado, ignorados, con copia privada y hashes fuera del repositorio. `check-sealed-private` en el ciclo. **Siguen en el historial local**: la reescritura los quita, ensayada en un clon con resultado correcto |
+| **Preview** | Vercel Authentication con *Standard Protection* **confirmada** (`all_except_custom_domains`). Dominios personalizados **sin proteger**. Un **enlace compartible** puede saltarse la autenticación: revisarlo o revocarlo. **Sin verificar desde incógnito**. Usa el mismo Supabase que producción |
+| **Supabase** | El proyecto actual, sin cambios. Revisión de solo lectura preparada. Ejecutor revisado: solo crea dos cuentas `+lcqa`, pide recuperación y cierra sesión; no borra ni configura |
+| **JWT** | Propuesta sin fusionar, apagada. Ensayo con la beta actual: 1886 pruebas. 87 casos adversariales locales |
+| **Tutor y seguridad** | Sellado v2: válidas 75,5 %, preguntas 63,9 %, seguridad manejada 29,2 %, dañinos como respuesta 0 de 48. Crisis indirectas 5 %. Chat libre cerrado |
+| **Inglés** | Pre-A1 congelado. A1 cerrado: D1 corregido (números 11–100); D2 revertido por proteger el archivo generado, **pendiente de aprobación**; 21 defectos más abiertos. Orden de opciones pendiente |
+| **Español** | Pre-A1 abierto; A1 6 de 20, cerrado. Sellado v2: válidas 91,7 % |
+| **Premium y precios** | Apagado; 13 requisitos sin completar; ninguna región vendible |
+| **Hosting** | Hobby prohíbe el uso comercial; cobrar exige Pro u otra opción |
+| **SII** | Sin inicio de actividades ni régimen; contador pendiente |
+| **QA** | Dos ciclos idénticos sobre `54f5f27`: 26/26, `check:all` 119/119, pytest 1799 / 28 omitidas, garantías 16/16 |
 
 **Autorizaciones pendientes, en orden:**
 
-| # | Decisión | Consecuencia |
+| # | Acción | Efecto |
 |---|---|---|
-| 1 | Reescribir commits a noreply (dirección copiada de GitHub → Settings → Emails) y retirar los conjuntos sellados del historial | Hashes nuevos y dos ciclos de QA más. Sin esto, el correo y los sellados quedan públicos para siempre |
-| 2 | Activar *Standard Protection* con *Vercel Authentication* y revisar las variables | Sin esto, una Preview puede ser pública y llegar al proyecto de producción |
-| 3 | *Push* y dos PR en borrador | Código público y Previews |
-| 4 | Revisión previa de solo lectura del proyecto Supabase, y añadir la URL de Preview en *Redirect URLs* | Permite los 10 recorridos con cuentas `+lcqa` |
-| 5 | Ejecutar los recorridos (ejecutor y navegador) | La única prueba real de B |
-| 6 | JWT: `CLAUDE.md`, rama y dependencia | Encender después de 5 |
-| 7 | Orden de opciones · contacto de privacidad · Chatto · revisión humana y legal | Requisitos de B |
-| 8 | Hosting comercial, contador, procesador | Requisitos de C |
+| 1 | Reescribir el historial local con tu noreply y sin los sellados | Hashes nuevos y dos ciclos de QA |
+| 2 | Revocar el enlace compartible de Vercel y comprobar la Preview en incógnito | Preview realmente privada |
+| 3 | *Push* de las ramas reescritas y dos PR en borrador | Código público y Previews |
+| 4 | Revisión de solo lectura del proyecto y *Redirect URLs* | Habilita los recorridos |
+| 5 | Ejecutar los recorridos con cuentas `+lcqa` | Escribe dos cuentas de prueba en el proyecto actual |
+| 6 | JWT: `CLAUDE.md`, rama y dependencia | Se enciende después de 5, solo en Preview |
+| 7 | D2 de inglés A1 y orden de opciones | Cambian archivos protegidos |
+| 8 | Contacto de privacidad, Chatto, revisión humana y legal | Requisitos de B |
 
-**Meta del 15 de noviembre:** beta externa gratuita por invitación (5 a 15 adultos, sin Premium) **solo si** se completan 1 a 5 y los 10 recorridos pasan, más el contacto de privacidad. Si no: beta interna. Nunca cobros.
+**Meta del 15 de noviembre:** B (gratuita, por invitación, 5 a 15 adultos) **solo** con 1 a 5 hechos, los 10 recorridos aprobados y los requisitos de B del punto 8. Si no: A.
 
-**Del 16 al 30 y después:** defectos de inglés A1 y decisión de apertura; español A1 hasta 20 lecciones; frases reales del piloto, con consentimiento, para el tutor; JWT en Preview y luego producción; preparar C (hosting, contador, procesador) sin cobrar; A2 en adelante solo con revisión humana.
+**Del 16 al 30 y después:** defectos de inglés A1; español A1 hasta 20 lecciones; frases reales del piloto, con consentimiento, para el tutor; JWT en Preview y luego en producción; preparar C sin cobrar; A2 en adelante con revisión humana.
 
-**Próximo paso que desbloquea el lanzamiento:** decisiones 1 y 2, y después 4.
+**Siguiente acción:** autorización 1 y acción 2.
 
 ## 1. Visión del producto
 - **Qué es:** una plataforma multidioma de práctica conversacional. El estudiante elige qué idioma aprender. Un solo motor educativo.

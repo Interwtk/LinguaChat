@@ -185,6 +185,26 @@
 
 **Nada de esto se ha ejecutado.**
 
+## Ciclos de la fase 8 (`scripts/qa-cycle.mjs`)
+
+**Commit de código probado: `54f5f27`** (árbol limpio antes y después). Dos ciclos; `--compare`: **IDENTICAL AND CLEAN**. Lo posterior es documentación.
+
+| Etapa | k1 y k2 |
+|---|---|
+| Etapas · `check:all` | **26/26** · **119/119** (nuevas: sellados privados, respuestas modelo de A1) |
+| Backend `pytest` | **1799 / 28 omitidas** |
+| Garantías de producto | **16/16** |
+| Sellados (miden, no aprueban) | sin cambios respecto de la fase 7 |
+| e2e | 4/4 y 5/5 |
+| Secretos | árbol 840 versionados, 0; historial 597.008 líneas, 0 |
+
+**Historia (sin ocultar fallos).**
+1. Primer intento, sobre `dc651e7`: 25/26. La matriz curricular y el esqueleto generado quedaron desactualizados tras mi corrección D2, y el árbol quedó sucio.
+2. Segundo intento, sobre `379fa15`: 25/26. La garantía «Pre-A1… sin cambios frente a main» detectó que D2 modificaba el esqueleto generado, que contiene todos los niveles.
+3. D2 revertido en `be1c112`. La garantía no se tocó.
+
+**Tipos de prueba.** Simuladas: 10 recorridos. Locales: ensayo de reescritura en un clon y ensayo de fusión JWT (1886). Reales: **ninguna**.
+
 ## Ciclos de la fase 7 (`scripts/qa-cycle.mjs`)
 
 **Commit de código probado: `4778fb8`** (árbol limpio antes y después). Dos ciclos; `--compare`: **IDENTICAL AND CLEAN**. Lo posterior es documentación.
