@@ -419,7 +419,7 @@
         "speaker": "lingua",
         "promptEn": "How are you?",
         "instructionKey": "ep38WellbeingInstruction",
-        "evalKind": "answer_wellbeing",
+        "evalKind": "ask_wellbeing",
         "suggestionEn": "I’m good, thanks.",
         "itemIds": [
           "im_good"

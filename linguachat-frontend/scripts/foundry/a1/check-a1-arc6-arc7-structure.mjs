@@ -121,8 +121,6 @@ for (const ep of A1_ARC6_ARC7_EPISODES) {
 /* ---- 7. evalKind coverage: every evalKind used must be a real arc6/7 intent, a shipped A1 evalKind, or a documented repairKind extension ---- */
 const SHIPPED_A1_EVAL_KINDS = new Set([
   'introduction', 'ask_wellbeing', 'express_like', 'repair_request', 'close_encounter',
-  // documented reuse (phase 6 review, D2): "How are you?" asks for an answer, not a question
-  'answer_wellbeing',
 ])
 const evalKindsUsed = new Set()
 for (const ep of A1_ARC6_ARC7_EPISODES) for (const s of collectSteps(ep.steps || [])) if (s.evalKind) evalKindsUsed.add(s.evalKind)
