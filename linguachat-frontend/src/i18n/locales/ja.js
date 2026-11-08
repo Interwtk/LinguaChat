@@ -1940,6 +1940,7 @@ export default {
   ep30RepairInstruction: "もう一度と頼む言い方は知っている。",
   ep30TimeInstruction: "数字は時刻にもなる。どの時計が合っている？",
   ep30AgainInstruction: "今回は画面に何もない。数字を言おう。",
+  ep30RetryExplainExact: "聞こえた数字を言いましょう：",
   ep30FinalInstruction: "もう一つ数字を、覚えているとおりに。",
   ep30CloseTitle: "10は天井じゃない",
   ep30CloseBody: "値段も時刻も電話番号も、もう全部言える。",

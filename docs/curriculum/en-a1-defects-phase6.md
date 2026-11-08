@@ -74,3 +74,9 @@
 - **D4:** se aceptan «eleven», «twelve», «half past…», «quarter to…», «noon» y «midnight».
 - Solo cambió el evaluador; ningún contenido. Siguen en verde los recorridos pedagógicos, A1 y la congelación de Pre-A1. Los demás defectos quedan abiertos.
 
+## Corregido en la fase 8
+
+- **D1:** un paso que nombra su número (`exactNumber`) solo acepta ese número y muestra el modelo correcto («Forty-five.»). Un paso de rango (`numberRange: [11, 100]`) acredita 11–100 solo con números de ese rango. Pre-A1 no cambia: sin esos campos, todo sigue igual.
+- **D2:** el paso «How are you?» evalúa una respuesta (`answer_wellbeing`), no una pregunta. «Fine.» sola sigue como pista: el evaluador compartido enseña «I'm …».
+- Nuevo `check-a1-model-answers`: las 52 respuestas modelo de A1 pasan su propio evaluador. A1 sigue cerrado.
+

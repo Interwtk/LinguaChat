@@ -1946,6 +1946,7 @@ export default {
   ep30RepairInstruction: "Tu sais déjà comment demander de répéter.",
   ep30TimeInstruction: "Un nombre peut aussi être une heure. Quelle horloge correspond ?",
   ep30AgainInstruction: "Rien à l’écran cette fois. Dis le nombre.",
+  ep30RetryExplainExact: "Dis le nombre que tu as entendu :",
   ep30FinalInstruction: "Encore un nombre, de mémoire.",
   ep30CloseTitle: "Dix n’est pas le plafond",
   ep30CloseBody: "Prix, heures, numéros de téléphone — tu peux tous les dire maintenant.",

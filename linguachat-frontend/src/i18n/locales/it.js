@@ -1946,6 +1946,7 @@ export default {
   ep30RepairInstruction: "Sai già come chiedere di ripetere.",
   ep30TimeInstruction: "Un numero può essere anche un’ora. Quale orologio corrisponde?",
   ep30AgainInstruction: "Niente sullo schermo questa volta. Di’ il numero.",
+  ep30RetryExplainExact: "Di' il numero che hai sentito:",
   ep30FinalInstruction: "Un altro numero, a memoria.",
   ep30CloseTitle: "Dieci non è il tetto",
   ep30CloseBody: "Prezzi, orari, numeri di telefono — ora puoi dirli tutti.",

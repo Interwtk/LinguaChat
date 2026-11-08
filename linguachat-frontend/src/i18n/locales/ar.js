@@ -1970,6 +1970,7 @@ export default {
   ep30RepairInstruction: "تعرف بالفعل كيف تطلب إعادته.",
   ep30TimeInstruction: "قد يكون الرقم وقتًا أيضًا. أي ساعة تطابقه؟",
   ep30AgainInstruction: "لا شيء على الشاشة هذه المرة. قل الرقم.",
+  ep30RetryExplainExact: "قل الرقم الذي سمعته:",
   ep30FinalInstruction: "رقم آخر، من الذاكرة.",
   ep30CloseTitle: "عشرة ليست السقف",
   ep30CloseBody: "الأسعار، الأوقات، أرقام الهواتف — تستطيع الآن قول أيٍّ منها.",

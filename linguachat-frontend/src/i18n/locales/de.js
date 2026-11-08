@@ -1946,6 +1946,7 @@ export default {
   ep30RepairInstruction: "Du weißt schon, wie man darum bittet, das noch einmal zu hören.",
   ep30TimeInstruction: "Eine Zahl kann auch eine Uhrzeit sein. Welche Uhr passt?",
   ep30AgainInstruction: "Diesmal nichts auf dem Bildschirm. Sag die Zahl.",
+  ep30RetryExplainExact: "Sag die Zahl, die du gehört hast:",
   ep30FinalInstruction: "Noch eine Zahl, aus dem Kopf.",
   ep30CloseTitle: "Zehn ist nicht die Grenze",
   ep30CloseBody: "Preise, Uhrzeiten, Telefonnummern — jetzt kannst du sie alle sagen.",

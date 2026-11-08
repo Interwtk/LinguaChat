@@ -1963,6 +1963,7 @@ const base = {
   ep30RepairInstruction: "You already know how to ask for that again.",
   ep30TimeInstruction: "A number can be a time, too. Which clock matches?",
   ep30AgainInstruction: "Nothing on screen this time. Say the number.",
+  ep30RetryExplainExact: "Say the number you heard:",
   ep30FinalInstruction: "One more number, from memory.",
   ep30CloseTitle: "Ten is not the ceiling",
   ep30CloseBody: "Prices, times, phone numbers — you can say any of them now.",

@@ -642,6 +642,8 @@ function EpisodeRunner({ episode, episodeId, onComplete = null, interestId = nul
         relationHint: step.relationHint || undefined,
         quantityForm: step.quantityForm || undefined,
         targetCount: stepCount || undefined,
+        exactNumber: Number.isInteger(step.exactNumber) ? step.exactNumber : undefined,
+        numberRange: Array.isArray(step.numberRange) ? step.numberRange : undefined,
         abilityForm: step.abilityForm || undefined,
         arrangeStage: step.arrangeStage || undefined,
         praisePrefix: step.praisePrefix || undefined,
