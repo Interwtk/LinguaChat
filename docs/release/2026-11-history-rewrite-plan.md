@@ -1,6 +1,6 @@
 # Historial publicable: plan de reescritura
 
-> Fase 8, 2026-11-07. **No ejecutado en las ramas reales.** Ensayado en un clon desechable. Requiere tu autorización.
+> Fase 8, 2026-11-07. **Ejecutado el 2026-11-07 con tu autorización**, solo en local. Nada publicado. Resultado en el §5.
 
 ## 1. Qué está publicado y qué no
 
@@ -55,3 +55,23 @@ Solo sobre commits **no publicados**. Para cada uno:
 6. Recién entonces, el *push* autorizado: ramas nuevas, nunca *force push* sobre ramas ajenas ni sobre `main`.
 
 **Reversión antes del *push*:** `git branch -f <rama> recovery/pre-noreply-<rama>` para cada rama. Después del *push*: cerrar el PR y borrar la rama remota. Lo publicado queda en `refs/pull`.
+
+## 5. Resultado de la reescritura autorizada
+
+- **Dirección:** `119076338+Interwtk@users.noreply.github.com`. Salió de tu cuenta autenticada (`gh api user`) y coincide con 529 commits de `main`. No se inventó.
+- **Respaldo previo, privado:** `%USERPROFILE%\LinguaChat-private\backups\pre-noreply-2026-11-07.bundle`, con su SHA-256, las referencias anteriores y el mapa de hashes viejos a nuevos (`noreply-commit-map.txt`). `git bundle verify`: correcto.
+- **Recuperación local**, nunca para publicar: etiquetas `recovery/pre-noreply-*` y `refs/original/*`.
+
+| Rama | Antes | Ahora | Commits | Sellados en el historial | Otras direcciones |
+|---|---|---|---|---|---|
+| `integration/local-p0-p5` | `e656e04` | `f146170` | 8 | 0 | 0 |
+| `beta/2026-11-es-for-en` | `819ce43` | `31367fb` | 91 | 0 | 0 |
+| `proposal/backend-jwt-verify` | `ff6e7d8` | `8b52636` | 52 | 0 | 0 |
+| `proposal/pre-a1-option-order` | `7e6d48e` | `1c9a7b6` | 27 | 0 | 0 |
+
+- **Árboles:** iguales en A, B y orden de opciones. La propuesta JWT difiere solo en los dos conjuntos sellados que contenía.
+- **Cadena:** `main` → A → B correcta, 83 commits propios de B. La propuesta JWT comparte la historia reescrita.
+- **Contenido:** ningún correo personal en el árbol de B. Queda una URL de Vercel con tu usuario en `docs/auth-email/README.md`, que **ya está en `main`** y no se modificó.
+- **Equivalencias de hashes citados en informes anteriores:** `54f5f27` → `2bf3cb5`, `4778fb8` → `51c9f5c`, `409bbf0` → `3d68de9`, `24065ba` → `b882094`, `fc55417` → `e10ae97`.
+- **QA sobre `31367fb`:** dos ciclos idénticos, 26/26, `check:all` 119/119, pytest 1799 / 28 omitidas, garantías 16/16, *rollback* desde git 30/30. Escaneo del historial: 0 coincidencias.
+

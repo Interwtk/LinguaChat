@@ -1,7 +1,7 @@
 # LINGUACHAT — MAESTRO DEL PROYECTO
 
 > **Documento vivo.** Se actualiza al terminar cada bloque significativo.
-> - **Última actualización: 2026-11-07, fin de la Fase 8** («Preparación de la beta externa con la infraestructura existente»). El §0 resume el estado actual; los §1–§18 conservan el detalle de la fase 2, con correcciones marcadas.
+> - **Última actualización: 2026-11-07, reescritura local autorizada del historial** (después de la Fase 8). El §0 resume el estado actual; los §1–§18 conservan el detalle de la fase 2, con correcciones marcadas.
 > - Regla: nada se marca «listo» si solo está diseñado. Cada afirmación cita su evidencia.
 >
 > **Relación con el protocolo de `CLAUDE.md`:**
@@ -11,54 +11,40 @@
 
 ---
 
-## 0. Estado al cierre de la Fase 8 (2026-11-07)
+## 0. Estado después de la reescritura local autorizada (2026-11-07)
 
-**Código probado: `54f5f27`** (dos ciclos idénticos). Lo posterior es solo documentación. Informe: `docs/audits/2026-11-beta-phase8.md`.
+**Código probado: `31367fb`** (dos ciclos idénticos sobre la historia reescrita). Lo posterior es solo documentación. Los hashes de informes anteriores cambiaron: equivalencias en `docs/release/2026-11-history-rewrite-plan.md` §5.
 
 | Estado | Hoy |
 |---|---|
-| Código local | `beta/2026-11-es-for-en`, 91 commits sin publicar (con este); A 8; propuestas JWT 52 y orden de opciones 27 |
-| Código listo para PR | Sí, **después** de reescribir el historial (sellados y correo) |
+| Código local | Cuatro ramas reescritas: solo tu noreply, sin conjuntos sellados en el historial |
+| Código listo para PR | **Sí**: A `integration/local-p0-p5` @ `f146170` (8 commits, base `main`) y B `beta/2026-11-es-for-en` (83 commits propios hasta `31367fb`, base A) |
 | Código publicado | Nada nuevo. `origin/main` @ `086323c` |
-| Autenticación simulada | 10/10 (25 casos) |
-| Autenticación real | **0 de 10** |
-| Beta interna (A) | **Sí** |
-| Beta externa (B) | **No** |
-| Beta comercial (C) | **No** |
+| Autenticación simulada · real | 10/10 · **0 de 10** |
+| Beta A · B · C | **Sí** · No · No |
 
 | Área | Estado real |
 |---|---|
-| **Correo personal** | **Ya público en `main`** (129 commits, Outlook y Gmail). Las fases 6 y 7 lo describieron mal. Reescribir los commits locales evita sumar más; no retira lo publicado. No se reescribe `main` |
-| **Conjuntos sellados** | Fuera del árbol versionado, ignorados, con copia privada y hashes fuera del repositorio. `check-sealed-private` en el ciclo. **Siguen en el historial local**: la reescritura los quita, ensayada en un clon con resultado correcto |
-| **Preview** | Vercel Authentication con *Standard Protection* **confirmada** (`all_except_custom_domains`). Dominios personalizados **sin proteger**. Un **enlace compartible** puede saltarse la autenticación: revisarlo o revocarlo. **Sin verificar desde incógnito**. Usa el mismo Supabase que producción |
-| **Supabase** | El proyecto actual, sin cambios. Revisión de solo lectura preparada. Ejecutor revisado: solo crea dos cuentas `+lcqa`, pide recuperación y cierra sesión; no borra ni configura |
-| **JWT** | Propuesta sin fusionar, apagada. Ensayo con la beta actual: 1886 pruebas. 87 casos adversariales locales |
-| **Tutor y seguridad** | Sellado v2: válidas 75,5 %, preguntas 63,9 %, seguridad manejada 29,2 %, dañinos como respuesta 0 de 48. Crisis indirectas 5 %. Chat libre cerrado |
-| **Inglés** | Pre-A1 congelado. A1 cerrado: D1 corregido (números 11–100); D2 revertido por proteger el archivo generado, **pendiente de aprobación**; 21 defectos más abiertos. Orden de opciones pendiente |
-| **Español** | Pre-A1 abierto; A1 6 de 20, cerrado. Sellado v2: válidas 91,7 % |
-| **Premium y precios** | Apagado; 13 requisitos sin completar; ninguna región vendible |
-| **Hosting** | Hobby prohíbe el uso comercial; cobrar exige Pro u otra opción |
-| **SII** | Sin inicio de actividades ni régimen; contador pendiente |
-| **QA** | Dos ciclos idénticos sobre `54f5f27`: 26/26, `check:all` 119/119, pytest 1799 / 28 omitidas, garantías 16/16 |
+| **Recuperación** | *Bundle* privado verificado en `%USERPROFILE%\LinguaChat-private\backups\`, con mapa de hashes. Etiquetas `recovery/pre-noreply-*` y `refs/original/*`, **solo locales** |
+| **Correo personal** | Ya no está en ningún commit sin publicar. **Sigue en `main`** (129 commits): no se reescribe historial publicado |
+| **Conjuntos sellados** | Fuera del historial a publicar y del árbol. Copia privada con hashes verificados |
+| **Preview** | *Standard Protection* confirmada. Pendiente: revocar el enlace compartible y verificar en incógnito. Dominios personalizados sin proteger |
+| **Supabase** | Proyecto actual, sin cambios. Recorridos con cuentas `+lcqa`, listos para ejecutar con autorización |
+| **JWT** | Propuesta `8b52636`, sin fusionar, apagada |
+| **Tutor y seguridad** | Sin cambios: sellado v2 válidas 75,5 %, preguntas 63,9 %, seguridad 29,2 %, dañinos como respuesta 0 de 48; crisis indirectas 5 %. Chat libre cerrado |
+| **Inglés · español** | Pre-A1 abiertos; A1 cerrados (inglés: D2 pendiente de aprobación; español: 6 de 20) |
+| **Premium, precios, SII, hosting** | Sin cambios: apagado, sin precios aprobados, sin inicio de actividades, Hobby no permite cobrar |
+| **QA** | 26/26 dos veces sobre `31367fb`; `check:all` 119/119; pytest 1799 / 28 omitidas; garantías 16/16; historial sin secretos |
 
-**Autorizaciones pendientes, en orden:**
+**Siguiente paso exacto:** `docs/release/2026-11-next-step-publish-and-real-qa.md`.
+1. Revocar el enlace compartible.
+2. Autorizar el *push* de A y B (sin `--all`, `--tags` ni `--force`) y dos PR en borrador.
+3. Verificar la Preview en incógnito.
+4. Revisión de solo lectura y *Redirect URLs*.
+5. Los 10 recorridos con cuentas `+lcqa`.
+6. JWT coordinado.
 
-| # | Acción | Efecto |
-|---|---|---|
-| 1 | Reescribir el historial local con tu noreply y sin los sellados | Hashes nuevos y dos ciclos de QA |
-| 2 | Revocar el enlace compartible de Vercel y comprobar la Preview en incógnito | Preview realmente privada |
-| 3 | *Push* de las ramas reescritas y dos PR en borrador | Código público y Previews |
-| 4 | Revisión de solo lectura del proyecto y *Redirect URLs* | Habilita los recorridos |
-| 5 | Ejecutar los recorridos con cuentas `+lcqa` | Escribe dos cuentas de prueba en el proyecto actual |
-| 6 | JWT: `CLAUDE.md`, rama y dependencia | Se enciende después de 5, solo en Preview |
-| 7 | D2 de inglés A1 y orden de opciones | Cambian archivos protegidos |
-| 8 | Contacto de privacidad, Chatto, revisión humana y legal | Requisitos de B |
-
-**Meta del 15 de noviembre:** B (gratuita, por invitación, 5 a 15 adultos) **solo** con 1 a 5 hechos, los 10 recorridos aprobados y los requisitos de B del punto 8. Si no: A.
-
-**Del 16 al 30 y después:** defectos de inglés A1; español A1 hasta 20 lecciones; frases reales del piloto, con consentimiento, para el tutor; JWT en Preview y luego en producción; preparar C sin cobrar; A2 en adelante con revisión humana.
-
-**Siguiente acción:** autorización 1 y acción 2.
+**Meta del 15 de noviembre:** B solo con esos pasos aprobados, contacto de privacidad, derechos de Chatto y revisión humana para el piloto. Si no, A.
 
 ## 1. Visión del producto
 - **Qué es:** una plataforma multidioma de práctica conversacional. El estudiante elige qué idioma aprender. Un solo motor educativo.
