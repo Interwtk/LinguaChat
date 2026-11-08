@@ -103,6 +103,8 @@ DOCUMENTS = [
     ("Beta y preparación", "docs/release/2026-11-supabase-test-project-guide.md"),
     ("Beta y preparación", "docs/release/2026-11-hosting-and-preview-protection.md"),
     ("QA, riesgos y bloqueos", "docs/audits/2026-11-beta-phase7.md"),
+    ("QA, riesgos y bloqueos", "docs/audits/2026-11-beta-phase8.md"),
+    ("Beta y preparación", "docs/release/2026-11-history-rewrite-plan.md"),
     ("Beta y preparación", "docs/release/2026-11-pr-authorization-request.md"),
     ("Seguridad", "docs/architecture/jwt-integration-review.md"),
     ("Inglés y español", "docs/curriculum/en-a1-defects-phase6.md"),
