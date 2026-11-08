@@ -14,7 +14,7 @@ function formatTime(ts) {
  * sentence — which is what it used to do.
  */
 export function MessageBubble({ message, previousUserText = null }) {
-  const { selectedMessage, selectMessage, submitMissionOption, isTyping, activeMissionDetails } = useApp()
+  const { selectedMessage, selectMessage, submitMissionOption, isTyping, activeMissionDetails, t } = useApp()
   const isUser = message.role === 'user'
   const isSelected = selectedMessage?.id === message.id
   const isCurrentMissionStep = Boolean(
@@ -30,7 +30,8 @@ export function MessageBubble({ message, previousUserText = null }) {
     return (
       <div className="flex justify-end mb-4 animate-message-in">
         <div className="flex flex-col items-end gap-1">
-          <div className="bubble-user">{message.text}</div>
+          {/* the learner may write English or their own language: let the text decide its direction */}
+          <div className="bubble-user" dir="auto">{message.text}</div>
           <span style={{ fontSize: 11, color: 'var(--muted)' }}>{formatTime(message.ts)}</span>
         </div>
       </div>
@@ -50,7 +51,10 @@ export function MessageBubble({ message, previousUserText = null }) {
           }`}
           style={{ '--tw-ring-color': 'var(--accent-tint)', '--tw-ring-offset-shadow': 'none' }}
           onClick={() => hasFeedback && selectMessage(message)}
-          title={hasFeedback ? 'Click to see notes' : ''}
+          title={hasFeedback ? t('showNotes') : undefined}
+          /* Lingua answers in English, or in the learner's language around English
+             material: the first strong character sets the direction (RTL UIs) */
+          dir="auto"
         >
           {message.audioEligible ? <ListeningTurn turnId={message.id} text={message.text} /> : message.text}
         </div>
@@ -73,7 +77,7 @@ export function MessageBubble({ message, previousUserText = null }) {
                   opacity: isTyping || !isCurrentMissionStep ? 0.55 : 1,
                 }}
               >
-                {option.text}
+                <span lang="en" dir="ltr">{option.text}</span>
               </button>
             ))}
           </div>

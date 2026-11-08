@@ -104,9 +104,43 @@ export function loadMemoryContext(atMs = Date.now(), { access = null } = {}) {
   return emptyMemoryContext(atMs)
 }
 
+/*
+ * Two copies of today's context (two tabs, or a screen holding an older copy)
+ * combine instead of the later save erasing the earlier one: dismissals are
+ * sets, the neutral request is sticky for the day, and recent topics keep the
+ * newest use of each topic. A different day is simply the newer context.
+ * This is a merge on save over one key: it covers a tab holding an old copy,
+ * not a tab whose view of storage is stale (see the P2 report for why that is
+ * acceptable for this store).
+ */
+export function mergeMemoryContexts(mine, stored) {
+  if (!stored || typeof stored !== 'object') return mine
+  if (stored.dayKey !== mine.dayKey) return String(stored.dayKey) > String(mine.dayKey) ? stored : mine
+  const union = (a = [], b = []) => [...new Set([...a, ...b])].slice(-MAX_DISMISSED)
+  const seen = new Set()
+  const recentTopics = [...(mine.recentTopics || []), ...(stored.recentTopics || [])]
+    .filter(entry => entry && !seen.has(entry.id) && seen.add(entry.id)).slice(0, MAX_RECENT_TOPICS)
+  return {
+    ...mine,
+    dismissedFactIds: union(stored.dismissedFactIds, mine.dismissedFactIds),
+    dismissedTopicIds: union(stored.dismissedTopicIds, mine.dismissedTopicIds),
+    neutralRequested: Boolean(mine.neutralRequested || stored.neutralRequested),
+    recentTopics,
+  }
+}
+
+function storedContext(read) {
+  try {
+    const raw = read(MEMORY_CONTEXT_KEY)
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
 export function saveMemoryContext(context, { access = null } = {}) {
   if (access) {
     try {
+      if (!access.valid()) return null
+      context = mergeMemoryContexts(context, storedContext(key => access.getItem(key)))
       if (!access.valid()) return null
       const serialized = JSON.stringify(context)
       if (access.setItem(MEMORY_CONTEXT_KEY, serialized) === false
@@ -116,7 +150,10 @@ export function saveMemoryContext(context, { access = null } = {}) {
       return null
     }
   }
-  try { localStorage.setItem(MEMORY_CONTEXT_KEY, JSON.stringify(context)) } catch { /* storage full/blocked */ }
+  try {
+    context = mergeMemoryContexts(context, storedContext(key => localStorage.getItem(key)))
+    localStorage.setItem(MEMORY_CONTEXT_KEY, JSON.stringify(context))
+  } catch { /* storage full/blocked */ }
   return context
 }
 

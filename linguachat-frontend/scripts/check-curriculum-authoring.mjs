@@ -184,7 +184,10 @@ const incidentalFor = (episode) =>
   (episode?.level === 'A1' ? A1_INCIDENTAL_ITEMS : INCIDENTAL_ITEMS)
 
 const runnerSource = readFileSync(new URL('../src/components/session/SessionRunner.jsx', import.meta.url), 'utf8')
+// The English source of a key is translations.js, or, for the closed levels
+// B1–C2, closedLevelsEn.js (moved out of the first chunk in P2).
 const baseLocale = readFileSync(new URL('../src/i18n/translations.js', import.meta.url), 'utf8')
+  + '\n' + readFileSync(new URL('../src/i18n/closedLevelsEn.js', import.meta.url), 'utf8')
 const LOCALES = ['es', 'pt', 'fr', 'it', 'de', 'ja', 'ar']
 const localeSources = Object.fromEntries(LOCALES.map(code =>
   [code, readFileSync(new URL(`../src/i18n/locales/${code}.js`, import.meta.url), 'utf8')]))
@@ -617,22 +620,30 @@ export function authoringProblems(episode, { allEpisodes = RUNTIME_EPISODES } = 
    *
    * Home, the session builder and the replay list are not about Pre-A1
    * specifically — they are about whatever level a learner may actually
-   * play (LC-PROD-001), so they must derive it from `playableLevelId()`
-   * rather than a hardcoded level id, or they silently stop agreeing with
-   * curriculum availability the day a second level opens.
+   * play (LC-PROD-001), so they must derive it from the registry rather than
+   * a hardcoded level id, or they silently stop agreeing with curriculum
+   * availability the day a second level opens. P5: and from the LEARNER's
+   * working level (learnerLevel.workingLevelId, itself derived from the
+   * registry and the learner's milestones), not the first level the product
+   * has open — which is the same for everyone and would keep a graduate in
+   * the level they finished.
    */
   const mustBeScoped = {
     'src/learning/curriculum/readiness.js': { what: 'Pre-A1 readiness', pattern: /episodesOfLevel\(PRE_A1\)/ },
     'src/learning/curriculum/preA1Map.js': { what: 'the Pre-A1 registry', pattern: /episodesOfLevel\(PRE_A1\)/ },
-    'src/components/today/TodayView.jsx': { what: 'Home', pattern: /episodesOfLevel\(playableLevelId\(\)\)/ },
-    'src/context/AppContext.jsx': { what: 'the session the app builds', pattern: /episodesOfLevel\(playableLevelId\(\)\)/ },
-    'src/components/episode/CompletedEpisodes.jsx': { what: 'the replay list', pattern: /episodesOfLevel\(playableLevelId\(\)\)/ },
+    'src/components/today/TodayView.jsx': { what: 'Home', pattern: /episodesOfLevel\(workingLevelId\(/, learner: true },
+    'src/context/AppContext.jsx': { what: 'the session the app builds', pattern: /episodesOfLevel\(workingLevelId\(/, learner: true },
+    'src/components/episode/CompletedEpisodes.jsx': { what: 'the replay list', pattern: /episodesOfLevel\(workingLevelId\(/, learner: true },
   }
-  for (const [path, { what, pattern }] of Object.entries(mustBeScoped)) {
+  for (const [path, { what, pattern, learner }] of Object.entries(mustBeScoped)) {
     const src = readFileSync(new URL(`../${path}`, import.meta.url), 'utf8')
     assert.ok(pattern.test(src),
       `${what} must take its episodes from the level registry (${path})`)
     const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    if (learner) {
+      assert.ok(!/playableLevelId\(/.test(code), `${what} must use the learner's working level, not the first open level (${path})`)
+      assert.ok(!/episodesOfLevel\(PRE_A1\)/.test(code), `${what} must not hardcode Pre-A1 (${path})`)
+    }
     assert.ok(!/EPISODE_SKELETON as ARC|EPISODE_SKELETON\.(filter|map|every|some|find)/.test(code),
       `${what} still walks the whole curriculum (${path})`)
   }

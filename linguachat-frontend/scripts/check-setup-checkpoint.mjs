@@ -207,7 +207,10 @@ assert.throws(()=>readVerifiedProfile({valid:()=>true,getItem(){throw Error('Sto
 ownValues.set('lc2-profile','{');assert.throws(()=>readVerifiedProfile(ownAccess))
 ownValues.set('lc2-profile','[]');assert.throws(()=>readVerifiedProfile(ownAccess),/Invalid/)
 assert.match(provider,/if \(!profileRestoredRef.current\)/,'token refresh must preserve unsaved in-memory profile edits after hydration')
-assert.ok(provider.indexOf('if (isolation.switched || isolation.reloadRequired)') < provider.indexOf('readVerifiedProfile(captureLearnerAccess())'),'hydrate only after account activation/reload fencing')
+// Sign-in hydrates through restoreProfile (P0-2), which wraps readVerifiedProfile
+// with recovery. The ordering invariant is unchanged, and the call must exist.
+assert.ok(provider.includes('restoreProfile(captureLearnerAccess())'), 'sign-in hydrates the verified profile')
+assert.ok(provider.indexOf('if (isolation.switched || isolation.reloadRequired)') < provider.indexOf('restoreProfile(captureLearnerAccess())'),'hydrate only after account activation/reload fencing')
 assert.match(setup,/<button\s+type="button"\s+aria-pressed=\{isSelected\}\s+key=\{p.id\}/)
 // A successful marker is meaningful only if the complete profile was written
 // and read back first. Inject storage failures without a browser dependency.

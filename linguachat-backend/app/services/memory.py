@@ -74,6 +74,11 @@ class ConversationMemory:
             "correction": _safe_text(result.correction) or None,
             "mode": result.mode.value,
             "level": level.value,
+            # Rule ids only (e.g. "past_irregular"): never the learner's words.
+            "error_types": [
+                str(f.get("rule"))[:32] for f in ((result.analysis or {}).get("findings") or [])
+                if isinstance(f, dict) and f.get("rule")
+            ][:4],
         }
 
         with self._lock:
@@ -84,6 +89,10 @@ class ConversationMemory:
     def recent_errors(self, session_id: str, limit: int = 3) -> list[str]:
         errors = [item["correction"] for item in self.get(session_id) if item.get("correction")]
         return errors[-limit:]
+
+    def recent_error_types(self, session_id: str, limit: int = 6) -> list[str]:
+        types = [t for item in self.get(session_id) for t in item.get("error_types") or []]
+        return types[-limit:]
 
     def clear(self, session_id: str | None = None) -> None:
         with self._lock:

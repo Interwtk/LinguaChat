@@ -1,6 +1,8 @@
 import { CEFR_LEVELS, PLACEMENT_QUESTIONS } from '../data/placementQuestions.js'
 import { translate } from '../i18n/translations.js'
-import { playableLevelId, labelKeyOfLevel } from '../learning/curriculum/levels.js'
+import { labelKeyOfLevel } from '../learning/curriculum/levels.js'
+import { workingLevelId } from '../learning/curriculum/learnerLevel.js'
+import { loadLearnerModel } from '../learning/engine/learnerModel.js'
 
 const MIN_QUESTIONS = 6
 const MAX_QUESTIONS = 10
@@ -168,7 +170,7 @@ export function calculatePlacementResult(state, language) {
   // legitimately name any CEFR band the quiz supports. `currentCourseLevelId` is
   // the separate, honest answer to "what will LinguaChat actually teach me right
   // now", derived from the curriculum registry rather than assumed equal to it.
-  const currentCourseLevelId = playableLevelId()
+  const currentCourseLevelId = workingLevelId(loadLearnerModel())
 
   return {
     level,

@@ -1,5 +1,5 @@
 import { readSetupCheckpoint, persistPlacementResult, SETUP_STEPS } from '../auth/setupCheckpoint.js'
-import { readVerifiedProfile } from '../auth/profileRestore.js'
+import { isQuotaError, restoreProfile } from '../auth/profileRestore.js'
 import { commitOnboarding } from '../auth/onboardingCommit.js'
 import { captureLearnerAccess, revokeLocalLease } from '../auth/localLease.js'
 import { learnerStorage as localStorage } from '../auth/localLease.js'
@@ -16,22 +16,31 @@ import {
   setNativeLanguage as persistNativeLanguage,
 } from '../services/language'
 import {
+  applyProgressEvent,
   clearStoredProgress,
+  commitProgressEvent,
   createEmptyProgress,
   createSessionId,
   getOrCreateSessionId,
   loadLocalProgress,
   loadStoredMessages,
+  mergeConversation,
+  mergeLocalProgress,
+  readStoredConversation,
+  readStoredProgress,
   recordPractice,
   recordMissionProgress,
   saveLocalProgress,
   saveStoredMessages,
+  startStoredConversation,
 } from '../services/localProgress'
+import { ownKey, WRITER_SEPARATOR } from '../services/writerKeys.js'
 import { translate, loadLocale, isLocaleReady } from '../i18n/translations'
 import { loadChatAppearance, saveChatAppearance } from '../services/chatAppearance'
 import {
   advanceMission,
   completeMission,
+  missionRewardId,
   createMissionCompleteMessage,
   createMissionFeedbackMessage,
   createMissionIntroMessage,
@@ -55,17 +64,21 @@ import {
   updateTutorPreferencesDurably,
 } from '../services/tutorPreferences'
 // the planner works from the shape of the level; the episode itself loads when it starts
-import { playableLevelId, episodesOfLevel } from '../learning/curriculum/levels.js'
+import { episodesOfLevel } from '../learning/curriculum/levels.js'
+import { workingLevelId } from '../learning/curriculum/learnerLevel.js'
 import { episodeRequest } from '../learning/curriculum/episodeContent.js'
 
 /*
  * The episodes a session may draw on. The planner itself is level-agnostic — it
  * takes whatever list it is given — so the level lives here, at the call site.
- * `playableLevelId()` derives it from the curriculum registry rather than a
- * hardcoded level id, so this keeps agreeing with Home once a second level opens.
+ * P5: it is the LEARNER's working level (learnerLevel.js), read from the active
+ * account's model at each call — the same answer Home gives — rather than the
+ * first level the product has open.
  */
-const ARC = episodesOfLevel(playableLevelId())
+const currentArc = () => episodesOfLevel(workingLevelId(loadLearnerModel()))
+const PROGRESS_RETRY_MS = 15000
 import { loadLearnerModel, saveLearnerModel, recordItemSeen } from '../learning/engine/learnerModel.js'
+import { classifyChatTurn, recordChatTurn, learningMemoryPayload } from '../learning/engine/chatEvidence.js'
 import { markFactUsed, rotateFactUsage, selectLearnerFact } from '../learning/engine/learnerFacts.js'
 import {
   loadMemoryContext, dismissTopic, recordTopicUse, recentTopicIds,
@@ -74,7 +87,7 @@ import { selectTopic, providerTopicContext } from '../learning/engine/topicSelec
 import { asSubjectValue } from '../learning/engine/semanticContext.js'
 import {
   loadSession, saveSession, getOrCreateSession, startSession,
-  advanceBlock, completeSession, isDurationMode, SESSION_KEY, normalizeSession,
+  advanceBlock, completeSession, isDurationMode, SESSION_KEY, normalizeSession, readStoredSessionRaw,
 } from '../learning/engine/session.js'
 
 const DURATION_PREF_KEY = 'lc2-session-duration'
@@ -226,6 +239,8 @@ export function AppProvider({ children }) {
   const accountBoundRef = useRef(false)
   const profileRestoredRef = useRef(false)
   const [authProviderError, setAuthProviderError] = useState('')
+  // Set when sign-in recovered a damaged local profile into setup.
+  const [profileRecoveryNotice, setProfileRecoveryNotice] = useState(false)
   const [tutorPreferenceSaveFailed, setTutorPreferenceSaveFailed] = useState(false)
 
   const getAuthService = useCallback(() => {
@@ -254,6 +269,18 @@ export function AppProvider({ children }) {
       return
     }
     authCallbackErrorRef.current = null
+
+    // Local data this session cannot use safely: show the real cause and end
+    // the provider session, so a reload does not repeat the failure behind a
+    // signed-in session. The compensatory SIGNED_OUT must not erase the message.
+    const blockSignIn = code => {
+      clearAuthCallback()
+      authIsolationBlockedRef.current = true
+      setAuthProviderError(code)
+      setAuthUser(null)
+      setAuthStep('entry')
+      getAuthService().signOut().catch(() => {})
+    }
 
     if (event === 'PASSWORD_RECOVERY') rememberVerifiedRecovery(session.user.id)
 
@@ -290,21 +317,30 @@ export function AppProvider({ children }) {
         setLanguagePreferences(durable.languagePreferences)
       }
       preferenceImportBlockedRef.current = false
-    } catch {
+    } catch (error) {
       preferenceImportBlockedRef.current = true
-      setAuthProviderError('storage_full')
-      setAuthStep('entry')
+      // The import journal fails closed with its bytes intact. Say what
+      // actually happened, and end the provider session so a reload does not
+      // repeat the same failure behind a signed-in session.
+      blockSignIn(isQuotaError(error) ? 'storage_full' : 'local_data_unreadable')
       return
     }
 
     let restoredProfile = null
     if (!profileRestoredRef.current) {
-      try { restoredProfile = readVerifiedProfile(captureLearnerAccess()) }
-      catch {
-        setAuthProviderError('storage_full')
-        setAuthStep('entry')
+      // A damaged profile is recovered into setup (original bytes quarantined,
+      // progress untouched); storage problems are reported as what they are.
+      const restored = restoreProfile(captureLearnerAccess())
+      if (restored.status === 'stale') return
+      if (restored.status !== 'restored' && restored.status !== 'recovered') {
+        blockSignIn({ storage_full: 'storage_full', storage_unavailable: 'storage_unavailable' }[restored.status]
+          || 'local_data_unreadable')
         return
       }
+      restoredProfile = restored.profile
+      // Recovery closed onboarding, so the routing below reopens setup at the
+      // last valid checkpoint (or placement).
+      if (restored.status === 'recovered') setProfileRecoveryNotice(true)
       profileRestoredRef.current = true
     }
     const user = providerUser(session.user)
@@ -361,7 +397,7 @@ export function AppProvider({ children }) {
       })
       subscription = registration?.data?.subscription || registration?.subscription || null
     } catch (error) {
-      setAuthProviderError(error?.message || 'Authentication is not configured.')
+      setAuthProviderError('auth_unavailable')
       setAuthStep('entry')
       return () => {}
     }
@@ -375,7 +411,7 @@ export function AppProvider({ children }) {
       })
       .catch((error) => {
         if (!alive) return
-        setAuthProviderError(authCallbackErrorRef.current || error?.message || 'Could not restore your session.')
+        setAuthProviderError(authCallbackErrorRef.current || 'session_restore_failed')
         if (authCallbackErrorRef.current) clearAuthCallback()
         setAuthStep('entry')
       })
@@ -421,7 +457,7 @@ export function AppProvider({ children }) {
   const [episodeRunOptions, setEpisodeRunOptions] = useState({ source: 'practice', wantsOtherBranch: false })
   const [episodeArcVersion, setEpisodeArcVersion] = useState(0) // bumps when episode progress changes
   // Daily session: restored from storage on first render so a reload resumes.
-  const [dailySession, setDailySession] = useState(() => loadSession(ARC))
+  const [dailySession, setDailySession] = useState(() => loadSession(currentArc()))
   const [sessionActive, setSessionActive] = useState(false)
   const [preferredDuration, setPreferredDuration] = useState(() => {
     try {
@@ -474,9 +510,59 @@ export function AppProvider({ children }) {
     saveStoredMessages(messages, { access: passiveStorageAccessRef.current })
   }, [messages])
 
+  /*
+   * P5: a progress save can fail (storage full or blocked). Until P5 nothing
+   * retried until the next turn and nothing said so; a turn held only in this
+   * tab's memory is lost if the tab closes. Now a failing save is retried every
+   * PROGRESS_RETRY_MS, and the learner is told — once, calmly — until it works.
+   */
+  const latestProgressRef = useRef(localProgress)
+  const [progressSaveFailing, setProgressSaveFailing] = useState(false)
   useEffect(() => {
-    saveLocalProgress(localProgress, { access: passiveStorageAccessRef.current })
+    latestProgressRef.current = localProgress
+    const access = passiveStorageAccessRef.current
+    if (saveLocalProgress(localProgress, { access }) !== false || !access.valid()) {
+      setProgressSaveFailing(false)
+      return undefined
+    }
+    setProgressSaveFailing(true)
+    const timer = setInterval(() => {
+      const current = passiveStorageAccessRef.current
+      if (!current.valid()) { clearInterval(timer); setProgressSaveFailing(false); return }
+      if (saveLocalProgress(latestProgressRef.current, { access: current }) !== false) {
+        clearInterval(timer)
+        setProgressSaveFailing(false)
+      }
+    }, PROGRESS_RETRY_MS)
+    return () => clearInterval(timer)
   }, [localProgress])
+
+  // Another tab of the same account saved progress or chat: fold it into this
+  // tab's copy. The passive writers above then persist anything this tab holds
+  // that storage does not, so both tabs converge without losing either side.
+  // Reads go through the same captured lease, so a revoked tab hears nothing.
+  useEffect(() => {
+    // Each tab writes its own copy (`<key>~w~<writer>`); any of them may change.
+    const watched = ['lc2-local-progress', 'lc2-chat-messages', 'lc2-chat-epoch']
+    const onStorage = event => {
+      if (event.key !== null && !watched.some(key => event.key === key || event.key.endsWith(':' + key)
+        || event.key.includes(':' + key + WRITER_SEPARATOR))) return
+      const access = passiveStorageAccessRef.current
+      if (!access.valid()) return
+      // Another tab removed this tab's own copy while tidying up: write it
+      // again by re-publishing the same state through the passive writers.
+      if (event.newValue === null && event.key?.endsWith(ownKey('lc2-local-progress')))
+        setLocalProgress(previous => access.valid() ? { ...previous } : previous)
+      if (event.newValue === null && event.key?.endsWith(ownKey('lc2-chat-messages')))
+        setMessages(previous => access.valid() ? [...previous] : previous)
+      const progress = readStoredProgress({ access })
+      if (progress) setLocalProgress(previous => access.valid() ? mergeLocalProgress(previous, progress) : previous)
+      const conversation = readStoredConversation({ access })
+      if (conversation) setMessages(previous => access.valid() ? mergeConversation(previous, conversation) : previous)
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
 
   // Mission starts, advances, completions and resets already persist under
   // their originating account lease before updating React. Replaying mission
@@ -533,6 +619,10 @@ export function AppProvider({ children }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [interfaceLanguageInfo.base, localeVersion],
   )
+  // The current translator for long-lived callbacks (missions) that build text
+  // when they run, without re-creating them on every language change.
+  const tRef = useRef(t)
+  tRef.current = t
   const interfaceReady = isLocaleReady(interfaceLanguage)
 
   /*
@@ -893,7 +983,7 @@ export function AppProvider({ children }) {
 
   const previewSession = useCallback((durationMode) => {
     const mode = durationMode || preferredDuration
-    return getOrCreateSession(loadLearnerModel(), ARC, { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
+    return getOrCreateSession(loadLearnerModel(), currentArc(), { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
   }, [dailySession, preferredDuration, sessionContext])
 
   const chooseDuration = useCallback((mode) => {
@@ -907,17 +997,17 @@ export function AppProvider({ children }) {
     if (replan) {
       const model = loadLearnerModel()
       if (!access.valid()) return false
-      next = getOrCreateSession(model, ARC, { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
+      next = getOrCreateSession(model, currentArc(), { durationMode: mode, stored: dailySession ?? undefined, ...sessionContext() })
       if (!next || !access.valid()) return false
       // Another tab can start, advance or replace today's plan while this tab
       // still shows the old duration selector. Check the durable cursor before
       // changing the preference or publishing a replacement plan.
       let storedSession = null
       try {
-        const raw = access.getItem(SESSION_KEY)
+        const raw = readStoredSessionRaw(access)
         if (!access.valid()) return false
         if (raw !== null) {
-          storedSession = normalizeSession(JSON.parse(raw), ARC)
+          storedSession = normalizeSession(JSON.parse(raw), currentArc())
           if (!storedSession) return false
         }
       } catch { return false }
@@ -940,9 +1030,9 @@ export function AppProvider({ children }) {
       // has to match the session this tab is showing.
       let storedSession
       try {
-        const raw = access.getItem(SESSION_KEY)
+        const raw = readStoredSessionRaw(access)
         if (!access.valid() || raw === null) return false
-        storedSession = normalizeSession(JSON.parse(raw), ARC)
+        storedSession = normalizeSession(JSON.parse(raw), currentArc())
       } catch { return false }
       if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
         || storedSession.dayKey !== dailySession.dayKey
@@ -971,16 +1061,16 @@ export function AppProvider({ children }) {
     if (!access.valid()) return false
     const planned = dailySession && dailySession.status !== 'completed'
       ? dailySession
-      : getOrCreateSession(loadLearnerModel(), ARC, { durationMode: preferredDuration, ...sessionContext() })
+      : getOrCreateSession(loadLearnerModel(), currentArc(), { durationMode: preferredDuration, ...sessionContext() })
     if (!access.valid() || !planned || planned.status === 'completed') return false
     // A second tab may have advanced or replaced the plan since this render.
     // Starting from a stale React snapshot must not rewind its durable cursor.
     let storedSession = null
     try {
-      const raw = access.getItem(SESSION_KEY)
+      const raw = readStoredSessionRaw(access)
       if (!access.valid()) return false
       if (raw !== null) {
-        storedSession = normalizeSession(JSON.parse(raw), ARC)
+        storedSession = normalizeSession(JSON.parse(raw), currentArc())
         if (!storedSession) return false
       }
     } catch { return false }
@@ -1031,9 +1121,9 @@ export function AppProvider({ children }) {
     // with the stale session captured by this render.
     let storedSession
     try {
-      const raw = access.getItem(SESSION_KEY)
+      const raw = readStoredSessionRaw(access)
       if (!access.valid() || raw === null) return false
-      storedSession = normalizeSession(JSON.parse(raw), ARC)
+      storedSession = normalizeSession(JSON.parse(raw), currentArc())
     } catch { return false }
     if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
       || storedSession.dayKey !== dailySession.dayKey
@@ -1061,9 +1151,9 @@ export function AppProvider({ children }) {
       if (dailySession.status !== 'active' || visibleBlock?.type !== 'session_completion') return false
       let storedSession
       try {
-        const raw = access.getItem(SESSION_KEY)
+        const raw = readStoredSessionRaw(access)
         if (!access.valid() || raw === null) return false
-        storedSession = normalizeSession(JSON.parse(raw), ARC)
+        storedSession = normalizeSession(JSON.parse(raw), currentArc())
       } catch { return false }
       const storedBlock = storedSession?.blocks?.[storedSession.currentBlockIndex]
       if (!access.valid() || !storedSession || storedSession.id !== dailySession.id
@@ -1077,10 +1167,14 @@ export function AppProvider({ children }) {
       const { session, awarded } = completeSession(storedSession, model)
       if (!access.valid()) return false
       if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
+      // The bonus is durable before the session is marked complete: a failure
+      // after this point is retried, and the session's id makes the retry (or
+      // the same session finishing in another tab) pay exactly once.
+      const bonus = awarded ? { id: `session-bonus:${session.id}`, kind: 'xp', at: Date.now(), xp: SESSION_BONUS_XP } : null
+      if (bonus && (!commitProgressEvent(bonus, { access }) || !access.valid())) return false
       if (!saveSession(session, { access }) || !access.valid()) return false
       setDailySession(previous => access.valid() ? session : previous)
-      if (awarded) setLocalProgress(previous => access.valid()
-        ? { ...previous, xp: (previous.xp || 0) + SESSION_BONUS_XP } : previous)
+      if (bonus) setLocalProgress(previous => access.valid() ? applyProgressEvent(previous, bonus) : previous)
     }
     setSessionActive(previous => access.valid() ? false : previous)
     setEpisodeActiveId(previous => access.valid() ? null : previous)
@@ -1129,18 +1223,12 @@ export function AppProvider({ children }) {
     }
     if (!access.valid()) return false
     if (saveLearnerModel(model, { verified: true }) !== true || !access.valid()) return false
-    setLocalProgress(previous => {
-      if (!access.valid()) return previous
-      const existing = new Set((previous.learnedItems || []).map(i => i.vocabId).filter(Boolean))
-      const additions = grants
-        .filter(grant => !existing.has(grant.vocabId))
-        .map(grant => ({ ...grant, lastSeenAt: Date.now() }))
-      return {
-        ...previous,
-        learnedItems: [...additions, ...(previous.learnedItems || [])],
-        xp: (previous.xp || 0) + (episode.xp || 0),
-      }
-    })
+    // XP and Garden words are durable before the episode may call itself
+    // awarded. The episode id makes a retry, or the same episode finishing in
+    // a second tab, pay once.
+    const award = { id: `episode-award:${episode.id}`, kind: 'award', at: Date.now(), xp: episode.xp || 0, grants }
+    if (!commitProgressEvent(award, { access }) || !access.valid()) return false
+    setLocalProgress(previous => access.valid() ? applyProgressEvent(previous, award) : previous)
     return access.valid()
   }, [])
 
@@ -1148,6 +1236,7 @@ export function AppProvider({ children }) {
     clearVerifiedRecovery()
     setAuthProviderError('')
     setTutorPreferenceSaveFailed(false)
+    setProfileRecoveryNotice(false)
     await getAuthService().signOut()
     applyProviderSession(null, 'SIGNED_OUT')
   }, [getAuthService, applyProviderSession])
@@ -1260,8 +1349,12 @@ export function AppProvider({ children }) {
       step_id: details.step.id,
       step_type: details.step.type,
       target_skill: details.mission.targetSkill,
-      instruction: details.step.instruction,
-      prompt: details.step.prompt,
+      // The backend is told the instruction in the learner's language and, as
+      // `prompt`, only ENGLISH material: a model answer or the English frame.
+      // It echoes `prompt` as the correction; a translate step's idea in the
+      // learner's language must never come back as "the correct English".
+      instruction: tRef.current(details.step.instructionKey),
+      prompt: details.step.model || (details.step.promptKey ? null : details.step.prompt) || null,
       expected_pattern: details.step.expectedPattern || null,
       options: details.step.options || null,
     }
@@ -1280,8 +1373,8 @@ export function AppProvider({ children }) {
     setMissionFeedback(previous => publication.valid() ? null : previous)
     setMissionCelebration(previous => publication.valid() ? null : previous)
     appendLinguaMessages([
-      createMissionIntroMessage(selectedMission),
-      createMissionStepMessage(getActiveMissionDetails(active)),
+      createMissionIntroMessage(selectedMission, false, tRef.current),
+      createMissionStepMessage(getActiveMissionDetails(active), tRef.current),
     ], publication)
     setView(previous => publication.valid() ? 'practice' : previous)
     setMobileSheet(previous => publication.valid() ? null : previous)
@@ -1366,7 +1459,7 @@ export function AppProvider({ children }) {
         nextSuggestion: response.suggestion || response.mission_feedback.hint || null,
       }
     } else {
-      evaluation = evaluateMissionStep(details.step, value)
+      evaluation = evaluateMissionStep(details.step, value, tRef.current)
     }
 
     if (!evaluation.passed) {
@@ -1423,23 +1516,27 @@ export function AppProvider({ children }) {
       setCompletedMissions(previous => publication.valid() ? [completed, ...previous].slice(0, 50) : previous)
       setLocalProgress(previous => {
         if (!publication.valid()) return previous
+        // Stable ids: the same step or completion reported again (retry,
+        // second tab, stale cursor) is the same reward, paid once.
         const withStep = recordMissionProgress(previous, {
           mission: details.mission,
           step: details.step,
           earnedXp: advanced.earnedThisStep,
           completed: false,
+          eventId: missionRewardId(activeMission, `step:${details.step.id}`),
         })
         return recordMissionProgress(withStep, {
           mission: details.mission,
           step: details.step,
           earnedXp: Math.max(0, details.mission.rewardXp - completed.earnedXp),
           completed: true,
+          eventId: missionRewardId(activeMission, 'complete'),
         })
       })
       setMissionCelebration(previous => publication.valid() ? {
         title: details.mission.title,
         xp: details.mission.rewardXp,
-        message: 'Mision completada. Lingua guardo tu avance en este dispositivo.',
+        messageKey: 'missionSavedOnDevice',
       } : previous)
       setMissionFeedback(previous => publication.valid() ? {
         passed: evaluation.passed,
@@ -1459,7 +1556,7 @@ export function AppProvider({ children }) {
                   why: response.explanation || evaluation.explanation || null,
                   suggestion: response.suggestion || evaluation.nextSuggestion || null,
                   learningAction: response.learning_action || null,
-                  focus: response.focus || details.mission.targetSkill,
+                  focus: response.focus || tRef.current(details.mission.skillKey),
                   wordToUse: response.word_to_use || null,
                 },
                 missionId: details.mission.id,
@@ -1467,8 +1564,8 @@ export function AppProvider({ children }) {
                 missionType: 'feedback',
                 ts: Date.now(),
               }
-            : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
-          createMissionCompleteMessage(details.mission, completed),
+            : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep, tRef.current),
+          createMissionCompleteMessage(details.mission, completed, tRef.current),
         ], publication)
       }, 650)
       return
@@ -1480,6 +1577,7 @@ export function AppProvider({ children }) {
       step: details.step,
       earnedXp: advanced.earnedThisStep,
       completed: false,
+      eventId: missionRewardId(activeMission, `step:${details.step.id}`),
     }) : previous)
     setActiveMission(previous => publication.valid() ? advanced.activeMission : previous)
     setMissionFeedback(previous => publication.valid() ? {
@@ -1500,7 +1598,7 @@ export function AppProvider({ children }) {
                 why: response.explanation || evaluation.explanation || null,
                 suggestion: response.suggestion || evaluation.nextSuggestion || null,
                 learningAction: response.learning_action || null,
-                focus: response.focus || details.mission.targetSkill,
+                focus: response.focus || tRef.current(details.mission.skillKey),
                 wordToUse: response.word_to_use || null,
               },
               missionId: details.mission.id,
@@ -1508,8 +1606,8 @@ export function AppProvider({ children }) {
               missionType: 'feedback',
               ts: Date.now(),
             }
-          : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep),
-        createMissionStepMessage(getActiveMissionDetails(advanced.activeMission)),
+          : createMissionFeedbackMessage(details.mission, details.step, evaluation, advanced.earnedThisStep, tRef.current),
+        createMissionStepMessage(getActiveMissionDetails(advanced.activeMission), tRef.current),
       ], publication)
     }, 650)
     } finally {
@@ -1538,7 +1636,7 @@ export function AppProvider({ children }) {
     appendLinguaMessages({
       id: `mission-exit-${Date.now()}`,
       role: 'lingua',
-      text: 'Salimos de la mision. Seguimos en chat libre cuando quieras.',
+      text: tRef.current('missionExit'),
       feedback: null,
       missionType: 'exit',
       ts: Date.now(),
@@ -1546,7 +1644,7 @@ export function AppProvider({ children }) {
     return publication.valid()
   }, [appendLinguaMessages])
 
-  const sendMessage = useCallback(async (text) => {
+  const sendMessage = useCallback(async (text, { assisted = false } = {}) => {
     // Keep the originating account lease through the request AND React's deferred flush.
     const chatAccess = captureLearnerAccess()
     const chatGeneration = chatGenerationRef.current
@@ -1630,13 +1728,29 @@ export function AppProvider({ children }) {
          * ends up saying "anyway, back to technology".
          */
         topicContext: learnerHasSpoken ? null : providerTopicContext(conversationTopic),
+        learningMemory: learningMemoryPayload(loadLearnerModel()),
+        assistance: assisted ? 'suggestion_sent' : 'none',
       })
       if (!chatStillCurrent()) return
 
+      /*
+       * What this turn means for learning (P3, chatEvidence.js): an error, a
+       * correct form typed back from the correction, a retrieval on a later
+       * day, a transfer to a new verb… Rule ids and times are recorded, never
+       * the sentence, and none of it is curriculum evidence.
+       */
+      const previousLingua = [...messages].reverse().find(m => m.role === 'lingua')
+      const learningModel = loadLearnerModel()
+      if (recordChatTurn(learningModel, classifyChatTurn({
+        turnId: userMsg.id, at: userMsg.ts, message: text.trim(), analysis: response.analysis, assisted,
+        previous: previousLingua ? { correction: previousLingua.feedback?.correction || null, retrieval: previousLingua.retrieval || null } : null,
+        model: learningModel,
+      })) && chatStillCurrent()) saveLearnerModel(learningModel)
+
       setConnectionNotice(prev => chatStillCurrent() ? response.connectionMessage : prev)
-      setMemoryNotice(prev => chatStillCurrent() ? (response.correction
-        ? 'Your recent corrections are saved on this device.'
-        : "I'll remember what we practiced today.") : prev)
+      setMemoryNotice(prev => chatStillCurrent()
+        ? translate(interfaceLanguageInfo.base, response.correction ? 'memoryNoticeCorrections' : 'memoryNoticePractice')
+        : prev)
       setLocalProgress(previous => chatStillCurrent() ? recordPractice(previous, {
         userMessage: text.trim(),
         response,
@@ -1663,6 +1777,8 @@ export function AppProvider({ children }) {
           wordToUse: response.word_to_use || null,
           translation: null,
         },
+        // a delayed retrieval Lingua just offered: the next turn answers it
+        retrieval: response.analysis?.retrieval || null,
         ts: Date.now(),
       }
       inFlight.replyId = linguaMsg.id
@@ -1670,11 +1786,12 @@ export function AppProvider({ children }) {
       setSelectedMessage(prev => chatStillCurrent() ? linguaMsg : prev)
     } catch {
       if (!chatStillCurrent()) return
-      setConnectionNotice(prev => chatStillCurrent() ? 'Lingua had trouble connecting. You can keep exploring the demo.' : prev)
+      // (P3: these were English in every language, and promised a "demo")
+      setConnectionNotice(prev => chatStillCurrent() ? tRef.current('chatOfflineNotice') : prev)
       const fallbackMsg = {
         id: `e${Date.now()}`,
         role: 'lingua',
-        text: 'You can keep practicing with the demo while the connection recovers.',
+        text: tRef.current('chatOfflineNotice'),
         feedback: null,
         ts: Date.now(),
       }
@@ -1702,8 +1819,8 @@ export function AppProvider({ children }) {
     )
     if (!hasCurrentStep) {
       appendLinguaMessages([
-        createMissionIntroMessage(details.mission, true),
-        createMissionStepMessage(details),
+        createMissionIntroMessage(details.mission, true, tRef.current),
+        createMissionStepMessage(details, tRef.current),
       ])
     }
   }, [activeMission, appendLinguaMessages, messages])
@@ -1720,7 +1837,9 @@ export function AppProvider({ children }) {
     const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
     // Persist with the originating account lease BEFORE publishing an empty
     // chat. Otherwise denied storage resurrects the old conversation on reload.
-    if (!saveStoredMessages([welcome], { access }) || !access.valid()) return false
+    // Starting a new conversation (not just saving one message) is what stops
+    // another open tab from writing the old one back.
+    if (!startStoredConversation(welcome, { access }) || !access.valid()) return false
     ++chatGenerationRef.current
     chatInFlightRef.current = null
     setIsTyping(prev => access.valid() ? false : prev)
@@ -1735,14 +1854,15 @@ export function AppProvider({ children }) {
     const access = captureLearnerAccess()
     if (!access.valid() || !window.confirm(t('resetProgressConfirm')) || !access.valid()) return
     const welcome = createWelcomeMessage(interfaceLanguageInfo.base)
-    const emptyProgress = createEmptyProgress()
+    // A new epoch: progress from before this moment no longer counts in any tab.
+    const emptyProgress = createEmptyProgress({ reset: true })
     // Destructive reset is not a best-effort UI action: every storage step
     // must be verified for the same account before React can display success.
     if (clearStoredProgress({ access }) === false || !access.valid()) return
     if (clearMissionStorage({ access }) === false || !access.valid()) return
     const nextSessionId = createSessionId({ access })
     if (!nextSessionId || !access.valid()) return
-    if (saveStoredMessages([welcome], { access }) === false || !access.valid()) return
+    if (startStoredConversation(welcome, { access }) === false || !access.valid()) return
     if (saveLocalProgress(emptyProgress, { access }) === false || !access.valid()) return
     ++missionGenerationRef.current
     ++chatGenerationRef.current
@@ -1773,6 +1893,7 @@ export function AppProvider({ children }) {
       updateNativeLanguage,
       t,
       authUser, authProviderError,
+      profileRecoveryNotice, dismissProfileRecoveryNotice: () => setProfileRecoveryNotice(false),
       login, signup, requestPasswordReset, resendConfirmation, changePassword,
       completePlacement, completeTutorPersonality, completeLearningPrefs,
       completePersonalization, applyRecommendedSetup,
@@ -1796,7 +1917,7 @@ export function AppProvider({ children }) {
       messages, sendMessage, clearMessages, isTyping,
       sessionId, localProgress, resetLocalProgress,
       chatAppearance, setChatAppearance,
-      connectionNotice, memoryNotice,
+      connectionNotice, memoryNotice, progressSaveFailing,
       selectedMessage, selectMessage,
       mobileSheet, setMobileSheet,
       messagesEndRef,

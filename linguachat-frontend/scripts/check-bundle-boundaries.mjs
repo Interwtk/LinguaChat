@@ -4,22 +4,35 @@
  *
  * The entry chunk is what every learner downloads before seeing anything, so it
  * is budgeted. Screens they may never open, the practice/episode engine and the
- * seven non-English interface locales must live in their own chunks. Run after
- * `npm run build`; it skips (without failing) when dist/ is absent, so the
- * check suite still works on a fresh clone.
+ * seven non-English interface locales must live in their own chunks.
+ *
+ * P2: it builds what it measures. It used to read whatever dist/ happened to
+ * hold and SKIP when there was none — and CI runs check:all before
+ * `npm run build`, so the budget was never enforced there (the entry had
+ * drifted to 877 kB over an 850 kB budget unnoticed). Now it runs its own
+ * production build into a temporary directory, every time, unless an
+ * explicit `--dist <dir>` names a build to inspect instead.
  */
 import assert from 'node:assert/strict'
-import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync, existsSync, mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve, join } from 'node:path'
 
 const here = dirname(fileURLToPath(import.meta.url))
-const DIST = resolve(here, '../dist/assets')
-
-if (!existsSync(DIST)) {
-  console.log('check-bundle-boundaries — SKIPPED (no dist/, run `npm run build` first)')
-  process.exit(0)
+const FRONTEND = resolve(here, '..')
+const distArg = process.argv.indexOf('--dist')
+let OUT
+if (distArg > 0) {
+  OUT = resolve(process.argv[distArg + 1] || '')
+} else {
+  OUT = mkdtempSync(join(tmpdir(), 'lc-bundle-'))
+  const { build } = await import('vite')
+  await build({ root: FRONTEND, logLevel: 'error', build: { outDir: OUT, emptyOutDir: true } })
+  process.on('exit', () => { try { rmSync(OUT, { recursive: true, force: true }) } catch { /* temp dir */ } })
 }
+const DIST = join(OUT, 'assets')
+assert.ok(existsSync(DIST), `no build output at ${DIST}`)
 
 // Budgets in kB. The entry sat at 645 kB before splitting; 500 kB is Vite's own
 // warning threshold and the number we must stay under.
@@ -168,7 +181,7 @@ const ok = () => { n++ }
 // 1) the page loads one entry chunk and it is under budget
 //    Read from index.html: the `index-` prefix stopped identifying the entry
 //    when a content chunk built from `episodes/index.js` took the same shape.
-const html = readFileSync('dist/index.html', 'utf8')
+const html = readFileSync(join(OUT, 'index.html'), 'utf8')
 const scripts = [...html.matchAll(/<script[^>]+src="\/assets\/([^"]+\.js)"/g)].map(m => m[1])
 assert.equal(scripts.length, 1, `the page should load one entry chunk, it loads ${scripts.length}`)
 const entries = scripts
@@ -185,6 +198,18 @@ for (const loc of LOCALES) {
   const chunk = find(new RegExp(`^${loc}-.*\\.js$`))
   assert.equal(chunk.length, 1, `locale ${loc} should be exactly one chunk, found ${chunk.length}`)
   assert.ok(sizeKb(chunk[0]) < LOCALE_MAX_KB, `locale ${loc} chunk unexpectedly large`)
+}
+ok()
+
+// 2b) the closed levels' English (B1–C2) is its own chunk, not the entry's (P2)
+{
+  const chunk = find(/^closedLevelsEn-.*\.js$/)
+  assert.equal(chunk.length, 1, 'the closed levels’ English should be exactly one chunk')
+  // the words, not the keys: the skeleton legitimately names the keys
+  for (const probe of ['One Thing After Another', 'Recognize implied meaning']) {
+    assert.ok(!entrySource.includes(probe), `closed-level copy "${probe}" is back in the entry`)
+    assert.ok(readFileSync(join(DIST, chunk[0]), 'utf8').includes(probe), `closed-level chunk lacks "${probe}"`)
+  }
 }
 ok()
 
@@ -248,6 +273,46 @@ for (const f of files) {
   const src = readFileSync(join(DIST, f), 'utf8')
   assert.ok(!src.includes('check-daily-session'), `${f} contains check-script code`)
   assert.ok(!src.includes('node:assert'), `${f} contains node-only test code`)
+}
+ok()
+
+// 6b) the development-only visual bench (bench/) never reaches a build (P2):
+//     not in any chunk, not in the page, not reachable from product source,
+//     and its config refuses to build at all.
+{
+  for (const f of readdirSync(OUT, { recursive: true }).map(String)) {
+    assert.ok(!/(^|[\\/])bench[\\/]/.test(f) && !/fakeAppContext/.test(f), `bench file in the build: ${f}`)
+    if (!/\.(js|html|css)$/.test(f)) continue
+    const src = readFileSync(join(OUT, f), 'utf8')
+    assert.ok(!src.includes('LC_VISUAL_BENCH') && !src.includes('bench-synthetic-context') && !src.includes('/bench/main.jsx'),
+      `${f} carries visual-bench code`)
+  }
+  const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(e =>
+    e.isDirectory() ? walk(join(dir, e.name)) : /\.(jsx?|mjs)$/.test(e.name) ? [join(dir, e.name)] : [])
+  for (const f of walk(join(FRONTEND, 'src'))) {
+    // static, side-effect and dynamic imports alike
+    assert.ok(!/(?:from\s+|import\s*\(?\s*)['"][^'"]*\/bench\//.test(readFileSync(f, 'utf8')), `${f} imports the visual bench`)
+  }
+  assert.ok(!/bench/.test(readFileSync(join(FRONTEND, 'vite.config.js'), 'utf8')), 'the product build config mentions the bench')
+  assert.ok(/command !== 'serve'\) throw/.test(readFileSync(join(FRONTEND, 'bench/vite.bench.config.mjs'), 'utf8')),
+    'the bench config must refuse to build')
+}
+ok()
+
+// 6c) the prepared, inactive A1 readiness evaluator (prepared/, P4) never ships:
+//     no chunk carries it and no product source imports it.
+{
+  for (const f of readdirSync(OUT, { recursive: true }).map(String)) {
+    if (!/\.(js|html|css)$/.test(f)) continue
+    const src = readFileSync(join(OUT, f), 'utf8')
+    assert.ok(!src.includes('a1.v0-uncalibrated') && !src.includes('deriveA1Readiness') && !src.includes('pending_calibration'),
+      `${f} carries the prepared A1 readiness evaluator`)
+  }
+  const walk = dir => readdirSync(dir, { withFileTypes: true }).flatMap(e =>
+    e.isDirectory() ? walk(join(dir, e.name)) : /\.(jsx?|mjs)$/.test(e.name) ? [join(dir, e.name)] : [])
+  for (const f of walk(join(FRONTEND, 'src'))) {
+    assert.ok(!/(?:from\s+|import\s*\(?\s*)['"][^'"]*\/prepared\//.test(readFileSync(f, 'utf8')), `${f} imports prepared/`)
+  }
 }
 ok()
 

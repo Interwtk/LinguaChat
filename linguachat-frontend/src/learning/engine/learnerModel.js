@@ -1,5 +1,7 @@
 import { teachingHistory, retentionProfile } from './teachingPolicy.js'
+import { mergeChatEvidence, sanitizeChatEvidence, sanitizeForgotten } from './chatEvidence.js'
 import { bindLearnerObject, captureLearnerAccess, captureLearnerObjectAccess } from '../../auth/localLease.js'
+import { collectDeadCopies, ownKey, storedCopies } from '../../services/writerKeys.js'
 /*
  * learnerModel (v2) — what the learner can do, with safe migration from v1.
  *
@@ -57,6 +59,14 @@ export function createLearnerModel() {
     // Ids of activity events already counted, so the same moment can never be
     // counted twice (double tap, StrictMode, reload, breakpoint, re-render).
     signalLog: [],
+    /*
+     * What the chat observed about rules Lingua corrected (P3): rule ids,
+     * kinds and times, never sentences — see chatEvidence.js. Informative
+     * only: none of it is curriculum evidence. `chatForgotten` holds the
+     * per-rule tombstones that make forgetting stick across tabs.
+     */
+    chatEvidence: [],
+    chatForgotten: {},
     /*
      * A compact history of how each episode was played: first time, resumed,
      * practised again, or practised taking the other option. Never the answers
@@ -121,6 +131,8 @@ function carryForward(parsed, { keepPreferences, keepSignals, keepRuns }) {
     recentInterests: keepPreferences && Array.isArray(parsed.recentInterests)
       ? parsed.recentInterests.filter(i => typeof i === 'string').slice(0, 8) : [],
     teachingHistory: teachingHistory(parsed.teachingHistory),
+    chatEvidence: sanitizeChatEvidence(parsed.chatEvidence),
+    chatForgotten: sanitizeForgotten(parsed.chatForgotten),
     signalLog: keepSignals ? sanitizeSignalLog(parsed.signalLog) : [],
     episodeRuns: keepRuns ? sanitizeEpisodeRuns(parsed.episodeRuns) : {},
     activeRun: keepRuns ? sanitizeRun(parsed.activeRun) : null,
@@ -140,6 +152,16 @@ function carryForward(parsed, { keepPreferences, keepSignals, keepRuns }) {
 
 /* The levels a milestone may be recorded for. Pre-A1 is the only one that exists. */
 export const MILESTONE_LEVELS = ['pre_a1']
+/*
+ * Levels whose milestone is KEPT if a copy already holds one, without this
+ * code ever recording it (P4). A1 opening is a separate, authorised change;
+ * until then nothing writes an A1 milestone (check-a1-arc1 proves playing A1
+ * creates none). Keeping a well-formed one means a tab still running this
+ * version cannot erase it from another tab's copy when A1 does open.
+ * Its version must name its own level, so a mislabelled entry is dropped.
+ */
+export const PRESERVED_MILESTONE_LEVELS = ['pre_a1', 'a1']
+const ownVersion = (level, version) => level === 'pre_a1' || (typeof version === 'string' && version.startsWith(level + '.'))
 
 /*
  * Keep a milestone only if it is shaped like one. A corrupt or hand-edited
@@ -149,11 +171,11 @@ export const MILESTONE_LEVELS = ['pre_a1']
 export function sanitizeLevelMilestones(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {}
   const out = {}
-  for (const level of MILESTONE_LEVELS) {
+  for (const level of PRESERVED_MILESTONE_LEVELS) {
     const entry = raw[level]
     if (!entry || typeof entry !== 'object') continue
     const at = Date.parse(entry.graduatedAt || '')
-    if (!Number.isFinite(at)) continue
+    if (!Number.isFinite(at) || !ownVersion(level, entry.evidenceVersion)) continue
     out[level] = {
       graduatedAt: new Date(at).toISOString(),
       evidenceVersion: typeof entry.evidenceVersion === 'string' ? entry.evidenceVersion.slice(0, 24) : 'unknown',
@@ -174,7 +196,7 @@ export function mergeLevelMilestones(mine, theirs) {
   const a = sanitizeLevelMilestones(mine)
   const b = sanitizeLevelMilestones(theirs)
   const out = {}
-  for (const level of MILESTONE_LEVELS) {
+  for (const level of PRESERVED_MILESTONE_LEVELS) {
     const x = a[level]
     const y = b[level]
     if (!x && !y) continue
@@ -312,11 +334,32 @@ function migrate(parsed) {
   return m
 }
 
+/*
+ * Every stored copy of the model, newest write first. Each tab writes its own
+ * copy (services/writerKeys.js); the shared key is an older copy. A copy that
+ * does not parse is skipped here and left untouched in storage.
+ */
+function modelCopies(access) {
+  const copies = []
+  for (const copy of storedCopies(access, KEY)) {
+    try {
+      const parsed = JSON.parse(copy.raw)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) copies.push({ key: copy.key, parsed, raw: copy.raw })
+    } catch { /* unreadable: ignored, never overwritten */ }
+  }
+  return copies.sort((a, b) => (Number(b.parsed.writtenAt) || 0) - (Number(a.parsed.writtenAt) || 0))
+}
+
 export function loadLearnerModel() {
   const access = captureLearnerAccess()
   try {
-    const stored = access.getItem(KEY)
-    if (stored) return access.bind(migrate(JSON.parse(stored)))
+    const copies = modelCopies(access)
+    if (copies.length) {
+      // The newest copy is the base; the evidence of every other copy is merged in.
+      let model = migrate(copies[0].parsed)
+      for (const copy of copies.slice(1)) model = mergeModelCopy(model, copy.parsed)
+      return access.bind(model)
+    }
   } catch {}
   return access.bind(emptyModel())
 }
@@ -333,9 +376,16 @@ export function loadLearnerModel() {
  * event id, so taking the larger of the two values is exactly the union of what
  * both copies saw: never double-counted, never lost.
  */
-function mergeActivityEvidence(model, access) {
-  let stored = null
-  try { stored = JSON.parse(access.getItem(KEY) || 'null') } catch { return model }
+function mergeActivityEvidence(model, access, mergedRaws = null) {
+  let merged = model
+  for (const copy of modelCopies(access)) {
+    merged = mergeModelCopy(merged, copy.parsed)
+    mergedRaws?.add(copy.raw)
+  }
+  return merged
+}
+
+function mergeModelCopy(model, stored) {
   if (!stored || typeof stored !== 'object' || stored.version !== MODEL_VERSION) return model
 
   const mine = model.activityPreferences || {}
@@ -359,6 +409,7 @@ function mergeActivityEvidence(model, access) {
     ...model,
     teachingHistory: teachingHistory([...new Map([...teachingHistory(stored.teachingHistory), ...teachingHistory(model.teachingHistory)].map(x => [x.id, x])).values()].sort((a,b) => a.at-b.at)),
     activityPreferences: merged,
+    ...mergeChatEvidence(model.chatEvidence, stored.chatEvidence, model.chatForgotten, stored.chatForgotten),
     // Preserve capabilities from independent snapshots without summing mastery evidence.
     // Same-id concurrent attempts need per-event provenance before safe reconciliation.
     canDo: mergeCanDoEvidence(model.canDo, stored.canDo),
@@ -610,17 +661,24 @@ export function saveLearnerModel(model, { verified = false } = {}) {
   const failure = () => verified ? false : model
   const access = captureLearnerObjectAccess(model)
   if (!access.valid()) return failure()
-  const merged = mergeActivityEvidence(model, access)
+  const mergedRaws = new Set()
+  const merged = mergeActivityEvidence(model, access, mergedRaws)
   if (!access.valid()) return failure()
   // Never reacquire/rebind to a new owner between validation, merge and write.
   // Only expose merged data to the caller after a durable scoped commit.
+  // Written to this tab's own copy only: another tab with a stale view of
+  // storage can never overwrite it (services/writerKeys.js).
+  const key = ownKey(KEY)
   try {
-    const serialized = JSON.stringify({ ...merged, version: MODEL_VERSION })
-    if (!access.setItem(KEY, serialized)) return failure()
-    if (verified && (!access.valid() || access.getItem(KEY) !== serialized || !access.valid())) {
+    const serialized = JSON.stringify({ ...merged, version: MODEL_VERSION, writtenAt: Date.now() })
+    if (!access.setItem(key, serialized)) return failure()
+    if (verified && (!access.valid() || access.getItem(key) !== serialized || !access.valid())) {
       return false
     }
   } catch { return failure() }
+  // Copies left by closed tabs whose exact bytes were just merged into this
+  // one are no longer needed (services/writerKeys.collectDeadCopies).
+  collectDeadCopies(access, KEY, (_parsed, raw) => mergedRaws.has(raw))
   // keep the caller's own object in step with what was written
   model.activityPreferences = merged.activityPreferences
   model.canDo = merged.canDo

@@ -39,6 +39,16 @@
   --border:        #E7E2DB;
   --border-strong: #D9D3CA;
 
+  /* — the call stage: night in BOTH themes. It used to paint itself with
+     --ink, which turns light in dark mode under light text: invisible. — */
+  /* text on an accent fill (primary button, the learner's bubble) — P3 */
+  --on-accent:      #FFF8F4;
+
+  --stage:          #1C2333;
+  --on-stage:       #F1EEE8;
+  --on-stage-muted: #C9C6C0;
+  --on-stage-line:  rgba(241, 238, 232, 0.24);
+
   /* — accents — */
   --accent:        #C86B4A;  /* terracotta: action, streak */
   --accent-strong: #A9563A;  /* pressed / links */
@@ -110,6 +120,15 @@
 
   --border:        #3D4658;
   --border-strong: #4A5468;
+
+  /* night accents are light: light text on them read at 2.6:1, so the
+     text goes dark (5.8:1 on the accent, 7.6:1 on its hover) — P3 */
+  --on-accent:      #1C2333;
+
+  --stage:          #141A27;
+  --on-stage:       #F1EEE8;
+  --on-stage-muted: #C3C9D4;
+  --on-stage-line:  rgba(241, 238, 232, 0.24);
 
   --accent:        #D98A66;
   --accent-strong: #E8A57F;
@@ -203,7 +222,7 @@ h1, h2, h3, .font-display {
  */
 .bubble-user {
   background: var(--chat-bubble, var(--accent));
-  color: #FFF8F4;
+  color: var(--on-accent);
   border-radius: 20px 20px 6px 20px;
   padding: 10px 15px;
   max-width: 76%;
@@ -487,7 +506,7 @@ h1, h2, h3, .font-display {
   padding: 13px 20px;
   border-radius: var(--radius);
   background: var(--accent);
-  color: #FFF8F4;
+  color: var(--on-accent);
   font-weight: 700;
   font-size: 0.9375rem;
   transition: background-color 0.18s ease, transform 0.18s ease;

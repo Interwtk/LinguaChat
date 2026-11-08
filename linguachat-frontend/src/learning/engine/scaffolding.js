@@ -136,6 +136,25 @@ export function evidenceKindForStep(step) {
  * support level. Someone typing an unaided sentence while a suggestion sits on
  * screen has produced it themselves, and the old rule threw that away.
  */
+/*
+ * The reply is the model answer that was on screen, typed back.
+ *
+ * Producing your own sentence while a suggestion is visible is still your own
+ * production; copying the suggestion is not. Case, spacing, apostrophe style
+ * and punctuation are ignored. A reply that contains the whole model (three
+ * words or more) plus extra words counts as a copy too: the evidence part was
+ * handed over. Anything genuinely different is left to the evaluator.
+ */
+export function copiesShownModel(reply, shownModel) {
+  // Apostrophes are dropped, so "im" copies "I'm" just as "I'm" does.
+  const norm = value => String(value || '').toLowerCase().replace(/['’‘`]/g, '')
+    .replace(/[^\p{L}\p{N} ]+/gu, ' ').replace(/\s+/g, ' ').trim()
+  const a = norm(reply), b = norm(shownModel)
+  if (!a || !b) return false
+  if (a === b) return true
+  return b.split(' ').length >= 3 && ` ${a} `.includes(` ${b} `)
+}
+
 export function isIndependentEvidence({ step, assistanceUsed = false, correct = true }) {
   if (!correct) return false
   if (assistanceUsed) return false

@@ -11,7 +11,8 @@
  * explicitly as part of this task's own evidence.
  */
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+// pathToFileURL: a bare C:\ path is not an import specifier on Windows
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { dirname, join } from 'node:path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -28,9 +29,9 @@ const [
   evaluatorsModule,
   { A1_ARC6_ARC7_I18N_EN },
 ] = await Promise.all([
-  import(join(FRONTEND, 'src/learning/levels/a1/index.js')),
-  import(join(FRONTEND, 'src/learning/levels/a1/evaluators.js')),
-  import(join(FRONTEND, 'src/learning/levels/a1/i18n/en.js')),
+  import(pathToFileURL(join(FRONTEND, 'src/learning/levels/a1/index.js')).href),
+  import(pathToFileURL(join(FRONTEND, 'src/learning/levels/a1/evaluators.js')).href),
+  import(pathToFileURL(join(FRONTEND, 'src/learning/levels/a1/i18n/en.js')).href),
 ])
 const { A1_ARC6_ARC7_NEW_INTENTS, A1_ARC6_ARC7_EVALUATORS, A1_ARC6_ARC7_REPAIR_KIND_EVALUATORS } = evaluatorsModule
 

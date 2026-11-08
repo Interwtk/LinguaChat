@@ -5,6 +5,7 @@
  * `node scripts/foundry/c2/run-all.mjs` from `linguachat-frontend/`.
  */
 import { spawnSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
 
 const SCRIPTS = [
   'check-c2-content-plan.mjs',
@@ -21,7 +22,7 @@ const SCRIPTS = [
 
 let failed = false
 for (const script of SCRIPTS) {
-  const result = spawnSync(process.execPath, [new URL(script, import.meta.url).pathname], { stdio: 'inherit' })
+  const result = spawnSync(process.execPath, [fileURLToPath(new URL(script, import.meta.url))], { stdio: 'inherit' })
   if (result.status !== 0) failed = true
 }
 if (failed) {

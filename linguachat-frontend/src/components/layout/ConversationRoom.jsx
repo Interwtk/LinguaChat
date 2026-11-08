@@ -17,6 +17,7 @@ import { loadLearnerModel, getEpisodeState } from '../../learning/engine/learner
 import { selectLearnerFact } from '../../learning/engine/learnerFacts.js'
 import { loadMemoryContext, dismissFact } from '../../learning/engine/memoryContext.js'
 import { asSubjectValue } from '../../learning/engine/semanticContext.js'
+import { isSubmitEnter } from '../../services/keyboard.js'
 
 /*
  * The episodes this screen may talk about, as structure only.
@@ -53,6 +54,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
     profile,
     connectionNotice,
     memoryNotice,
+    progressSaveFailing,
     setMobileSheet,
     navigateTo,
     t,
@@ -118,23 +120,29 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
     }
   }, [input])
 
+  // A suggestion Lingua offered and the learner sent unchanged is assisted:
+  // it can be good practice, never evidence of what they know (P3).
+  const promptedRef = useRef(null)
   const handleSend = useCallback(() => {
     const text = input.trim()
     if (!text || isTyping) return
-    sendMessage(text)
+    const assisted = promptedRef.current !== null && text === promptedRef.current.trim()
+    promptedRef.current = null
+    sendMessage(text, { assisted })
     setInput('')
     setSparkOpen(false)
     if (textareaRef.current) textareaRef.current.style.height = 'auto'
   }, [input, isTyping, sendMessage])
 
   const handleKey = useCallback((e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (isSubmitEnter(e)) {
       e.preventDefault()
       handleSend()
     }
   }, [handleSend])
 
   const usePrompt = useCallback((text) => {
+    promptedRef.current = text
     setInput(text)
     setSparkOpen(false)
     textareaRef.current?.focus()
@@ -316,6 +324,21 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
         </div>
       )}
 
+      {progressSaveFailing && (
+        <div className="mt-3 px-3.5 py-2.5 rounded-xl animate-fade-up"
+          role="status"
+          style={{
+            ...practicePanelStyle,
+            background: 'var(--accent-soft)',
+            border: '1px solid var(--accent-tint)',
+            color: 'var(--text)',
+            fontSize: '0.8125rem',
+            lineHeight: 1.45,
+          }}>
+          {t('progressNotSavedNotice')}
+        </div>
+      )}
+
       {memoryNotice && (
         <div className="mt-3 px-3.5 py-2.5 rounded-xl animate-fade-up"
           role="status"
@@ -362,7 +385,7 @@ export function ConversationRoom({ focusMode = false, onToggleFocusMode, onOpenN
           <div style={{ minWidth: 0 }}>
             <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--ink)' }}>{t('missionComplete')}</p>
             <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', lineHeight: 1.5 }}>
-              {missionCelebration.message} +{missionCelebration.xp} XP.
+              {t(missionCelebration.messageKey || 'missionSavedOnDevice')} +{missionCelebration.xp} XP.
             </p>
           </div>
         </div>

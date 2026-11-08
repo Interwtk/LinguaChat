@@ -61,6 +61,11 @@ jobs:
           NODE
       - run: npm run build
       - run: npm run check:i18n
+      # Executes the real workflow scripts against a fake `gh` (needs bash + jq,
+      # present on this runner). Kept out of check:all so the functional suite
+      # runs anywhere, including Windows; it still runs on every PR here.
+      - name: GitHub-integration checks (workflow fixtures, bash + jq)
+        run: npm run check:github-integration
 
   backend:
     name: backend — compile and tests

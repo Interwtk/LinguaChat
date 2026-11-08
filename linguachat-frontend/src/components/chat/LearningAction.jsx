@@ -1,19 +1,28 @@
 import { useApp } from '../../context/AppContext'
 
-const ACTION_LABELS = {
-  complete_sentence: 'Completa',
-  answer_question: 'Responde',
-  rewrite: 'Reescribe',
-  choose_option: 'Elige',
-  ask_back: 'Pregunta',
-  use_word: 'Usa palabra',
+// Labels follow the learner's language (they were hardcoded Spanish).
+const ACTION_LABEL_KEYS = {
+  complete_sentence: 'actionComplete',
+  answer_question: 'actionAnswer',
+  rewrite: 'actionRewrite',
+  choose_option: 'actionChoose',
+  ask_back: 'actionAskBack',
+  use_word: 'actionUseWord',
+  fill_blank: 'actionFillBlank',
+}
+
+function focusComposer() {
+  const composer = document.querySelector('textarea.chat-input')
+  if (!composer) return
+  composer.focus()
+  composer.scrollIntoView?.({ block: 'nearest' })
 }
 
 export function LearningAction({ action }) {
   const { t } = useApp()
   if (!action?.prompt) return null
 
-  const label = ACTION_LABELS[action.type] || t('learningAction')
+  const label = ACTION_LABEL_KEYS[action.type] ? t(ACTION_LABEL_KEYS[action.type]) : t('learningAction')
 
   return (
     <div
@@ -48,14 +57,18 @@ export function LearningAction({ action }) {
               {label}
             </span>
           </div>
-          <p style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.45 }}>
+          {/* English material, sometimes framed in the learner's language */}
+          <p dir="auto" style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--ink)', lineHeight: 1.45 }}>
             {action.prompt}
           </p>
         </div>
+        {/* It used to do nothing. It takes the learner to the place to answer.
+            White on --info was 2.1:1 in dark mode; --surface reads in both. */}
         <button
           type="button"
+          onClick={focusComposer}
           className="rounded-xl px-3 py-2 text-xs font-bold transition-all hover:-translate-y-px active:scale-[0.98]"
-          style={{ background: 'var(--info)', color: '#fff', border: 'none', whiteSpace: 'nowrap' }}
+          style={{ background: 'var(--info)', color: 'var(--surface)', border: 'none', whiteSpace: 'nowrap' }}
         >
           {t('tryIt')}
         </button>
@@ -64,7 +77,7 @@ export function LearningAction({ action }) {
       {action.options?.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-3">
           {action.options.map(option => (
-            <span key={option} style={{
+            <span key={option} lang="en" dir="ltr" style={{
               fontSize: 11,
               fontWeight: 650,
               color: 'var(--ink)',

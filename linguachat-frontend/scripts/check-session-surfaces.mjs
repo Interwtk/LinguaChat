@@ -14,6 +14,13 @@ import { fileURLToPath } from 'node:url'
 import { dirname, resolve as resolvePath } from 'node:path'
 import { selectRepresentativeFormat, BLOCK_CANDIDATES, formatSupportsObjective } from '../src/learning/engine/formatChoice.js'
 import { ACTIVITY_FORMATS } from '../src/learning/engine/learnerModel.js'
+import {
+  applyProgressEvent, collectDeadCopies, mergeIntoStoredProgress, serializeStoredProgress,
+} from '../src/services/localProgress.js'
+import { ownKey, storedCopies } from '../src/services/writerKeys.js'
+import { ledgerFromStored, mergeLedgers, sameLedger } from '../src/services/progressLedger.js'
+import { translate } from '../src/i18n/translations.js'
+import { mergeSessions } from '../src/learning/engine/session.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const read = (p) => readFileSync(resolvePath(here, '..', p), 'utf8')
@@ -248,9 +255,10 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const finish = new Function('deps', 'with (deps) { return (() => {' + match[1] + '\n})() }')
   for (const mode of [
     'double-click', 'already-awarded', 'missing', 'denied', 'invalid-json',
-    'revoked-after-read', 'different-session', 'rejected-write',
+    'revoked-after-read', 'different-session', 'rejected-write', 'rejected-bonus',
   ]) {
     let valid = true
+    const committed = []
     let stored = {
       id: '2026-10-30:standard', version: 1, status: 'active',
       awarded: mode === 'already-awarded', dayKey: '2026-10-30',
@@ -262,7 +270,10 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const deps = {
       dailySession: { ...stored, awarded: false },
       SESSION_KEY: 'lc2-daily-session-v1',
-      ARC: [],
+      // Reads go through the merged per-tab reader (P2); here, one stored copy.
+      readStoredSessionRaw: access => access.getItem('lc2-daily-session-v1'),
+      // P5: the session's episodes come from the learner's working level
+      currentArc: () => [],
       captureLearnerAccess: () => ({
         valid: () => valid,
         getItem: (key) => {
@@ -294,6 +305,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       setEpisodeArcVersion: () => {},
       setView: () => {},
       SESSION_BONUS_XP: 15,
+      // The bonus is a durable, identified progress event (P0-1).
+      commitProgressEvent: event => {
+        if (mode === 'rejected-bonus') return false
+        committed.push(event.id)
+        return true
+      },
+      applyProgressEvent,
     }
     const first = finish(deps)
     const second = finish(deps)
@@ -302,6 +320,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(second, false, 'stale second click must not finish an already completed cursor')
       assert.equal(xp, 15, 'two completions before React flush must award once')
       assert.equal(writes, 1)
+      assert.deepEqual(committed, ['session-bonus:2026-10-30:standard'], 'the bonus is committed once, by session id')
     } else if (mode === 'already-awarded') {
       assert.equal(first, true)
       assert.equal(second, false, 'completed cursor cannot be replayed by a stale click')
@@ -324,11 +343,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   assert.match(context, /if \(isolation\.claimedGuestData && !isolation\.reloadRequired\)\s*passiveStorageAccessRef\.current = captureLearnerAccess\(\)/,
     'a first guest claim must rebind passive persistence to the new authenticated lease')
   const messageEffect = context.match(/useEffect\(\(\) => \{\s*(saveStoredMessages\(messages, \{ access: passiveStorageAccessRef\.current \}\))\s*\}, \[messages\]\)/)
-  const progressEffect = context.match(/useEffect\(\(\) => \{\s*(saveLocalProgress\(localProgress, \{ access: passiveStorageAccessRef\.current \}\))\s*\}, \[localProgress\]\)/)
+  // P5: the progress writer retries a failing save and reports it; same captured lease throughout
+  const progressEffect = context.match(/useEffect\(\(\) => \{\n(    latestProgressRef\.current = localProgress\n[\s\S]*?)\n  \}, \[localProgress\]\)/)
   assert.ok(messageEffect && progressEffect,
     'passive writers must use their captured lease, never a fresh lease or unscoped storage')
   const runMessages = new Function('deps', 'with (deps) { ' + messageEffect[1] + ' }')
-  const runProgress = new Function('deps', 'with (deps) { ' + progressEffect[1] + ' }')
+  assert.ok(!/captureLearnerAccess\(|unscopedAccess|localStorage\./.test(progressEffect[1]), 'the progress writer never takes a fresh lease')
+  const runProgress = new Function('deps', 'with (deps) { return (() => {' + progressEffect[1] + '\n})() }')
   for (const mode of ['same-account', 'switched-account', 'revoked-tab', 'claimed-guest']) {
     let active = mode === 'same-account' || mode === 'claimed-guest'
     const captured = { valid: () => active }
@@ -336,8 +357,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const messages = [{ id: 'old-A' }]
     const localProgress = { xp: 42 }
     let writes = 0
+    const timers = []
+    let failing = null
     const deps = {
-      passiveStorageAccessRef, messages, localProgress,
+      passiveStorageAccessRef, messages, localProgress, latestProgressRef: { current: null }, PROGRESS_RETRY_MS: 15000,
+      setProgressSaveFailing: value => { failing = value },
+      setInterval: (fn, ms) => { timers.push({ fn, ms }); return timers.length },
+      clearInterval: id => { if (timers[id - 1]) timers[id - 1].cleared = true },
       saveStoredMessages: (_value, { access }) => {
         assert.equal(access, captured, mode + ': chat uses the original lease')
         if (!access.valid()) return false
@@ -356,6 +382,34 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     runMessages(deps)
     runProgress(deps)
     assert.equal(writes, active ? 2 : 0, mode + ': stale effects must never persist into B')
+    assert.equal(timers.length, 0, mode + ': nothing to retry when the save worked or the lease is gone')
+    assert.equal(failing, false, mode + ': no notice when the save worked or the lease is gone')
+  }
+  // P5: a save that fails under a VALID lease is retried, with the same lease, and reported until it works
+  {
+    const captured = { valid: () => true }
+    let ok = false, attempts = 0, failing = null
+    const timers = []
+    const deps = {
+      passiveStorageAccessRef: { current: captured }, localProgress: { xp: 1 }, latestProgressRef: { current: null },
+      PROGRESS_RETRY_MS: 15000,
+      setProgressSaveFailing: value => { failing = value },
+      setInterval: (fn, ms) => { timers.push({ fn, ms }); return timers.length },
+      clearInterval: id => { if (timers[id - 1]) timers[id - 1].cleared = true },
+      saveLocalProgress: (_value, { access }) => { assert.equal(access, captured, 'retries keep the original lease'); attempts++; return ok },
+    }
+    const cleanup = runProgress(deps)
+    assert.equal(failing, true, 'a failing save is reported')
+    assert.equal(timers.length, 1, 'and retried')
+    assert.equal(timers[0].ms, 15000)
+    timers[0].fn()
+    assert.equal(failing, true, 'still failing: still reported')
+    ok = true
+    timers[0].fn()
+    assert.equal(failing, false, 'the notice goes away once a retry works')
+    assert.equal(timers[0].cleared, true, 'and the retry stops')
+    assert.equal(attempts, 3)
+    assert.equal(typeof cleanup, 'function', 'the retry is cleared when the progress changes or the screen unmounts')
   }
   ok()
 }
@@ -730,7 +784,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
 // arrived while the original account was still active.
 {
   const context = read('src/context/AppContext.jsx')
-  const signature = '  const sendMessage = useCallback(async (text) => {'
+  const signature = '  const sendMessage = useCallback(async (text, { assisted = false } = {}) => {'
   const start = context.indexOf(signature)
   const end = context.indexOf('\n  }, [activeCompanion, activeMission, conversationTopic', start)
   assert.ok(start >= 0 && end > start, 'free chat must retain an inspectable async callback')
@@ -780,6 +834,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       sessionId: 'A-session',
       nativeLanguageInfo: { base: 'es' },
       interfaceLanguageInfo: { base: 'es' },
+      // The memory notice follows the learner's language (P1 stage C).
+      translate,
       targetLanguage: 'en',
       tutorPreferences: {},
       activeCompanion: null,
@@ -791,6 +847,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       providerTopicContext: () => ({}),
       recordPractice: () => ({ owner: 'A' }),
       recordTopicUse: () => {},
+      // P3: the learning record of a chat turn (chatEvidence.js) and its translator
+      assisted: false,
+      tRef: { current: key => key },
+      learningMemoryPayload: () => [],
+      classifyChatTurn: () => ({ kind: 'not_evaluable', entries: [] }),
+      recordChatTurn: () => false,
+      saveLearnerModel: () => true,
     }
     const pending = send('Hello', deps)
     let alreadyFlushed = 0
@@ -975,8 +1038,11 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         return mode === 'failed-completion' ? null : { missionId: 'A-mission', earnedXp: 4 }
       },
       recordMissionProgress: () => ({ owner: 'A' }),
+      // Mission rewards carry a stable id per run and step (P2).
+      missionRewardId: (active, part) => `mission:${active?.missionId}:${active?.startedAt}:${part}`,
       createMissionFeedbackMessage: () => ({ missionType: 'feedback' }),
       createMissionStepMessage: () => ({ missionType: 'step' }),
+      tRef: { current: key => key },
       createMissionCompleteMessage: () => ({ missionType: 'complete' }),
     }
     const pending = submit('answer', null, deps)
@@ -1138,7 +1204,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       createWelcomeMessage: language => ({ role: 'lingua', text: 'Welcome ' + language }),
       // This older deferred-React regression supplies a successful durable
       // writer; the new dedicated block below tests real read-back failures.
-      saveStoredMessages: (_messages, { access }) => access.valid(),
+      // Clearing starts a new conversation (P0-1), so other tabs cannot
+      // write the old one back.
+      startStoredConversation: (_welcome, { access }) => access.valid(),
       interfaceLanguageInfo: { base: 'es' },
     }
     updateProfile({ name: 'A profile', level: 'A1' }, deps)
@@ -1233,9 +1301,11 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         sessions++
         return mode === 'rejected-session' ? null : 'A-new-session'
       },
-      saveStoredMessages: (messages, options) => {
+      // Reset starts a new conversation (P0-1): a stale tab cannot write the
+      // erased chat back.
+      startStoredConversation: (welcome, options) => {
         assert.equal(options.access, access, 'welcome must be durably stored under the original lease')
-        assert.equal(messages[0].text, 'Welcome es')
+        assert.equal(welcome.text, 'Welcome es')
         chatWrites++
         return mode !== 'rejected-chat'
       },
@@ -1357,6 +1427,15 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       localStorage: { removeItem: () => { throw new Error('unscoped write') },
         setItem: () => { throw new Error('unscoped write') } },
       writeJSON: () => { throw new Error('unscoped write') },
+      // saveLocalProgress merges with what storage holds (P0-1). The real
+      // helpers run against the same scoped `access`, never unscoped storage.
+      mergeIntoStoredProgress, serializeStoredProgress,
+      // P5: a verified write confirms this page's save times
+      confirmSaves: () => {},
+      // Each tab writes its own copy (P1 stage A); the same scoped access only.
+      ownKey, collectDeadCopies, ledgerFromStored, mergeLedgers, sameLedger,
+      // Mission history has one copy per tab; a reset removes all of them (P2).
+      storedCopies,
     }
     const expected = mode === 'current'
     assert.equal(clearProgress({ access }, deps), expected, mode + ': progress keys')
@@ -1609,9 +1688,10 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     'with (deps) { const { grants = [] } = options || {}; ' +
     context.slice(start + signature.length, end) + ' }')
 
-  for (const mode of ['current', 'stale-flush', 'denied', 'revoked-load', 'revoked-grant', 'revoked-save', 'rejected-model-save']) {
+  for (const mode of ['current', 'stale-flush', 'denied', 'revoked-load', 'revoked-grant', 'revoked-save', 'rejected-model-save', 'rejected-award', 'revoked-award']) {
     let owner = mode === 'denied' ? 'B' : 'A'
     let loads = 0, seen = 0, saves = 0
+    const committed = []
     const queued = []
     const model = { seen: [] }
     const progress = mode === 'current'
@@ -1637,8 +1717,17 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         return mode !== 'rejected-model-save'
       },
       setLocalProgress: updater => queued.push(updater),
+      // XP and Garden words are a durable, identified event (P0-1).
+      commitProgressEvent: (event, options) => {
+        assert.equal(typeof options.access.valid, 'function', 'the award is written under a captured lease')
+        if (mode === 'revoked-award') owner = 'B'
+        if (mode === 'rejected-award') return false
+        committed.push(event.id)
+        return true
+      },
+      applyProgressEvent,
     }
-    const result = award({ xp: 5 }, {
+    const result = award({ id: 'first_greeting', xp: 5 }, {
       grants: [{ vocabId: 'new-word' }, { vocabId: 'existing' }],
     }, deps)
     if (mode === 'stale-flush') owner = 'B'
@@ -1654,6 +1743,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(queued.length, 1)
       assert.equal(progress.xp, 14)
       assert.deepEqual(progress.learnedItems.map(item => item.vocabId), ['new-word', 'existing'])
+      assert.deepEqual(committed, ['episode-award:first_greeting'], 'the award is committed by episode id')
     } else {
       assert.deepEqual(progress, original, mode + ': stale episode must not award B')
       assert.equal(queued.length, mode === 'stale-flush' ? 1 : 0)
@@ -1698,7 +1788,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     'revoked-save', 'stale-id', 'stale-day', 'stale-index', 'stale-block',
     'stale-status', 'already-completed', 'wrong-visible-block',
     'wrong-durable-type', 'missing', 'invalid-json', 'blocked-read', 'revoked-read',
+    'rejected-bonus', 'revoked-bonus',
   ]) {
+    const bonuses = []
     let owner = mode === 'denied' ? 'B' : 'A'
     let loads = 0, completions = 0, modelSaves = 0, writes = 0, reads = 0
     const visible = mode === 'wrong-visible-block'
@@ -1744,7 +1836,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const deps = {
       SESSION_BONUS_XP: 15,
       SESSION_KEY: 'daily-session',
-      ARC: [],
+      readStoredSessionRaw: access => access.getItem('daily-session'), // merged per-tab reader (P2)
+      currentArc: () => [], // P5: the learner's working level (was ARC)
       normalizeSession: value => value,
       dailySession: structuredClone(visible),
       captureLearnerAccess: () => access,
@@ -1764,12 +1857,28 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         if (mode === 'revoked-model-save') owner = 'B'
         return mode !== 'rejected-model-save'
       },
+      readStoredSessionRaw: access => access.getItem('daily-session'),
       saveSession: (session, options) => save(session, options, {
         SESSION_KEY: 'daily-session',
         localStorage: { setItem: () => { throw new Error('unscoped write') } },
+        // saveSession writes this tab's own copy, merged with what is stored (P2).
+        learnerAccess: { valid() { throw new Error('unscoped write') } },
+        readStoredSessionRaw: access => access.getItem('daily-session'),
+        mergeSessions, ownKey: base => base + '~w~harness', collectDeadCopies: () => Promise.resolve(0),
       }),
       setDailySession: queue('daily'),
       setLocalProgress: queue('progress'),
+      // The bonus is committed as an identified event before the session is
+      // marked complete (P0-1); its own storage is exercised by
+      // check-same-account-tabs.mjs.
+      commitProgressEvent: (event, options) => {
+        assert.equal(options.access, access, 'the bonus is written under the original lease')
+        if (mode === 'revoked-bonus') owner = 'B'
+        if (mode === 'rejected-bonus') return false
+        bonuses.push(event.id)
+        return true
+      },
+      applyProgressEvent,
       setSessionActive: queue('active'),
       setEpisodeActiveId: queue('episode'),
       setEpisodeArcVersion: queue('arc'),
@@ -1794,6 +1903,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       assert.equal(completions, 1)
       assert.equal(modelSaves, 1)
       assert.equal(queued.length, 6)
+      assert.deepEqual(bonuses, ['session-bonus:A-session'])
     } else {
       assert.equal(result, mode === 'stale-flush', mode + ': only a valid current completion may succeed')
       assert.deepEqual(state, original, mode + ': stale completion cannot mutate B or an older cursor')
@@ -1876,7 +1986,8 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     }
     const deps = {
       SESSION_KEY: 'daily-session',
-      ARC: [],
+      readStoredSessionRaw: access => access.getItem('daily-session'), // merged per-tab reader (P2)
+      currentArc: () => [], // P5: the learner's working level (was ARC)
       normalizeSession: value => value,
       captureLearnerAccess: () => access,
       dailySession: mode === 'no-session' ? null : structuredClone(initial),
@@ -1885,9 +1996,14 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         if (mode === 'revoked-advance') owner = 'B'
         return { ...session, currentBlockIndex: session.currentBlockIndex + 1 }
       },
+      // Reads go through the merged per-tab reader; writes to this tab's copy (P2).
+      readStoredSessionRaw: access => access.getItem('daily-session'),
       saveSession: (session, options) => save(session, options, {
         SESSION_KEY: 'daily-session',
         localStorage: { setItem: () => { throw new Error('unscoped write') } },
+        learnerAccess: { valid() { throw new Error('unscoped write') } },
+        readStoredSessionRaw: access => access.getItem('daily-session'),
+        mergeSessions, ownKey: base => base, collectDeadCopies: () => Promise.resolve(0),
       }),
       setEpisodeArcVersion: update => queued.push(['arc', update]),
       setDailySession: update => queued.push(['daily', update]),
@@ -2069,11 +2185,12 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const deps = {
       captureLearnerAccess: () => access,
       SESSION_KEY: 'daily-session',
+      readStoredSessionRaw: access => access.getItem('daily-session'), // merged per-tab reader (P2)
       normalizeSession: value => value,
       dailySession: daily,
       preferredDuration: 'standard',
       sessionContext: () => ({}),
-      ARC: [],
+      currentArc: () => [], // P5: the learner's working level (was ARC)
       getOrCreateSession: () => {
         if (mode === 'first-session' || mode === 'old-completed' || mode === 'absent-current') return planned
         if (mode === 'completed-today') return daily
@@ -2320,8 +2437,9 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     const deps = {
       DURATION_PREF_KEY: 'duration',
       SESSION_KEY: 'daily-session',
+      readStoredSessionRaw: access => access.getItem('daily-session'), // merged per-tab reader (P2)
       normalizeSession: value => value,
-      ARC: [],
+      currentArc: () => [], // P5: the learner's working level (was ARC)
       dailySession: original.daily,
       captureLearnerAccess: () => access,
       isDurationMode: value => value === 'quick',
@@ -2405,7 +2523,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const persist = new Function('activeMission', 'options', 'deps',
     'with (deps) { const { access = null } = options || {}; ' +
     extract(missions, 'export function saveActiveMission(activeMission, { access = null } = {}) {',
-      '\n}\n\nexport function loadCompletedMissions') + ' }')
+      '\n}\n') + ' }') // end of saveActiveMission itself (P2 added readers after it)
   const create = new Function('mission', 'options', 'deps',
     'with (deps) { const { access = null } = options || {}; ' +
     extract(missions, 'export function startMission(mission, { access = null } = {}) {',
@@ -2473,6 +2591,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
         getActiveMissionDetails: active => ({ mission, step: { id: 'step-A' }, active }),
         createMissionIntroMessage: () => ({ id: 'intro-A' }),
         createMissionStepMessage: () => ({ id: 'step-A' }),
+        tRef: { current: key => key },
         appendLinguaMessages: (_messages, publication) => {
           appends++
           queued.push(['messages', () => publication.valid()])
@@ -2531,7 +2650,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const persist = new Function('activeMission', 'options', 'deps',
     'with (deps) { const { access = null } = options || {}; ' +
     extract('export function saveActiveMission(activeMission, { access = null } = {}) {',
-      '\n}\n\nexport function loadCompletedMissions') + ' }')
+      '\n}\n') + ' }') // end of saveActiveMission itself (P2 added readers after it)
   const advance = new Function('activeMission', 'step', 'answerValue', 'evaluation', 'options', 'deps',
     'with (deps) { const { access = null, deferSave = false } = options || {}; ' +
     extract('export function advanceMission(activeMission, step, answerValue, evaluation, { access = null, deferSave = false } = {}) {',
@@ -2590,7 +2709,7 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   const persist = new Function('activeMission', 'options', 'deps',
     'with (deps) { const { access = null } = options || {}; ' +
     extract('export function saveActiveMission(activeMission, { access = null } = {}) {',
-      '\n}\n\nexport function loadCompletedMissions') + ' }')
+      '\n}\n') + ' }') // end of saveActiveMission itself (P2 added readers after it)
   const complete = new Function('activeMission', 'options', 'deps',
     'with (deps) { const { access = null } = options || {}; ' +
     extract('export function completeMission(activeMission, { access = null } = {}) {',
@@ -2655,6 +2774,16 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       saveActiveMission: save,
       loadCompletedMissions: () => { throw new Error('unscoped history read') },
       saveCompletedMissions: () => { throw new Error('unscoped history write') },
+      // History has one copy per tab (P2); here a single copy, read and written
+      // through the same scoped access, failing closed on unreadable bytes.
+      readCompletedMissions: lease => {
+        const raw = lease.getItem('completed-missions')
+        if (raw === null) return []
+        const list = JSON.parse(raw)
+        if (!Array.isArray(list)) throw new Error('Unreadable mission history')
+        return list
+      },
+      ownKey: base => base, collectDeadCopies: () => Promise.resolve(0),
     }
     const prepared = advance(saved, { id: 's1', type: 'write_sentence', xp: 4 },
       'hello', { passed: true }, { access, deferSave: true }, {
@@ -2697,12 +2826,14 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
   assert.ok(start >= 0 && end > start, 'clearMessages must remain inspectable')
   const clear = new Function('deps', 'with (deps) { ' +
     context.slice(start + signature.length, end) + ' }')
-  const saveStart = progress.indexOf('export function saveStoredMessages(messages, { access = null } = {}) {')
-  const saveEnd = progress.indexOf('\n}\n\nexport function createEmptyProgress', saveStart)
+  // Clearing starts a new conversation (P0-1): an epoch, then the welcome.
+  const writerSignature = 'export function startStoredConversation(welcome, { access = null } = {}) {'
+  const saveStart = progress.indexOf(writerSignature)
+  const saveEnd = progress.indexOf('\n}\n', saveStart)
   assert.ok(saveStart >= 0 && saveEnd > saveStart, 'durable chat writer must remain inspectable')
-  const save = new Function('messages', 'options', 'deps', 'with (deps) { ' +
+  const save = new Function('welcome', 'options', 'deps', 'with (deps) { ' +
     'const { access = null } = options || {}; ' +
-    progress.slice(saveStart + 'export function saveStoredMessages(messages, { access = null } = {}) {'.length, saveEnd) + ' }')
+    progress.slice(saveStart + writerSignature.length, saveEnd) + ' }')
 
   for (const mode of [
     'current', 'stale-flush', 'denied', 'rejected-write', 'mismatched-read',
@@ -2739,8 +2870,10 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
       chatGenerationRef, chatInFlightRef,
       interfaceLanguageInfo: { base: 'es' },
       createWelcomeMessage: () => ({ id: 'welcome-es' }),
-      saveStoredMessages: (messages, options) => save(messages, options, {
-        STORAGE_KEYS: { messages: 'chat' },
+      startStoredConversation: (welcome, options) => save(welcome, options, {
+        STORAGE_KEYS: { messages: 'chat', chatEpoch: 'chat-epoch' },
+        makeId: () => 'chat-epoch-1',
+        unscopedAccess: { valid() { throw new Error('Durable path bypassed') } },
         writeJSON: () => { throw new Error('Durable path bypassed') },
       }),
       setMessages: update => queued.push(['messages', update]),
@@ -2761,11 +2894,13 @@ const block = (type, format, source = 'planner') => ({ id: `${type}:${format}`, 
     if (mode === 'current') {
       assert.deepEqual(state, { messages: [{ id: 'welcome-es' }], selected: null, typing: false })
       assert.equal(stored.get('chat'), JSON.stringify([{ id: 'welcome-es' }]))
+      assert.equal(JSON.parse(stored.get('chat-epoch')).id, 'chat-epoch-1', 'the new conversation is marked')
     } else {
       assert.deepEqual(state, original, mode + ': no unsaved or foreign UI reset')
     }
     if (mode === 'denied') assert.equal(writes, 0)
-    if (mode === 'stale-flush') assert.equal(writes, 1, 'A was saved, B UI stays untouched')
+    // Two writes: the conversation epoch, then the welcome message.
+    if (mode === 'stale-flush') assert.equal(writes, 2, 'A was saved, B UI stays untouched')
   }
   ok()
 }

@@ -1,12 +1,11 @@
 import { useApp } from '../../context/AppContext'
-import { playableLevelId, episodesOfLevel } from '../../learning/curriculum/levels.js'
+import { episodesOfLevel } from '../../learning/curriculum/levels.js'
+import { workingLevelId } from '../../learning/curriculum/learnerLevel.js'
 
 /*
  * One level's episodes: a replay list must not offer another level's content.
- * `playableLevelId()` — not a hardcoded level id — so this keeps agreeing with
- * Home once a second level opens.
+ * P5: the learner's working level (learnerLevel.js), as Home uses.
  */
-const ARC = episodesOfLevel(playableLevelId())
 import { getEpisodeState, loadLearnerModel } from '../../learning/engine/learnerModel.js'
 import { timesPractised, canTryOtherBranch } from '../../learning/engine/episodeRuns.js'
 
@@ -24,6 +23,7 @@ export function CompletedEpisodes() {
   const { t, startEpisode, episodeArcVersion, nativeLanguageInfo } = useApp()
   const model = loadLearnerModel()
   const nativeLang = nativeLanguageInfo.base
+  const ARC = episodesOfLevel(workingLevelId(model))
   const done = ARC.filter(ep => getEpisodeState(model, ep.id).status === 'completed')
   if (!done.length) return null
 

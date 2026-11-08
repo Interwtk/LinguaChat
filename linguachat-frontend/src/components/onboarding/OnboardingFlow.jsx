@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useApp } from '../../context/AppContext'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { ChattoMascot } from '../mascot/ChattoMascot'
+import { isSubmitEnter } from '../../services/keyboard.js'
 
 /* ─── Step data ─── */
 const GOALS = [
@@ -125,7 +126,7 @@ export function OnboardingFlow() {
                 type="text"
                 value={name}
                 onChange={e => setName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && next()}
+                onKeyDown={e => isSubmitEnter(e, { allowShift: true }) && next()}
                 placeholder="Your name..."
                 autoFocus
                 className="w-full px-5 py-4 rounded-2xl text-base font-medium transition-all"

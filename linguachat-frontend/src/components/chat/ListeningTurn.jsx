@@ -37,6 +37,6 @@ function ListeningTurnContent({ text, onSignals }) {
       <button type="button" className="tool-chip" aria-expanded={transcript} onClick={() => { stats.current.transcript = true; setTranscript(v => !v); publish() }}>{t(transcript ? 'listeningHide' : 'listeningTranscript')}</button>
     </div>
     <p role="status" aria-live="polite" className="text-xs">{t(!controller.current.supported || state === 'error' ? 'listeningUnavailable' : state === 'playing' ? 'listeningPlaying' : 'listeningStopped')}</p>
-    {transcript && <p lang="en" className="mt-2">{text}</p>}
+    {transcript && <p lang="en" dir="ltr" className="mt-2">{text}</p>}
   </section>
 }

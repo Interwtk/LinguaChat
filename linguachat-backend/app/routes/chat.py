@@ -4,6 +4,7 @@ from fastapi import APIRouter, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from ai.chat_evaluation import safe_assistance
 from ai.engine import generate_response
 from ai.schemas import ChatMode, ChatResult, LanguageInfo, LanguageLevel, MissionContext
 from app.services.memory import conversation_memory
@@ -33,7 +34,9 @@ ALLOWED_TUTOR_PREFERENCES = {
     "learner_style",
 }
 
-ALLOWED_COMPANIONS = {"lingua", "lingo", "chatto"}
+# Lingua is the only tutor. "lingo" (legacy) and "chatto" (the mascot) are not
+# tutors: whatever a client sends, Lingua answers.
+ALLOWED_COMPANIONS = {"lingua"}
 
 LANGUAGE_NAMES = {
     "ar": "Arabic",
@@ -93,6 +96,15 @@ class ChatRequest(BaseModel):
     # {"remembered_like": "music"}. Deliberately narrow: no history, no scores,
     # no mastery, no activity events — anything else is ignored, not stored.
     optional_context: dict | None = None
+    # P3: what the learner's own device remembers across days about rules
+    # Lingua corrected before — rule ids, a status, which verbs were already
+    # practised. Never sentences. Validated below; anything else is dropped.
+    learning_memory: list | None = None
+    # P5: how this message was produced, as the device knows it ("none",
+    # "suggestion_sent" when the learner sent a suggestion Lingua offered, …).
+    # A closed set; anything else is treated as "none". It can only LOWER what
+    # the turn is worth (assisted is never independent), never raise it.
+    assistance: str | None = None
 
 
 def _language_name(base: str) -> str:
@@ -157,6 +169,33 @@ def _safe_topic_facet(value) -> str | None:
     return text if TOPIC_FACET_PATTERN.match(text) else None
 
 
+MEMORY_RULES = {"past_irregular", "past_marker", "third_person", "article"}
+MEMORY_STATUSES = {"observed", "recurring", "improving", "holding"}
+MEMORY_STRATEGIES = {"brief_explanation", "contrast_example", "guided_retrieval"}
+_MEMORY_WORD = re.compile(r"^[a-z]{1,20}$")
+
+
+def _safe_learning_memory(value) -> list[dict]:
+    """At most eight known rules, each with a few closed-set fields."""
+    if not isinstance(value, list):
+        return []
+    safe, seen = [], set()
+    for item in value[:8]:
+        if not isinstance(item, dict) or item.get("rule") not in MEMORY_RULES or item["rule"] in seen:
+            continue
+        seen.add(item["rule"])
+        entry = {"rule": item["rule"], "due": item.get("due") is True}
+        if item.get("status") in MEMORY_STATUSES:
+            entry["status"] = item["status"]
+        if item.get("preferred_strategy") in MEMORY_STRATEGIES:
+            entry["preferred_strategy"] = item["preferred_strategy"]
+        bases = [b for b in (item.get("bases") or []) if isinstance(b, str) and _MEMORY_WORD.match(b)]             if isinstance(item.get("bases"), list) else []
+        if bases:
+            entry["bases"] = bases[:12]
+        safe.append(entry)
+    return safe
+
+
 def _safe_optional_context(value) -> dict:
     """Keep only the handful of short, harmless hints we actually understand.
 
@@ -217,8 +256,13 @@ def chat(req: ChatRequest, response: Response):
             "tutor_preferences": tutor_preferences,
             "active_companion": active_companion,
             "recent_errors": conversation_memory.recent_errors(session_id),
+            # Which error rules fired recently, so the tutor can change strategy
+            # when an explanation did not work (ai/local_engine.choose_strategy).
+            "recent_error_types": conversation_memory.recent_error_types(session_id),
             "mission_context": mission_context,
             "optional_context": _safe_optional_context(req.optional_context),
+            "learning_memory": _safe_learning_memory(req.learning_memory),
+            "assistance": safe_assistance(req.assistance),
         }
 
         generated = generate_response(

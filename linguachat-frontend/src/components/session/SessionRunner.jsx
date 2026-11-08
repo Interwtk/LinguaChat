@@ -30,6 +30,7 @@ import {
   deriveInitialScaffold, updateScaffoldAfterTurn, evidenceKindForStep,
   isIndependentEvidence, showsModelAnswer,
 } from '../../learning/engine/scaffolding.js'
+import { isSubmitEnter } from '../../services/keyboard.js'
 
 const En = ({ children, style }) => <span lang="en" dir="ltr" style={style}>{children}</span>
 
@@ -454,13 +455,16 @@ function PracticeTurn({ block, topic = null, sessionId = null, listeningBaseline
   const teaching = modelRef.current
   const decisionRef = useRef(null)
   if (!decisionRef.current) {
-  const instruction = block.payload?.requiredPractice === 'recall' ? 'concise'
-    : showsModelAnswer(scaffold) ? 'worked_example'
-      : chooseTeaching(teaching, kind, ['concise', 'worked_example'], decisionSeed, 'instruction')?.format
-        || (seedFrom(decisionSeed + ':instruction') % 2 ? 'concise' : 'worked_example')
   const channel = listeningBaseline ? 'listening'
     : chooseTeaching(teaching, kind, ['reading', 'listening'], decisionSeed, 'channel')?.format
       || (seedFrom(decisionSeed + ':channel') % 2 ? 'reading' : 'listening')
+  // P5: the explanation style is ranked by this SKILL's own later probes when
+  // there are enough (a method can help listening and not writing).
+  const instruction = block.payload?.requiredPractice === 'recall' ? 'concise'
+    : showsModelAnswer(scaffold) ? 'worked_example'
+      : chooseTeaching(teaching, kind, ['concise', 'worked_example'], decisionSeed, 'instruction',
+        { skill: channel === 'listening' ? 'listening' : 'written' })?.format
+        || (seedFrom(decisionSeed + ':instruction') % 2 ? 'concise' : 'worked_example')
   decisionRef.current = { instruction, channel }
   }
   const { instruction, channel } = decisionRef.current
@@ -848,7 +852,7 @@ function PracticeTurn({ block, topic = null, sessionId = null, listeningBaseline
       {isOpenFormat && (
         <div className="flex items-end gap-2 rounded-2xl p-2.5" aria-busy={reviewing} style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)', opacity: reviewing ? 0.7 : 1 }}>
           <input ref={inputRef} value={reply} onChange={e => setReply(e.target.value)} disabled={reviewing} lang="en" dir="ltr"
-            onKeyDown={e => { if (e.key === 'Enter' && reply.trim() && !reviewing) submit({ fromSuggestion: answerWasShown() }) }}
+            onKeyDown={e => { if (isSubmitEnter(e, { allowShift: true }) && reply.trim() && !reviewing) submit({ fromSuggestion: answerWasShown() }) }}
             placeholder={t('ep1TypeReply')} aria-label={t('sessionTurnInstruction')} className="chat-input flex-1 bg-transparent text-sm"
             style={{ color: 'var(--ink)', border: 'none', outline: 'none', padding: '7px 4px' }} />
           <button onClick={() => submit({ fromSuggestion: answerWasShown() })} disabled={!reply.trim() || reviewing}

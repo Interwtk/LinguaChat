@@ -262,7 +262,10 @@ const MUSIC = { type: 'like', value: 'music' }
   assert.match(story, /lang="en" dir="ltr"/, 'English target text stays LTR inside an RTL page')
   assert.match(story, /evaluateEpisodeResponse\(/, 'the free reply uses the SAME hybrid evaluator')
   assert.ok(!/Math\.random/.test(story), 'nothing about a story may be random')
-  assert.match(story, /localStorage\.setItem\(STORY_STORAGE_KEY/, 'progress through the story is persisted')
+  // P2: persisted through the engine's merge-on-save, which never rewinds a
+  // turn another tab already reached; the engine still writes the same key.
+  assert.match(story, /saveStoryState\(state, story\)/, 'progress through the story is persisted')
+  assert.match(read('src/learning/engine/miniStory.js'), /setItem\(STORY_STORAGE_KEY/, 'under the story key')
   ok()
 }
 

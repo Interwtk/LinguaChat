@@ -9,17 +9,19 @@ import { ChattoMascot } from '../mascot/ChattoMascot'
 import { StreakFlame } from '../ui/StreakFlame'
 // Home names episodes and shows their keys; it never renders their content
 import { SKELETON_BY_ID } from '../../learning/curriculum/preA1Skeleton.generated.js'
-import { playableLevelId, episodesOfLevel } from '../../learning/curriculum/levels.js'
+import { episodesOfLevel } from '../../learning/curriculum/levels.js'
+import { workingLevelId } from '../../learning/curriculum/learnerLevel.js'
 
 /*
  * The level Home is about. Progress, the next episode and the completion card all
  * describe one level: with A1 in the curriculum an unfiltered list would show a
  * learner 17/38 and offer them an episode from a level they cannot open.
  *
- * `playableLevelId()` — not a hardcoded level id — so this stays correct the day
- * a second level opens instead of quietly continuing to plan Pre-A1 forever.
+ * P5: the LEARNER's working level (learnerLevel.js) — not the first level the
+ * product has open — so a learner who graduated is not planned back into the
+ * level they finished the day a second level opens.
  */
-const ARC = episodesOfLevel(playableLevelId())
+const levelArc = () => episodesOfLevel(workingLevelId(loadLearnerModel()))
 
 const getEpisode = (id) => SKELETON_BY_ID[id] || null
 import { planDay, arcProgress } from '../../learning/engine/planner.js'
@@ -79,6 +81,7 @@ function SmallWindow({ eyebrow, children, tone = 'paper', className = '', style 
 export function TodayView({ onOpenPath }) {
   const { navigateTo, profile, t, nativeLanguageInfo, interfaceLanguageInfo, startPracticeMission, activeMissionDetails, completedMissions, episodeArcVersion, startEpisode,
     dailySession, previewSession, beginSession, localProgress, messages } = useApp()
+  const ARC = levelArc()
   const plan = planDay(loadLearnerModel(), ARC)
   const planEpisode = plan.episodeId ? getEpisode(plan.episodeId) : null
   /*

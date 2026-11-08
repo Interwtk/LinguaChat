@@ -169,3 +169,14 @@ class ChatResult(BaseModel):
     detected_language: LanguageInfo | None = None
     target_language: LanguageInfo | None = None
     mission_feedback: MissionFeedback | None = None
+    # What the local engine could honestly tell about the learner's message:
+    # verdict (error / no_issue_detected / insufficient / not_english /
+    # translation), findings, confidence and the teaching strategy it chose.
+    # Never rendered as mastery; "no_issue_detected" is not "correct".
+    analysis: dict | None = None
+    # P5: what the evaluator contract said about this message (layer
+    # `chat-evaluation/1`, ai/chat_evaluation.py): verdict, categorical
+    # certainty, the evidence kind it PROPOSES, which adapter answered and any
+    # incident (timeout, rejection) that made the local reference answer.
+    # Proposes, never grants: no mastery, XP, level or progress here.
+    evaluation: dict | None = None

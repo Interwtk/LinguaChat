@@ -15,7 +15,9 @@ import {
   getNextQuestion,
   shouldFinishPlacement,
 } from '../../services/placement'
-import { playableLevelId, labelKeyOfLevel } from '../../learning/curriculum/levels.js'
+import { labelKeyOfLevel } from '../../learning/curriculum/levels.js'
+import { workingLevelId } from '../../learning/curriculum/learnerLevel.js'
+import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 import {
   CORRECTION_OPTIONS,
   GOAL_OPTIONS,
@@ -26,6 +28,7 @@ import {
 } from '../../services/tutorPreferences'
 
 function SetupShell({ children, step, totalSteps }) {
+  const { profileRecoveryNotice, dismissProfileRecoveryNotice, t } = useApp()
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid var(--border)' }}>
@@ -47,6 +50,19 @@ function SetupShell({ children, step, totalSteps }) {
           <ThemeToggle compact />
         </div>
       </div>
+      {/* Sign-in recovered a damaged local profile into setup: say so once. */}
+      {profileRecoveryNotice && (
+        <div className="px-5 pt-4" style={{ maxWidth: 640, width: '100%', margin: '0 auto' }}>
+          <div role="status" className="rounded-2xl p-3 flex items-start gap-3"
+            style={{ color: 'var(--ink)', background: 'var(--info-soft)', border: '1px solid var(--info)', fontSize: '0.875rem', lineHeight: 1.5 }}>
+            <p style={{ flex: 1 }}>{t('profileRecoveredNotice')}</p>
+            <button type="button" onClick={dismissProfileRecoveryNotice}
+              className="font-bold" style={{ color: 'var(--ink)', fontSize: '0.8125rem' }}>
+              {t('close')}
+            </button>
+          </div>
+        </div>
+      )}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         {children}
       </div>
@@ -262,7 +278,7 @@ function PlacementTest() {
 function LevelReveal() {
   const { profile, setAuthStep, t } = useApp()
   const moti = getMotiMoment('placementDone')
-  const currentCourseLevelId = playableLevelId()
+  const currentCourseLevelId = workingLevelId(loadLearnerModel())
   const result = profile.placementResult || {
     level: 'B1', vocab: 72, grammar: 65, conversation: 78,
     currentCourseLevelId,

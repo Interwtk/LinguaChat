@@ -3,7 +3,8 @@ import { ProgressMap } from '../progress/ProgressMap'
 import { getMissionForToday } from '../../services/missions'
 import { ChattoMascot } from '../mascot/ChattoMascot'
 import { StreakFlame } from '../ui/StreakFlame'
-import { playableLevelId } from '../../learning/curriculum/levels.js'
+import { workingLevelId } from '../../learning/curriculum/learnerLevel.js'
+import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
 
 /**
  * The path and the progress that goes with it.
@@ -27,8 +28,10 @@ export function JourneyRail({ onClose, embedded = false }) {
   const xpNextLevel = Math.max(200, Math.ceil((xp + 1) / 200) * 200)
   const streak = localProgress.streak || 0
   const wordsLearned = (localProgress.learnedItems || []).length
-  const sessionsTotal = (localProgress.sessions || []).length
-  const minutesToday = localProgress.messagesSent > 0 ? Math.max(1, Math.ceil(localProgress.messagesSent * 1.5)) : 0
+  // P3: the first tile was "today: N min" computed as ALL messages ever x 1.5,
+  // and "missions" fell back to the number of practice days. Both are now
+  // what they say: messages written and missions completed.
+  const messagesSent = localProgress.messagesSent || 0
   const xpPercent = Math.round((xp / xpNextLevel) * 100)
 
   return (
@@ -67,7 +70,7 @@ export function JourneyRail({ onClose, embedded = false }) {
           <div className="flex items-center justify-between mb-3">
             <div>
               <p style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--ink)' }}>
-                {profile.name || 'Learner'}
+                {profile.name || t('learner')}
               </p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span style={{
@@ -76,7 +79,6 @@ export function JourneyRail({ onClose, embedded = false }) {
                 }}>
                   {profile.level}
                 </span>
-                <span style={{ fontSize: 11, color: 'var(--muted)' }}>{t('level')} 3</span>
               </div>
             </div>
             <div className="flex items-center gap-1.5" style={{
@@ -164,7 +166,7 @@ export function JourneyRail({ onClose, embedded = false }) {
           <p style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--muted)', marginBottom: 10 }}>
             {isMobileSheet ? t('yourJourney') : t('path')}
           </p>
-          <ProgressMap courseLevelId={playableLevelId()} />
+          <ProgressMap courseLevelId={workingLevelId(loadLearnerModel())} />
         </div>
 
         {/*
@@ -181,9 +183,9 @@ export function JourneyRail({ onClose, embedded = false }) {
       {/* Bottom stats */}
       <div className="px-5 py-4 grid grid-cols-3 gap-2" style={{ borderTop: '1px solid var(--border)' }}>
         {[
-          { label: t('today'), value: `${minutesToday}m`, color: 'var(--info)' },
+          { label: t('messages'), value: messagesSent, color: 'var(--info)' },
           { label: t('words'), value: wordsLearned, color: 'var(--positive)' },
-          { label: t('missions'), value: completedMissions.length || sessionsTotal, color: 'var(--accent)' },
+          { label: t('missions'), value: (completedMissions || []).length, color: 'var(--accent)' },
         ].map(s => (
           <div key={s.label} className="text-center py-2 rounded-xl" style={{ background: 'var(--surface-soft)', border: '1px solid var(--border)' }}>
             <p style={{ fontWeight: 800, fontSize: '1rem', color: s.color }}>{s.value}</p>

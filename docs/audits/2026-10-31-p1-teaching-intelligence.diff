@@ -1,0 +1,3485 @@
+--- /dev/null
++++ b/linguachat-backend/ai/grammar_check.py
+@@ -0,0 +1,247 @@
++"""Rule-based checks for common learner errors in English chat messages.
++
++WHAT THIS IS
++------------
++A small set of general, high-precision rules — not a list of sentences. Each
++rule recognises a family of errors ("goed", "eated", "runned", ...) from
++linguistic knowledge (irregular verb forms, time markers, agreement, the a/an
++sound rule) and proposes one correction with the facts needed to explain it.
++
++WHAT IT IS NOT
++--------------
++It does not understand English. A sentence with no finding has NOT been shown
++to be correct: the verdict is ``no_issue_detected`` with low confidence, and
++callers must never present that as "correct". Anything outside these rules
++(word choice, tense subtleties, meaning) needs a real evaluator — the hybrid
++contract's remote path, when an authorised provider exists.
++"""
++from __future__ import annotations
++
++import re
++from dataclasses import dataclass, field
++
++# Base form -> simple past. Ambiguous or easily-misread verbs are left out on
++# purpose (read, lead, lie, ...): a wrong correction is worse than none.
++IRREGULAR_PAST = {
++    "be": "was", "become": "became", "begin": "began", "break": "broke", "bring": "brought",
++    "build": "built", "buy": "bought", "catch": "caught", "choose": "chose", "come": "came",
++    "cut": "cut", "do": "did", "draw": "drew", "drink": "drank", "drive": "drove", "eat": "ate",
++    "fall": "fell", "feel": "felt", "find": "found", "fly": "flew", "forget": "forgot",
++    "get": "got", "give": "gave", "go": "went", "grow": "grew", "have": "had", "hear": "heard",
++    "hit": "hit", "hold": "held", "hurt": "hurt", "keep": "kept", "know": "knew", "leave": "left",
++    "lose": "lost", "make": "made", "meet": "met", "pay": "paid", "put": "put", "ride": "rode",
++    "run": "ran", "say": "said", "see": "saw", "sell": "sold", "send": "sent", "shut": "shut",
++    "sit": "sat", "sleep": "slept", "speak": "spoke", "spend": "spent", "stand": "stood",
++    "swim": "swam", "take": "took", "teach": "taught", "tell": "told", "think": "thought",
++    "understand": "understood", "wake": "woke", "wear": "wore", "win": "won", "write": "wrote",
++}
++
++# Real English words that a naive "+ed" generator would produce: never flag them.
++REAL_WORDS = {"seed", "singed", "flied", "putted", "costed", "leaded", "wakened", "shutted"}
++
++# Regular verbs common at A1–B1, for tense and agreement checks.
++REGULAR_VERBS = {
++    "call", "clean", "cook", "dance", "enjoy", "finish", "help", "like", "listen", "live", "love",
++    "need", "open", "play", "start", "stay", "study", "talk", "travel", "visit", "walk", "want",
++    "watch", "work", "arrive", "move", "use", "try", "wash", "practice", "practise", "learn",
++}
++AGREEMENT_VERBS = REGULAR_VERBS | {
++    "go", "do", "have", "eat", "drink", "speak", "read", "write", "know", "think", "teach",
++    "make", "get", "take", "say", "see", "come", "sleep", "run", "swim", "drive", "buy", "sing",
++}
++
++SUBJECTS = {"i", "you", "we", "they", "he", "she", "it"}
++THIRD_PERSON = {"he", "she", "it"}
++AUXILIARIES = {"do", "does", "did", "can", "could", "will", "would", "should", "must", "may",
++               "might", "to", "let", "make", "made", "help", "see", "saw", "watch", "hear"}
++PAST_UNITS = {"night", "week", "month", "year", "weekend", "summer", "winter", "spring",
++              "autumn", "fall", "time", "monday", "tuesday", "wednesday", "thursday",
++              "friday", "saturday", "sunday"}
++
++# "a"/"an" follow the sound, not the letter.
++VOWEL_LETTER_CONSONANT_SOUND = ("uni", "use", "usu", "uti", "eu", "ewe", "one", "once", "ufo", "uk", "us")
++SILENT_H = ("hour", "honest", "honor", "honour", "heir")
++
++TOKEN = re.compile(r"[A-Za-z]+(?:'[A-Za-z]+)?")
++
++
++@dataclass
++class Finding:
++    """One detected error and everything needed to correct and explain it."""
++    rule: str                      # stable id: past_irregular, past_marker, third_person, article
++    original: str                  # the learner's token(s), as written
++    replacement: str               # what replaces them
++    start: int
++    end: int
++    confidence: str                # high | medium
++    facts: dict = field(default_factory=dict)  # values for the explanation templates
++
++
++def _past_of(base: str) -> str:
++    if base in IRREGULAR_PAST:
++        return IRREGULAR_PAST[base]
++    if base.endswith("e"):
++        return base + "d"
++    if re.search(r"[^aeiou]y$", base):
++        return base[:-1] + "ied"
++    if base in {"travel"}:
++        return base + "led"
++    if re.search(r"^[^aeiou]*[aeiou][^aeiouwxy]$", base) and len(base) <= 4:
++        return base + base[-1] + "ed"
++    return base + "ed"
++
++
++def _third_person(base: str) -> str:
++    if base == "have":
++        return "has"
++    if re.search(r"(s|sh|ch|x|z|o)$", base):
++        return base + "es"
++    if re.search(r"[^aeiou]y$", base):
++        return base[:-1] + "ies"
++    return base + "s"
++
++
++def _overregularized_forms() -> dict[str, str]:
++    """Every plausible "+ed" mistake of an irregular verb -> its base form."""
++    forms: dict[str, str] = {}
++    for base, past in IRREGULAR_PAST.items():
++        if base in {"be", "have", "do"}:
++            candidates = {base + "ed"}
++        else:
++            candidates = {base + "ed"}
++            if base.endswith("e"):
++                candidates.add(base + "d")
++            if re.search(r"[^aeiou][aeiou][^aeiouwy]$", base):
++                candidates.add(base + base[-1] + "ed")
++            if base.endswith("y") and not base.endswith(("ay", "ey", "oy", "uy")):
++                candidates.add(base[:-1] + "ied")
++        candidates.add(past + "ed")       # "wented", "ated"
++        for form in candidates:
++            if form not in REAL_WORDS and form != past:
++                forms[form] = base
++    return forms
++
++
++OVERREGULARIZED = _overregularized_forms()
++
++
++def _match_case(template: str, replacement: str) -> str:
++    if template.isupper() and len(template) > 1:
++        return replacement.upper()
++    if template[:1].isupper():
++        return replacement[:1].upper() + replacement[1:]
++    return replacement
++
++
++def _base_of(verb: str) -> str | None:
++    """The base form of a present-tense verb the rules know, or None."""
++    if verb in AGREEMENT_VERBS or verb in IRREGULAR_PAST:
++        return verb
++    for suffix, restore in (("ies", "y"), ("es", ""), ("s", "")):
++        if verb.endswith(suffix):
++            base = verb[: -len(suffix)] + restore
++            if base in AGREEMENT_VERBS or base in IRREGULAR_PAST:
++                return base
++    return None
++
++
++def _past_marker(words: list[str]) -> str | None:
++    for i, word in enumerate(words):
++        if word == "yesterday":
++            return "yesterday"
++        if word == "ago" and i > 0:
++            return f"{words[i - 1]} ago" if i > 1 else "ago"
++        if word == "last" and i + 1 < len(words) and words[i + 1] in PAST_UNITS:
++            return f"last {words[i + 1]}"
++    return None
++
++
++def analyze(text: str) -> list[Finding]:
++    """All findings, left to right, without overlapping spans."""
++    tokens = list(TOKEN.finditer(text or ""))
++    words = [t.group(0).lower() for t in tokens]
++    findings: list[Finding] = []
++    taken: set[int] = set()
++
++    def add(index: int, finding: Finding) -> None:
++        if index not in taken:
++            taken.add(index)
++            findings.append(finding)
++
++    # 1) Irregular verbs given a regular "-ed" past: "goed", "eated", "runned".
++    for i, token in enumerate(tokens):
++        base = OVERREGULARIZED.get(words[i])
++        if base:
++            past = IRREGULAR_PAST[base]
++            add(i, Finding("past_irregular", token.group(0), _match_case(token.group(0), past),
++                           token.start(), token.end(), "high",
++                           {"wrong": token.group(0), "base": base, "past": past}))
++
++    # 2) A finished time ("yesterday", "last week", "two days ago") with a present verb.
++    marker = _past_marker(words)
++    if marker:
++        for i in range(len(tokens) - 1):
++            if words[i] not in SUBJECTS or i + 1 in taken:
++                continue
++            if i > 0 and words[i - 1] in AUXILIARIES:
++                continue
++            verb = words[i + 1]
++            if verb in {"am", "is", "are"}:
++                past = "were" if verb == "are" else "was"
++                base = "be"
++            else:
++                base = _base_of(verb)
++                if not base:
++                    continue
++                past = _past_of(base)
++            token = tokens[i + 1]
++            add(i + 1, Finding("past_marker", token.group(0), _match_case(token.group(0), past),
++                               token.start(), token.end(), "medium",
++                               {"marker": marker, "base": base, "past": past, "wrong": token.group(0)}))
++            break
++
++    # 3) He/she/it with a base verb in the present: "she like" -> "she likes".
++    if not marker:
++        for i in range(len(tokens) - 1):
++            subject = words[i]
++            if subject not in THIRD_PERSON or i + 1 in taken:
++                continue
++            if i > 0 and words[i - 1] in AUXILIARIES | {"does", "did", "do"}:
++                continue
++            # "it" is only a subject at the start of a clause ("let it go" is not).
++            if subject == "it" and i > 0 and not re.search(r"[.!?,;]\s*$", text[: tokens[i].start()]):
++                continue
++            verb = words[i + 1]
++            if verb in AGREEMENT_VERBS and verb not in {"can", "will"}:
++                fixed = _third_person(verb)
++                token = tokens[i + 1]
++                add(i + 1, Finding("third_person", token.group(0), _match_case(token.group(0), fixed),
++                                   token.start(), token.end(), "medium",
++                                   {"subject": tokens[i].group(0), "base": verb, "fixed": fixed}))
++
++    # 4) a/an by the sound of the next word: "a apple" -> "an apple".
++    for i in range(len(tokens) - 1):
++        article, nxt = words[i], words[i + 1]
++        if article not in {"a", "an"} or not tokens[i + 1].group(0).islower():
++            continue
++        vowel_sound = (nxt[0] in "aeiou" and not nxt.startswith(VOWEL_LETTER_CONSONANT_SOUND)) \
++            or nxt.startswith(SILENT_H)
++        wanted = "an" if vowel_sound else "a"
++        if wanted != article:
++            token = tokens[i]
++            add(i, Finding("article", token.group(0), _match_case(token.group(0), wanted),
++                           token.start(), token.end(), "medium",
++                           {"article": wanted, "word": nxt, "wrong": token.group(0)}))
++
++    return sorted(findings, key=lambda f: f.start)
++
++
++def corrected_sentence(text: str, findings: list[Finding]) -> str:
++    """The learner's sentence with every finding applied."""
++    out, last = [], 0
++    for finding in sorted(findings, key=lambda f: f.start):
++        out.append(text[last:finding.start])
++        out.append(finding.replacement)
++        last = finding.end
++    out.append(text[last:])
++    return "".join(out).strip()
+--- a/linguachat-backend/ai/local_engine.py
++++ b/linguachat-backend/ai/local_engine.py
+@@ -3,9 +3,13 @@
+ import re
+ import unicodedata
+ 
++from ai.grammar_check import analyze, corrected_sentence
+ from ai.schemas import ChatMode, ChatResult, LanguageLevel, LearningAction, MissionFeedback
++from ai.tutor_i18n import MESSAGES, resolve_language, say
+ 
+ 
++# Spanish -> English. The local dictionary is this small and this Spanish: a
++# word outside it is answered with an honest "I can't translate that".
+ TRANSLATIONS = {
+     "queso": "cheese",
+     "agua": "water",
+@@ -48,6 +52,8 @@
+     "me gusta bailar": "I like to dance",
+     "quiero aprender ingles": "I want to learn English",
+ }
++# English -> Spanish meanings. Only ever offered to a Spanish-speaking learner:
++# a Spanish word is not a "meaning" for somebody whose language is Japanese.
+ EN_TO_ES = {
+     "cheese": "queso",
+     "water": "agua",
+@@ -71,40 +77,65 @@
+     "please": "por favor",
+ }
+ 
+-CORRECTIONS = {
+-    "how you are": ("How are you?", "Para preguntar, usa How + are + you."),
+-    "you are how": ("How are you?", "En preguntas con how, how va primero."),
+-    "are you how": ("How are you?", "La forma natural es How are you?"),
+-    "how your are": ("How are you?", "Aqui necesitas you, no your."),
+-    "me good": ("I am good.", "En ingles la frase empieza con I."),
+-    "me happy today": ("I'm happy today.", "Usa I'm antes de una emocion."),
+-    "im good": ("I'm good.", "Solo falta el apostrofe en I'm."),
+-    "me travel want": ("I want to travel.", "Orden simple: I want to + verbo."),
+-    "travel me want": ("I want to travel.", "Empieza con I: I want to travel."),
+-    "not understand": ("I do not understand.", "Agrega I para que la frase este completa."),
+-    "i not understand": ("I do not understand.", "Para negar, usa do not."),
+-    "speack": ("speak", "La palabra correcta es speak."),
++# Whole beginner phrases with a known fix, and the rule that explains it.
++FIXED_PHRASES = {
++    "how you are": ("How are you?", "question_order"),
++    "you are how": ("How are you?", "question_order"),
++    "are you how": ("How are you?", "question_order"),
++    "how your are": ("How are you?", "question_order"),
++    "me good": ("I am good.", "subject_needed"),
++    "me happy today": ("I'm happy today.", "subject_needed"),
++    "im good": ("I'm good.", "contraction"),
++    "me travel want": ("I want to travel.", "want_to"),
++    "travel me want": ("I want to travel.", "want_to"),
++    "not understand": ("I do not understand.", "subject_needed"),
++    "i not understand": ("I do not understand.", "negation"),
++    "speack": ("speak", "spelling"),
+ }
+ 
+-TRANSLATION_TRIGGERS = ("como se dice", "como digo", "traduce", "traducir", "how do you say", "how to say", "say")
+-MEANING_TRIGGERS = ("que significa", "what does")
+-PRACTICE_TRIGGERS = (
+-    "practica",
+-    "practicar",
+-    "ejercicio",
+-    "quiz",
+-    "challenge",
+-    "practice",
+-    "let's practice",
+-    "lets practice",
++RULE_FOCUS = {
++    "past_irregular": "focus_past",
++    "past_marker": "focus_past",
++    "third_person": "focus_agreement",
++    "article": "focus_articles",
++}
++
++# A new sentence frame for guided retrieval, so the answer is never the one
++# just shown on screen: retrieval of the form, in a context not yet used.
++TRANSFER_FRAMES = {
++    "past_irregular": "Last weekend we ____ ({base}) with some friends.",
++    "past_marker": "Last Saturday my friend ____ ({base}) early.",
++    "third_person": "My brother ____ ({base}) every morning.",
++    "article": "There was ____ (a/an) {word} on the table.",
++}
++
++PRACTICE_REQUEST = re.compile(
++    r"^(?:let'?s |can we |could we |i want to |quiero )?"
++    r"(?:practice|practise|practicar|practica|ejercicio|exercise|quiz)\b",
+ )
++TRANSLATION_TRIGGERS = ("como se dice", "como digo", "traduce", "traducir", "how do you say", "how to say", "say")
+ GREETINGS = {"hello", "hi", "hey", "good morning", "good afternoon", "good evening"}
+-SPANISH_HINTS = {"hola", "como", "quiero", "puedo", "digo", "decir", "gracias"}
++
++# Function words of the learner's own language, to notice a message written in
++# it instead of English. The language comes from the explicit user_language
++# code; these lists only answer "is this message in that language?".
++OWN_LANGUAGE_WORDS = {
++    "es": {"el", "la", "los", "las", "que", "de", "y", "en", "un", "una", "es", "por", "para", "con",
++           "como", "quiero", "tengo", "gracias", "hola", "yo", "no", "mi", "muy"},
++    "pt": {"o", "os", "as", "que", "de", "e", "em", "um", "uma", "é", "não", "para", "com", "eu",
++           "obrigado", "obrigada", "olá", "muito", "meu"},
++    "fr": {"le", "la", "les", "que", "de", "et", "un", "une", "est", "je", "pas", "pour", "avec",
++           "bonjour", "merci", "très", "mon", "moi"},
++    "it": {"il", "la", "che", "di", "e", "un", "una", "è", "non", "per", "con", "sono", "ciao",
++           "grazie", "io", "molto", "mio"},
++    "de": {"der", "die", "das", "und", "ist", "ich", "nicht", "ein", "eine", "zu", "mit", "danke",
++           "hallo", "sehr", "mein", "bin"},
++}
++NON_LATIN = {"ja": re.compile(r"[぀-ヿ一-鿿]"), "ar": re.compile(r"[؀-ۿ]")}
+ 
+ 
+-def _active_companion(profile: dict | None) -> str:
+-    companion = str((profile or {}).get("active_companion") or "lingua").lower()
+-    return companion if companion in {"lingua", "lingo", "chatto"} else "lingua"
++def _language(profile: dict | None) -> str:
++    return resolve_language((profile or {}).get("native_language"))[0]
+ 
+ 
+ def _topic_context(profile: dict | None) -> tuple[str | None, str | None]:
+@@ -150,21 +181,6 @@
+     return text.strip().strip("¿?\"'“”‘’`.:;! ")
+ 
+ 
+-def detect_mode(text: str) -> ChatMode:
+-    normalized = normalize(text)
+-
+-    if _extract_translation_intent(text):
+-        return ChatMode.TRANSLATION
+-    if normalized in CORRECTIONS:
+-        return ChatMode.CORRECTION
+-    return ChatMode.CHAT
+-
+-
+-def _is_practice_request(text: str) -> bool:
+-    normalized = normalize(text)
+-    return any(trigger in normalized for trigger in PRACTICE_TRIGGERS)
+-
+-
+ def _extract_translation_intent(text: str) -> dict | None:
+     cleaned = _clean_outer_punctuation(text)
+     normalized = normalize(cleaned)
+@@ -184,6 +200,135 @@
+     return None
+ 
+ 
++def detect_mode(text: str) -> ChatMode:
++    if _extract_translation_intent(text):
++        return ChatMode.TRANSLATION
++    if normalize(text) in FIXED_PHRASES or analyze(text):
++        return ChatMode.CORRECTION
++    return ChatMode.CHAT
++
++
++def _is_practice_request(text: str) -> bool:
++    normalized = normalize(text)
++    return len(normalized.split()) <= 6 and bool(PRACTICE_REQUEST.match(normalized))
++
++
++def _written_in_own_language(text: str, lang: str) -> bool:
++    if lang in NON_LATIN:
++        letters = [c for c in text if c.isalpha()]
++        own = [c for c in letters if NON_LATIN[lang].match(c)]
++        return bool(letters) and len(own) / len(letters) >= 0.5
++    words = OWN_LANGUAGE_WORDS.get(lang)
++    if not words:
++        return False
++    tokens = re.findall(r"[^\W\d_]+", text.lower())
++    hits = sum(1 for token in tokens if token in words)
++    return hits >= 2 and hits / max(1, len(tokens)) >= 0.4
++
++
++def assess(message: str, profile: dict | None = None) -> dict:
++    """What the local engine can honestly say about this message.
++
++    verdict:
++      error              a rule found a real error (with findings)
++      no_issue_detected  no rule fired — NOT proof the sentence is correct
++      insufficient       too little English to judge (a word, punctuation)
++      not_english        written in the learner's own language
++    """
++    lang = _language(profile)
++    words = re.findall(r"[A-Za-z]+(?:'[A-Za-z]+)?", message)
++    if lang != "en" and _written_in_own_language(message, lang):
++        return {"verdict": "not_english", "confidence": "medium", "findings": [], "source": "local_rules"}
++    fixed = FIXED_PHRASES.get(normalize(message))
++    if fixed:
++        correction, rule = fixed
++        return {"verdict": "error", "confidence": "high", "source": "local_rules",
++                "findings": [{"rule": rule, "original": message.strip(), "replacement": correction,
++                              "confidence": "high", "facts": {"correction": correction}}],
++                "corrected": correction}
++    findings = analyze(message)
++    if findings:
++        return {"verdict": "error", "source": "local_rules",
++                "confidence": "high" if all(f.confidence == "high" for f in findings) else "medium",
++                "findings": [{"rule": f.rule, "original": f.original, "replacement": f.replacement,
++                              "confidence": f.confidence, "facts": f.facts} for f in findings],
++                "corrected": corrected_sentence(message, findings)}
++    if len(words) < 2:
++        return {"verdict": "insufficient", "confidence": "high", "findings": [], "source": "local_rules"}
++    # The rules are few. Silence from them is not a verdict of correctness.
++    return {"verdict": "no_issue_detected", "confidence": "low", "findings": [], "source": "local_rules"}
++
++
++def choose_strategy(rule: str, profile: dict | None) -> str:
++    """How to teach this error now, from what has already been tried.
++
++    First time: a brief rule. The same error again soon after: the explanation
++    did not work, so contrast it with a counterexample. A third time: stop
++    explaining and ask for retrieval in a new sentence. The window is the short
++    conversation memory, so the choice recovers as the error stops recurring.
++    """
++    recent = [r for r in (profile or {}).get("recent_error_types") or [] if r == rule]
++    if len(recent) >= 2:
++        return "guided_retrieval"
++    if recent or _tutor_preferences(profile).get("explanation_depth") == "detailed":
++        return "contrast_example"
++    return "brief_explanation"
++
++
++def _explain(rule: str, facts: dict, strategy: str, lang: str) -> str:
++    depth = "brief" if strategy == "brief_explanation" else "detailed"
++    key = f"{rule}.{depth}"
++    if key in MESSAGES:
++        return say(key, lang, **facts)
++    text = say(f"{rule}.brief", lang, **facts)
++    if depth == "detailed" and facts.get("wrong") and facts.get("right"):
++        text = f"{text} {say('compare', lang, wrong=facts['wrong'], right=facts['right'])}"
++    return text
++
++
++def _follow_up(level: LanguageLevel) -> str:
++    if level in {LanguageLevel.A1, LanguageLevel.A2}:
++        return "Tell me one more thing about it."
++    if level in {LanguageLevel.B1, LanguageLevel.B2}:
++        return "What happened next?"
++    return "How did that turn out?"
++
++
++def _correction_response(message: str, level: LanguageLevel, profile: dict, analysis: dict) -> ChatResult:
++    lang = _language(profile)
++    primary = analysis["findings"][0]
++    rule = primary["rule"]
++    strategy = choose_strategy(rule, profile)
++    corrected = analysis["corrected"]
++    facts = {**primary["facts"], "wrong": primary["original"], "right": primary["replacement"]}
++    explanation = _explain(rule, facts, strategy, lang)
++    if _tutor_preferences(profile).get("correction_style") == "gentle":
++        explanation = say("gentle_prefix", lang, text=explanation)
++
++    if strategy == "guided_retrieval" and rule in TRANSFER_FRAMES:
++        material = TRANSFER_FRAMES[rule].format(base=facts.get("base", ""), word=facts.get("word", ""))
++        # The frame keeps the same verb or noun, so the expected form is the same.
++        expected = primary["facts"].get("past") or primary["facts"].get("fixed") or primary["facts"].get("article")
++        prompt = say("fill_past", lang, base=facts.get("base", ""), material=material) \
++            if rule in {"past_irregular", "past_marker"} else say("fill_generic", lang, material=material)
++        action = LearningAction(type="fill_blank", prompt=prompt, options=None, expected=expected)
++    else:
++        action = LearningAction(type="rewrite", prompt=say("rewrite", lang, correction=corrected), options=None)
++
++    lead = 'Almost! We say: "' if level in {LanguageLevel.A1, LanguageLevel.A2} else 'Nearly — the natural version is: "'
++    return ChatResult(
++        reply=f'{lead}{corrected}" {_follow_up(level)}',
++        correction=corrected,
++        explanation=explanation,
++        suggestion=say("sugg_repeat", lang),
++        mode=ChatMode.CORRECTION,
++        learning_action=action,
++        focus=say(RULE_FOCUS.get(rule, "focus_phrase"), lang),
++        word_to_use=None,
++        analysis={**analysis, "strategy": strategy, "language": lang},
++    )
++
++
+ def _chat_reply(
+     text: str,
+     level: LanguageLevel,
+@@ -211,6 +356,8 @@
+         return "Nice choice. Where would you like to go?"
+     if "video game" in normalized or "gaming" in normalized:
+         return "Cool. What game have you been playing lately?"
++    if re.search(r"\b(who|what) are you\b", normalized):
++        return "I'm Lingua, your English tutor. What would you like to talk about?"
+ 
+     # Everything above this line is the LEARNER's subject: a greeting, a question
+     # they asked, a word they used. It wins, and the chosen topic is not consulted.
+@@ -234,147 +381,75 @@
+     return "Got it. Tell me a little more." if has_history else "Tell me more."
+ 
+ 
+-def _practice_reply(level: LanguageLevel) -> tuple[str, str]:
++def _practice_reply(level: LanguageLevel, lang: str) -> tuple[str, str]:
+     if level == LanguageLevel.A1:
+-        return "Vamos con algo corto: I like ___.", "Escribe una frase simple con I like."
++        return "Let's do a short one: I like ___.", say("sugg_simple", lang)
+     if level == LanguageLevel.A2:
+-        return "Cuenta algo de ayer en una frase.", "Usa una palabra en pasado, como went o watched."
++        return "Tell me about yesterday in one sentence.", say("use_word", lang, word="went")
+     if level == LanguageLevel.B1:
+-        return "Describe un viaje que te gustaria hacer.", "Agrega una razon con because."
++        return "Describe a trip you would like to take.", say("sugg_reason", lang)
+     if level == LanguageLevel.B2:
+-        return "Would you rather travel alone or with friends? Why?", "Use 'although' in your answer."
++        return "Would you rather travel alone or with friends? Why?", say("use_word", lang, word="although")
+     if level == LanguageLevel.C1:
+-        return "Explain how travel can change someone's perspective.", "Use a nuanced example."
+-    return "Defend or challenge this idea: fluency matters more than accuracy.", "Use a concise counterargument."
++        return "Explain how travel can change someone's perspective.", say("sugg_nuance", lang)
++    return "Defend or challenge this idea: fluency matters more than accuracy.", say("sugg_nuance", lang)
+ 
+ 
+-def _chat_suggestion(level: LanguageLevel, text: str) -> str:
+-    if set(normalize(text).split()).intersection(SPANISH_HINTS):
+-        return "Intenta responder con una frase corta en ingles."
++def _chat_suggestion(level: LanguageLevel, lang: str, verdict: str) -> str:
++    if verdict == "not_english":
++        return say("sugg_try_english", lang)
+     if level in {LanguageLevel.A1, LanguageLevel.A2}:
+-        return "Usa una frase simple: I + verbo + una idea."
++        return say("sugg_simple", lang)
+     if level in {LanguageLevel.B1, LanguageLevel.B2}:
+-        return "Agrega una razon o un ejemplo."
+-    return "Add nuance with a contrast or qualification."
+-
+-
+-def _companion_chat_response(
+-    companion: str,
+-    message: str,
+-    level: LanguageLevel,
+-    profile: dict,
+-    history: list[dict] | None,
+-) -> ChatResult | None:
+-    normalized = normalize(message)
+-    prefs = _tutor_preferences(profile)
+-
+-    if companion == "lingo":
+-        word = normalized.split(" ", 1)[0] if normalized else "today"
+-        meaning = EN_TO_ES.get(word)
+-        if meaning:
+-            reply = f"{word.capitalize()} = {meaning}."
+-            explanation = f"Ejemplo: I like {word}."
+-            suggestion = "Ahora completa: I like _____."
+-        else:
+-            reply = "Elige una palabra util de tu frase y usala otra vez."
+-            explanation = "Lingo se enfoca en vocabulario y frases cortas."
+-            suggestion = "Escribe: I use this word: ____."
+-        return ChatResult(
+-            reply=reply,
+-            correction=None,
+-            explanation=explanation,
+-            suggestion=suggestion,
+-            mode=ChatMode.CHAT,
+-            learning_action=LearningAction(
+-                type="fill_blank",
+-                prompt="Completa: I like _____.",
+-                options=None,
+-                expected=word if meaning else None,
+-            ),
+-            focus="Vocabulary practice",
+-            word_to_use=word if meaning else "word",
+-            detected_language=profile.get("native_language"),
+-            target_language=profile.get("target_language"),
+-        )
++        return say("sugg_reason", lang)
++    return say("sugg_nuance", lang)
+ 
+-    if companion == "chatto":
+-        reply = _chat_reply(message, level, bool(history))
+-        if prefs.get("pace") == "slow_clear":
+-            suggestion = "Answer with one short sentence."
+-        else:
+-            suggestion = "Keep the conversation going with one detail."
+-        return ChatResult(
+-            reply=reply,
+-            correction=None,
+-            explanation=None,
+-            suggestion=suggestion,
+-            mode=ChatMode.CHAT,
+-            learning_action=LearningAction(
+-                type="answer_question",
+-                prompt="Answer naturally: I think ____ because ____.",
+-                options=None,
+-            ),
+-            focus="Natural conversation",
+-            word_to_use="because",
+-            detected_language=profile.get("native_language"),
+-            target_language=profile.get("target_language"),
+-        )
+-
+-    return None
+-
+-
+-def _learning_action_for(
+-    mode: ChatMode,
+-    message: str,
+-    level: LanguageLevel,
+-    correction: str | None = None,
+-    translation: str | None = None,
+-) -> LearningAction:
+-    normalized = normalize(message)
+-
+-    if mode == ChatMode.TRANSLATION and translation:
+-        return LearningAction(
+-            type="fill_blank",
+-            prompt="Completa: I like _____.",
+-            options=None,
+-            expected=translation,
+-        )
+-
+-    if mode == ChatMode.CORRECTION and correction:
+-        if normalized == "how you are":
+-            return LearningAction(
+-                type="answer_question",
+-                prompt="Ahora responde: 'I'm good, thanks. And you?'",
+-                options=None,
+-            )
+-        if normalized == "me happy today":
+-            return LearningAction(
+-                type="complete_sentence",
+-                prompt="Agrega una razon: 'I'm happy today because ____.'",
+-                options=None,
+-            )
+-        return LearningAction(
+-            type="rewrite",
+-            prompt=f"Escribela otra vez usando: '{correction}'",
+-            options=None,
+-        )
+ 
++def _learning_action_for(level: LanguageLevel, lang: str) -> LearningAction:
+     if level in {LanguageLevel.A1, LanguageLevel.A2}:
+         return LearningAction(
+             type="complete_sentence",
+-            prompt="Completa: 'Today I feel ____ because ____.'",
++            prompt=say("complete", lang, material="'Today I feel ____ because ____.'"),
+             options=None,
+         )
+     if level in {LanguageLevel.B1, LanguageLevel.B2}:
+-        return LearningAction(
+-            type="ask_back",
+-            prompt="Haz una pregunta de vuelta sobre el mismo tema.",
+-            options=None,
+-        )
+-    return LearningAction(
+-        type="use_word",
+-        prompt="Usa although en tu proxima frase.",
+-        options=None,
++        return LearningAction(type="ask_back", prompt=say("ask_back", lang), options=None)
++    return LearningAction(type="use_word", prompt=say("use_word", lang, word="although"), options=None)
++
++
++def _translation_response(message: str, level: LanguageLevel, lang: str) -> ChatResult:
++    intent = _extract_translation_intent(message) or {"phrase": normalize(message), "direction": "to_en"}
++    phrase = intent["phrase"]
++    normalized_phrase = normalize(phrase)
++    word = None
++    if intent["direction"] == "from_en":
++        meaning = EN_TO_ES.get(normalized_phrase) if lang == "es" else None
++        if meaning:
++            reply = say("meaning_known", lang, phrase=phrase.capitalize(), translation=meaning)
++            word = normalized_phrase
++        else:
++            reply = say("translation_unknown", lang)
++    else:
++        translation = TRANSLATIONS.get(normalized_phrase)
++        if translation:
++            reply = say("translation_to_en", lang, phrase=phrase.capitalize(), translation=translation)
++            word = translation
++        else:
++            reply = say("translation_unknown", lang)
++    return ChatResult(
++        reply=reply,
++        correction=None,
++        explanation=say("example_like", lang, material=f"I like {word}.") if word else
++        say("ask_translation_hint", lang, material="How do you say ___ in English?"),
++        suggestion=say("complete", lang, material="I like _____.") if word else None,
++        mode=ChatMode.TRANSLATION,
++        learning_action=LearningAction(
++            type="fill_blank", prompt=say("complete", lang, material="I like _____."), options=None, expected=word,
++        ) if word else _learning_action_for(level, lang),
++        focus=say("focus_translation", lang),
++        word_to_use=word,
++        analysis={"verdict": "translation", "confidence": "high" if word else "low",
++                  "findings": [], "source": "local_rules", "language": lang},
+     )
+ 
+ 
+@@ -386,8 +461,8 @@
+ ) -> ChatResult:
+     message = user_message.strip()
+     profile = user_profile or {}
++    lang = _language(profile)
+     mission_context = profile.get("mission_context")
+-    companion = _active_companion(profile)
+ 
+     if mission_context:
+         expected = normalize(str(mission_context.get("expected_pattern") or ""))
+@@ -402,23 +477,17 @@
+                     break
+             is_correct = answer == expected or (expected_option and answer == expected_option)
+         score = 85 if is_correct else (45 if answer else 0)
+-        feedback = (
+-            "Good. That works for this practice step."
+-            if is_correct
+-            else "Good try. Use the hint and try this step once more."
+-        )
++        # Lingua's reaction is English, the language being practised; the
++        # instructions around it follow the learner's language.
++        feedback = "Good. That works for this practice step." if is_correct else "Good try. Once more, please."
+         return ChatResult(
+             reply=feedback,
+             correction=None if is_correct else mission_context.get("prompt"),
+-            explanation=None if is_correct else "In local mode, Lingua checks the main pattern only.",
+-            suggestion="Continue to the next step." if is_correct else "Try again with a short English phrase.",
++            explanation=None if is_correct else say("mission_local_note", lang),
++            suggestion=say("mission_continue", lang) if is_correct else say("mission_try_again", lang),
+             mode=ChatMode.CHAT,
+-            learning_action=LearningAction(
+-                type="answer_question",
+-                prompt="Write one short answer in English.",
+-                options=None,
+-            ),
+-            focus=mission_context.get("target_skill") or "Mission practice",
++            learning_action=LearningAction(type="answer_question", prompt=say("mission_answer", lang), options=None),
++            focus=mission_context.get("target_skill") or say("focus_practice", lang),
+             word_to_use=None,
+             detected_language=profile.get("native_language"),
+             target_language=profile.get("target_language"),
+@@ -432,90 +501,32 @@
+             ),
+         )
+ 
+-    mode = detect_mode(message)
+-
+-    if mode == ChatMode.TRANSLATION:
+-        intent = _extract_translation_intent(message) or {"phrase": normalize(message), "direction": "to_en"}
+-        phrase = intent["phrase"]
+-        normalized_phrase = normalize(phrase)
+-        if intent["direction"] == "from_en":
+-            translation = EN_TO_ES.get(normalized_phrase)
+-            if translation:
+-                reply = f'"{phrase.capitalize()}" significa "{translation}".'
+-                explanation = f"Es una palabra util. Ejemplo: I like {normalized_phrase}."
+-                suggestion = f"Ahora escribe una frase con {normalized_phrase}."
+-                word_to_use = normalized_phrase
+-                action_expected = normalized_phrase
+-            else:
+-                reply = "Puedo ayudarte con eso. Con OpenAI activo puedo explicarlo mejor."
+-                explanation = "En modo local solo conozco algunas palabras A1/A2."
+-                suggestion = "Prueba con una palabra corta como cheese, water o coffee."
+-                word_to_use = None
+-                action_expected = None
+-        else:
+-            translation = TRANSLATIONS.get(normalized_phrase)
+-            if translation:
+-                reply = f'"{phrase.capitalize()}" se dice "{translation}" en ingles.'
+-                explanation = f"Ejemplo: I like {translation}."
+-                suggestion = "Ahora intentalo tu: I like _____."
+-                word_to_use = translation
+-                action_expected = translation
+-            else:
+-                reply = "Buena pregunta. Con OpenAI activo puedo traducirlo mejor."
+-                explanation = "Por ahora practiquemos como pedir una traduccion."
+-                suggestion = "Pregunta asi: How do you say ___ in English?"
+-                word_to_use = None
+-                action_expected = None
+-        return ChatResult(
+-            reply=reply,
+-            correction=None,
+-            explanation=explanation,
+-            suggestion=suggestion,
+-            mode=mode,
+-            learning_action=LearningAction(
+-                type="fill_blank",
+-                prompt="Completa: I like _____.",
+-                options=None,
+-                expected=action_expected,
+-            ) if action_expected else _learning_action_for(mode, message, level, translation=None),
+-            focus="Traduccion util",
+-            word_to_use=word_to_use,
+-        )
+-
+-    if mode == ChatMode.CORRECTION:
+-        correction, explanation = CORRECTIONS[normalize(message)]
+-        if _tutor_preferences(profile).get("correction_style") == "gentle":
+-            explanation = f"Solo una cosa: {explanation}"
+-        return ChatResult(
+-            reply=correction,
+-            correction=correction,
+-            explanation=explanation,
+-            suggestion="Repite la frase corregida una vez.",
+-            mode=mode,
+-            learning_action=_learning_action_for(mode, message, level, correction=correction),
+-            focus="Question word order",
+-            word_to_use=None,
+-        )
++    if _extract_translation_intent(message):
++        return _translation_response(message, level, lang)
+ 
+     if _is_practice_request(message):
+-        reply, suggestion = _practice_reply(level)
++        reply, suggestion = _practice_reply(level, lang)
+         return ChatResult(
+             reply=reply,
+             correction=None,
+             explanation=None,
+             suggestion=suggestion,
+             mode=ChatMode.CHAT,
+-            learning_action=_learning_action_for(ChatMode.CHAT, message, level),
+-            focus="Guided production",
++            learning_action=_learning_action_for(level, lang),
++            focus=say("focus_practice", lang),
+             word_to_use="because" if level in {LanguageLevel.A1, LanguageLevel.A2} else "although",
+         )
+ 
+-    companion_response = _companion_chat_response(companion, message, level, profile, history)
+-    if companion_response:
+-        return companion_response
++    analysis = assess(message, profile)
++    if analysis["verdict"] == "error":
++        return _correction_response(message, level, profile, analysis)
+ 
+     _topic_id, topic_facet = _topic_context(profile)
+-    reply = _chat_reply(message, level, bool(history), topic_facet)
++    reply = (
++        "Let's try it in English! Start with something short, like: I am ..."
++        if analysis["verdict"] == "not_english"
++        else _chat_reply(message, level, bool(history), topic_facet)
++    )
+     # Only claim to be on the topic when the reply actually is. The learner had
+     # already brought their own subject in every other branch, and a focus line
+     # announcing "game worlds" over a conversation about travel is a small lie.
+@@ -524,11 +535,13 @@
+         reply=reply,
+         correction=None,
+         explanation=None,
+-        suggestion=_chat_suggestion(level, message),
++        suggestion=say("sugg_unclear", lang) if analysis["verdict"] == "insufficient" and normalize(message) not in GREETINGS
++        else _chat_suggestion(level, lang, analysis["verdict"]),
+         mode=ChatMode.CHAT,
+-        learning_action=_learning_action_for(ChatMode.CHAT, message, level),
++        learning_action=_learning_action_for(level, lang),
+         # naming the topic is honest and useful; naming why it was chosen is not,
+         # and the server was never told why anyway
+-        focus=f"Talking about {topic_facet}" if on_topic else "Keep the conversation moving",
++        focus=f"Talking about {topic_facet}" if on_topic else say("focus_conversation", lang),
+         word_to_use="because" if level in {LanguageLevel.A1, LanguageLevel.A2} else "although",
++        analysis={**analysis, "language": lang},
+     )
+--- a/linguachat-backend/ai/openai_tutor.py
++++ b/linguachat-backend/ai/openai_tutor.py
+@@ -23,10 +23,10 @@
+ Help the learner practice without fear. Reply like a real chat, never like an essay.
+ Your job is not only to answer. Your job is to help the learner produce the next sentence.
+ 
+-Companions:
+-- lingua: main tutor. Correct, explain, guide missions, and keep balance.
+-- lingo: vocabulary companion. Prioritize useful words, phrases, memory, and tiny word practice.
+-- chatto: conversation companion. Prioritize natural roleplay, follow-up questions, and free conversation.
++You are the only tutor. Chatto is the app's mascot: it never speaks as a tutor,
++never teaches, evaluates or holds a conversation. Do not role-play as Chatto or
++any other companion. Write explanations, hints and the reasons for corrections in
++the learner's language given below; keep the English being practised in English.
+ 
+ Choose exactly one mode:
+ - chat: natural conversation and correct English.
+@@ -129,7 +129,6 @@
+             or (profile.get("optional_context") or {}).get("topic")
+         preferences = profile.get("preferences") or {}
+         tutor_preferences = profile.get("tutor_preferences") or {}
+-        active_companion = profile.get("active_companion") or "lingua"
+         recent_errors = profile.get("recent_errors") or []
+         native_language = profile.get("native_language") or {"code": "en", "base": "en", "name": "English"}
+         target_language = profile.get("target_language") or {"code": "en", "base": "en", "name": "English"}
+@@ -141,7 +140,6 @@
+             f"Conversation topic chosen for this turn: {topic_context or 'none'}.\n"
+             f"Practice preferences: {preferences}.\n"
+             f"Tutor personalization: {tutor_preferences}.\n"
+-            f"Active companion: {active_companion}.\n"
+             f"Recent corrected phrases: {recent_errors or 'none'}.\n"
+             f"Mission context, if any: {mission_context or 'none'}."
+         )
+--- a/linguachat-backend/ai/schemas.py
++++ b/linguachat-backend/ai/schemas.py
+@@ -169,3 +169,8 @@
+     detected_language: LanguageInfo | None = None
+     target_language: LanguageInfo | None = None
+     mission_feedback: MissionFeedback | None = None
++    # What the local engine could honestly tell about the learner's message:
++    # verdict (error / no_issue_detected / insufficient / not_english /
++    # translation), findings, confidence and the teaching strategy it chose.
++    # Never rendered as mastery; "no_issue_detected" is not "correct".
++    analysis: dict | None = None
+--- /dev/null
++++ b/linguachat-backend/ai/tutor_i18n.py
+@@ -0,0 +1,417 @@
++"""The local tutor's auxiliary text, in the learner's one user_language.
++
++English is what the learner practises, so the English material inside these
++messages (example sentences, the corrected sentence, verb forms) is never
++translated. Everything around it — instructions, explanations, corrections'
++reasons, suggestions — follows the explicit language code the client sends.
++
++The eight languages are the eight the product implements. Any other code gets
++English and the caller is told (`localized=False`): nothing silently pretends
++to be a language it is not. These strings were written for this catalogue and
++have not yet been reviewed by native-speaking teachers.
++"""
++from __future__ import annotations
++
++SUPPORTED = ("en", "es", "pt", "fr", "it", "de", "ja", "ar")
++
++MESSAGES: dict[str, dict[str, str]] = {
++    # --- explanations: irregular past given "-ed" ---------------------------
++    "past_irregular.brief": {
++        "en": "'{base}' is irregular: its past form is '{past}', not '{wrong}'.",
++        "es": "'{base}' es irregular: su pasado es '{past}', no '{wrong}'.",
++        "pt": "'{base}' é irregular: o passado é '{past}', não '{wrong}'.",
++        "fr": "« {base} » est irrégulier : son passé est « {past} », pas « {wrong} ».",
++        "it": "'{base}' è irregolare: il passato è '{past}', non '{wrong}'.",
++        "de": "„{base}“ ist unregelmäßig: Die Vergangenheit ist „{past}“, nicht „{wrong}“.",
++        "ja": "「{base}」は不規則動詞です。過去形は「{wrong}」ではなく「{past}」です。",
++        "ar": "الفعل '{base}' شاذّ: صيغة الماضي منه '{past}' وليست '{wrong}'.",
++    },
++    "past_irregular.detailed": {
++        "en": "Regular verbs add -ed in the past (play → played), but '{base}' changes form: {base} → {past}. Compare: ✗ {wrong} · ✓ {past}.",
++        "es": "Los verbos regulares agregan -ed en pasado (play → played), pero '{base}' cambia de forma: {base} → {past}. Compara: ✗ {wrong} · ✓ {past}.",
++        "pt": "Os verbos regulares recebem -ed no passado (play → played), mas '{base}' muda de forma: {base} → {past}. Compare: ✗ {wrong} · ✓ {past}.",
++        "fr": "Les verbes réguliers prennent -ed au passé (play → played), mais « {base} » change de forme : {base} → {past}. Comparez : ✗ {wrong} · ✓ {past}.",
++        "it": "I verbi regolari aggiungono -ed al passato (play → played), ma '{base}' cambia forma: {base} → {past}. Confronta: ✗ {wrong} · ✓ {past}.",
++        "de": "Regelmäßige Verben bekommen in der Vergangenheit -ed (play → played), aber „{base}“ ändert seine Form: {base} → {past}. Vergleiche: ✗ {wrong} · ✓ {past}.",
++        "ja": "規則動詞は過去形で -ed を付けます（play → played）が、「{base}」は形が変わります：{base} → {past}。比べてみましょう：✗ {wrong} · ✓ {past}。",
++        "ar": "الأفعال القياسية تُضاف إليها ‎-ed‎ في الماضي (play → played)، أمّا '{base}' فيتغيّر شكله: {base} → {past}. قارن: ✗ {wrong} · ✓ {past}.",
++    },
++    # --- explanations: finished time with a present verb --------------------
++    "past_marker.brief": {
++        "en": "'{marker}' means it already happened, so the verb goes in the past: {wrong} → {past}.",
++        "es": "'{marker}' indica que ya ocurrió, así que el verbo va en pasado: {wrong} → {past}.",
++        "pt": "'{marker}' indica que já aconteceu, então o verbo vai no passado: {wrong} → {past}.",
++        "fr": "« {marker} » indique que c'est déjà arrivé, donc le verbe se met au passé : {wrong} → {past}.",
++        "it": "'{marker}' indica che è già successo, quindi il verbo va al passato: {wrong} → {past}.",
++        "de": "„{marker}“ zeigt, dass es schon passiert ist, also steht das Verb in der Vergangenheit: {wrong} → {past}.",
++        "ja": "「{marker}」はもう起きたことを表すので、動詞は過去形にします：{wrong} → {past}。",
++        "ar": "'{marker}' تعني أنّ الأمر حدث بالفعل، لذا يأتي الفعل بصيغة الماضي: {wrong} → {past}.",
++    },
++    "past_marker.detailed": {
++        "en": "Words like 'yesterday', 'last week' or 'two days ago' mark a finished time, and the verb must be in the past. Regular verbs add -ed (walk → walked); some change completely (go → went). Here: {wrong} → {past}.",
++        "es": "Palabras como 'yesterday', 'last week' o 'two days ago' marcan un tiempo terminado, y el verbo debe ir en pasado. Los regulares agregan -ed (walk → walked); otros cambian por completo (go → went). Aquí: {wrong} → {past}.",
++        "pt": "Palavras como 'yesterday', 'last week' ou 'two days ago' marcam um tempo terminado, e o verbo deve ir no passado. Os regulares recebem -ed (walk → walked); outros mudam totalmente (go → went). Aqui: {wrong} → {past}.",
++        "fr": "Des mots comme « yesterday », « last week » ou « two days ago » marquent un moment terminé, et le verbe doit être au passé. Les réguliers prennent -ed (walk → walked) ; d'autres changent complètement (go → went). Ici : {wrong} → {past}.",
++        "it": "Parole come 'yesterday', 'last week' o 'two days ago' indicano un tempo concluso, e il verbo deve andare al passato. I regolari aggiungono -ed (walk → walked); altri cambiano del tutto (go → went). Qui: {wrong} → {past}.",
++        "de": "Wörter wie „yesterday“, „last week“ oder „two days ago“ markieren eine abgeschlossene Zeit, und das Verb muss in der Vergangenheit stehen. Regelmäßige Verben bekommen -ed (walk → walked); andere ändern sich ganz (go → went). Hier: {wrong} → {past}.",
++        "ja": "「yesterday」「last week」「two days ago」のような言葉は終わった時を表すので、動詞は過去形にします。規則動詞は -ed を付け（walk → walked）、形がすっかり変わる動詞もあります（go → went）。ここでは：{wrong} → {past}。",
++        "ar": "كلمات مثل 'yesterday' و'last week' و'two days ago' تدلّ على زمن انتهى، فيجب أن يأتي الفعل بصيغة الماضي. الأفعال القياسية تُضاف إليها ‎-ed‎ (walk → walked)، وبعضها يتغيّر كليًّا (go → went). هنا: {wrong} → {past}.",
++    },
++    # --- explanations: he/she/it agreement ----------------------------------
++    "third_person.brief": {
++        "en": "With he, she or it in the present, the verb takes -s: {subject} {fixed}.",
++        "es": "Con he, she o it en presente, el verbo lleva -s: {subject} {fixed}.",
++        "pt": "Com he, she ou it no presente, o verbo recebe -s: {subject} {fixed}.",
++        "fr": "Avec he, she ou it au présent, le verbe prend un -s : {subject} {fixed}.",
++        "it": "Con he, she o it al presente, il verbo prende la -s: {subject} {fixed}.",
++        "de": "Mit he, she oder it bekommt das Verb im Präsens ein -s: {subject} {fixed}.",
++        "ja": "現在形で主語が he・she・it のとき、動詞に -s が付きます：{subject} {fixed}。",
++        "ar": "مع he أو she أو it في المضارع، يأخذ الفعل ‎-s‎: {subject} {fixed}.",
++    },
++    "third_person.detailed": {
++        "en": "In the present: I, you, we, they {base} — but he, she, it {fixed}. Compare: ✗ {subject} {base} · ✓ {subject} {fixed}.",
++        "es": "En presente: I, you, we, they {base}; pero he, she, it {fixed}. Compara: ✗ {subject} {base} · ✓ {subject} {fixed}.",
++        "pt": "No presente: I, you, we, they {base}; mas he, she, it {fixed}. Compare: ✗ {subject} {base} · ✓ {subject} {fixed}.",
++        "fr": "Au présent : I, you, we, they {base} ; mais he, she, it {fixed}. Comparez : ✗ {subject} {base} · ✓ {subject} {fixed}.",
++        "it": "Al presente: I, you, we, they {base}; ma he, she, it {fixed}. Confronta: ✗ {subject} {base} · ✓ {subject} {fixed}.",
++        "de": "Im Präsens: I, you, we, they {base} – aber he, she, it {fixed}. Vergleiche: ✗ {subject} {base} · ✓ {subject} {fixed}.",
++        "ja": "現在形では I・you・we・they なら {base}、he・she・it なら {fixed} です。比べてみましょう：✗ {subject} {base} · ✓ {subject} {fixed}。",
++        "ar": "في المضارع: I وyou وwe وthey ‏{base}، أمّا he وshe وit ‏{fixed}. قارن: ✗ {subject} {base} · ✓ {subject} {fixed}.",
++    },
++    # --- explanations: a / an ------------------------------------------------
++    "article.brief": {
++        "en": "Use '{article}' before '{word}': it depends on the first sound.",
++        "es": "Usa '{article}' antes de '{word}': depende del primer sonido.",
++        "pt": "Use '{article}' antes de '{word}': depende do primeiro som.",
++        "fr": "Utilisez « {article} » devant « {word} » : cela dépend du premier son.",
++        "it": "Usa '{article}' davanti a '{word}': dipende dal primo suono.",
++        "de": "Vor „{word}“ steht „{article}“: Es kommt auf den ersten Laut an.",
++        "ja": "「{word}」の前は「{article}」です。最初の音で決まります。",
++        "ar": "استخدم '{article}' قبل '{word}': يعتمد ذلك على الصوت الأول.",
++    },
++    "article.detailed": {
++        "en": "'a' and 'an' follow the first SOUND of the next word, not the letter: a dog, an apple, an hour, a university. Here: {article} {word}.",
++        "es": "'a' y 'an' dependen del primer SONIDO de la palabra siguiente, no de la letra: a dog, an apple, an hour, a university. Aquí: {article} {word}.",
++        "pt": "'a' e 'an' dependem do primeiro SOM da palavra seguinte, não da letra: a dog, an apple, an hour, a university. Aqui: {article} {word}.",
++        "fr": "« a » et « an » dépendent du premier SON du mot suivant, pas de la lettre : a dog, an apple, an hour, a university. Ici : {article} {word}.",
++        "it": "'a' e 'an' dipendono dal primo SUONO della parola seguente, non dalla lettera: a dog, an apple, an hour, a university. Qui: {article} {word}.",
++        "de": "„a“ und „an“ richten sich nach dem ersten LAUT des nächsten Wortes, nicht nach dem Buchstaben: a dog, an apple, an hour, a university. Hier: {article} {word}.",
++        "ja": "「a」と「an」は次の単語の文字ではなく最初の音で決まります：a dog, an apple, an hour, a university。ここでは：{article} {word}。",
++        "ar": "'a' و'an' تتبعان الصوت الأول للكلمة التالية لا الحرف: a dog, an apple, an hour, a university. هنا: {article} {word}.",
++    },
++    # --- explanations: fixed beginner phrases ---------------------------------
++    "question_order.brief": {
++        "en": "In a question with 'how', the order is How + are + you.",
++        "es": "En una pregunta con 'how', el orden es How + are + you.",
++        "pt": "Numa pergunta com 'how', a ordem é How + are + you.",
++        "fr": "Dans une question avec « how », l'ordre est How + are + you.",
++        "it": "In una domanda con 'how', l'ordine è How + are + you.",
++        "de": "In einer Frage mit „how“ ist die Reihenfolge How + are + you.",
++        "ja": "「how」を使う疑問文の語順は How + are + you です。",
++        "ar": "في السؤال الذي يبدأ بـ 'how' يكون الترتيب How + are + you.",
++    },
++    "subject_needed.brief": {
++        "en": "An English sentence needs a subject: start with 'I'.",
++        "es": "Una oración en inglés necesita sujeto: empieza con 'I'.",
++        "pt": "Uma frase em inglês precisa de sujeito: comece com 'I'.",
++        "fr": "Une phrase anglaise a besoin d'un sujet : commencez par « I ».",
++        "it": "Una frase inglese ha bisogno di un soggetto: inizia con 'I'.",
++        "de": "Ein englischer Satz braucht ein Subjekt: Beginne mit „I“.",
++        "ja": "英語の文には主語が必要です。「I」から始めましょう。",
++        "ar": "الجملة الإنجليزية تحتاج إلى فاعل: ابدأ بـ 'I'.",
++    },
++    "contraction.brief": {
++        "en": "'I'm' is short for 'I am' and needs the apostrophe.",
++        "es": "'I'm' es la forma corta de 'I am' y lleva apóstrofo.",
++        "pt": "'I'm' é a forma curta de 'I am' e leva apóstrofo.",
++        "fr": "« I'm » est la forme courte de « I am » et prend une apostrophe.",
++        "it": "'I'm' è la forma breve di 'I am' e vuole l'apostrofo.",
++        "de": "„I'm“ ist die Kurzform von „I am“ und braucht den Apostroph.",
++        "ja": "「I'm」は「I am」の短縮形で、アポストロフィが必要です。",
++        "ar": "'I'm' اختصار لـ 'I am' وتحتاج إلى الفاصلة العليا.",
++    },
++    "negation.brief": {
++        "en": "To make a verb negative, use 'do not' (or 'don't') before it.",
++        "es": "Para negar un verbo, usa 'do not' (o 'don't') antes de él.",
++        "pt": "Para negar um verbo, use 'do not' (ou 'don't') antes dele.",
++        "fr": "Pour mettre un verbe à la forme négative, utilisez « do not » (ou « don't ») devant.",
++        "it": "Per negare un verbo, usa 'do not' (o 'don't') prima del verbo.",
++        "de": "Um ein Verb zu verneinen, setze „do not“ (oder „don't“) davor.",
++        "ja": "動詞を否定するには、前に「do not」（または「don't」）を置きます。",
++        "ar": "لنفي الفعل استخدم 'do not' (أو 'don't') قبله.",
++    },
++    "want_to.brief": {
++        "en": "The order is I want to + verb.",
++        "es": "El orden es I want to + verbo.",
++        "pt": "A ordem é I want to + verbo.",
++        "fr": "L'ordre est I want to + verbe.",
++        "it": "L'ordine è I want to + verbo.",
++        "de": "Die Reihenfolge ist I want to + Verb.",
++        "ja": "語順は I want to + 動詞 です。",
++        "ar": "الترتيب هو I want to + الفعل.",
++    },
++    "spelling.brief": {
++        "en": "The correct spelling is '{correction}'.",
++        "es": "Se escribe '{correction}'.",
++        "pt": "Escreve-se '{correction}'.",
++        "fr": "Cela s'écrit « {correction} ».",
++        "it": "Si scrive '{correction}'.",
++        "de": "Man schreibt „{correction}“.",
++        "ja": "正しいつづりは「{correction}」です。",
++        "ar": "التهجئة الصحيحة هي '{correction}'.",
++    },
++    "compare": {
++        "en": "Compare: ✗ {wrong} · ✓ {right}",
++        "es": "Compara: ✗ {wrong} · ✓ {right}",
++        "pt": "Compare: ✗ {wrong} · ✓ {right}",
++        "fr": "Comparez : ✗ {wrong} · ✓ {right}",
++        "it": "Confronta: ✗ {wrong} · ✓ {right}",
++        "de": "Vergleiche: ✗ {wrong} · ✓ {right}",
++        "ja": "比べてみましょう：✗ {wrong} · ✓ {right}",
++        "ar": "قارن: ✗ {wrong} · ✓ {right}",
++    },
++    "gentle_prefix": {
++        "en": "Just one thing: {text}",
++        "es": "Solo una cosa: {text}",
++        "pt": "Só uma coisa: {text}",
++        "fr": "Juste une chose : {text}",
++        "it": "Solo una cosa: {text}",
++        "de": "Nur eine Sache: {text}",
++        "ja": "ひとつだけ：{text}",
++        "ar": "أمر واحد فقط: {text}",
++    },
++    # --- practice prompts (English material stays English) -------------------
++    "rewrite": {
++        "en": "Write it again using: \"{correction}\"",
++        "es": "Escríbela otra vez usando: \"{correction}\"",
++        "pt": "Escreva de novo usando: \"{correction}\"",
++        "fr": "Réécrivez-la en utilisant : « {correction} »",
++        "it": "Riscrivila usando: \"{correction}\"",
++        "de": "Schreib es noch einmal mit: „{correction}“",
++        "ja": "次の形を使ってもう一度書いてください：「{correction}」",
++        "ar": "اكتبها مرة أخرى مستخدمًا: \"{correction}\"",
++    },
++    "fill_past": {
++        "en": "Your turn, without looking back: fill the gap with the past of '{base}': {material}",
++        "es": "Tu turno, sin mirar arriba: completa con el pasado de '{base}': {material}",
++        "pt": "Sua vez, sem olhar acima: complete com o passado de '{base}': {material}",
++        "fr": "À vous, sans regarder plus haut : complétez avec le passé de « {base} » : {material}",
++        "it": "Tocca a te, senza guardare sopra: completa con il passato di '{base}': {material}",
++        "de": "Jetzt du, ohne nach oben zu schauen: Ergänze die Vergangenheit von „{base}“: {material}",
++        "ja": "上を見ずにやってみましょう。「{base}」の過去形で空欄を埋めてください：{material}",
++        "ar": "دورك، دون النظر إلى الأعلى: أكمل الفراغ بصيغة الماضي من '{base}': {material}",
++    },
++    "fill_generic": {
++        "en": "Your turn, without looking back: fill the gap: {material}",
++        "es": "Tu turno, sin mirar arriba: completa el espacio: {material}",
++        "pt": "Sua vez, sem olhar acima: complete a lacuna: {material}",
++        "fr": "À vous, sans regarder plus haut : complétez : {material}",
++        "it": "Tocca a te, senza guardare sopra: completa lo spazio: {material}",
++        "de": "Jetzt du, ohne nach oben zu schauen: Ergänze die Lücke: {material}",
++        "ja": "上を見ずにやってみましょう。空欄を埋めてください：{material}",
++        "ar": "دورك، دون النظر إلى الأعلى: أكمل الفراغ: {material}",
++    },
++    "complete": {
++        "en": "Complete: {material}", "es": "Completa: {material}", "pt": "Complete: {material}",
++        "fr": "Complétez : {material}", "it": "Completa: {material}", "de": "Ergänze: {material}",
++        "ja": "完成させてください：{material}", "ar": "أكمل: {material}",
++    },
++    "answer_naturally": {
++        "en": "Answer naturally: {material}", "es": "Responde con naturalidad: {material}",
++        "pt": "Responda com naturalidade: {material}", "fr": "Répondez naturellement : {material}",
++        "it": "Rispondi in modo naturale: {material}", "de": "Antworte natürlich: {material}",
++        "ja": "自然に答えてみましょう：{material}", "ar": "أجب بشكل طبيعي: {material}",
++    },
++    "ask_back": {
++        "en": "Ask a question back about the same topic.",
++        "es": "Haz una pregunta de vuelta sobre el mismo tema.",
++        "pt": "Faça uma pergunta de volta sobre o mesmo tema.",
++        "fr": "Posez une question en retour sur le même sujet.",
++        "it": "Fai a tua volta una domanda sullo stesso argomento.",
++        "de": "Stell eine Gegenfrage zum selben Thema.",
++        "ja": "同じ話題について、こちらに質問を返してみましょう。",
++        "ar": "اطرح سؤالًا مقابلًا عن الموضوع نفسه.",
++    },
++    "use_word": {
++        "en": "Use '{word}' in your next sentence.", "es": "Usa '{word}' en tu próxima frase.",
++        "pt": "Use '{word}' na sua próxima frase.", "fr": "Utilisez « {word} » dans votre prochaine phrase.",
++        "it": "Usa '{word}' nella tua prossima frase.", "de": "Verwende „{word}“ in deinem nächsten Satz.",
++        "ja": "次の文で「{word}」を使ってみましょう。", "ar": "استخدم '{word}' في جملتك التالية.",
++    },
++    # --- suggestions -----------------------------------------------------------
++    "sugg_try_english": {
++        "en": "Try answering with a short sentence in English.",
++        "es": "Intenta responder con una frase corta en inglés.",
++        "pt": "Tente responder com uma frase curta em inglês.",
++        "fr": "Essayez de répondre par une phrase courte en anglais.",
++        "it": "Prova a rispondere con una frase breve in inglese.",
++        "de": "Versuch, mit einem kurzen Satz auf Englisch zu antworten.",
++        "ja": "英語の短い文で答えてみましょう。",
++        "ar": "حاول أن تجيب بجملة قصيرة بالإنجليزية.",
++    },
++    "sugg_simple": {
++        "en": "Use a simple sentence: I + verb + one idea.",
++        "es": "Usa una frase simple: I + verbo + una idea.",
++        "pt": "Use uma frase simples: I + verbo + uma ideia.",
++        "fr": "Faites une phrase simple : I + verbe + une idée.",
++        "it": "Usa una frase semplice: I + verbo + un'idea.",
++        "de": "Bilde einen einfachen Satz: I + Verb + eine Idee.",
++        "ja": "シンプルな文で：I + 動詞 + ひとつの内容。",
++        "ar": "استخدم جملة بسيطة: I + فعل + فكرة واحدة.",
++    },
++    "sugg_reason": {
++        "en": "Add a reason or an example.", "es": "Agrega una razón o un ejemplo.",
++        "pt": "Acrescente um motivo ou um exemplo.", "fr": "Ajoutez une raison ou un exemple.",
++        "it": "Aggiungi un motivo o un esempio.", "de": "Füge einen Grund oder ein Beispiel hinzu.",
++        "ja": "理由か例をひとつ加えてみましょう。", "ar": "أضف سببًا أو مثالًا.",
++    },
++    "sugg_nuance": {
++        "en": "Add nuance with a contrast or a qualification.",
++        "es": "Agrega matices con un contraste o una salvedad.",
++        "pt": "Acrescente nuances com um contraste ou uma ressalva.",
++        "fr": "Nuancez avec un contraste ou une réserve.",
++        "it": "Aggiungi sfumature con un contrasto o una precisazione.",
++        "de": "Füge Nuancen hinzu, mit einem Gegensatz oder einer Einschränkung.",
++        "ja": "対比や条件を加えて、ニュアンスを出してみましょう。",
++        "ar": "أضف دقّة بمقارنة أو استدراك.",
++    },
++    "sugg_repeat": {
++        "en": "Say the corrected sentence once more, then keep going.",
++        "es": "Di la frase corregida una vez más y sigue.",
++        "pt": "Diga a frase corrigida mais uma vez e continue.",
++        "fr": "Redites la phrase corrigée une fois, puis continuez.",
++        "it": "Ripeti la frase corretta una volta e poi continua.",
++        "de": "Sag den korrigierten Satz noch einmal und mach dann weiter.",
++        "ja": "直した文をもう一度言ってから、続けましょう。",
++        "ar": "قل الجملة المصحّحة مرة أخرى ثم تابع.",
++    },
++    "sugg_unclear": {
++        "en": "Write a full sentence so I can give you useful feedback.",
++        "es": "Escribe una oración completa para que pueda darte una corrección útil.",
++        "pt": "Escreva uma frase completa para eu poder dar um retorno útil.",
++        "fr": "Écrivez une phrase complète pour que je puisse vous donner un retour utile.",
++        "it": "Scrivi una frase completa così posso darti un riscontro utile.",
++        "de": "Schreib einen ganzen Satz, damit ich dir sinnvolles Feedback geben kann.",
++        "ja": "役に立つフィードバックができるよう、文の形で書いてみてください。",
++        "ar": "اكتب جملة كاملة حتى أتمكّن من إعطائك ملاحظة مفيدة.",
++    },
++    # --- translation (the dictionary only covers some Spanish words) ----------
++    "translation_to_en": {
++        "en": "\"{phrase}\" in English is \"{translation}\".", "es": "\"{phrase}\" en inglés se dice \"{translation}\".",
++        "pt": "\"{phrase}\" em inglês é \"{translation}\".", "fr": "« {phrase} » se dit « {translation} » en anglais.",
++        "it": "\"{phrase}\" in inglese si dice \"{translation}\".", "de": "„{phrase}“ heißt auf Englisch „{translation}“.",
++        "ja": "「{phrase}」は英語で「{translation}」です。", "ar": "\"{phrase}\" بالإنجليزية هي \"{translation}\".",
++    },
++    "translation_unknown": {
++        "en": "In local mode I only know a few words, so I can't translate that reliably.",
++        "es": "En modo local solo conozco algunas palabras, así que no puedo traducir eso con seguridad.",
++        "pt": "No modo local só conheço algumas palavras, então não consigo traduzir isso com segurança.",
++        "fr": "En mode local, je ne connais que quelques mots : je ne peux pas traduire cela de façon fiable.",
++        "it": "In modalità locale conosco solo alcune parole, quindi non posso tradurlo in modo affidabile.",
++        "de": "Im lokalen Modus kenne ich nur wenige Wörter, deshalb kann ich das nicht zuverlässig übersetzen.",
++        "ja": "ローカルモードでは知っている単語が少ないため、確実に翻訳できません。",
++        "ar": "في الوضع المحلي أعرف كلمات قليلة فقط، لذا لا أستطيع ترجمة ذلك بدقّة.",
++    },
++    "meaning_known": {
++        "en": "\"{phrase}\" means \"{translation}\".", "es": "\"{phrase}\" significa \"{translation}\".",
++        "pt": "\"{phrase}\" significa \"{translation}\".", "fr": "« {phrase} » signifie « {translation} ».",
++        "it": "\"{phrase}\" significa \"{translation}\".", "de": "„{phrase}“ bedeutet „{translation}“.",
++        "ja": "「{phrase}」は「{translation}」という意味です。", "ar": "\"{phrase}\" تعني \"{translation}\".",
++    },
++    "example_like": {
++        "en": "Example: {material}", "es": "Ejemplo: {material}", "pt": "Exemplo: {material}",
++        "fr": "Exemple : {material}", "it": "Esempio: {material}", "de": "Beispiel: {material}",
++        "ja": "例：{material}", "ar": "مثال: {material}",
++    },
++    "ask_translation_hint": {
++        "en": "Ask like this: {material}", "es": "Pregunta así: {material}", "pt": "Pergunte assim: {material}",
++        "fr": "Demandez ainsi : {material}", "it": "Chiedi così: {material}", "de": "Frag so: {material}",
++        "ja": "このように聞いてみましょう：{material}", "ar": "اسأل هكذا: {material}",
++    },
++    # --- focus labels ------------------------------------------------------------
++    "focus_conversation": {
++        "en": "Keep the conversation moving", "es": "Mantén la conversación", "pt": "Mantenha a conversa",
++        "fr": "Faire vivre la conversation", "it": "Portare avanti la conversazione", "de": "Das Gespräch fortsetzen",
++        "ja": "会話を続ける", "ar": "مواصلة المحادثة",
++    },
++    "focus_past": {
++        "en": "Past tense", "es": "Tiempo pasado", "pt": "Tempo passado", "fr": "Le passé",
++        "it": "Il passato", "de": "Vergangenheit", "ja": "過去形", "ar": "زمن الماضي",
++    },
++    "focus_agreement": {
++        "en": "Verb agreement (he/she/it)", "es": "Concordancia del verbo (he/she/it)",
++        "pt": "Concordância do verbo (he/she/it)", "fr": "Accord du verbe (he/she/it)",
++        "it": "Accordo del verbo (he/she/it)", "de": "Verbform bei he/she/it",
++        "ja": "動詞の形（he/she/it）", "ar": "مطابقة الفعل (he/she/it)",
++    },
++    "focus_articles": {
++        "en": "a / an", "es": "a / an", "pt": "a / an", "fr": "a / an",
++        "it": "a / an", "de": "a / an", "ja": "a / an", "ar": "a / an",
++    },
++    "focus_phrase": {
++        "en": "Useful everyday phrases", "es": "Frases útiles del día a día", "pt": "Frases úteis do dia a dia",
++        "fr": "Phrases utiles du quotidien", "it": "Frasi utili di tutti i giorni", "de": "Nützliche Alltagssätze",
++        "ja": "日常の便利な表現", "ar": "عبارات يومية مفيدة",
++    },
++    "focus_translation": {
++        "en": "Useful translation", "es": "Traducción útil", "pt": "Tradução útil", "fr": "Traduction utile",
++        "it": "Traduzione utile", "de": "Nützliche Übersetzung", "ja": "役に立つ訳", "ar": "ترجمة مفيدة",
++    },
++    "focus_practice": {
++        "en": "Guided practice", "es": "Práctica guiada", "pt": "Prática guiada", "fr": "Pratique guidée",
++        "it": "Pratica guidata", "de": "Angeleitetes Üben", "ja": "ガイド付き練習", "ar": "تدريب موجَّه",
++    },
++    # --- missions ---------------------------------------------------------------------
++    "mission_local_note": {
++        "en": "In local mode, Lingua checks the main pattern only.",
++        "es": "En modo local, Lingua solo revisa la estructura principal.",
++        "pt": "No modo local, a Lingua verifica apenas a estrutura principal.",
++        "fr": "En mode local, Lingua ne vérifie que la structure principale.",
++        "it": "In modalità locale, Lingua controlla solo la struttura principale.",
++        "de": "Im lokalen Modus prüft Lingua nur das Hauptmuster.",
++        "ja": "ローカルモードでは、Lingua は主な形だけを確認します。",
++        "ar": "في الوضع المحلي، تتحقق Lingua من البنية الأساسية فقط.",
++    },
++    "mission_continue": {
++        "en": "Continue to the next step.", "es": "Continúa con el siguiente paso.", "pt": "Continue para o próximo passo.",
++        "fr": "Passez à l'étape suivante.", "it": "Passa al passaggio successivo.", "de": "Weiter zum nächsten Schritt.",
++        "ja": "次のステップに進みましょう。", "ar": "انتقل إلى الخطوة التالية.",
++    },
++    "mission_try_again": {
++        "en": "Try again with a short English phrase.", "es": "Inténtalo otra vez con una frase corta en inglés.",
++        "pt": "Tente de novo com uma frase curta em inglês.", "fr": "Réessayez avec une courte phrase en anglais.",
++        "it": "Riprova con una breve frase in inglese.", "de": "Versuch es noch einmal mit einem kurzen englischen Satz.",
++        "ja": "短い英語の文でもう一度やってみましょう。", "ar": "حاول مرة أخرى بعبارة إنجليزية قصيرة.",
++    },
++    "mission_answer": {
++        "en": "Write one short answer in English.", "es": "Escribe una respuesta corta en inglés.",
++        "pt": "Escreva uma resposta curta em inglês.", "fr": "Écrivez une réponse courte en anglais.",
++        "it": "Scrivi una risposta breve in inglese.", "de": "Schreib eine kurze Antwort auf Englisch.",
++        "ja": "英語で短く答えてください。", "ar": "اكتب إجابة قصيرة بالإنجليزية.",
++    },
++}
++
++
++def resolve_language(value) -> tuple[str, bool]:
++    """The catalogue language for a client language value, and whether it is real.
++
++    Accepts the LanguageInfo the route builds (``.base``), a dict, or a code.
++    Anything outside the eight implemented languages gets English, reported as
++    not localized so the caller can say so instead of pretending.
++    """
++    base = None
++    if hasattr(value, "base"):
++        base = value.base or getattr(value, "code", None)
++    elif isinstance(value, dict):
++        base = value.get("base") or value.get("code")
++    elif isinstance(value, str):
++        base = value
++    base = str(base or "en").strip().lower().replace("_", "-").split("-", 1)[0]
++    return (base, True) if base in SUPPORTED else ("en", base == "en")
++
++
++def say(key: str, lang: str, **values) -> str:
++    """One catalogue message in ``lang`` (English if a translation is missing)."""
++    table = MESSAGES[key]
++    template = table.get(lang) or table["en"]
++    return template.format_map(values)
+--- a/linguachat-backend/app/routes/chat.py
++++ b/linguachat-backend/app/routes/chat.py
+@@ -33,7 +33,9 @@
+     "learner_style",
+ }
+ 
+-ALLOWED_COMPANIONS = {"lingua", "lingo", "chatto"}
++# Lingua is the only tutor. "lingo" (legacy) and "chatto" (the mascot) are not
++# tutors: whatever a client sends, Lingua answers.
++ALLOWED_COMPANIONS = {"lingua"}
+ 
+ LANGUAGE_NAMES = {
+     "ar": "Arabic",
+@@ -217,6 +219,9 @@
+             "tutor_preferences": tutor_preferences,
+             "active_companion": active_companion,
+             "recent_errors": conversation_memory.recent_errors(session_id),
++            # Which error rules fired recently, so the tutor can change strategy
++            # when an explanation did not work (ai/local_engine.choose_strategy).
++            "recent_error_types": conversation_memory.recent_error_types(session_id),
+             "mission_context": mission_context,
+             "optional_context": _safe_optional_context(req.optional_context),
+         }
+--- a/linguachat-backend/app/services/memory.py
++++ b/linguachat-backend/app/services/memory.py
+@@ -74,6 +74,11 @@
+             "correction": _safe_text(result.correction) or None,
+             "mode": result.mode.value,
+             "level": level.value,
++            # Rule ids only (e.g. "past_irregular"): never the learner's words.
++            "error_types": [
++                str(f.get("rule"))[:32] for f in ((result.analysis or {}).get("findings") or [])
++                if isinstance(f, dict) and f.get("rule")
++            ][:4],
+         }
+ 
+         with self._lock:
+@@ -85,6 +90,10 @@
+         errors = [item["correction"] for item in self.get(session_id) if item.get("correction")]
+         return errors[-limit:]
+ 
++    def recent_error_types(self, session_id: str, limit: int = 6) -> list[str]:
++        types = [t for item in self.get(session_id) for t in item.get("error_types") or []]
++        return types[-limit:]
++
+     def clear(self, session_id: str | None = None) -> None:
+         with self._lock:
+             if session_id is None:
+--- a/linguachat-backend/tests/test_api.py
++++ b/linguachat-backend/tests/test_api.py
+@@ -8,6 +8,8 @@
+ 
+ client = TestClient(app)
+ EXPECTED_KEYS = {
++    # What the local engine could honestly tell about the message (P1 stage C).
++    "analysis",
+     "reply",
+     "correction",
+     "explanation",
+@@ -105,7 +107,9 @@
+ 
+ 
+ def test_meaning_question_from_english_to_spanish():
+-    response = post_chat("qué significa cheese", level="A1")
++    # A Spanish-speaking learner's client sends its user_language explicitly.
++    response = post_chat_payload({"session_id": "meaning-es", "message": "qué significa cheese",
++                                  "level": "A1", "native_language": "es"})
+     data = response.json()
+ 
+     assert response.status_code == 200
+@@ -113,6 +117,16 @@
+     assert "queso" in data["reply"].lower()
+ 
+ 
++def test_a_spanish_meaning_is_never_given_to_a_learner_of_another_language():
++    response = post_chat_payload({"session_id": "meaning-ja", "message": "what does cheese mean",
++                                  "level": "A1", "native_language": "ja"})
++    data = response.json()
++
++    assert response.status_code == 200
++    assert "queso" not in (data["reply"] + " " + (data["explanation"] or "")).lower()
++    assert "ローカルモード" in data["reply"], "the honest limit is stated in the learner's language"
++
++
+ def test_translation_intent_long_phrase_does_not_repeat_request():
+     response = post_chat("como digo me gusta el queso", level="A1")
+     data = response.json()
+@@ -175,19 +189,16 @@
+     assert data["mode"] == "chat"
+ 
+ 
+-def test_lingo_companion_uses_vocabulary_fallback():
+-    response = post_chat_payload({
+-        "session_id": "lingo-session",
+-        "message": "cheese",
+-        "level": "A1",
+-        "active_companion": "lingo",
+-        "tutor_preferences": {"interests": ["food"]},
+-    })
+-    data = response.json()
+-
+-    assert response.status_code == 200
+-    assert data["focus"] == "Vocabulary practice"
+-    assert "queso" in (data["reply"] + " " + (data["explanation"] or "")).lower()
++def test_legacy_companions_are_answered_by_lingua():
++    # Lingua is the only tutor: "lingo" is legacy and Chatto is the mascot.
++    lingua = post_chat_payload({"session_id": "companion-lingua", "message": "I like cheese",
++                                "level": "A1", "active_companion": "lingua"}).json()
++    for companion in ("lingo", "chatto", "anything"):
++        data = post_chat_payload({"session_id": f"companion-{companion}", "message": "I like cheese",
++                                  "level": "A1", "active_companion": companion}).json()
++        assert data == lingua, companion
++        text = " ".join(str(data.get(k) or "") for k in ("reply", "explanation", "suggestion", "focus"))
++        assert "Lingo" not in text and "Vocabulary practice" not in text
+ 
+ 
+ def test_old_native_language_string_still_works():
+--- /dev/null
++++ b/linguachat-backend/tests/test_tutor_intelligence.py
+@@ -0,0 +1,222 @@
++"""The local tutor: corrections, explanations, strategy and language.
++
++Synthetic learners, replayed with many verbs, sentences and languages so a pass
++cannot depend on one hand-written example. These tests prove the engine is
++consistent and honest about its limits; they do not prove that real learners
++learn better (that needs a pilot).
++"""
++import re
++
++import pytest
++from fastapi.testclient import TestClient
++
++from ai.grammar_check import IRREGULAR_PAST, analyze, corrected_sentence
++from ai.tutor_i18n import MESSAGES, SUPPORTED, resolve_language
++from app.services.memory import conversation_memory
++from main import app
++
++client = TestClient(app)
++LANGS = list(SUPPORTED)
++SCRIPT = {"ja": re.compile(r"[぀-ヿ一-鿿]"), "ar": re.compile(r"[؀-ۿ]")}
++SPANISH_ONLY = re.compile(r"\b(Escribe|Usa una|Completa|Agrega|Intenta|pasado)\b")
++
++
++@pytest.fixture(autouse=True)
++def fresh_memory(monkeypatch):
++    monkeypatch.setenv("LINGUACHAT_PROVIDER", "local")
++    conversation_memory.clear()
++    yield
++    conversation_memory.clear()
++
++
++def chat(message, *, lang="es", level="A1", session="s", **extra):
++    response = client.post("/chat", json={"session_id": session, "message": message, "level": level,
++                                          "native_language": lang, **extra})
++    assert response.status_code == 200
++    return response.json()
++
++
++# --- the mandatory case -------------------------------------------------------
++
++def test_yesterday_i_goed_to_school():
++    data = chat("Yesterday I goed to school.")
++    assert data["mode"] == "correction"
++    assert data["correction"] == "Yesterday I went to school."
++    assert "went" in data["explanation"] and "go" in data["explanation"] and "goed" in data["explanation"]
++    assert "irregular" in data["explanation"]
++    assert data["analysis"]["verdict"] == "error"
++    assert data["analysis"]["findings"][0]["rule"] == "past_irregular"
++
++
++# --- generalisation, not a list of sentences ----------------------------------
++
++WRONG_PASTS = {
++    "eated": "ate", "buyed": "bought", "thinked": "thought", "catched": "caught", "teached": "taught",
++    "writed": "wrote", "drived": "drove", "swimmed": "swam", "runned": "ran", "sleeped": "slept",
++    "bringed": "brought", "payed": "paid", "sayed": "said", "goed": "went", "wented": "went",
++    "speaked": "spoke", "taked": "took", "maked": "made", "comed": "came", "knowed": "knew",
++}
++
++
++@pytest.mark.parametrize("wrong,past", sorted(WRONG_PASTS.items()))
++@pytest.mark.parametrize("frame", ["Yesterday I {} a lot.", "We {} together last night.", "She {} it two days ago."])
++def test_every_irregular_past_mistake_is_corrected(wrong, past, frame):
++    findings = analyze(frame.format(wrong))
++    assert [f.rule for f in findings][:1] == ["past_irregular"]
++    assert findings[0].replacement == past
++    assert corrected_sentence(frame.format(wrong), findings) == frame.format(past)
++
++
++@pytest.mark.parametrize("sentence,expected", [
++    ("Yesterday I go to the park.", "Yesterday I went to the park."),
++    ("Last week we visit my grandma.", "Last week we visited my grandma."),
++    ("Two days ago they are very tired.", "Two days ago they were very tired."),
++    ("She like music.", "She likes music."),
++    ("He watch TV every day.", "He watches TV every day."),
++    ("My sister eat an banana.", None),
++    ("I have a orange.", "I have an orange."),
++    ("It is an university.", "It is a university."),
++])
++def test_other_rules(sentence, expected):
++    findings = analyze(sentence)
++    assert findings, sentence
++    if expected:
++        assert corrected_sentence(sentence, findings) == expected
++
++
++# --- no false negatives on natural, valid English ----------------------------
++
++VALID = [
++    "Yesterday I went to school.", "I went to school yesterday.", "We ate pizza last night.",
++    "She likes music.", "Does she like music?", "He doesn't like coffee.", "Let it go.",
++    "I have an apple.", "It is a university.", "I waited an hour.", "They were tired two days ago.",
++    "I seed the soil every spring.", "Can she swim?", "I want to go home.", "My friends play football.",
++    "Last week I visited my grandma.", "I didn't go to school yesterday.", "Did you eat breakfast?",
++    "He has a car.", "We usually walk to work.", "She can drive.", "It works now.",
++    "I'm happy today.", "How are you?", "I would like a coffee, please.", "They study English.",
++    "An honest answer is best.", "I bought a new phone.", "He wrote a letter.", "We swam in the lake.",
++]
++
++
++@pytest.mark.parametrize("sentence", VALID)
++def test_valid_sentences_get_no_correction(sentence):
++    assert analyze(sentence) == []
++    data = chat(sentence, session="valid-" + str(abs(hash(sentence))))
++    assert data["correction"] is None
++    # No rule fired: that is NOT a verdict of correctness, and it is never sold as one.
++    assert data["analysis"]["verdict"] in {"no_issue_detected", "insufficient"}
++    assert data["analysis"]["confidence"] in {"low", "high"}
++    assert not re.search(r"\b(correct|perfect|no mistakes)\b", data["reply"], re.I)
++
++
++# --- strategy changes when an explanation does not work ----------------------
++
++def test_strategy_escalates_then_recovers():
++    seen = []
++    for message in ["Yesterday I goed to school.", "Last week I eated pizza.", "Yesterday we runned home."]:
++        data = chat(message, session="escalate")
++        seen.append(data["analysis"]["strategy"])
++    assert seen == ["brief_explanation", "contrast_example", "guided_retrieval"]
++    last = data
++    assert last["learning_action"]["type"] == "fill_blank"
++    assert last["learning_action"]["expected"] == "ran"
++    # Retrieval in a NEW sentence: neither the learner's nor the corrected one.
++    assert "We ran home" not in last["learning_action"]["prompt"]
++    assert "____" in last["learning_action"]["prompt"]
++    assert "✗" in last["explanation"], "the contrast stays available"
++    # Once the error stops recurring, the window clears and the light touch returns.
++    for i in range(8):
++        chat("I like my school.", session="escalate")
++    assert chat("Yesterday I buyed bread.", session="escalate")["analysis"]["strategy"] == "brief_explanation"
++
++
++def test_a_detailed_preference_starts_with_contrast():
++    data = chat("She like music.", session="pref", tutor_preferences={"explanation_depth": "detailed"})
++    assert data["analysis"]["strategy"] == "contrast_example"
++
++
++def test_the_level_shapes_the_reply_not_the_correction():
++    a1 = chat("Yesterday I goed to school.", level="A1", session="lv1")
++    c1 = chat("Yesterday I goed to school.", level="C1", session="lv2")
++    assert a1["correction"] == c1["correction"] == "Yesterday I went to school."
++    assert a1["reply"] != c1["reply"]
++
++
++# --- the learner's language, explicitly --------------------------------------
++
++@pytest.mark.parametrize("lang", LANGS)
++def test_explanations_follow_the_learner_language(lang):
++    data = chat("Yesterday I goed to school.", lang=lang, session="lang-" + lang)
++    assert data["analysis"]["language"] == lang
++    text = " ".join(str(data[k] or "") for k in ("explanation", "suggestion", "focus")) + data["learning_action"]["prompt"]
++    assert "went" in data["explanation"], "the English form itself is never translated"
++    if lang in SCRIPT:
++        assert SCRIPT[lang].search(text), f"{lang} text is in its own script"
++    if lang != "es":
++        assert not SPANISH_ONLY.search(text), f"no Spanish leaks into {lang}"
++    assert data["reply"].startswith("Almost!"), "Lingua's own line stays in English, the practised language"
++
++
++def test_switching_language_mid_session():
++    es = chat("Yesterday I goed to school.", lang="es", session="switch")
++    ja = chat("Last week I eated pizza.", lang="ja", session="switch")
++    assert es["analysis"]["language"] == "es" and ja["analysis"]["language"] == "ja"
++    assert SCRIPT["ja"].search(ja["explanation"]) and not SPANISH_ONLY.search(ja["explanation"])
++
++
++def test_unsupported_language_is_english_and_says_so():
++    assert resolve_language("ko") == ("en", False)
++    assert resolve_language({"code": "ar-EG", "base": "ar"}) == ("ar", True)
++    data = chat("Yesterday I goed to school.", lang="ko", session="ko")
++    assert data["analysis"]["language"] == "en"
++
++
++def test_every_message_exists_in_all_eight_languages():
++    for key, table in MESSAGES.items():
++        assert set(table) == set(SUPPORTED), key
++        placeholders = set(re.findall(r"{(\w+)}", table["en"]))
++        for lang, text in table.items():
++            assert set(re.findall(r"{(\w+)}", text)) == placeholders, (key, lang)
++
++
++def test_a_message_in_the_learners_own_language_is_noticed():
++    for lang, message in [("es", "hola quiero aprender ingles"), ("ja", "こんにちは、英語を勉強したい"),
++                          ("ar", "مرحبا أريد أن أتعلم"), ("fr", "je ne sais pas comment le dire")]:
++        data = chat(message, lang=lang, session="own-" + lang)
++        assert data["analysis"]["verdict"] == "not_english", lang
++        assert data["correction"] is None
++
++
++# --- ambiguity and missing information --------------------------------------
++
++@pytest.mark.parametrize("message", ["ok", "???", "school", "...", "x"])
++def test_too_little_to_judge_is_said_plainly(message):
++    data = chat(message, session="amb-" + message)
++    assert data["correction"] is None
++    assert data["analysis"]["verdict"] == "insufficient"
++
++
++def test_typing_back_the_correction_is_not_praised_as_mastery():
++    chat("Yesterday I goed to school.", session="copy")
++    data = chat("Yesterday I went to school.", session="copy")
++    assert data["correction"] is None
++    assert data["analysis"]["verdict"] == "no_issue_detected"
++    assert data["analysis"]["confidence"] == "low"
++
++
++# --- one tutor ----------------------------------------------------------------
++
++@pytest.mark.parametrize("companion", ["lingo", "chatto", "Chatto", "LINGO", None])
++def test_only_lingua_answers(companion):
++    payload = {"active_companion": companion} if companion else {}
++    data = chat("Yesterday I goed to school.", session="who", **payload)
++    text = " ".join(str(data.get(k) or "") for k in ("reply", "explanation", "suggestion", "focus"))
++    assert "Lingo" not in text and "Chatto" not in text
++    assert chat("who are you", session="who2", **payload)["reply"].startswith("I'm Lingua")
++
++
++def test_memory_keeps_rule_ids_not_words():
++    chat("Yesterday I goed to school.", session="priv")
++    stored = conversation_memory.get("priv")[-1]
++    assert stored["error_types"] == ["past_irregular"]
++    assert conversation_memory.recent_error_types("priv") == ["past_irregular"]
+--- a/linguachat-frontend/package.json
++++ b/linguachat-frontend/package.json
+@@ -52,7 +52,7 @@
+     "check:a1-arc6-arc7-journeys": "node scripts/foundry/a1/check-a1-arc6-arc7-journeys.mjs",
+     "check:a1-arc6-arc7-structure": "node scripts/foundry/a1/check-a1-arc6-arc7-structure.mjs",
+     "build:skeleton": "node scripts/build-curriculum-skeleton.mjs",
+-    "check:all": "node scripts/check-i18n.mjs && node scripts/check-i18n-lint.mjs && node scripts/check-learning-content.mjs && node scripts/check-episodes.mjs && node scripts/check-learner-model.mjs && node scripts/check-arc-e2e.mjs && node scripts/check-edge-cases.mjs && node scripts/check-hybrid-evaluation.mjs && node scripts/check-episode-recovery.mjs && node scripts/check-visual-structure.mjs && node scripts/check-visual-identity.mjs && node scripts/check-daily-session.mjs && node scripts/check-second-arc.mjs && node scripts/check-session-recovery.mjs && node scripts/check-third-arc.mjs && node scripts/check-third-arc-e2e.mjs && node scripts/check-activity-signals.mjs && node scripts/check-preference-planning.mjs && node scripts/check-personalized-home.mjs && node scripts/check-episode-replay.mjs && node scripts/check-learner-facts.mjs && node scripts/check-session-surfaces.mjs && node scripts/check-memory-and-story.mjs && node scripts/check-locale-loading.mjs && node scripts/check-user-language.mjs && node scripts/check-language-detection.mjs && node scripts/check-language-support.mjs && node scripts/check-semantic-context.mjs && node scripts/check-fourth-arc.mjs && node scripts/check-curriculum-map.mjs && node scripts/check-cross-level-ids.mjs && node scripts/check-adaptive-scaffolding.mjs && node scripts/check-learning-states.mjs && node scripts/check-fifth-arc.mjs && node scripts/check-repair-evaluation.mjs && node scripts/check-fifth-arc-flow.mjs && node scripts/check-semantic-slots.mjs && node scripts/check-sixth-arc.mjs && node scripts/check-things-and-quantity-evaluation.mjs && node scripts/check-pre-a1-readiness.mjs && node scripts/check-pre-a1-journeys.mjs && node scripts/check-graduation.mjs && node scripts/check-target-range-evidence.mjs && node scripts/check-pre-a1-freeze.mjs && node scripts/check-a1-blueprint.mjs && node scripts/check-a1-arc1.mjs && node scripts/check-a1-arc2.mjs && node scripts/check-a1-arc3.mjs && node scripts/check-a1-arc4.mjs && node scripts/check-a1-arc5.mjs && node scripts/check-curriculum-authoring.mjs && node scripts/check-interest-personalization.mjs && node scripts/check-curriculum-loading.mjs && node scripts/check-autonomy-audit.mjs && node scripts/check-cloud-automation.mjs && node scripts/check-two-clean-cycles.mjs && node scripts/check-merge-blocker-gate.mjs && node scripts/check-continuous-automation.mjs && node scripts/check-placement-honesty.mjs && node scripts/check-pedagogical-journeys.mjs && node scripts/check-a1-longitudinal-journeys.mjs && node scripts/foundry/a1/check-a1-arc6-arc7-structure.mjs && node scripts/foundry/a1/check-a1-arc6-arc7-evaluators.mjs && node scripts/foundry/a1/check-a1-arc6-arc7-journeys.mjs && node scripts/check-bundle-boundaries.mjs && node scripts/check-auth-service.mjs && node src/auth/check-auth-ui-wiring.mjs && node src/auth/check-browser-data-isolation.mjs && node src/auth/check-lazy-provider.mjs && node scripts/check-cloud-preferences.mjs && node src/cloud/check-preference-import.mjs && node src/cloud/check-preference-sync.mjs && node src/cloud/check-preference-transport.mjs && node src/cloud/check-sync-runtime.mjs && node src/auth/check-local-lease.mjs && node src/auth/check-stale-tab-learner-model.mjs --secure && node src/auth/check-stale-tab-learner-model-read.mjs --secure && node src/auth/check-stale-tab-aba-progress-rollback.mjs --secure && node src/auth/check-stale-guest-model.mjs && node scripts/check-teaching-policy.mjs && node scripts/check-listening.mjs && node scripts/check-longitudinal-regressions.mjs && node scripts/check-setup-checkpoint.mjs && node scripts/check-failed-save-and-reconcile-learner-model.mjs && node scripts/check-same-account-tabs.mjs && node scripts/check-profile-recovery.mjs",
++    "check:all": "node scripts/check-i18n.mjs && node scripts/check-i18n-lint.mjs && node scripts/check-learning-content.mjs && node scripts/check-episodes.mjs && node scripts/check-learner-model.mjs && node scripts/check-arc-e2e.mjs && node scripts/check-edge-cases.mjs && node scripts/check-hybrid-evaluation.mjs && node scripts/check-episode-recovery.mjs && node scripts/check-visual-structure.mjs && node scripts/check-visual-identity.mjs && node scripts/check-daily-session.mjs && node scripts/check-second-arc.mjs && node scripts/check-session-recovery.mjs && node scripts/check-third-arc.mjs && node scripts/check-third-arc-e2e.mjs && node scripts/check-activity-signals.mjs && node scripts/check-preference-planning.mjs && node scripts/check-personalized-home.mjs && node scripts/check-episode-replay.mjs && node scripts/check-learner-facts.mjs && node scripts/check-session-surfaces.mjs && node scripts/check-memory-and-story.mjs && node scripts/check-locale-loading.mjs && node scripts/check-user-language.mjs && node scripts/check-language-detection.mjs && node scripts/check-language-support.mjs && node scripts/check-semantic-context.mjs && node scripts/check-fourth-arc.mjs && node scripts/check-curriculum-map.mjs && node scripts/check-cross-level-ids.mjs && node scripts/check-adaptive-scaffolding.mjs && node scripts/check-learning-states.mjs && node scripts/check-fifth-arc.mjs && node scripts/check-repair-evaluation.mjs && node scripts/check-fifth-arc-flow.mjs && node scripts/check-semantic-slots.mjs && node scripts/check-sixth-arc.mjs && node scripts/check-things-and-quantity-evaluation.mjs && node scripts/check-pre-a1-readiness.mjs && node scripts/check-pre-a1-journeys.mjs && node scripts/check-graduation.mjs && node scripts/check-target-range-evidence.mjs && node scripts/check-pre-a1-freeze.mjs && node scripts/check-a1-blueprint.mjs && node scripts/check-a1-arc1.mjs && node scripts/check-a1-arc2.mjs && node scripts/check-a1-arc3.mjs && node scripts/check-a1-arc4.mjs && node scripts/check-a1-arc5.mjs && node scripts/check-curriculum-authoring.mjs && node scripts/check-interest-personalization.mjs && node scripts/check-curriculum-loading.mjs && node scripts/check-autonomy-audit.mjs && node scripts/check-cloud-automation.mjs && node scripts/check-two-clean-cycles.mjs && node scripts/check-merge-blocker-gate.mjs && node scripts/check-continuous-automation.mjs && node scripts/check-placement-honesty.mjs && node scripts/check-pedagogical-journeys.mjs && node scripts/check-a1-longitudinal-journeys.mjs && node scripts/foundry/a1/check-a1-arc6-arc7-structure.mjs && node scripts/foundry/a1/check-a1-arc6-arc7-evaluators.mjs && node scripts/foundry/a1/check-a1-arc6-arc7-journeys.mjs && node scripts/check-bundle-boundaries.mjs && node scripts/check-auth-service.mjs && node src/auth/check-auth-ui-wiring.mjs && node src/auth/check-browser-data-isolation.mjs && node src/auth/check-lazy-provider.mjs && node scripts/check-cloud-preferences.mjs && node src/cloud/check-preference-import.mjs && node src/cloud/check-preference-sync.mjs && node src/cloud/check-preference-transport.mjs && node src/cloud/check-sync-runtime.mjs && node src/auth/check-local-lease.mjs && node src/auth/check-stale-tab-learner-model.mjs --secure && node src/auth/check-stale-tab-learner-model-read.mjs --secure && node src/auth/check-stale-tab-aba-progress-rollback.mjs --secure && node src/auth/check-stale-guest-model.mjs && node scripts/check-teaching-policy.mjs && node scripts/check-listening.mjs && node scripts/check-longitudinal-regressions.mjs && node scripts/check-setup-checkpoint.mjs && node scripts/check-failed-save-and-reconcile-learner-model.mjs && node scripts/check-same-account-tabs.mjs && node scripts/check-profile-recovery.mjs && node scripts/check-teaching-intelligence.mjs",
+     "check:episode-replay": "node scripts/check-episode-replay.mjs",
+     "check:learner-facts": "node scripts/check-learner-facts.mjs",
+     "check:session-surfaces": "node scripts/check-session-surfaces.mjs",
+@@ -79,6 +79,7 @@
+     "check:isolation": "node src/auth/check-local-lease.mjs && node src/auth/check-stale-tab-learner-model.mjs --secure && node src/auth/check-stale-tab-learner-model-read.mjs --secure && node src/auth/check-stale-tab-aba-progress-rollback.mjs --secure && node src/auth/check-stale-guest-model.mjs",
+     "check:same-account-tabs": "node scripts/check-same-account-tabs.mjs",
+     "check:profile-recovery": "node scripts/check-profile-recovery.mjs",
++    "check:teaching-intelligence": "node scripts/check-teaching-intelligence.mjs",
+     "check:teaching": "node scripts/check-teaching-policy.mjs",
+     "check:listening": "node scripts/check-listening.mjs",
+     "check:longitudinal-regressions": "node scripts/check-longitudinal-regressions.mjs",
+--- a/linguachat-frontend/scripts/check-failed-save-and-reconcile-learner-model.mjs
++++ b/linguachat-frontend/scripts/check-failed-save-and-reconcile-learner-model.mjs
+@@ -9,11 +9,11 @@
+   get length() { return this.data.size }
+   key(i) { return [...this.data.keys()][i] ?? null }
+   getItem(k) {
+-    if (this.mismatchLearnerReads && String(k).endsWith(':lc2-learner-model-v1')) return 'mismatched-readback'
++    if (this.mismatchLearnerReads && String(k).includes(':lc2-learner-model-v1')) return 'mismatched-readback'
+     return this.data.get(String(k)) ?? null
+   }
+   setItem(k, v) {
+-    if (this.rejectLearnerWrites && String(k).endsWith(':lc2-learner-model-v1')) {
++    if (this.rejectLearnerWrites && String(k).includes(':lc2-learner-model-v1')) {
+       throw new Error('QuotaExceededError (simulated)')
+     }
+     this.data.set(String(k), String(v))
+--- a/linguachat-frontend/scripts/check-same-account-tabs.mjs
++++ b/linguachat-frontend/scripts/check-same-account-tabs.mjs
+@@ -20,6 +20,7 @@
+ import * as progressStore from '../src/services/localProgress.js'
+ import { activateLocalAccount } from '../src/auth/browserDataIsolation.js'
+ import { captureLearnerAccess, NAMESPACE_PREFIX } from '../src/auth/localLease.js'
++import { writerId } from '../src/services/writerKeys.js'
+ import { createLearnerModel, loadLearnerModel, saveLearnerModel, recordItemAttempt } from '../src/learning/engine/learnerModel.js'
+ 
+ const {
+@@ -127,7 +128,8 @@
+ }
+ function freshLoad(shared, owner) { return openTab(shared, owner) }
+ function storedKeys(shared, suffix) {
+-  return [...shared.values.keys()].filter(k => k.startsWith(NAMESPACE_PREFIX) && k.endsWith(':' + suffix))
++  // One copy per writer (tab): `<suffix>~w~<writer>`, plus any older shared key.
++  return [...shared.values.keys()].filter(k => k.startsWith(NAMESPACE_PREFIX) && (k.endsWith(':' + suffix) || k.includes(':' + suffix + '~w~')))
+ }
+ 
+ console.log('check-same-account-tabs')
+@@ -218,7 +220,7 @@
+   const shared = new Store()
+   const a = openTab(shared, 'A'), b = openTab(shared, 'A')
+   practice(a, 'one', T0); persist(a)
+-  shared.failWrites = key => key.endsWith(':lc2-local-progress')
++  shared.failWrites = key => key.includes(':lc2-local-progress')
+   practice(b, 'two', T0 + 5)
+   assert.equal(persist(b).progress, false, 'a denied write is reported as not saved')
+   assert.equal(freshLoad(shared, 'A').progress.messagesSent, 1, 'the durable value is intact')
+@@ -233,7 +235,7 @@
+ scenario('a reward is not confirmed when its write is refused', () => {
+   const shared = new Store()
+   const a = openTab(shared, 'A')
+-  shared.failWrites = key => key.endsWith(':lc2-local-progress')
++  shared.failWrites = key => key.includes(':lc2-local-progress')
+   assert.equal(reward(a, 'episode-award:first_greeting', 30), false)
+   shared.failWrites = null
+   assert.equal(freshLoad(shared, 'A').progress.xp, 0)
+@@ -315,7 +317,7 @@
+   const restarted = freshLoad(shared, 'A')
+   assert.equal(restarted.progress.xp, 25)
+   assert.equal(restarted.progress.messagesSent, 1)
+-  assert.equal(storedKeys(shared, 'lc2-local-progress').length, 1)
++  assert.equal(storedKeys(shared, 'lc2-local-progress').length, 2, 'one copy per writer, never a shared overwrite')
+ })
+ 
+ scenario('a reset in one tab is not undone by a stale tab, which keeps only later work', () => {
+@@ -339,7 +341,7 @@
+   for (let i = 0; i < 3; i++) practice(a, 'old ' + i, old + i * DAY)
+   persist(a); hear(b)                            // b now holds the same old events
+   practice(a, 'recent', Date.now()); persist(a)  // a's save folds the old events
+-  const stored = JSON.parse(shared.getItem(storedKeys(shared, 'lc2-local-progress')[0]))
++  const stored = JSON.parse(shared.getItem(storedKeys(shared, 'lc2-local-progress').find(k => k.includes(a.act(() => writerId())))))
+   assert.equal(stored.events.length, 1, 'only the recent event stays in the ledger')
+   assert.equal(stored.base.folded, 3)
+   persist(b)                                     // b re-sends the folded events
+@@ -415,5 +417,141 @@
+   assert.deepEqual(freshLoad(shared, 'A').messages.map(m => m.text), ['Hi'], 'the erased conversation stays erased')
+ })
+ 
++/*
++ * Adversarial: a browser tab reads localStorage from its own cache, which other
++ * tabs update asynchronously. `staleView` freezes what a tab can read while
++ * its writes still reach the real store — the interleaving that lost a whole
++ * tab's 300 verified saves in two real Chromium tabs with the shared-key design.
++ */
++function staleView(shared) {
++  const frozen = new Map(shared.values)
++  return {
++    get length() { return frozen.size },
++    key(i) { return [...frozen.keys()][i] ?? null },
++    getItem(k) { return frozen.has(String(k)) ? frozen.get(String(k)) : null },
++    setItem(k, v) { shared.setItem(k, v); frozen.set(String(k), String(v)) },
++    removeItem(k) { shared.removeItem(k); frozen.delete(String(k)) },
++  }
++}
++scenario('a tab writing from a stale cache cannot erase another tab’s saves', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  // a reads storage now; b then saves 30 turns a never sees.
++  const view = staleView(shared)
++  for (let i = 0; i < 30; i++) { practice(b, 'b ' + i, T0 + i); assert.notEqual(persist(b).progress, false) }
++  // a saves 30 turns through its stale view and never hears b (closed).
++  for (let i = 0; i < 30; i++) {
++    practice(a, 'a ' + i, T0 + 100 + i)
++    a.act(() => {
++      globalThis.localStorage = view
++      try { assert.notEqual(saveLocalProgress(a.progress, { access: captureLearnerAccess(view) }), false) }
++      finally { globalThis.localStorage = shared }
++    })
++  }
++  const p = freshLoad(shared, 'A').progress
++  assert.equal(p.messagesSent, 60, 'both tabs’ verified saves survive')
++  assert.equal(p.xp, 600)
++})
++
++// Small deterministic PRNG so every failure can be replayed by its seed.
++function prng(seed) { let x = seed >>> 0; return () => ((x = (x * 1664525 + 1013904223) >>> 0) / 2 ** 32) }
++
++scenario('random interleavings of 3 tabs, stale caches and abrupt closes lose no verified save (200 seeds)', () => {
++  for (let seed = 1; seed <= 200; seed++) {
++    const rand = prng(seed)
++    const shared = new Store()
++    const tabs = [0, 1, 2].map(() => ({ tab: openTab(shared, 'A'), alive: true, saved: 0, done: 0, view: null }))
++    let at = T0
++    for (let step = 0; step < 60; step++) {
++      const t = tabs[Math.floor(rand() * tabs.length)]
++      if (!t.alive) continue
++      const roll = rand()
++      if (roll < 0.06) { t.alive = false; continue }                       // closed abruptly
++      if (roll < 0.25) { t.view = staleView(shared); continue }            // cache falls behind
++      if (roll < 0.35) { t.view = null; hear(t.tab); continue }            // catches up
++      practice(t.tab, `s${seed} t${tabs.indexOf(t)} #${t.done++}`, at++)
++      const ok = t.view
++        ? t.tab.act(() => { globalThis.localStorage = t.view; try { return saveLocalProgress(t.tab.progress, { access: captureLearnerAccess(t.view) }) } finally { globalThis.localStorage = shared } })
++        : persist(t.tab).progress
++      if (ok !== false) t.saved = t.done
++    }
++    const expected = tabs.reduce((sum, t) => sum + t.saved, 0)
++    const p = freshLoad(shared, 'A').progress
++    assert.equal(p.messagesSent, expected, `seed ${seed}: every verified save survives`)
++    assert.equal(p.xp, expected * 10, `seed ${seed}: XP matches`)
++  }
++})
++
++scenario('a reward re-sent after its event was compacted is not paid again', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A')
++  const old = Date.now() - 30 * DAY
++  assert.equal(reward(a, 'episode-award:first_greeting', 30, old), true)
++  practice(a, 'recent', Date.now()); persist(a)                      // compaction folds the award
++  const stored = JSON.parse(shared.getItem(storedKeys(shared, 'lc2-local-progress').find(k => k.includes(a.act(() => writerId())))))
++  assert.equal(stored.events.some(e => e.id === 'episode-award:first_greeting'), false, 'the award event was folded')
++  assert.deepEqual(stored.base.foldedIds, ['episode-award:first_greeting'], 'its id is remembered')
++  const b = openTab(shared, 'A')
++  assert.equal(reward(b, 'episode-award:first_greeting', 30, Date.now()), true, 'a retry is accepted as already paid')
++  persist(b)
++  assert.equal(freshLoad(shared, 'A').progress.xp, 40, 'paid once: 30 + 10')
++})
++
++scenario('idle copies that add nothing are removed; others are kept', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A'), c = openTab(shared, 'A')
++  practice(b, 'from b', T0); persist(b)
++  practice(c, 'only in c', T0 + 1); c.act(() => saveLocalProgress(c.progress, { access: c.access }))
++  const keyOf = tab => storedKeys(shared, 'lc2-local-progress').find(k => k.includes(tab.act(() => writerId())))
++  const age = (tab, ms) => { const k = keyOf(tab); const v = JSON.parse(shared.getItem(k)); v.writtenAt -= ms; shared.values.set(k, JSON.stringify(v)) }
++  age(b, 10 * 60 * 1000)                                  // b idle 10 min
++  hear(a)                                                 // a holds b's and c's content now
++  persist(a)
++  assert.equal(Boolean(keyOf(b)), false, "b's idle, redundant copy is removed")
++  assert.equal(Boolean(keyOf(c)), true, "c's recent copy is kept even though a holds it")
++  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 2)
++  // b, still open, saves again: its copy comes back, nothing is lost.
++  practice(b, 'b again', T0 + 2); persist(b)
++  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 3)
++})
++
++scenario('a copy holding something nobody else has is never removed, however idle', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  practice(a, 'only a', T0 + 1); persist(a)
++  const view = staleView(shared)                           // a's cache stops here
++  practice(b, 'only b', T0); persist(b)
++  const k = storedKeys(shared, 'lc2-local-progress').find(key => key.includes(b.act(() => writerId())))
++  const v = JSON.parse(shared.getItem(k)); v.writtenAt -= 60 * 60 * 1000; shared.values.set(k, JSON.stringify(v))
++  // a saves again without seeing b: b's idle copy is the only holder of b's turn.
++  practice(a, 'a again', T0 + 2)
++  a.act(() => {
++    globalThis.localStorage = view
++    try { saveLocalProgress(a.progress, { access: captureLearnerAccess(view) }) } finally { globalThis.localStorage = shared }
++  })
++  assert.notEqual(shared.getItem(k), null, "b's copy survives")
++  // a, now seeing b's copy, still must not remove what only b holds until it holds it too.
++  persist(a)
++  assert.equal(freshLoad(shared, 'A').progress.messagesSent, 3)
++})
++
++scenario('learner-model evidence saved from a stale cache does not erase the other tab’s evidence', () => {
++  const shared = new Store()
++  const a = openTab(shared, 'A'), b = openTab(shared, 'A')
++  const ma = a.act(() => loadLearnerModel()), mb = b.act(() => loadLearnerModel())
++  const view = staleView(shared)                           // a's cache stops here
++  b.act(() => { recordItemAttempt(mb, 'goodbye', { correct: true, independent: true }); assert.equal(saveLearnerModel(mb, { verified: true }), true) })
++  a.act(() => {
++    globalThis.localStorage = view
++    try {
++      recordItemAttempt(ma, 'hello', { correct: true, independent: true })
++      assert.equal(saveLearnerModel(ma, { verified: true }), true)
++    } finally { globalThis.localStorage = shared }
++  })
++  const merged = freshLoad(shared, 'A').act(() => loadLearnerModel())
++  assert.ok(merged.languageItems.hello, "a's evidence")
++  assert.ok(merged.languageItems.goodbye, "b's evidence survives a's stale save")
++})
++
+ console.log(`\ncheck-same-account-tabs — ${checks} passed, ${failures.length} failed`)
+ if (failures.length) process.exit(1)
+--- a/linguachat-frontend/scripts/check-session-surfaces.mjs
++++ b/linguachat-frontend/scripts/check-session-surfaces.mjs
+@@ -14,7 +14,12 @@
+ import { dirname, resolve as resolvePath } from 'node:path'
+ import { selectRepresentativeFormat, BLOCK_CANDIDATES, formatSupportsObjective } from '../src/learning/engine/formatChoice.js'
+ import { ACTIVITY_FORMATS } from '../src/learning/engine/learnerModel.js'
+-import { applyProgressEvent, mergeIntoStoredProgress, serializeStoredProgress } from '../src/services/localProgress.js'
++import {
++  applyProgressEvent, collectIdleCopies, mergeIntoStoredProgress, serializeStoredProgress,
++} from '../src/services/localProgress.js'
++import { ownKey } from '../src/services/writerKeys.js'
++import { ledgerFromStored, mergeLedgers, sameLedger } from '../src/services/progressLedger.js'
++import { translate } from '../src/i18n/translations.js'
+ 
+ const here = dirname(fileURLToPath(import.meta.url))
+ const read = (p) => readFileSync(resolvePath(here, '..', p), 'utf8')
+@@ -790,6 +795,8 @@
+       sessionId: 'A-session',
+       nativeLanguageInfo: { base: 'es' },
+       interfaceLanguageInfo: { base: 'es' },
++      // The memory notice follows the learner's language (P1 stage C).
++      translate,
+       targetLanguage: 'en',
+       tutorPreferences: {},
+       activeCompanion: null,
+@@ -1374,6 +1381,8 @@
+       // saveLocalProgress merges with what storage holds (P0-1). The real
+       // helpers run against the same scoped `access`, never unscoped storage.
+       mergeIntoStoredProgress, serializeStoredProgress,
++      // Each tab writes its own copy (P1 stage A); the same scoped access only.
++      ownKey, collectIdleCopies, ledgerFromStored, mergeLedgers, sameLedger,
+     }
+     const expected = mode === 'current'
+     assert.equal(clearProgress({ access }, deps), expected, mode + ': progress keys')
+--- /dev/null
++++ b/linguachat-frontend/scripts/check-teaching-intelligence.mjs
+@@ -0,0 +1,242 @@
++#!/usr/bin/env node
++/*
++ * check-teaching-intelligence — synthetic learners, longitudinal, reproducible.
++ *
++ * Twelve learner profiles drive the real engine (teaching policy, learner
++ * model, scaffolding, copy detection, topic selection, account isolation).
++ * Each profile is replayed with several seeds, capability names and event
++ * orders, so a pass cannot depend on one hand-picked example.
++ *
++ * WHAT THIS PROVES: the engine is internally consistent — strategies change
++ * with evidence, uncertainty follows the amount of evidence, assistance never
++ * becomes mastery, retention and transfer need later and new evidence, topics
++ * vary, accounts stay apart. WHAT IT DOES NOT PROVE: that real people learn
++ * better. That needs a pilot with real learners.
++ *
++ * The chat tutor's corrections and explanations (goed → went, strategy
++ * escalation, eight languages) are checked in the backend suite:
++ * linguachat-backend/tests/test_tutor_intelligence.py.
++ *
++ * Run: node scripts/check-teaching-intelligence.mjs
++ */
++import assert from 'node:assert/strict'
++import { observeTeaching, chooseTeaching, skillEvidence, evidenceSummary, retentionProfile } from '../src/learning/engine/teachingPolicy.js'
++import { createLearnerModel, recordItemAttempt, loadLearnerModel, saveLearnerModel } from '../src/learning/engine/learnerModel.js'
++import { copiesShownModel, isIndependentEvidence, deriveInitialScaffold, updateScaffoldAfterTurn } from '../src/learning/engine/scaffolding.js'
++import { selectTopic } from '../src/learning/engine/topicSelection.js'
++import { KNOWN_INTERESTS } from '../src/learning/engine/interests.js'
++import { activateLocalAccount } from '../src/auth/browserDataIsolation.js'
++import { LEVELS } from '../src/learning/curriculum/levels.js'
++
++const DAY = 86400000
++const START = Date.UTC(2026, 9, 1, 9)
++let passed = 0
++const failures = []
++function scenario(name, run) {
++  try { run(); passed++; console.log('  ok  ' + name) }
++  catch (error) { failures.push(name); console.log('  FAIL ' + name + '\n       ' + String(error.message).split('\n')[0]) }
++}
++function prng(seed) { let x = seed >>> 0; return () => ((x = (x * 1664525 + 1013904223) >>> 0) / 2 ** 32) }
++function shuffled(list, rand) { const out = [...list]; for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [out[i], out[j]] = [out[j], out[i]] } return out }
++
++// One practice day: an instruction (worked example or concise) and, on a LATER
++// day, an independent first attempt that tests it. `skill` picks the channel.
++function lesson(model, { capability, day, instruction = 'concise', channel = 'reading', context = 'home' }) {
++  observeTeaching(model, { id: `${capability}:teach:${day}`, capability, format: 'free_reply', session: `d${day}`,
++    at: START + day * DAY, success: null, instruction, channel, context })
++}
++function probe(model, { capability, day, success, channel = 'reading', context = 'home', independent = true, assisted = false, retried = false }) {
++  observeTeaching(model, { id: `${capability}:probe:${day}:${context}`, capability, format: 'free_reply', session: `p${day}`,
++    at: START + day * DAY + 3600000, success, independent, assisted, retried, channel, context,
++    listening: channel === 'listening' ? { firstListenSuccess: success } : null })
++}
++const CAPS = ['introduce_self', 'order_food', 'ask_directions', 'describe_day']
++const SEEDS = [1, 7, 42, 99]
++
++console.log('check-teaching-intelligence')
++
++scenario('1. a beginner starts with full support, and support is withdrawn only by independent success', () => {
++  for (const cap of CAPS) {
++    let state = deriveInitialScaffold({ learnerModel: createLearnerModel(), targetIntent: cap, runMode: 'first_run' })
++    assert.equal(state.currentLevel, 'high', cap + ': a new learner gets the most help')
++    state = updateScaffoldAfterTurn(state, { correct: true, assistanceUsed: true, evidenceKind: 'open' })
++    assert.equal(state.currentLevel, 'high', 'a helped success does not remove help')
++    for (let i = 0; i < 4; i++) state = updateScaffoldAfterTurn(state, { correct: true, assistanceUsed: false, evidenceKind: 'open' })
++    assert.notEqual(state.currentLevel, 'high', 'independent successes withdraw support')
++  }
++})
++
++scenario('2. a fast learner: delayed independent successes make the evidence "supported"', () => {
++  for (const cap of CAPS) {
++    const m = createLearnerModel()
++    for (let d = 0; d < 6; d++) { lesson(m, { capability: cap, day: d * 2 }); probe(m, { capability: cap, day: d * 2 + 1, success: true }) }
++    const written = skillEvidence(m, cap, START + 30 * DAY).written
++    assert.equal(written.status, 'supported', cap)
++    assert.ok(written.mean > 0.8)
++    assert.equal(retentionProfile(m, cap, START + 30 * DAY).priority, -1, 'consistently retained: review can wait')
++  }
++})
++
++scenario('3. repeated errors bring support back (reversible), and the method is switched after two failures', () => {
++  for (const seed of SEEDS) {
++    let state = { ...deriveInitialScaffold({ learnerModel: createLearnerModel(), targetIntent: 'x', runMode: 'first_run' }) }
++    for (let i = 0; i < 6; i++) state = updateScaffoldAfterTurn(state, { correct: true, assistanceUsed: false, evidenceKind: 'open' })
++    const rank = { low: 0, medium: 1, high: 2 }
++    const lowered = state.currentLevel
++    assert.ok(rank[lowered] < rank.high, 'independent work lowered support first')
++    for (let i = 0; i < 3; i++) state = updateScaffoldAfterTurn(state, { correct: false, evidenceKind: 'open', retried: true })
++    assert.ok(rank[state.currentLevel] > rank[lowered], 'support returns after repeated errors')
++    const m = createLearnerModel()
++    for (const d of [0, 2]) { lesson(m, { capability: 'order_food', day: d, instruction: 'concise' }); probe(m, { capability: 'order_food', day: d + 1, success: false }) }
++    const choice = chooseTeaching(m, 'order_food', ['concise', 'worked_example'], String(seed), 'instruction')
++    assert.equal(choice?.reason, 'switch_after_failure')
++    assert.equal(choice.format, 'worked_example', 'the method that failed twice is not chosen again')
++  }
++})
++
++scenario('4. understood with help but not remembered later: no mastery, review comes first', () => {
++  for (const cap of CAPS) {
++    const m = createLearnerModel()
++    for (let d = 0; d < 4; d++) recordItemAttempt(m, cap + ':item', { correct: true, independent: false, atMs: START + d * 1000 })
++    assert.notEqual(m.languageItems[cap + ':item'].learningState, 'can_use', 'helped success is never mastery')
++    for (let d = 0; d < 3; d++) {
++      lesson(m, { capability: cap, day: d * 2, instruction: 'worked_example' })
++      probe(m, { capability: cap, day: d * 2 + 1, success: true, assisted: true, independent: false })
++    }
++    probe(m, { capability: cap, day: 9, success: false })
++    assert.equal(skillEvidence(m, cap, START + 20 * DAY).written.successes, 0, 'assisted successes are not retention evidence')
++    assert.equal(retentionProfile(m, cap, START + 20 * DAY).priority, 2, 'the forgotten capability is reviewed first')
++  }
++})
++
++scenario('5. retained and transferred: success in contexts never seen before counts as transfer', () => {
++  for (const cap of CAPS) {
++    const m = createLearnerModel()
++    const contexts = ['home', 'cafe', 'airport', 'office']
++    contexts.forEach((context, i) => { lesson(m, { capability: cap, day: i * 3, context: 'home' }); probe(m, { capability: cap, day: i * 3 + 2, success: true, context }) })
++    const e = skillEvidence(m, cap, START + 40 * DAY).written
++    assert.equal(e.transfer, 3, 'three new contexts after the first')
++    assert.equal(e.delayed, 4)
++  }
++})
++
++scenario('6. strengths differ by skill: written is not listening, and speaking is never inferred', () => {
++  const m = createLearnerModel()
++  for (let d = 0; d < 5; d++) {
++    lesson(m, { capability: 'order_food', day: d * 4 })
++    probe(m, { capability: 'order_food', day: d * 4 + 1, success: true, channel: 'reading' })
++    probe(m, { capability: 'order_food', day: d * 4 + 2, success: d === 4, channel: 'listening', context: 'audio' + d })
++  }
++  const e = skillEvidence(m, 'order_food', START + 40 * DAY)
++  assert.ok(e.written.mean > e.listening.mean + 0.3, 'written strong, listening weak')
++  assert.equal(e.speaking.status, 'not_assessed')
++  assert.equal(e.pronunciation.status, 'not_assessed')
++})
++
++scenario('7. interests change: topics follow, and topics outside the interests still appear', () => {
++  const before = new Map(), after = new Map(), outside = { before: 0, after: 0 }
++  for (let i = 0; i < 400; i++) {
++    const a = selectTopic({ explicitInterests: ['games', 'music'], seed: 'b' + i })
++    const b = selectTopic({ explicitInterests: ['sports', 'cooking'], seed: 'a' + i })
++    before.set(a.interestId, (before.get(a.interestId) || 0) + 1)
++    after.set(b.interestId, (after.get(b.interestId) || 0) + 1)
++    if (!['games', 'music'].includes(a.interestId)) outside.before++
++    if (!['sports', 'cooking'].includes(b.interestId)) outside.after++
++  }
++  assert.ok((before.get('games') || 0) + (before.get('music') || 0) > 200, 'chosen interests lead')
++  assert.ok((after.get('sports') || 0) + (after.get('cooking') || 0) > 200, 'and the new ones take over when they change')
++  assert.ok((after.get('games') || 0) + (after.get('music') || 0) < 40, 'old interests are not stuck')
++  assert.ok(outside.before >= 40 && outside.after >= 40, 'other topics are not blocked')
++  assert.ok(before.size >= 5 && after.size >= 5, 'variety across contexts')
++  assert.ok(KNOWN_INTERESTS.length > 10)
++})
++
++scenario('8. copying the visible model answer is never independent evidence', () => {
++  const step = { type: 'free_reply', format: 'free_reply' }
++  for (const [reply, shown] of [
++    ["Hi, I'm Ana.", "Hi, I'm Ana."], ["hi im ana", "Hi, I'm Ana!"], ["  HI, I'M ANA ", "Hi, I'm Ana."],
++    ["I would like a coffee, please.", "I would like a coffee, please"], ['Well, I would like a coffee please thanks', 'I would like a coffee, please.'],
++  ]) {
++    assert.equal(copiesShownModel(reply, shown), true, reply)
++    assert.equal(isIndependentEvidence({ step, assistanceUsed: copiesShownModel(reply, shown) }), false)
++  }
++  const m = createLearnerModel()
++  for (let i = 0; i < 5; i++) recordItemAttempt(m, 'coffee', { correct: true, independent: false, atMs: START + i * DAY })
++  assert.notEqual(m.languageItems.coffee.learningState, 'can_use', 'five copies are still not mastery')
++})
++
++scenario('9. a natural variant is the learner’s own production, not a copy', () => {
++  for (const [reply, shown] of [
++    ["Hello! My name is Ana.", "Hi, I'm Ana."], ["Could I get a coffee?", 'I would like a coffee, please.'],
++    ["I'd love a tea", 'I would like a coffee, please.'], ['Ana here, nice to meet you', "Hi, I'm Ana."],
++  ]) assert.equal(copiesShownModel(reply, shown), false, reply)
++})
++
++scenario('10. evidence is per capability, never per interface language', () => {
++  const m = createLearnerModel()
++  for (let d = 0; d < 4; d++) { lesson(m, { capability: 'greet', day: d * 2 }); probe(m, { capability: 'greet', day: d * 2 + 1, success: true }) }
++  const es = skillEvidence(m, 'greet', START + 20 * DAY)
++  // Switching the auxiliary language changes no stored evidence.
++  const after = skillEvidence(JSON.parse(JSON.stringify(m)), 'greet', START + 20 * DAY)
++  assert.deepEqual(after, es)
++})
++
++scenario('11. ambiguous outcomes (unknown verdicts) are neither successes nor failures', () => {
++  const m = createLearnerModel()
++  for (let d = 0; d < 6; d++) { lesson(m, { capability: 'ask', day: d * 2 }); probe(m, { capability: 'ask', day: d * 2 + 1, success: null }) }
++  const e = skillEvidence(m, 'ask', START + 20 * DAY).written
++  assert.equal(e.samples, 0)
++  assert.equal(e.status, 'insufficient', 'no evidence, no claim')
++  assert.equal(chooseTeaching(m, 'ask', ['concise', 'worked_example'], 's', 'instruction'), null)
++})
++
++scenario('12. recent results reverse earlier hypotheses, in any order of arrival', () => {
++  for (const seed of SEEDS) {
++    const rand = prng(seed)
++    const events = []
++    for (let d = 0; d < 6; d++) events.push(['lesson', d * 2], ['probe', d * 2 + 1, true])
++    for (let d = 6; d < 14; d++) events.push(['lesson', d * 2], ['probe', d * 2 + 1, false])
++    const m = createLearnerModel()
++    for (const [kind, day, success] of shuffled(events, rand)) {
++      if (kind === 'lesson') lesson(m, { capability: 'describe_day', day })
++      else probe(m, { capability: 'describe_day', day, success })
++    }
++    const early = skillEvidence(m, 'describe_day', START + 13 * DAY).written
++    const late = skillEvidence(m, 'describe_day', START + 40 * DAY).written
++    assert.ok(early.mean > 0.75, `seed ${seed}: early hypothesis was strong`)
++    assert.ok(late.mean < early.mean, 'later failures lower it')
++    assert.equal(retentionProfile(m, 'describe_day', START + 40 * DAY).priority, 2, 'and send it back to review')
++  }
++})
++
++scenario('uncertainty narrows with evidence and never claims anything from fewer than three', () => {
++  assert.equal(evidenceSummary(2, 0).status, 'insufficient')
++  assert.equal(evidenceSummary(2, 1).status, 'uncertain')
++  const few = evidenceSummary(3, 1), many = evidenceSummary(30, 10)
++  assert.ok(many.high - many.low < few.high - few.low)
++  assert.equal(many.status, 'supported')
++})
++
++scenario('learners of different accounts never see each other’s teaching evidence', () => {
++  class Store { values = new Map(); get length() { return this.values.size } key(i) { return [...this.values.keys()][i] ?? null } getItem(k) { return this.values.get(k) ?? null } setItem(k, v) { this.values.set(k, String(v)) } removeItem(k) { this.values.delete(k) } }
++  const shared = globalThis.localStorage = new Store()
++  globalThis.sessionStorage = new Store()
++  activateLocalAccount(shared, 'A')
++  const a = loadLearnerModel()
++  lesson(a, { capability: 'greet', day: 0 }); probe(a, { capability: 'greet', day: 1, success: true })
++  assert.equal(saveLearnerModel(a, { verified: true }), true)
++  globalThis.sessionStorage = new Store()
++  activateLocalAccount(shared, 'B')
++  assert.equal(loadLearnerModel().teachingHistory?.length || 0, 0, 'B starts with no evidence of A')
++  globalThis.sessionStorage = new Store()
++  activateLocalAccount(shared, 'A')
++  assert.equal(loadLearnerModel().teachingHistory.length, 2, 'A finds its own evidence again')
++  delete globalThis.localStorage; delete globalThis.sessionStorage
++})
++
++scenario('the curriculum gates are unchanged: Pre-A1 open, A1–C2 closed', () => {
++  assert.deepEqual(LEVELS.filter(l => l.available).map(l => l.id), ['pre_a1'])
++})
++
++console.log(`\ncheck-teaching-intelligence — ${passed} passed, ${failures.length} failed`)
++if (failures.length) process.exit(1)
+--- a/linguachat-frontend/src/auth/localLease.js
++++ b/linguachat-frontend/src/auth/localLease.js
+@@ -114,6 +114,7 @@
+   return validLocalLease(storage, lease) ? keys : []
+ }
+ export const learnerStorage = {
++  keys() { return scopedKeys(globalThis.localStorage, currentLease()) },
+   get length() { return scopedKeys(globalThis.localStorage, currentLease()).length },
+   key(i) { return scopedKeys(globalThis.localStorage, currentLease())[i] ?? null },
+   getItem(key) { return readScoped(globalThis.localStorage, key, currentLease()) },
+@@ -124,6 +125,8 @@
+ export function captureLearnerAccess(storage = browserStorage(), lease = currentLease(storage)) {
+   return {
+     valid: () => validLocalLease(storage, lease),
++    // The account's own learner keys under this lease (empty once revoked).
++    keys: () => scopedKeys(storage, lease),
+     bind(value) {
+       if (value && typeof value === 'object') bindings.set(value, lease)
+       return value
+--- a/linguachat-frontend/src/components/chat/LearningAction.jsx
++++ b/linguachat-frontend/src/components/chat/LearningAction.jsx
+@@ -1,19 +1,21 @@
+ import { useApp } from '../../context/AppContext'
+ 
+-const ACTION_LABELS = {
+-  complete_sentence: 'Completa',
+-  answer_question: 'Responde',
+-  rewrite: 'Reescribe',
+-  choose_option: 'Elige',
+-  ask_back: 'Pregunta',
+-  use_word: 'Usa palabra',
++// Labels follow the learner's language (they were hardcoded Spanish).
++const ACTION_LABEL_KEYS = {
++  complete_sentence: 'actionComplete',
++  answer_question: 'actionAnswer',
++  rewrite: 'actionRewrite',
++  choose_option: 'actionChoose',
++  ask_back: 'actionAskBack',
++  use_word: 'actionUseWord',
++  fill_blank: 'actionFillBlank',
+ }
+ 
+ export function LearningAction({ action }) {
+   const { t } = useApp()
+   if (!action?.prompt) return null
+ 
+-  const label = ACTION_LABELS[action.type] || t('learningAction')
++  const label = ACTION_LABEL_KEYS[action.type] ? t(ACTION_LABEL_KEYS[action.type]) : t('learningAction')
+ 
+   return (
+     <div
+--- a/linguachat-frontend/src/components/episode/EpisodeShell.jsx
++++ b/linguachat-frontend/src/components/episode/EpisodeShell.jsx
+@@ -19,7 +19,7 @@
+ } from '../../learning/engine/learnerModel.js'
+ import {
+   deriveInitialScaffold, updateScaffoldAfterTurn, reviveScaffoldState,
+-  evidenceKindForStep, isIndependentEvidence, showsStepModelAnswer, showsHintByDefault,
++  copiesShownModel, evidenceKindForStep, isIndependentEvidence, showsStepModelAnswer, showsHintByDefault,
+ } from '../../learning/engine/scaffolding.js'
+ import { dayKeyFor } from '../../learning/engine/session.js'
+ import { seedFrom } from '../../learning/engine/variation.js'
+@@ -517,7 +517,11 @@
+     if (!text.trim()) return
+     const token = guardRef.current.begin()
+     if (token === null) return                // a submission is already in flight
+-    const independent = isIndependentEvidence({ step, assistanceUsed: fromSuggestion, correct: true })
++    // Typing back the model answer that is on screen is assisted, never
++    // independent evidence, whatever the scaffold level (copiesShownModel).
++    const shownModel = showsStepModelAnswer(step, scaffold, { unaidedAttempt, retry })
++      ? resolve(step.suggestionEn || '', vars) : ''
++    const independent = isIndependentEvidence({ step, assistanceUsed: fromSuggestion || copiesShownModel(text, shownModel), correct: true })
+     const turnContext = { linguaSaid: resolve(step.promptEn || step.sceneEn || '', vars) }
+ 
+     // Decide up front whether we will need Lingua, only to show a calm status.
+--- a/linguachat-frontend/src/components/identity/LanguageIdentity.jsx
++++ b/linguachat-frontend/src/components/identity/LanguageIdentity.jsx
+@@ -2,6 +2,9 @@
+ import { createPortal } from 'react-dom'
+ import { useApp } from '../../context/AppContext'
+ import { JourneyRail } from '../layout/JourneyRail'
++import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
++import { teachingHistory } from '../../learning/engine/teachingPolicy.js'
++import { labelKeyOfLevel, playableLevelId } from '../../learning/curriculum/levels.js'
+ import { LinguaAvatar } from '../ui/LinguaAvatar'
+ import { getLanguageOption, languageFromInput, searchLanguages } from '../../services/language'
+ import {
+@@ -173,16 +176,31 @@
+   }, [languageOpen])
+ 
+   const hasLocalProgress = localProgress.messagesSent > 0
+-  const confidence = localProgress.confidence || 0
+   const streak = localProgress.streak || 0
+-  const progressData = [45, 54, 62, Math.max(45, confidence - 5), confidence]
+-    .map((score, index) => ({ week: index === 4 ? t('progressNow') : `W${index + 1}`, score }))
++  /*
++   * Evidence, not a story: answers the learner produced on their own at the
++   * first attempt (no help, no retry), per week, from the teaching history the
++   * engine already keeps. The old bars were the constants 45, 54, 62 drawn
++   * for everybody.
++   */
++  const progressData = useMemo(() => {
++    const now = Date.now(), WEEK = 7 * 86400000
++    const counts = [0, 0, 0, 0, 0]
++    for (const x of teachingHistory(loadLearnerModel().teachingHistory)) {
++      if (!x.independent || x.assisted || x.retried || x.success !== true) continue
++      const weeksAgo = Math.floor((now - x.at) / WEEK)
++      if (weeksAgo >= 0 && weeksAgo < 5) counts[4 - weeksAgo] += 1
++    }
++    const max = Math.max(1, ...counts)
++    return counts.map((count, index) => ({ week: index === 4 ? t('progressNow') : String(index - 4), count, score: (count / max) * 100 }))
++  }, [t])
++  const independentThisWeek = progressData[4].count
++  const hasEvidence = progressData.some(d => d.count > 0)
+   const practicedTopics = hasLocalProgress && localProgress.topics.length
+     ? localProgress.topics
+     : profile.preferences?.goals || [profile.goal || 'Travel']
+   const currentMood = MOOD_COLORS.find(m => m.id === moodColor) || MOOD_COLORS[0]
+   const relationship = t(getRelationshipLabelKey(streak))
+-  const [confidenceSummaryBefore, confidenceSummaryAfter = ''] = t('confidenceSummary', { delta: confidence - 45 }).split('{percent}')
+   const currentLanguage = useMemo(() => getLanguageOption(nativeLanguageInfo), [nativeLanguageInfo])
+   const languageResults = useMemo(
+     () => searchLanguages(languageSearch, currentLanguage),
+@@ -295,7 +313,7 @@
+                   fontSize: 10, fontWeight: 700, background: 'var(--accent)',
+                   color: '#fff', padding: '2px 9px', borderRadius: 999,
+                 }}>
+-                  {profile.level || 'B1'}
++                  {t(labelKeyOfLevel(playableLevelId()) || 'preA1LevelBadge')}
+                 </span>
+                 <span style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>
+                   {profile.email || 'linguachat.user'}
+@@ -536,7 +554,7 @@
+         {/* Confidence evolution */}
+         <div className="rounded-2xl p-5 mb-5 animate-fade-up" style={{ animationDelay: '0.12s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
+           <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 16 }}>
+-            {t('confidenceEvolution')}
++            {t('evidenceWeeklyTitle')}
+           </p>
+           <div className="flex items-end gap-2" style={{ height: 80 }}>
+             {progressData.map((d, i) => (
+@@ -555,9 +573,7 @@
+             ))}
+           </div>
+           <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 12 }}>
+-            {confidenceSummaryBefore}
+-            <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{confidence}%</span>
+-            {confidenceSummaryAfter}
++            {hasEvidence ? t('evidenceWeeklySummary', { count: independentThisWeek }) : t('evidenceWeeklyEmpty')}
+           </p>
+         </div>
+ 
+--- a/linguachat-frontend/src/context/AppContext.jsx
++++ b/linguachat-frontend/src/context/AppContext.jsx
+@@ -34,6 +34,7 @@
+   saveStoredMessages,
+   startStoredConversation,
+ } from '../services/localProgress'
++import { ownKey, WRITER_SEPARATOR } from '../services/writerKeys.js'
+ import { translate, loadLocale, isLocaleReady } from '../i18n/translations'
+ import { loadChatAppearance, saveChatAppearance } from '../services/chatAppearance'
+ import {
+@@ -513,11 +514,19 @@
+   // that storage does not, so both tabs converge without losing either side.
+   // Reads go through the same captured lease, so a revoked tab hears nothing.
+   useEffect(() => {
++    // Each tab writes its own copy (`<key>~w~<writer>`); any of them may change.
+     const watched = ['lc2-local-progress', 'lc2-chat-messages', 'lc2-chat-epoch']
+     const onStorage = event => {
+-      if (event.key !== null && !watched.some(key => event.key === key || event.key.endsWith(':' + key))) return
++      if (event.key !== null && !watched.some(key => event.key === key || event.key.endsWith(':' + key)
++        || event.key.includes(':' + key + WRITER_SEPARATOR))) return
+       const access = passiveStorageAccessRef.current
+       if (!access.valid()) return
++      // Another tab removed this tab's own copy while tidying up: write it
++      // again by re-publishing the same state through the passive writers.
++      if (event.newValue === null && event.key?.endsWith(ownKey('lc2-local-progress')))
++        setLocalProgress(previous => access.valid() ? { ...previous } : previous)
++      if (event.newValue === null && event.key?.endsWith(ownKey('lc2-chat-messages')))
++        setMessages(previous => access.valid() ? [...previous] : previous)
+       const progress = readStoredProgress({ access })
+       if (progress) setLocalProgress(previous => access.valid() ? mergeLocalProgress(previous, progress) : previous)
+       const conversation = readStoredConversation({ access })
+@@ -1682,9 +1691,9 @@
+       if (!chatStillCurrent()) return
+ 
+       setConnectionNotice(prev => chatStillCurrent() ? response.connectionMessage : prev)
+-      setMemoryNotice(prev => chatStillCurrent() ? (response.correction
+-        ? 'Your recent corrections are saved on this device.'
+-        : "I'll remember what we practiced today.") : prev)
++      setMemoryNotice(prev => chatStillCurrent()
++        ? translate(interfaceLanguageInfo.base, response.correction ? 'memoryNoticeCorrections' : 'memoryNoticePractice')
++        : prev)
+       setLocalProgress(previous => chatStillCurrent() ? recordPractice(previous, {
+         userMessage: text.trim(),
+         response,
+--- a/linguachat-frontend/src/i18n/locales/ar.js
++++ b/linguachat-frontend/src/i18n/locales/ar.js
+@@ -555,6 +555,19 @@
+   authStorageUnavailable: 'لا يسمح هذا المتصفح لـ LinguaChat بقراءة بياناته المحفوظة (مثلًا في نافذة خاصة أو عند حظر تخزين الموقع). اسمح بالتخزين لهذا الموقع، ثم سجّل الدخول مرة أخرى.',
+   authLocalDataUnreadable: 'تعذّرت قراءة بعض البيانات المحفوظة على هذا الجهاز بأمان. احتفظنا بها دون تغيير وسجّلنا خروجك لحمايتها. سجّل الدخول مرة أخرى.',
+   profileRecoveredNotice: 'تعذّرت قراءة الملف الشخصي المحفوظ على هذا الجهاز. احتفظنا بنسخة منه، ويستمر الإعداد من آخر خطوة صالحة. تقدّمك وكلماتك وتفضيلاتك في أمان.',
++  chatOfflineNotice: 'خدمة التدريس في Lingua غير متاحة الآن. تبقى رسائلك هنا، ولن يُراجَع شيء حتى تعود الخدمة.',
++  evidenceWeeklyTitle: 'إجابات بمفردك، أسبوعيًّا',
++  evidenceWeeklySummary: 'أجبتَ بمفردك هذا الأسبوع من المحاولة الأولى: {count}',
++  evidenceWeeklyEmpty: 'لا يوجد تدريب كافٍ بعد لإظهار اتجاه. ستظهر هنا الإجابات التي تقدّمها بمفردك.',
++  memoryNoticeCorrections: 'تصحيحاتك الأخيرة محفوظة على هذا الجهاز.',
++  memoryNoticePractice: 'سأتذكّر ما تدرّبنا عليه اليوم.',
++  actionComplete: 'أكمل',
++  actionAnswer: 'أجب',
++  actionRewrite: 'أعد الكتابة',
++  actionChoose: 'اختر',
++  actionAskBack: 'اسأل بدورك',
++  actionUseWord: 'استخدم الكلمة',
++  actionFillBlank: 'املأ الفراغ',
+   confirmEmailTitle: 'أكّد بريدك الإلكتروني',
+   confirmEmailText: 'أرسلنا رابط تأكيد إلى {email}. افتحه لتفعيل حسابك.',
+   resendConfirmation: 'إعادة إرسال رسالة التأكيد',
+--- a/linguachat-frontend/src/i18n/locales/de.js
++++ b/linguachat-frontend/src/i18n/locales/de.js
+@@ -551,6 +551,19 @@
+   authStorageUnavailable: 'Dieser Browser erlaubt LinguaChat nicht, gespeicherte Daten zu lesen (zum Beispiel in einem privaten Fenster oder wenn der Website-Speicher blockiert ist). Erlaube den Speicher für diese Website und melde dich erneut an.',
+   authLocalDataUnreadable: 'Einige auf diesem Gerät gespeicherte Daten konnten nicht sicher gelesen werden. Sie wurden unverändert aufbewahrt, und wir haben dich zu ihrem Schutz abgemeldet. Melde dich erneut an.',
+   profileRecoveredNotice: 'Wir konnten das auf diesem Gerät gespeicherte Profil nicht lesen. Eine Kopie wurde aufbewahrt, und die Einrichtung geht bei deinem letzten gültigen Schritt weiter. Dein Fortschritt, deine Wörter und deine Einstellungen sind sicher.',
++  chatOfflineNotice: 'Der Tutordienst von Lingua ist gerade nicht erreichbar. Deine Nachrichten bleiben hier; bis er zurück ist, wird nichts geprüft.',
++  evidenceWeeklyTitle: 'Selbstständige Antworten pro Woche',
++  evidenceWeeklySummary: 'Diese Woche selbstständig beim ersten Versuch beantwortet: {count}',
++  evidenceWeeklyEmpty: 'Noch nicht genug Übung, um einen Verlauf zu zeigen. Antworten, die du selbstständig gibst, erscheinen hier.',
++  memoryNoticeCorrections: 'Deine letzten Korrekturen sind auf diesem Gerät gespeichert.',
++  memoryNoticePractice: 'Ich merke mir, was wir heute geübt haben.',
++  actionComplete: 'Ergänze',
++  actionAnswer: 'Antworte',
++  actionRewrite: 'Schreib neu',
++  actionChoose: 'Wähle',
++  actionAskBack: 'Frag zurück',
++  actionUseWord: 'Nutze das Wort',
++  actionFillBlank: 'Füll die Lücke',
+   confirmEmailTitle: 'Bestätige deine E-Mail-Adresse',
+   confirmEmailText: 'Wir haben einen Bestätigungslink an {email} gesendet. Öffne ihn, um dein Konto zu aktivieren.',
+   resendConfirmation: 'Bestätigungs-E-Mail erneut senden',
+--- a/linguachat-frontend/src/i18n/locales/es.js
++++ b/linguachat-frontend/src/i18n/locales/es.js
+@@ -620,6 +620,19 @@
+   authStorageUnavailable: 'Este navegador no permite que LinguaChat lea sus datos guardados (por ejemplo, en una ventana privada o con el almacenamiento del sitio bloqueado). Permite el almacenamiento para este sitio y vuelve a iniciar sesión.',
+   authLocalDataUnreadable: 'Algunos datos guardados en este dispositivo no se pudieron leer de forma segura. Se conservaron sin cambios y cerramos tu sesión para protegerlos. Vuelve a iniciar sesión.',
+   profileRecoveredNotice: 'No pudimos leer el perfil guardado en este dispositivo. Guardamos una copia y la configuración continúa desde tu último paso válido. Tu progreso, tus palabras y tus preferencias están a salvo.',
++  chatOfflineNotice: 'El servicio de tutoría de Lingua no está disponible en este momento. Tus mensajes se quedan aquí; no se revisa nada hasta que vuelva.',
++  evidenceWeeklyTitle: 'Respuestas por tu cuenta, por semana',
++  evidenceWeeklySummary: 'Respondidas por tu cuenta esta semana, al primer intento: {count}',
++  evidenceWeeklyEmpty: 'Todavía no hay práctica suficiente para mostrar una tendencia. Aquí aparecerán las respuestas que des por tu cuenta.',
++  memoryNoticeCorrections: 'Tus correcciones recientes se guardan en este dispositivo.',
++  memoryNoticePractice: 'Recordaré lo que practicamos hoy.',
++  actionComplete: 'Completa',
++  actionAnswer: 'Responde',
++  actionRewrite: 'Reescribe',
++  actionChoose: 'Elige',
++  actionAskBack: 'Pregunta tú',
++  actionUseWord: 'Usa la palabra',
++  actionFillBlank: 'Completa el espacio',
+   confirmEmailTitle: 'Confirma tu correo',
+   confirmEmailText: 'Te enviamos un enlace a {email}. Ábrelo para activar tu cuenta.',
+   resendConfirmation: 'Reenviar correo de confirmación',
+--- a/linguachat-frontend/src/i18n/locales/fr.js
++++ b/linguachat-frontend/src/i18n/locales/fr.js
+@@ -551,6 +551,19 @@
+   authStorageUnavailable: 'Ce navigateur n’autorise pas LinguaChat à lire ses données enregistrées (par exemple en navigation privée ou si le stockage du site est bloqué). Autorisez le stockage pour ce site, puis reconnectez-vous.',
+   authLocalDataUnreadable: 'Certaines données enregistrées sur cet appareil n’ont pas pu être lues en toute sécurité. Elles ont été conservées telles quelles et vous avez été déconnecté pour les protéger. Reconnectez-vous.',
+   profileRecoveredNotice: 'Nous n’avons pas pu lire le profil enregistré sur cet appareil. Une copie a été conservée et la configuration reprend à votre dernière étape valide. Vos progrès, vos mots et vos préférences sont préservés.',
++  chatOfflineNotice: 'Le service de tutorat de Lingua est indisponible pour le moment. Vos messages restent ici ; rien n’est vérifié avant son retour.',
++  evidenceWeeklyTitle: 'Réponses en autonomie, par semaine',
++  evidenceWeeklySummary: 'Réponses en autonomie cette semaine, du premier coup : {count}',
++  evidenceWeeklyEmpty: 'Pas encore assez de pratique pour montrer une tendance. Les réponses que vous donnez seul·e apparaîtront ici.',
++  memoryNoticeCorrections: 'Vos corrections récentes sont enregistrées sur cet appareil.',
++  memoryNoticePractice: 'Je me souviendrai de ce que nous avons pratiqué aujourd’hui.',
++  actionComplete: 'Complétez',
++  actionAnswer: 'Répondez',
++  actionRewrite: 'Réécrivez',
++  actionChoose: 'Choisissez',
++  actionAskBack: 'Posez une question',
++  actionUseWord: 'Utilisez le mot',
++  actionFillBlank: 'Complétez le trou',
+   confirmEmailTitle: 'Confirmez votre e-mail',
+   confirmEmailText: 'Nous avons envoyé un lien de confirmation à {email}. Ouvrez-le pour activer votre compte.',
+   resendConfirmation: 'Renvoyer l’e-mail de confirmation',
+--- a/linguachat-frontend/src/i18n/locales/it.js
++++ b/linguachat-frontend/src/i18n/locales/it.js
+@@ -551,6 +551,19 @@
+   authStorageUnavailable: 'Questo browser non consente a LinguaChat di leggere i dati salvati (ad esempio in una finestra privata o con l’archiviazione del sito bloccata). Consenti l’archiviazione per questo sito e accedi di nuovo.',
+   authLocalDataUnreadable: 'Non è stato possibile leggere in modo sicuro alcuni dati salvati su questo dispositivo. Li abbiamo conservati senza modifiche e abbiamo chiuso la sessione per proteggerli. Accedi di nuovo.',
+   profileRecoveredNotice: 'Non siamo riusciti a leggere il profilo salvato su questo dispositivo. Ne abbiamo conservato una copia e la configurazione riprende dal tuo ultimo passaggio valido. I tuoi progressi, le tue parole e le tue preferenze sono al sicuro.',
++  chatOfflineNotice: 'Il servizio di tutoraggio di Lingua non è raggiungibile al momento. I tuoi messaggi restano qui; nulla viene controllato finché non torna.',
++  evidenceWeeklyTitle: 'Risposte in autonomia, per settimana',
++  evidenceWeeklySummary: 'Risposte date in autonomia questa settimana, al primo tentativo: {count}',
++  evidenceWeeklyEmpty: 'Non c’è ancora abbastanza pratica per mostrare una tendenza. Qui compariranno le risposte che dai in autonomia.',
++  memoryNoticeCorrections: 'Le tue correzioni recenti sono salvate su questo dispositivo.',
++  memoryNoticePractice: 'Ricorderò cosa abbiamo praticato oggi.',
++  actionComplete: 'Completa',
++  actionAnswer: 'Rispondi',
++  actionRewrite: 'Riscrivi',
++  actionChoose: 'Scegli',
++  actionAskBack: 'Fai una domanda',
++  actionUseWord: 'Usa la parola',
++  actionFillBlank: 'Completa lo spazio',
+   confirmEmailTitle: 'Conferma la tua email',
+   confirmEmailText: 'Abbiamo inviato un link di conferma a {email}. Aprilo per attivare il tuo account.',
+   resendConfirmation: 'Invia di nuovo l’email di conferma',
+--- a/linguachat-frontend/src/i18n/locales/ja.js
++++ b/linguachat-frontend/src/i18n/locales/ja.js
+@@ -550,6 +550,19 @@
+   authStorageUnavailable: 'このブラウザでは、LinguaChat が保存データを読み込めません（プライベートウィンドウや、サイトの保存領域がブロックされている場合など）。このサイトの保存を許可してから、もう一度ログインしてください。',
+   authLocalDataUnreadable: 'この端末に保存されている一部のデータを安全に読み込めませんでした。データは変更せずに保管し、保護のためにログアウトしました。もう一度ログインしてください。',
+   profileRecoveredNotice: 'この端末に保存されているプロフィールを読み込めませんでした。コピーを保管し、最後の有効なステップから設定を再開します。学習の進み具合、単語、設定はそのまま残っています。',
++  chatOfflineNotice: '現在 Lingua のチューターサービスに接続できません。メッセージはここに残りますが、復旧するまで添削は行われません。',
++  evidenceWeeklyTitle: '自力で答えた数（週ごと）',
++  evidenceWeeklySummary: '今週、最初の挑戦で自力で答えた数：{count}',
++  evidenceWeeklyEmpty: 'まだ傾向を示せるほどの練習がありません。自力で答えた内容がここに表示されます。',
++  memoryNoticeCorrections: '最近の添削はこの端末に保存されています。',
++  memoryNoticePractice: '今日練習したことを覚えておきますね。',
++  actionComplete: '完成させる',
++  actionAnswer: '答える',
++  actionRewrite: '書き直す',
++  actionChoose: '選ぶ',
++  actionAskBack: '質問を返す',
++  actionUseWord: '単語を使う',
++  actionFillBlank: '空欄を埋める',
+   confirmEmailTitle: 'メールアドレスを確認',
+   confirmEmailText: '{email} に確認リンクを送信しました。リンクを開いてアカウントを有効化してください。',
+   resendConfirmation: '確認メールを再送信',
+--- a/linguachat-frontend/src/i18n/locales/pt.js
++++ b/linguachat-frontend/src/i18n/locales/pt.js
+@@ -551,6 +551,19 @@
+   authStorageUnavailable: 'Este navegador não permite que o LinguaChat leia os dados salvos (por exemplo, numa janela privada ou com o armazenamento do site bloqueado). Permita o armazenamento para este site e entre novamente.',
+   authLocalDataUnreadable: 'Alguns dados salvos neste dispositivo não puderam ser lidos com segurança. Eles foram mantidos sem alterações e encerramos sua sessão para protegê-los. Entre novamente.',
+   profileRecoveredNotice: 'Não conseguimos ler o perfil salvo neste dispositivo. Guardamos uma cópia e a configuração continua a partir do seu último passo válido. Seu progresso, suas palavras e suas preferências estão seguros.',
++  chatOfflineNotice: 'O serviço de tutoria da Lingua não está disponível agora. Suas mensagens ficam aqui; nada é verificado até ele voltar.',
++  evidenceWeeklyTitle: 'Respostas por conta própria, por semana',
++  evidenceWeeklySummary: 'Respondidas por conta própria nesta semana, na primeira tentativa: {count}',
++  evidenceWeeklyEmpty: 'Ainda não há prática suficiente para mostrar uma tendência. As respostas que você der por conta própria aparecerão aqui.',
++  memoryNoticeCorrections: 'Suas correções recentes ficam salvas neste dispositivo.',
++  memoryNoticePractice: 'Vou lembrar o que praticamos hoje.',
++  actionComplete: 'Complete',
++  actionAnswer: 'Responda',
++  actionRewrite: 'Reescreva',
++  actionChoose: 'Escolha',
++  actionAskBack: 'Pergunte de volta',
++  actionUseWord: 'Use a palavra',
++  actionFillBlank: 'Preencha a lacuna',
+   confirmEmailTitle: 'Confirme seu e-mail',
+   confirmEmailText: 'Enviamos um link de confirmação para {email}. Abra-o para ativar sua conta.',
+   resendConfirmation: 'Reenviar e-mail de confirmação',
+--- a/linguachat-frontend/src/i18n/translations.js
++++ b/linguachat-frontend/src/i18n/translations.js
+@@ -1229,6 +1229,19 @@
+   authStorageUnavailable: 'This browser is not letting LinguaChat read its saved data (for example in a private window or with site storage blocked). Allow storage for this site, then sign in again.',
+   authLocalDataUnreadable: 'Some data saved on this device could not be read safely. It was kept unchanged and you were signed out to protect it. Please sign in again.',
+   profileRecoveredNotice: 'We could not read the profile saved on this device. A copy has been kept, and setup continues from your last valid step. Your progress, words and preferences are safe.',
++  chatOfflineNotice: "Lingua's tutor service is not reachable right now. Your messages stay here; nothing is checked until it is back.",
++  evidenceWeeklyTitle: 'Answers on your own, per week',
++  evidenceWeeklySummary: 'Answered on your own this week, at the first try: {count}',
++  evidenceWeeklyEmpty: 'Not enough practice yet to show a trend. Answers you give on your own will appear here.',
++  memoryNoticeCorrections: 'Your recent corrections are saved on this device.',
++  memoryNoticePractice: "I'll remember what we practiced today.",
++  actionComplete: 'Complete',
++  actionAnswer: 'Answer',
++  actionRewrite: 'Rewrite',
++  actionChoose: 'Choose',
++  actionAskBack: 'Ask back',
++  actionUseWord: 'Use the word',
++  actionFillBlank: 'Fill the gap',
+   confirmEmailTitle: 'Confirm your email',
+   confirmEmailText: 'We sent a confirmation link to {email}. Open it to activate your account.',
+   resendConfirmation: 'Resend confirmation email',
+--- a/linguachat-frontend/src/learning/engine/learnerModel.js
++++ b/linguachat-frontend/src/learning/engine/learnerModel.js
+@@ -1,5 +1,6 @@
+ import { teachingHistory, retentionProfile } from './teachingPolicy.js'
+ import { bindLearnerObject, captureLearnerAccess, captureLearnerObjectAccess } from '../../auth/localLease.js'
++import { ownKey, storedCopies, WRITER_IDLE_MS } from '../../services/writerKeys.js'
+ /*
+  * learnerModel (v2) — what the learner can do, with safe migration from v1.
+  *
+@@ -312,11 +313,32 @@
+   return m
+ }
+ 
++/*
++ * Every stored copy of the model, newest write first. Each tab writes its own
++ * copy (services/writerKeys.js); the shared key is an older copy. A copy that
++ * does not parse is skipped here and left untouched in storage.
++ */
++function modelCopies(access) {
++  const copies = []
++  for (const copy of storedCopies(access, KEY)) {
++    try {
++      const parsed = JSON.parse(copy.raw)
++      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) copies.push({ key: copy.key, parsed })
++    } catch { /* unreadable: ignored, never overwritten */ }
++  }
++  return copies.sort((a, b) => (Number(b.parsed.writtenAt) || 0) - (Number(a.parsed.writtenAt) || 0))
++}
++
+ export function loadLearnerModel() {
+   const access = captureLearnerAccess()
+   try {
+-    const stored = access.getItem(KEY)
+-    if (stored) return access.bind(migrate(JSON.parse(stored)))
++    const copies = modelCopies(access)
++    if (copies.length) {
++      // The newest copy is the base; the evidence of every other copy is merged in.
++      let model = migrate(copies[0].parsed)
++      for (const copy of copies.slice(1)) model = mergeModelCopy(model, copy.parsed)
++      return access.bind(model)
++    }
+   } catch {}
+   return access.bind(emptyModel())
+ }
+@@ -334,8 +356,12 @@
+  * both copies saw: never double-counted, never lost.
+  */
+ function mergeActivityEvidence(model, access) {
+-  let stored = null
+-  try { stored = JSON.parse(access.getItem(KEY) || 'null') } catch { return model }
++  let merged = model
++  for (const copy of modelCopies(access)) merged = mergeModelCopy(merged, copy.parsed)
++  return merged
++}
++
++function mergeModelCopy(model, stored) {
+   if (!stored || typeof stored !== 'object' || stored.version !== MODEL_VERSION) return model
+ 
+   const mine = model.activityPreferences || {}
+@@ -614,13 +640,26 @@
+   if (!access.valid()) return failure()
+   // Never reacquire/rebind to a new owner between validation, merge and write.
+   // Only expose merged data to the caller after a durable scoped commit.
++  // Written to this tab's own copy only: another tab with a stale view of
++  // storage can never overwrite it (services/writerKeys.js).
++  const key = ownKey(KEY)
+   try {
+-    const serialized = JSON.stringify({ ...merged, version: MODEL_VERSION })
+-    if (!access.setItem(KEY, serialized)) return failure()
+-    if (verified && (!access.valid() || access.getItem(KEY) !== serialized || !access.valid())) {
++    const serialized = JSON.stringify({ ...merged, version: MODEL_VERSION, writtenAt: Date.now() })
++    if (!access.setItem(key, serialized)) return failure()
++    if (verified && (!access.valid() || access.getItem(key) !== serialized || !access.valid())) {
+       return false
+     }
+   } catch { return failure() }
++  // Other copies idle for a while were just merged into this one: remove them
++  // so storage does not grow with every page load. Best effort only.
++  try {
++    for (const copy of storedCopies(access, KEY)) {
++      if (copy.key === key) continue
++      let writtenAt = 0
++      try { writtenAt = Number(JSON.parse(copy.raw)?.writtenAt) || 0 } catch { continue }
++      if (Date.now() - writtenAt >= WRITER_IDLE_MS && access.valid()) access.removeItem(copy.key)
++    }
++  } catch { /* Cleanup is optional. */ }
+   // keep the caller's own object in step with what was written
+   model.activityPreferences = merged.activityPreferences
+   model.canDo = merged.canDo
+--- a/linguachat-frontend/src/learning/engine/scaffolding.js
++++ b/linguachat-frontend/src/learning/engine/scaffolding.js
+@@ -136,6 +136,25 @@
+  * support level. Someone typing an unaided sentence while a suggestion sits on
+  * screen has produced it themselves, and the old rule threw that away.
+  */
++/*
++ * The reply is the model answer that was on screen, typed back.
++ *
++ * Producing your own sentence while a suggestion is visible is still your own
++ * production; copying the suggestion is not. Case, spacing, apostrophe style
++ * and punctuation are ignored. A reply that contains the whole model (three
++ * words or more) plus extra words counts as a copy too: the evidence part was
++ * handed over. Anything genuinely different is left to the evaluator.
++ */
++export function copiesShownModel(reply, shownModel) {
++  // Apostrophes are dropped, so "im" copies "I'm" just as "I'm" does.
++  const norm = value => String(value || '').toLowerCase().replace(/['’‘`]/g, '')
++    .replace(/[^\p{L}\p{N} ]+/gu, ' ').replace(/\s+/g, ' ').trim()
++  const a = norm(reply), b = norm(shownModel)
++  if (!a || !b) return false
++  if (a === b) return true
++  return b.split(' ').length >= 3 && ` ${a} `.includes(` ${b} `)
++}
++
+ export function isIndependentEvidence({ step, assistanceUsed = false, correct = true }) {
+   if (!correct) return false
+   if (assistanceUsed) return false
+--- a/linguachat-frontend/src/learning/engine/teachingPolicy.js
++++ b/linguachat-frontend/src/learning/engine/teachingPolicy.js
+@@ -29,9 +29,11 @@
+   }
+   return candidates.map(format => {
+     const samples = outcomes[format].slice(-12)
++    const successes = samples.filter(x => x.success).length
+     return { format, count: samples.length,
+-      retention: (1 + samples.filter(x => x.success).length) / (2 + samples.length),
+-      transfer: samples.filter(x => x.transfer && x.success).length }
++      retention: (1 + successes) / (2 + samples.length),
++      transfer: samples.filter(x => x.transfer && x.success).length,
++      uncertainty: evidenceSummary(successes, samples.length - successes) }
+   })
+ }
+ 
+@@ -61,13 +63,79 @@
+   return { samples: recent.length, lastAt: last?.at ?? null, lastSuccess: last?.success ?? null, successes,
+     priority: !last ? 0 : !last.success ? 2 : successes >= 3 ? -1 : 0 }
+ }
++/*
++ * How much the evidence supports a success rate: a Beta(1+s, 1+f) summary with
++ * a ±2 sd band. A product heuristic for "how sure may we sound", not a validated
++ * psychometric estimate. Fewer than three observations is never enough to claim
++ * anything; a wide band is reported as uncertain rather than rounded to a verdict.
++ */
++export function evidenceSummary(successes, failures) {
++  const s = Math.max(0, successes | 0), f = Math.max(0, failures | 0)
++  const a = 1 + s, b = 1 + f, n = s + f
++  const mean = a / (a + b)
++  const sd = Math.sqrt((a * b) / ((a + b) ** 2 * (a + b + 1)))
++  const low = Math.max(0, mean - 2 * sd), high = Math.min(1, mean + 2 * sd)
++  return { samples: n, successes: s, mean, low, high,
++    status: n < 3 ? 'insufficient' : high - low > 0.5 ? 'uncertain' : 'supported' }
++}
++
++/*
++ * The method behind the last two later-retrieval probes failed both times: try
++ * the other one. Reversible by construction — the next probes judge the switch
++ * the same way, and a recovered method is chosen again by the estimates.
++ */
++function failedTwice(history, dimension) {
++  const probes = retentionProbes(history).filter(x => x.prior[dimension] !== undefined).slice(-2)
++  if (probes.length < 2 || probes.some(x => x.probe.success)) return null
++  return probes[0].prior[dimension] === probes[1].prior[dimension] ? probes[1].prior[dimension] : null
++}
++
+ export function chooseTeaching(model, capability, candidates, seed = '', dimension = 'format') {
+   if (!capability || candidates.length < 2) return null
+   const estimates = teachingEstimates(model, capability, candidates, dimension)
+-  if (!estimates.some(x => x.count >= 3)) return null
++  if (!estimates.some(x => x.count >= 3)) {
++    // Too little evidence to rank methods. The one thing already worth acting
++    // on: the same method failed the last two later-retrieval probes.
++    const history = teachingHistory(model?.teachingHistory).filter(x => x.capability === capability)
++    const failing = failedTwice(history, dimension)
++    if (!failing || !candidates.includes(failing)) return null
++    const others = candidates.filter(x => x !== failing)
++    return { format: others[seedFrom(String(seed)) % others.length], reason: 'switch_after_failure', failing, estimates }
++  }
+   const n = seedFrom(String(seed))
+   // Exploration remains reachable even after strong early evidence.
+   if (n % 5 === 0) return { format: candidates[Math.floor(n / 5) % candidates.length], reason: 'exploration', estimates }
+   const ranked = [...estimates].sort((a, b) => b.retention - a.retention || b.transfer - a.transfer || a.count - b.count)
+   return { format: ranked[0].format, reason: 'later-independent-retrieval', estimates }
+ }
++
++/*
++ * What has actually been demonstrated for one capability, per skill.
++ *
++ * Only independent first attempts count, and only one per learning-day (the
++ * same retention probes the estimates use). Written work and listening are
++ * kept apart: reading a sentence correctly says nothing about hearing it.
++ * Speaking and pronunciation are never assessed by this app (no microphone),
++ * so they are reported as `not_assessed`, never inferred from text.
++ * `delayed` counts successes in a later session than the first practice;
++ * `transfer` those in a context never used before for this capability.
++ */
++export function skillEvidence(model, capability, atMs = Date.now()) {
++  const history = teachingHistory(model?.teachingHistory).filter(x => x.capability === capability && x.at <= atMs)
++  const probes = retentionProbes(history)
++  const skillOf = x => (x.channel === 'listening' || x.listening ? 'listening' : 'written')
++  const out = {}
++  for (const skill of ['written', 'listening']) {
++    const own = probes.filter(x => skillOf(x.probe) === skill)
++    const ok = own.filter(x => x.probe.success)
++    let transfer = 0
++    for (const { probe, index } of own) {
++      const earlier = history.slice(0, index)
++      if (probe.success && probe.context && !earlier.some(x => x.context === probe.context)) transfer++
++    }
++    out[skill] = { ...evidenceSummary(ok.length, own.length - ok.length), delayed: ok.length, transfer }
++  }
++  out.speaking = { status: 'not_assessed' }
++  out.pronunciation = { status: 'not_assessed' }
++  return out
++}
+--- a/linguachat-frontend/src/services/api.js
++++ b/linguachat-frontend/src/services/api.js
+@@ -1,275 +1,20 @@
++import { translate } from '../i18n/translations'
++
+ const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : '/api')
+ const VALID_MODES = new Set(['chat', 'translation', 'correction'])
+-const CONNECTION_MESSAGE = 'Lingua tuvo un problema de conexion. Puedes seguir practicando en modo local.'
+-
+-/* ─── Spanish detection ─── */
+-const SPANISH_WORDS = /\b(como se dice|que significa|como|quiero|viajar|hablar|necesito|puedo|tengo|hace|gracias|por favor|bueno|malo|mucho|poco|hola|adios|ayuda|dinero|trabajo|familia|comida|agua|casa|tiempo|amigo|amor|feliz|triste)\b/i
+-const SPANISH_CHARS = /[áéíóúüñ¿¡]/
+-
+-/* ─── Translation map ─── */
+-const TRANSLATIONS = {
+-  'queso':                  'cheese',
+-  'agua':                   'water',
+-  'cafe':                   'coffee',
+-  'comida':                 'food',
+-  'pan':                    'bread',
+-  'leche':                  'milk',
+-  'arroz':                  'rice',
+-  'pollo':                  'chicken',
+-  'manzana':                'apple',
+-  'quiero viajar':          'I want to travel',
+-  'quiero comer':           'I want to eat',
+-  'me llamo':               'My name is',
+-  'no entiendo':            'I do not understand',
+-  'necesito ayuda':         'I need help',
+-  'gracias por todo':       'Thank you for everything',
+-  'cuanto cuesta':          'How much does it cost',
+-  'donde esta':             'Where is',
+-  'como te llamas':         'What is your name',
+-  'estoy cansado':          'I am tired',
+-  'tengo hambre':           'I am hungry',
+-  'quiero aprender ingles': 'I want to learn English',
+-  'buenos dias':            'Good morning',
+-  'buenas noches':          'Good night',
+-}
+-
+-const EN_TO_ES = {
+-  cheese: 'queso',
+-  water: 'agua',
+-  coffee: 'cafe',
+-  food: 'comida',
+-  bread: 'pan',
+-  milk: 'leche',
+-  rice: 'arroz',
+-  chicken: 'pollo',
+-  apple: 'manzana',
+-}
+-
+-// Lingua is the only tutor. `active_companion` is still sent for backend
+-// compatibility, but the display name is always Lingua.
+-function companionName() {
+-  return 'Lingua'
+-}
+ 
+-/* ─── Error patterns ─── */
+-const PATTERNS = [
+-  {
+-    test: /\bhow (you|u) are\b/i,
+-    correction: 'How are you?',
+-    why: 'En esta pregunta el orden natural es: How + are + you.',
+-    suggestion: "I'm doing great, thanks! What about you?",
+-  },
+-  {
+-    test: /\bme happy today\b/i,
+-    correction: "I'm happy today.",
+-    why: "Usa I'm antes de una emocion.",
+-    suggestion: "I'm happy today because I am learning.",
+-  },
+-  {
+-    test: /\bi am (boring|bored today|boring today)\b/i,
+-    correction: 'I feel bored.',
+-    why: 'Bored describe como se siente una persona. Boring describe una cosa.',
+-    suggestion: 'I feel bored today. The weather is so boring!',
+-  },
+-  {
+-    test: /\bi (don't|dont|do not) knows?\b/i,
+-    correction: "I don't know.",
+-    why: 'Con I usamos don\'t para negar.',
+-    suggestion: "I don't know the answer. Can you explain it?",
+-  },
+-  {
+-    test: /\bi (went|go) there yesterday\b/i,
+-    correction: 'I went there yesterday.',
+-    why: 'Yesterday pide pasado. Went es el pasado de go.',
+-    suggestion: 'I went to the market yesterday and bought vegetables.',
+-  },
+-  {
+-    test: /\bi want (go|eat|travel|learn|practice)\b/i,
+-    correction: text => text.replace(/i want (\w+)/i, (_, v) => `I want to ${v}`),
+-    why: 'Despues de want usa to + verbo.',
+-    suggestion: 'I want to travel to London next summer.',
+-  },
+-  {
+-    test: /\bi no (like|have|want|know|understand)\b/i,
+-    correction: text => text.replace(/i no (\w+)/i, (_, v) => `I don't ${v}`),
+-    why: 'Para negar una accion, usa don\'t o doesn\'t.',
+-    suggestion: "I don't like spicy food. What about you?",
+-  },
+-  {
+-    test: /\bshe (have|go|like|work|live)\b/i,
+-    correction: text => text.replace(/she (\w+)/i, (_, v) => `she ${v}s`),
+-    why: 'Con she, he o it, el verbo suele llevar -s.',
+-    suggestion: 'She works at a hospital. She goes there every morning.',
+-  },
+-]
+-
+-/* ─── Natural responses by mode ─── */
+-const RESPONSES = {
+-  casual: [
+-    "Buen intento. Mira este ajuste breve.",
+-    "Vas bien. Te dejo una correccion util.",
+-    "Buena idea. Solo ajustemos la frase.",
+-    "Eso sirve para practicar. Probemos una version mejor.",
+-    "Bien. Hagamos que suene mas natural.",
+-  ],
+-  strict: [
+-    "Revisa este patron. Es importante.",
+-    "Casi. Este ajuste cambia el sentido.",
+-    "Buen intento. Corrijamos lo esencial.",
+-    "Este patron aparece mucho.",
+-    "Aqui esta lo que conviene ajustar.",
+-  ],
+-  friendly: [
+-    "Muy buen intento. Solo un ajuste pequeno.",
+-    "Me gusta que lo intentaste. Mira esta version.",
+-    "Casi perfecto. Ajustemos una cosa.",
+-    "Bien. Te dejo una nota corta.",
+-    "Estas cerca. Mira la correccion.",
+-  ],
+-  interview: [
+-    "Para contexto profesional, usa esta version.",
+-    "Buena estructura. Ajustemos el tono formal.",
+-    "Casual esta bien; para entrevista, mejor esta frase.",
+-    "Buen intento. Esta version es mas precisa.",
+-    "Buena respuesta. La version formal cambia un poco.",
+-  ],
+-  default: [
+-    "Buen intento. Te dejo una nota corta.",
+-    "Buena frase. Ajustemos una cosa.",
+-    "Vas por buen camino. Mira la nota.",
+-    "Sigue practicando. Estas cerca.",
+-    "Buen intento. Asi suena mejor.",
+-  ],
+-}
+-
+-function pickResponse(mode) {
+-  const pool = RESPONSES[mode?.toLowerCase()] || RESPONSES.default
+-  return pool[Math.floor(Math.random() * pool.length)]
+-}
++/*
++ * When the tutor service cannot be reached, Lingua says so and checks nothing.
++ * The old offline fallback answered in Spanish for every learner and called
++ * unchecked sentences "correct": no claim about the learner's English may be
++ * made without an evaluation behind it. The notice is in the learner's language.
++ */
++const OFFLINE_REPLY = "I can't reach my tutor service right now, so I can't check that sentence. Please try again in a moment."
+ 
+ function randomDelay(min = 1200, max = 2200) {
+   return new Promise(r => setTimeout(r, min + Math.random() * (max - min)))
+ }
+ 
+-function normalizeForIntent(text) {
+-  return text
+-    .normalize('NFD')
+-    .replace(/[\u0300-\u036f]/g, '')
+-    .toLowerCase()
+-    .trim()
+-    .replace(/[¿?."'“”‘’:;!]+/g, '')
+-    .replace(/\s+/g, ' ')
+-}
+-
+-function extractTranslationIntent(text) {
+-  const normalized = normalizeForIntent(text)
+-  const patterns = [
+-    [/^(?:como se dice|como digo|traduce|traducir)\s+(.+)$/, 'to_en'],
+-    [/^(?:how do you say|how to say|say)\s+(.+?)(?:\s+in english)?$/, 'to_en'],
+-    [/^(?:que significa)\s+(.+)$/, 'from_en'],
+-    [/^what does\s+(.+?)\s+mean$/, 'from_en'],
+-  ]
+-  for (const [pattern, direction] of patterns) {
+-    const match = normalized.match(pattern)
+-    if (match?.[1]) return { phrase: match[1].trim(), direction }
+-  }
+-  return null
+-}
+-
+-function getMockResponse({ message, mode, tutorPreferences = {}, activeCompanion = 'lingua' }) {
+-  const text = message.trim()
+-  const companion = companionName(activeCompanion)
+-
+-  /* Spanish translation request */
+-  const translationIntent = extractTranslationIntent(text)
+-  if (translationIntent) {
+-    const translation = translationIntent.direction === 'from_en'
+-      ? EN_TO_ES[translationIntent.phrase]
+-      : TRANSLATIONS[translationIntent.phrase]
+-    if (!translation) {
+-      return {
+-        message: `${companion}: buena pregunta. Con el backend activo puedo traducirlo mejor.`,
+-        suggestion: 'Practica esta pregunta: How do you say ___ in English?',
+-        learning_action: {
+-          type: 'fill_blank',
+-          prompt: 'How do you say ___ in English?',
+-          options: null,
+-        },
+-        focus: 'Traduccion util',
+-      }
+-    }
+-    const targetWord = translationIntent.direction === 'from_en' ? translationIntent.phrase : translation
+-    return {
+-      reply: translationIntent.direction === 'from_en'
+-        ? `"${translationIntent.phrase}" significa "${translation}".`
+-        : `"${translationIntent.phrase}" se dice "${translation}" en ingles.`,
+-      explanation: `Ejemplo: I like ${targetWord}.`,
+-      suggestion: translationIntent.direction === 'from_en'
+-        ? `Ahora escribe una frase con ${targetWord}.`
+-        : 'Ahora intentalo tu: I like _____.',
+-      mode: 'translation',
+-      learning_action: {
+-        type: 'fill_blank',
+-        prompt: 'I like _____.',
+-        options: null,
+-        expected: targetWord,
+-      },
+-      focus: 'Traduccion util',
+-      word_to_use: targetWord,
+-    }
+-  }
+-
+-  /* Pattern matching */
+-  for (const p of PATTERNS) {
+-    if (p.test.test(text)) {
+-      const correction = typeof p.correction === 'function'
+-        ? p.correction(text)
+-        : p.correction
+-      return {
+-        message: tutorPreferences.correction_style === 'strict'
+-          ? 'Revisemos la frase con cuidado.'
+-          : pickResponse(mode),
+-        correction,
+-        why: p.why,
+-        suggestion: p.suggestion,
+-        learning_action: {
+-          type: 'rewrite',
+-          prompt: correction === 'How are you?'
+-            ? "Ahora responde: \"I'm good, thanks. And you?\""
+-            : correction === "I'm happy today."
+-              ? "Agrega una razon: \"I'm happy today because ____.\""
+-              : `Escribela otra vez con: "${correction}"`,
+-          options: null,
+-        },
+-        focus: 'Orden de palabras',
+-      }
+-    }
+-  }
+-
+-  /* Clean sentence - positive feedback */
+-  const positives = [
+-    "Suena natural. Sigamos con una frase mas.",
+-    "Bien escrito. No hace falta corregir esa frase.",
+-    "Muy bien. Ahora puedes agregar un detalle.",
+-    "Correcto. Practiquemos una respuesta un poco mas completa.",
+-    "Esta frase esta bien. Buen punto de partida.",
+-    "Bien dicho. Una frase clara tambien cuenta.",
+-  ]
+-  return {
+-    message: positives[Math.floor(Math.random() * positives.length)],
+-    suggestion: text.length < 30
+-      ? `Agrega una idea: "${text} because ____."`
+-      : null,
+-    learning_action: {
+-      type: 'ask_back',
+-      prompt: 'Haz una pregunta de vuelta sobre el mismo tema.',
+-      options: null,
+-    },
+-    focus: 'Conversacion natural',
+-    word_to_use: 'because',
+-  }
+-}
+-
+ /* ─── Public API ─── */
+ export function normalizeChatResponse(payload) {
+   const data = typeof payload === 'string' ? { reply: payload } : (payload || {})
+@@ -375,9 +120,9 @@
+   } catch {
+     await randomDelay(450, 850)
+     return {
+-      ...normalizeChatResponse(getMockResponse({ message, mode, tutorPreferences, activeCompanion })),
++      ...normalizeChatResponse({ reply: OFFLINE_REPLY, mode: 'chat' }),
+       isFallback: true,
+-      connectionMessage: CONNECTION_MESSAGE,
++      connectionMessage: translate(interfaceLanguage?.base || nativeLanguage?.base || 'en', 'chatOfflineNotice'),
+     }
+   }
+ }
+--- a/linguachat-frontend/src/services/localProgress.js
++++ b/linguachat-frontend/src/services/localProgress.js
+@@ -5,6 +5,7 @@
+   PROGRESS_VERSION, sameLedger, serializeLedger, snapshotFrom,
+ } from './progressLedger.js'
+ import { quarantineValue } from './storageQuarantine.js'
++import { ownKey, storedCopies, writerId, WRITER_IDLE_MS } from './writerKeys.js'
+ 
+ const STORAGE_KEYS = {
+   sessionId: 'lc2-session-id',
+@@ -20,11 +21,16 @@
+  * that two tabs of the same account can both save without erasing each other.
+  * The object the app holds is the totals it always read (xp, streak, topics,
+  * ...) plus `ledger`, the record those totals were folded from.
++ *
++ * Each tab writes only its own copy (see writerKeys.js) and reads the union of
++ * every copy, so no tab can overwrite what another tab saved, even when its
++ * view of storage is momentarily stale.
+  */
+ 
+ // The access the learner's own tab would capture, for the few unscoped callers.
+ const unscopedAccess = {
+   valid: () => true,
++  keys: () => localStorage.keys(),
+   getItem: key => localStorage.getItem(key),
+   setItem: (key, value) => { localStorage.setItem(key, value); return true },
+ }
+@@ -65,17 +71,40 @@
+  * copy fails this throws, so nothing replaces the only copy of the data.
+  */
+ export function mergeIntoStoredProgress(access, progress, now = Date.now()) {
+-  const raw = access.getItem(STORAGE_KEYS.progress)
+-  const stored = parseStoredProgress(raw)
+-  if (stored.unreadable && !quarantineValue(access, STORAGE_KEYS.progress, raw)) {
+-    throw new Error('Unreadable progress could not be preserved')
++  let merged = progress ? ledgerOf(progress) : null
++  for (const copy of storedCopies(access, STORAGE_KEYS.progress)) {
++    const stored = parseStoredProgress(copy.raw)
++    if (stored.unreadable) {
++      if (!quarantineValue(access, copy.key, copy.raw)) throw new Error('Unreadable progress could not be preserved')
++      continue
++    }
++    merged = mergeLedgers(merged, stored.ledger)
+   }
+-  const mine = progress ? ledgerOf(progress) : null
+-  return compactLedger(mergeLedgers(stored.ledger, mine) || createLedger(), now)
++  return compactLedger(merged || createLedger(), now)
+ }
+ 
++// This tab's copy: the ledger plus who wrote it and when (for cleanup).
+ export function serializeStoredProgress(ledger) {
+-  return JSON.stringify(serializeLedger(ledger))
++  return JSON.stringify({ ...serializeLedger(ledger), writer: writerId(), writtenAt: Date.now() })
++}
++
++/*
++ * Remove other writers' copies that add nothing to this tab's and have been
++ * idle for a while, so storage does not grow with every tab ever opened. Best
++ * effort: a failure here never fails the save that already succeeded.
++ */
++export function collectIdleCopies(access, base, addsNothing) {
++  try {
++    const own = ownKey(base)
++    for (const copy of storedCopies(access, base)) {
++      if (copy.key === own) continue
++      let parsed = null
++      try { parsed = JSON.parse(copy.raw) } catch { continue }
++      const idleFor = Date.now() - (Number.isFinite(parsed?.writtenAt) ? parsed.writtenAt : 0)
++      if (copy.key !== base && idleFor < WRITER_IDLE_MS) continue
++      if (addsNothing(parsed) && access.valid()) access.removeItem(copy.key)
++    }
++  } catch { /* Cleanup is optional. */ }
+ }
+ 
+ function conversationEpochAt(raw) {
+@@ -121,26 +150,26 @@
+  * The messages to write: storage merged with this copy. Unreadable stored
+  * bytes are quarantined first, as for progress.
+  */
++// A stored conversation copy: the shared key holds an array, a writer's copy
++// holds { writer, writtenAt, messages }. Null if it is neither.
++function messagesOf(parsed) {
++  if (Array.isArray(parsed)) return parsed
++  return Array.isArray(parsed?.messages) ? parsed.messages : null
++}
++
+ export function mergeIntoStoredMessages(access, messages) {
+   const epochAt = conversationEpochAt(access.getItem(STORAGE_KEYS.chatEpoch))
+-  const raw = access.getItem(STORAGE_KEYS.messages)
+-  let stored = []
+-  if (raw !== null) {
+-    try {
+-      stored = JSON.parse(raw)
+-      if (!Array.isArray(stored)) throw new Error('Not a conversation')
+-    } catch {
+-      if (!quarantineValue(access, STORAGE_KEYS.messages, raw)) throw new Error('Unreadable chat could not be preserved')
+-      stored = []
++  let merged = Array.isArray(messages) ? messages : []
++  for (const copy of storedCopies(access, STORAGE_KEYS.messages)) {
++    let stored = null
++    try { stored = messagesOf(JSON.parse(copy.raw)) } catch { stored = null }
++    if (!stored) {
++      if (!quarantineValue(access, copy.key, copy.raw)) throw new Error('Unreadable chat could not be preserved')
++      continue
+     }
++    merged = mergeMessageLists(stored, merged, epochAt)
+   }
+-  return mergeMessageLists(stored, messages, epochAt)
+-}
+-
+-function writeJSON(key, value) {
+-  try {
+-    localStorage.setItem(key, JSON.stringify(value))
+-  } catch {}
++  return mergeMessageLists([], merged, epochAt)
+ }
+ 
+ export function createSessionId({ access = null } = {}) {
+@@ -168,8 +197,7 @@
+ 
+ export function loadStoredMessages(welcomeMessage) {
+   try {
+-    const messages = mergeMessageLists(JSON.parse(localStorage.getItem(STORAGE_KEYS.messages) || '[]'), [],
+-      conversationEpochAt(localStorage.getItem(STORAGE_KEYS.chatEpoch)))
++    const messages = readStoredConversation({ access: unscopedAccess })?.messages || []
+     return messages.length ? messages : [welcomeMessage]
+   } catch {
+     return [welcomeMessage]
+@@ -183,16 +211,22 @@
+     // write must not look successful.
+     try {
+       if (!access.valid()) return false
+-      const serialized = JSON.stringify(mergeIntoStoredMessages(access, messages))
+-      if (!access.valid() || access.setItem(STORAGE_KEYS.messages, serialized) === false
+-        || !access.valid() || access.getItem(STORAGE_KEYS.messages) !== serialized) return false
++      const merged = mergeIntoStoredMessages(access, messages)
++      const key = ownKey(STORAGE_KEYS.messages)
++      const serialized = JSON.stringify({ writer: writerId(), writtenAt: Date.now(), messages: merged })
++      if (!access.valid() || access.setItem(key, serialized) === false
++        || !access.valid() || access.getItem(key) !== serialized) return false
++      const held = new Set(merged.map(messageKey))
++      const epochAt = conversationEpochAt(access.getItem(STORAGE_KEYS.chatEpoch))
++      collectIdleCopies(access, STORAGE_KEYS.messages, parsed => (messagesOf(parsed) || [])
++        .every(message => held.has(messageKey(message)) || (Number(message?.ts) || 0) < epochAt))
+       return access.valid()
+     } catch {
+       return false
+     }
+   }
+   // Keep the existing best-effort path for passive state persistence.
+-  try { writeJSON(STORAGE_KEYS.messages, mergeIntoStoredMessages(unscopedAccess, messages)) } catch {}
++  try { saveStoredMessages(messages, { access: unscopedAccess }) } catch {}
+ }
+ 
+ /*
+@@ -220,10 +254,13 @@
+ export function readStoredConversation({ access }) {
+   try {
+     if (!access.valid()) return null
+-    const raw = access.getItem(STORAGE_KEYS.messages)
+-    const messages = raw === null ? [] : JSON.parse(raw)
+-    if (!Array.isArray(messages)) return null
+     const epochAt = conversationEpochAt(access.getItem(STORAGE_KEYS.chatEpoch))
++    let messages = []
++    for (const copy of storedCopies(access, STORAGE_KEYS.messages)) {
++      let stored = null
++      try { stored = messagesOf(JSON.parse(copy.raw)) } catch { stored = null }
++      if (stored) messages = mergeMessageLists(stored, messages, epochAt)
++    }
+     return access.valid() ? { messages, epochAt } : null
+   } catch {
+     return null
+@@ -252,19 +289,28 @@
+ 
+ export function loadLocalProgress() {
+   try {
+-    const { ledger } = parseStoredProgress(localStorage.getItem(STORAGE_KEYS.progress))
+-    // Unreadable progress loads as empty in memory; the first save quarantines
+-    // the stored bytes before anything replaces them.
++    // Unreadable copies are left out in memory; the first save quarantines
++    // their bytes. Nothing replaces them.
++    const ledger = readStoredLedger(unscopedAccess)
+     if (ledger) return progressFromLedger({ ...ledger, base: { ...ledger.base, startedAt: ledger.base.startedAt ?? Date.now() } })
+   } catch {}
+   return createEmptyProgress()
+ }
+ 
+ /* What another tab saved, for the `storage` listener. Null if absent or unreadable. */
++function readStoredLedger(access) {
++  let merged = null
++  for (const copy of storedCopies(access, STORAGE_KEYS.progress)) {
++    const { ledger } = parseStoredProgress(copy.raw)
++    if (ledger) merged = mergeLedgers(merged, ledger)
++  }
++  return merged
++}
++
+ export function readStoredProgress({ access }) {
+   try {
+     if (!access.valid()) return null
+-    const { ledger } = parseStoredProgress(access.getItem(STORAGE_KEYS.progress))
++    const ledger = readStoredLedger(access)
+     return ledger && access.valid() ? progressFromLedger(ledger) : null
+   } catch {
+     return null
+@@ -284,15 +330,21 @@
+     // copy was read) and verify the write before reporting success.
+     try {
+       if (!access.valid()) return false
+-      const serialized = serializeStoredProgress(mergeIntoStoredProgress(access, progress))
+-      if (!access.valid() || access.setItem(STORAGE_KEYS.progress, serialized) === false
+-        || !access.valid() || access.getItem(STORAGE_KEYS.progress) !== serialized) return false
++      const ledger = mergeIntoStoredProgress(access, progress)
++      const key = ownKey(STORAGE_KEYS.progress)
++      const serialized = serializeStoredProgress(ledger)
++      if (!access.valid() || access.setItem(key, serialized) === false
++        || !access.valid() || access.getItem(key) !== serialized) return false
++      collectIdleCopies(access, STORAGE_KEYS.progress, parsed => {
++        const theirs = ledgerFromStored(parsed)
++        return Boolean(theirs) && sameLedger(mergeLedgers(ledger, theirs), ledger)
++      })
+       return access.valid()
+     } catch {
+       return false
+     }
+   }
+-  try { writeJSON(STORAGE_KEYS.progress, serializeLedger(mergeIntoStoredProgress(unscopedAccess, progress))) } catch {}
++  try { saveLocalProgress(progress, { access: unscopedAccess }) } catch {}
+ }
+ 
+ /*
+@@ -324,10 +376,14 @@
+ export function commitProgressEvent(event, { access }) {
+   try {
+     if (!access.valid()) return false
++    const key = ownKey(STORAGE_KEYS.progress)
+     const serialized = serializeStoredProgress(addEvent(mergeIntoStoredProgress(access, null), event))
+-    if (!access.valid() || access.setItem(STORAGE_KEYS.progress, serialized) === false || !access.valid()) return false
+-    const { ledger } = parseStoredProgress(access.getItem(STORAGE_KEYS.progress))
+-    return Boolean(ledger?.events.some(stored => stored.id === event.id)) && access.valid()
++    if (!access.valid() || access.setItem(key, serialized) === false || !access.valid()) return false
++    const { ledger } = parseStoredProgress(access.getItem(key))
++    // Already folded into the base (paid long ago) counts as committed: the
++    // caller must not retry forever, and nothing is paid twice.
++    const held = ledger?.events.some(stored => stored.id === event.id) || ledger?.base.foldedIds.includes(event.id)
++    return Boolean(held) && access.valid()
+   } catch {
+     return false
+   }
+--- a/linguachat-frontend/src/services/progressLedger.js
++++ b/linguachat-frontend/src/services/progressLedger.js
+@@ -35,6 +35,11 @@
+ export const LEDGER_HORIZON_MS = 7 * 86400000
+ export const LEDGER_MAX_EVENTS = 500
+ export const INITIAL_EPOCH = Object.freeze({ id: 'initial', at: 0 })
++// Ids of folded rewards that a retry could legitimately send again (episode
++// awards, daily bonuses). Their events leave the ledger when folded; their ids
++// must not, or the same reward re-sent later would be paid twice.
++export const FOLDED_IDS_MAX = 2000
++export const isStableEventId = id => /^(episode-award|session-bonus):/.test(id)
+ 
+ const EVENT_KINDS = new Set(['practice', 'mission', 'award', 'xp'])
+ 
+@@ -321,7 +326,7 @@
+ export function createLedger({ epoch = INITIAL_EPOCH, startedAt = Date.now(), snapshot = emptySnapshot() } = {}) {
+   return {
+     epoch: { ...epoch },
+-    base: { snapshot: sanitizeSnapshot(snapshot), startedAt, foldedBefore: 0, folded: 0 },
++    base: { snapshot: sanitizeSnapshot(snapshot), startedAt, foldedBefore: 0, folded: 0, foldedIds: [] },
+     events: [],
+   }
+ }
+@@ -350,6 +355,8 @@
+       startedAt: Number.isFinite(base.startedAt) ? base.startedAt : null,
+       foldedBefore: Math.max(0, finite(base.foldedBefore)),
+       folded: Math.max(0, finite(base.folded)),
++      foldedIds: Array.isArray(base.foldedIds)
++        ? base.foldedIds.filter(id => typeof id === 'string' && isStableEventId(id)).slice(-FOLDED_IDS_MAX) : [],
+     },
+     events: dedupe(value.events.map(sanitizeEvent).filter(Boolean)),
+   }
+@@ -389,9 +396,13 @@
+   if (!b) return a
+   const epoch = newerEpoch(a.epoch, b.epoch)
+   const sameEpoch = [a, b].filter(l => l.epoch.id === epoch.id && l.epoch.at === epoch.at)
+-  const base = sameEpoch.map(l => l.base).reduce(preferredBase)
++  const preferred = sameEpoch.map(l => l.base).reduce(preferredBase)
++  // A reward folded in either copy stays counted, whichever base is kept.
++  const foldedIds = [...new Set(sameEpoch.flatMap(l => l.base.foldedIds || []))].sort().slice(-FOLDED_IDS_MAX)
++  const base = { ...preferred, foldedIds }
++  const folded = new Set(foldedIds)
+   const events = dedupe([...a.events, ...b.events])
+-    .filter(event => event.at >= epoch.at && event.at >= base.foldedBefore)
++    .filter(event => event.at >= epoch.at && event.at >= base.foldedBefore && !folded.has(event.id))
+   return { epoch: { ...epoch }, base, events }
+ }
+ 
+@@ -406,6 +417,7 @@
+   // An event from before a reset or already folded into the base cannot be
+   // added again; it was either erased by the learner or already counted.
+   if (event.at < ledger.epoch.at || event.at < ledger.base.foldedBefore) return ledger
++  if ((ledger.base.foldedIds || []).includes(event.id)) return ledger
+   return { ...ledger, events: dedupe([...ledger.events, event]) }
+ }
+ 
+@@ -427,6 +439,8 @@
+       snapshot: foldEvents(ledger.base.snapshot, folding),
+       foldedBefore: Math.max(ledger.base.foldedBefore, cutoff),
+       folded: ledger.base.folded + folding.length,
++      foldedIds: [...new Set([...(ledger.base.foldedIds || []), ...folding.map(e => e.id).filter(isStableEventId)])]
++        .sort().slice(-FOLDED_IDS_MAX),
+     },
+     events: events.filter(event => event.at >= cutoff),
+   }
+--- /dev/null
++++ b/linguachat-frontend/src/services/writerKeys.js
+@@ -0,0 +1,67 @@
++/*
++ * One storage key per writer.
++ *
++ * Browsers keep a per-tab cache of localStorage and update it from other tabs
++ * asynchronously. While a tab is busy it cannot see another tab's latest
++ * write, so read–merge–write on a shared key can still overwrite that write —
++ * reproduced in two real tabs: one tab's 300 verified saves all vanished.
++ *
++ * So no tab ever rewrites a key another tab writes. Each page load writes its
++ * own copy under `<base>~w~<writer>`; readers merge every copy (the merge is a
++ * union, so extra copies are harmless). A copy that adds nothing to this
++ * tab's own, and has not been written for a while, is removed to bound
++ * storage; its owner, if still open, rewrites it on its next save.
++ *
++ * Keys keep the `lc2-` prefix, so they live in the account's namespace and
++ * move with the account exactly like every other learner key.
++ */
++export const WRITER_SEPARATOR = '~w~'
++const TAB_KEY = 'lc2-writer-tab'
++
++function randomId() {
++  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID().slice(0, 13)
++  return `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`
++}
++
++// Distinct per page load (a duplicated tab copies sessionStorage, not this).
++const PAGE = randomId()
++// Without a usable sessionStorage the id must still be stable for this page.
++const NO_SESSION_TAB = 'tab'
++
++/* This tab's writer id: the tab's session id plus this page load. */
++export function writerId() {
++  let tab = null
++  try {
++    const session = globalThis.sessionStorage
++    if (session) {
++      tab = session.getItem(TAB_KEY)
++      if (!tab) { tab = randomId(); session.setItem(TAB_KEY, tab) }
++      if (session.getItem(TAB_KEY) !== tab) tab = null
++    }
++  } catch { tab = null }
++  return `${tab || NO_SESSION_TAB}.${PAGE}`
++}
++
++export function ownKey(base) {
++  return `${base}${WRITER_SEPARATOR}${writerId()}`
++}
++
++export function isWriterKey(base, key) {
++  return key === base || (typeof key === 'string' && key.startsWith(base + WRITER_SEPARATOR))
++}
++
++/* Every stored copy of `base`: the shared (older) key and each writer's key. */
++export function storedCopies(access, base) {
++  const keys = typeof access.keys === 'function' ? access.keys() : []
++  // This tab's own copy is always read, even where keys cannot be listed.
++  const names = [...new Set([base, ownKey(base), ...keys.filter(key => isWriterKey(base, key))])]
++  const copies = []
++  for (const key of names) {
++    const raw = access.getItem(key)
++    if (raw !== null && raw !== undefined) copies.push({ key, raw })
++  }
++  return copies
++}
++
++// A copy idle this long whose content this tab already holds may be removed.
++export const WRITER_IDLE_MS = 2 * 60 * 1000

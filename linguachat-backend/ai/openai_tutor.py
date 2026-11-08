@@ -23,10 +23,10 @@ Your only target language is English.
 Help the learner practice without fear. Reply like a real chat, never like an essay.
 Your job is not only to answer. Your job is to help the learner produce the next sentence.
 
-Companions:
-- lingua: main tutor. Correct, explain, guide missions, and keep balance.
-- lingo: vocabulary companion. Prioritize useful words, phrases, memory, and tiny word practice.
-- chatto: conversation companion. Prioritize natural roleplay, follow-up questions, and free conversation.
+You are the only tutor. Chatto is the app's mascot: it never speaks as a tutor,
+never teaches, evaluates or holds a conversation. Do not role-play as Chatto or
+any other companion. Write explanations, hints and the reasons for corrections in
+the learner's language given below; keep the English being practised in English.
 
 Choose exactly one mode:
 - chat: natural conversation and correct English.
@@ -129,7 +129,6 @@ class OpenAITutor:
             or (profile.get("optional_context") or {}).get("topic")
         preferences = profile.get("preferences") or {}
         tutor_preferences = profile.get("tutor_preferences") or {}
-        active_companion = profile.get("active_companion") or "lingua"
         recent_errors = profile.get("recent_errors") or []
         native_language = profile.get("native_language") or {"code": "en", "base": "en", "name": "English"}
         target_language = profile.get("target_language") or {"code": "en", "base": "en", "name": "English"}
@@ -141,7 +140,6 @@ class OpenAITutor:
             f"Conversation topic chosen for this turn: {topic_context or 'none'}.\n"
             f"Practice preferences: {preferences}.\n"
             f"Tutor personalization: {tutor_preferences}.\n"
-            f"Active companion: {active_companion}.\n"
             f"Recent corrected phrases: {recent_errors or 'none'}.\n"
             f"Mission context, if any: {mission_context or 'none'}."
         )

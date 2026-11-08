@@ -2,6 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useApp } from '../../context/AppContext'
 import { JourneyRail } from '../layout/JourneyRail'
+import { loadLearnerModel } from '../../learning/engine/learnerModel.js'
+import { teachingHistory } from '../../learning/engine/teachingPolicy.js'
+import { learnerSummary } from '../../learning/engine/learnerSummary.js'
+import { LearningSummaryCard } from './LearningSummaryCard'
+import { labelKeyOfLevel } from '../../learning/curriculum/levels.js'
+import { workingLevelId } from '../../learning/curriculum/learnerLevel.js'
 import { LinguaAvatar } from '../ui/LinguaAvatar'
 import { getLanguageOption, languageFromInput, searchLanguages } from '../../services/language'
 import {
@@ -15,6 +21,7 @@ import {
   labelKeyFor,
   personalityName,
 } from '../../services/tutorPreferences'
+import { isSubmitEnter } from '../../services/keyboard.js'
 
 const MOOD_COLORS = [
   /*
@@ -173,16 +180,37 @@ export function LanguageIdentity() {
   }, [languageOpen])
 
   const hasLocalProgress = localProgress.messagesSent > 0
-  const confidence = localProgress.confidence || 0
   const streak = localProgress.streak || 0
-  const progressData = [45, 54, 62, Math.max(45, confidence - 5), confidence]
-    .map((score, index) => ({ week: index === 4 ? t('progressNow') : `W${index + 1}`, score }))
+  /*
+   * Evidence, not a story: answers the learner produced on their own at the
+   * first attempt (no help, no retry), per week, from the teaching history the
+   * engine already keeps. The old bars were the constants 45, 54, 62 drawn
+   * for everybody.
+   */
+  const progressData = useMemo(() => {
+    const now = Date.now(), WEEK = 7 * 86400000
+    const counts = [0, 0, 0, 0, 0]
+    for (const x of teachingHistory(loadLearnerModel().teachingHistory)) {
+      if (!x.independent || x.assisted || x.retried || x.success !== true) continue
+      const weeksAgo = Math.floor((now - x.at) / WEEK)
+      if (weeksAgo >= 0 && weeksAgo < 5) counts[4 - weeksAgo] += 1
+    }
+    const max = Math.max(1, ...counts)
+    return counts.map((count, index) => ({ week: index === 4 ? t('progressNow') : String(index - 4), count, score: (count / max) * 100 }))
+  }, [t])
+  const independentThisWeek = progressData[4].count
+  /*
+   * What the learner practises, can already do on their own, should review and
+   * what is not evaluated at all — from the same model the engine teaches from.
+   * Counts and plain words; no score is invented.
+   */
+  const summary = useMemo(() => learnerSummary(loadLearnerModel()), [])
+  const hasEvidence = progressData.some(d => d.count > 0)
   const practicedTopics = hasLocalProgress && localProgress.topics.length
     ? localProgress.topics
     : profile.preferences?.goals || [profile.goal || 'Travel']
   const currentMood = MOOD_COLORS.find(m => m.id === moodColor) || MOOD_COLORS[0]
   const relationship = t(getRelationshipLabelKey(streak))
-  const [confidenceSummaryBefore, confidenceSummaryAfter = ''] = t('confidenceSummary', { delta: confidence - 45 }).split('{percent}')
   const currentLanguage = useMemo(() => getLanguageOption(nativeLanguageInfo), [nativeLanguageInfo])
   const languageResults = useMemo(
     () => searchLanguages(languageSearch, currentLanguage),
@@ -267,7 +295,7 @@ export function LanguageIdentity() {
                   <input
                     value={nameInput}
                     onChange={e => setNameInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && saveName()}
+                    onKeyDown={e => isSubmitEnter(e, { allowShift: true }) && saveName()}
                     autoFocus
                     className="rounded-xl px-3 py-1.5 text-sm outline-none"
                     style={{ background: 'var(--surface-soft)', border: '1px solid var(--accent)', color: 'var(--ink)', fontFamily: 'inherit', fontWeight: 700, flex: 1 }}
@@ -295,7 +323,7 @@ export function LanguageIdentity() {
                   fontSize: 10, fontWeight: 700, background: 'var(--accent)',
                   color: '#fff', padding: '2px 9px', borderRadius: 999,
                 }}>
-                  {profile.level || 'B1'}
+                  {t(labelKeyOfLevel(workingLevelId(loadLearnerModel())) || 'preA1LevelBadge')}
                 </span>
                 <span style={{ fontSize: '0.8125rem', color: 'var(--muted)' }}>
                   {profile.email || 'linguachat.user'}
@@ -533,10 +561,14 @@ export function LanguageIdentity() {
           ))}
         </div>
 
+        {/* Your learning, from evidence */}
+        <LearningSummaryCard summary={summary} />
+
+
         {/* Confidence evolution */}
         <div className="rounded-2xl p-5 mb-5 animate-fade-up" style={{ animationDelay: '0.12s', background: 'var(--surface)', border: '1px solid var(--border)' }}>
           <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--muted)', marginBottom: 16 }}>
-            {t('confidenceEvolution')}
+            {t('evidenceWeeklyTitle')}
           </p>
           <div className="flex items-end gap-2" style={{ height: 80 }}>
             {progressData.map((d, i) => (
@@ -555,9 +587,7 @@ export function LanguageIdentity() {
             ))}
           </div>
           <p style={{ fontSize: '0.8125rem', color: 'var(--muted)', marginTop: 12 }}>
-            {confidenceSummaryBefore}
-            <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{confidence}%</span>
-            {confidenceSummaryAfter}
+            {hasEvidence ? t('evidenceWeeklySummary', { count: independentThisWeek }) : t('evidenceWeeklyEmpty')}
           </p>
         </div>
 
