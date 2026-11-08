@@ -156,7 +156,7 @@ No propongo cambiar el contenido congelado sin evidencia medida de estudiantes r
 | `where_is_it` | finding_your_way | ask_where_something_is | 3 | 2 | 4 | sí (12) | no (cerrado) | 30 | 8/8 | 1 / 9 |
 | `its_over_there` | finding_your_way | say_where_something_is | 3 | 2 | 5 | sí (13) | no (cerrado) | 31 | 8/8 | 1 / 9 |
 | `how_do_i_get_there` | finding_your_way | ask_about_getting_somewhere | 2 | 2 | 1 | sí (8) | no (cerrado) | 23 | 8/8 | 1 / 9 |
-| `more_than_ten` | paying_and_choosing | use_bigger_numbers | 3 | 2 | 4 | sí (12) | no (cerrado) | 23 | 8/8 | 2 / 8 |
+| `more_than_ten` | paying_and_choosing | use_bigger_numbers | 3 | 2 | 4 | sí (12) | no (cerrado) | 24 | 8/8 | 2 / 8 |
 | `how_much_is_it` | paying_and_choosing | ask_the_price | 3 | 2 | 4 | sí (12) | no (cerrado) | 28 | 8/8 | 1 / 8 |
 | `this_one_or_that_one` | paying_and_choosing | ask_the_price | 3 | 2 | 4 | sí (12) | no (cerrado) | 23 | 8/8 | 1 / 8 |
 | `buying_it` | paying_and_choosing | buy_something | 3 | 2 | 1 | sí (9) | no (cerrado) | 19 | 8/8 | 1 / 8 |

@@ -3842,7 +3842,7 @@ export const EPISODE_SKELETON = [
       },
       {
         "type": "free_reply",
-        "evalKind": "ask_wellbeing",
+        "evalKind": "answer_wellbeing",
         "itemIds": [
           "im_good"
         ],
