@@ -36,3 +36,10 @@ auth-qa-result.json
 # per-cycle safety measurements (the committed baselines stay)
 linguachat-backend/tests/safety_eval/results/*-qa-*.json
 linguachat-backend/tests/guided_eval/results/*-qa-*.json
+
+# Sealed evaluation sets: kept locally, never published (scripts/check-sealed-private.mjs)
+linguachat-backend/tests/guided_eval/guided_holdout_v1.jsonl
+linguachat-backend/tests/guided_eval/guided_holdout_v2.jsonl
+linguachat-backend/tests/safety_eval/holdout_v1.jsonl
+linguachat-frontend/scripts/fixtures/es-blind-holdout-v2.jsonl
+linguachat-frontend/scripts/fixtures/es-blind-holdout.jsonl

@@ -86,6 +86,7 @@ stage('foundry a2-structure', process.execPath, ['scripts/foundry/a2/check-a2-st
 stage('ledger integrity + P3 rollback (from git)', process.execPath, ['scripts/check-ledger-rollback.mjs', '--require'], { cwd: FE })
 stage('adaptation policy', process.execPath, ['scripts/check-adaptation-policy.mjs', '--report'], { cwd: FE })
 stage('cloud scope', process.execPath, ['.github/scripts/check-linguachat-cloud-scope.mjs'], { summary: t => t.trim().split('\n').at(-1) })
+stage('sealed sets stay private', process.execPath, ['scripts/check-sealed-private.mjs'])
 stage('cloud scope self-test', process.execPath, ['.github/scripts/check-linguachat-cloud-scope.mjs', '--self-test'])
 stage('cloud scope tests', process.execPath, ['.github/scripts/check-linguachat-cloud-scope.test.mjs'])
 stage('backend compileall', PY, ['-m', 'compileall', '-q', '-x', '\\.venv', '.'], { cwd: BE, summary: () => 'compiled' })
