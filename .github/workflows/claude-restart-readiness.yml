@@ -1,0 +1,48 @@
+# Read-only, zero-Claude-cost readiness check. This is NOT the Claude worker.
+name: Claude restart readiness (no paid calls)
+
+on:
+  push:
+    branches:
+      - 'ops/claude-restart-readiness'
+    paths:
+      - '.github/workflows/claude-restart-readiness.yml'
+  pull_request:
+    paths:
+      - '.github/workflows/claude-restart-readiness.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      TOKEN_PRESENT: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Report current prerequisites without printing secrets
+        shell: bash
+        run: |
+          set -euo pipefail
+          report() { printf '%s\n' "$1" | tee -a "$GITHUB_STEP_SUMMARY"; }
+          report '## LinguaChat autonomous-chain readiness (read-only)'
+          if [ "$TOKEN_PRESENT" = 'true' ]; then
+            report '- Claude Actions token: present (validity and remaining usage NOT verified).'
+          else
+            report '- Claude Actions token: MISSING. A personal Claude-to-GitHub connection cannot substitute for this Actions credential.'
+          fi
+          if [ -f .github/workflows/claude-chain.yml ] && [ -f .github/workflows/claude-task.yml ]; then
+            report '- Chain/worker workflows: active folder.'
+          else
+            report '- Chain/worker workflows: paused or incomplete; do not claim continuous execution.'
+          fi
+          NEXT=$(node .github/scripts/next-task.mjs --json)
+          TASK_STATUS=$(node -e 'const q=JSON.parse(process.argv[1]); console.log(`- Next claimable task: ${q.id ?? "none"}; reason: ${q.reason}`)' "$NEXT")
+          report "$TASK_STATUS"
+          report '- This job did not start Claude, deploy, merge, use cloud credentials, or incur model API usage.'
